@@ -1,5 +1,5 @@
 /*
-System.h
+InkPlate6.h
 Inkplate 6 Arduino library
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
 September 24, 2020
@@ -14,40 +14,35 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#ifndef __SYSTEM_H__
-#define __SYSTEM_H__
-
-#include "../libs/SdFat/SdFat.h"
-#include "Arduino.h"
-#include "SPI.h"
+#ifndef __INKPLATE6_H__
+#define __INKPLATE6_H__
 
 #include "defines.h"
-#include "Esp.h"
-#include "Mcp.h"
-#include "NetworkClient.h"
 
-class System : public Mcp
+class InkPlate6
 {
   public:
-    void setPanelState(uint8_t s);
-    uint8_t getPanelState();
-
-    void setSdCardOk(int16_t s);
-    int16_t getSdCardOk();
-
-    int8_t readTemperature();
-
-    uint8_t readTouchpad(uint8_t _pad);
-    double readBattery();
-
-    int16_t sdCardInit();
-
-    SdFat getSdFat();
-    SPIClass getSPI();
+    enum PanelState { OFF, ON };
 
   private:
-    uint8_t _panelOn = 0;
-    int16_t _sdCardOk = 0;
+    PanelState panel_state;
+
+  public:
+    InkPlate6() : panel_state(OFF) { }
+
+    void       set_panel_state(PanelState s) { panel_state = s; };
+    PanelState get_panel_state() { return panel_state; };
+
+    int8_t  read_temperature();
+
+    uint8_t read_touchpad(uint8_t _pad);
+    double  read_battery();
 };
+
+#if INKPLATE6
+  InkPlate6 ink_plate_6;
+#else
+  extern InkPlate6 ink_plate_6;
+#endif
 
 #endif
