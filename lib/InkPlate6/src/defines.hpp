@@ -20,8 +20,6 @@ contact techsupport@e-radionica.com Distributed as-is; no warranty is given.
 #include <cstdint>
 #include <cstring>
 
-#include "freertos/FreeRTOS.h"
-
 static const uint8_t HIGH = 1;
 static const uint8_t LOW  = 0;
 

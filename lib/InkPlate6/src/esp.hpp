@@ -7,22 +7,27 @@
 
 #define NOP() asm volatile ("nop")
 
+/**
+ * @brief ESP-IDF support methods
+ * 
+ * These are class methods that simplify access to some esp-idf specifics.
+ * The class is taylored for the needs of the low-level driver classes of the InkPlate-6
+ * software.
+ */
 class ESP
 {
   public:
-    static inline long IRAM_ATTR micros() { return (unsigned long) esp_timer_get_time(); }
-    static inline long IRAM_ATTR millis() { return (unsigned long) esp_timer_get_time() / 1000; }
+    static inline long IRAM_ATTR millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
 
-    static void delay_microseconds(uint32_t micro_seconds) {
-      uint32_t m = micros();
-      if (micro_seconds) {
+    static void IRAM_ATTR delay_microseconds(uint32_t micro_seconds) {
+      uint32_t m = esp_timer_get_time();
+      if (micro_seconds > 0) {
         uint32_t e = m + micro_seconds;
         if (m > e) {
-          while (micros() > e) NOP(); // overflow...
+          while (esp_timer_get_time() > e) NOP(); // overflow...
         }
-        while (micros() < e) NOP();
+        while (esp_timer_get_time() < e) NOP();
       }
-
     }
 
     static void delay(uint32_t micro_seconds) {

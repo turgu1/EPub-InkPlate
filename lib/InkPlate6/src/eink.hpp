@@ -34,10 +34,12 @@ Distributed as-is; no warranty is given.
 class EInk : NonCopyable
 {
   public:
-    static const uint16_t WIDTH  = 800;
-    static const uint16_t HEIGHT = 600;
-    static const uint16_t BITMAP_SIZE_1BIT = (WIDTH * HEIGHT) >> 3;
-    static const uint32_t BITMAP_SIZE_3BIT = ((uint32_t) WIDTH * HEIGHT) >> 1;
+    static const uint16_t WIDTH  = 800; // In pixels
+    static const uint16_t HEIGHT = 600; // In pixels
+    static const uint16_t BITMAP_SIZE_1BIT = (WIDTH * HEIGHT) >> 3;            // In bytes
+    static const uint32_t BITMAP_SIZE_3BIT = ((uint32_t) WIDTH * HEIGHT) >> 1; // In bytes
+    static const uint16_t LINE_SIZE_1BIT   = WIDTH >> 3;                       // In bytes
+    static const uint16_t LINE_SIZE_3BIT   = WIDTH >> 1;                       // In bytes
 
     enum PanelMode   { PM_1BIT, PM_3BIT };
     enum PanelState  { OFF, ON };
@@ -94,7 +96,7 @@ class EInk : NonCopyable
 
     inline bool       is_initialized() { return initialized; }
 
-    void clear_display();
+    void clear_bitmap();
     void update();
     void partial_update();
 
