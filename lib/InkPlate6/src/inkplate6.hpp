@@ -14,27 +14,17 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#ifndef __INKPLATE6_H__
-#define __INKPLATE6_H__
+#ifndef __INKPLATE6_HPP__
+#define __INKPLATE6_HPP__
 
-#include "defines.h"
+#include "defines.hpp"
 
 class InkPlate6
 {
   public:
-    enum PanelState { OFF, ON };
-
-  private:
-    PanelState panel_state;
-
-  public:
-    InkPlate6() : panel_state(OFF) { }
-
-    void       set_panel_state(PanelState s) { panel_state = s; };
-    PanelState get_panel_state() { return panel_state; };
+    InkPlate6();
 
     int8_t  read_temperature();
-
     uint8_t read_touchpad(uint8_t _pad);
     double  read_battery();
 };

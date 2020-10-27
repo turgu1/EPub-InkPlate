@@ -14,10 +14,11 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#ifndef __EINK_H__
-#define __EINK_H__
+#ifndef __EINK_HPP__
+#define __EINK_HPP__
 
-#include "defines.h"
+#include "defines.hpp"
+#include "noncopyable.hpp"
 
 /**
  * @brief Low level e-Ink display
@@ -25,9 +26,12 @@ Distributed as-is; no warranty is given.
  * This class implements the low level methods required to control
  * and access the e-ink display of the InkPlate-6 device.
  * 
+ * This is a singleton. It cannot be instanciated elsewhere. It is not 
+ * instanciated in the heap. This is reinforced by the C++ construction
+ * below. It also cannot be copied through the NonCopyable derivation.
  */
 
-class EInk
+class EInk : NonCopyable
 {
   public:
     static const uint16_t WIDTH  = 800;
@@ -35,16 +39,19 @@ class EInk
     static const uint16_t BITMAP_SIZE_1BIT = (WIDTH * HEIGHT) >> 3;
     static const uint32_t BITMAP_SIZE_3BIT = ((uint32_t) WIDTH * HEIGHT) >> 1;
 
-    enum Mode { B1, B3 };
+    enum PanelMode   { PM_1BIT, PM_3BIT };
+    enum PanelState  { OFF, ON };
 
   private:
     static const uint8_t EINK_ADDRESS = 0x48;
-
-
-    static EInk * instance;
+   
+    PanelMode  panel_mode;
+    PanelState panel_state;
 
     bool initialized;
-    Mode mode;
+
+    static EInk singleton;
+    EInk();  // Private constructor
 
     void precalculateGamma(uint8_t * c, float gamma);
 
@@ -58,18 +65,34 @@ class EInk
     void pins_z_state();
     void pins_as_outputs();
 
-    uint32_t pin_LUT[256];
+    uint32_t pin_lut[256];
 
     static const uint8_t  waveform_3bit[8][8]; 
     static const uint32_t waveform[50]; 
+    static const uint8_t  lut2[16];
+    static const uint8_t  lutw[16];
+    static const uint8_t  lutb[16];
+
+    uint8_t * D_memory4Bit;
+    uint8_t * _pBuffer;
+    uint8_t * DMemoryNew;
+    uint8_t * partial;
+
+    bool block_partial;
 
   public:
-    EInk();
 
-    void begin(Mode mode);
+    static inline EInk & get_singleton() noexcept { return singleton; }
 
-    inline void set_display_mode(Mode new_mode) { mode = new_mode; }
-    inline Mode get_display_mode() { return mode; }
+    void begin(PanelMode mode);
+
+    inline void       set_panel_state(PanelState s) { panel_state = s; }
+    inline PanelState get_panel_state() { return panel_state; }
+
+    inline void       set_panel_mode(PanelMode new_mode) { panel_mode = new_mode; }
+    inline PanelMode  get_panel_mode() { return panel_mode; }
+
+    inline bool       is_initialized() { return initialized; }
 
     void clear_display();
     void update();
@@ -84,10 +107,10 @@ class EInk
     void clean_fast(uint8_t c, uint8_t rep);
 };
 
-#if EINK
-  EInk e_ink;
+#if __EINK__
+  EInk & e_ink = EInk::get_singleton();
 #else
-  extern EInk e_ink;
+  extern EInk & e_ink;
 #endif
 
 #endif

@@ -14,199 +14,206 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#include "mcp.h"
-#include "wire.h"
+#define __MCP__ 1
+#include "mcp.hpp"
+
+#include "wire.hpp"
+
+#include "driver/gpio.h"
+
+MCP MCP::singleton;
 
 // LOW LEVEL:
 
-bool MCP::begin(uint8_t *_r)
+bool MCP::begin()
 {
-  Wire::begin_transmission(address);
-  int error = Wire::end_transmission();
+  wire.begin_transmission(address);
+  int error = wire.end_transmission();
   if (error) return false;
     
-  read_registers(address, _r);
-  _r[0] = 0xff;
-  _r[1] = 0xff;
-  update_all_register(address, _r);
+  read_registers(registers);
+  registers[0] = 0xff;
+  registers[1] = 0xff;
+  update_all_register(registers);
 
   return true;
 }
 
 void MCP::read_registers(uint8_t * k)
 {
-  Wire::begin_transmission(address);
-  Wire::write(0x00);
-  Wire::end_transmission();
-  Wire::request_from(address, (uint8_t) 22);
+  wire.begin_transmission(address);
+  wire.write(0x00);
+  wire.end_transmission();
+  wire.request_from(address, (uint8_t) 22);
   for (int i = 0; i < 22; ++i) {
-    k[i] = Wire::read();
+    k[i] = wire.read();
   }
 }
 
-void MCP::read_registers(uint8_t _regName, uint8_t * k, uint8_t _n)
+void MCP::read_registers(Reg reg, uint8_t * k, uint8_t count)
 {
-  Wire::begin_transmission(address);
-  Wire::write(_regName);
-  Wire::end_transmission();
+  wire.begin_transmission(address);
+  wire.write(reg);
+  wire.end_transmission();
 
-  Wire::request_from(address, _n);
-  for (int i = 0; i < _n; ++i) {
-    k[_regName + i] = Wire::read();
+  wire.request_from(address, count);
+  for (int i = 0; i < count; ++i) {
+    k[reg + i] = wire.read();
   }
 }
 
-void MCP::read_register(uint8_t _regName, uint8_t * k)
+void MCP::read_register(Reg reg, uint8_t * k)
 {
-  Wire::begin_transmission(address);
-  Wire::write(_regName);
-  Wire::end_transmission();
-  Wire::request_from(address, (uint8_t) 1);
-  k[_regName] = Wire::read();
+  wire.begin_transmission(address);
+  wire.write(reg);
+  wire.end_transmission();
+  wire.request_from(address, (uint8_t) 1);
+  k[reg] = wire.read();
 }
 
 void MCP::update_all_register(uint8_t * k)
 {
-  Wire::begin_transmission(address);
-  Wire::write(0x00);
+  wire.begin_transmission(address);
+  wire.write(0x00);
   for (int i = 0; i < 22; ++i) {
-    Wire::write(k[i]);
+    wire.write(k[i]);
   }
-  Wire::end_transmission();
+  wire.end_transmission();
 }
 
-void MCP::update_register(uint8_t _regName, uint8_t _d)
+void MCP::update_register(Reg reg, uint8_t _d)
 {
-  Wire::begin_transmission(address);
-  Wire::write(_regName);
-  Wire::write(_d);
-  Wire::end_transmission();
+  wire.begin_transmission(address);
+  wire.write(reg);
+  wire.write(_d);
+  wire.end_transmission();
 }
 
-void MCP::update_register(uint8_t _regName, uint8_t * k, uint8_t _n)
+void MCP::update_register(Reg reg, uint8_t * k, uint8_t _n)
 {
-  Wire::begin_transmission(address);
-  Wire::write(_regName);
+  wire.begin_transmission(address);
+  wire.write(reg);
   for (int i = 0; i < _n; ++i) {
-    Wire::write(k[_regName + i]);
+    wire.write(k[reg + i]);
   }
-  Wire::end_transmission();
+  wire.end_transmission();
 }
 
 // HIGH LEVEL:
 
-void MCP::pin_mode(uint8_t _pin, PinMode _mode)
+void MCP::set_direction(Pin pin, PinMode mode)
 {
-  uint8_t _port = (_pin >> 3) & 1;
-  uint8_t _p = _pin & 0x07;
+  uint8_t port = (pin >> 3) & 1;
+  uint8_t p    =  pin &  7;
 
-  switch (_mode) {
+  switch (mode) {
     case INPUT:
-      mcpRegsInt[MCP23017_IODIRA + _port] |= 1 << _p;   // Set it to input
-      mcpRegsInt[MCP23017_GPPUA + _port] &= ~(1 << _p); // Disable pullup on that pin
-      update_register(MCP23017_IODIRA + _port, mcpRegsInt[MCP23017_IODIRA + _port]);
-      update_register(MCP23017_GPPUA + _port, mcpRegsInt[MCP23017_GPPUA + _port]);
+      registers[IODIRA + port] |=   1 << p;    // Set it to input
+      registers[GPPUA  + port] &= ~(1 << p); // Disable pullup on that pin
+      update_register((Reg)(IODIRA + port), registers[IODIRA + port]);
+      update_register((Reg)(GPPUA  + port), registers[GPPUA  + port]);
       break;
 
   case INPUT_PULLUP:
-      mcpRegsInt[MCP23017_IODIRA + _port] |= 1 << _p; // Set it to input
-      mcpRegsInt[MCP23017_GPPUA + _port] |= 1 << _p;  // Enable pullup on that pin
-      update_register(MCP23017_IODIRA + _port, mcpRegsInt[MCP23017_IODIRA + _port]);
-      update_register(MCP23017_GPPUA + _port, mcpRegsInt[MCP23017_GPPUA + _port]);
+      registers[IODIRA + port] |= 1 << p; // Set it to input
+      registers[GPPUA  + port] |= 1 << p; // Enable pullup on that pin
+      update_register((Reg)(IODIRA + port), registers[IODIRA + port]);
+      update_register((Reg)(GPPUA  + port), registers[GPPUA  + port]);
       break;
 
   case OUTPUT:
-      mcpRegsInt[MCP23017_IODIRA + _port] &= ~(1 << _p); // Set it to output
-      mcpRegsInt[MCP23017_GPPUA + _port] &= ~(1 << _p);  // Disable pullup on that pin
-      update_register(MCP23017_IODIRA + _port, mcpRegsInt[MCP23017_IODIRA + _port]);
-      update_register(MCP23017_GPPUA + _port, mcpRegsInt[MCP23017_GPPUA + _port]);
+      registers[IODIRA + port] &= ~(1 << p); // Set it to output
+      registers[GPPUA  + port] &= ~(1 << p); // Disable pullup on that pin
+      update_register((Reg)(IODIRA + port), registers[IODIRA + port]);
+      update_register((Reg)(GPPUA  + port), registers[GPPUA  + port]);
       break;
   }
 }
 
-void MCP::digital_write(uint8_t _pin, uint8_t _state)
+void MCP::digital_write(Pin pin, uint8_t state)
 {
-  uint8_t _port = (_pin / 8) & 1;
-  uint8_t _p = _pin % 8;
+  uint8_t port = (pin / 8) & 1;
+  uint8_t _p = pin % 8;
 
-  if (mcpRegsInt[MCP23017_IODIRA + _port] & (1 << _p)) return;
-  _state ? (mcpRegsInt[MCP23017_GPIOA + _port] |= (1 << _p)) : (mcpRegsInt[MCP23017_GPIOA + _port] &= ~(1 << _p));
-  update_register(MCP23017_GPIOA + _port, mcpRegsInt[MCP23017_GPIOA + _port]);
+  if (registers[IODIRA + port] & (1 << _p)) return;
+  state ? (registers[GPIOA + port] |= (1 << _p)) : (registers[GPIOA + port] &= ~(1 << _p));
+  update_register((Reg)(GPIOA + port), registers[GPIOA + port]);
 }
 
-uint8_t MCP::digital_read(uint8_t _pin)
+uint8_t MCP::digital_read(Pin pin)
 {
-  uint8_t _port = (_pin / 8) & 1;
-  uint8_t _p = _pin % 8;
-  readMCPRegister(MCP23017_GPIOA + _port, mcpRegsInt);
-  return (mcpRegsInt[MCP23017_GPIOA + _port] & (1 << _p)) ? HIGH : LOW;
+  uint8_t port = (pin >> 3) & 1;
+  uint8_t p    =  pin & 7;
+  read_register((Reg)(GPIOA + port), registers);
+  return (registers[GPIOA + port] & (1 << p)) ? HIGH : LOW;
 }
 
-void MCP::setIntOutput(uint8_t intPort, uint8_t mirroring, uint8_t openDrain, uint8_t polarity)
+void MCP::set_int_output(uint8_t intPort, uint8_t mirroring, uint8_t openDrain, uint8_t polarity)
 {
   intPort   &= 1;
   mirroring &= 1;
   openDrain &= 1;
   polarity  &= 1;
-  mcpRegsInt[MCP23017_IOCONA + intPort] = (mcpRegsInt[MCP23017_IOCONA + intPort] & ~(1 << 6)) | (1 << mirroring);
-  mcpRegsInt[MCP23017_IOCONA + intPort] = (mcpRegsInt[MCP23017_IOCONA + intPort] & ~(1 << 6)) | (1 << openDrain);
-  mcpRegsInt[MCP23017_IOCONA + intPort] = (mcpRegsInt[MCP23017_IOCONA + intPort] & ~(1 << 6)) | (1 << polarity);
-  update_register(MCP23017_IOCONA + intPort, mcpRegsInt[MCP23017_IOCONA + intPort]);
+
+  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << mirroring);
+  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << openDrain);
+  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << polarity);
+  update_register((Reg)(IOCONA + intPort), registers[IOCONA + intPort]);
 }
 
-void MCP::setIntPin(uint8_t _pin, IntMode _mode)
+void MCP::set_int_pin(Pin pin, IntMode mode)
 {
-  uint8_t _port = (_pin / 8) & 1;
-  uint8_t _p = _pin % 8;
+  uint8_t port = (pin / 8) & 1;
+  uint8_t p = pin % 8;
 
-  switch (_mode) {
+  switch (mode) {
     case CHANGE:
-      mcpRegsInt[MCP23017_INTCONA + _port] &= ~(1 << _p);
+      registers[INTCONA + port] &= ~(1 << p);
       break;
 
     case FALLING:
-      mcpRegsInt[MCP23017_INTCONA + _port] |= (1 << _p);
-      mcpRegsInt[MCP23017_DEFVALA + _port] |= (1 << _p);
+      registers[INTCONA + port] |= (1 << p);
+      registers[DEFVALA + port] |= (1 << p);
       break;
 
     case RISING:
-      mcpRegsInt[MCP23017_INTCONA + _port] |= (1 << _p);
-      mcpRegsInt[MCP23017_DEFVALA + _port] &= ~(1 << _p);
+      registers[INTCONA + port] |=  (1 << p);
+      registers[DEFVALA + port] &= ~(1 << p);
       break;
   }
-  mcpRegsInt[MCP23017_GPINTENA + _port] |= (1 << _p);
-  update_register(MCP23017_GPINTENA, mcpRegsInt, 6);
+  registers[GPINTENA + port] |= (1 << p);
+  update_register(GPINTENA, registers, 6);
 }
 
-void MCP::removeIntPin(uint8_t _pin)
+void MCP::remove_int_pin(Pin pin)
 {
-  uint8_t _port = (_pin / 8) & 1;
-  uint8_t _p = _pin % 8;
-  mcpRegsInt[MCP23017_GPINTENA + _port] &= ~(1 << _p);
-  update_register(MCP23017_GPINTENA, mcpRegsInt, 2);
+  uint8_t port = (pin / 8) & 1;
+  uint8_t p = pin % 8;
+  registers[GPINTENA + port] &= ~(1 << p);
+  update_register(GPINTENA, registers, 2);
 }
 
-uint16_t MCP::getINT()
+uint16_t MCP::get_int()
 {
-  readMCPRegisters(MCP23017_INTFA, mcpRegsInt, 2);
-  return ((mcpRegsInt[MCP23017_INTFB] << 8) | mcpRegsInt[MCP23017_INTFA]);
+  read_registers(INTFA, registers, 2);
+  return ((registers[INTFB] << 8) | registers[INTFA]);
 }
 
-uint16_t MCP::getINTstate()
+uint16_t MCP::get_int_state()
 {
-  readMCPRegisters(MCP23017_INTCAPA, mcpRegsInt, 2);
-  return ((mcpRegsInt[MCP23017_INTCAPB] << 8) | mcpRegsInt[MCP23017_INTCAPA]);
+  read_registers(INTCAPA, registers, 2);
+  return ((registers[INTCAPB] << 8) | registers[INTCAPA]);
 }
 
-void MCP::setPorts(uint16_t _d)
+void MCP::set_ports(uint16_t d)
 {
-  mcpRegsInt[MCP23017_GPIOA] = _d & 0xff;
-  mcpRegsInt[MCP23017_GPIOB] = (_d >> 8) & 0xff;
-  update_register(MCP23017_GPIOA, mcpRegsInt, 2);
+  registers[GPIOA] = d & 0xff;
+  registers[GPIOB] = (d >> 8) & 0xff;
+  update_register(GPIOA, registers, 2);
 }
 
-uint16_t MCP::getPorts()
+uint16_t MCP::get_ports()
 {
-  readMCPRegisters(MCP23017_GPIOA, mcpRegsInt, 2);
-  return ((mcpRegsInt[MCP23017_GPIOB] << 8) | (mcpRegsInt[MCP23017_GPIOA]));
+  read_registers(GPIOA, registers, 2);
+  return ((registers[GPIOB] << 8) | (registers[GPIOA]));
 }

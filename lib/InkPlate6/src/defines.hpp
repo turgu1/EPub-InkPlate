@@ -14,11 +14,13 @@ included with this example. If you have any questions about licensing, please
 contact techsupport@e-radionica.com Distributed as-is; no warranty is given.
 */
 
-#ifndef __DEFINES_H__
-#define __DEFINES_H__
+#ifndef __DEFINES_HPP__
+#define __DEFINES_HPP__
 
 #include <cstdint>
 #include <cstring>
+
+#include "freertos/FreeRTOS.h"
 
 static const uint8_t HIGH = 1;
 static const uint8_t LOW  = 0;

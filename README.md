@@ -11,5 +11,5 @@ The driver classes are:
 - MCP - MCP23017 16 bits IO expander class. (Arduino Mcp)
 
 These has been copied from the Arduino implementation and are modified extensively to be inline with the rest of the
-EPub-Linux code. A lot remain to be done.
+EPub-Linux code. A lot remains to be done.
 
