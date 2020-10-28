@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "driver/adc.h"
 
 #define NOP() asm volatile ("nop")
 
@@ -34,7 +35,12 @@ class ESP
       vTaskDelay(micro_seconds / portTICK_PERIOD_MS);
     }
 
-    static int16_t analog_read(gpio_num_t port);
+    static int16_t analog_read(adc1_channel_t channel) {
+      adc1_config_width(ADC_WIDTH_BIT_12);
+      adc1_config_channel_atten(channel, ADC_ATTEN_MAX);
+
+      return adc1_get_raw(channel);
+    }
 
     // This needs option CONFIG_SPIRAM_USE in sdconfig to be 
     // set to "Make RAM allocatable using heap_caps_malloc(…, MALLOC_CAP_SPIRAM)" 

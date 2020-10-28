@@ -57,12 +57,12 @@ class EInk : NonCopyable
 
     void precalculateGamma(uint8_t * c, float gamma);
 
-    void update_1b();
-    void update_3b();
+    void update_1bit();
+    void update_3bit();
 
     void vscan_start();
     void vscan_end();
-    void hscan_start(uint32_t _d = 0);
+    void hscan_start(uint32_t d = 0);
     
     void pins_z_state();
     void pins_as_outputs();
@@ -107,6 +107,8 @@ class EInk : NonCopyable
 
     void clean();
     void clean_fast(uint8_t c, uint8_t rep);
+
+    int8_t read_temperature();
 };
 
 #if __EINK__

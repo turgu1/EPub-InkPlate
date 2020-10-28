@@ -173,12 +173,12 @@ EInk::clear_bitmap()
 void 
 EInk::update()
 {
-  if      (get_panel_mode() == PM_1BIT) update_1b();
-  else if (get_panel_mode() == PM_3BIT) update_3b();
+  if      (get_panel_mode() == PM_1BIT) update_1bit();
+  else if (get_panel_mode() == PM_3BIT) update_3bit();
 }
 
 void 
-EInk::update_1b()
+EInk::update_1bit()
 {
   memcpy(DMemoryNew, partial, BITMAP_SIZE_1BIT);
 
@@ -293,7 +293,7 @@ EInk::update_1b()
 }
 
 void 
-EInk::update_3b()
+EInk::update_3bit()
 {
   turn_on();
   clean_fast(0,  1);
@@ -372,16 +372,16 @@ void
 EInk::partial_update()
 {
   if (get_panel_mode() == PM_1BIT) return;
-  if (block_partial) update_1b();
+  if (block_partial) update_1bit();
 
   uint32_t n    = 119999;
   uint32_t send;
-  uint16_t pos  = 59999;
+  uint16_t pos  = BITMAP_SIZE_1BIT - 1;
   uint8_t  data = 0;
   uint8_t  diffw, diffb;
 
   for (int i = 0; i < HEIGHT; ++i) {
-    for (int j = 0; j < 100; ++j) {
+    for (int j = 0; j < LINE_SIZE_1BIT; ++j) {
       diffw =  *(DMemoryNew + pos) & ~*(partial + pos);
       diffb = ~*(DMemoryNew + pos) &  *(partial + pos);
       pos--;
@@ -424,7 +424,7 @@ EInk::partial_update()
   vscan_start();
   turn_off();
 
-  memcpy(DMemoryNew, partial, 60000);
+  memcpy(DMemoryNew, partial, BITMAP_SIZE_1BIT);
 }
 
 void 
@@ -633,3 +633,38 @@ void EInk::pins_as_outputs()
   gpio_set_direction(GPIO_NUM_26, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_27, GPIO_MODE_OUTPUT);
 }
+
+int8_t 
+EInk::read_temperature()
+{
+  int8_t temp;
+    
+  if (get_panel_state() == OFF) {
+    mcp.WAKEUP_SET();
+    mcp.PWRUP_SET();
+    ESP::delay(5);
+  }
+
+  wire.begin_transmission(EINK_ADDRESS);
+  wire.write(0x0D);
+  wire.write(0b10000000);
+  wire.end_transmission();
+    
+  ESP::delay(5);
+
+  wire.begin_transmission(EINK_ADDRESS);
+  wire.write(0x00);
+  wire.end_transmission();
+
+  wire.request_from(0x48, 1);
+  temp = wire.read();
+    
+  if (get_panel_state() == OFF) {
+    mcp.PWRUP_CLEAR();
+    mcp.WAKEUP_CLEAR();
+    ESP::delay(5);
+  }
+
+  return temp;
+}
+

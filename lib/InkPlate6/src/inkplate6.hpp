@@ -24,7 +24,6 @@ class InkPlate6
   public:
     InkPlate6();
 
-    int8_t  read_temperature();
     uint8_t read_touchpad(uint8_t _pad);
     double  read_battery();
 };
