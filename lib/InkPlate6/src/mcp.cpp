@@ -17,19 +17,25 @@ Distributed as-is; no warranty is given.
 #define __MCP__ 1
 #include "mcp.hpp"
 
-#include "wire.hpp"
+#include "logging.hpp"
 
+#include "wire.hpp"
 #include "driver/gpio.h"
+
+static const char * TAG = "MCP";
 
 MCP MCP::singleton;
 
 // LOW LEVEL:
 
-bool MCP::begin()
+bool MCP::initialize()
 {
   wire.begin_transmission(address);
   int error = wire.end_transmission();
-  if (error) return false;
+  if (error) {
+    ESP_LOGE(TAG, "Unable to access MCP.");
+    return false;
+  }
     
   read_registers(registers);
   registers[0] = 0xff;

@@ -3,10 +3,12 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_task_wdt.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
 
-#define NOP() asm volatile ("nop")
+static const uint8_t HIGH = 1;
+static const uint8_t LOW  = 0;
 
 /**
  * @brief ESP-IDF support methods
@@ -22,12 +24,13 @@ class ESP
 
     static void IRAM_ATTR delay_microseconds(uint32_t micro_seconds) {
       uint32_t m = esp_timer_get_time();
+      taskYIELD();
       if (micro_seconds > 0) {
         uint32_t e = m + micro_seconds;
         if (m > e) {
-          while (esp_timer_get_time() > e) NOP(); // overflow...
+          while (esp_timer_get_time() > e) asm volatile ("nop"); // overflow...
         }
-        while (esp_timer_get_time() < e) NOP();
+        while (esp_timer_get_time() < e) asm volatile ("nop");
       }
     }
 

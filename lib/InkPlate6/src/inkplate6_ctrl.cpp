@@ -14,21 +14,25 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#include "inkplate6.hpp"
+#include "inkplate6_ctrl.hpp"
+
+#include "logging.hpp"
 
 #include "wire.hpp"
 #include "mcp.hpp"
 #include "esp.hpp"
 #include "eink.hpp"
 
+static const char * TAG = "InkPlate6Ctrl";
+
 uint8_t 
-InkPlate6::read_touchpad(uint8_t pad)
+InkPlate6Ctrl::read_touchpad(uint8_t pad)
 {
   return mcp.digital_read((MCP::Pin)((pad & 3) + 10));
 }
 
 double 
-InkPlate6::read_battery()
+InkPlate6Ctrl::read_battery()
 {
   mcp.digital_write(MCP::BATTERY_SWITCH, HIGH);
   ESP::delay(1);

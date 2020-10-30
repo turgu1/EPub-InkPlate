@@ -1,13 +1,18 @@
 #define __WIRE__ 1
 #include "wire.hpp"
 
+#include "logging.hpp"
+
 #include "driver/i2c.h"
+
+static const char * TAG = "Wire";
 
 Wire Wire::singleton;
 
 esp_err_t    
-Wire::begin()
+Wire::initialize()
 {
+  ESP_LOGD(TAG, "Initializing...");
   esp_err_t result = ESP_OK;
 
   if (!initialized) {
@@ -18,14 +23,20 @@ Wire::begin()
     config.scl_pullup_en    = GPIO_PULLUP_DISABLE;
     config.sda_io_num       = 21;
     config.sda_pullup_en    = GPIO_PULLUP_DISABLE;
-    config.master.clk_speed = 100000; // to be confirm
+    config.master.clk_speed = 20000; // to be confirm
 
     result = i2c_param_config(I2C_NUM_0, &config);
 
     if (result == ESP_OK) {
+      ESP_LOGD(TAG, "i2c_param_config Ok");
       result = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
     }
-
+    if (result == ESP_OK) {
+      ESP_LOGD(TAG, "i2c_driver_install Ok");
+    }
+    else {
+      ESP_LOGE(TAG, "Unablem to complete I2C config sequence: %s.", esp_err_to_name(result));
+    }
     initialized = result == ESP_OK;
   }
 
@@ -35,7 +46,7 @@ Wire::begin()
 esp_err_t    
 Wire::begin_transmission(uint8_t addr)
 {
-  if (!initialized) begin();
+  if (!initialized) initialize();
 
   if (initialized) {
     cmd = i2c_cmd_link_create();
@@ -52,12 +63,21 @@ Wire::begin_transmission(uint8_t addr)
 esp_err_t     
 Wire::end_transmission()
 {
+  esp_err_t result;
+
   if (initialized) {
-    i2c_master_write(cmd, buffer, index, true);
-    i2c_master_stop(cmd);
+    if ((result = i2c_master_write(cmd, buffer, index, true)) != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to write data to I2C: %s.", esp_err_to_name(result));
+    }
+    if ((result = i2c_master_stop(cmd)) != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to stop I2C: %s.", esp_err_to_name(result));
+    }
     esp_err_t result = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     index = 0;
+    if (result != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to complete Wire Transmission: %s.", esp_err_to_name(result));
+    }
     return result;
   }
   else {
@@ -88,7 +108,7 @@ Wire::read()
 esp_err_t    
 Wire::request_from(uint8_t addr, uint8_t size)
 {
-  if (!initialized) begin();
+  if (!initialized) initialize();
 
   if (initialized) {
     if (size == 0) return ESP_OK;
@@ -105,6 +125,9 @@ Wire::request_from(uint8_t addr, uint8_t size)
     i2c_cmd_link_delete(cmd);
     size_to_read = size;
     index = 0;
+    if (result != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to complete request_from: %s.", esp_err_to_name(result));
+    }
     return result;
   }
   else {

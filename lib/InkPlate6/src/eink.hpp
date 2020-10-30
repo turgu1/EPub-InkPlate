@@ -19,6 +19,7 @@ Distributed as-is; no warranty is given.
 
 #include "defines.hpp"
 #include "noncopyable.hpp"
+#include "driver/gpio.h"
 
 /**
  * @brief Low level e-Ink display
@@ -41,24 +42,25 @@ class EInk : NonCopyable
     static const uint16_t LINE_SIZE_1BIT   = WIDTH >> 3;                       // In bytes
     static const uint16_t LINE_SIZE_3BIT   = WIDTH >> 1;                       // In bytes
 
+    typedef uint8_t Bitmap3Bit [BITMAP_SIZE_3BIT];
+    typedef uint8_t Bitmap1Bit [BITMAP_SIZE_1BIT];
+
     enum PanelMode   { PM_1BIT, PM_3BIT };
     enum PanelState  { OFF, ON };
 
   private:
-    static const uint8_t EINK_ADDRESS = 0x48;
+    static const uint8_t PWRMGR_ADDRESS = 0x48;
    
-    PanelMode  panel_mode;
     PanelState panel_state;
+    bool       initialized;
+    bool       partial_allowed;
 
-    bool initialized;
 
     static EInk singleton;
     EInk();  // Private constructor
 
-    void precalculateGamma(uint8_t * c, float gamma);
-
-    void update_1bit();
-    void update_3bit();
+    void update_1bit(const Bitmap1Bit & bitmap);
+    void update_3bit(const Bitmap3Bit & bitmap);
 
     void vscan_start();
     void vscan_end();
@@ -69,39 +71,59 @@ class EInk : NonCopyable
 
     uint32_t pin_lut[256];
 
-    static const uint8_t  waveform_3bit[8][8]; 
-    static const uint32_t waveform[50]; 
-    static const uint8_t  lut2[16];
-    static const uint8_t  lutw[16];
-    static const uint8_t  lutb[16];
+    static const uint8_t  WAVEFORM_3BIT[8][8]; 
+    static const uint32_t WAVEFORM[50]; 
+    static const uint8_t  LUT2[16];
+    static const uint8_t  LUTW[16];
+    static const uint8_t  LUTB[16];
 
-    uint8_t * D_memory4Bit;
-    uint8_t * _pBuffer;
-    uint8_t * DMemoryNew;
-    uint8_t * partial;
+    static const uint8_t CL    = 0x01;
+    static const uint8_t CKV   = 0x01;
+    static const uint8_t SPH   = 0x02;
+    static const uint8_t LE    = 0x04;
 
-    bool block_partial;
+    static const uint32_t DATA = 0x0E8C0030;
+
+    uint8_t * p_buffer;
+    Bitmap1Bit * d_memory_new;
+
+    inline void cl_set()    { GPIO.out_w1ts = CL; }
+    inline void cl_clear()  { GPIO.out_w1tc = CL; }
+
+    inline void ckv_set()   { GPIO.out1_w1ts.val = CKV; }
+    inline void ckv_clear() { GPIO.out1_w1tc.val = CKV; }
+
+    inline void sph_set()   { GPIO.out1_w1ts.val = SPH; }
+    inline void sph_clear() { GPIO.out1_w1tc.val = SPH; }
+
+    inline void le_set()    { GPIO.out_w1ts = LE; }
+    inline void le_clear()  { GPIO.out_w1tc = LE; }
 
   public:
 
     static inline EInk & get_singleton() noexcept { return singleton; }
 
-    void begin(PanelMode mode);
+    bool initialize();
 
     inline void       set_panel_state(PanelState s) { panel_state = s; }
     inline PanelState get_panel_state() { return panel_state; }
 
-    inline void       set_panel_mode(PanelMode new_mode) { panel_mode = new_mode; }
-    inline PanelMode  get_panel_mode() { return panel_mode; }
-
     inline bool       is_initialized() { return initialized; }
 
-    void clear_bitmap();
-    void update();
-    void partial_update();
+    void clear_bitmap(Bitmap1Bit & bitmap);
+    void clear_bitmap(Bitmap3Bit & bitmap);
+
+    inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
+    inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }
+
+    void partial_update(const Bitmap1Bit & bitmap);
 
     void turn_on();
     void turn_off();
+
+    inline void allow_partial() { partial_allowed = true;  }
+    inline void block_partial() { partial_allowed = false; }
+    inline bool is_partial_allowed() { return partial_allowed; }
 
     uint8_t read_power_good();
 

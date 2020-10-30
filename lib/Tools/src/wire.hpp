@@ -29,7 +29,7 @@ class Wire : NonCopyable
   public:
     static inline Wire & get_singleton() noexcept { return singleton; }
 
-    esp_err_t  begin();
+    esp_err_t  initialize();
     esp_err_t  begin_transmission(uint8_t addr);
     esp_err_t  end_transmission();
     esp_err_t  write(uint8_t val);

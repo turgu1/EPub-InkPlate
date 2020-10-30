@@ -17,43 +17,22 @@ Distributed as-is; no warranty is given.
 #define __EINK__ 1
 #include "eink.hpp"
 
+#include "logging.hpp"
+
 #include "wire.hpp"
 #include "mcp.hpp"
 #include "esp.hpp"
 
-#include "driver/gpio.h"
-
-#define CL 0x01
-
-#define CL_SET    { GPIO.out_w1ts = CL; }
-#define CL_CLEAR  { GPIO.out_w1tc = CL; }
-
-#define CKV 0x01
-
-#define CKV_SET    { GPIO.out1_w1ts.val = CKV; }
-#define CKV_CLEAR  { GPIO.out1_w1tc.val = CKV; }
-
-#define SPH 0x02
-
-#define SPH_SET     { GPIO.out1_w1ts.val = SPH; }
-#define SPH_CLEAR   { GPIO.out1_w1tc.val = SPH; }
-
-#define LE 0x04
-
-#define LE_SET      { GPIO.out_w1ts = LE; }
-#define LE_CLEAR    { GPIO.out_w1tc = LE; }
-
-
-#define DATA 0x0E8C0030
+static const char * TAG = "EInk";
 
 EInk EInk::singleton;
 
-const uint8_t EInk::waveform_3bit[8][8] = {
+const uint8_t EInk::WAVEFORM_3BIT[8][8] = {
   {0, 0, 0, 0, 1, 1, 1, 0}, {1, 2, 2, 2, 1, 1, 1, 0}, {0, 1, 2, 1, 1, 2, 1, 0},
   {0, 2, 1, 2, 1, 2, 1, 0}, {0, 0, 0, 1, 1, 1, 2, 0}, {2, 1, 1, 1, 2, 1, 2, 0},
   {1, 1, 1, 2, 1, 2, 2, 0}, {0, 0, 0, 0, 0, 0, 2, 0} };
 
-const uint32_t EInk::waveform[50] = {
+const uint32_t EInk::WAVEFORM[50] = {
     0x00000008, 0x00000008, 0x00200408, 0x80281888, 0x60A81898, 0x60A8A8A8, 0x60A8A8A8, 0x6068A868, 0x6868A868,
     0x6868A868, 0x68686868, 0x6A686868, 0x5A686868, 0x5A686868, 0x5A586A68, 0x5A5A6A68, 0x5A5A6A68, 0x55566A68,
     0x55565A64, 0x55555654, 0x55555556, 0x55555556, 0x55555556, 0x55555516, 0x55555596, 0x15555595, 0x95955595,
@@ -61,22 +40,22 @@ const uint32_t EInk::waveform[50] = {
     0x84848484, 0x84848484, 0xA5A48484, 0xA9A4A4A8, 0xA9A8A8A8, 0xA5A9A9A4, 0xA5A5A5A4, 0xA1A5A5A1, 0xA9A9A9A9,
     0xA9A9A9A9, 0xA9A9A9A9, 0xA9A9A9A9, 0x15151515, 0x11111111 };
 
-const uint8_t EInk::lut2[16] = {
+const uint8_t EInk::LUT2[16] = {
   0xAA, 0xA9, 0xA6, 0xA5, 0x9A, 0x99, 0x96, 0x95,
   0x6A, 0x69, 0x66, 0x65, 0x5A, 0x59, 0x56, 0x55 };
 
-const uint8_t EInk::lutw[16] = {
+const uint8_t EInk::LUTW[16] = {
   0xFF, 0xFE, 0xFB, 0xFA, 0xEF, 0xEE, 0xEB, 0xEA,
   0xBF, 0xBE, 0xBB, 0xBA, 0xAF, 0xAE, 0xAB, 0xAA };
 
-const uint8_t EInk::lutb[16] = {
+const uint8_t EInk::LUTB[16] = {
   0xFF, 0xFD, 0xF7, 0xF5, 0xDF, 0xDD, 0xD7, 0xD5,
   0x7F, 0x7D, 0x77, 0x75, 0x5F, 0x5D, 0x57, 0x55 };
 
-EInk::EInk() : 
-  panel_mode(PM_1BIT), 
+EInk::EInk() :
   panel_state(OFF), 
-  initialized(false)
+  initialized(false),
+  partial_allowed(false)  
 {
   for (uint32_t i = 0; i < 256; ++i) {
     pin_lut[i] =  ((i & 0b00000011) << 4)        | 
@@ -86,17 +65,22 @@ EInk::EInk() :
   }
 }
 
-void 
-EInk::begin(PanelMode mode)
+bool 
+EInk::initialize()
 {
-  if (initialized) return;
+  ESP_LOGD(TAG, "Initializing...");
 
-  set_panel_mode(mode);
+  if (initialized) return true;
 
-  wire.begin();
-  mcp.WAKEUP_SET();
+  if (wire.initialize() != ESP_OK) {
+    ESP_LOGE(TAG, "Initialization not completed (Wire issue).");
+    return false;
+  };
+
+  mcp.wakeup_set();
   ESP::delay(1);
-  wire.begin_transmission(EINK_ADDRESS);
+  ESP_LOGD(TAG, "Power Init...");
+  wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x09);
   wire.write(0b00011011); // Power up seq.
   wire.write(0b00000000); // Power up delay (3mS per rail)
@@ -104,12 +88,22 @@ EInk::begin(PanelMode mode)
   wire.write(0b00000000); // Power down delay (6mS per rail)
   wire.end_transmission();
   ESP::delay(1);
-  mcp.WAKEUP_CLEAR();
 
-  mcp.begin();
-  mcp.set_direction(MCP::VCOM,   MCP::OUTPUT);
-  mcp.set_direction(MCP::PWRUP,  MCP::OUTPUT);
-  mcp.set_direction(MCP::WAKEUP, MCP::OUTPUT);
+  ESP_LOGD(TAG, "Power init completed");
+
+  mcp.wakeup_clear();
+
+  if (!mcp.initialize()) {
+    ESP_LOGE(TAG, "Initialization not completed (MCP Issue).");
+    return false;
+  }
+  else {
+    ESP_LOGD(TAG, "MCP initialized");
+  }
+
+  mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
+  mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
+  mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT);
   mcp.set_direction(MCP::GPIO0_ENABLE, MCP::OUTPUT);
   mcp.digital_write(MCP::GPIO0_ENABLE, HIGH);
 
@@ -140,53 +134,48 @@ EInk::begin(PanelMode mode)
   // Battery voltage Switch MOSFET
   mcp.set_direction(MCP::BATTERY_SWITCH, MCP::OUTPUT);
 
-  DMemoryNew   = (uint8_t *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
-  partial      = (uint8_t *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
-  _pBuffer     = (uint8_t *) ESP::ps_malloc(120000);
-  D_memory4Bit = (uint8_t *) ESP::ps_malloc(240000);
+  ESP_LOGD(TAG, "Memory allocation for bitmap buffers...");
+  d_memory_new = (Bitmap1Bit *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
+  p_buffer     = (uint8_t *)    ESP::ps_malloc(120000);
 
-  if ((DMemoryNew   == nullptr) || 
-      (partial      == nullptr) || 
-      (_pBuffer     == nullptr) || 
-      (D_memory4Bit == nullptr)) {
+  if ((d_memory_new == nullptr) || 
+      (p_buffer     == nullptr)) {
     do {
-      ESP::delay(100);
+      ESP_LOGE(TAG, "Unable to complete buffers allocation");
+      ESP::delay(10000);
     } while (true);
   }
 
-  memset(DMemoryNew, 0, BITMAP_SIZE_1BIT);
-  memset(partial,    0, BITMAP_SIZE_1BIT);
-  memset(_pBuffer,   0, 120000);
-
-  memset(D_memory4Bit, 255, BITMAP_SIZE_3BIT);
+  memset(d_memory_new, 0, BITMAP_SIZE_1BIT);
+  memset(p_buffer,     0, 120000);
 
   initialized = true;
+  return true;
 }
 
 void 
-EInk::clear_bitmap()
+EInk::clear_bitmap(Bitmap1Bit & bitmap)
 {
-  if      (get_panel_mode() == PM_1BIT) memset(partial,        0, BITMAP_SIZE_1BIT);
-  else if (get_panel_mode() == PM_3BIT) memset(D_memory4Bit, 255, BITMAP_SIZE_3BIT);
+  memset(&bitmap, 0, sizeof(Bitmap1Bit));
+}
+
+void
+EInk::clear_bitmap(Bitmap3Bit & bitmap)
+{
+  memset(&bitmap, 255, sizeof(Bitmap3Bit));
 }
 
 void 
-EInk::update()
+EInk::update_1bit(const Bitmap1Bit & bitmap)
 {
-  if      (get_panel_mode() == PM_1BIT) update_1bit();
-  else if (get_panel_mode() == PM_3BIT) update_3bit();
-}
-
-void 
-EInk::update_1bit()
-{
-  memcpy(DMemoryNew, partial, BITMAP_SIZE_1BIT);
+  ESP_LOGD(TAG, "update_1bit...");
+  memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
 
   uint32_t send;
-  uint8_t  data;
   uint8_t  dram;
 
   turn_on();
+
   clean_fast(0,  1);
   clean_fast(1, 21);
   clean_fast(2,  1);
@@ -197,27 +186,23 @@ EInk::update_1bit()
   clean_fast(0, 12);
 
   for (int k = 0; k < 4; ++k) {
-    uint8_t * DMemoryNewPtr = DMemoryNew + BITMAP_SIZE_1BIT - 1;
+    uint8_t * ptr = ((uint8_t *) &bitmap) + BITMAP_SIZE_1BIT - 1;
     vscan_start();
 
     for (int i = 0; i < HEIGHT; ++i) {
-      dram = *(DMemoryNewPtr--);
-      data = lutb[dram >> 4];
-      send = pin_lut[data];
+      dram = *ptr--;
+      send = pin_lut[LUTB[dram >> 4]];
       hscan_start(send);
-      data = lutb[dram & 0x0F];
-      send = pin_lut[data];
+      send = pin_lut[LUTB[dram & 0x0F]];
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
 
       for (int j = 0; j < LINE_SIZE_1BIT - 1; ++j) {
-        dram = *(DMemoryNewPtr--);
-        data = lutb[dram >> 4];
-        send = pin_lut[data];
+        dram = *ptr--;
+        send = pin_lut[LUTB[dram >> 4]];
         GPIO.out_w1ts = send | CL;
         GPIO.out_w1tc = DATA | CL;
-        data = lutb[dram & 0x0F];
-        send = pin_lut[data];
+        send = pin_lut[LUTB[dram & 0x0F]];
         GPIO.out_w1ts = send | CL;
         GPIO.out_w1tc = DATA | CL;
       }
@@ -233,24 +218,20 @@ EInk::update_1bit()
   vscan_start();
 
   for (int i = 0; i < HEIGHT; ++i) {
-    dram = *(DMemoryNew + pos);
-    data = lut2[dram >> 4];
-    send = pin_lut[data];
+    dram = (*d_memory_new)[pos];
+    send = pin_lut[LUT2[dram >> 4]];
     hscan_start(send);
-    data = lut2[dram & 0x0F];
-    send = pin_lut[data];
+    send = pin_lut[LUT2[dram & 0x0F]];
     GPIO.out_w1ts = send | CL;
     GPIO.out_w1tc = DATA | CL;
     pos--;
     
     for (int j = 0; j < LINE_SIZE_1BIT - 1; ++j) {
-      dram = *(DMemoryNew + pos);
-      data = lut2[dram >> 4];
-      send = pin_lut[data];
+      dram = (*d_memory_new)[pos];
+      send = pin_lut[LUT2[dram >> 4]];
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
-      data = lut2[dram & 0x0F];
-      send = pin_lut[data];
+      send = pin_lut[LUT2[dram & 0x0F]];
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
       pos--;
@@ -265,15 +246,13 @@ EInk::update_1bit()
   vscan_start();
 
   for (int i = 0; i < HEIGHT; ++i) {
-    dram = *(DMemoryNew + pos);
-    data = 0;
-    send = pin_lut[data];
+    dram = (*d_memory_new)[pos];
+    send = pin_lut[0];
     hscan_start(send);
-    data = 0;
     GPIO.out_w1ts = send | CL;
     GPIO.out_w1tc = DATA | CL;
 
-    for (int j = 0; j < BITMAP_SIZE_1BIT - 1; ++j) {  // ????
+    for (int j = 0; j < BITMAP_SIZE_1BIT - 1; ++j) {
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
       GPIO.out_w1ts = send | CL;
@@ -289,13 +268,17 @@ EInk::update_1bit()
 
   vscan_start();
   turn_off();
-  block_partial = false;
+  
+  partial_allowed = false;
 }
 
 void 
-EInk::update_3bit()
+EInk::update_3bit(const Bitmap3Bit & bitmap)
 {
+  ESP_LOGD(TAG, "Update_3bit...");
+
   turn_on();
+
   clean_fast(0,  1);
   clean_fast(1, 21);
   clean_fast(2,  1);
@@ -306,7 +289,7 @@ EInk::update_3bit()
   clean_fast(0, 12);
 
   for (int k = 0; k < 8; ++k) {
-    uint8_t *dp = D_memory4Bit + BITMAP_SIZE_3BIT - 1;
+    uint8_t * dp = ((uint8_t *) &bitmap) + BITMAP_SIZE_3BIT - 1;
     uint32_t send;
     uint8_t  pix1;
     uint8_t  pix2;
@@ -316,6 +299,7 @@ EInk::update_3bit()
     uint8_t  pixel2;
 
     vscan_start();
+
     for (int i = 0; i < HEIGHT; ++i) {
       pixel  = 0;
       pixel2 = 0;
@@ -323,10 +307,10 @@ EInk::update_3bit()
       pix2   = *(dp--);
       pix3   = *(dp--);
       pix4   = *(dp--);
-      pixel  |= (waveform_3bit[pix1 & 0x07][k] << 6) | (waveform_3bit[(pix1 >> 4) & 0x07][k] << 4) |
-                (waveform_3bit[pix2 & 0x07][k] << 2) | (waveform_3bit[(pix2 >> 4) & 0x07][k] << 0);
-      pixel2 |= (waveform_3bit[pix3 & 0x07][k] << 6) | (waveform_3bit[(pix3 >> 4) & 0x07][k] << 4) |
-                (waveform_3bit[pix4 & 0x07][k] << 2) | (waveform_3bit[(pix4 >> 4) & 0x07][k] << 0);
+      pixel  |= (WAVEFORM_3BIT[pix1 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix1 >> 4) & 0x07][k] << 4) |
+                (WAVEFORM_3BIT[pix2 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix2 >> 4) & 0x07][k] << 0);
+      pixel2 |= (WAVEFORM_3BIT[pix3 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix3 >> 4) & 0x07][k] << 4) |
+                (WAVEFORM_3BIT[pix4 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix4 >> 4) & 0x07][k] << 0);
 
       send = pin_lut[pixel];
       hscan_start(send);
@@ -342,10 +326,10 @@ EInk::update_3bit()
         pix3   = *(dp--);
         pix4   = *(dp--);
 
-        pixel  |= (waveform_3bit[pix1 & 0x07][k] << 6) | (waveform_3bit[(pix1 >> 4) & 0x07][k] << 4) |
-                  (waveform_3bit[pix2 & 0x07][k] << 2) | (waveform_3bit[(pix2 >> 4) & 0x07][k] << 0);
-        pixel2 |= (waveform_3bit[pix3 & 0x07][k] << 6) | (waveform_3bit[(pix3 >> 4) & 0x07][k] << 4) |
-                  (waveform_3bit[pix4 & 0x07][k] << 2) | (waveform_3bit[(pix4 >> 4) & 0x07][k] << 0);
+        pixel  |= (WAVEFORM_3BIT[pix1 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix1 >> 4) & 0x07][k] << 4) |
+                  (WAVEFORM_3BIT[pix2 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix2 >> 4) & 0x07][k] << 0);
+        pixel2 |= (WAVEFORM_3BIT[pix3 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix3 >> 4) & 0x07][k] << 4) |
+                  (WAVEFORM_3BIT[pix4 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix4 >> 4) & 0x07][k] << 0);
 
         send = pin_lut[pixel];
         GPIO.out_w1ts = send | CL;
@@ -369,25 +353,25 @@ EInk::update_3bit()
 }
 
 void 
-EInk::partial_update()
+EInk::partial_update(const Bitmap1Bit & bitmap)
 {
-  if (get_panel_mode() == PM_1BIT) return;
-  if (block_partial) update_1bit();
+  if (!partial_allowed) update_1bit(bitmap);
+
+  ESP_LOGD(TAG, "Partial update...");
 
   uint32_t n    = 119999;
   uint32_t send;
   uint16_t pos  = BITMAP_SIZE_1BIT - 1;
-  uint8_t  data = 0;
   uint8_t  diffw, diffb;
 
   for (int i = 0; i < HEIGHT; ++i) {
     for (int j = 0; j < LINE_SIZE_1BIT; ++j) {
-      diffw =  *(DMemoryNew + pos) & ~*(partial + pos);
-      diffb = ~*(DMemoryNew + pos) &  *(partial + pos);
+      diffw =  (*d_memory_new)[pos] & ~bitmap[pos];
+      diffb = ~(*d_memory_new)[pos] &  bitmap[pos];
       pos--;
-      *(_pBuffer + n) = lutw[diffw >> 4] & (lutb[diffb >> 4]);
+      p_buffer[n] = LUTW[diffw >> 4] & (LUTB[diffb >> 4]);
       n--;
-      *(_pBuffer + n) = lutw[diffw & 0x0F] & (lutb[diffb & 0x0F]);
+      p_buffer[n] = LUTW[diffw & 0x0F] & (LUTB[diffb & 0x0F]);
       n--;
     }
   }
@@ -399,14 +383,12 @@ EInk::partial_update()
     n = 119999;
 
     for (int i = 0; i < HEIGHT; ++i) {
-      data = *(_pBuffer + n);
-      send = pin_lut[data];
+      send = pin_lut[p_buffer[n]];
       hscan_start(send);
       n--;
 
       for (int j = 0; j < 199; ++j) {
-        data = *(_pBuffer + n);
-        send = pin_lut[data];
+        send = pin_lut[p_buffer[n]];
         GPIO.out_w1ts = send | CL;
         GPIO.out_w1tc = DATA | CL;
         n--;
@@ -424,25 +406,30 @@ EInk::partial_update()
   vscan_start();
   turn_off();
 
-  memcpy(DMemoryNew, partial, BITMAP_SIZE_1BIT);
+  memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
 }
 
 void 
 EInk::clean()
 {
+  ESP_LOGD(TAG, "Clean...");
+
   turn_on();
+
   int m = 0;
   clean_fast(0, 1);
-  m++; clean_fast((waveform[m] >> 30) & 3,  8);
-  m++; clean_fast((waveform[m] >> 24) & 3,  1);
-  m++; clean_fast( waveform[m]        & 3,  8);
-  m++; clean_fast((waveform[m] >>  6) & 3,  1);
-  m++; clean_fast((waveform[m] >> 30) & 3, 10);
+  m++; clean_fast((WAVEFORM[m] >> 30) & 3,  8);
+  m++; clean_fast((WAVEFORM[m] >> 24) & 3,  1);
+  m++; clean_fast( WAVEFORM[m]        & 3,  8);
+  m++; clean_fast((WAVEFORM[m] >>  6) & 3,  1);
+  m++; clean_fast((WAVEFORM[m] >> 30) & 3, 10);
 }
 
 void 
 EInk::clean_fast(uint8_t c, uint8_t rep)
 {
+  ESP_LOGD(TAG, "Clean_fast...");
+
   turn_on();
   uint8_t data = 0;
  
@@ -482,17 +469,17 @@ EInk::turn_off()
 {
   if (get_panel_state() == OFF) return;
 
-  mcp.OE_CLEAR();
-  mcp.GMOD_CLEAR();
+  mcp.oe_clear();
+  mcp.gmod_clear();
   GPIO.out &= ~(DATA | LE | CL);
-  CKV_CLEAR;
-  SPH_CLEAR;
-  mcp.SPV_CLEAR();
+  ckv_clear();
+  sph_clear();
+  mcp.spv_clear();
 
-  mcp.VCOM_CLEAR();
+  mcp.vcom_clear();
   ESP::delay(6);
-  mcp.PWRUP_CLEAR();
-  mcp.WAKEUP_CLEAR();
+  mcp.pwrup_clear();
+  mcp.wakeup_clear();
 
   unsigned long timer = ESP::millis();
 
@@ -509,27 +496,27 @@ void EInk::turn_on()
 {
   if (get_panel_state() == ON) return;
 
-  mcp.WAKEUP_SET();
+  mcp.wakeup_set();
   ESP::delay(1);
-  mcp.PWRUP_SET();
+  mcp.pwrup_set();
 
   // Enable all rails
-  wire.begin_transmission(EINK_ADDRESS);
+  wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x01);
   wire.write(0b00111111);
   wire.end_transmission();
 
   pins_as_outputs();
 
-  LE_CLEAR;
-  mcp.OE_CLEAR();
-  CL_CLEAR;
-  SPH_SET;
-  mcp.GMOD_SET();
-  mcp.SPV_SET();
-  CKV_CLEAR;
-  mcp.OE_CLEAR();
-  mcp.VCOM_SET();
+  le_clear();
+  mcp.oe_clear();
+  cl_clear();
+  sph_set();
+  mcp.gmod_set();
+  mcp.spv_set();
+  ckv_clear();
+  mcp.oe_clear();
+  mcp.vcom_set();
 
   unsigned long timer = ESP::millis();
 
@@ -538,23 +525,23 @@ void EInk::turn_on()
   } while ((read_power_good() != PWR_GOOD_OK) && (ESP::millis() - timer) < 250);
 
   if ((ESP::millis() - timer) >= 250) {
-    mcp.WAKEUP_CLEAR();
-    mcp.VCOM_CLEAR();
-    mcp.PWRUP_CLEAR();
+    mcp.wakeup_clear();
+    mcp.vcom_clear();
+    mcp.pwrup_clear();
     return;
   }
 
-  mcp.OE_SET();
+  mcp.oe_set();
   set_panel_state(ON);
 }
 
 uint8_t EInk::read_power_good()
 {
-  wire.begin_transmission(EINK_ADDRESS);
+  wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x0F);
   wire.end_transmission();
 
-  wire.request_from(EINK_ADDRESS, 1);
+  wire.request_from(PWRMGR_ADDRESS, 1);
   return wire.read();
 }
 
@@ -562,33 +549,33 @@ uint8_t EInk::read_power_good()
 
 void EInk::vscan_start()
 {
-  CKV_SET;         ESP::delay_microseconds( 7);
-  mcp.SPV_CLEAR(); ESP::delay_microseconds(10);
-  CKV_CLEAR;       ESP::delay_microseconds( 0);
-  CKV_SET;         ESP::delay_microseconds( 8);
-  mcp.SPV_SET();   ESP::delay_microseconds(10);
-  CKV_CLEAR;       ESP::delay_microseconds( 0);
-  CKV_SET;         ESP::delay_microseconds(18);
-  CKV_CLEAR;       ESP::delay_microseconds( 0);
-  CKV_SET;         ESP::delay_microseconds(18);
-  CKV_CLEAR;       ESP::delay_microseconds( 0);
-  CKV_SET;
+  ckv_set();         ESP::delay_microseconds( 7);
+  mcp.spv_clear();   ESP::delay_microseconds(10);
+  ckv_clear();       ESP::delay_microseconds( 0);
+  ckv_set();         ESP::delay_microseconds( 8);
+  mcp.spv_set();     ESP::delay_microseconds(10);
+  ckv_clear();       ESP::delay_microseconds( 0);
+  ckv_set();         ESP::delay_microseconds(18);
+  ckv_clear();       ESP::delay_microseconds( 0);
+  ckv_set();         ESP::delay_microseconds(18);
+  ckv_clear();       ESP::delay_microseconds( 0);
+  ckv_set();
 }
 
 void EInk::hscan_start(uint32_t d)
 {
-  SPH_CLEAR;
+  sph_clear();
   GPIO.out_w1ts = d    | CL;
   GPIO.out_w1tc = DATA | CL;
-  SPH_SET;
-  CKV_SET;
+  sph_set();
+  ckv_set();
 }
 
 void EInk::vscan_end()
 {
-  CKV_CLEAR;
-  LE_SET;
-  LE_CLEAR;
+  ckv_clear();
+  le_set();
+  le_clear();
   ESP::delay_microseconds(0);
 }
 
@@ -640,19 +627,19 @@ EInk::read_temperature()
   int8_t temp;
     
   if (get_panel_state() == OFF) {
-    mcp.WAKEUP_SET();
-    mcp.PWRUP_SET();
+    mcp.wakeup_set();
+    mcp.pwrup_set();
     ESP::delay(5);
   }
 
-  wire.begin_transmission(EINK_ADDRESS);
+  wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x0D);
   wire.write(0b10000000);
   wire.end_transmission();
     
   ESP::delay(5);
 
-  wire.begin_transmission(EINK_ADDRESS);
+  wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x00);
   wire.end_transmission();
 
@@ -660,8 +647,8 @@ EInk::read_temperature()
   temp = wire.read();
     
   if (get_panel_state() == OFF) {
-    mcp.PWRUP_CLEAR();
-    mcp.WAKEUP_CLEAR();
+    mcp.pwrup_clear();
+    mcp.wakeup_clear();
     ESP::delay(5);
   }
 

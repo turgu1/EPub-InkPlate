@@ -19,6 +19,7 @@ Distributed as-is; no warranty is given.
 
 #include "defines.hpp"
 #include "noncopyable.hpp"
+#include "esp.hpp"
 
 class MCP : NonCopyable
 {
@@ -27,7 +28,7 @@ class MCP : NonCopyable
     uint8_t registers[22];
 
     static MCP singleton;
-    MCP(); // Not instanciable
+    MCP() {}; // Not instanciable
 
   public:
     static inline MCP & get_singleton() noexcept { return singleton; }
@@ -63,7 +64,7 @@ class MCP : NonCopyable
       TOUCH_2        = 12
     };
 
-    bool begin();
+    bool initialize();
 
     void read_registers(uint8_t * k);
     void read_registers(Reg reg, uint8_t * k, uint8_t n);
@@ -88,28 +89,28 @@ class MCP : NonCopyable
     void     set_ports(uint16_t d);
     uint16_t get_ports();
 
-    inline void OE_SET()       { digital_write(OE,     HIGH); }
-    inline void OE_CLEAR()     { digital_write(OE,     LOW ); }
+    inline void oe_set()       { digital_write(OE,     HIGH); }
+    inline void oe_clear()     { digital_write(OE,     LOW ); }
 
-    inline void GMOD_SET()     { digital_write(GMOD,   HIGH); }
-    inline void GMOD_CLEAR()   { digital_write(GMOD,   LOW ); }
+    inline void gmod_set()     { digital_write(GMOD,   HIGH); }
+    inline void gmod_clear()   { digital_write(GMOD,   LOW ); }
 
-    inline void SPV_SET()      { digital_write(SPV,    HIGH); }
-    inline void SPV_CLEAR()    { digital_write(SPV,    LOW ); }
+    inline void spv_set()      { digital_write(SPV,    HIGH); }
+    inline void spv_clear()    { digital_write(SPV,    LOW ); }
 
-    inline void WAKEUP_SET()   { digital_write(WAKEUP, HIGH); }
-    inline void WAKEUP_CLEAR() { digital_write(WAKEUP, LOW ); }
+    inline void wakeup_set()   { digital_write(WAKEUP, HIGH); }
+    inline void wakeup_clear() { digital_write(WAKEUP, LOW ); }
 
-    inline void PWRUP_SET()    { digital_write(PWRUP,  HIGH); }
-    inline void PWRUP_CLEAR()  { digital_write(PWRUP,  LOW ); }
+    inline void pwrup_set()    { digital_write(PWRUP,  HIGH); }
+    inline void pwrup_clear()  { digital_write(PWRUP,  LOW ); }
 
-    inline void VCOM_SET()     { digital_write(VCOM,   HIGH); }
-    inline void VCOM_CLEAR()   { digital_write(VCOM,   LOW ); }
+    inline void vcom_set()     { digital_write(VCOM,   HIGH); }
+    inline void vcom_clear()   { digital_write(VCOM,   LOW ); }
 };
 
 // Singleton
 
-#if MCP
+#if __MCP__
   MCP & mcp = MCP::get_singleton();
 #else
   extern MCP & mcp;

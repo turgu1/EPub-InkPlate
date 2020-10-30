@@ -19,19 +19,19 @@ Distributed as-is; no warranty is given.
 
 #include "defines.hpp"
 
-class InkPlate6
+class InkPlate6Ctrl
 {
   public:
-    InkPlate6();
+    InkPlate6Ctrl();
 
     uint8_t read_touchpad(uint8_t _pad);
     double  read_battery();
 };
 
 #if INKPLATE6
-  InkPlate6 ink_plate_6;
+  InkPlate6Ctrl inkplate_6_ctrl;
 #else
-  extern InkPlate6 ink_plate_6;
+  extern InkPlate6Ctrl inkplate6_ctrl;
 #endif
 
 #endif
