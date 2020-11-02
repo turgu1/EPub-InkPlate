@@ -20,11 +20,10 @@ static const uint8_t LOW  = 0;
 class ESP
 {
   public:
-    static inline long IRAM_ATTR millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
+    static inline long millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
 
     static void IRAM_ATTR delay_microseconds(uint32_t micro_seconds) {
       uint32_t m = esp_timer_get_time();
-      taskYIELD();
       if (micro_seconds > 0) {
         uint32_t e = m + micro_seconds;
         if (m > e) {
@@ -34,8 +33,13 @@ class ESP
       }
     }
 
-    static void delay(uint32_t micro_seconds) {
-      vTaskDelay(micro_seconds / portTICK_PERIOD_MS);
+    static void delay(uint32_t milliseconds) {
+      if (milliseconds < portTICK_PERIOD_MS) {
+        taskYIELD();
+      }
+      else {
+        vTaskDelay(milliseconds / portTICK_PERIOD_MS);
+      }
     }
 
     static int16_t analog_read(adc1_channel_t channel) {

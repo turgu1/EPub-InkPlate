@@ -65,6 +65,34 @@ EInk::EInk() :
   }
 }
 
+void EInk::test()
+{
+  printf("Wakeup set...\n"); fflush(stdout);
+
+  if (!mcp.initialize()) {
+    ESP_LOGE(TAG, "Initialization not completed (MCP Issue).");
+    return;
+  }
+  else {
+    ESP_LOGD(TAG, "MCP initialized.");
+  }
+
+  mcp.set_direction(MCP::WAKEUP, MCP::OUTPUT);
+
+  mcp.wakeup_set();
+
+  // mcp.test();
+
+  ESP::delay(2000);
+
+  ESP_LOGD(TAG, "Power Mgr...");
+  
+  wire.begin_transmission(PWRMGR_ADDRESS);
+  wire.end_transmission();
+
+  mcp.wakeup_clear();
+}
+
 bool 
 EInk::initialize()
 {
@@ -72,14 +100,23 @@ EInk::initialize()
 
   if (initialized) return true;
 
-  if (wire.initialize() != ESP_OK) {
-    ESP_LOGE(TAG, "Initialization not completed (Wire issue).");
+  wire.initialize();
+  if (!mcp.initialize()) {
+    ESP_LOGE(TAG, "Initialization not completed (MCP Issue).");
     return false;
-  };
+  }
+  else {
+    ESP_LOGD(TAG, "MCP initialized.");
+  }
+
+  mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT);
 
   mcp.wakeup_set();
-  ESP::delay(1);
-  ESP_LOGD(TAG, "Power Init...");
+
+  ESP::delay(100);
+
+  ESP_LOGD(TAG, "Power Mgr Init..."); fflush(stdout);
+
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x09);
   wire.write(0b00011011); // Power up seq.
@@ -93,17 +130,8 @@ EInk::initialize()
 
   mcp.wakeup_clear();
 
-  if (!mcp.initialize()) {
-    ESP_LOGE(TAG, "Initialization not completed (MCP Issue).");
-    return false;
-  }
-  else {
-    ESP_LOGD(TAG, "MCP initialized");
-  }
-
   mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
   mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
-  mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT);
   mcp.set_direction(MCP::GPIO0_ENABLE, MCP::OUTPUT);
   mcp.digital_write(MCP::GPIO0_ENABLE, HIGH);
 
@@ -112,6 +140,7 @@ EInk::initialize()
   gpio_set_direction(GPIO_NUM_2,  GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
+
   mcp.set_direction(MCP::OE,      MCP::OUTPUT);
   mcp.set_direction(MCP::GMOD,    MCP::OUTPUT);
   mcp.set_direction(MCP::SPV,     MCP::OUTPUT);
@@ -134,9 +163,11 @@ EInk::initialize()
   // Battery voltage Switch MOSFET
   mcp.set_direction(MCP::BATTERY_SWITCH, MCP::OUTPUT);
 
-  ESP_LOGD(TAG, "Memory allocation for bitmap buffers...");
   d_memory_new = (Bitmap1Bit *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
   p_buffer     = (uint8_t *)    ESP::ps_malloc(120000);
+
+  ESP_LOGD(TAG, "Memory allocation for bitmap buffers.");
+  ESP_LOGD(TAG, "d_memory_new: %08x p_buffer: %08x.", (unsigned int)d_memory_new, (unsigned int)p_buffer);
 
   if ((d_memory_new == nullptr) || 
       (p_buffer     == nullptr)) {
@@ -151,18 +182,6 @@ EInk::initialize()
 
   initialized = true;
   return true;
-}
-
-void 
-EInk::clear_bitmap(Bitmap1Bit & bitmap)
-{
-  memset(&bitmap, 0, sizeof(Bitmap1Bit));
-}
-
-void
-EInk::clear_bitmap(Bitmap3Bit & bitmap)
-{
-  memset(&bitmap, 255, sizeof(Bitmap3Bit));
 }
 
 void 
@@ -186,7 +205,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   clean_fast(0, 12);
 
   for (int k = 0; k < 4; ++k) {
-    uint8_t * ptr = ((uint8_t *) &bitmap) + BITMAP_SIZE_1BIT - 1;
+    const uint8_t * ptr = &bitmap[BITMAP_SIZE_1BIT - 1];
     vscan_start();
 
     for (int i = 0; i < HEIGHT; ++i) {
@@ -289,7 +308,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
   clean_fast(0, 12);
 
   for (int k = 0; k < 8; ++k) {
-    uint8_t * dp = ((uint8_t *) &bitmap) + BITMAP_SIZE_3BIT - 1;
+    const uint8_t * dp = &bitmap[BITMAP_SIZE_3BIT - 1];
     uint32_t send;
     uint8_t  pix1;
     uint8_t  pix2;
@@ -318,7 +337,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
 
-      for (int j = 0; j < BITMAP_SIZE_1BIT - 1; ++j) {
+      for (int j = 0; j < (LINE_SIZE_3BIT >> 2)- 1; ++j) {
         pixel  = 0;
         pixel2 = 0;
         pix1   = *(dp--);
@@ -344,6 +363,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
       GPIO.out_w1tc = DATA | CL;
       vscan_end();
     }
+
     ESP::delay_microseconds(230);
   }
 
@@ -428,9 +448,10 @@ EInk::clean()
 void 
 EInk::clean_fast(uint8_t c, uint8_t rep)
 {
-  ESP_LOGD(TAG, "Clean_fast...");
+  ESP_LOGD(TAG, "Clean Fast %d, %d", c, rep);
 
   turn_on();
+  
   uint8_t data = 0;
  
   if      (c == 0) data = 0b10101010;

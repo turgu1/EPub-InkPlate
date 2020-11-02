@@ -40,19 +40,25 @@ Graphics::Graphics()
   _partial     = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
   D_memory4Bit = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
 
-  memset(_partial,       0, sizeof(EInk::Bitmap1Bit));
-  memset(D_memory4Bit, 255, sizeof(EInk::Bitmap3Bit));
-
   if ((_partial == nullptr) || (D_memory4Bit == nullptr)) {
     ESP_LOGE(TAG, "Unable to allocate PSRAM memory for buffers.");
   }
+
+  ESP_LOGD(TAG, "Buffers addresses: _partial 0x%08x, D_memory4Bit 0x%08x", (int)_partial, (int)D_memory4Bit);
+  EInk::clear_bitmap(*_partial);
+  EInk::clear_bitmap(*D_memory4Bit);
+
+  _width  = EInk::WIDTH;
+  _height = EInk::HEIGHT;
+
+  _displayMode = -1;
 }
 
 void Graphics::show()
 {
   ESP_LOGD(TAG, "Display Mode: %d.", getDisplayMode());
   
-  if (getDisplayMode() == 0) {
+  if (getDisplayMode() == 1) {
     e_ink.update(*_partial);
   }
   else {
@@ -93,7 +99,7 @@ void Graphics::startWrite()
 }
 
 void Graphics::writePixel(int16_t x0, int16_t y0, uint16_t color)
-{
+{    
     if (x0 > width() - 1 || y0 > height() - 1 || x0 < 0 || y0 < 0)
         return;
 
@@ -113,21 +119,23 @@ void Graphics::writePixel(int16_t x0, int16_t y0, uint16_t color)
         break;
     }
 
-    if (getDisplayMode() == 0)
+    //ESP_LOGD(TAG, "Display mode = %d", getDisplayMode());
+
+    if (getDisplayMode() == 1)
     {
-        int x = x0 >> 3;
-        int x_sub = x0 & 7;
-        uint8_t temp = (*_partial)[100 * y0 + x];
-        (*_partial)[100 * y0 + x] = (~pixelMaskLUT[x_sub] & temp) | (color ? pixelMaskLUT[x_sub] : 0);
+      int x = x0 >> 3;
+      int x_sub = x0 & 7;
+      uint8_t * temp = &(*_partial)[100 * y0 + x];
+      //ESP_LOGD(TAG, "writePixel [%d, %d] (%08x) : %d", x0, y0, (int) temp, color);
+      *temp = (~pixelMaskLUT[x_sub] & *temp) | (color ? pixelMaskLUT[x_sub] : 0);
     }
-    else
+    else if (getDisplayMode() == 3)
     {
         color &= 7;
         int x = x0 >> 1;
         int x_sub = x0 & 1;
-        uint8_t temp;
-        temp = (*D_memory4Bit)[400 * y0 + x];
-        (*D_memory4Bit)[400 * y0 + x] = (pixelMaskGLUT[x_sub] & temp) | (x_sub ? color : color << 4);
+        uint8_t * temp = &(*D_memory4Bit)[400 * y0 + x];
+        *temp = (pixelMaskGLUT[x_sub] & *temp) | (x_sub ? color : color << 4);
     }
 }
 
@@ -205,9 +213,15 @@ void Graphics::selectDisplayMode(uint8_t _mode)
 {
     if (_mode != _displayMode)
     {
-        _displayMode = _mode & 1;
-        memset(_partial, 0, 60000);
-        memset(D_memory4Bit, 255, 240000);
+        _displayMode = _mode;
+        if (_mode == 1) {
+          EInk::clear_bitmap(*_partial);
+        }
+        else {
+          EInk::clear_bitmap(*D_memory4Bit);
+        }
+        // memset(_partial, 0, 60000);
+        // memset(D_memory4Bit, 255, 240000);
         //_blockPartial = 1;
     }
 }

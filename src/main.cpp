@@ -6,14 +6,13 @@
 
 #include "inkplate6_ctrl.hpp"
 #include "Graphics.hpp"
-
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#include "mcp.hpp"
 
 extern "C" {
 
 static const char * TAG = "Main";
 
-void app_main() 
+void mainTask(void * params) 
 {
   // esp_log_level_set("*", ESP_LOG_DEBUG);
 
@@ -24,17 +23,26 @@ void app_main()
   }
   printf("\n"); fflush(stdout);
 
-  ESP_LOGD(TAG, "Initializations...");
+  // ESP_LOGD(TAG, "Initializations...");
 
   if (e_ink.initialize()) {
     ESP_LOGI(TAG, "EInk initialized!");
+
+    static Graphics graphics;
+
+    //e_ink.clean();
+
+    ESP_LOGI(TAG, "Set Display Mode...");
+    graphics.selectDisplayMode(1);
+    ESP_LOGI(TAG, "writeLine...");
+    graphics.writeLine(10, 10, 200, 200, BLACK);
+    graphics.writeFillRect(400, 400, 150, 150, BLACK);
+    ESP_LOGI(TAG, "Show...");
+    graphics.show();
   }
 
-  Graphics graphics;
-
-  graphics.setDisplayMode(3);
-  graphics.writeLine(10, 10, 200, 200, BLACK);
-  graphics.show();
+  //mcp.test();
+  //e_ink.test();
   
   while (1) {
     printf("Allo!\n");
@@ -42,4 +50,17 @@ void app_main()
   }
 }
 
+#define STACK_SIZE 10000
+
+void app_main()
+{
+  TaskHandle_t xHandle = NULL;
+
+  xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *) 1, tskIDLE_PRIORITY, &xHandle);
+  configASSERT(xHandle);
+
+  //esp_task_wdt_add(xHandle);
+
 }
+
+} // extern "C"

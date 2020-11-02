@@ -71,7 +71,7 @@ class Graphics
     uint8_t rotation;
     uint16_t _width, _height;
 
-    uint8_t _displayMode = 0;
+    uint8_t _displayMode = -1;
 
   protected:
 };

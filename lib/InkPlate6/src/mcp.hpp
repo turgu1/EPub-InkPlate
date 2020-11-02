@@ -24,11 +24,11 @@ Distributed as-is; no warranty is given.
 class MCP : NonCopyable
 {
   private:
-    static const uint8_t address = 0x20;
+    static const uint8_t MCP_ADDRESS = 0x20;
     uint8_t registers[22];
 
     static MCP singleton;
-    MCP() {}; // Not instanciable
+    MCP() { memset(registers, 0, 22); }; // Not instanciable
 
   public:
     static inline MCP & get_singleton() noexcept { return singleton; }
@@ -64,6 +64,8 @@ class MCP : NonCopyable
       TOUCH_2        = 12
     };
 
+    void test();
+    
     bool initialize();
 
     void read_registers(uint8_t * k);

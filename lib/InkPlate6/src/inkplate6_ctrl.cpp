@@ -39,5 +39,7 @@ InkPlate6Ctrl::read_battery()
   int16_t adc = ESP::analog_read(ADC1_CHANNEL_7); // ADC 1 Channel 7 is GPIO port 35
   mcp.digital_write(MCP::BATTERY_SWITCH, LOW);
 
+  ESP_LOGE(TAG, "Battery adc readout: %d.", adc);
+  
   return ((double(adc) / 4095.0) * 3.3 * 2);
 }

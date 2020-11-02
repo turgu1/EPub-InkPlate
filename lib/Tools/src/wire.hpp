@@ -15,6 +15,7 @@ class Wire : NonCopyable
     static  Wire singleton;
 
     uint8_t buffer[BUFFER_LENGTH];
+    uint8_t address;
     uint8_t size_to_read;
     uint8_t index;
 
@@ -29,10 +30,10 @@ class Wire : NonCopyable
   public:
     static inline Wire & get_singleton() noexcept { return singleton; }
 
-    esp_err_t  initialize();
-    esp_err_t  begin_transmission(uint8_t addr);
-    esp_err_t  end_transmission();
-    esp_err_t  write(uint8_t val);
+    void       initialize();
+    void       begin_transmission(uint8_t addr);
+    void       end_transmission();
+    void       write(uint8_t val);
     uint8_t    read();
     esp_err_t  request_from(uint8_t addr, uint8_t size);
 };
