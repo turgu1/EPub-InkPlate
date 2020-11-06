@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-void log(char level, char * tag, char * fmt, ...) 
+void log(const char level, const char * tag, const char * fmt, ...) 
 { 
   va_list args;
   va_start(args, fmt);

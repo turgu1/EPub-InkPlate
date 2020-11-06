@@ -21,7 +21,7 @@ Wire::setup()
     config.scl_pullup_en    = GPIO_PULLUP_DISABLE;
     config.sda_io_num       = GPIO_NUM_21;
     config.sda_pullup_en    = GPIO_PULLUP_DISABLE;
-    config.master.clk_speed = 100000;
+    config.master.clk_speed = 50000;
 
     ESP_ERROR_CHECK(  i2c_param_config(I2C_NUM_0, &config));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
@@ -45,7 +45,7 @@ void
 Wire::end_transmission()
 {
   if (initialized) {
-    // ESP_LOGD(TAG, "Writing %d bytes to i2c at address 0x%02x.", index, address);
+    //ESP_LOGD(TAG, "Writing %d bytes to i2c at address 0x%02x.", index, address);
 
     // for (int i = 0; i < index; i++) {
     //   printf("%02x ", buffer[i]);

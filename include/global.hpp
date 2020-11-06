@@ -21,9 +21,6 @@
 
 #define BASE_FONT_SIZE 12
 
-#define MAX_COVER_WIDTH  70
-#define MAX_COVER_HEIGHT 90
-
 #if EPUB_LINUX_BUILD
   #define MAIN_FOLDER "/home/turgu1/Dev/EPub-Linux/bin"
 #else
@@ -83,24 +80,5 @@
     extern int64_t start_heap_size;
   #endif
 #endif
-
-#if 0
-/**
- * @brief Book Compute Mode
- * 
- * This is used to indicate if we are computing the location of pages 
- * to include in the database, moving to the start of a page to be
- * shown, or preparing a page to display on screen. This is mainly 
- * used by the book_view and page classes to optimize the speed of 
- * computations.
- */
-enum ComputeMode { LOCATION, MOVE, DISPLAY };
-#if __GLOBAL__
-  ComputeMode compute_mode;
-#else
-  extern ComputeMode compute_mode;
-#endif
-#endif
-
 
 #endif

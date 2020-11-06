@@ -36,8 +36,8 @@ class MCP : NonCopyable
     static inline MCP & get_singleton() noexcept { return singleton; }
 
     enum PinMode : uint8_t { INPUT,  INPUT_PULLUP, OUTPUT };
-    enum IntMode  : uint8_t { CHANGE, FALLING, RISING };
-    enum Reg : uint8_t {
+    enum IntMode : uint8_t { CHANGE, FALLING,      RISING };
+    enum Reg     : uint8_t {
       IODIRA   = 0x00,
       GPINTENA = 0x04,
       DEFVALA  = 0x06,

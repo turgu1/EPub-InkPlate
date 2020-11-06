@@ -2,7 +2,10 @@
 #define __EPUB_HPP__
 
 #include "global.hpp"
+
+#define RAPIDXML_NO_EXCEPTIONS
 #include "rapidxml.hpp"
+
 #include "css.hpp"
 #include "page.hpp"
 

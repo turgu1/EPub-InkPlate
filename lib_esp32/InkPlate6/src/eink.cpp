@@ -365,7 +365,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
     ESP::delay_microseconds(230);
   }
 
-  clean_fast(3, 1);
+  //clean_fast(3, 1);
   vscan_start();
   turn_off();
 }
@@ -446,7 +446,7 @@ EInk::clean()
 void 
 EInk::clean_fast(uint8_t c, uint8_t rep)
 {
-  ESP_LOGD(TAG, "Clean Fast %d, %d", c, rep);
+  //ESP_LOGD(TAG, "Clean Fast %d, %d", c, rep);
 
   turn_on();
   

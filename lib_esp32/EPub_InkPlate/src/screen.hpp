@@ -36,7 +36,7 @@ class Screen : NonCopyable
                       int16_t x, int16_t y);
 
     inline void clear()  { EInk::clear_bitmap(*frame_buffer); }
-    inline void update() { e_ink.clean(); /* e_ink.update(*frame_buffer); */ }
+    inline void update() { e_ink.clean(); e_ink.update(*frame_buffer); }
 
   private:
     static Screen singleton;
@@ -45,7 +45,7 @@ class Screen : NonCopyable
     EInk::Bitmap3Bit * frame_buffer;
 
     inline void set_pixel(uint16_t col, uint16_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer)[(EInk::LINE_SIZE_3BIT * row) + (col >> 1)];
+      uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * col) + (row >> 1)];
       *temp = col & 1 ? (*temp & 0xF0) | color : (*temp & 0x0F) | (color << 4);
     }
 

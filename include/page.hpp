@@ -43,7 +43,7 @@ class Page
     };
 
     struct Image {
-      const unsigned char * bitmap;
+      const uint8_t * bitmap;
       int16_t width;
       int16_t height;
     };
@@ -71,6 +71,15 @@ class Page
 
     typedef std::list<DisplayListEntry> DisplayList;
 
+    /**
+     * @brief Book Compute Mode
+     * 
+     * This is used to indicate if we are computing the location of pages 
+     * to include in the database, moving to the start of a page to be
+     * shown, or preparing a page to display on screen. This is mainly 
+     * used by the book_view and page classes to optimize the speed of 
+     * computations.
+     */
     ComputeMode compute_mode;
 
     DisplayList display_list; ///< The list of characters and their position to put on screen

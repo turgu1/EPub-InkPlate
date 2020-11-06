@@ -30,7 +30,7 @@ void mainTask(void * params)
 
     static Graphics graphics;
 
-    //e_ink.clean();
+    e_ink.clean();
 
     ESP_LOGI(TAG, "Set Display Mode...");
     graphics.selectDisplayMode(3);

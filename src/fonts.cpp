@@ -26,9 +26,9 @@ bool Fonts::setup()
   std::string bold_italic = FONTS_FOLDER "/CrimsonPro-BoldItalic.ttf";
 
   if (!add(def, NORMAL,      normal     )) return false;
-  if (!add(def, BOLD,        bold       )) return false;
-  if (!add(def, ITALIC,      italic     )) return false;
-  if (!add(def, BOLD_ITALIC, bold_italic)) return false;   
+  // if (!add(def, BOLD,        bold       )) return false;
+  // if (!add(def, ITALIC,      italic     )) return false;
+  // if (!add(def, BOLD_ITALIC, bold_italic)) return false;   
 
   return true;
 }

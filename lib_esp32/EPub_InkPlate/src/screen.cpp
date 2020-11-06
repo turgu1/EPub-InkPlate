@@ -46,11 +46,11 @@ Screen::put_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint16_t j = y, q = 0; j < y_max; j++, q++) {
-    for (uint16_t i = x, p = q * width; i < x_max; i++) {
+  for (uint16_t j = y, q = 0; j < y_max; j++, q++) {  // rows
+    for (uint16_t i = x, p = q * width; i < x_max; i++) {  // columns
       uint8_t v = bitmap_data[p];
       if (v != 255) { // Do not paint white pixels
-        set_pixel(j, i, v >> 5);
+        set_pixel(i, j, v >> 5);
       }
       p++;
     }
@@ -72,7 +72,7 @@ Screen::put_highlight(
 
   for (uint16_t j = y, q = 0; j < y_max; j++, q++) {
     for (uint16_t i = x, p = q * width; i < x_max; i++, p++) {
-      set_pixel(j, i, 6);
+      set_pixel(i, j, 6);
     }
   }
 }
@@ -92,7 +92,7 @@ Screen::clear_region(
 
   for (uint16_t j = y, q = 0; j < y_max; j++, q++) {
     for (uint16_t i = x, p = q * width; i < x_max; i++, p++) {
-      set_pixel(j, i, 7);
+      set_pixel(i, j, 7);
     }
   }
 } 
@@ -115,7 +115,7 @@ Screen::put_bitmap_invert(
     for (int i = x, p = q * width; i < x_max; i++) {
       uint8_t v = (255 - bitmap_data[p]);
       if (v != 255) {
-        set_pixel(j, i, v >> 5);
+        set_pixel(i, j, v >> 5);
       }
       p++;
     }

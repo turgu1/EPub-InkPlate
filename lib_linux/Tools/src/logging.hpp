@@ -4,9 +4,9 @@
 #include <cstdio>
 
 #if __LOGGING__
-  void log(char level, char * tag, char * fmt, ...);
+  void log(const char level, const char * tag, const char * fmt, ...);
 #else
-  extern void log(char level, char * tag, char * fmt, ...);
+  extern void log(const char level, const char * tag, const char * fmt, ...);
 #endif
 
 #define LOG_I(tag, fmt, ...) { log('I', tag, fmt, ##__VA_ARGS__); }

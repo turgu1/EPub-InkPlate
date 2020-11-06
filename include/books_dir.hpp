@@ -6,12 +6,11 @@
 #include "epub.hpp"
 
 #include <vector>
+#include <map>
 #include <iostream>
 #include <fstream>
 
-#include "sqlite3.h"
-
-#define BOOKS_DIR_DB_VERSION 1
+#include "simple_db.hpp"
 
 /**
  * @brief Books Directory class
@@ -24,6 +23,16 @@
 class BooksDir
 {
   public:
+    static const uint16_t BOOKS_DIR_DB_VERSION =   1;
+
+    static const uint8_t  FILENAME_SIZE        = 128;
+    static const uint8_t  TITLE_SIZE           = 128;
+    static const uint8_t  AUTHOR_SIZE          =  64;
+    static const uint16_t DESCRIPTION_SIZE     = 512;
+
+    static const uint8_t  MAX_COVER_WIDTH      =  70;
+    static const uint8_t  MAX_COVER_HEIGHT     =  90;
+
     /**
      * @brief Single EBook Record
      * 
@@ -34,31 +43,30 @@ class BooksDir
      * by the epub class.
      */
     struct EBookRecord {
-      std::string filename;          ///< Ebook filename, no folder
-      int32_t file_size;             ///< File size in bytes
-      std::string title;             ///< Title from epub meta-data
-      std::string author;            ///< Author from epub meta-data
-      std::string description;       ///< Description from epub meta-data
-      unsigned char * cover_bitmap;  ///< Cover bitmap shrinked for books list presentation
-      int16_t cover_width;           ///< Width of the cover bitmap
-      int16_t cover_height;          ///< Height of the cover bitmap
+      char     filename[FILENAME_SIZE];       ///< Ebook filename, no folder
+                                              ///  MUST STAY AS FIRST ITEM IN EBookRecord
+      int32_t  file_size;                     ///< File size in bytes
+      char     title[TITLE_SIZE];             ///< Title from epub meta-data
+      char     author[AUTHOR_SIZE];           ///< Author from epub meta-data
+      char     description[DESCRIPTION_SIZE]; ///< Description from epub meta-data
+      uint8_t  cover_bitmap[MAX_COVER_WIDTH][MAX_COVER_HEIGHT];  ///< Cover bitmap shrinked for books list presentation
+      uint8_t  cover_width;                   ///< Width of the cover bitmap
+      uint8_t  cover_height;                  ///< Height of the cover bitmap
+      uint8_t  pages_data[0];                 ///< Blob of pages data
     };
 
   private:
-    sqlite3 * db; ///< The SQLite3 database structure
+    SimpleDB db;                       ///< The SimpleDB database
 
-    typedef std::vector<int64_t> Ids;  ///< Vector of primary keys of books.
-    Ids book_ids;                      ///< Books index pointing at the primary key of each book
+    typedef std::map<std::string, int16_t> SortedIndex;  ///< Sorted map of book names and indexes.
+    SortedIndex sorted_index;          ///< Books index pointing at the db index of each book
     EBookRecord book;                  ///< Book Record structure prepared to return to the caller
     int16_t current_book_idx;          ///< Current book index present in the book structure
 
   public:
-    BooksDir() : db(nullptr), current_book_idx(-1) {
-      book.cover_bitmap = nullptr;
-    }
+    BooksDir() : current_book_idx(-1) { }
    ~BooksDir() {
-      book_ids.clear();
-      delete [] book.cover_bitmap;
+      sorted_index.clear();
       close_db(); 
     }
 
@@ -67,7 +75,7 @@ class BooksDir
      * 
      * @return int16_t The number of books present in the database
      */
-    inline int16_t get_book_count() const { return book_ids.size(); }
+    inline int16_t get_book_count() const { return sorted_index.size(); }
 
     /**
      * @brief Get a book meta-data
@@ -78,7 +86,7 @@ class BooksDir
      * 
      * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve the data.
      */
-    const EBookRecord * get_book_data(int16_t idx);
+    const EBookRecord * get_book_data(uint16_t idx);
 
     /**
      * @brief Get page locations
@@ -129,10 +137,10 @@ class BooksDir
     bool refresh();
 
     /**
-     * @brief Close the SQLite3 database
+     * @brief Close the SimpleDB database
      * 
      */
-    void close_db() { if (db) { sqlite3_close(db); db = nullptr; } }
+    void close_db() { db.close(); }
 };
 
 #if __BOOKS_DIR__

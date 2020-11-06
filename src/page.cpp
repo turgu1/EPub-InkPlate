@@ -596,7 +596,10 @@ Page::add_word(const char * word,  const Format & fmt)
       if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first))) == nullptr) {
         glyph = font->get_glyph('?');
       }
-      if (glyph) add_glyph_to_line(glyph, *font, false);
+      if (glyph) {
+        add_glyph_to_line(glyph, *font, false);
+        //font->show_glyph(*glyph);
+      }
     }
     first = false;
   }
