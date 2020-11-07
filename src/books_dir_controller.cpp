@@ -99,7 +99,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       if (book_idx < books_dir.get_book_count()) {
         book = books_dir.get_book_data(book_idx);
         if (book != nullptr) {
-          book_filename = BOOKS_FOLDER;
+          book_filename = BOOKS_FOLDER "/";
           book_filename += book->filename;
         
           if (book_controller.open_book_file(book_filename, book_idx)) {

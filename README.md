@@ -1,8 +1,10 @@
 # EPub-InkPlate An EPub Reader for the InkPlate-6 device
 
+(Updated 2020.11.06)
+
 Work in progress...
 
-Translation of basic InkPlate-6 device driver classes is complete. Look at the EPub-Linux project for the current application being ported to this project.
+Translation of basic InkPlate-6 device driver classes is complete. The integration of the Linux version of the EPub application is complete. Debugging is ongoing.
 
 The driver classes are:
 
@@ -13,7 +15,7 @@ The driver classes are:
 - Inkplate6Ctrl - Will be a low-level class to control various modes of usage
   (like deep sleep, light sleep, sd card mounting, etc.)
 
-The hardware drivers have been copied from the Arduino implementation and have been modified extensively to be in line with the rest of the EPub-Linux code. There is still some refactoring to do. It's now time to migrate the EPub-Linux to this project.
+The hardware drivers have been copied from the Arduino implementation and have been modified extensively to be in line with the rest of the EPub-Linux code. There is still some refactoring to do. The source code can be found in folder lib_esp32/InkPlate6/src.
 
 All the code has been migrated and debugging is ongoing.
 

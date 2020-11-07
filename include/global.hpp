@@ -27,8 +27,8 @@
   #define MAIN_FOLDER "/sdcard"
 #endif
 
-#define FONTS_FOLDER MAIN_FOLDER "/fonts/"
-#define BOOKS_FOLDER MAIN_FOLDER "/books/"
+#define FONTS_FOLDER MAIN_FOLDER "/fonts"
+#define BOOKS_FOLDER MAIN_FOLDER "/books"
 
 
 // Debugging aid

@@ -17,8 +17,8 @@
 
 static const char * TAG = "BooksDir";
 
-static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "books_dir.db";
-static const char * NEW_DIR_FILE   = BOOKS_FOLDER "new_dir.db";
+static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "/books_dir.db";
+static const char * NEW_DIR_FILE   = BOOKS_FOLDER "/new_dir.db";
 
 bool 
 BooksDir::read_books_directory()
@@ -77,9 +77,11 @@ BooksDir::read_books_directory()
   }
 
   if (!refresh()) return false;
+  if (!db.open(BOOKS_DIR_FILE)) return false;
 
   show_db();
 
+  LOG_D(TAG, "Reading directory completed.");
   return true;
 }
 
@@ -132,7 +134,7 @@ BooksDir::get_page_locs(EPub::PageLocs & page_locs, int16_t idx)
 
   if (size <= 0) return false;
 
-  unsigned char * data = (unsigned char *) malloc(size);
+  unsigned char * data = (unsigned char *) allocate(size);
 
   std::stringstream str;
   
@@ -148,6 +150,8 @@ BooksDir::get_page_locs(EPub::PageLocs & page_locs, int16_t idx)
       " offset: " << loc.offset <<
       " size: " << loc.size << std::endl;
   }
+
+  free(data);
 
   return true;
 }
@@ -181,6 +185,8 @@ BooksDir::refresh()
   //  First look if existing entries in the database exists as ebook.
   //  Build a list of filenames for next step.
 
+  LOG_D(TAG, "Refreshing database content");
+
   SortedIndex index;
 
   struct PartialRecord {
@@ -195,7 +201,7 @@ BooksDir::refresh()
   while (db.goto_next()) {
     db.get_record(&partial_record, sizeof(partial_record));
 
-    std::string fname = BOOKS_FOLDER;
+    std::string fname = BOOKS_FOLDER "/";
     fname.append(partial_record.filename);
 
     struct stat stat_buffer;   
@@ -227,7 +233,7 @@ BooksDir::refresh()
       bool first = true;
       do {
         int32_t size = db.get_record_size();
-        EBookRecord * data = (EBookRecord *) malloc(size);
+        EBookRecord * data = (EBookRecord *) allocate(size);
         if (!db.get_record(data, size)) return false;
         if (!new_db->add_record(data, size)) return false;
         if (!first) {
@@ -249,14 +255,17 @@ BooksDir::refresh()
 
   // Find ebooks that are new since last database refresh
 
-  struct dirent *de = nullptr;
-  DIR *dp = nullptr;
+  struct dirent * de = nullptr;
+  DIR * dp = nullptr;
+
+  LOG_D(TAG, "Looking at book files in folder %s", BOOKS_FOLDER);
 
   dp = opendir(BOOKS_FOLDER);
 
   if (dp != nullptr) {
 
     while ((de = readdir(dp))) {
+
       int16_t size = strlen(de->d_name);
       if ((size > 5) && (strcasecmp(&de->d_name[size - 5], ".epub") == 0)) {
 
@@ -268,8 +277,9 @@ BooksDir::refresh()
 
           // The book is not in the database, we add it now
 
-          // LOG_D(TAG, "New book found: %s", de->d_name);
-          fname = BOOKS_FOLDER;
+          LOG_D(TAG, "New book found: %s", de->d_name);
+
+          fname = BOOKS_FOLDER "/";
           fname.append(de->d_name);
 
           int32_t file_size = 0;
@@ -294,6 +304,10 @@ BooksDir::refresh()
             int32_t record_size = sizeof(EBookRecord) + streamed_page_locs.str().size();
             EBookRecord * the_book = (EBookRecord *) allocate(record_size);
             
+            if (the_book == nullptr) {
+              LOG_E(TAG, "Not enough memory for new book: %d bytes required.", record_size);
+              return false;
+            }
             memset(the_book, 0, record_size);
 
             if (the_book == nullptr) return false;
@@ -355,9 +369,9 @@ BooksDir::refresh()
         }
       }
     }
-  }
 
-  closedir(dp);
+    closedir(dp);
+  }
 
   return true;
 }
@@ -392,7 +406,7 @@ BooksDir::show_db()
 
     if (size <= 0) return;
 
-    unsigned char * data = (unsigned char *) malloc(size);
+    unsigned char * data = (unsigned char *) allocate(size);
 
     std::stringstream str;
     
