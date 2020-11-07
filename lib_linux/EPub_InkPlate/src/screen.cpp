@@ -3,12 +3,9 @@
 // As all GTK related code is located in this module, we also implement
 // some part of the event manager code here...
 
-#include "eventmgr.hpp"
-
 #define __SCREEN__ 1
 #include "screen.hpp"
 
-#include "epub.hpp"
 #include <iomanip>
 
 #define BYTES_PER_PIXEL 3
@@ -23,17 +20,7 @@ free_pixels(guchar * pixels, gpointer data)
   delete [] pixels;
 }
 
-#define BUTTON_EVENT(button, msg) \
-  static void button##_clicked(GObject * button, GParamSpec * property, gpointer data) { \
-    event_mgr.button(); \
-  }
 
-BUTTON_EVENT(left,   "Left Clicked"  )
-BUTTON_EVENT(right,  "Right Clicked" )
-BUTTON_EVENT(up,     "Up Clicked"    )
-BUTTON_EVENT(down,   "Down Clicked"  )
-BUTTON_EVENT(select, "Select Clicked")
-BUTTON_EVENT(home,   "Home Clicked"  )
 
 inline void 
 setrgb(guchar * a, int row, int col, int stride,
@@ -44,10 +31,12 @@ setrgb(guchar * a, int row, int col, int stride,
 }
 
 void 
-Screen::put_bitmap(const unsigned char * bitmap_data, 
-                   int16_t width, 
-                   int16_t height, 
-                   int16_t x, int16_t y) //, bool show)
+Screen::put_bitmap(
+  const unsigned char * bitmap_data, 
+  uint16_t width, 
+  uint16_t height, 
+  int16_t  x, 
+  int16_t  y) //, bool show)
 {
   if (bitmap_data == nullptr) return;
   
@@ -86,8 +75,11 @@ Screen::put_bitmap(const unsigned char * bitmap_data,
 }
 
 void 
-Screen::put_highlight(int16_t width, int16_t height, 
-                   int16_t x, int16_t y) //, bool show)
+Screen::put_highlight(
+  uint16_t width, 
+  uint16_t height, 
+  int16_t  x, 
+  int16_t  y) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
@@ -109,8 +101,11 @@ Screen::put_highlight(int16_t width, int16_t height,
 
 
 void 
-Screen::clear_region(int16_t width, int16_t height, 
-                     int16_t x, int16_t y) //, bool show)
+Screen::clear_region(
+  uint16_t width, 
+  uint16_t height, 
+  int16_t  x, 
+  int16_t  y) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
@@ -195,24 +190,16 @@ Screen::update()
 
 static void destroy_app( GtkWidget *widget, gpointer   data )
 {
-  epub.close_file();
   gtk_main_quit();
 }
 
 Screen::Screen()
 {
   static GtkWidget 
-    * window, 
     * vbox1,
     * vbox2,
     * hbox1,
-    * hbox2,
-    * left_button,
-    * right_button,
-    * up_button,
-    * down_button,
-    * select_button,
-    * home_button;
+    * hbox2;
 
   gtk_init(nullptr, nullptr);
 
@@ -258,18 +245,11 @@ Screen::Screen()
   gtk_box_set_homogeneous(GTK_BOX(hbox2), TRUE);
 
     left_button = gtk_button_new_with_label("Left"  );
-    right_button = gtk_button_new_with_label("Right" );
+   right_button = gtk_button_new_with_label("Right" );
       up_button = gtk_button_new_with_label("Up"    );
     down_button = gtk_button_new_with_label("Down"  );
   select_button = gtk_button_new_with_label("Select");
     home_button = gtk_button_new_with_label("Home"  );
-
-  g_signal_connect(G_OBJECT(  left_button), "clicked", G_CALLBACK(  left_clicked), (gpointer) window);
-  g_signal_connect(G_OBJECT( right_button), "clicked", G_CALLBACK( right_clicked), (gpointer) window);
-  g_signal_connect(G_OBJECT(    up_button), "clicked", G_CALLBACK(    up_clicked), (gpointer) window);
-  g_signal_connect(G_OBJECT(  down_button), "clicked", G_CALLBACK(  down_clicked), (gpointer) window);
-  g_signal_connect(G_OBJECT(select_button), "clicked", G_CALLBACK(select_clicked), (gpointer) window);
-  g_signal_connect(G_OBJECT(  home_button), "clicked", G_CALLBACK(  home_clicked), (gpointer) window);
 
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(id.image     ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(up_button    ), FALSE, FALSE, 0);
@@ -281,6 +261,7 @@ Screen::Screen()
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(select_button), TRUE,  TRUE,  0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(home_button  ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1), FALSE, FALSE, 0);
+
 
   gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(vbox1));
 

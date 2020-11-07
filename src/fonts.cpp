@@ -20,15 +20,15 @@ bool Fonts::setup()
   LOG_D(TAG, "Fonts initialization");
 
   std::string def         = "Default";
-  std::string normal      = FONTS_FOLDER "/CrimsonPro-Regular.ttf";
-  std::string bold        = FONTS_FOLDER "/CrimsonPro-Bold.ttf";
-  std::string italic      = FONTS_FOLDER "/CrimsonPro-Italic.ttf";
-  std::string bold_italic = FONTS_FOLDER "/CrimsonPro-BoldItalic.ttf";
+  std::string normal      = FONTS_FOLDER "CrimsonPro-Regular.ttf";
+  std::string bold        = FONTS_FOLDER "CrimsonPro-Bold.ttf";
+  std::string italic      = FONTS_FOLDER "CrimsonPro-Italic.ttf";
+  std::string bold_italic = FONTS_FOLDER "CrimsonPro-BoldItalic.ttf";
 
   if (!add(def, NORMAL,      normal     )) return false;
-  // if (!add(def, BOLD,        bold       )) return false;
-  // if (!add(def, ITALIC,      italic     )) return false;
-  // if (!add(def, BOLD_ITALIC, bold_italic)) return false;   
+  if (!add(def, BOLD,        bold       )) return false;
+  if (!add(def, ITALIC,      italic     )) return false;
+  if (!add(def, BOLD_ITALIC, bold_italic)) return false;   
 
   return true;
 }

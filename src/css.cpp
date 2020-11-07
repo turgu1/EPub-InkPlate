@@ -40,8 +40,6 @@ CSS::FontSizeMap CSS::font_size_map = {
   { "xx-large", 24 }
 };
 
-int16_t CSS::font_normal_size = BASE_FONT_SIZE;
-
 void
 CSS::clear()
 {

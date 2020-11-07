@@ -1,6 +1,7 @@
 #define __UNZIP__ 1
 #include "unzip.hpp"
 #include "logging.hpp"
+#include "alloc.hpp"
 
 #include "stb_image.h"
 
@@ -284,7 +285,7 @@ Unzip::get_file(const char * filename, int & file_size)
     if (lseek(fd, filename_size + extra_size, SEEK_CUR) != (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size)) ERR(24);
     // LOG_D(TAG, "Unzip Get Method: ", fe->method);
     
-    data = new char[fe->size + 1];
+    data = (char *) allocate(fe->size + 1);
 
     if (data == nullptr) ERR(25);
     data[fe->size] = 0;
@@ -351,7 +352,7 @@ Unzip::get_file(const char * filename, int & file_size)
 
         inflateEnd(&zstr);
       #else
-        char * compressed_data = new char [fe->compressed_size + 2];
+        char * compressed_data = (char *) allocate(fe->compressed_size + 2);
         if (compressed_data == nullptr) ERR(27);
         if (read(fd, compressed_data, fe->compressed_size) != (fe->compressed_size)) ERR(28);
         compressed_data[fe->compressed_size] = 0;
@@ -363,7 +364,7 @@ Unzip::get_file(const char * filename, int & file_size)
         }
         // std::cout << "[FILE CONTENT:]" << std::endl << data << std::endl << "[END]" << std::endl;
 
-        delete [] compressed_data;
+        free(compressed_data);
       #endif
     }
     else break;
@@ -373,7 +374,7 @@ Unzip::get_file(const char * filename, int & file_size)
   }
 // error:
   if (!completed) {
-    delete [] data;
+    free(data);
     file_size = 0;
     LOG_E(TAG, "Unzip get: Error!: %d", err);
   }

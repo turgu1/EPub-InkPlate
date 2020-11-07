@@ -42,6 +42,7 @@ class BooksDir
      * The *get_page_locs()* method is retrieving the page locations when required
      * by the epub class.
      */
+    #pragma pack(push, 1)
     struct EBookRecord {
       char     filename[FILENAME_SIZE];       ///< Ebook filename, no folder
                                               ///  MUST STAY AS FIRST ITEM IN EBookRecord
@@ -54,6 +55,12 @@ class BooksDir
       uint8_t  cover_height;                  ///< Height of the cover bitmap
       uint8_t  pages_data[0];                 ///< Blob of pages data
     };
+
+    struct VersionRecord {
+      uint16_t version;
+      char     app_name[32];
+    };
+    #pragma pack(pop)
 
   private:
     SimpleDB db;                       ///< The SimpleDB database
@@ -141,6 +148,8 @@ class BooksDir
      * 
      */
     void close_db() { db.close(); }
+
+    void show_db();
 };
 
 #if __BOOKS_DIR__

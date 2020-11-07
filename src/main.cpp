@@ -1,6 +1,14 @@
+#define __GLOBAL__ 1
+#include "global.hpp"
+
+#if EPUB_INKPLATE6_BUILD
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "logging.hpp"
+
+#include "app_controller.hpp"
+#include "fonts.hpp"
 
 #include <stdio.h>
 
@@ -20,14 +28,17 @@ mainTask(void * params)
   }
   printf("\n"); fflush(stdout);
 
-#if 1
   if (!inkplate6_ctrl.setup() || 
       !fonts.setup()) {
     LOG_E(TAG, "Unable to setup the hardware environment!");
+    std::abort();
   }
 
   LOG_D(TAG, "Initialization completed");
 
+  app_controller.start();
+
+#if 0
   Page::Format fmt = {
     .line_height_factor = 0.9,
     .font_index         = 0,
@@ -83,3 +94,19 @@ app_main(void)
 }
 
 } // extern "C"
+
+#else
+
+#include "app_controller.hpp"
+#include "fonts.hpp"
+
+static const char * TAG = "Main";
+
+int 
+main(int argc, char **argv) 
+{
+  if (fonts.setup()) app_controller.start();
+  
+  return 0;
+}
+#endif

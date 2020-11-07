@@ -365,8 +365,9 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
     ESP::delay_microseconds(230);
   }
 
-  //clean_fast(3, 1);
+  clean_fast(3, 1);
   vscan_start();
+  ESP::delay_microseconds(230);
   turn_off();
 }
 

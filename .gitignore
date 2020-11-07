@@ -5,3 +5,10 @@
 .vscode/ipch
 example
 build
+bin/epub-test
+bin/books/Broken
+bin/books/Broken2
+bin/books/Done
+bin/books/temp
+bin/books/books_dir.db
+bin/books/test*

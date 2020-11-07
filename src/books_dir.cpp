@@ -17,25 +17,26 @@
 
 static const char * TAG = "BooksDir";
 
-static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "/books_dir.db";
-static const char * NEW_DIR_FILE   = BOOKS_FOLDER "/new_dir.db";
+static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "books_dir.db";
+static const char * NEW_DIR_FILE   = BOOKS_FOLDER "new_dir.db";
 
 bool 
 BooksDir::read_books_directory()
 {
+  LOG_D(TAG, "Reading books directory: %s.", BOOKS_DIR_FILE);
+
   if (!db.open(BOOKS_DIR_FILE)) {
     LOG_E(TAG, "Can't open database: %s", BOOKS_DIR_FILE);
     return false;
   }
 
+  // show_db();
+
   // We first verify if the database content is of the current version
 
   bool version_ok = false;
 
-  struct VersionRecord {
-    uint16_t version;
-    char     app_name[32];
-  } version_record;
+  VersionRecord version_record;
 
   if (db.get_record_count() == 0) {
     version_record.version = BOOKS_DIR_DB_VERSION;
@@ -75,24 +76,15 @@ BooksDir::read_books_directory()
     }
   }
 
-  refresh();
+  if (!refresh()) return false;
 
-  sorted_index.clear();
-
-  char * filename = (char *) malloc(FILENAME_SIZE);
-
-  db.goto_first();  // First is database version... skip
-
-  while (db.goto_next()) {
-    db.get_record(filename, FILENAME_SIZE);
-    sorted_index[filename] = db.get_current_idx();
-  }
+  show_db();
 
   return true;
 }
 
 template<typename POD>
-std::ostream& serialize(std::ostream& os, std::vector<POD> const& v)
+std::ostream & serialize(std::ostream & os, std::vector<POD> const & v)
 {
     // this only works on built in data types (PODs)
     static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
@@ -105,7 +97,7 @@ std::ostream& serialize(std::ostream& os, std::vector<POD> const& v)
 }
 
 template<typename POD>
-std::istream& deserialize(std::istream& is, std::vector<POD>& v)
+std::istream & deserialize(std::istream & is, std::vector<POD> & v)
 {
     static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
         "Can only deserialize POD types with this function");
@@ -140,7 +132,7 @@ BooksDir::get_page_locs(EPub::PageLocs & page_locs, int16_t idx)
 
   if (size <= 0) return false;
 
-  uint8_t * data = (uint8_t *) malloc(size);
+  unsigned char * data = (unsigned char *) malloc(size);
 
   std::stringstream str;
   
@@ -149,6 +141,13 @@ BooksDir::get_page_locs(EPub::PageLocs & page_locs, int16_t idx)
   str.write((const char *) data, size);
 
   deserialize(str, page_locs);
+
+  for (auto & loc : page_locs) {
+    std::cout << 
+      "ItemRef Index: " << loc.itemref_index <<
+      " offset: " << loc.offset <<
+      " size: " << loc.size << std::endl;
+  }
 
   return true;
 }
@@ -180,13 +179,19 @@ bool
 BooksDir::refresh()
 {
   //  First look if existing entries in the database exists as ebook.
+  //  Build a list of filenames for next step.
+
+  SortedIndex index;
 
   struct PartialRecord {
-    char filename[FILENAME_SIZE];
+    char    filename[FILENAME_SIZE];
     int32_t file_size;
+    char    title[TITLE_SIZE];
   } partial_record;
 
-  db.goto_first();
+  sorted_index.clear();
+
+  db.goto_first(); // Go pass the DB version record
   while (db.goto_next()) {
     db.get_record(&partial_record, sizeof(partial_record));
 
@@ -194,13 +199,25 @@ BooksDir::refresh()
     fname.append(partial_record.filename);
 
     struct stat stat_buffer;   
+
+    // if file with filename not found or the file size is not the same, 
+    // remove the database entry
     if ((stat(fname.c_str(), &stat_buffer) != 0) || 
         (stat_buffer.st_size != partial_record.file_size)) {
+      LOG_D(TAG, "Book no longer available: %s", partial_record.filename);
       db.set_deleted();
-    } 
+    }
+    else {
+      LOG_D(TAG, "Title: %s", partial_record.title);
+      index[partial_record.filename] = 0;
+      sorted_index[partial_record.title] = db.get_current_idx();
+    }
   }
   
   if (db.is_some_record_deleted()) {
+
+    // Some record have been deleted. We have to recreate a database
+    // with the cleaned records
 
     SimpleDB * new_db = new SimpleDB;
     sorted_index.clear();
@@ -210,11 +227,11 @@ BooksDir::refresh()
       bool first = true;
       do {
         int32_t size = db.get_record_size();
-        uint8_t * data = (uint8_t *) malloc(size);
+        EBookRecord * data = (EBookRecord *) malloc(size);
         if (!db.get_record(data, size)) return false;
         if (!new_db->add_record(data, size)) return false;
         if (!first) {
-          sorted_index[(char *) data] = new_db->get_record_count() - 1;
+          sorted_index[(*data).title] = new_db->get_record_count() - 1;
         }
         first = false;
         free(data);
@@ -236,7 +253,9 @@ BooksDir::refresh()
   DIR *dp = nullptr;
 
   dp = opendir(BOOKS_FOLDER);
+
   if (dp != nullptr) {
+
     while ((de = readdir(dp))) {
       int16_t size = strlen(de->d_name);
       if ((size > 5) && (strcasecmp(&de->d_name[size - 5], ".epub") == 0)) {
@@ -245,9 +264,11 @@ BooksDir::refresh()
 
         // check if ebook file named fname is in the database
 
-        if (sorted_index.find(fname) == sorted_index.end()) {
+        if (index.find(fname) == index.end()) {
 
           // The book is not in the database, we add it now
+
+          // LOG_D(TAG, "New book found: %s", de->d_name);
           fname = BOOKS_FOLDER;
           fname.append(de->d_name);
 
@@ -266,13 +287,19 @@ BooksDir::refresh()
             book_view.build_page_locs(); // This build epub::page_locs vector
             std::stringstream streamed_page_locs;
 
-            serialize(streamed_page_locs, epub.get_page_locs());
+            const EPub::PageLocs & page_locs = epub.get_page_locs();
 
-            int32_t record_size = sizeof(EBookRecord) + streamed_page_locs.str().size() + 1;
+            serialize(streamed_page_locs, page_locs);
+
+            int32_t record_size = sizeof(EBookRecord) + streamed_page_locs.str().size();
             EBookRecord * the_book = (EBookRecord *) allocate(record_size);
             
+            memset(the_book, 0, record_size);
+
+            if (the_book == nullptr) return false;
+
             memcpy(
-              the_book->pages_data, 
+              &the_book->pages_data[0], 
               streamed_page_locs.str().c_str(), 
               streamed_page_locs.str().size());
 
@@ -318,9 +345,12 @@ BooksDir::refresh()
               }
             }
         
-            db.add_record(the_book, record_size);
+            if (!db.add_record(the_book, record_size)) return false;
+
+            sorted_index[the_book->title] = db.get_record_count() - 1;
 
             epub.close_file();
+            free(the_book);
           }
         }
       }
@@ -330,4 +360,57 @@ BooksDir::refresh()
   closedir(dp);
 
   return true;
+}
+
+void
+BooksDir::show_db()
+{
+  VersionRecord  version_record;
+  EBookRecord    book;
+  EPub::PageLocs page_locs;
+
+  if (!db.goto_first()) return;
+  
+  if (!db.get_record(&version_record, sizeof(VersionRecord))) return;
+
+  std::cout << 
+    "DB Version: "    << version_record.version  << 
+    " app: "          << version_record.app_name << 
+    " record count: " << db.get_record_count() - 1 << std::endl;
+
+  while (db.goto_next()) {
+    if (!db.get_record(&book, sizeof(EBookRecord))) return;
+    std::cout 
+      << "Book: "          << book.filename        << std::endl
+      << "  record size: " << db.get_record_size() << std::endl
+      << "  title: "       << book.title           << std::endl
+      << "  author: "      << book.author          << std::endl
+      << "  description: " << book.description     << std::endl
+      << "  bitmap size: " << +book.cover_width << " " << +book.cover_height << std::endl;
+
+    int32_t size = db.get_record_size() - sizeof(EBookRecord);
+
+    if (size <= 0) return;
+
+    unsigned char * data = (unsigned char *) malloc(size);
+
+    std::stringstream str;
+    
+    if (!db.get_partial_record(data, size, sizeof(EBookRecord))) return;
+
+    str.write((const char *) data, size);
+
+    deserialize(str, page_locs);
+
+    std::cout << "Page locs: qty: " << page_locs.size() << std::endl;
+
+    for (auto & loc : page_locs) {
+      std::cout << 
+        "ItemRef Index: " << loc.itemref_index <<
+        " offset: " << loc.offset <<
+        " size: " << loc.size << std::endl;
+    }
+
+    free(data);
+  }
 }

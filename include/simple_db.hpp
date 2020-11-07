@@ -8,11 +8,11 @@
 /**
  * @brief Very simple database tool
  * 
- * A *very* simple one table database tol. Each record is having a single size that can
+ * A *very* simple, one table database tool. Each record is having a single size that can
  * be different from each other. 
  * 
  * The tool maintains the location of each record in an array in RAM. No
- * index beyond that. When a database file is open, the tool compute the
+ * index beyond that. When a database file is open, the tool computes the
  * location of each record. All record in file are considered valid.
  * 
  * A record can be marked as deleted using the set_deleted() method. This
@@ -26,12 +26,13 @@
  * Each record is preceeded with its size in file. Nothing else is kept in file
  * then the data associated with the record.
  * 
+ * (c) 2020, Guy Turcotte
  */
 
 class SimpleDB
 {
   private:
-    static const uint16_t MAX_RECORD_COUNT = 50;
+    static const uint16_t MAX_RECORD_COUNT = 100;
 
     FILE * file;
 
@@ -57,88 +58,28 @@ class SimpleDB
      * @return true The file has been opened.
      * @return false 
      */
-    bool open(std::string filename) {
-      if (db_is_open) {
-        fclose(file);
-        db_is_open = false;
-      }
-
-      if ((file = fopen(filename.c_str(), "r+")) == nullptr) return create(filename);
-
-      bool done = false;
-      while (true) {
-        if (fseek(file, 0, SEEK_END)) break;
-        file_size = ftell(file);
-        if (fseek(file, 0, SEEK_SET)) break;
-
-        uint16_t idx    = 0;
-        int32_t  offset = 0;
-      
-        while ((idx < MAX_RECORD_COUNT) && (offset < file_size)) {
-          record_offset[idx] = offset;
-          int32_t size;
-          if (fread(&size, sizeof(int32_t), 1, file) != 1) goto error;
-          offset += size + sizeof(int32_t);
-          if (offset < file_size) if (fseek(file, offset, SEEK_SET)) goto error;
-          idx++;
-        }
-        done = true;
-        record_count = idx;
-        break;
-      }
-    error:
-      if (!done) {
-        fclose(file);
-        return false;
-      }
-      else {
-        db_is_open          = true;
-        some_record_deleted = false;
-        current_record_idx  = 0;
-        return true;
-      }
-    }
+    bool open(std::string filename);
     
     /**
      * @brief Create a new database.
      * 
-     * The current database is closed and a new file empty file is created.
+     * The current database is closed and a new empty file is created.
      * If a file already exists, it will be overided.
      * 
      * @param filename 
      * @return true File created and database pointing at it.
      * @return false File already exists and not overrided. Nothing done.
      */
-    bool create(std::string filename) {
-      if (db_is_open) {
-        fclose(file);
-        db_is_open = false;
-      }
+    bool create(std::string filename);
 
-      if ((file = fopen(filename.c_str(), "w+")) == nullptr) return false;
-
-      db_is_open          = true;
-      some_record_deleted = false;
-      current_record_idx  = 0;
-      record_count        = 0;
-      file_size           = 0;
-
-      return true;
-    }
-
-    void close() { 
-      if (db_is_open) {
-        db_is_open = false;
-        fclose(file);
-      }
-    }
+    void close();
     
-    uint16_t             get_current_idx() { return current_record_idx;  }
-    void    set_current_idx(int16_t index) { current_record_idx = index; }
-    uint16_t            get_record_count() { return record_count;        }
-    uint16_t               get_file_size() { return file_size;           }
-    bool          is_some_record_deleted() { return some_record_deleted; }
-    bool                      is_db_open() { return db_is_open;          }
+    inline uint16_t             get_current_idx() { return current_record_idx;  }
+    inline void    set_current_idx(int16_t index) { current_record_idx = index; }
+    inline uint16_t            get_record_count() { return record_count;        }
+    inline uint16_t               get_file_size() { return file_size;           }
+    inline bool          is_some_record_deleted() { return some_record_deleted; }
+    inline bool                      is_db_open() { return db_is_open;          }
 
     /**
      * @brief Add a record at the end of the file.
@@ -150,27 +91,11 @@ class SimpleDB
      * @return true Record has been added.
      * @return false Potential file access issue.
      */
-    bool add_record(void * record, int32_t size) {
-      if (fseek(file, 0, SEEK_END)) return false;
-      if (fwrite(&size, sizeof(int32_t), 1, file) != 1) return false;
-      if (fwrite(record, size, 1, file) != 1) return false;
-      file_size += sizeof(int32_t) + size;
-      return true;
-    }
+    bool add_record(void * record, int32_t size);
 
-    bool get_record(void * record, int32_t size) {
-      if ((size <= 0) || (current_record_idx >= record_count)) return false;
-      if (fseek(file, record_offset[current_record_idx] + sizeof(int32_t), SEEK_SET)) return false;
-      if (fread(record, size, 1, file) != 1) return false;
-      return true;
-    }
+    bool get_record(void * record, int32_t size);
 
-    bool get_partial_record(void * record, int32_t size, int32_t offset) {
-      if ((size <= 0) || (current_record_idx >= record_count)) return false;
-      if (fseek(file, record_offset[current_record_idx] + sizeof(int32_t) + offset, SEEK_SET)) return false;
-      if (fread(record, size, 1, file) != 1) return false;
-      return true;
-    }
+    bool get_partial_record(void * record, int32_t size, int32_t offset);
 
     /**
      * @brief Get size of the current record.

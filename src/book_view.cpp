@@ -906,7 +906,7 @@ BookView::show_page(int16_t page_nbr)
       }
       else {
         page.show_cover(data, size);
-        delete [] data;
+        free(data);
       }
 
     }

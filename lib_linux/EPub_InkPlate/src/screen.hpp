@@ -32,9 +32,9 @@ class Screen : NonCopyable
     void put_bitmap_invert(const unsigned char * bitmap_data, 
                     uint16_t width, uint16_t height, 
                     int16_t x, int16_t y);
-     void put_highlight(int16_t width, int16_t height, 
+     void put_highlight(uint16_t width, uint16_t height, 
                        int16_t x, int16_t y);
-    void clear_region(int16_t width, int16_t height, 
+    void clear_region(uint16_t width, uint16_t height, 
                       int16_t x, int16_t y);
     void clear();
     void update();
@@ -53,6 +53,15 @@ class Screen : NonCopyable
 
   public:
     static Screen & get_singleton() noexcept { return singleton; }
+
+    GtkWidget
+      * window, 
+      * left_button,
+      * right_button,
+      * up_button,
+      * down_button,
+      * select_button,
+      * home_button;
 };
 
 #if __SCREEN__

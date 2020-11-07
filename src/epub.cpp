@@ -14,6 +14,11 @@ using namespace rapidxml;
 
 static const char * TAG = "EPub";
 
+void rapidxml::parse_error_handler(const char * what, void * where) { 
+   LOG_E(TAG, "RapidXML Parse error: %s.", what); 
+   std::abort();
+}
+
 EPub::EPub()
 {
   opf_data          = nullptr;
@@ -53,12 +58,12 @@ EPub::get_opf()
   if (!(data = unzip.get_file("mimetype", size))) return false;
   if (strcmp(data, "application/epub+zip")) {
     LOG_E(TAG, "This is not an EPUB ebook format.");
-    delete [] data;
+    free(data);
     return false;
   }
 
   // A file named 'META-INF/container.xml' must be present and point to the OPF file
-  delete [] data;
+  free(data);
   if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
   
   xml_document<>    doc;
@@ -107,7 +112,7 @@ EPub::get_opf()
     LOG_E(TAG, "EPub get_opf error: %d", err);
   }
 
-  delete [] data;
+  free(data);
   doc.clear();
   
   return completed;
@@ -366,7 +371,7 @@ void
 EPub::clear_item_data()
 {
   current_item.clear();
-  delete [] current_item_data;
+  free(current_item_data);
   current_item_data = nullptr;
 
   current_item_css_list.clear();
@@ -383,7 +388,7 @@ EPub::close_file()
 
   if (opf_data) {
     opf.clear();
-    delete [] opf_data;
+    free(opf_data);
   }
 
   opf_base_path.clear();
@@ -573,7 +578,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
     image.height  = h;
     channel_count = c;
 
-    delete [] data;
+    free(data);
 
     if (image.bitmap != nullptr) return true;
   }
