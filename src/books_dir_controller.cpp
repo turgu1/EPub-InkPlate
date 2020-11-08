@@ -17,7 +17,7 @@ BooksDirController::BooksDirController()
 }
 
 void
-BooksDirController::init()
+BooksDirController::setup()
 {
   if (!books_dir.read_books_directory()) {
     LOG_E("There was issues reading books directory.");

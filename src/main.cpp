@@ -9,10 +9,11 @@
   #include "freertos/task.h"
   #include "logging.hpp"
 
+  #include "books_dir_controller.hpp"
   #include "app_controller.hpp"
   #include "fonts.hpp"
-  #include "inkplate6_ctrl.hpp"
   #include "screen.hpp"
+  #include "inkplate6_ctrl.hpp"
 
   #include "nvs_flash.h"
 
@@ -23,6 +24,11 @@
   void 
   mainTask(void * params) 
   {
+    esp_err_t ret = nvs_flash_init();
+    if (ret != ESP_OK) {
+      LOG_E("Failed to initialise NVS Flash (%s).", esp_err_to_name(ret));
+    } 
+
     for (int i = 10; i > 0; i--) {
       printf("\r%02d ...", i);
       fflush(stdout);
@@ -37,15 +43,11 @@
 
     LOG_D("Initialization completed");
 
-    fonts.setup();
-    screen.setup();
-
-    esp_err_t ret = nvs_flash_init();
-    if (ret != ESP_OK) {
-      LOG_E("Failed to initialise NVS Flash (%s).", esp_err_to_name(ret));
-    } 
-
-    app_controller.start();
+    if (fonts.setup()) {
+      screen.setup();
+      books_dir_controller.setup();
+      app_controller.start();
+    }
 
     while (1) {
       printf("Allo!\n");
@@ -83,6 +85,8 @@
   {
     if (fonts.setup()) {
       screen.setup();
+      books_dir_controller.setup();
+      // exit(0)  // Used for some Valgrind tests
       app_controller.start();
     }
     

@@ -12,7 +12,7 @@ class BooksDirController
     
   public:
     BooksDirController();
-    void init();
+    void setup();
     void key_event(EventMgr::KeyEvent key);
     void enter();
     void leave();

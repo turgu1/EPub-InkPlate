@@ -22,8 +22,6 @@ AppController::AppController()
 void
 AppController::start()
 {
-  books_dir_controller.init();
-  //exit(0); // Used for some valgrind tests
   books_dir_controller.enter();
 
   event_mgr.start_loop();
