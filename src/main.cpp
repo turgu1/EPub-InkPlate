@@ -74,6 +74,7 @@
 
   // Linux main function
 
+  #include "books_dir_controller.hpp"
   #include "app_controller.hpp"
   #include "fonts.hpp"
   #include "screen.hpp"

@@ -160,13 +160,13 @@ Unzip::open_zip_file(const char * zip_filename)
         }
         fname[filename_size] = 0;
 
-        FileEntry fe;
+        FileEntry * fe = new FileEntry;
 
-        fe.filename        = fname;
-        fe.start_pos       = getuint32((const unsigned char *) &buffer[38]);
-        fe.compressed_size = getuint32((const unsigned char *) &buffer[16]);
-        fe.size            = getuint32((const unsigned char *) &buffer[20]);
-        fe.method          = getuint16((const unsigned char *) &buffer[ 6]);
+        fe->filename        = fname;
+        fe->start_pos       = getuint32((const unsigned char *) &buffer[38]);
+        fe->compressed_size = getuint32((const unsigned char *) &buffer[16]);
+        fe->size            = getuint32((const unsigned char *) &buffer[20]);
+        fe->method          = getuint16((const unsigned char *) &buffer[ 6]);
 
         //LOG_D("File: %s %d %d %d %d", fe.filename, fe.start_pos, fe.compressed_size, fe.size, fe.method);
         file_entries.push_back(fe);
@@ -192,8 +192,9 @@ void
 Unzip::close_zip_file()
 {
   if (zip_file_is_open) {
-    for (auto & entry : file_entries) {
-      delete [] entry.filename;
+    for (auto * entry : file_entries) {
+      delete [] entry->filename;
+      delete entry;
     }
     file_entries.clear();
     fclose(file);
@@ -235,11 +236,12 @@ clean_fname(const char * filename)
       } while ((t > str) && (*t != '/'));
     }
   }
-  
+  if ((t == str) && (*s == '/')) s++;
   while ((*t++ = *s++)) ;
 
   return str;
 }
+
 
 // std::string 
 // clean_fname(const char * filename)
@@ -272,25 +274,30 @@ Unzip::get_file(const char * filename, int & file_size)
   
   if (!zip_file_is_open) return nullptr;
 
-  LOG_D("Point 1 (%d)", uxTaskGetStackHighWaterMark(nullptr));
-  LOG_D("Before clean_fname: %s", filename);
+  #if EPUB_INKPLATE6_BUILD
+    LOG_D("Point 1 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+  #endif
+
   char * the_filename = clean_fname(filename);
   LOG_D("After clean_fname: %s", the_filename);
 
-  std::vector<FileEntry>::iterator fe = file_entries.begin();
+  std::vector<FileEntry *>::iterator fe = file_entries.begin();
 
   while (fe != file_entries.end()) {
-    if (strcmp(fe->filename, the_filename) == 0) break;
+    if (strcmp((*fe)->filename, the_filename) == 0) break;
     fe++;
   }
 
-  LOG_D("Point 2 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+  #if EPUB_INKPLATE6_BUILD
+    LOG_D("Point 2 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+  #endif
+
   if (fe == file_entries.end()) {
     LOG_E("Unzip Get: File not found: %s", the_filename);
     return nullptr;
   }
   else {
-    LOG_D("File: %s at pos: %d", fe->filename, fe->start_pos);
+    LOG_D("File: %s at pos: %d", (*fe)->filename, (*fe)->start_pos);
   }
 
   delete [] the_filename;
@@ -317,16 +324,20 @@ Unzip::get_file(const char * filename, int & file_size)
     
     const int LOCAL_HEADER_SIZE = 26;
 
-    LOG_D("Point 3 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #if EPUB_INKPLATE6_BUILD
+      LOG_D("Point 3 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #endif
 
-    LOG_D("Seeking at position %d", fe->start_pos);
-    if (fseek(file, fe->start_pos, SEEK_SET)) ERR(20);
+    LOG_D("Seeking at position %d", (*fe)->start_pos);
+    if (fseek(file, (*fe)->start_pos, SEEK_SET)) ERR(20);
     LOG_D("Reading 4 bytes...");
     if (fread(buffer, 4, 1, file) != 1) ERR(21);
     LOG_D("Check if content is a zip.");
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) ERR(22);
 
-    LOG_D("Point 4 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #if EPUB_INKPLATE6_BUILD
+      LOG_D("Point 4 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #endif
 
     if (fread(buffer, LOCAL_HEADER_SIZE, 1, file) != 1) ERR(23);
 
@@ -341,21 +352,25 @@ Unzip::get_file(const char * filename, int & file_size)
     if (fseek(file, filename_size + extra_size, SEEK_CUR)) ERR(24);
     // LOG_D("Unzip Get Method: ", fe->method);
 
-    LOG_D("Point 5 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #if EPUB_INKPLATE6_BUILD
+      LOG_D("Point 5 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+    #endif
 
-    data = (char *) allocate(fe->size + 1);
+    data = (char *) allocate((*fe)->size + 1);
 
     if (data == nullptr) ERR(25);
-    data[fe->size] = 0;
+    data[(*fe)->size] = 0;
 
-    if (fe->method == 0) {
-      if (fread(data, fe->size, 1, file) != 1) ERR(26);
+    if ((*fe)->method == 0) {
+      if (fread(data, (*fe)->size, 1, file) != 1) ERR(26);
       //LOG_E("Unzip: read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
     }
-    else if (fe->method == 8) {
+    else if ((*fe)->method == 8) {
 
-      LOG_D("Point 6 (%d)", uxTaskGetStackHighWaterMark(nullptr));
-
+      #if EPUB_INKPLATE6_BUILD
+        LOG_D("Point 6 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+      #endif
+      
       #if ZLIB
         if (result != fe->size) ERR(29);
 
@@ -412,14 +427,14 @@ Unzip::get_file(const char * filename, int & file_size)
 
         inflateEnd(&zstr);
       #else
-        char * compressed_data = (char *) allocate(fe->compressed_size + 2);
+        char * compressed_data = (char *) allocate((*fe)->compressed_size + 2);
         if (compressed_data == nullptr) ERR(27);
-        if (fread(compressed_data, fe->compressed_size, 1, file) != 1) ERR(28);
-        compressed_data[fe->compressed_size] = 0;
-        compressed_data[fe->compressed_size + 1] = 0;
+        if (fread(compressed_data, (*fe)->compressed_size, 1, file) != 1) ERR(28);
+        compressed_data[(*fe)->compressed_size] = 0;
+        compressed_data[(*fe)->compressed_size + 1] = 0;
 
-        int32_t result = stbi_zlib_decode_noheader_buffer(data, fe->size, compressed_data, fe->compressed_size + 2);
-        if (result != fe->size) {
+        int32_t result = stbi_zlib_decode_noheader_buffer(data, (*fe)->size, compressed_data, (*fe)->compressed_size + 2);
+        if (result != (*fe)->size) {
           ERR(29);
         }
         // std::cout << "[FILE CONTENT:]" << std::endl << data << std::endl << "[END]" << std::endl;
@@ -441,7 +456,7 @@ Unzip::get_file(const char * filename, int & file_size)
     LOG_E("Unzip get: Error!: %d", err);
   }
   else {
-    file_size = fe->size;
+    file_size = (*fe)->size;
   }
   return data;
 }

@@ -5,7 +5,10 @@
 #include "book_view.hpp"
 #include "logging.hpp"
 #include "alloc.hpp"
-#include "esp.hpp"
+
+#if EPUB_INKPLATE6_BUILD
+  #include "esp.hpp"
+#endif
 
 #include "stb_image.h"
 #include "stb_image_resize.h"
@@ -266,7 +269,9 @@ BooksDir::refresh()
 
   LOG_D("Looking at book files in folder %s", BOOKS_FOLDER);
  
-  ESP::show_heaps_info();
+  #if EPUB_INKPLATE6_BUILD
+    ESP::show_heaps_info();
+  #endif
   
   dp = opendir(BOOKS_FOLDER);
 

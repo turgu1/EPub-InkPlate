@@ -24,7 +24,7 @@ class Unzip
 
     FILE * file; // Current File Descriptor
     bool zip_file_is_open;
-    std::vector<FileEntry> file_entries;
+    std::vector<FileEntry *> file_entries;
 
     uint32_t getuint32(const unsigned char * b) {
       return  ((uint32_t)b[0])        | 
