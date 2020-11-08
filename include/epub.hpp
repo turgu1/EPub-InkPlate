@@ -17,7 +17,7 @@ class EPub
 {
   public:
     enum MediaType { XML, JPEG, PNG, GIF, BMP };
-    typedef std::list<CSS> CSSCache;
+    //typedef std::list<CSS> CSSCache;
     typedef std::list<CSS *> CSSList;
     struct Location {
       int32_t offset;                ///< Position as a number of characters in the item.
@@ -39,8 +39,8 @@ class EPub
 
     typedef std::forward_list<char *> CSSData;
 
-    CSSCache  css_cache;             ///< All css files in the ebook are maintained here.
-    CSSCache  temp_css_cache;        ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
+    CSSList   css_cache;             ///< All css files in the ebook are maintained here.
+    CSSList   temp_css_cache;        ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
     CSSList   current_item_css_list; ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
     CSS *     current_item_css;      ///< Ghost CSS created through merging css suites from current_item_css_list.
  
@@ -80,7 +80,7 @@ class EPub
      */
     void retrieve_page_locs(int16_t idx) ;
 
-    CSSCache    & get_css_cache() { return css_cache; };
+    CSSList     & get_css_cache() { return css_cache; };
     CSS         * get_current_item_css() { return current_item_css; };
     std::string & get_current_item_file_path() { return current_item_file_path; };
 
@@ -93,7 +93,7 @@ class EPub
     /**
      * @brief Retrieve cover's filename
      * 
-     * Look inside the opf file to grap the cover filename. First search in the metadata. If
+     * Look inside the opf file to grab the cover filename. First search in the metadata. If
      * not found, search in the manifest for an entry with type cover-image
      * 
      * @return char * filename, or nullptr if not found 

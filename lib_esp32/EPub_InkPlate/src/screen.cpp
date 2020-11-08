@@ -122,7 +122,7 @@ Screen::put_bitmap_invert(
   }
 }
 
-Screen::Screen()
+void Screen::setup()
 {
   frame_buffer = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
   clear();

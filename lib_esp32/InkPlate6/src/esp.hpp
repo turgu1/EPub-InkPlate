@@ -9,6 +9,8 @@
 #include "driver/gpio.h"
 #include "driver/adc.h"
 
+#include "logging.hpp"
+
 static const uint8_t HIGH = 1;
 static const uint8_t LOW  = 0;
 
@@ -21,6 +23,9 @@ static const uint8_t LOW  = 0;
  */
 class ESP
 {
+  private:
+    static const char * TAG;
+    
   public:
     static inline long millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
 
@@ -57,7 +62,22 @@ class ESP
     // In sdconfig, the option can be found here:
     //   Component config > ESP32-specific > CONFIG_ESP32_SPIRAM_SUPPORT > SPI RAM config
     //
-    static void * ps_malloc(uint32_t size) { return heap_caps_malloc(size, MALLOC_CAP_SPIRAM); }
+    static void * ps_malloc(uint32_t size) { 
+      void * mem = heap_caps_malloc(size, MALLOC_CAP_SPIRAM); 
+      if (mem == nullptr) {
+        ESP_LOGE(TAG, "Not enough memory on PSRAM!!! (Asking %u bytes)", size);
+      }
+      return mem;
+    }
+
+    static void show_heaps_info() {
+      ESP_LOGD(TAG, "+----- HEAPS DATA -----+");
+      ESP_LOGD(TAG, "| Total heap:  %7d |",  heap_caps_get_total_size(MALLOC_CAP_8BIT  ));
+      ESP_LOGD(TAG, "| Free heap:   %7d |",    heap_caps_get_free_size(MALLOC_CAP_8BIT  ));
+      ESP_LOGD(TAG, "| Total PSRAM: %7d |", heap_caps_get_total_size(MALLOC_CAP_SPIRAM));
+      ESP_LOGD(TAG, "| Free PSRAM:  %7d |",   heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+      ESP_LOGD(TAG, "+----------------------+");
+    }
 };
 
 #endif

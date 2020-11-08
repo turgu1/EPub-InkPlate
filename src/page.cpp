@@ -147,10 +147,10 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
 
         #if DEBUGGING
           if ((entry.x < 0) || (entry.y < 0)) {
-            LOG_E(TAG, "Put_str_at with a negative location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a negative location: %d %d", entry.x, entry.y);
           }
           else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-            LOG_E(TAG, "Put_str_at with a too large location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a too large location: %d %d", entry.x, entry.y);
           }
         #endif
 
@@ -205,10 +205,10 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
 
         #if DEBUGGING
           if ((entry.x < 0) || (entry.y < 0)) {
-            LOG_E(TAG, "Put_str_at with a negative location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a negative location: %d %d", entry.x, entry.y);
           }
           else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-            LOG_E(TAG, "Put_str_at with a too large location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a too large location: %d %d", entry.x, entry.y);
           }
         #endif
 
@@ -315,7 +315,7 @@ Page::line_break(const Format & fmt)
 {
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
   
-  // LOG_D(TAG, "line_break font index: %d", fmt.font_index);
+  // LOG_D("line_break font index: %d", fmt.font_index);
 
   if (line_list.size() > 0) {
     add_line(fmt, false);
@@ -469,17 +469,17 @@ Page::add_line(const Format & fmt, bool justifyable)
       xpos += entry.kind.image_entry.advance;
     }
     else {
-      LOG_E(TAG, "Wrong entry type for add_line: %d", entry.command);
+      LOG_E("Wrong entry type for add_line: %d", entry.command);
     }
 
     #if DEBUGGING
       if ((entry.x < 0) || (entry.y < 0)) {
-        LOG_E(TAG, "add_line entry with a negative location: %d %d %d", entry.x, entry.y, entry.command);
+        LOG_E("add_line entry with a negative location: %d %d %d", entry.x, entry.y, entry.command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
       else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-        LOG_E(TAG, "add_line with a too large location: %d %d %d", entry.x, entry.y, entry.command);
+        LOG_E("add_line with a too large location: %d %d %d", entry.x, entry.y, entry.command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
@@ -586,7 +586,7 @@ Page::add_word(const char * word,  const Format & fmt)
       return false;
     }
     if (width >= (para_max_x - para_min_x - para_indent)) {
-      LOG_E(TAG, "WORD TOO LARGE!! '%s'", word);
+      LOG_E("WORD TOO LARGE!! '%s'", word);
     }
   }
 
@@ -805,10 +805,10 @@ Page::put_image(Image & image,
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
-      LOG_E(TAG, "put_bitmap with a negative location: %d %d", entry.x, entry.y);
+      LOG_E("put_bitmap with a negative location: %d %d", entry.x, entry.y);
     }
     else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-      LOG_E(TAG, "put_bitmap with a too large location: %d %d", entry.x, entry.y);
+      LOG_E("put_bitmap with a too large location: %d %d", entry.x, entry.y);
     }
   #endif
 
@@ -830,10 +830,10 @@ Page::put_highlight(
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
-      LOG_E(TAG, "put_highlight with a negative location: %d %d", entry.x, entry.y);
+      LOG_E("put_highlight with a negative location: %d %d", entry.x, entry.y);
     }
     else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-      LOG_E(TAG, "put_highlight with a too large location: %d %d", entry.x, entry.y);
+      LOG_E("put_highlight with a too large location: %d %d", entry.x, entry.y);
     }
   #endif
 
@@ -858,10 +858,10 @@ Page::clear_region(
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
-      LOG_E(TAG, "Put_str_at with a negative location: %d %d", entry.x, entry.y);
+      LOG_E("Put_str_at with a negative location: %d %d", entry.x, entry.y);
     }
     else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-      LOG_E(TAG, "Put_str_at with a too large location: %d %d", entry.x, entry.y);
+      LOG_E("Put_str_at with a too large location: %d %d", entry.x, entry.y);
     }
   #endif
 
@@ -877,7 +877,7 @@ Page::show_cover(unsigned char * data, int32_t size)
     unsigned char * bitmap_data = stbi_load_from_memory(data, size, &image_width, &image_height, &channel_count, 1);
 
     if (bitmap_data != nullptr) { 
-      // LOG_D(TAG, "Image: width: %d height: %d channel_count: %d", image_width, image_height, channel_count);
+      // LOG_D("Image: width: %d height: %d channel_count: %d", image_width, image_height, channel_count);
 
       int32_t w = Screen::WIDTH;
       int32_t h = image_height * Screen::WIDTH / image_width;
@@ -890,7 +890,7 @@ Page::show_cover(unsigned char * data, int32_t size)
       int32_t x = (Screen::WIDTH  - w) >> 1;
       int32_t y = (Screen::HEIGHT - h) >> 1;
 
-      // LOG_D(TAG, "Image Parameters: %d %d %d %d", w, h, x, y);
+      // LOG_D("Image Parameters: %d %d %d %d", w, h, x, y);
 
       unsigned char * resized_bitmap = new unsigned char[w * h];
 
@@ -904,7 +904,7 @@ Page::show_cover(unsigned char * data, int32_t size)
       delete [] resized_bitmap;
     }
     else {
-      LOG_E(TAG, "Unable to load cover file");
+      LOG_E("Unable to load cover file");
     }
 
     stbi_image_free(bitmap_data);

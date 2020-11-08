@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <ios>
-#include <fstream>
 
 static const char * TAG = "TTF";
 
@@ -72,7 +71,7 @@ TTF::get_glyph(int32_t charcode)
   else {
     int glyph_index = stbtt_FindGlyphIndex(&font, charcode);
     if (glyph_index == 0) {
-      LOG_E(TAG, "Charcode not found in face: %d", charcode);
+      LOG_E("Charcode not found in face: %d", charcode);
       charcode = ' ';
       if ((cit != glyph_cache.end()) && ((git = cit->second.find(charcode)) != cit->second.end())) {
         return git->second;
@@ -98,7 +97,7 @@ TTF::get_glyph(int32_t charcode)
 
     #if DEBUGGING
       if ((xoff == 9999) || (xoff == 9999)) {
-        LOG_E(TAG, "Hum... Glyph with uninitialized offsets: charcode: %d xoff: %d yoff: %d", charcode, xoff, yoff);
+        LOG_E("Hum... Glyph with uninitialized offsets: charcode: %d xoff: %d yoff: %d", charcode, xoff, yoff);
       }
     #endif
 
@@ -133,7 +132,7 @@ TTF::set_font_size(int16_t size)
   //scale_factor = stbtt_ScaleForPixelHeight(&font, ppem;
 
   if (scale_factor == 0) {
-    LOG_E(TAG, "set_font_size: scale_factor is 0!: size: %d ppem: %d scale factor: %f", size, ppem, scale_factor);
+    LOG_E("set_font_size: scale_factor is 0!: size: %d ppem: %d scale factor: %f", size, ppem, scale_factor);
   }
 
   ascender         = scale_factor * ascent;
@@ -147,53 +146,49 @@ TTF::set_font_size(int16_t size)
 bool 
 TTF::set_font_face_from_file(const std::string & font_filename)
 {
-  LOG_D(TAG, "set_font_face_from_file() ...");
+  LOG_D("set_font_face_from_file() ...");
 
-  std::ifstream font_file;
-  font_file.open(font_filename, std::ifstream::in);
-
-  if (!font_file.is_open()) {
-    LOG_E(TAG, "set_font_face_from_file: Unable to open font file '%s'", font_filename.c_str());
+  FILE * font_file;
+  if ((font_file = fopen(font_filename.c_str(), "r")) == nullptr) {
+    LOG_E("set_font_face_from_file: Unable to open font file '%s'", font_filename.c_str());
     return false;
   }
   else {
     uint8_t * buffer;
 
-    font_file.seekg (0, std::ios::end);
-    if (font_file.fail()) {
-      LOG_E(TAG, "set_font_face_from_file: Unable to seek to the end of file");
-      font_file.close();
+    if (fseek(font_file, 0, SEEK_END)) {
+      LOG_E("set_font_face_from_file: Unable to seek to the end of file");
+      fclose(font_file);
       return false;
     }
 
-    std::streamoff length = font_file.tellg();
+    int32_t length = ftell(font_file);
     
-    LOG_D(TAG, "Font File Length: %d", (int32_t) length);
+    LOG_D("Font File Length: %d", length);
 
     buffer = (uint8_t *) allocate(length + 1);
 
     if (buffer == nullptr) {
-      LOG_E(TAG, "Unable to allocate font buffer: %d", (int32_t) (length + 1));
+      LOG_E("Unable to allocate font buffer: %d", (int32_t) (length + 1));
       return false;
     }
 
-    font_file.seekg (0, std::ios::beg);
-    if (font_file.fail()) {
-      LOG_E(TAG, "set_font_face_from_file: Unable to seek to the beginning of file");
-      font_file.close();
+    if (fseek(font_file, 0, SEEK_SET)) {
+      LOG_E("set_font_face_from_file: Unable to seek to the beginning of file");
+      fclose(font_file);
       free(buffer);
       return false;
     }
     else {
-      font_file.read((char *) buffer, length);
-      if (font_file.fail()) {
-        LOG_E(TAG, "set_font_face_from_file: Unable to read file content");
-        font_file.close();
+      if (fread(buffer, length, 1, font_file) != 1) {
+        LOG_E("set_font_face_from_file: Unable to read file content");
+        fclose(font_file);
         free(buffer);
         return false;
       }
     }
-    font_file.close();
+    
+    fclose(font_file);
 
     buffer[length] = 0;
 
@@ -213,7 +208,7 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t buffer_length)
     error = stbtt_InitFont(&font, buffer, idx);
   }
   if ((idx == -1) || (error == 0)) {
-    LOG_E(TAG, "The memory font format is unsupported or is broken.");
+    LOG_E("The memory font format is unsupported or is broken.");
     return false;
   }
 

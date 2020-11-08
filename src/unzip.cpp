@@ -31,8 +31,8 @@ Unzip::open_zip_file(const char * zip_filename)
 {
   // Open zip file
   if (zip_file_is_open) close_zip_file();
-  if ((fd = open(zip_filename, O_RDONLY)) == -1) {
-    LOG_E(TAG, "Uzip: Unable to open file: %s", zip_filename);
+  if ((file = fopen(zip_filename, "r")) == nullptr) {
+    LOG_E("Uzip: Unable to open file: %s", zip_filename);
     return false;
   }
   zip_file_is_open = true;
@@ -68,24 +68,25 @@ Unzip::open_zip_file(const char * zip_filename)
 
     buffer[FILE_CENTRAL_SIZE] = 0;
 
-    off_t length = lseek(fd, 0, SEEK_END);
+    if (fseek(file, 0, SEEK_END)) ERR(0);
+    off_t length = ftell(file);
     if (length < FILE_CENTRAL_SIZE) ERR(1); 
     off_t offset = length - FILE_CENTRAL_SIZE;
 
-    if (lseek(fd, offset, SEEK_SET) != offset) ERR(2);
-    if (read(fd, buffer, FILE_CENTRAL_SIZE) != FILE_CENTRAL_SIZE) ERR(3);
+    if (fseek(file, offset, SEEK_SET)) ERR(2);
+    if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(3);
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 5) && (buffer[3] == 6))) {
       // There must be a comment in the last entry. Search for the beginning of the entry
       offset -= FILE_CENTRAL_SIZE;
       bool found = false;
       while (!found && (offset > 0)) {
-        if (lseek(fd, offset, SEEK_SET) != offset) ERR(4);
-        if (read(fd, buffer, FILE_CENTRAL_SIZE) != FILE_CENTRAL_SIZE) ERR(5);
+        if (fseek(file, offset, SEEK_SET)) ERR(4);
+        if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(5);
         char * p;
         if ((p = strstr(buffer, "PK\5\6")) != nullptr) {
           offset += (p - buffer);
-          if (lseek(fd, offset, SEEK_SET) != offset) ERR(6);
-          if (read(fd, buffer, FILE_CENTRAL_SIZE) != FILE_CENTRAL_SIZE) ERR(7);
+          if (fseek(file, offset, SEEK_SET)) ERR(6);
+          if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(7);
           found = true;
           break;
         }
@@ -135,25 +136,25 @@ Unzip::open_zip_file(const char * zip_filename)
 
       if (count == 0) ERR(8);
 
-      if (lseek(fd, offset, SEEK_SET) != offset) ERR(9);
+      if (fseek(file, offset, SEEK_SET)) ERR(9);
       
       file_entries.reserve(count);
 
       while (true) {
-        if (read(fd, buffer, 4) != 4) ERR(10);
+        if (fread(buffer, 4, 1, file) != 1) ERR(10);
         if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 1) && (buffer[3] == 2))) {
           // End of list...
           completed = true;
           break;
         }
-        if (read(fd, buffer, FILE_ENTRY_SIZE) != FILE_ENTRY_SIZE) ERR(11);
+        if (fread(buffer, FILE_ENTRY_SIZE, 1, file) != 1) ERR(11);
 
         uint16_t filename_size = getuint16((const unsigned char *) &buffer[24]);
         uint16_t extra_size    = getuint16((const unsigned char *) &buffer[26]);
         uint16_t comment_size  = getuint16((const unsigned char *) &buffer[28]);
         
         char * fname = new char[filename_size + 1];
-        if (read(fd, fname, filename_size) != filename_size) {
+        if (fread(fname, filename_size, 1, file) != 1) {
           delete [] fname;
           break;
         }
@@ -167,22 +168,22 @@ Unzip::open_zip_file(const char * zip_filename)
         fe.size            = getuint32((const unsigned char *) &buffer[20]);
         fe.method          = getuint16((const unsigned char *) &buffer[ 6]);
 
-        //LOG_D(TAG, "File: %s %d %d %d %d", fe.filename, fe.start_pos, fe.compressed_size, fe.size, fe.method);
+        //LOG_D("File: %s %d %d %d %d", fe.filename, fe.start_pos, fe.compressed_size, fe.size, fe.method);
         file_entries.push_back(fe);
 
         offset += FILE_ENTRY_SIZE + 4 + filename_size + extra_size + comment_size;
-        if (lseek(fd, extra_size + comment_size, SEEK_CUR) != offset) ERR(12);
+        if (fseek(file, extra_size + comment_size, SEEK_CUR)) ERR(12);
       }
     }
     break;
   }
 
   if (!completed) {
-    LOG_E(TAG, "Unzip: open_file error: %d", err);
+    LOG_E("Unzip: open_file error: %d", err);
     close_zip_file();
   }
   else {
-    // LOG_D(TAG, "Unzip: open_file completed!");
+    // LOG_D("Unzip: open_file completed!");
   }
   return completed;
 }
@@ -191,60 +192,108 @@ void
 Unzip::close_zip_file()
 {
   if (zip_file_is_open) {
+    for (auto & entry : file_entries) {
+      delete [] entry.filename;
+    }
     file_entries.clear();
-    close(fd);
+    fclose(file);
     zip_file_is_open = false;
   }
 
-  // LOG_D(TAG, "Zip file closed.");
+  // LOG_D("Zip file closed.");
 }
 
-std::string 
+/**
+ * @brief Clean filename path
+ * 
+ * This function cleans filename path that may contain relation folders (like '..').
+ * 
+ * @param filename The filename to clean
+ * @return char * The cleaned up filename. Must be freed after usage.
+ */
+char *
 clean_fname(const char * filename)
 {
-  std::string str = "";
-  std::string str2 = filename;
-  const char * s;
-  while ((s = strstr(str2.c_str(), "/../")) != nullptr) {
-    const char *ss = s-1;
-    while ((ss != str2.c_str()) && (*ss != '/')) ss--;
-    if (ss != str2.c_str()) {
-      const char * t = str2.c_str();
-      while (t != (ss + 1)) str.push_back(*t++);
+  char * str = new char[strlen(filename) + 1];
+
+  const char * s = filename;
+  const char * u;
+  char       * t = str;
+
+  while ((u = strstr(s, "/../")) != nullptr) {
+    const char * ss = s;   // keep it for copy in target
+    s = u + 3;             // prepare for next iteration
+    do {                   // get rid of preceeding folder name
+      u--;
+    } while ((u > ss) && (*u != '/'));
+    if (u >= ss) {
+      while (ss != u) *t++ = *ss++;
     }
-    str.append(s + 4);
-    str2 = str;
-    str = "";
+    else if ((*u != '/') && (t > str)) {
+      do {
+        t--;
+      } while ((t > str) && (*t != '/'));
+    }
   }
-  return str2;
+  
+  while ((*t++ = *s++)) ;
+
+  return str;
 }
+
+// std::string 
+// clean_fname(const char * filename)
+// {
+//   std::string str = "";
+//   std::string str2 = filename;
+//   const char * s;
+//   while ((s = strstr(str2.c_str(), "/../")) != nullptr) {
+//     const char *ss = s-1;
+//     while ((ss != str2.c_str()) && (*ss != '/')) ss--;
+//     if (ss != str2.c_str()) {
+//       const char * t = str2.c_str();
+//       while (t != (ss + 1)) str.push_back(*t++);
+//     }
+//     str.append(s + 4);
+//     str2 = str;
+//     str = "";
+//   }
+//   return str2;
+// }
 
 char * 
 Unzip::get_file(const char * filename, int & file_size)
 {
+  LOG_D("get_file: %s", filename);
+  
   char * data = nullptr;
   int err = 0;
   file_size = 0;
   
   if (!zip_file_is_open) return nullptr;
 
-  std::string the_filename = clean_fname(filename);
+  LOG_D("Point 1 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+  LOG_D("Before clean_fname: %s", filename);
+  char * the_filename = clean_fname(filename);
+  LOG_D("After clean_fname: %s", the_filename);
 
   std::vector<FileEntry>::iterator fe = file_entries.begin();
 
   while (fe != file_entries.end()) {
-    if (strcmp(fe->filename, the_filename.c_str()) == 0) break;
+    if (strcmp(fe->filename, the_filename) == 0) break;
     fe++;
   }
 
-
+  LOG_D("Point 2 (%d)", uxTaskGetStackHighWaterMark(nullptr));
   if (fe == file_entries.end()) {
-    LOG_E(TAG, "Unzip Get: File not found: %s", the_filename.c_str());
+    LOG_E("Unzip Get: File not found: %s", the_filename);
     return nullptr;
   }
   else {
-    //LOG_D(TAG, "File: %s at pos: %d", fe->filename, fe->start_pos);
+    LOG_D("File: %s at pos: %d", fe->filename, fe->start_pos);
   }
+
+  delete [] the_filename;
 
   bool completed = false;
   while (true) {
@@ -268,33 +317,44 @@ Unzip::get_file(const char * filename, int & file_size)
     
     const int LOCAL_HEADER_SIZE = 26;
 
-    if (lseek(fd, fe->start_pos, SEEK_SET) != fe->start_pos) ERR(20);
-    if (read(fd, buffer, 4) != 4) ERR(21);
+    LOG_D("Point 3 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+
+    LOG_D("Seeking at position %d", fe->start_pos);
+    if (fseek(file, fe->start_pos, SEEK_SET)) ERR(20);
+    LOG_D("Reading 4 bytes...");
+    if (fread(buffer, 4, 1, file) != 1) ERR(21);
+    LOG_D("Check if content is a zip.");
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) ERR(22);
 
-    if (read(fd, buffer, LOCAL_HEADER_SIZE) != LOCAL_HEADER_SIZE) ERR(23);
+    LOG_D("Point 4 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+
+    if (fread(buffer, LOCAL_HEADER_SIZE, 1, file) != 1) ERR(23);
 
     uint16_t filename_size = getuint16((const unsigned char *) &buffer[22]);
     uint16_t extra_size    = getuint16((const unsigned char *) &buffer[24]);
 
     // bool has_data_descriptor = ((buffer[2] & 8) != 0);
     // if (has_data_descriptor) {
-    //   LOG_D(TAG, "Unzip: with data descriptor...");
+    //   LOG_D("Unzip: with data descriptor...");
     // }
 
-    if (lseek(fd, filename_size + extra_size, SEEK_CUR) != (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size)) ERR(24);
-    // LOG_D(TAG, "Unzip Get Method: ", fe->method);
-    
+    if (fseek(file, filename_size + extra_size, SEEK_CUR)) ERR(24);
+    // LOG_D("Unzip Get Method: ", fe->method);
+
+    LOG_D("Point 5 (%d)", uxTaskGetStackHighWaterMark(nullptr));
+
     data = (char *) allocate(fe->size + 1);
 
     if (data == nullptr) ERR(25);
     data[fe->size] = 0;
 
     if (fe->method == 0) {
-      if (read(fd, data, fe->size) != fe->size) ERR(26);
-      //LOG_E(TAG, "Unzip: read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
+      if (fread(data, fe->size, 1, file) != 1) ERR(26);
+      //LOG_E("Unzip: read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
     }
     else if (fe->method == 8) {
+
+      LOG_D("Point 6 (%d)", uxTaskGetStackHighWaterMark(nullptr));
 
       #if ZLIB
         if (result != fe->size) ERR(29);
@@ -326,7 +386,7 @@ Unzip::get_file(const char * filename, int & file_size)
         do
         {
           uint16_t size = cur < rep ? BUFFER_SIZE : rem;
-          if (read(fd, buffer, size) != size) {
+          if (fread(buffer, size, 1, file) != 1) {
             inflateEnd(&zstr);
             goto error;
           }
@@ -354,7 +414,7 @@ Unzip::get_file(const char * filename, int & file_size)
       #else
         char * compressed_data = (char *) allocate(fe->compressed_size + 2);
         if (compressed_data == nullptr) ERR(27);
-        if (read(fd, compressed_data, fe->compressed_size) != (fe->compressed_size)) ERR(28);
+        if (fread(compressed_data, fe->compressed_size, 1, file) != 1) ERR(28);
         compressed_data[fe->compressed_size] = 0;
         compressed_data[fe->compressed_size + 1] = 0;
 
@@ -369,6 +429,8 @@ Unzip::get_file(const char * filename, int & file_size)
     }
     else break;
 
+    LOG_D("Point 7");
+
     completed = true;
     break;
   }
@@ -376,7 +438,7 @@ Unzip::get_file(const char * filename, int & file_size)
   if (!completed) {
     free(data);
     file_size = 0;
-    LOG_E(TAG, "Unzip get: Error!: %d", err);
+    LOG_E("Unzip get: Error!: %d", err);
   }
   else {
     file_size = fe->size;

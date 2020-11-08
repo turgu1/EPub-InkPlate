@@ -17,7 +17,7 @@ bool Fonts::setup()
 {
   FontEntry font_entry;
 
-  LOG_D(TAG, "Fonts initialization");
+  LOG_D("Fonts initialization");
 
   std::string def         = "Default";
   std::string normal      = FONTS_FOLDER "/CrimsonPro-Regular.ttf";
@@ -44,7 +44,7 @@ Fonts::~Fonts()
 void
 Fonts::clear()
 {
-  // LOG_D(TAG, "Fonts Clear!");
+  // LOG_D("Fonts Clear!");
   // Keep the first 4 fonts as they are reused
   #if USE_EPUB_FONTS
     int i = 0;
@@ -96,7 +96,7 @@ Fonts::add(const std::string & name,
     }
   }
   else {
-    LOG_E(TAG, "Unable to allocate memory.");
+    LOG_E("Unable to allocate memory.");
   }
 
   return false;
@@ -129,7 +129,7 @@ Fonts::add(const std::string & name,
     }
   }
   else {
-    LOG_E(TAG, "Unable to allocate memory.");
+    LOG_E("Unable to allocate memory.");
   }
 
   return false;

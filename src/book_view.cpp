@@ -26,7 +26,7 @@ BookView::page_locs_end_page(Page::Format & fmt)
 
   epub.add_page_loc(loc);
 
-  // LOG_D(TAG, "Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
+  // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
   
   start_of_page_offset = current_offset;
 
@@ -59,6 +59,12 @@ BookView::page_locs_recurse(xml_node<> * node, Page::Format fmt)
     adjust_format(node, fmt, element_properties); // Adjust format from element attributes
 
     if (element_properties) {
+      for (auto * property : *element_properties) {
+        for (auto * val : property->values) {
+          delete val;
+        }
+        delete property;
+      }
       delete element_properties;
       element_properties = nullptr;
     }
@@ -339,11 +345,11 @@ BookView::get_pixel_value(const CSS::Value & value, const Page::Format & fmt, in
     case CSS::CM:
       return (value.num * Screen::RESOLUTION) / 2.54;
     case CSS::STR:
-      // LOG_D(TAG, "get_pixel_value(): Str value: %s", value.str.c_str());
+      // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
       return 0;
       break;
     default:
-      // LOG_D(TAG, "get_pixel_value: Wrong data type!: %d", value.value_type);
+      // LOG_D("get_pixel_value: Wrong data type!: %d", value.value_type);
       return value.num;
   }
   return 0;
@@ -368,11 +374,11 @@ BookView::get_point_value(const CSS::Value & value, const Page::Format & fmt, in
     case CSS::NOTYPE:
       return ref * value.num;
     case CSS::STR:
-      LOG_D(TAG, "get_point_value(): Str value: %s.", value.str.c_str());
+      LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
       return 0;
       break;
     default:
-      LOG_E(TAG, "get_point_value(): Wrong data type!");
+      LOG_E("get_point_value(): Wrong data type!");
       return value.num;
   }
   return 0;
@@ -392,7 +398,7 @@ BookView::get_factor_value(const CSS::Value & value, const Page::Format & fmt, f
     case CSS::PERCENT:
       return (value.num * ref) / 100.0;
     default:
-      // LOG_E(TAG, "get_factor_value: Wrong data type!");
+      // LOG_E("get_factor_value: Wrong data type!");
       return 1.0;
   }
   return 0;
@@ -438,7 +444,7 @@ BookView::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite 
 {  
   const CSS::Values * vals;
 
-  // LOG_D(TAG, "Found!");
+  // LOG_D("Found!");
 
   Fonts::FaceStyle font_weight = ((fmt.font_style == Fonts::BOLD) || (fmt.font_style == Fonts::BOLD_ITALIC)) ? Fonts::BOLD : Fonts::NORMAL;
   Fonts::FaceStyle font_style = ((fmt.font_style == Fonts::ITALIC) || (fmt.font_style == Fonts::BOLD_ITALIC)) ? Fonts::ITALIC : Fonts::NORMAL;
@@ -457,7 +463,7 @@ BookView::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite 
       if ((idx = fonts.get_index(font_name->str, new_style)) != -1) break;
     }
     if (idx == -1) {
-      // LOG_E(TAG, "Font not found 1: %s %s", vals->at(0).str.c_str(), new_style);
+      // LOG_E("Font not found 1: %s %s", vals->at(0).str.c_str(), new_style);
       idx = fonts.get_index("Default", new_style);
     }
     if (idx == -1) {
@@ -486,7 +492,7 @@ BookView::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite 
   if ((vals = CSS::get_values_from_suite(suite, CSS::FONT_SIZE))) {
     fmt.font_size = get_point_value(*(vals->front()), fmt, fmt.font_size);
     if (fmt.font_size == 0) {
-      LOG_E(TAG, "adjust_format_from_suite: setting fmt.font_size to 0!!!");
+      LOG_E("adjust_format_from_suite: setting fmt.font_size to 0!!!");
     }
   }
 
@@ -496,7 +502,7 @@ BookView::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite 
 
   if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN))) {
     int16_t size = 0;
-    for (auto val : *vals) size++;
+    for (auto val __attribute__ ((unused)) : *vals) size++;
     CSS::Values::const_iterator it = vals->begin();
     if (size == 1) {
       fmt.margin_top   = fmt.margin_bottom = 
@@ -561,7 +567,7 @@ BookView::get_image(std::string & filename, Page::Image & image)
         if (image.bitmap[i] != 0) { all_zero = false; break; }
       }
       if (all_zero) {
-        LOG_E(TAG, "Bitmap is all zeroes...");
+        LOG_E("Bitmap is all zeroes...");
       }
       // malloc is used as bitmap2 will be freed by stbi_image.
       unsigned char * bitmap2 = (unsigned char *) malloc(image.width * image.height);
@@ -593,7 +599,7 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
 
   if (*(name = node->name())) { 
 
-    // LOG_D(TAG, "Node name: %s", name);
+    // LOG_D("Node name: %s", name);
 
     // Do it only if we are now in the current page content
 
@@ -650,7 +656,7 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
         case LI:
         case P:
           para = true; start_of_paragraph = true;
-          // LOG_D(TAG, "Para: %d %d", fmt.font_index, fmt.font_size);
+          // LOG_D("Para: %d %d", fmt.font_index, fmt.font_size);
           break;
         case BR:
           if (started) {
@@ -883,7 +889,7 @@ BookView::build_page_at(const EPub::Location & loc)
     }
 
     if (current_offset != end_of_page_offset) {
-      LOG_E(TAG, "Current page offset and end of page offset differ: %d vd %d", current_offset, end_of_page_offset);
+      LOG_E("Current page offset and end of page offset differ: %d vd %d", current_offset, end_of_page_offset);
     }
   }
 }
@@ -891,18 +897,18 @@ BookView::build_page_at(const EPub::Location & loc)
 void
 BookView::show_page(int16_t page_nbr)
 {
-  // LOG_D(TAG, "Page: %d", page_nbr + 1);
+  // LOG_D("Page: %d", page_nbr + 1);
  
   current_page_nbr = page_nbr;
   if (page_nbr == 0) {
     const char * filename = epub.get_cover_filename();
     if (filename != nullptr) {
-      // LOG_D(TAG, "Cover filename: %s", filename);
+      // LOG_D("Cover filename: %s", filename);
       int32_t size;
       unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
       if (data == NULL) {
-        LOG_E(TAG, "Unable to retrieve cover file: %s", filename);
+        LOG_E("Unable to retrieve cover file: %s", filename);
       }
       else {
         page.show_cover(data, size);
@@ -911,7 +917,7 @@ BookView::show_page(int16_t page_nbr)
 
     }
     else {
-      LOG_D(TAG, "There doesn't seems to have any cover.");
+      LOG_D("There doesn't seems to have any cover.");
     }
   }
   else if (page_nbr < epub.get_page_count()) {

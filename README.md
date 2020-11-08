@@ -1,8 +1,13 @@
 # EPub-InkPlate An EPub Reader for the InkPlate-6 device
 
-(Updated 2020.11.06)
+(Updated 2020.11.08)
 
-Work in progress...
+Work in progress... still some bugs that make the app unstable...
+Searching for the following error: 
+
+***ERROR*** A stack overflow in task mainTask has been detected.
+
+----
 
 Translation of basic InkPlate-6 device driver classes is complete. The integration of the Linux version of the EPub application is complete. Debugging is ongoing.
 

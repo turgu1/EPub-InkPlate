@@ -22,7 +22,7 @@ class Unzip
       uint16_t method;          // compress method (0 = not compressed, 8 = DEFLATE)
     };
 
-    int fd; // Current File Descriptor
+    FILE * file; // Current File Descriptor
     bool zip_file_is_open;
     std::vector<FileEntry> file_entries;
 

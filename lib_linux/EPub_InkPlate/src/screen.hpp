@@ -42,7 +42,7 @@ class Screen : NonCopyable
 
   private:
     static Screen singleton;
-    Screen();
+    Screen() {};
 
 
     struct ImageData {
@@ -53,7 +53,8 @@ class Screen : NonCopyable
 
   public:
     static Screen & get_singleton() noexcept { return singleton; }
-
+    void setup();
+    
     GtkWidget
       * window, 
       * left_button,

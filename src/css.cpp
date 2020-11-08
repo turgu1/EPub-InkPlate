@@ -81,7 +81,7 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
     while (*s && (*s != '"') && (*s != '\r') && (*s != '\n')) s++;
     if (!skip_value) v->str.assign(st, s - st);
     if (*s != '"') {
-      LOG_E(TAG, "parse_value(): Expected '\"'");
+      LOG_E("parse_value(): Expected '\"'");
     }
     else {
       s++;
@@ -96,7 +96,7 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
     while (*s && (strchr(" ,;\r\n\t}", *s) == nullptr)) s++;
     if (!skip_value) {
       if (s == st) {
-        LOG_E(TAG, "parse_value(): nothing to parse");
+        LOG_E("parse_value(): nothing to parse");
         v->value_type = NOTHING;
       }
       else {
@@ -111,7 +111,7 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
           else if (!isdigit(st[last_idx])) {
             std::string val;
             val.assign(st, s - st);
-            LOG_E(TAG, "Unknown value type: '%s' at offset: %d", val.c_str(), (int32_t)(s - buffer_start));
+            LOG_E("Unknown value type: '%s' at offset: %d", val.c_str(), (int32_t)(s - buffer_start));
             v->value_type = NOTHING;
           }
           else v->value_type = NOTYPE;
@@ -153,7 +153,7 @@ CSS::parse_property_name(const char * str, std::string & name)
     name.assign(str, s - str);
   }
   else {
-    LOG_E(TAG, "parse_property_name(): No property name present!");
+    LOG_E("parse_property_name(): No property name present!");
     return nullptr;
   }
   
@@ -180,7 +180,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
     SKIP_BLANKS;
     
     if (*str != ':')  { 
-      LOG_E(TAG, "css error: ':' expected at offset %d", (int32_t)(str - buffer_start));
+      LOG_E("css error: ':' expected at offset %d", (int32_t)(str - buffer_start));
       return nullptr; 
     }
     str++; SKIP_BLANKS;
@@ -213,7 +213,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
           else if (v->str.compare("justify"  ) == 0) v->choice = JUSTIFY;
           else if (v->str.compare("justified") == 0) v->choice = JUSTIFY;
           else {
-            LOG_E(TAG, "text-align not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
+            LOG_E("text-align not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
         else if (property->id == TEXT_TRANSFORM) {
@@ -221,21 +221,21 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
           else if (v->str.compare("uppercase"   ) == 0) v->choice = UPPERCASE;
           else if (v->str.compare("capitalize"  ) == 0) v->choice = CAPITALIZE;
           else {
-            LOG_E(TAG, "text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
+            LOG_E("text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
         else if (property->id == FONT_WEIGHT) {
           if      ((v->str.compare("bold"  ) == 0) || (v->str.compare("bolder" ) == 0)) v->choice = Fonts::BOLD;
           else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice = Fonts::NORMAL;
           else {
-            LOG_E(TAG, "font-weight not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
+            LOG_E("font-weight not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
         else if (property->id == FONT_STYLE) {
           if      ((v->str.compare("italic") == 0) || (v->str.compare("oblique") == 0)) v->choice = Fonts::ITALIC;
           else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice = Fonts::NORMAL;
           else {
-            LOG_E(TAG, "font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
+            LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
           }
         }
         else if ((property->id == FONT_SIZE) && (v->value_type == STR)) {
@@ -282,13 +282,13 @@ CSS::parse_selector(const char * str, std::string & selector)
 
   while (strchr("@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+#*>:.~^=_[]()|$\" ", *s)) s++;
   if (s == start) {
-    LOG_E(TAG, "parse_selector(): There is no selector!");
+    LOG_E("parse_selector(): There is no selector!");
   }
   else {
     s--;
     while ((s > start) && (*s == ' ')) s--;
     if ((s == start) && (*s == ' ')) {
-      LOG_E(TAG, "parse_selector(): There is no selector!");
+      LOG_E("parse_selector(): There is no selector!");
     }
     else {
       s++;
@@ -321,7 +321,7 @@ CSS::CSS(std::string folder_path,
          int32_t size, 
          const std::string & css_id)
 {
-  // LOG_D(TAG, "Adding new CSS: %d", css_id);
+  // LOG_D("Adding new CSS: %d", css_id);
   
   id = css_id;
   file_folder_path = folder_path;
@@ -337,7 +337,7 @@ CSS::CSS(std::string folder_path,
   const char * end = buffer + size;
   std::string w;
 
-  // LOG_E(TAG, "CSS file before analysis: %s", buffer);
+  // LOG_E("CSS file before analysis: %s", buffer);
   // bool found = false;
 
   while (str < end) {
@@ -361,7 +361,7 @@ CSS::CSS(std::string folder_path,
       }
 
       // if (w.compare(".indent") == 0) {
-      //   LOG_D(TAG, "Found it");
+      //   LOG_D("Found it");
       //   found = true;
       // }
       selectors.push_back(w);
@@ -372,7 +372,7 @@ CSS::CSS(std::string folder_path,
     if (str >= end) break;
     SKIP_BLANKS;
     if (*str != '{') { 
-      LOG_E(TAG, "css error: '{' expected at offset %d", (int32_t)(str - buffer)); 
+      LOG_E("css error: '{' expected at offset %d", (int32_t)(str - buffer)); 
       return; 
     }
     str++; SKIP_BLANKS;
@@ -388,6 +388,9 @@ CSS::CSS(std::string folder_path,
         }
         if (!ghost) suites.push_front(properties);
       }
+      else if (properties) { // Is empty, but takes some bytes...
+        delete properties;
+      }
     }
 
     // if (found) {
@@ -397,11 +400,10 @@ CSS::CSS(std::string folder_path,
     SKIP_BLANKS;
 
     if (*str != '}')  { 
-      LOG_E(TAG, "css error: '}' expected at offset %d", (int32_t)(str - buffer)); 
+      LOG_E("css error: '}' expected at offset %d", (int32_t)(str - buffer)); 
       return; 
     }
     str++; SKIP_BLANKS;
-
   }
 
   return;

@@ -5,10 +5,11 @@
 #include "book_controller.hpp"
 #include "books_dir.hpp"
 #include "books_dir_view.hpp"
+#include "logging.hpp"
 
 #include <string>
 
-// static const char * TAG = "BooksDirController";
+static const char * TAG = "BooksDirController";
 
 BooksDirController::BooksDirController()
 {
@@ -19,7 +20,7 @@ void
 BooksDirController::init()
 {
   if (!books_dir.read_books_directory()) {
-    books_dir.refresh();
+    LOG_E("There was issues reading books directory.");
   }
   page_nbr = 0;
   current_index = 0;

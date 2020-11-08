@@ -6,8 +6,6 @@
 
 #include "strlcpy.hpp"
 
-#define APP_NAME "EPUB-INKPLATE" // Used to mark the database (file books_dir.cpp)
-
 #if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE6_BUILD)) 
   #error "BUILD_TYPE Not Set."
 #else
@@ -16,9 +14,6 @@
   #endif
 #endif
 
-#define DEBUGGING_AID  0   ///< 1: Allow for specific page debugging output
-
-#define COMPUTE_SIZE   0  ///< ToDo: To implement on the ESP32
 #define USE_EPUB_FONTS 1  ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
 
 #if EPUB_LINUX_BUILD
@@ -52,6 +47,8 @@
 // To be used, only one book must be in the books folder and the books_dir.db 
 // file must be deleted before any trial.
 
+#define DEBUGGING_AID  0   ///< 1: Allow for specific page debugging output
+
 #if DEBUGGING_AID
   #define PAGE_TO_SHOW_LOCATION 706
   #define SET_PAGE_TO_SHOW(val) { show_location = val == PAGE_TO_SHOW_LOCATION; }
@@ -69,16 +66,6 @@
 #else
   #define SET_PAGE_TO_SHOW(val)
   #define SHOW_LOCATION(msg)
-#endif
-
-#if COMPUTE_SIZE
-  #if _GLOBAL_
-    int64_t memory_used;
-    int64_t start_heap_size;
-  #else
-    extern int32_t memory_used;
-    extern int64_t start_heap_size;
-  #endif
 #endif
 
 #endif

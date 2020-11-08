@@ -4,6 +4,7 @@
 #include "fonts.hpp"
 #include "unzip.hpp"
 #include "books_dir.hpp"
+#include "logging.hpp"
 
 #include "stb_image.h"
 
@@ -15,7 +16,7 @@ using namespace rapidxml;
 static const char * TAG = "EPub";
 
 void rapidxml::parse_error_handler(const char * what, void * where) { 
-   LOG_E(TAG, "RapidXML Parse error: %s.", what); 
+   LOG_E("RapidXML Parse error: %s.", what); 
    std::abort();
 }
 
@@ -55,15 +56,18 @@ EPub::get_opf()
   // A file named 'mimetype' must be present and must contain the
   // string 'application/epub+zip'
 
+  LOG_D("Check mimetype.");
   if (!(data = unzip.get_file("mimetype", size))) return false;
-  if (strcmp(data, "application/epub+zip")) {
-    LOG_E(TAG, "This is not an EPUB ebook format.");
+  if (strncmp(data, "application/epub+zip", 20)) {
+    LOG_E("This is not an EPUB ebook format.");
     free(data);
     return false;
   }
 
-  // A file named 'META-INF/container.xml' must be present and point to the OPF file
   free(data);
+
+  // A file named 'META-INF/container.xml' must be present and point to the OPF file
+  LOG_D("Check container.xml.");
   if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
   
   xml_document<>    doc;
@@ -80,7 +84,7 @@ EPub::get_opf()
     for (node = node->first_node("rootfile"); 
          node; 
          node = node->next_sibling("rootfile")) {
-      //LOG_D(TAG, ">> %s %d", node->name(), node->first_attribute("media-type")->value());
+      //LOG_D(">> %s %d", node->name(), node->first_attribute("media-type")->value());
 
       if ((attr = node->first_attribute("media-type")) && 
           (strcmp(attr->value(), "application/oebps-package+xml") == 0)) break;
@@ -101,7 +105,7 @@ EPub::get_opf()
           (strcmp(attr->value(), "http://www.idpf.org/2007/opf") == 0) &&
           (attr = node->first_attribute("version")) &&
           ((strcmp(attr->value(), "2.0") == 0) || (strcmp(attr->value(), "3.0") == 0)))) {
-      LOG_E(TAG, "This book is not compatible with this software.");
+      LOG_E("This book is not compatible with this software.");
       break;
     }
 
@@ -109,12 +113,14 @@ EPub::get_opf()
   }
 
   if (!completed) {
-    LOG_E(TAG, "EPub get_opf error: %d", err);
+    LOG_E("EPub get_opf error: %d", err);
   }
 
   free(data);
   doc.clear();
   
+  LOG_D("get_opf() completed.");
+
   return completed;
 }
 
@@ -167,7 +173,7 @@ EPub::retrieve_fonts_from_css(CSS & css)
         font_weight = (Fonts::FaceStyle) values->front()->choice;
       }
       style = fonts.adjust_font_style(style, font_style, font_weight);
-      // LOG_D(TAG, "Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
+      // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
       if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
         if ((values = css.get_values_from_props(*props, CSS::SRC)) &&
@@ -176,10 +182,10 @@ EPub::retrieve_fonts_from_css(CSS & css)
           std::string filename = css.get_folder_path();
           filename.append(values->front()->str);
           int32_t size;
-          LOG_D(TAG, "Font file name: %s", filename.c_str());
+          LOG_D("Font file name: %s", filename.c_str());
           unsigned char * buffer = (unsigned char *) retrieve_file(filename, size);
           if (buffer == nullptr) {
-            LOG_E(TAG, "Unable to retrieve font file: %s", values->front()->str.c_str());
+            LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
           }
           else {
             fonts.add(font_family, style, buffer, size);
@@ -238,7 +244,7 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
 
     if (item_media_type == XML) {
 
-      // LOG_D(TAG, "Reading file %s", attr->value().c_str());
+      // LOG_D("Reading file %s", attr->value().c_str());
 
       current_item.parse<parse_normalize_whitespace>(current_item_data);
       
@@ -263,9 +269,9 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
                 // search the list of css files to see if it already been
                 // parsed
                 int16_t idx = 0;
-                CSSCache::iterator css_cache_it = css_cache.begin();
+                CSSList::iterator css_cache_it = css_cache.begin();
                 while (css_cache_it != css_cache.end()) {
-                  if (css_cache_it->get_id()->compare(css_id) == 0) break;
+                  if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
                   css_cache_it++;
                   idx++;
                 }
@@ -281,16 +287,17 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
                     #if COMPUTE_SIZE
                       memory_used += size;
                     #endif
-                    // LOG_D(TAG, "CSS Filename: %s", fname.c_str());
+                    // LOG_D("CSS Filename: %s", fname.c_str());
                     CSS * css_tmp = new CSS(extract_path(fname.c_str()), data, size, css_id);
+                    free(data);
                     // css_tmp->show();
                     retrieve_fonts_from_css(*css_tmp);
-                    css_cache.push_back(*css_tmp);
+                    css_cache.push_back(css_tmp);
                     current_item_css_list.push_back(css_tmp);
                   }
                 }
                 else {
-                  current_item_css_list.push_back(&*css_cache_it);
+                  current_item_css_list.push_back(*css_cache_it);
                 }
               }
             } while ((node = node->next_sibling("link")));
@@ -308,7 +315,7 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
           CSS * css_tmp = new CSS(current_item_file_path, node->value(), node->value_size() , "current-item");
           retrieve_fonts_from_css(*css_tmp);
           // css_tmp->show();
-          temp_css_cache.push_back(*css_tmp);
+          temp_css_cache.push_back(css_tmp);
         } while ((node = node->next_sibling("style")));
       }
 
@@ -320,8 +327,8 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
       for (auto * css : current_item_css_list) {
         current_item_css->retrieve_data_from_css(*css);
       }
-      for (auto & css : temp_css_cache) {
-        current_item_css->retrieve_data_from_css(css);
+      for (auto * css : temp_css_cache) {
+        current_item_css->retrieve_data_from_css(*css);
       }
       // current_item_css->show();
     }
@@ -330,11 +337,11 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
   }
 
   if (!completed) {
-    LOG_E(TAG, "EPub get_current_item error: %d", err);
+    LOG_E("EPub get_current_item error: %d", err);
     clear_item_data();
   }
   else {
-    //LOG_D(TAG, "EPub get_item retrieved item id: %s", id);
+    //LOG_D("EPub get_item retrieved item id: %s", id);
     current_itemref = itemref;
   }
   return completed;
@@ -351,19 +358,24 @@ EPub::open_file(const std::string & epub_filename)
     memory_used = 0;
   #endif
 
+  LOG_D("Opening EPub file through unzip...");
   if (!unzip.open_zip_file(epub_filename.c_str())) {
-    LOG_E(TAG, "EPub open_file: Unable to open zip file: %s", epub_filename.c_str());
+    LOG_E("EPub open_file: Unable to open zip file: %s", epub_filename.c_str());
     return false;
   }
   
+  LOG_D("Getting the OPF file");
   if (!get_opf()) {
-    LOG_E(TAG, "EPub open_file: Unable to get opf of %s", epub_filename.c_str());
+    LOG_E("EPub open_file: Unable to get opf of %s", epub_filename.c_str());
     unzip.close_zip_file();
     return false;
   }
 
   current_itemref_index = 0;
   file_is_open = true;
+
+  LOG_D("EPub file is now open.");
+
   return true;
 }
 
@@ -374,8 +386,14 @@ EPub::clear_item_data()
   free(current_item_data);
   current_item_data = nullptr;
 
+  // for (auto * css : current_item_css_list) {
+  //   delete css;
+  // }
   current_item_css_list.clear();
 
+  for (auto * css : temp_css_cache) {
+    delete css;
+  }
   temp_css_cache.clear();
 }
 
@@ -393,6 +411,10 @@ EPub::close_file()
 
   opf_base_path.clear();
   unzip.close_zip_file();
+
+  for (auto * css : css_cache) {
+    delete css;
+  }
   css_cache.clear();
   fonts.clear();
 
@@ -568,7 +590,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
   unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
   if (data == NULL) {
-    LOG_E(TAG, "Unable to retrieve cover file: %s", filename.c_str());
+    LOG_E("Unable to retrieve cover file: %s", filename.c_str());
   }
   else {
     int w, h, c;

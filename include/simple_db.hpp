@@ -34,18 +34,19 @@ class SimpleDB
   private:
     static const uint16_t MAX_RECORD_COUNT = 100;
 
-    FILE * file;
+    FILE * db_file;
 
     bool     db_is_open;
     bool     some_record_deleted;
-    int32_t  record_offset[MAX_RECORD_COUNT]; ///< record offset in file or -1 if deleted
+    int32_t  record_offset[MAX_RECORD_COUNT]; ///< record offset in file 
+    bool     is_deleted[MAX_RECORD_COUNT];    ///< true if record is deleted
     uint16_t record_count;
     uint32_t file_size;
     uint16_t current_record_idx; ///< Index of current record in record_offset
 
   public:
     SimpleDB() : db_is_open(false), record_count(0), current_record_idx(0) {};
-   ~SimpleDB() { if (db_is_open) fclose(file); }
+   ~SimpleDB() { if (db_is_open) fclose(db_file); }
 
     /**
      * @brief Open an existing database file.
@@ -103,31 +104,31 @@ class SimpleDB
      * Returns 0 if at end of the database
      */
     int32_t get_record_size() {
-      if (current_record_idx >= record_count) return 0;
+      if ((current_record_idx >= record_count) || 
+          is_deleted[current_record_idx]) return 0;
       if (current_record_idx == (record_count - 1)) {
-        return file_size - record_offset[current_record_idx] - sizeof(int32_t);
+        return file_size - 
+               record_offset[current_record_idx] - 
+               sizeof(int32_t);
       }
-      return record_offset[current_record_idx + 1] - record_offset[current_record_idx] - sizeof(int32_t);
+      return record_offset[current_record_idx + 1] - 
+             record_offset[current_record_idx] - 
+             sizeof(int32_t);
     }
 
     /**
      * @brief Set current record as deleted.
      * 
-     * @return true cursor is pointing at next valid record.
-     * @return false no more valid record
      */
-    bool set_deleted() { 
-      record_offset[current_record_idx] = -1;
+    void set_deleted() { 
+      is_deleted[current_record_idx] = true;
       some_record_deleted = true; 
-      return goto_next();
     }
-
-    bool end_of_db() { return current_record_idx >= record_count; }
 
     bool goto_first() {
       uint16_t idx = 0;
-      while ((idx < record_count) && (record_offset[idx] == -1)) idx++;
-      if (idx < record_count) {
+      while ((idx < record_count) && is_deleted[idx]) idx++;
+      if ((idx < record_count)  && !is_deleted[idx]) {
         current_record_idx = idx;
         return true;
       }
@@ -136,12 +137,11 @@ class SimpleDB
 
     bool goto_next() {
       uint16_t idx = current_record_idx + 1;
-      while ((idx < record_count) && (record_offset[idx] == -1)) idx++;
-      if (idx < record_count) {
+      while ((idx < record_count) && is_deleted[idx]) idx++;
+      if ((idx < record_count) && !is_deleted[idx]) {
         current_record_idx = idx;
         return true;
       }
-
       return false;
     }
 };

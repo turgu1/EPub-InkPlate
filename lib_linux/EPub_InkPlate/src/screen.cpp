@@ -193,7 +193,8 @@ static void destroy_app( GtkWidget *widget, gpointer   data )
   gtk_main_quit();
 }
 
-Screen::Screen()
+void
+Screen::setup()
 {
   static GtkWidget 
     * vbox1,

@@ -6,6 +6,7 @@
 #include "param_controller.hpp"
 #include "option_controller.hpp"
 #include "eventmgr.hpp"
+#include "screen.hpp"
 
 //static const char * TAG = "AppController";
 
@@ -22,6 +23,7 @@ void
 AppController::start()
 {
   books_dir_controller.init();
+  //exit(0); // Used for some valgrind tests
   books_dir_controller.enter();
 
   event_mgr.start_loop();

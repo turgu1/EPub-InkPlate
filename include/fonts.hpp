@@ -36,7 +36,7 @@ class Fonts
     TTF * get(int16_t index, int16_t size) {
       TTF * f; 
       if (index >= font_cache.size()) {
-        LOG_E(TAG, "Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
+        LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
         f = font_cache.at(0).font;
         if (f) f->set_font_size(size);
       }
@@ -51,7 +51,7 @@ class Fonts
 
     const char * get_name(int16_t index) {
       if (index >= font_cache.size()) {
-        LOG_E(TAG, "Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
+        LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
         return font_cache[0].name.c_str(); 
       }
       else {
@@ -66,7 +66,7 @@ class Fonts
 
     void check(int16_t index, FaceStyle style) {
       if (font_cache[index].style != style) {
-        LOG_E(TAG, "Hum... font_check failed");
+        LOG_E("Hum... font_check failed");
       } 
     };
 

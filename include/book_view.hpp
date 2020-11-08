@@ -49,7 +49,7 @@ class BookView
       if (style != fmt.font_style) {
         int16_t idx = -1;
         if ((idx = fonts.get_index(fonts.get_name(fmt.font_index), style)) == -1) {
-          // LOG_E(TAG, "Font not found 2: %s %d", fonts.get_name(fmt.font_index), style);
+          // LOG_E("Font not found 2: %s %d", fonts.get_name(fmt.font_index), style);
           idx = fonts.get_index("Default", style);
         }
         if (idx == -1) {
@@ -99,7 +99,7 @@ class BookView
     void show_page(int16_t page_nbr);
 
     void line_added_at(int16_t ypos) {
-      LOG_D(TAG, "Line added: %d %d", current_offset, ypos);
+      LOG_D("Line added: %d %d", current_offset, ypos);
     }
 };
 

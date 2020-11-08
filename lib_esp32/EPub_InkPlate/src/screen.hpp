@@ -40,7 +40,7 @@ class Screen : NonCopyable
 
   private:
     static Screen singleton;
-    Screen();
+    Screen() { };
 
     EInk::Bitmap3Bit * frame_buffer;
 
@@ -51,6 +51,7 @@ class Screen : NonCopyable
 
   public:
     static Screen & get_singleton() noexcept { return singleton; }
+    void setup();
 };
 
 #if __SCREEN__

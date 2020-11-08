@@ -9,8 +9,8 @@
   extern void log(const char level, const char * tag, const char * fmt, ...);
 #endif
 
-#define LOG_I(tag, fmt, ...) { log('I', tag, fmt, ##__VA_ARGS__); }
-#define LOG_D(tag, fmt, ...) { log('D', tag, fmt, ##__VA_ARGS__); }
-#define LOG_E(tag, fmt, ...) { log('E', tag, fmt, ##__VA_ARGS__); }
+#define LOG_I(fmt, ...) { log('I', TAG, fmt, ##__VA_ARGS__); }
+#define LOG_D(fmt, ...) { log('D', TAG, fmt, ##__VA_ARGS__); }
+#define LOG_E(fmt, ...) { log('E', TAG, fmt, ##__VA_ARGS__); }
 
 #endif
