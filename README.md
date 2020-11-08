@@ -2,7 +2,11 @@
 
 (Updated 2020.11.08)
 
-Work in progress... still some bugs that make the app unstable...
+Work in progress... 
+
+- still some bugs that make the app unstable...
+- some code remains to be added for interaction with the touch buttons...
+
 Searching for the following error: 
 
 ***ERROR*** A stack overflow in task mainTask has been detected.
@@ -29,3 +33,9 @@ This is now done in a PlatformIO/Espressif32 development framework. PlatformIO o
 Parameters that must be setup with menuconfig include PSRAM allocation choice and sd_card long filename support. Details to be explained later.
 
 Memory availability is low. Some modifications maybe required to optimize memory usage (memory pools instead of fine grained malloc/new).
+
+## Runtime environment
+
+The EPub-InkPlate application requires that a uSD Card be present in the device. This uSD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub`  in lowercase.
+
+You can change the base fonts at your desire. Some open fonts are available in the `bin/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold and bold-italic glyphs. At this point in time, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you wants to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
