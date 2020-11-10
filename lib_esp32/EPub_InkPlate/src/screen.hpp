@@ -18,9 +18,11 @@
 class Screen : NonCopyable
 {
   public:
-    static const uint16_t WIDTH      = EInk::HEIGHT;
-    static const uint16_t HEIGHT     = EInk::WIDTH;
-    static const uint16_t RESOLUTION = 166;  ///< Pixels per inch
+    static const uint16_t WIDTH           = EInk::HEIGHT;
+    static const uint16_t HEIGHT          = EInk::WIDTH;
+    static const uint16_t RESOLUTION      = 166;  ///< Pixels per inch
+    static const uint8_t  HIGHLIGHT_COLOR = 5;
+    static const uint8_t  WHITE_COLOR     = 7;
     
     static const uint8_t  grayscaleLevelCount = 8;
 
@@ -30,10 +32,9 @@ class Screen : NonCopyable
     void put_bitmap_invert(const unsigned char * bitmap_data, 
                     uint16_t width, uint16_t height, 
                     int16_t x, int16_t y);
-    void put_highlight(uint16_t width, uint16_t height, 
-                       int16_t x, int16_t y);
-    void clear_region(uint16_t width, uint16_t height, 
-                      int16_t x, int16_t y);
+    void set_region(uint16_t width, uint16_t height, 
+                    int16_t x, int16_t y,
+                    uint8_t color);
 
     inline void clear()  { EInk::clear_bitmap(*frame_buffer); }
     inline void update() { e_ink.clean(); e_ink.update(*frame_buffer); }
@@ -46,9 +47,9 @@ class Screen : NonCopyable
 
     EInk::Bitmap3Bit * frame_buffer;
 
-    inline void set_pixel(uint16_t col, uint16_t row, uint8_t color) {
+    inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * col) + (row >> 1)];
-      *temp = col & 1 ? (*temp & 0xF0) | color : (*temp & 0x0F) | (color << 4);
+      *temp = col & 1 ? (*temp & 0x70) | color : (*temp & 0x07) | (color << 4);
     }
 
   public:

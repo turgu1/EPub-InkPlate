@@ -37,62 +37,42 @@ Screen::put_bitmap(
   if (x < 0) x = 0;
   if (y < 0) y = 0;
 
-  uint16_t x_max = x + width;
-  uint16_t y_max = y + height;
+  uint32_t x_max = x + width;
+  uint32_t y_max = y + height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint16_t j = y, q = 0; j < y_max; j++, q++) {  // rows
-    for (uint16_t i = x, p = q * width; i < x_max; i++) {  // columns
+  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // rows
+    for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {  // columns
       uint8_t v = bitmap_data[p];
       if (v != 255) { // Do not paint white pixels
         set_pixel(i, j, v >> 5);
       }
-      p++;
     }
   }
 }
 
 void 
-Screen::put_highlight(
+Screen::set_region(
   uint16_t width, 
   uint16_t height, 
   int16_t x, 
-  int16_t y) //, bool show)
+  int16_t y,
+  uint8_t color) //, bool show)
 {
-  uint16_t x_max = x + width;
-  uint16_t y_max = y + height;
+  uint32_t x_max = x + width;
+  uint32_t y_max = y + height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint16_t j = y, q = 0; j < y_max; j++, q++) {
-    for (uint16_t i = x, p = q * width; i < x_max; i++, p++) {
-      set_pixel(i, j, 6);
+  for (uint16_t j = y; j < y_max; j++) {
+    for (uint16_t i = x; i < x_max; i++) {
+      set_pixel(i, j, color);
     }
   }
 }
-
-void 
-Screen::clear_region(
-  uint16_t width, 
-  uint16_t height, 
-  int16_t x, 
-  int16_t y) //, bool show)
-{
-  uint16_t x_max = x + width;
-  uint16_t y_max = y + height;
-
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
-
-  for (uint16_t j = y, q = 0; j < y_max; j++, q++) {
-    for (uint16_t i = x, p = q * width; i < x_max; i++, p++) {
-      set_pixel(i, j, 7);
-    }
-  }
-} 
 
 void 
 Screen::put_bitmap_invert(
@@ -108,13 +88,12 @@ Screen::put_bitmap_invert(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++) {
+  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {
+    for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {
       uint8_t v = (255 - bitmap_data[p]);
       if (v != 255) {
         set_pixel(i, j, v >> 5);
       }
-      p++;
     }
   }
 }

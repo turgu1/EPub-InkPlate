@@ -245,18 +245,20 @@ Page::paint()
         entry.y);
     }
     else if (entry.command == HIGHLIGHT_REGION) {
-      screen.put_highlight(
+      screen.set_region(
         entry.kind.region_entry.width, 
         entry.kind.region_entry.height, 
         entry.x, 
-        entry.y);
+        entry.y,
+        Screen::HIGHLIGHT_COLOR);
     }
     else if (entry.command == CLEAR_REGION) {
-      screen.clear_region(
+      screen.set_region(
         entry.kind.region_entry.width, 
         entry.kind.region_entry.height, 
         entry.x, 
-        entry.y);
+        entry.y,
+        Screen::WHITE_COLOR);
     }
   };
 

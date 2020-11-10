@@ -115,8 +115,8 @@ class EInk : NonCopyable
 
     inline bool        is_initialized() { return initialized; }
 
-    static inline void clear_bitmap(Bitmap1Bit & bitmap) { memset(&bitmap,   0, sizeof(Bitmap1Bit)); }
-    static inline void clear_bitmap(Bitmap3Bit & bitmap) { memset(&bitmap, 255, sizeof(Bitmap3Bit)); }
+    static inline void clear_bitmap(Bitmap1Bit & bitmap) { memset(&bitmap,    0, sizeof(Bitmap1Bit)); }
+    static inline void clear_bitmap(Bitmap3Bit & bitmap) { memset(&bitmap, 0x77, sizeof(Bitmap3Bit)); }
 
     inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
     inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }

@@ -20,10 +20,10 @@ free_pixels(guchar * pixels, gpointer data)
 
 inline void 
 setrgb(guchar * a, int row, int col, int stride,
-            guchar r, guchar g, guchar b) 
+            guchar color) 
 {
   int p = row * stride + col * BYTES_PER_PIXEL;
-  a[p] = r; a[p+1] = g; a[p+2] = b;
+  a[p] = a[p+1] = a[p+2] = color;
 }
 
 void 
@@ -59,23 +59,23 @@ Screen::put_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
   for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++) {
+    for (int i = x, p = q * width; i < x_max; i++, p++) {
       int v = bitmap_data[p];
       if (v != 255) {
         v &= 0xE0; // 8 levels of grayscale
-        setrgb(g, j, i, id.stride, v, v, v);
+        setrgb(g, j, i, id.stride, v);
       }
-      p++;
     }
   }
 }
 
 void 
-Screen::put_highlight(
+Screen::set_region(
   uint16_t width, 
   uint16_t height, 
   int16_t  x, 
-  int16_t  y) //, bool show)
+  int16_t  y,
+  uint8_t color) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
@@ -88,35 +88,9 @@ Screen::put_highlight(
 
   int v = 0xE0;
 
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++, p++) {
-      setrgb(g, j, i, id.stride, v, v, v);
-    }
-  }
-}
-
-
-void 
-Screen::clear_region(
-  uint16_t width, 
-  uint16_t height, 
-  int16_t  x, 
-  int16_t  y) //, bool show)
-{
-  GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
-  guchar    * g  = gdk_pixbuf_get_pixels(pb);
-  
-  int16_t x_max = x + width;
-  int16_t y_max = y + height;
-
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
-
-  int v = 0xFF;
-
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++, p++) {
-      setrgb(g, j, i, id.stride, v, v, v);
+  for (int j = y; j < y_max; j++) {
+    for (int i = x; i < x_max; i++) {
+      setrgb(g, j, i, id.stride, color);
     }
   }
 }
@@ -139,13 +113,12 @@ Screen::put_bitmap_invert(
   if (x_max > WIDTH ) x_max = WIDTH;
 
   for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++) {
+    for (int i = x, p = q * width; i < x_max; i++, p++) {
       int v = (255 - bitmap_data[p]);
       if (v != 255) {
         v &= 0xE0; // 8 levels of grayscale
-        setrgb(g, j, i, id.stride, v, v, v);
+        setrgb(g, j, i, id.stride, v);
       }
-      p++;
     }
   }
 }
@@ -171,7 +144,7 @@ Screen::test()
   for (int r = 0; r < id.rows; r++)
     for (int c = 0; c < id.cols; c++)
       if ((r + N) / 20 % 2 && (c + N) / 20 % 2)
-        setrgb(g, r, c, id.stride, 0, 0, 0);
+        setrgb(g, r, c, id.stride, 0);
 
   N = (N + 1) % 100;
 
@@ -209,7 +182,7 @@ Screen::setup()
   
   for (int r = 0; r < HEIGHT; r++)
     for (int c = 0; c < WIDTH; c++)
-        setrgb(pixels, r, c, id.stride, 255, 255, 255);
+        setrgb(pixels, r, c, id.stride, 255);
 
   GdkPixbuf *pb = gdk_pixbuf_new_from_data(
     pixels,

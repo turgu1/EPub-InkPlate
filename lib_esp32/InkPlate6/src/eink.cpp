@@ -111,7 +111,7 @@ EInk::setup()
   mcp.set_direction(MCP::WAKEUP, MCP::OUTPUT); ESP::delay(100);
   mcp.wakeup_set();                            ESP::delay(100);
 
-  ESP_LOGD(TAG, "Power Mgr Init..."); fflush(stdout);
+  //ESP_LOGD(TAG, "Power Mgr Init..."); fflush(stdout);
 
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x09);
@@ -122,7 +122,7 @@ EInk::setup()
   wire.end_transmission();
   ESP::delay(1);
 
-  ESP_LOGD(TAG, "Power init completed");
+  //ESP_LOGD(TAG, "Power init completed");
 
   mcp.wakeup_clear();
 
@@ -303,7 +303,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
   clean_fast(2,  1);
   clean_fast(0, 12);
 
-  for (int k = 0; k < 8; ++k) {
+  for (int k = 0; k < 8; k++) {
     const uint8_t * dp = &bitmap[BITMAP_SIZE_3BIT - 1];
     uint32_t send;
     uint8_t  pix1;
@@ -315,17 +315,23 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
 
     vscan_start();
 
-    for (int i = 0; i < HEIGHT; ++i) {
+    for (int i = 0; i < HEIGHT; i++) {
       pixel  = 0;
       pixel2 = 0;
       pix1   = *(dp--);
       pix2   = *(dp--);
       pix3   = *(dp--);
       pix4   = *(dp--);
-      pixel  |= (WAVEFORM_3BIT[pix1 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix1 >> 4) & 0x07][k] << 4) |
-                (WAVEFORM_3BIT[pix2 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix2 >> 4) & 0x07][k] << 0);
-      pixel2 |= (WAVEFORM_3BIT[pix3 & 0x07][k] << 6) | (WAVEFORM_3BIT[(pix3 >> 4) & 0x07][k] << 4) |
-                (WAVEFORM_3BIT[pix4 & 0x07][k] << 2) | (WAVEFORM_3BIT[(pix4 >> 4) & 0x07][k] << 0);
+
+      pixel  |= (WAVEFORM_3BIT[pix1 & 0x07][k] << 6) | 
+                (WAVEFORM_3BIT[(pix1 >> 4) & 0x07][k] << 4) |
+                (WAVEFORM_3BIT[pix2 & 0x07][k] << 2) | 
+                (WAVEFORM_3BIT[(pix2 >> 4) & 0x07][k] << 0);
+
+      pixel2 |= (WAVEFORM_3BIT[pix3 & 0x07][k] << 6) | 
+                (WAVEFORM_3BIT[(pix3 >> 4) & 0x07][k] << 4) |
+                (WAVEFORM_3BIT[pix4 & 0x07][k] << 2) |
+                (WAVEFORM_3BIT[(pix4 >> 4) & 0x07][k] << 0);
 
       send = pin_lut[pixel];
       hscan_start(send);
@@ -333,7 +339,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
 
-      for (int j = 0; j < (LINE_SIZE_3BIT >> 2)- 1; ++j) {
+      for (int j = 0; j < (LINE_SIZE_3BIT >> 2)- 1; j++) {
         pixel  = 0;
         pixel2 = 0;
         pix1   = *(dp--);
@@ -365,7 +371,6 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
 
   clean_fast(3, 1);
   vscan_start();
-  ESP::delay_microseconds(230);
   turn_off();
 }
 
@@ -458,15 +463,15 @@ EInk::clean_fast(uint8_t c, uint8_t rep)
 
   uint32_t send = pin_lut[data];
 
-  for (int k = 0; k < rep; ++k) {
+  for (int k = 0; k < rep; k++) {
     vscan_start();
 
-    for (int i = 0; i < HEIGHT; ++i) {
+    for (int i = 0; i < HEIGHT; i++) {
       hscan_start(send);
       GPIO.out_w1ts = send | CL;
       GPIO.out_w1tc = DATA | CL;
 
-      for (int j = 0; j < LINE_SIZE_1BIT - 1; ++j) {
+      for (int j = 0; j < LINE_SIZE_1BIT - 1; j++) {
         GPIO.out_w1ts = send | CL;
         GPIO.out_w1tc = DATA | CL;
         GPIO.out_w1ts = send | CL;
@@ -486,17 +491,20 @@ void
 EInk::turn_off()
 {
   if (get_panel_state() == OFF) return;
+ 
+      mcp.oe_clear();
+    mcp.gmod_clear();
 
-  mcp.oe_clear();
-  mcp.gmod_clear();
   GPIO.out &= ~(DATA | LE | CL);
-  ckv_clear();
-  sph_clear();
-  mcp.spv_clear();
+  
+         ckv_clear();
+         sph_clear();
+     mcp.spv_clear();
+    mcp.vcom_clear();
 
-  mcp.vcom_clear();
-  ESP::delay(6);
-  mcp.pwrup_clear();
+        ESP::delay(6);
+
+   mcp.pwrup_clear();
   mcp.wakeup_clear();
 
   unsigned long timer = ESP::millis();
@@ -526,13 +534,13 @@ void EInk::turn_on()
 
   pins_as_outputs();
 
-  le_clear();
+      le_clear();
   mcp.oe_clear();
-  cl_clear();
-  sph_set();
+      cl_clear();
+       sph_set();
   mcp.gmod_set();
-  mcp.spv_set();
-  ckv_clear();
+   mcp.spv_set();
+     ckv_clear();
   mcp.oe_clear();
   mcp.vcom_set();
 
@@ -567,17 +575,17 @@ uint8_t EInk::read_power_good()
 
 void EInk::vscan_start()
 {
-  ckv_set();         ESP::delay_microseconds( 7);
-  mcp.spv_clear();   ESP::delay_microseconds(10);
-  ckv_clear();       ESP::delay_microseconds( 0);
-  ckv_set();         ESP::delay_microseconds( 8);
-  mcp.spv_set();     ESP::delay_microseconds(10);
-  ckv_clear();       ESP::delay_microseconds( 0);
-  ckv_set();         ESP::delay_microseconds(18);
-  ckv_clear();       ESP::delay_microseconds( 0);
-  ckv_set();         ESP::delay_microseconds(18);
-  ckv_clear();       ESP::delay_microseconds( 0);
-  ckv_set();
+        ckv_set(); ESP::delay_microseconds( 7);
+  mcp.spv_clear(); ESP::delay_microseconds(10);
+      ckv_clear(); ESP::delay_microseconds( 0);
+        ckv_set(); ESP::delay_microseconds( 8);
+    mcp.spv_set(); ESP::delay_microseconds(10);
+      ckv_clear(); ESP::delay_microseconds( 0);
+        ckv_set(); ESP::delay_microseconds(18);
+      ckv_clear(); ESP::delay_microseconds( 0);
+        ckv_set(); ESP::delay_microseconds(18);
+      ckv_clear(); ESP::delay_microseconds( 0);
+        ckv_set();
 }
 
 void EInk::hscan_start(uint32_t d)
