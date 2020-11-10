@@ -1,7 +1,8 @@
-#include <cinttypes>
-#include "esp.hpp"
+#ifndef __ALOC_HPP__
+#define __ALLOC_HPP__
 
-inline void * allocate(uint32_t size) 
-{
-  return ESP::ps_malloc(size);  
-}
+#include <cstddef>
+
+extern void * allocate(size_t size);
+
+#endif

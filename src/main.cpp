@@ -14,8 +14,11 @@
   #include "fonts.hpp"
   #include "screen.hpp"
   #include "inkplate6_ctrl.hpp"
-
+  #include "epub.hpp"
+  #include "unzip.hpp"
+  #include "pugixml.hpp"
   #include "nvs_flash.h"
+  #include "alloc.hpp"
 
   #include <stdio.h>
 
@@ -41,11 +44,15 @@
       std::abort();
     }
 
-    LOG_D("Initialization completed");
+    // epub.open_file("/sdcard/books/WarPeace.epub");
+    // epub.close_file();
+
+    pugi::set_memory_management_functions(allocate, free);
 
     if (fonts.setup()) {
       screen.setup();
       books_dir_controller.setup();
+      LOG_D("Initialization completed");
       app_controller.start();
     }
 
@@ -55,7 +62,7 @@
     }
   }
 
-  #define STACK_SIZE 10000
+  #define STACK_SIZE 20000
 
   extern "C" {
 

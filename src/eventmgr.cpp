@@ -51,5 +51,32 @@ EventMgr::EventMgr()
 #else
   void EventMgr::start_loop()
   {
+    // Simple Uart based keyboard entry
+    //
+    //       w
+    //       ^
+    //  a <-   -> s
+    //       v
+    //       z
+    //
+    //  Home:   Space bar
+    //  Select: d
+
+    while(1) {
+		  uint8_t ch = fgetc(stdin);
+	    if (ch != 0xFF) {
+        switch (ch) {
+          case 'a'  : app_controller.key_event(KEY_LEFT);   break;
+          case 's'  : app_controller.key_event(KEY_RIGHT);  break;
+          case 'w'  : app_controller.key_event(KEY_UP);     break;
+          case 'z'  : app_controller.key_event(KEY_DOWN);   break;
+          case ' '  : app_controller.key_event(KEY_HOME);   break;
+          case 'd'  : app_controller.key_event(KEY_SELECT); break;
+          default: 
+            fputc('!', stdout);
+            break;
+        }
+	    }
+    }  
   }
 #endif

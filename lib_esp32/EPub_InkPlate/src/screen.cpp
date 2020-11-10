@@ -12,8 +12,6 @@
 
 #define BYTES_PER_PIXEL 3
 
-//static const char * TAG = "Screen";
-
 Screen Screen::singleton;
 
 void 
@@ -26,7 +24,6 @@ Screen::put_bitmap(
 {
   if (bitmap_data == nullptr) return;
   
-
   // if (show) {
   //   unsigned char * p = bitmap_data;
   //   for (int j = 0; j < image_height; j++) {

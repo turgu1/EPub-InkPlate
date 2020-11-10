@@ -39,6 +39,8 @@ class Screen : NonCopyable
     inline void update() { e_ink.clean(); e_ink.update(*frame_buffer); }
 
   private:
+    static constexpr char const * TAG = "Screen";
+
     static Screen singleton;
     Screen() { };
 

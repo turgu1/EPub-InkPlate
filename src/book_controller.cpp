@@ -6,7 +6,6 @@
 #include "epub.hpp"
 #include "page.hpp"
 
-#include "rapidxml.hpp"
 
 #include <string>
 

@@ -199,6 +199,8 @@ BooksDir::refresh()
   DIR           * dp = nullptr;
   SortedIndex     index;
 
+  bool some_added_record = false;
+
   struct PartialRecord {
     char    filename[FILENAME_SIZE];
     int32_t file_size;
@@ -290,6 +292,8 @@ BooksDir::refresh()
 
           // The book is not in the database, we add it now
 
+          some_added_record = true;
+          
           LOG_D("New book found: %s", de->d_name);
 
           fname = BOOKS_FOLDER "/";
@@ -397,6 +401,11 @@ BooksDir::refresh()
   }
 
   index.clear();
+  if (some_added_record) {
+    db.close(); // To ensure that data is well written on SD Card
+    return db.open(BOOKS_DIR_FILE);
+  }
+
   return true;
 
 error_clear:

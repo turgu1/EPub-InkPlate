@@ -3,6 +3,7 @@
 
 #include "ttf2.hpp"
 #include "screen.hpp"
+#include "alloc.hpp"
 
 #include <iomanip>
 #include <cstring>
@@ -13,7 +14,7 @@
 #include "stb_image_resize.h"
 #include "logging.hpp"
 
-using namespace rapidxml;
+using namespace pugi;
 
 void 
 BookView::page_locs_end_page(Page::Format & fmt)
@@ -36,23 +37,23 @@ BookView::page_locs_end_page(Page::Format & fmt)
 }
 
 bool
-BookView::page_locs_recurse(xml_node<> * node, Page::Format fmt)
+BookView::page_locs_recurse(xml_node node, Page::Format fmt)
 {
   if (node == nullptr) return false;
   
-  char * name;
+  const char * name;
   bool para = false;
   bool image_is_present = false;
   Page::Image image;
 
-  if (*(name = node->name())) { // A name is attached to the node.
+  if (*(name = node.name())) { // A name is attached to the node.
     Elements::iterator element_it;
 
-    xml_attribute<> * attr = node->first_attribute("style");
+    xml_attribute attr = node.attribute("style");
     CSS::Properties * element_properties = nullptr;
     if (attr) {
-      const char * buffer = attr->value();
-      const char * end = buffer + attr->value_size();
+      const char * buffer = attr.value();
+      const char * end = buffer + strlen(buffer);
       element_properties = CSS::parse_properties(&buffer, end, buffer);
     }
 
@@ -77,22 +78,25 @@ BookView::page_locs_recurse(xml_node<> * node, Page::Format fmt)
         case SPAN:
         case A:
           break;
-        case IMG: {
-            xml_attribute<> * attr = node->first_attribute("src");
-            if (attr != nullptr) {
-              std::string filename = attr->value();
-              image_is_present = get_image(filename, image);
-            }
-          }
+        case IMG:
+        case IMAGE:
           break;
-        case IMAGE: {
-            xml_attribute<> * attr = node->first_attribute("xlink:href");
-            if (attr != nullptr) {
-              std::string filename = attr->value();
-              image_is_present = get_image(filename, image);
-            }
-          }
-          break;
+        // case IMG: {
+        //     xml_attribute attr = node.attribute("src");
+        //     if (attr != nullptr) {
+        //       std::string filename = attr.value();
+        //       image_is_present = get_image(filename, image);
+        //     }
+        //   }
+        //   break;
+        // case IMAGE: {
+        //     xml_attribute attr = node.attribute("xlink:href");
+        //     if (attr != nullptr) {
+        //       std::string filename = attr.value();
+        //       image_is_present = get_image(filename, image);
+        //     }
+        //   }
+        //   break;
         case LI:
         case P:
           para = true; start_of_paragraph = true;
@@ -175,10 +179,10 @@ BookView::page_locs_recurse(xml_node<> * node, Page::Format fmt)
         }
       } 
 
-      xml_node<> * sub = node->first_node();
+      xml_node sub = node.first_child();
       while (sub) {
         page_locs_recurse(sub, fmt);
-        sub = sub->next_sibling();
+        sub = sub.next_sibling();
       }
 
       if (para) {
@@ -206,7 +210,7 @@ BookView::page_locs_recurse(xml_node<> * node, Page::Format fmt)
     }
   }
   else {
-    const char * str = node->value();
+    const char * str = node.value();
     SHOW_LOCATION("->");
 
     while (*str) {
@@ -303,10 +307,10 @@ BookView::build_page_locs()
 
       current_offset       = 0;
       start_of_page_offset = 0;
-      xml_node<> * node = epub.current_item.first_node("html");
+      xml_node node = epub.current_item.child("html");
 
       if (node && 
-         (node = node->first_node("body"))) {
+         (node = node.child("body"))) {
 
         page.start(fmt);
 
@@ -405,20 +409,20 @@ BookView::get_factor_value(const CSS::Value & value, const Page::Format & fmt, f
 }
 
 void
-BookView::adjust_format(xml_node<> * node, 
+BookView::adjust_format(xml_node node, 
                         Page::Format & fmt,
                         CSS::Properties * element_properties)
 {
-  xml_attribute<> * attr = node->first_attribute("class");
+  xml_attribute attr = node.attribute("class");
 
   const CSS::PropertySuite * suite = nullptr;
   const CSS * current_item_css = epub.get_current_item_css();
 
-  std::string element_name = node->name();
+  std::string element_name = node.name();
 
   if (current_item_css) {
     if (attr) {
-      std::stringstream ss(attr->value());
+      std::stringstream ss(attr.value());
       std::string class_name;
 
       while (std::getline (ss, class_name, ' ')) {
@@ -570,7 +574,7 @@ BookView::get_image(std::string & filename, Page::Image & image)
         LOG_E("Bitmap is all zeroes...");
       }
       // malloc is used as bitmap2 will be freed by stbi_image.
-      unsigned char * bitmap2 = (unsigned char *) malloc(image.width * image.height);
+      unsigned char * bitmap2 = (unsigned char *) allocate(image.width * image.height);
       stbir_resize_uint8(image.bitmap, image.width, image.height, 0, 
                          bitmap2,      image.width, image.height, 0,
                          1);
@@ -585,7 +589,7 @@ BookView::get_image(std::string & filename, Page::Image & image)
 }
 
 bool
-BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
+BookView::build_page_recurse(pugi::xml_node node, Page::Format fmt)
 {
   if (node == nullptr) return false;
   if (page.is_full()) return true;
@@ -597,7 +601,7 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
 
   // If node->name() is not an empty string, this is the start of a named element
 
-  if (*(name = node->name())) { 
+  if (*(name = node.name())) { 
 
     // LOG_D("Node name: %s", name);
 
@@ -607,11 +611,11 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
 
     if (started) page.set_compute_mode(Page::DISPLAY);
 
-    xml_attribute<> * attr = node->first_attribute("style");
+    xml_attribute attr = node.attribute("style");
     CSS::Properties * element_properties = nullptr;
     if (attr) {
-      const char * buffer = attr->value();
-      const char * end = buffer + attr->value_size();
+      const char * buffer = attr.value();
+      const char * end = buffer + strlen(buffer);
       element_properties = CSS::parse_properties(&buffer, end, buffer);
     }
 
@@ -632,27 +636,30 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
         case SPAN:
         case A:
           break;
-        case IMAGE: {
-            xml_attribute<> * attr = node->first_attribute("xlink:href");
-            if (attr != nullptr) {
-              std::string filename = attr->value();
-              image_is_present = get_image(filename, image);
-            }
-          }
+        case IMG:
+        case IMAGE:
           break;
-        case IMG: {
-            if (started) { 
-              xml_attribute<> * attr = node->first_attribute("src");
-              if (attr != nullptr) {
-                std::string filename = attr->value();
-                image_is_present = get_image(filename, image);
-              }
-            }
-            else {
-              image_is_present = true;
-            }
-          }
-          break;
+        // case IMAGE: {
+        //     xml_attribute attr = node.attribute("xlink:href");
+        //     if (attr != nullptr) {
+        //       std::string filename = attr.value();
+        //       image_is_present = get_image(filename, image);
+        //     }
+        //   }
+        //   break;
+        // case IMG: {
+        //     if (started) { 
+        //       xml_attribute attr = node.attribute("src");
+        //       if (attr != nullptr) {
+        //         std::string filename = attr.value();
+        //         image_is_present = get_image(filename, image);
+        //       }
+        //     }
+        //     else {
+        //       image_is_present = true;
+        //     }
+        //   }
+        //   break;
         case LI:
         case P:
           para = true; start_of_paragraph = true;
@@ -740,14 +747,14 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
         start_of_paragraph = false;
       }
 
-      xml_node<> * sub = node->first_node();
+      xml_node sub = node.first_child();
       while (sub) {
         if (page.is_full()) return true;
         if (!build_page_recurse(sub, fmt)) {
           if (page.is_full()) return true;
           return false;
         }
-        sub = sub->next_sibling();
+        sub = sub.next_sibling();
       }
 
       if (current_offset >= start_of_page_offset) {
@@ -768,7 +775,7 @@ BookView::build_page_recurse(xml_node<> * node, Page::Format fmt)
   }
   else {
     // We look now at the node content and prepare the glyphs to be put on a page.
-    const char * str = node->value();
+    const char * str = node.value();
     int16_t size;
 
     if (current_offset >= end_of_page_offset) return true;
@@ -860,12 +867,12 @@ BookView::build_page_at(const EPub::Location & loc)
     current_offset       = 0;
     start_of_page_offset = loc.offset;
     end_of_page_offset   = loc.offset + loc.size;
-    xml_node<> * node    = epub.current_item.first_node("html");
+    xml_node node    = epub.current_item.child("html");
 
     SET_PAGE_TO_SHOW(current_page_nbr);
 
     if (node && 
-        (node = node->first_node("body"))) {
+        (node = node.child("body"))) {
 
       page.start(fmt);
 
@@ -904,7 +911,7 @@ BookView::show_page(int16_t page_nbr)
     const char * filename = epub.get_cover_filename();
     if (filename != nullptr) {
       // LOG_D("Cover filename: %s", filename);
-      int32_t size;
+      uint32_t size;
       unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
       if (data == NULL) {

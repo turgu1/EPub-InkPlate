@@ -6,13 +6,13 @@
 #include <unordered_map>
 
 #include "global.hpp"
-#include "rapidxml.hpp"
+#include "pugixml.hpp"
 #include "page.hpp"
 #include "epub.hpp"
 #include "css.hpp"
 #include "fonts.hpp"
 
-using namespace rapidxml;
+using namespace pugi;
 
 class BookView
 {
@@ -35,11 +35,11 @@ class BookView
     bool indent_paragraph;
 
     bool get_image(std::string & filename, Page::Image & image);
-    void adjust_format(xml_node<> * node, Page::Format & fmt, CSS::Properties * element_properties);
+    void adjust_format(pugi::xml_node node, Page::Format & fmt, CSS::Properties * element_properties);
     void adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite & suite);
-    bool page_locs_recurse(xml_node<> * node, Page::Format fmt);
+    bool page_locs_recurse(pugi::xml_node node, Page::Format fmt);
     void page_locs_end_page(Page::Format & fmt);
-    bool build_page_recurse(xml_node<> * node, Page::Format fmt);
+    bool build_page_recurse(pugi::xml_node node, Page::Format fmt);
     void build_page_at(const EPub::Location & loc);
     int16_t get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
     int16_t get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
@@ -68,11 +68,7 @@ class BookView
       elements{{"p",     P}, {"div", DIV},     {"span", SPAN}, {"br",     BR}, {"h1",   H1},  
                {"h2",   H2}, {"h3",   H3},     {"h4",     H4}, {"h5",     H5}, {"h6",   H6}, 
                {"b",     B}, {"i",     I},     {"em",     EM}, {"body", BODY}, {"a",     A},
-               {"img", IMG}, {"image", IMAGE}, {"li",     LI},
-               {"P",     P}, {"DIV", DIV},     {"SPAN", SPAN}, {"BR",     BR}, {"H1",   H1},  
-               {"H2",   H2}, {"H3",   H3},     {"H4",     H4}, {"H5",     H5}, {"H6",   H6}, 
-               {"B",     B}, {"I",     I},     {"EM",     EM}, {"BODY", BODY}, {"A",     A},
-               {"IMG", IMG}, {"IMAGE", IMAGE}, {"LI",     LI}}
+               {"img", IMG}, {"image", IMAGE}, {"li",     LI}}
       {  }
 
     ~BookView() { }

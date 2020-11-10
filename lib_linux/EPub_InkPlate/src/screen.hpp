@@ -41,6 +41,8 @@ class Screen : NonCopyable
     void test();
 
   private:
+    static constexpr char const * TAG = "Screen";
+
     static Screen singleton;
     Screen() {};
 

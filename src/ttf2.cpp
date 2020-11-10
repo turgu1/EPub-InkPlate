@@ -1,11 +1,15 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
+#include "alloc.hpp"
+
+#define STBTT_malloc(x,u)  ((void)(u),allocate(x))
+#define STBTT_free(x,u)    ((void)(u),free(x))
+
 #define __TTF__ 1
 #include "ttf2.hpp"
 
 #include "screen.hpp"
 #include "logging.hpp"
-#include "alloc.hpp"
 
 #include <algorithm>
 #include <ios>
@@ -46,7 +50,7 @@ TTF::clear_glyph_cache()
   for (auto const & entry : glyph_cache) {
     for (auto const & glyph : entry.second) {
       free(glyph.second->buffer);
-      delete glyph.second;
+      free(glyph.second);
     }
   }
   glyph_cache.clear();
@@ -79,7 +83,7 @@ TTF::get_glyph(int32_t charcode)
       glyph_index = stbtt_FindGlyphIndex(&font, charcode);
     }
 
-    BitmapGlyph * glyph = new BitmapGlyph;
+    BitmapGlyph * glyph = (BitmapGlyph *) allocate(sizeof(BitmapGlyph));
     glyph->buffer = nullptr;
     glyph->root = this;
 

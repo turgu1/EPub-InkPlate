@@ -10,8 +10,6 @@
 
 #define BYTES_PER_PIXEL 3
 
-static const char * TAG = "Screen";
-
 Screen Screen::singleton;
 
 void 
@@ -19,8 +17,6 @@ free_pixels(guchar * pixels, gpointer data)
 {
   delete [] pixels;
 }
-
-
 
 inline void 
 setrgb(guchar * a, int row, int col, int stride,

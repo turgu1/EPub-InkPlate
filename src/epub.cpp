@@ -5,28 +5,24 @@
 #include "unzip.hpp"
 #include "books_dir.hpp"
 #include "logging.hpp"
+#include "esp.hpp"
 
 #include "stb_image.h"
 
 #include <cstring>
 #include <string>
 
-using namespace rapidxml;
+using namespace pugi;
 
 static const char * TAG = "EPub";
-
-void rapidxml::parse_error_handler(const char * what, void * where) { 
-   LOG_E("RapidXML Parse error: %s.", what); 
-   std::abort();
-}
 
 EPub::EPub()
 {
   opf_data          = nullptr;
   current_item_data = nullptr;
-  current_itemref   = nullptr;
   file_is_open      = false;
   opf_base_path.clear();
+  current_itemref   = xml_node(NULL);
 }
 
 EPub::~EPub()
@@ -34,24 +30,20 @@ EPub::~EPub()
   close_file();
 }
 
-std::string 
-extract_path(const char * fname)
+void
+extract_path(const char * fname, std::string & path)
 {
-  std::string p = "";
+  path.clear();
   int i = strlen(fname) - 1;
   while ((i > 0) && (fname[i] != '/')) i--;
-  if (i > 0) p.assign(fname, ++i);
-  return p;
+  if (i > 0) path.assign(fname, ++i);
 }
 
-bool 
-EPub::get_opf()
+bool
+EPub::check_mimetype()
 {
-  int err = 0;
-  #define ERR(e) { err = e; break; }
-
-  char * data;
-  int32_t size;
+  char   * data;
+  uint32_t size;
 
   // A file named 'mimetype' must be present and must contain the
   // string 'application/epub+zip'
@@ -65,46 +57,96 @@ EPub::get_opf()
   }
 
   free(data);
+  return true;
+}
+
+#define ERR(e) { err = e; break; }
+
+const char *
+EPub::get_opf_filename()
+{
+  int          err = 0;
+  char       * data;
+  uint32_t     size;
+  const char * fname = nullptr;
 
   // A file named 'META-INF/container.xml' must be present and point to the OPF file
   LOG_D("Check container.xml.");
-  if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
+  if (!(data = unzip.get_file("META-INF/container.xml", size))) return nullptr;
   
-  xml_document<>    doc;
-  xml_node<>      * node;
-  xml_attribute<> * attr;
+  xml_document    doc;
+  xml_node        node;
+  xml_attribute   attr;
 
-  doc.parse<0>(data);
+  xml_parse_result res = doc.load_buffer_inplace(data, size);
+  if (res.status != status_ok) {
+    LOG_E("xml load error: %d", res.status);
+    free(data);
+    return nullptr;
+  }
 
   bool completed = false;
   while (!completed) {
-    if (!(node = doc.first_node("container"))) ERR(1);
-    if (!((attr = node->first_attribute("version")) && (strcmp(attr->value(), "1.0") == 0))) ERR(2);
-    if (!(node = node->first_node("rootfiles"))) ERR(3);
-    for (node = node->first_node("rootfile"); 
+    if (!(node = doc.child("container"))) ERR(1);
+    if (!((attr = node.attribute("version")) && (strcmp(attr.value(), "1.0") == 0))) ERR(2);
+    if (!(node = node.child("rootfiles"))) ERR(3);
+    for (node = node.child("rootfile"); 
          node; 
-         node = node->next_sibling("rootfile")) {
-      //LOG_D(">> %s %d", node->name(), node->first_attribute("media-type")->value());
+         node = node.next_sibling("rootfile")) {
+      //LOG_D(">> %s %d", node->name(), node.attribute("media-type")->value());
 
-      if ((attr = node->first_attribute("media-type")) && 
-          (strcmp(attr->value(), "application/oebps-package+xml") == 0)) break;
+      if ((attr = node.attribute("media-type")) && 
+          (strcmp(attr.value(), "application/oebps-package+xml") == 0)) break;
+    }
+    if (!node) ERR(4);
+    if (!(attr = node.attribute("full-path"))) ERR(5);
+    
+    fname = attr.value();
+
+    completed = true;
+  }
+
+  if (!completed) {
+    LOG_E("EPub get_opf error: %d", err);
+  }
+
+  doc.reset(); 
+  free(data);
+
+  return fname;
+}
+
+bool 
+EPub::get_opf(const char * filename)
+{
+  int err = 0;
+  uint32_t size;
+
+  xml_node      node;
+  xml_attribute attr;
+
+  bool completed = false;
+  while (!completed) {
+    extract_path(filename, opf_base_path);
+    LOG_D("opf_base_path: %s", opf_base_path.c_str());
+
+    if (!(opf_data = unzip.get_file(filename, size))) ERR(6);
+
+    xml_parse_result res = opf.load_buffer_inplace(opf_data, size);
+    if (res.status != status_ok) {
+      LOG_E("xml load error: %d", res.status);
+      opf.reset();
+      free(opf_data);
+      opf_data = nullptr;
+      return false;
     }
 
-    // Get the OPF and parse its XML content
-    if (!node) ERR(4);
-    if (!(attr = node->first_attribute("full-path"))) ERR(5);
-    if (!(opf_data = unzip.get_file(attr->value(), size))) ERR(6);
-
-    opf_base_path = extract_path(attr->value());
-
-    opf.parse<0>(opf_data);
-
     // Verifie that the OPF is of one of the version understood by this application
-    if (!((node = opf.first_node("package")) && 
-          (attr = node->first_attribute("xmlns")) &&
-          (strcmp(attr->value(), "http://www.idpf.org/2007/opf") == 0) &&
-          (attr = node->first_attribute("version")) &&
-          ((strcmp(attr->value(), "2.0") == 0) || (strcmp(attr->value(), "3.0") == 0)))) {
+    if (!((node = opf.child("package")) && 
+          (attr = node.attribute("xmlns")) &&
+          (strcmp(attr.value(), "http://www.idpf.org/2007/opf") == 0) &&
+          (attr = node.attribute("version")) &&
+          ((strcmp(attr.value(), "2.0") == 0) || (strcmp(attr.value(), "3.0") == 0)))) {
       LOG_E("This book is not compatible with this software.");
       break;
     }
@@ -114,22 +156,23 @@ EPub::get_opf()
 
   if (!completed) {
     LOG_E("EPub get_opf error: %d", err);
+    opf.reset();
+    free(opf_data);
   }
-
-  free(data);
-  doc.clear();
-  
+ 
   LOG_D("get_opf() completed.");
 
   return completed;
 }
 
 char *
-EPub::retrieve_file(const std::string & fname, int32_t & size)
+EPub::retrieve_file(const char * fname, uint32_t & size)
 {
   std::string filename = opf_base_path;
-  
   filename.append(fname);
+
+  // LOG_D("Retrieving file %s", filename.c_str());
+
   char * str = unzip.get_file(filename.c_str(), size);
 
   return str;
@@ -181,9 +224,9 @@ EPub::retrieve_fonts_from_css(CSS & css)
             (values->front()->value_type == CSS::URL)) {
           std::string filename = css.get_folder_path();
           filename.append(values->front()->str);
-          int32_t size;
+          uint32_t size;
           LOG_D("Font file name: %s", filename.c_str());
-          unsigned char * buffer = (unsigned char *) retrieve_file(filename, size);
+          unsigned char * buffer = (unsigned char *) retrieve_file(filename.c_str(), size);
           if (buffer == nullptr) {
             LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
           }
@@ -198,7 +241,7 @@ EPub::retrieve_fonts_from_css(CSS & css)
 }
 
 bool 
-EPub::get_item(rapidxml::xml_node<> * itemref)
+EPub::get_item(pugi::xml_node itemref)
 {
   int err = 0;
   #define ERR(e) { err = e; break; }
@@ -209,24 +252,24 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
   
   clear_item_data();
 
-  xml_node<>      * node;
-  xml_attribute<> * attr;
+  ESP::show_heaps_info();
 
-  char * id = itemref->first_attribute("idref")->value();
+  xml_node      node;
+  xml_attribute attr;
+
+  const char * id = itemref.attribute("idref").value();
 
   bool completed = false;
 
   while (!completed) {
-    if (!((node = opf.first_node("package")) && 
-          (node = node->first_node("manifest")) && 
-          (node = node->first_node("item")))) ERR(1);
-    for (; node != nullptr; node = node->next_sibling("item")) {
-      if ((attr = node->first_attribute("id")) && (strcmp(attr->value(), id) == 0)) break;
+    if (!(node = opf.child("package").child("manifest").child("item"))) ERR(1);
+    for (; node; node = node.next_sibling("item")) {
+      if ((attr = node.attribute("id")) && (strcmp(attr.value(), id) == 0)) break;
     }
     if (!node) ERR(2);
 
-    if (!(attr = node->first_attribute("media-type"))) ERR(3);
-    char * media_type = attr->value();
+    if (!(attr = node.attribute("media-type"))) ERR(3);
+    const char * media_type = attr.value();
     
     if (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = XML;
     else if (strcmp(media_type, "image/jpeg") == 0) item_media_type = JPEG;
@@ -235,19 +278,30 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
     else if (strcmp(media_type, "image/gif" ) == 0) item_media_type =  GIF;
     else ERR(4);
 
-    if (!(attr = node->first_attribute("href"))) ERR(4);
+    if (!(attr = node.attribute("href"))) ERR(4);
 
-    int32_t size;
-    current_item_file_path = extract_path(attr->value());
+    // LOG_D("Retrieving file %s", attr.value());
 
-    if (!(current_item_data = retrieve_file(attr->value(), size))) ERR(5);
+    uint32_t size;
+    extract_path(attr.value(), current_item_file_path);
+
+    LOG_D("current_item_file_path: %s.", current_item_file_path.c_str());
+
+    if (!(current_item_data = retrieve_file(attr.value(), size))) ERR(5);
 
     if (item_media_type == XML) {
 
-      // LOG_D("Reading file %s", attr->value().c_str());
+      // LOG_D("Reading file %s", attr.value().c_str());
 
-      current_item.parse<parse_normalize_whitespace>(current_item_data);
-      
+      xml_parse_result res = current_item.load_buffer_inplace(current_item_data, size);
+      if (res.status != status_ok) {
+        LOG_E("current_item xml load error: %d", res.status);
+        current_item.reset();
+        free(current_item_data);
+        current_item_data = nullptr;
+        return false;
+      }
+
       // current_item.parse<0>(current_item_data);
       
       //if (css.size() > 0) css.clear(); 
@@ -256,67 +310,63 @@ EPub::get_item(rapidxml::xml_node<> * itemref)
       // The properties are then merged into the current_css map for the item
       // being processed.
 
-      if ((node = current_item.first_node("html"))) {
-        if ((node = node->first_node("head"))) {
-          if ((node = node->first_node("link"))) {
-            do {
-              if ((attr = node->first_attribute("type")) &&
-                  (strcmp(attr->value(), "text/css") == 0) &&
-                  (attr = node->first_attribute("href"))) {
+      if ((node = current_item.child("html").child("head").child("link"))) {
+        do {
+          if ((attr = node.attribute("type")) &&
+              (strcmp(attr.value(), "text/css") == 0) &&
+              (attr = node.attribute("href"))) {
 
-                std::string css_id = attr->value(); // uses href as id
+            std::string css_id = attr.value(); // uses href as id
 
-                // search the list of css files to see if it already been
-                // parsed
-                int16_t idx = 0;
-                CSSList::iterator css_cache_it = css_cache.begin();
-                while (css_cache_it != css_cache.end()) {
-                  if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
-                  css_cache_it++;
-                  idx++;
-                }
-                if (css_cache_it == css_cache.end()) {
+            // search the list of css files to see if it already been
+            // parsed
+            int16_t idx = 0;
+            CSSList::iterator css_cache_it = css_cache.begin();
+            while (css_cache_it != css_cache.end()) {
+              if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
+              css_cache_it++;
+              idx++;
+            }
+            if (css_cache_it == css_cache.end()) {
 
-                  // The css file was not found. Load it in the cache.
-                  int32_t size;
-                  std::string fname = current_item_file_path;
-                  fname.append(css_id.c_str());
-                  char * data = retrieve_file(fname, size);
-                  
-                  if (data != nullptr) {
-                    #if COMPUTE_SIZE
-                      memory_used += size;
-                    #endif
-                    // LOG_D("CSS Filename: %s", fname.c_str());
-                    CSS * css_tmp = new CSS(extract_path(fname.c_str()), data, size, css_id);
-                    free(data);
-                    // css_tmp->show();
-                    retrieve_fonts_from_css(*css_tmp);
-                    css_cache.push_back(css_tmp);
-                    current_item_css_list.push_back(css_tmp);
-                  }
-                }
-                else {
-                  current_item_css_list.push_back(*css_cache_it);
-                }
+              // The css file was not found. Load it in the cache.
+              uint32_t size;
+              std::string fname = current_item_file_path;
+              fname.append(css_id.c_str());
+              char * data = retrieve_file(fname.c_str(), size);
+              
+              if (data != nullptr) {
+                #if COMPUTE_SIZE
+                  memory_used += size;
+                #endif
+                // LOG_D("CSS Filename: %s", fname.c_str());
+                std::string path;
+                extract_path(fname.c_str(), path);
+                CSS * css_tmp = new CSS(path, data, size, css_id);
+                free(data);
+                // css_tmp->show();
+                retrieve_fonts_from_css(*css_tmp);
+                css_cache.push_back(css_tmp);
+                current_item_css_list.push_back(css_tmp);
               }
-            } while ((node = node->next_sibling("link")));
+            }
+            else {
+              current_item_css_list.push_back(*css_cache_it);
+            }
           }
-        }
+        } while ((node = node.next_sibling("link")));
       }
 
       // Now look at <style> tags presents in the <html><head>, creating a temporary
       // css object for each of them.
 
-      if ((node = current_item.first_node("html")) &&
-          (node = node->first_node("head")) &&
-          (node = node->first_node("style"))) {
+      if ((node = current_item.child("html").child("head").child("style"))) {
         do {
-          CSS * css_tmp = new CSS(current_item_file_path, node->value(), node->value_size() , "current-item");
+          CSS * css_tmp = new CSS(current_item_file_path, node.value(), strlen(node.value()) , "current-item");
           retrieve_fonts_from_css(*css_tmp);
           // css_tmp->show();
           temp_css_cache.push_back(css_tmp);
-        } while ((node = node->next_sibling("style")));
+        } while ((node = node.next_sibling("style")));
       }
 
       // Populate the current_item css structure with property suites present in
@@ -363,9 +413,14 @@ EPub::open_file(const std::string & epub_filename)
     LOG_E("EPub open_file: Unable to open zip file: %s", epub_filename.c_str());
     return false;
   }
-  
+
+  if (!check_mimetype()) return false;
+
   LOG_D("Getting the OPF file");
-  if (!get_opf()) {
+  const char * filename;
+  if ((filename = get_opf_filename()) == nullptr) return false;
+
+  if (!get_opf(filename)) {
     LOG_E("EPub open_file: Unable to get opf of %s", epub_filename.c_str());
     unzip.close_zip_file();
     return false;
@@ -382,7 +437,7 @@ EPub::open_file(const std::string & epub_filename)
 void
 EPub::clear_item_data()
 {
-  current_item.clear();
+  current_item.reset();
   free(current_item_data);
   current_item_data = nullptr;
 
@@ -405,8 +460,9 @@ EPub::close_file()
   clear_item_data();
 
   if (opf_data) {
-    opf.clear();
+    opf.reset();
     free(opf_data);
+    opf_data = nullptr;
   }
 
   opf_base_path.clear();
@@ -428,14 +484,7 @@ EPub::get_meta(const std::string & name)
 {
   if (!file_is_open) return nullptr;
 
-  xml_node<> * node;
-  //xml_attribute<> * attr;
-
-  if (!((node = opf.first_node("package")) && 
-        (node = node->first_node("metadata")) && 
-        (node = node->first_node(name.c_str())))) return nullptr;
-
-  return node->value();
+  return opf.child("package").child("metadata").child_value(name.c_str());
 }
 
 const char *
@@ -443,36 +492,32 @@ EPub::get_cover_filename()
 {
   if (!file_is_open) return nullptr;
 
-  xml_node<>      * node;
-  xml_attribute<> * attr;
+  xml_node      node;
+  xml_attribute attr;
 
   const char * itemref = nullptr;
   const char * filename = nullptr;
 
   // First, try to find it from metadata
 
-  if ((node = opf.first_node("package")) &&
-        (node = node->first_node("metadata")) &&
-        (node = node->first_node("meta"))) {
+  if ((node = opf.child("package").child("metadata").child("meta"))) {
 
-    for (; node != nullptr; node = node->next_sibling("meta")) {
-      if ((attr = node->first_attribute("name")) && 
-          (strcmp(attr->value(), "cover") == 0) && 
-          (attr = node->first_attribute("content")) &&
-          (itemref = attr->value())) {
+    for (; node; node = node.next_sibling("meta")) {
+      if ((attr = node.attribute("name")) && 
+          (strcmp(attr.value(), "cover") == 0) && 
+          (attr = node.attribute("content")) &&
+          (itemref = attr.value())) {
 
-        xml_node<> *n;
-        xml_attribute<> *a;
+        xml_node n;
+        xml_attribute a;
 
-        if ((n = opf.first_node("package")) &&
-            (n = n->first_node("manifest")) &&
-            (n = n->first_node("item"))) {
+        if ((n = opf.child("package").child("manifest").child("item"))) {
 
-          for (; n != nullptr; n = n->next_sibling("item")) {
-            if ((a = n->first_attribute("id")) && 
-                (strcmp(a->value(), itemref) == 0) &&
-                (a = n->first_attribute("href"))) {
-              filename = a->value();
+          for (; n != nullptr; n = n.next_sibling("item")) {
+            if ((a = n.attribute("id")) && 
+                (strcmp(a.value(), itemref) == 0) &&
+                (a = n.attribute("href"))) {
+              filename = a.value();
             }
           }
         }
@@ -485,16 +530,14 @@ EPub::get_cover_filename()
   if (filename == nullptr) {
     // Look inside manifest
 
-    if ((node = opf.first_node("package")) &&
-          (node = node->first_node("manifest")) &&
-          (node = node->first_node("item"))) {
+    if ((node = opf.child("package").child("manifest").child("item"))) {
 
-      for (; node != nullptr; node = node->next_sibling("item")) {
-        if ((attr = node->first_attribute("id")) && 
-            (strcmp(attr->value(), "cover-image") == 0) && 
-            (attr = node->first_attribute("href"))) {
+      for (; node != nullptr; node = node.next_sibling("item")) {
+        if ((attr = node.attribute("id")) && 
+            (strcmp(attr.value(), "cover-image") == 0) && 
+            (attr = node.attribute("href"))) {
 
-          filename = attr->value();
+          filename = attr.value();
         }
       }
     }
@@ -509,12 +552,12 @@ EPub::get_first_item()
   current_itemref_index = 0;
 
   if (!file_is_open) return false;
-  xml_node<> * node;
+  xml_node node;
 
-  if (!((node = opf.first_node("package")) &&
-        (node = node->first_node("spine")) &&
-        (node = node->first_node("itemref"))))
+  if (!((node = opf.child("package").child("spine").child("itemref"))))
     return false;
+
+  LOG_D("Getting item %s...", node.attribute("idref").value());
 
   if ((current_itemref != node) && (!get_item(node))) return false;
   current_itemref_index = 0;
@@ -525,10 +568,12 @@ bool
 EPub::get_next_item()
 {
   if (!file_is_open) return false;
-  if (current_itemref == nullptr) return false;
-  xml_node<> * node = current_itemref->next_sibling("itemref");
+  if (current_itemref.empty()) return false;
+  xml_node node = current_itemref.next_sibling("itemref");
 
   if (node) {
+    LOG_D("Getting item %s...", node.attribute("idref").value());
+  
     current_itemref_index++;
     return get_item(node);
   }
@@ -544,17 +589,15 @@ EPub::get_item_at_index(int16_t itemref_index)
 
   if (current_itemref_index == itemref_index) return true;
   
-  xml_node<>* node;
+  xml_node node;
 
-  if (!((node = opf.first_node("package")) &&
-        (node = node->first_node("spine")) &&
-        (node = node->first_node("itemref"))))
+  if (!((node = opf.child("package").child("spine").child("itemref"))))
     return false;
 
   int16_t index = 0;
 
   while (node && (index < itemref_index)) {
-    node = node->next_sibling("itemref");
+    node = node.next_sibling("itemref");
     index++;
   }
 
@@ -571,8 +614,8 @@ bool
 EPub::get_previous_item()
 {
   if (!file_is_open) return false;
-  if (current_itemref == nullptr) return false;
-  xml_node<> * node = current_itemref->previous_sibling("itemref");
+  if (current_itemref.empty()) return false;
+  xml_node node = current_itemref.previous_sibling("itemref");
 
   if (node) {
     current_itemref_index--;
@@ -586,8 +629,8 @@ EPub::get_previous_item()
 bool
 EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_count)
 {
-  int32_t size;
-  unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
+  uint32_t size;
+  unsigned char * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
 
   if (data == NULL) {
     LOG_E("Unable to retrieve cover file: %s", filename.c_str());

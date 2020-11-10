@@ -3,8 +3,7 @@
 
 #include "global.hpp"
 
-#define RAPIDXML_NO_EXCEPTIONS
-#include "rapidxml.hpp"
+#include "pugixml.hpp"
 
 #include "css.hpp"
 #include "page.hpp"
@@ -17,7 +16,7 @@ class EPub
 {
   public:
     enum MediaType { XML, JPEG, PNG, GIF, BMP };
-    //typedef std::list<CSS> CSSCache;
+
     typedef std::list<CSS *> CSSList;
     struct Location {
       int32_t offset;                ///< Position as a number of characters in the item.
@@ -27,17 +26,15 @@ class EPub
     typedef std::vector<Location> PageLocs;
 
   private:
-    rapidxml::xml_document<> opf;    ///< The OPF document description.
-    rapidxml::xml_node<> * current_itemref;
+    pugi::xml_document opf;    ///< The OPF document description.
+    pugi::xml_node current_itemref;
     int16_t current_itemref_index;
     char *  opf_data;
     char *  current_item_data;
     std::string opf_base_path;
     std::string current_item_file_path;
 
-    PageLocs page_locs;            ///< Pages location list for the current document.
-
-    typedef std::forward_list<char *> CSSData;
+    PageLocs page_locs;              ///< Pages location list for the current document.
 
     CSSList   css_cache;             ///< All css files in the ebook are maintained here.
     CSSList   temp_css_cache;        ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
@@ -48,8 +45,10 @@ class EPub
     bool      file_is_open;
 
     const char * get_meta(const std::string & name);
-    bool   get_opf();
-    void   retrieve_fonts_from_css(CSS & css);
+    bool         get_opf(const char * filename);
+    bool         check_mimetype();
+    const char * get_opf_filename();
+    void         retrieve_fonts_from_css(CSS & css);
 
   public:
     EPub();
@@ -57,19 +56,19 @@ class EPub
 
     void clear_item_data();
     
-    rapidxml::xml_document<> current_item;
+    pugi::xml_document current_item;
 
     bool open_file(const std::string & epub_filename);
     bool close_file();
 
-    int16_t get_itemref_index() { return current_itemref_index;      };
+    int16_t       get_itemref_index() { return current_itemref_index;      };
     const char *  get_title()         { return get_meta("dc:title");       };
     const char *  get_author()        { return get_meta("dc:creator");     };
     const char *  get_description()   { return get_meta("dc:description"); };
     
     bool    get_image(std::string & filename, Page::Image & image, int16_t & channel_count);
   
-    char *  retrieve_file(const std::string & fname, int32_t & size);
+    char *  retrieve_file(const char * fname, uint32_t & size);
 
     /*
      * @brief pages locations retrieval from the book list directory. 
@@ -87,7 +86,7 @@ class EPub
     bool get_first_item();
     bool get_next_item();
     bool get_previous_item();
-    bool get_item(rapidxml::xml_node<> * itemref);
+    bool get_item(pugi::xml_node itemref);
     bool get_item_at_index(int16_t itemref_index);
 
     /**
@@ -105,8 +104,8 @@ class EPub
      * 
      * @return int16_t The number of pages in the book, or 0 if no file opened.
      */
-    inline int16_t get_page_count() { return file_is_open ? page_locs.size() : 0; }
-    inline void    add_page_loc(Location & loc) { page_locs.push_back(loc); }
+    inline int16_t  get_page_count() { return file_is_open ? page_locs.size() : 0; }
+    inline void       add_page_loc(Location & loc) { page_locs.push_back(loc); }
     inline void    clear_page_locs(int16_t initial_size) { page_locs.clear(); page_locs.reserve(initial_size); }
     inline const Location & get_page_loc(int16_t page_nbr) { return page_locs[page_nbr]; }
     inline const PageLocs & get_page_locs() const { return page_locs; }
