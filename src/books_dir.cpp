@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <sstream>
 
-static const char * TAG = "BooksDir";
-
 static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "/books_dir.db";
 static const char * NEW_DIR_FILE   = BOOKS_FOLDER "/new_dir.db";
 static const char * APP_NAME       = "EPUB-INKPLATE";

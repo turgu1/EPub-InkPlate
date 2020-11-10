@@ -4,8 +4,6 @@
 #include "logging.hpp"
 #include "driver/i2c.h"
 
-static const char * TAG = "Wire";
-
 Wire Wire::singleton;
 
 void

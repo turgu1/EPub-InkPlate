@@ -8,6 +8,8 @@
 class BooksDirView
 {
   private:
+    static constexpr char const * TAG = "BooksDirView";
+
     static const int16_t FIRST_ENTRY_YPOS = 20;
     static const int16_t LEFT_POS = 30;
     static const int16_t TITLE_FONT_SIZE = 10;

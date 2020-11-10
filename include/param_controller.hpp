@@ -6,6 +6,9 @@
 
 class ParamController
 {
+  private:
+    static constexpr char const * TAG = "ParamController";
+
   public:
     ParamController();
     void key_event(EventMgr::KeyEvent key);

@@ -22,8 +22,6 @@ Distributed as-is; no warranty is given.
 #include "wire.hpp"
 #include "driver/gpio.h"
 
-//static const char * TAG = "MCP";
-
 MCP MCP::singleton;
 
 // LOW LEVEL:

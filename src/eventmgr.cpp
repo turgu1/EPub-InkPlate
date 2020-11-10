@@ -4,8 +4,6 @@
 #include "eventmgr.hpp"
 #include "app_controller.hpp"
 
-// static const char * TAG = "EventMgr";
-
 EventMgr::EventMgr()
 {
   

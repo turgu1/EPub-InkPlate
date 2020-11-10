@@ -5,6 +5,9 @@
 
 class ParamView
 {
+  private:
+    static constexpr char const * TAG = "ParamView";
+
   public:
     ParamView();
 };

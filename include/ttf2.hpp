@@ -21,6 +21,8 @@ class TTF
     };
     
   private:
+    static constexpr char const * TAG = "TTF";
+
     bool is_ready;
     stbtt_fontinfo font;
     float scale_factor;

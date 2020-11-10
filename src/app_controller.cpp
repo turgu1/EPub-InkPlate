@@ -8,8 +8,6 @@
 #include "eventmgr.hpp"
 #include "screen.hpp"
 
-//static const char * TAG = "AppController";
-
 AppController::AppController()
 {
   current_ctrl = DIR;

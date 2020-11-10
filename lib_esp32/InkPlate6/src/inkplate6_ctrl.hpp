@@ -24,6 +24,8 @@ Distributed as-is; no warranty is given.
 class InkPlate6Ctrl : NonCopyable
 {
 private:
+  static constexpr char const * TAG = "InkPlate6Ctrl";
+
   static InkPlate6Ctrl singleton;
   InkPlate6Ctrl() {};
 

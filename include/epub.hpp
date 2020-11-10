@@ -26,6 +26,8 @@ class EPub
     typedef std::vector<Location> PageLocs;
 
   private:
+   static constexpr char const * TAG = "EPub";
+
     pugi::xml_document opf;    ///< The OPF document description.
     pugi::xml_node current_itemref;
     int16_t current_itemref_index;

@@ -13,8 +13,6 @@
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
 
-static const char * TAG = "InkPlate6Ctrl";
-
 InkPlate6Ctrl InkPlate6Ctrl::singleton;
 
 bool 

@@ -5,6 +5,9 @@
 
 class OptionView
 {
+  private:
+    static constexpr char const * TAG = "OptionView";
+
   public:
     OptionView();
 };

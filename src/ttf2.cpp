@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <ios>
 
-static const char * TAG = "TTF";
-
 TTF::TTF(const std::string & filename)
 {
   is_ready = false;

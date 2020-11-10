@@ -17,7 +17,7 @@ using namespace pugi;
 class BookView
 {
   private:
-    const char * TAG = "BookView";
+    static constexpr char const * TAG = "BookView";
 
     int32_t current_offset;          ///< Where we are in current item
     int32_t start_of_page_offset;

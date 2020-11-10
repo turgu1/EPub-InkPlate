@@ -5,7 +5,6 @@
 #include "unzip.hpp"
 #include "books_dir.hpp"
 #include "logging.hpp"
-#include "esp.hpp"
 
 #include "stb_image.h"
 
@@ -13,8 +12,6 @@
 #include <string>
 
 using namespace pugi;
-
-static const char * TAG = "EPub";
 
 EPub::EPub()
 {
@@ -251,8 +248,6 @@ EPub::get_item(pugi::xml_node itemref)
   if ((current_item_data != nullptr) && (current_itemref == itemref)) return true;
   
   clear_item_data();
-
-  ESP::show_heaps_info();
 
   xml_node      node;
   xml_attribute attr;

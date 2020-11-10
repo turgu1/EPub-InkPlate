@@ -6,6 +6,9 @@
 
 class OptionController
 {
+  private:
+    static constexpr char const * TAG = "OptionController";
+
   public:
     OptionController();
     void key_event(EventMgr::KeyEvent key);

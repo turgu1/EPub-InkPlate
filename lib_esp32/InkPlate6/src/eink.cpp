@@ -23,8 +23,6 @@ Distributed as-is; no warranty is given.
 #include "mcp.hpp"
 #include "esp.hpp"
 
-static const char * TAG = "EInk";
-
 EInk EInk::singleton;
 
 const uint8_t EInk::WAVEFORM_3BIT[8][8] = {

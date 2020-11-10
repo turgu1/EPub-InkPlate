@@ -6,8 +6,6 @@
 #include <cstring>
 #include <cctype>
 
-static const char * TAG = "CSS";
-
 CSS::PropertyMap CSS::property_map = {
   { "not-used",       CSS::NOT_USED       },
   { "font-family",    CSS::FONT_FAMILY    }, 

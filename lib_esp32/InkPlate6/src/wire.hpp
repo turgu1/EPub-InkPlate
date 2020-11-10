@@ -9,6 +9,8 @@
 class Wire : NonCopyable
 {
   private:
+    static constexpr char const * TAG = "Wire";
+
     static const uint8_t BUFFER_LENGTH = 30;
     
     bool    initialized;

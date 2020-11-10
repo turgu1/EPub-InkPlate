@@ -18,6 +18,8 @@ class BookController
     void put_str(const char * str, int xpos, int ypos);
 
   private:
+    static constexpr char const * TAG = "BookController";
+
     int16_t current_page;
 };
 

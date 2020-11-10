@@ -24,7 +24,7 @@ static const uint8_t LOW  = 0;
 class ESP
 {
   private:
-    static const char * TAG;
+    static constexpr char const * TAG = "ESP";
     
   public:
     static inline long millis() { return (unsigned long) (esp_timer_get_time() / 1000); }

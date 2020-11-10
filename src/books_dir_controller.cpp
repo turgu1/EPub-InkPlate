@@ -9,8 +9,6 @@
 
 #include <string>
 
-static const char * TAG = "BooksDirController";
-
 BooksDirController::BooksDirController()
 {
 

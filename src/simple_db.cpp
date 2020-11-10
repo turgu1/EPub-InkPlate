@@ -3,8 +3,6 @@
 
 #include "logging.hpp"
 
-static const char *TAG = "SimpleDB";
-
 bool 
 SimpleDB::open(std::string filename) 
 {

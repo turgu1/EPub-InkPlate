@@ -63,6 +63,8 @@ class BooksDir
     #pragma pack(pop)
 
   private:
+    static constexpr char const * TAG = "BooksDir";
+
     SimpleDB db;                       ///< The SimpleDB database
 
     typedef std::map<std::string, int16_t> SortedIndex;  ///< Sorted map of book names and indexes.

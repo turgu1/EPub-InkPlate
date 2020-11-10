@@ -8,6 +8,8 @@
 class Unzip
 {
   private:
+    static constexpr char const * TAG = "Unzip";
+
     static const int BUFFER_SIZE = 1024;
     char buffer[BUFFER_SIZE];
     /**

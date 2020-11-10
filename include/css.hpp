@@ -150,6 +150,8 @@ class CSS
     static FontSizeMap font_size_map;
 
   private:
+    static constexpr char const * TAG = "CSS";
+
     bool ghost; // Property suites come from other instances. So don't delete them...
     typedef std::unordered_map<Selector, PropertySuite> RulesMap;
     RulesMap rules_map;

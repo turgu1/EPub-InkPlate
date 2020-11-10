@@ -51,6 +51,8 @@ class Page
     enum ComputeMode { LOCATION, MOVE, DISPLAY };
 
   private:
+    static constexpr char const * TAG = "Page";
+
     enum DisplayListCommand { GLYPH, IMAGE, HIGHLIGHT_REGION, CLEAR_REGION };
     struct DisplayListEntry {
       union Kind {

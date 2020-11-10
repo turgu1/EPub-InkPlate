@@ -4,8 +4,6 @@
 #include "app_controller.hpp"
 #include "epub.hpp"
 
-// static const char * TAG = "ParamController";
-
 ParamController::ParamController()
 {
 

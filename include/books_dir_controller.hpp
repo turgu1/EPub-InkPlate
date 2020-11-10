@@ -7,6 +7,8 @@
 class BooksDirController
 {
   private:
+    static constexpr char const * TAG = "BooksDirController";
+
     int16_t page_nbr;
     int16_t current_index;
     

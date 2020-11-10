@@ -3,8 +3,6 @@
 
 #include "app_controller.hpp"
 
-// static const char * TAG = "OptionController";
-
 OptionController::OptionController()
 {
 

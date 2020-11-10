@@ -22,7 +22,7 @@
 
   #include <stdio.h>
 
-  static const char *TAG = "main";
+  static constexpr char const * TAG = "main";
 
   void 
   mainTask(void * params) 

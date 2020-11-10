@@ -19,8 +19,6 @@
   #include "zlib.h" // ToDo: Migrate to stb
 #endif
 
-static const char * TAG = "Unzip";
-
 Unzip::Unzip()
 {
   zip_file_is_open = false; 

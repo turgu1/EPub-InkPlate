@@ -7,8 +7,6 @@
 
 #include <iomanip>
 
-// static const char * TAG = "BooksDirView";
-
 void 
 BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 {

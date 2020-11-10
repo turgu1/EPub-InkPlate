@@ -6,10 +6,7 @@
 #include "epub.hpp"
 #include "page.hpp"
 
-
 #include <string>
-
-// static const char * TAG = "BookController";
 
 void 
 BookController::enter()

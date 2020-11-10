@@ -23,8 +23,6 @@
 #include <string>
 #include <algorithm>
 
-static const char * TAG = "Page";
-
 Page::Page() :
   compute_mode(DISPLAY), 
   screen_is_full(false)

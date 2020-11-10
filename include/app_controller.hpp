@@ -60,6 +60,8 @@ class AppController
     void key_event(EventMgr::KeyEvent key);
 
   private:
+    static constexpr char const * TAG = "AppController";
+
     static const int LAST_COUNT = 4;
     Ctrl current_ctrl;
     Ctrl last_ctrl[LAST_COUNT]; ///< LIFO of last controllers in use

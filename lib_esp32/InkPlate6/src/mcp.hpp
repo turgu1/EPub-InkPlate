@@ -26,6 +26,8 @@ Distributed as-is; no warranty is given.
 class MCP : NonCopyable
 {
   private:
+    static constexpr char const * TAG = "MCP";
+
     static const uint8_t MCP_ADDRESS = 0x20;
     uint8_t registers[22];
 

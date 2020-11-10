@@ -51,6 +51,8 @@ class EInk : NonCopyable
     enum PanelState  { OFF, ON };
 
   private:
+    static constexpr char const * TAG = "EInk";
+
     static const uint8_t PWRMGR_ADDRESS = 0x48;
     static const uint8_t PWR_GOOD_OK    = 0b11111010;
 

@@ -11,7 +11,7 @@
 class Fonts
 {
   private:
-    const char * TAG = "Fonts";
+    static constexpr char const * TAG = "Fonts";
 
   public:
     Fonts();
