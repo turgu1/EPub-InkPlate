@@ -48,7 +48,7 @@ TTF::clear_face()
   clear_cache();
   if (face != nullptr) FT_Done_Face(face);
   face = nullptr;
-  delete [] memory_font;
+  free(memory_font);
   
   current_size = -1;
 }
@@ -58,10 +58,12 @@ TTF::clear_cache()
 {
   for (auto const & entry : cache) {
     for (auto const & glyph : entry.second) {
-      FT_Done_Glyph((FT_Glyph) glyph.second);      
+      free(glyph.second->buffer);
+      free(glyph.second);      
     }
   }
   cache.clear();
+  cache.reserve(50);
 }
 
 TTF::BitmapGlyph *
@@ -107,13 +109,22 @@ TTF::get_glyph(int32_t charcode)
       }
     }
 
-    BitmapGlyph glyph;
-    if (error = FT_Get_Glyph(face->glyph, (FT_Glyph *) &glyph)) {
+    BitmapGlyph * glyph; (BitmapGlyph *) allocate(sizeof(BitmapGlyph));
+    FT_Glyph ft_glyph;
+    if (error = FT_Get_Glyph(face->glyph, (FT_Glyph *) &ft_glyph)) {
       LOG_E("Unable to copy glyph... Out of memory?");
       return nullptr;
     }
     cache[current_size][charcode] = glyph;
-    return & glyph;
+
+    glyph->width     = ft_glyph.width;
+    glyph->rows      = ft_glyph.rows;
+    glyph->xoff      = ft_glyph.xoff;
+    glyph->yoff      = ft_glyph.yoff;
+    glyph->advance   = ;
+    glyph->left_side = ;
+
+    return glyph;
   }
 }
 

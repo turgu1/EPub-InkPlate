@@ -1,11 +1,10 @@
 #ifndef _TTF_HPP_
 #define _TTF_HPP_
 
-//#include "global.hpp"
-
 #include "logging.hpp"
 
 #include <ft2build.h>
+
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
@@ -36,7 +35,7 @@ class TTF
 
     int16_t index;
     
-    inline bool ready() const { return true; }
+    inline bool ready() const { return face != nullptr; }
     
     /**
      * @brief Get a glyph object
@@ -103,7 +102,7 @@ class TTF
     }
 
   private:
-    typedef std::unordered_map<int32_t, BitmapGlyph> Glyphs; ///< Cache for the glyphs'  bitmap 
+    typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
     typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
     GlyphsCache cache;
 
