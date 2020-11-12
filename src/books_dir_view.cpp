@@ -64,7 +64,7 @@ BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     if (item_idx == current_item_idx) {
       page.put_highlight(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
                          BooksDir::max_cover_height, 
-                         xpos - 3, ypos);
+                         xpos - 5, ypos);
     }
 
     fmt.font_index    = 0;
@@ -130,7 +130,7 @@ BooksDirView::highlight(int16_t item_idx)
 
     page.clear_region(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
                       BooksDir::max_cover_height, 
-                      xpos - 3, ypos);
+                      xpos - 5, ypos);
 
     // TTF * font = fonts.get(1, 9);
 
@@ -183,7 +183,7 @@ BooksDirView::highlight(int16_t item_idx)
     
     page.put_highlight(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
                        BooksDir::max_cover_height, 
-                       xpos - 3, ypos);
+                       xpos - 5, ypos);
 
 
     fmt.font_index    = 0,

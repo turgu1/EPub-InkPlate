@@ -23,26 +23,26 @@ class Screen : NonCopyable
     static const uint16_t WIDTH           = 600;
     static const uint16_t HEIGHT          = 800;
     static const uint16_t RESOLUTION      = 166;  ///< Pixels per inch
-    static const uint8_t  HIGHLIGHT_COLOR = 0xE0;
+    static const uint8_t  HIGHLIGHT_COLOR = 0x00;
     static const uint8_t  WHITE_COLOR     = 0xFF;
     
-    static const uint8_t  grayscaleLevelCount = 8;
-
-    void put_bitmap(const unsigned char * bitmap_data, 
+    void draw_bitmap(const unsigned char * bitmap_data, 
                     uint16_t width, uint16_t height, 
                     int16_t x, int16_t y);
-    void put_bitmap_invert(const unsigned char * bitmap_data, 
-                    uint16_t width, uint16_t height, 
+    void draw_glyph(const unsigned char * bitmap_data, 
+                    uint16_t width, uint16_t height, uint16_t pitch,
                     int16_t x, int16_t y);
-    void set_region(uint16_t width, uint16_t height, 
-                    int16_t x, int16_t y,
-                    uint8_t color);
+    void draw_rectangle(uint16_t width, uint16_t height, 
+                        int16_t x, int16_t y,
+                        uint8_t color);
     void  clear();
     void update();
     void   test();
 
   private:
     static constexpr char const * TAG = "Screen";
+
+    static const uint8_t LUT1BIT[8];
 
     static Screen singleton;
     Screen() {};

@@ -62,7 +62,7 @@
     }
   }
 
-  #define STACK_SIZE 20000
+  #define STACK_SIZE 40000
 
   extern "C" {
 

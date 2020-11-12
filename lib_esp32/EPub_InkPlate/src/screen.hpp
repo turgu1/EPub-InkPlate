@@ -21,35 +21,54 @@ class Screen : NonCopyable
     static const uint16_t WIDTH           = EInk::HEIGHT;
     static const uint16_t HEIGHT          = EInk::WIDTH;
     static const uint16_t RESOLUTION      = 166;  ///< Pixels per inch
-    static const uint8_t  HIGHLIGHT_COLOR = 5;
-    static const uint8_t  WHITE_COLOR     = 7;
+    static const uint8_t  HIGHLIGHT_COLOR = 1;
+    static const uint8_t  WHITE_COLOR     = 0;
     
-    static const uint8_t  grayscaleLevelCount = 8;
-
-    void put_bitmap(const unsigned char * bitmap_data, 
-                    uint16_t width, uint16_t height, 
-                    int16_t x, int16_t y);
-    void put_bitmap_invert(const unsigned char * bitmap_data, 
-                    uint16_t width, uint16_t height, 
-                    int16_t x, int16_t y);
-    void set_region(uint16_t width, uint16_t height, 
-                    int16_t x, int16_t y,
-                    uint8_t color);
+    void draw_bitmap(const unsigned char * bitmap_data, 
+                     uint16_t width, uint16_t height, 
+                     int16_t x, int16_t y);
+    void  draw_glyph(const unsigned char * bitmap_data, 
+                     uint16_t width, uint16_t height, uint16_t pitch,
+                     int16_t x, int16_t y);
+    void draw_rectangle(uint16_t width, uint16_t height, 
+                        int16_t x, int16_t y,
+                        uint8_t color);
 
     inline void clear()  { EInk::clear_bitmap(*frame_buffer); }
-    inline void update() { e_ink.clean(); e_ink.update(*frame_buffer); }
+    inline void update() { 
+      if (partial_count == 0) {
+        //e_ink.clean(); 
+        e_ink.update(*frame_buffer);
+        partial_count = 6;
+      }
+      else {
+        e_ink.partial_update(*frame_buffer);
+        partial_count--;
+      }
+    }
 
   private:
     static constexpr char const * TAG = "Screen";
+    static const uint8_t LUT1BIT[8];
+    static const uint8_t LUT1BIT_INV[8];
 
     static Screen singleton;
-    Screen() { };
+    Screen() : partial_count(0) { };
 
-    EInk::Bitmap3Bit * frame_buffer;
+    EInk::Bitmap1Bit * frame_buffer;
+    uint8_t partial_count;
+
+    // inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
+    //   uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * (col + 1)) + (row >> 1)];
+    //   *temp = col & 1 ? (*temp & 0x70) | color : (*temp & 0x07) | (color << 4);
+    // }
 
     inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * col) + (row >> 1)];
-      *temp = col & 1 ? (*temp & 0x70) | color : (*temp & 0x07) | (color << 4);
+      uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];
+      if (color == 1)
+        *temp = *temp | LUT1BIT_INV[row & 7];
+      else
+        *temp = (*temp & ~LUT1BIT_INV[row & 7]);
     }
 
   public:

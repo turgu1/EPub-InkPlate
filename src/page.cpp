@@ -222,22 +222,22 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
 void
 Page::paint()
 {
-  if (display_list.size() == 0) return;
-  if (compute_mode != DISPLAY) return;
+  if ((display_list.size() == 0) || (compute_mode != DISPLAY)) return;
   
   screen.clear();
 
   for (auto & entry : display_list) {
     if (entry.command == GLYPH) {
-      screen.put_bitmap_invert(
+      screen.draw_glyph(
         entry.kind.glyph_entry.glyph->buffer, 
         entry.kind.glyph_entry.glyph->width, 
         entry.kind.glyph_entry.glyph->rows, 
+        entry.kind.glyph_entry.glyph->pitch, 
         entry.x, 
         entry.y);
     }
     else if (entry.command == IMAGE) {
-      screen.put_bitmap(
+      screen.draw_bitmap(
         entry.kind.image_entry.image.bitmap, 
         entry.kind.image_entry.image.width, 
         entry.kind.image_entry.image.height, 
@@ -245,7 +245,7 @@ Page::paint()
         entry.y);
     }
     else if (entry.command == HIGHLIGHT_REGION) {
-      screen.set_region(
+      screen.draw_rectangle(
         entry.kind.region_entry.width, 
         entry.kind.region_entry.height, 
         entry.x, 
@@ -253,7 +253,7 @@ Page::paint()
         Screen::HIGHLIGHT_COLOR);
     }
     else if (entry.command == CLEAR_REGION) {
-      screen.set_region(
+      screen.draw_rectangle(
         entry.kind.region_entry.width, 
         entry.kind.region_entry.height, 
         entry.x, 
@@ -805,10 +805,10 @@ Page::put_image(Image & image,
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
-      LOG_E("put_bitmap with a negative location: %d %d", entry.x, entry.y);
+      LOG_E("draw_bitmap with a negative location: %d %d", entry.x, entry.y);
     }
     else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-      LOG_E("put_bitmap with a too large location: %d %d", entry.x, entry.y);
+      LOG_E("draw_bitmap with a too large location: %d %d", entry.x, entry.y);
     }
   #endif
 
@@ -898,7 +898,7 @@ Page::show_cover(unsigned char * data, int32_t size)
                         resized_bitmap, w,           h,            0,
                         1);
       screen.clear();
-      screen.put_bitmap(resized_bitmap, w, h, x, y);
+      screen.draw_bitmap(resized_bitmap, w, h, x, y);
       screen.update();
 
       delete [] resized_bitmap;

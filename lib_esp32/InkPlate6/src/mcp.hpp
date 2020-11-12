@@ -1,6 +1,12 @@
 /*
 MCP.h
-Inkplate 6 Arduino library
+Inkplate 6 ESP-IDF
+
+Modified by Guy Turcotte 
+November 12, 2020
+
+from the Arduino Library:
+
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
 September 24, 2020
 https://github.com/e-radionicacom/Inkplate-6-Arduino-library

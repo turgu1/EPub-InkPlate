@@ -9,13 +9,17 @@
 #include "esp.hpp"
 
 #include <iomanip>
+#include <cstring>
 
 #define BYTES_PER_PIXEL 3
 
 Screen Screen::singleton;
 
+const uint8_t Screen::LUT1BIT[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+const uint8_t Screen::LUT1BIT_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+
 void 
-Screen::put_bitmap(
+Screen::draw_bitmap(
   const unsigned char * bitmap_data, 
   uint16_t width, 
   uint16_t height, 
@@ -43,18 +47,42 @@ Screen::put_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // rows
-    for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {  // columns
-      uint8_t v = bitmap_data[p];
-      if (v != 255) { // Do not paint white pixels
-        set_pixel(i, j, v >> 5);
+  // for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // rows
+  //   for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {  // columns
+  //     uint8_t v = bitmap_data[p];
+  //     if (v != 255) { // Do not paint white pixels
+  //       set_pixel(i, j, v >> 5);
+  //     }
+  //   }
+  // }
+
+  static int16_t err[601];
+  int16_t error;
+  memset(err, 0, 601*2);
+
+  for (int j = y, q = 0; j < y_max; j++, q++) {
+    for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+      int32_t v = bitmap_data[p] + err[k + 1];
+      if (v > 128) {
+        error = (v - 255);
+        set_pixel(i, j, 0);
       }
+      else {
+        error = v;
+        set_pixel(i, j, 1);
+      }
+      if (k != 0) {
+        err[k - 1] += error / 8;
+      }
+      err[k]     += 3 * error / 8;
+      err[k + 1]  =     error / 8;
+      err[k + 2] += 3 * error / 8;
     }
   }
 }
 
 void 
-Screen::set_region(
+Screen::draw_rectangle(
   uint16_t width, 
   uint16_t height, 
   int16_t x, 
@@ -67,18 +95,22 @@ Screen::set_region(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint16_t j = y; j < y_max; j++) {
-    for (uint16_t i = x; i < x_max; i++) {
-      set_pixel(i, j, color);
-    }
+  for (int i = x; i < x_max; i++) {
+    set_pixel(i,         y, color);
+    set_pixel(i, y_max - 1, color);
+  }
+  for (int j = y; j < y_max; j++) {
+    set_pixel(    x,     j, color);
+    set_pixel(x_max - 1, j, color);
   }
 }
 
 void 
-Screen::put_bitmap_invert(
+Screen::draw_glyph(
   const unsigned char * bitmap_data, 
   uint16_t width, 
   uint16_t height, 
+  uint16_t pitch,
   int16_t x, 
   int16_t y) //, bool show)
 {
@@ -88,18 +120,16 @@ Screen::put_bitmap_invert(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {
-    for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {
-      uint8_t v = (255 - bitmap_data[p]);
-      if (v != 255) {
-        set_pixel(i, j, v >> 5);
-      }
+  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // row
+    for (uint32_t i = x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
+      uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+      set_pixel(i, j, v ? 1 : 0);
     }
   }
 }
 
 void Screen::setup()
 {
-  frame_buffer = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
+  frame_buffer = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
   clear();
 }

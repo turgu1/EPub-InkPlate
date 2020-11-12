@@ -1,6 +1,12 @@
 /*
 eink.h
-Inkplate 6 Arduino library
+Inkplate 6 ESP-IDF
+
+Modified by Guy Turcotte 
+November 12, 2020
+
+from the Arduino Library:
+
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
 September 24, 2020
 https://github.com/e-radionicacom/Inkplate-6-Arduino-library
@@ -47,7 +53,6 @@ class EInk : NonCopyable
     typedef uint8_t Bitmap3Bit [BITMAP_SIZE_3BIT];
     typedef uint8_t Bitmap1Bit [BITMAP_SIZE_1BIT];
 
-    enum PanelMode   { PM_1BIT, PM_3BIT };
     enum PanelState  { OFF, ON };
 
   private:
@@ -62,7 +67,10 @@ class EInk : NonCopyable
 
 
     static EInk singleton;
-    EInk();  // Private constructor
+    EInk() :
+      panel_state(OFF), 
+      initialized(false),
+      partial_allowed(false) { }  // Private constructor
 
     void update_1bit(const Bitmap1Bit & bitmap);
     void update_3bit(const Bitmap3Bit & bitmap);
@@ -74,7 +82,7 @@ class EInk : NonCopyable
     void pins_z_state();
     void pins_as_outputs();
 
-    uint32_t pin_lut[256];
+    static const uint32_t PIN_LUT[256];
 
     static const uint8_t  WAVEFORM_3BIT[8][8]; 
     static const uint32_t WAVEFORM[50]; 

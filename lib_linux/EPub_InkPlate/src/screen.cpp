@@ -7,10 +7,13 @@
 #include "screen.hpp"
 
 #include <iomanip>
+#include <cstring>
 
 #define BYTES_PER_PIXEL 3
 
 Screen Screen::singleton;
+
+const uint8_t Screen::LUT1BIT[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
 void 
 free_pixels(guchar * pixels, gpointer data)
@@ -27,7 +30,7 @@ setrgb(guchar * a, int row, int col, int stride,
 }
 
 void 
-Screen::put_bitmap(
+Screen::draw_bitmap(
   const unsigned char * bitmap_data, 
   uint16_t width, 
   uint16_t height, 
@@ -36,7 +39,6 @@ Screen::put_bitmap(
 {
   if (bitmap_data == nullptr) return;
   
-
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
@@ -58,19 +60,100 @@ Screen::put_bitmap(
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
+
+  static int16_t err[601];
+  int16_t error;
+  memset(err, 0, 601*2);
+
   for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++, p++) {
-      int v = bitmap_data[p];
-      if (v != 255) {
-        v &= 0xE0; // 8 levels of grayscale
-        setrgb(g, j, i, id.stride, v);
+    for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+      int32_t v = bitmap_data[p] + err[k + 1];
+      if (v > 128) {
+        error = (v - 255);
+        setrgb(g, j, i, id.stride, 255);
       }
+      else {
+        error = v;
+        setrgb(g, j, i, id.stride, 0);
+      }
+      if (k != 0) {
+        err[k - 1] += error / 8;
+      }
+      err[k]     += 3 * error / 8;
+      err[k + 1]  =     error / 8;
+      err[k + 2] += 3 * error / 8;
     }
   }
 }
 
+// procedure dither ( width, height,      --size of image
+// get-pixel(x,y), set_output-pixel(x,y)  --access to pixels 
+// error_arr: array[0..width] of integer; --holds the errors 
+// error:integer;                         --error for current pixel 
+
+// j: integer <- 0; 
+// until j = height do 
+//   i: integer <- 0; 
+//   until i = width - 1 loop                          -- don't go all the way to edge 
+//     val <- get_pixel(x,y) + error_arr[x + 1];       -- pixel value with error 
+//     if val > 128                                    -- above threshold 
+//     then set_output_pixel(x,y); error <- val - 255; -- output white 
+//     else error <- val;                              -- leave output black 
+//     if x != O then                                  -- don't spread left at edge 
+//       error_arr[x - 1] <- error_arr[x - 1] + error / 8; --lower left pixel 
+//     error_arr[x] <- error arr[x] + 3 * error / 8;    --pixel below 
+//     error_arr[x + 1] <- error / 8; --initial error for lower right 
+//     error_arr[x + 2] <- error_arr[x + 2] + 3 * error / 8; --pixel to the right 
+//     x <- x + 1; 
+//   ­endloop; 
+//   y <- y + 1; 
+// endloop; 
+
+// void 
+// Screen::draw_bitmap(
+//   const unsigned char * bitmap_data, 
+//   uint16_t width, 
+//   uint16_t height, 
+//   int16_t  x, 
+//   int16_t  y) //, bool show)
+// {
+//   if (bitmap_data == nullptr) return;
+  
+
+//   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
+//   guchar    * g  = gdk_pixbuf_get_pixels(pb);
+  
+//   // if (show) {
+//   //   unsigned char * p = bitmap_data;
+//   //   for (int j = 0; j < image_height; j++) {
+//   //     for (int i = 0; i < image_width; i++) {
+//   //       std::cout << std::setw(2) << std::setfill('0') << std::hex << (int) *p++;
+//   //     }
+//   //     std::cout << std::endl;
+//   //   }
+//   // }   
+
+//   if (x < 0) x = 0;
+//   if (y < 0) y = 0;
+
+//   int16_t x_max = x + width;
+//   int16_t y_max = y + height;
+
+//   if (y_max > HEIGHT) y_max = HEIGHT;
+//   if (x_max > WIDTH ) x_max = WIDTH;
+//   for (int j = y, q = 0; j < y_max; j++, q++) {
+//     for (int i = x, p = q * width; i < x_max; i++, p++) {
+//       int v = bitmap_data[p];
+//       if (v != 255) {
+//         v &= 0xE0; // 8 levels of grayscale
+//         setrgb(g, j, i, id.stride, v);
+//       }
+//     }
+//   }
+// }
+
 void 
-Screen::set_region(
+Screen::draw_rectangle(
   uint16_t width, 
   uint16_t height, 
   int16_t  x, 
@@ -86,20 +169,22 @@ Screen::set_region(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  int v = 0xE0;
-
+  for (int i = x; i < x_max; i++) {
+    setrgb(g, y, i, id.stride, color);
+    setrgb(g, y_max - 1, i, id.stride, color);
+  }
   for (int j = y; j < y_max; j++) {
-    for (int i = x; i < x_max; i++) {
-      setrgb(g, j, i, id.stride, color);
-    }
+    setrgb(g, j, x, id.stride, color);
+    setrgb(g, j, x_max - 1, id.stride, color);
   }
 }
 
 void 
-Screen::put_bitmap_invert(
+Screen::draw_glyph(
   const unsigned char * bitmap_data, 
   uint16_t width, 
   uint16_t height, 
+  uint16_t pitch,
   int16_t x, 
   int16_t y) //, bool show)
 {
@@ -113,12 +198,14 @@ Screen::put_bitmap_invert(
   if (x_max > WIDTH ) x_max = WIDTH;
 
   for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width; i < x_max; i++, p++) {
-      int v = (255 - bitmap_data[p]);
-      if (v != 255) {
-        v &= 0xE0; // 8 levels of grayscale
-        setrgb(g, j, i, id.stride, v);
-      }
+    for (int i = x, p = (q * pitch) << 3; i < x_max; i++, p++) {
+      // int v = (255 - bitmap_data[p]);
+      // if (v != 255) {
+      //   v &= 0xE0; // 8 levels of grayscale
+      //   setrgb(g, j, i, id.stride, v);
+      // }
+      uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+      setrgb(g, j, i, id.stride, v ? 0 : 255);
     }
   }
 }
