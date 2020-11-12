@@ -87,7 +87,7 @@ Some elements to consider in the future (no specific order of priority):
 
 The EPub-InkPlate application requires that a micro-SD Card be present in the device. This micro-SD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub` in lowercase. 
 
-You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `bin/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. Please choose fonts that do not take too much space in memory. The four fonts are loaded in memory at the start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
+You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `bin/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. Please choose fonts that do not take too much space in memory as they are loaded in memory at start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
 
 ## On the complexity of EPUB page formatting
 
@@ -132,4 +132,4 @@ When I started this effort, I was aiming at supplying a tailored ebook reader fo
 
 On September 27th, 2020, we learned that she was diagnosed with the Covid-19 virus. She passed away during the night of October 1st.
 
-I dedicate this effort to her. Claudette, my wife, and I will always remember you!
+I dedicate this effort to her. Claudette, my wife and I will always remember you!
