@@ -2,7 +2,7 @@
 
 (Updated 2020.11.12)
 
-Work in progress... the application is not ready yet. This readme contains information that could be innacurate. 
+Work in progress... the application is not ready yet. This readme contains information that could be innacurate.
 
 The application is now using 1Bit planes (dithering on images, FreeType library for TrueType rasteriser). Currents results are promising. Still tests ongoing...
 
@@ -76,12 +76,14 @@ Some elements to consider in the future (no specific order of priority):
 - Footnote management
 - Kerning
 - TXT, MOBI book formats
-- <table> formatting
+- `<table>` formatting
 - Page progression direction: Right then left
 - Notes
 - Bookmarks
 - Landscape display selectable
 - Other elements proposed by users
+
+And potentially many more...
 
 ## Runtime environment
 
