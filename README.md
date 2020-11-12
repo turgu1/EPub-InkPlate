@@ -40,7 +40,7 @@ Memory availability is low. Some modifications maybe required to optimize memory
 
 Some pictures from the InkPlate-6 version:
 
-<img src="doc/pictures/IMG_1377.JPG" alt="picture" width="300"  style="transform:rotate(90deg);"/><img src="doc/pictures/IMG_1378.JPG" alt="picture" width="300"  style="transform:rotate(90deg);"/>
+<img src="doc/pictures/IMG_1377.JPG" alt="picture" width="300"/><img src="doc/pictures/IMG_1378.JPG" alt="picture" width="300"/>
 
 Some pictures from the Linux version:
 
