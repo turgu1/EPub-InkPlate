@@ -3,6 +3,8 @@
 
 #include "noncopyable.hpp"
 
+#include <cinttypes>
+
 #include <gtk/gtk.h>
 
 /**

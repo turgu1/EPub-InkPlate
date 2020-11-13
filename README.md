@@ -105,17 +105,21 @@ Images that are integrated into a book may also be taking a lot of memory. 1600x
 
 ## Development environment
 
-[Visual Studio Code](https://code.visualstudio.com/) is the code editor I'm using. The [PlatformIO](https://platformio.org/) extension used to manage application configuration for both Linux and the ESP32.
+[Visual Studio Code](https://code.visualstudio.com/) is the code editor I'm using. The [PlatformIO](https://platformio.org/) extension is used to manage application configuration for both Linux and the ESP32.
 
 ### Dependencies
 
 The following are the libraries currently in use by the application:
 
-- [GTK+3](https://www.gtk.org/) (Only for the Linux version)
+- [GTK+3](https://www.gtk.org/) (Only for the Linux version) The development headers must be installed. This can be done with the following command (on Linux Mint):
+  
+  ``` bash
+  $ sudo apt-get install build-essential libgtk-3-dev
+  ```
 
 The following are imported C header and source files, that implement some algorithms:
 
-- [FreeType](https://www.freetype.org) parse, decode, and rasterize characters from TrueType fonts.
+- [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.10.4/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
 - [PubiXML](https://pugixml.org/) (For XML parsing)
 - [STB](https://github.com/nothings/stb) (For image loading and resizing, and zip deflating, etc.) :
 
@@ -127,6 +131,55 @@ The following libraries were used at first but replaced with counterparts:
 - [ZLib](https://zlib.net/) deflating (unzip). A file deflater is already supplied with `stb_image.h`.
 - [RapidXML](http://rapidxml.sourceforge.net/index.htm) (For XML parsing) Too much stack space required. Replaced with PubiXML.
 - [SQLite3](https://www.sqlite.org/index.html) (The amalgamation version. For books simple database) Too many issues to get it runs on an ESP32. I built my own simple DB tool (look at `src/simple_db.cpp` and `include/simble_db.hpp`)
+
+### FreeType library compilation for ESP32
+
+The FreeType library is using a complex makefile structure to simplify (!) the compilation process. Here are the steps taken to get a library suitable for integration in the EPub-InkPlate ESP32 application. As this process is already done, there is no need to run it again, unless a new version of the library is required or some changes to the modules selection is done.
+
+1. The folder named `lib_freetype` is created to receive the library and its dependancies at install time:
+
+    ``` bash
+    $ mkdir lib_freetype
+    ```
+
+2. The ESP-IDF SDK must be installed in the main user folder. Usually it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
+
+3. The files `freetype-2.10.4/modules.cfg` and `freetypr-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
+
+4. A file named `freetype-2.10.4/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
+
+5. The following commands are executed:
+
+   ``` bash
+   $ cd freetype-2.10.4
+   $ bash myconf.sh
+   $ make
+   $ make install
+   ```
+
+   This will have created several files in folder `lib_freetype`.
+
+6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains harfbuzz reference.
+7. Voilà...
+
+### ESP-IDF configuration specifics
+
+The EPub-InkPlate application requires some functionalities to be properly setup with the ESP-IDF. The following elements have been done:
+
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of this partitions configuration. The current size of the application is a bit larger than 1MB.
+  
+- **ESP32 processor speed**: The processor must be run at 240MHz. The following line in `platformio.ini` request this speed:
+
+    ```
+    board_build.f_cpu = 240000000L
+    ```
+- **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offer 4MB+4MB of additional RAM. The first 4MB is readily available to integrate to the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
+
+  ```
+  $ idf.py menuconfig
+  ```
+
+TBC
 
 ## In Memoriam
 
