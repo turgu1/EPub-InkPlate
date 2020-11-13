@@ -46,6 +46,8 @@ Some pictures from the Linux version:
 
 <img src="doc/pictures/books_select.png" alt="drawing" width="300"/><img src="doc/pictures/book_page.png" alt="drawing" width="300"/>
 
+A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that show the first working version of the EPub-InkPlate application.
+
 ## Characteristics
 
 The first release is expected to have basic functionalities (maybe less, depending on memory usage on the ESP32):
@@ -107,6 +109,17 @@ Images that are integrated into a book may also be taking a lot of memory. 1600x
 
 [Visual Studio Code](https://code.visualstudio.com/) is the code editor I'm using. The [PlatformIO](https://platformio.org/) extension is used to manage application configuration for both Linux and the ESP32.
 
+All source code are located in various folders:
+
+- Source code used by both Linux and InkPlate are located in the `include` and `src` folders
+- Source code in support of Linux only are located in the `lib_linux` folder
+- Source code in support of the InkPlate-6 (ESP32) only are locate in the `lib_esp32` folder
+- The freetype library for ESP32 is in folder `lib_freetype`
+
+The file `platformio.ini` contains the configuration options required to compile both Linux and InkPlate applications.
+
+Note that source code located in folders `old` and `test` are not used. They will be deleted from the project when the application developement will be completed.
+
 ### Dependencies
 
 The following are the libraries currently in use by the application:
@@ -144,7 +157,7 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 2. The ESP-IDF SDK must be installed in the main user folder. Usually it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
 
-3. The files `freetype-2.10.4/modules.cfg` and `freetypr-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
+3. The files `freetype-2.10.4/modules.cfg` and `freetype-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
 
 4. A file named `freetype-2.10.4/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
 
