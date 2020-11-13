@@ -164,22 +164,40 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 ### ESP-IDF configuration specifics
 
-The EPub-InkPlate application requires some functionalities to be properly setup with the ESP-IDF. The following elements have been done:
+The EPub-InkPlate application requires some functionalities to be properly setup with the ESP-IDF. The following elements have been done (No need to do it again):
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of this partitions configuration. The current size of the application is a bit larger than 1MB.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of this partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.5MB OTA partitions.
   
-- **ESP32 processor speed**: The processor must be run at 240MHz. The following line in `platformio.ini` request this speed:
-
-    ```
-    board_build.f_cpu = 240000000L
-    ```
 - **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offer 4MB+4MB of additional RAM. The first 4MB is readily available to integrate to the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
 
   ```
   $ idf.py menuconfig
   ```
 
-TBC
+  The application will show a list of configuration aspects. To configure PSRAM:
+
+  - Select `Component Config` > `ESP32-Specific` > `Support for external, SPI-Connected RAM`
+  - Select `SPI RAM config` > `Initialize SPI RAM during startup`
+  - Select `Run memory test on SPI RAM Initialization`
+  - Select `Enable workaround for bug in SPI RAM cache for Rev 1 ESP32s`
+  - Select `SPI RAM access method` > `Make RAM allocatable using malloc() as well`
+
+  Leave the other options as they are. 
+
+- **ESP32 processor speed**: The processor must be run at 240MHz. The following line in `platformio.ini` request this speed:
+
+    ```
+    board_build.f_cpu = 240000000L
+    ```
+  You can also select the speed in the sdkconfig file:
+
+  - Select `Component config` > `ESP32-Specific` > `CPU frequency` > `240 Mhz`
+
+- **FAT Filesystem Support**: The application requires usage of the micro SD card. This card must be formatted on a computer (Linux or Windows) with a FAT 32 partition. The following parameters must be adjusted in `sdkconfig`:
+
+  - Select `Component config` > `FAT Filesystem support` > `Max Long filename length` > `255`
+  - Select `Number of simultaneous open files protected  by lock function` > `5`
+  - Select `Prefer external RAM when allocating FATFS buffer`
 
 ## In Memoriam
 
