@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __LOGGING_HPP__
 #define __LOGGING_HPP__
 

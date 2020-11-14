@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __OPTION_CONTROLLER__ 1
 #include "option_controller.hpp"
 

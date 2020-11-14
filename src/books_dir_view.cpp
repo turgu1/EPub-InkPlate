@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __BOOKS_DIR_VIEW__ 1
 #include "books_dir_view.hpp"
 

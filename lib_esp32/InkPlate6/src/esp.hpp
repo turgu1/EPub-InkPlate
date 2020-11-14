@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __ESP_HPP__
 #define __ESP_HPP__
 

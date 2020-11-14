@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __TTF_HPP__
 #define __TTF_HPP__
 
@@ -10,6 +14,7 @@
 #include FT_GLYPH_H
 
 #include <unordered_map>
+#include <forward_list>
 #include <string>
 
 class TTF
@@ -92,22 +97,23 @@ class TTF
       return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6); 
     }
 
-    /**
-     * @brief Face ascender height
-     * 
-     * @return int32_t The face ascender height in pixels relative to 
-     *                 the current font size.
-     */
-    int32_t ascender_height() { 
-      return (face == nullptr) ? 0 : (face->size->metrics.ascender >> 6);
-    }
-
   private:
+    static constexpr uint16_t BYTE_POOL_SIZE = 4096;
+
     typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
     typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
+    typedef uint8_t BytePool[BYTE_POOL_SIZE];
+    typedef std::forward_list<BytePool *> BytePools;
+    
     GlyphsCache cache;
 
     MemoryPool<BitmapGlyph> bitmap_glyph_pool;
+    
+    BytePools byte_pools;
+    uint16_t  byte_pool_idx;
+
+    void add_buff_to_byte_pool();
+    uint8_t * byte_pool_alloc(uint16_t size);
 
     unsigned char * memory_font;                      ///< Buffer for memory fonts
     int current_size;

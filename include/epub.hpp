@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __EPUB_HPP__
 #define __EPUB_HPP__
 
@@ -47,9 +51,9 @@ class EPub
     bool      file_is_open;
 
     const char * get_meta(const std::string & name);
-    bool         get_opf(const char * filename);
+    bool         get_opf(std::string & filename);
     bool         check_mimetype();
-    const char * get_opf_filename();
+    bool         get_opf_filename(std::string & filename);
     void         retrieve_fonts_from_css(CSS & css);
 
   public:

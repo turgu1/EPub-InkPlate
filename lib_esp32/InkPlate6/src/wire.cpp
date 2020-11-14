@@ -1,3 +1,8 @@
+
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __WIRE__ 1
 #include "wire.hpp"
 

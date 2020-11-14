@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __BOOKS_DIR_HPP__
 #define __BOOKS_DIR_HPP__
 

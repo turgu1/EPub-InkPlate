@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __PARAM_VIEW_HPP__
 #define __PARAM_VIEW_HPP__
 

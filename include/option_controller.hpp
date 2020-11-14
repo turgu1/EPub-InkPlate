@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __OPTION_CONTROLLER_HPP__
 #define __OPTION_CONTROLLER_HPP__
 

@@ -88,14 +88,6 @@ class TTF
      */
     int16_t get_descender_height() { return is_ready ? descender : 0; }
 
-    /**
-     * @brief Face ascender height
-     * 
-     * @return int16_t The face ascender height in pixels relative to 
-     *                 the current font size.
-     */
-    int16_t ascender_height() { return is_ready ? ascender : 0; }
-
     void show_glyph(BitmapGlyph & g);
 
   private:

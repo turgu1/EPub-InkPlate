@@ -1,7 +1,9 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #ifndef __NON_COPYABLE_HPP__
 #define __NON_COPYABLE_HPP__
-
-// Requires C++ 11
 
 /**
  * @brief Make children classes impossible to be copied.

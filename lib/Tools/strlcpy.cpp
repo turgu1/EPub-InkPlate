@@ -10,7 +10,7 @@ strlcat(char * dst, const char * src, size_t size)
   dstlen = strlen(dst);
   size   -= dstlen + 1;
 
-  if (!size) return (dstlen);
+  if (!size) return dstlen;
 
   srclen = strlen(src);
 

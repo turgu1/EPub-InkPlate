@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __EPUB__ 1
 #include "epub.hpp"
 
@@ -59,17 +63,16 @@ EPub::check_mimetype()
 
 #define ERR(e) { err = e; break; }
 
-const char *
-EPub::get_opf_filename()
+bool
+EPub::get_opf_filename(std::string & filename)
 {
   int          err = 0;
   char       * data;
   uint32_t     size;
-  const char * fname = nullptr;
 
   // A file named 'META-INF/container.xml' must be present and point to the OPF file
   LOG_D("Check container.xml.");
-  if (!(data = unzip.get_file("META-INF/container.xml", size))) return nullptr;
+  if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
   
   xml_document    doc;
   xml_node        node;
@@ -79,7 +82,7 @@ EPub::get_opf_filename()
   if (res.status != status_ok) {
     LOG_E("xml load error: %d", res.status);
     free(data);
-    return nullptr;
+    return false;
   }
 
   bool completed = false;
@@ -98,7 +101,7 @@ EPub::get_opf_filename()
     if (!node) ERR(4);
     if (!(attr = node.attribute("full-path"))) ERR(5);
     
-    fname = attr.value();
+    filename.assign(attr.value());
 
     completed = true;
   }
@@ -110,11 +113,11 @@ EPub::get_opf_filename()
   doc.reset(); 
   free(data);
 
-  return fname;
+  return completed;
 }
 
 bool 
-EPub::get_opf(const char * filename)
+EPub::get_opf(std::string & filename)
 {
   int err = 0;
   uint32_t size;
@@ -124,10 +127,10 @@ EPub::get_opf(const char * filename)
 
   bool completed = false;
   while (!completed) {
-    extract_path(filename, opf_base_path);
+    extract_path(filename.c_str(), opf_base_path);
     LOG_D("opf_base_path: %s", opf_base_path.c_str());
 
-    if (!(opf_data = unzip.get_file(filename, size))) ERR(6);
+    if (!(opf_data = unzip.get_file(filename.c_str(), size))) ERR(6);
 
     xml_parse_result res = opf.load_buffer_inplace(opf_data, size);
     if (res.status != status_ok) {
@@ -412,8 +415,8 @@ EPub::open_file(const std::string & epub_filename)
   if (!check_mimetype()) return false;
 
   LOG_D("Getting the OPF file");
-  const char * filename;
-  if ((filename = get_opf_filename()) == nullptr) return false;
+  std::string filename;
+  if (!get_opf_filename(filename)) return false;
 
   if (!get_opf(filename)) {
     LOG_E("EPub open_file: Unable to get opf of %s", epub_filename.c_str());

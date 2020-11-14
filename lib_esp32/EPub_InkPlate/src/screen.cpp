@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 // Using GTK on Linux to emulate InkPlate screen
 //
 // As all GTK related code is located in this module, we also implement

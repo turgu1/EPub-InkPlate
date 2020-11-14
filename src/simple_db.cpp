@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __SIMPLE_DB__ 1
 #include "simple_db.hpp"
 

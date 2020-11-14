@@ -1,5 +1,6 @@
 The following are the license descriptions for each part of the
-EPubInkPlate software.
+EPubInkPlate software. Beware of the limitations related to some of
+the libraries described below.
 
 ----- EPubInkPlate License - MIT License ----------------------------------------
 

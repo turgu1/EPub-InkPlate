@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define _TTF_ 1
 #include "ttf2.hpp"
 
@@ -17,11 +21,12 @@ TTF::TTF(const std::string & filename)
     int error = FT_Init_FreeType(& library);
     if (error) {
       LOG_E("An error occurred during FreeType library initialization.");
+      std::abort();
     }
   }
 
+  add_buff_to_byte_pool();
   set_font_face_from_file(filename);
-
   memory_font  = nullptr;
   current_size = -1;
 }
@@ -37,6 +42,7 @@ TTF::TTF(unsigned char * buffer, int32_t size)
     }
   }
 
+  add_buff_to_byte_pool();
   set_font_face_from_memory(buffer, size);
   current_size = -1;
 }
@@ -44,6 +50,37 @@ TTF::TTF(unsigned char * buffer, int32_t size)
 TTF::~TTF()
 {
   if (face != nullptr) clear_face();
+}
+
+void
+TTF::add_buff_to_byte_pool()
+{
+  BytePool * pool = (BytePool *) allocate(BYTE_POOL_SIZE);
+  if (pool == nullptr) {
+    LOG_E("Unable to allocated memory for bytes pool.");
+    std::abort();
+  }
+  byte_pools.push_front(pool);
+
+  byte_pool_idx = 0;
+}
+
+uint8_t * 
+TTF::byte_pool_alloc(uint16_t size)
+{
+  if (size > BYTE_POOL_SIZE) {
+    LOG_E("Byte Pool Size NOT BIG ENOUGH!!!");
+    std::abort();
+  }
+  if ((byte_pool_idx + size) > BYTE_POOL_SIZE) {
+    LOG_D("Adding new Byte Pool buffer.");
+    add_buff_to_byte_pool();
+  }
+
+  uint8_t * buff = &(*byte_pools.front())[byte_pool_idx];
+  byte_pool_idx += size;
+
+  return buff;
 }
 
 void
@@ -62,11 +99,15 @@ TTF::clear_cache()
 {
   for (auto const & entry : cache) {
     for (auto const & glyph : entry.second) {
-      free(glyph.second->buffer);
       bitmap_glyph_pool.deleteElement(glyph.second);      
     }
   }
 
+  for (auto * buff : byte_pools) {
+    free(buff);
+  }
+  byte_pools.clear();
+  
   cache.clear();
   cache.reserve(50);
 }
@@ -160,7 +201,7 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
       int32_t size = glyph->pitch * glyph->rows;
 
       if (size > 0) {
-        glyph->buffer = (unsigned char *) allocate(size);
+        glyph->buffer = byte_pool_alloc(size);
 
         if (glyph->buffer == nullptr) {
           LOG_E("Unable to allocate memory for glyph.");
