@@ -172,14 +172,14 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
    This will have created several files in folder `lib_freetype`.
 
-6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains harfbuzz reference.
+6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains `harfbuzz` reference.
 7. Voilà...
 
 ### ESP-IDF configuration specifics
 
-The EPub-InkPlate application requires some functionalities to be properly setup with the ESP-IDF. The following elements have been done (No need to do it again):
+The EPub-InkPlate application requires some functionalities to be properly setup within the ESP-IDF. The following elements have been done (No need to do it again):
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of this partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.5MB OTA partitions.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.5MB OTA partitions.
   
 - **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offer 4MB+4MB of additional RAM. The first 4MB is readily available to integrate to the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
 

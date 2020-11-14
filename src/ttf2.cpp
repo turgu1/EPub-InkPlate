@@ -4,6 +4,9 @@
 #include "screen.hpp"
 #include "alloc.hpp"
 
+#include <iostream>
+#include <ostream>
+
 FT_Library TTF::library{ nullptr };
 
 TTF::TTF(const std::string & filename)
@@ -60,15 +63,16 @@ TTF::clear_cache()
   for (auto const & entry : cache) {
     for (auto const & glyph : entry.second) {
       free(glyph.second->buffer);
-      free(glyph.second);      
+      bitmap_glyph_pool.deleteElement(glyph.second);      
     }
   }
+
   cache.clear();
   cache.reserve(50);
 }
 
 TTF::BitmapGlyph *
-TTF::get_glyph(int32_t charcode)
+TTF::get_glyph(int32_t charcode, bool load_bitmap)
 {
   int error;
   GlyphsCache::iterator cit;
@@ -98,55 +102,103 @@ TTF::get_glyph(int32_t charcode)
         LOG_E("Unable to load glyph for charcode: %d", charcode);
         return nullptr;
       }
-      else {
-        if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP /* FT_GLYPH_FORMAT_BITMAP */) {
-          error = FT_Render_Glyph(face->glyph,            /* glyph slot  */
-                                  FT_RENDER_MODE_MONO); /* render mode */
-          if (error) {
-            LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
-            return nullptr;
-          }
-        }
-      }
+      // else if (load_bitmap) {
+      //   if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP /* FT_GLYPH_FORMAT_BITMAP */) {
+      //     error = FT_Render_Glyph(face->glyph,            /* glyph slot  */
+      //                             FT_RENDER_MODE_MONO); /* render mode */
+      //     if (error) {
+      //       LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
+      //       return nullptr;
+      //     }
+      //   }
+      // }
     }
 
-    BitmapGlyph * glyph = (BitmapGlyph *) allocate(sizeof(BitmapGlyph));
+    BitmapGlyph * glyph = bitmap_glyph_pool.newElement();
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
       return nullptr;
     }
 
-    FT_Glyph ft_glyph;
+    FT_GlyphSlot slot = face->glyph;
 
-    if ((error = FT_Get_Glyph(face->glyph, (FT_Glyph *) &ft_glyph))) {
-      LOG_E("Unable to copy glyph... Out of memory?");
-      return nullptr;
-    }
+    glyph->root     =  this;
+    glyph->width    =  slot->metrics.width  >>  6;
+    glyph->rows     =  slot->metrics.height >>  6;
 
-    glyph->pitch    = ((FT_BitmapGlyph)ft_glyph)->bitmap.pitch;
-    glyph->width    = ((FT_BitmapGlyph)ft_glyph)->bitmap.width;
-    glyph->rows     = ((FT_BitmapGlyph)ft_glyph)->bitmap.rows;
-    glyph->xoff     = ((FT_BitmapGlyph)ft_glyph)->left;
-    glyph->yoff     = -((FT_BitmapGlyph)ft_glyph)->top;
-    glyph->advance  = ((FT_BitmapGlyph)ft_glyph)->root.advance.x >> 16;
-    //glyph->left_side = ;
-    glyph->root     = this;
+    if (load_bitmap) {
 
-    int32_t size = glyph->pitch * glyph->rows;
-    if (size > 0) {
-      glyph->buffer = (unsigned char *) allocate(size);
-
-      if (glyph->buffer == nullptr) {
-        LOG_E("Unable to allocate memory for glyph.");
-        return nullptr;
+      if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP /* FT_GLYPH_FORMAT_BITMAP */) {
+        error = FT_Render_Glyph(face->glyph,            /* glyph slot  */
+                                FT_RENDER_MODE_MONO); /* render mode */
+        if (error) {
+          LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
+          return nullptr;
+        }
       }
 
-      memcpy(glyph->buffer, ((FT_BitmapGlyph)ft_glyph)->bitmap.buffer, size);
+      // FT_Glyph ft_glyph;
+
+      // if ((error = FT_Get_Glyph(face->glyph, (FT_Glyph *) &ft_glyph))) {
+      //   LOG_E("Unable to copy glyph... Out of memory?");
+      //   return nullptr;
+      // }
+
+      // glyph->pitch    =  ((FT_BitmapGlyph)ft_glyph)->bitmap.pitch;
+      // glyph->width    =  ((FT_BitmapGlyph)ft_glyph)->bitmap.width;
+      // glyph->rows     =  ((FT_BitmapGlyph)ft_glyph)->bitmap.rows;
+      // glyph->xoff     =  ((FT_BitmapGlyph)ft_glyph)->left;
+      // glyph->yoff     = -((FT_BitmapGlyph)ft_glyph)->top;
+      // glyph->advance  =  ((FT_BitmapGlyph)ft_glyph)->root.advance.x >> 16;
+      //glyph->left_side = ;
+
+      glyph->pitch = slot->bitmap.pitch;
+      glyph->rows  = slot->bitmap.rows;
+      glyph->width = slot->bitmap.width;
+
+      int32_t size = glyph->pitch * glyph->rows;
+
+      if (size > 0) {
+        glyph->buffer = (unsigned char *) allocate(size);
+
+        if (glyph->buffer == nullptr) {
+          LOG_E("Unable to allocate memory for glyph.");
+          return nullptr;
+        }
+        // else {
+        //   LOG_D("Allocated %d bytes for glyph.", size)
+        // }
+
+        memcpy(glyph->buffer, slot->bitmap.buffer, size);
+
+        // memcpy(glyph->buffer, ((FT_BitmapGlyph)ft_glyph)->bitmap.buffer, size);
+      }
+      else {
+        glyph->buffer = nullptr;
+      }
+
+      // FT_Done_Glyph(ft_glyph);
     }
     else {
-      glyph->buffer = nullptr;
+      glyph->buffer =  nullptr;
+      glyph->pitch  =  0;
     }
+
+    glyph->xoff     =  slot->bitmap_left;
+    glyph->yoff     = -slot->bitmap_top;
+    glyph->advance  =  slot->advance.x >>  6;
+
+    // std::cout << "Glyph: " <<
+    //   " w:"  << glyph->width <<
+    //   " bw:" << slot->bitmap.width <<
+    //   " r:"  << glyph->rows <<
+    //   " br:" << slot->bitmap.rows <<
+    //   " p:"  << glyph->pitch <<
+    //   " x:"  << glyph->xoff <<
+    //   " y:"  << glyph->yoff <<
+    //   " a:"  << glyph->advance << std::endl;
+
     cache[current_size][charcode] = glyph;
     return glyph;
   }

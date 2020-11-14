@@ -40,10 +40,14 @@ Page::~Page()
 void
 Page::clear_display_list()
 {
-  for (auto & entry: display_list) {
-    if (entry.command == IMAGE) {
-      if (entry.kind.image_entry.image.bitmap) delete [] entry.kind.image_entry.image.bitmap;
+  for (auto * entry: display_list) {
+    if (entry->command == IMAGE) {
+      if (entry->kind.image_entry.image.bitmap) {
+        delete [] entry->kind.image_entry.image.bitmap;
+      }
     }
+    display_list_entry_pool.deleteElement(entry);
+    entry = nullptr;
   }
   display_list.clear();
 }
@@ -51,7 +55,7 @@ Page::clear_display_list()
 void
 Page::clear_line_list()
 {
-  // As the image bitmap has been moved to the display_list, nothing required 
+  // As the entries have been moved to the display_list, nothing required 
   // specific memory management activity.
   line_list.clear();
 }
@@ -136,23 +140,23 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
   if (fmt.align == CSS::LEFT_ALIGN) {
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
-        DisplayListEntry entry;
-        entry.command = GLYPH;
-        entry.kind.glyph_entry.glyph  = glyph;
-        entry.x = xpos + glyph->xoff;
-        entry.y = ypos + glyph->yoff;
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
+        DisplayListEntry * entry = display_list_entry_pool.newElement();
+        entry->command = GLYPH;
+        entry->kind.glyph_entry.glyph = glyph;
+        entry->x = xpos + glyph->xoff;
+        entry->y = ypos + glyph->yoff;
 
         #if DEBUGGING
           if ((entry.x < 0) || (entry.y < 0)) {
-            LOG_E("Put_str_at with a negative location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a negative location: %d %d", entry->x, entry->y);
           }
           else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-            LOG_E("Put_str_at with a too large location: %d %d", entry.x, entry.y);
+            LOG_E("Put_str_at with a too large location: %d %d", entry->x, entry->y);
           }
         #endif
 
-        display_list.push_back(entry);
+        display_list.push_front(entry);
       
         xpos += glyph->advance;
       }
@@ -165,7 +169,7 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
 
     while (*s) {
       bool first = true;
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
         size += glyph->advance;
       }
       first = false;
@@ -193,13 +197,13 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
     s = str.c_str();
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
         
-        DisplayListEntry entry;
-        entry.command = GLYPH;
-        entry.kind.glyph_entry.glyph = glyph;
-        entry.x = x + glyph->xoff;
-        entry.y = ypos + glyph->yoff;
+        DisplayListEntry * entry = display_list_entry_pool.newElement();
+        entry->command = GLYPH;
+        entry->kind.glyph_entry.glyph = glyph;
+        entry->x = x + glyph->xoff;
+        entry->y = ypos + glyph->yoff;
 
         #if DEBUGGING
           if ((entry.x < 0) || (entry.y < 0)) {
@@ -210,7 +214,7 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
           }
         #endif
 
-        display_list.push_back(entry);
+        display_list.push_front(entry);
       
         x += glyph->advance;
       }
@@ -222,42 +226,47 @@ Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & f
 void
 Page::paint()
 {
-  if ((display_list.size() == 0) || (compute_mode != DISPLAY)) return;
+  if ((display_list.empty()) || (compute_mode != DISPLAY)) return;
   
   screen.clear();
 
-  for (auto & entry : display_list) {
-    if (entry.command == GLYPH) {
-      screen.draw_glyph(
-        entry.kind.glyph_entry.glyph->buffer, 
-        entry.kind.glyph_entry.glyph->width, 
-        entry.kind.glyph_entry.glyph->rows, 
-        entry.kind.glyph_entry.glyph->pitch, 
-        entry.x, 
-        entry.y);
+  for (auto * entry : display_list) {
+    if (entry->command == GLYPH) {
+      if (entry->kind.glyph_entry.glyph != nullptr) {
+        screen.draw_glyph(
+          entry->kind.glyph_entry.glyph->buffer, 
+          entry->kind.glyph_entry.glyph->width, 
+          entry->kind.glyph_entry.glyph->rows, 
+          entry->kind.glyph_entry.glyph->pitch, 
+          entry->x, 
+          entry->y);
+      }
+      else {
+        LOG_E("DISPLAY LIST CORRUPTED!!");
+      }
     }
-    else if (entry.command == IMAGE) {
+    else if (entry->command == IMAGE) {
       screen.draw_bitmap(
-        entry.kind.image_entry.image.bitmap, 
-        entry.kind.image_entry.image.width, 
-        entry.kind.image_entry.image.height, 
-        entry.x, 
-        entry.y);
+        entry->kind.image_entry.image.bitmap, 
+        entry->kind.image_entry.image.width, 
+        entry->kind.image_entry.image.height, 
+        entry->x, 
+        entry->y);
     }
-    else if (entry.command == HIGHLIGHT_REGION) {
+    else if (entry->command == HIGHLIGHT_REGION) {
       screen.draw_rectangle(
-        entry.kind.region_entry.width, 
-        entry.kind.region_entry.height, 
-        entry.x, 
-        entry.y,
+        entry->kind.region_entry.width, 
+        entry->kind.region_entry.height, 
+        entry->x, 
+        entry->y,
         Screen::HIGHLIGHT_COLOR);
     }
-    else if (entry.command == CLEAR_REGION) {
+    else if (entry->command == CLEAR_REGION) {
       screen.draw_rectangle(
-        entry.kind.region_entry.width, 
-        entry.kind.region_entry.height, 
-        entry.x, 
-        entry.y,
+        entry->kind.region_entry.width, 
+        entry->kind.region_entry.height, 
+        entry->x, 
+        entry->y,
         Screen::WHITE_COLOR);
     }
   };
@@ -317,7 +326,7 @@ Page::line_break(const Format & fmt)
   
   // LOG_D("line_break font index: %d", fmt.font_index);
 
-  if (line_list.size() > 0) {
+  if (!line_list.empty()) {
     add_line(fmt, false);
   }
   else {
@@ -381,7 +390,7 @@ Page::end_paragraph(const Format & fmt)
 {
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
 
-  if (line_list.size() > 0) add_line(fmt, false);
+  if (!line_list.empty()) add_line(fmt, false);
 
   ypos += fmt.margin_bottom - font->get_descender_height();
 
@@ -399,7 +408,7 @@ Page::add_line(const Format & fmt, bool justifyable)
 {
   if (ypos == 0) ypos = min_y;
 
-  xpos  = para_min_x + para_indent;
+  xpos = para_min_x + para_indent;
   if (xpos < min_x) xpos = min_x;
   int16_t line_height = glyphs_height * fmt.line_height_factor;
   ypos += top_margin + (line_height >> 1) + (glyphs_height >> 1);
@@ -423,27 +432,39 @@ Page::add_line(const Format & fmt, bool justifyable)
 
   // Get rid of space characters that are at the end of the line.
   // This is mainly required for the JUSTIFY alignment algo.
-  while (line_list.size() > 0) {
-    if (line_list.rbegin()->y > 0) line_list.pop_back(); else break;
+
+  while (!line_list.empty()) {
+    if ((*(line_list.begin()))->y > 0) {
+      DisplayListEntry * entry = *(line_list.begin());
+      if (entry->command == IMAGE) {
+        if (entry->kind.image_entry.image.bitmap) delete [] entry->kind.image_entry.image.bitmap;
+      }
+      display_list_entry_pool.deleteElement(entry);
+      line_list.pop_front(); 
+    }
+    else break;
   }
 
-  if (line_list.size() > 0) {
+  if (!line_list.empty() && (compute_mode == DISPLAY)) {
+  
+    line_list.reverse();
+
     if ((fmt.align == CSS::JUSTIFY) && justifyable) {
       int16_t target_width = (para_max_x - para_min_x - para_indent);
       int16_t loop_count = 0;
       while ((line_width < target_width) && (++loop_count < 50)) {
         bool at_least_once = false;
-        for (auto & entry : line_list) {
-          if (entry.x > 0) {
+        for (auto * entry : line_list) {
+          if (entry->x > 0) {
             at_least_once = true;
-            entry.x++;
+            entry->x++;
             if (++line_width >= target_width) break;
           }
         }
         if (!at_least_once) break; // No space available in line to justify the line
       }
       if (loop_count >= 50) {
-        for (auto & entry : line_list) entry.x = 0;
+        for (auto * entry : line_list) entry->x = 0;
       }
     }
     else {
@@ -456,38 +477,37 @@ Page::add_line(const Format & fmt, bool justifyable)
     }
   }
   
-  for (auto & entry : line_list) {
-    if (entry.command == GLYPH) {
-      int16_t x = entry.x;
-      entry.x = xpos + entry.kind.glyph_entry.glyph->xoff;
-      entry.y = ypos + entry.kind.glyph_entry.glyph->yoff;
-      xpos += (x == 0) ? entry.kind.glyph_entry.glyph->advance : x;
+  for (auto * entry : line_list) {
+    if (entry->command == GLYPH) {
+      int16_t x = entry->x;
+      entry->x = xpos + entry->kind.glyph_entry.glyph->xoff;
+      entry->y = ypos + entry->kind.glyph_entry.glyph->yoff;
+      xpos += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
     }
-    else if (entry.command == IMAGE) {
-      entry.x = xpos;
-      entry.y = ypos - entry.kind.image_entry.image.height;
-      xpos += entry.kind.image_entry.advance;
+    else if (entry->command == IMAGE) {
+      entry->x = xpos;
+      entry->y = ypos - entry->kind.image_entry.image.height;
+      xpos += entry->kind.image_entry.advance;
     }
     else {
-      LOG_E("Wrong entry type for add_line: %d", entry.command);
+      LOG_E("Wrong entry type for add_line: %d", entry->command);
     }
 
     #if DEBUGGING
-      if ((entry.x < 0) || (entry.y < 0)) {
-        LOG_E("add_line entry with a negative location: %d %d %d", entry.x, entry.y, entry.command);
+      if ((entry->x < 0) || (entry->y < 0)) {
+        LOG_E("add_line entry with a negative location: %d %d %d", entry->x, entry->y, entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
-      else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-        LOG_E("add_line with a too large location: %d %d %d", entry.x, entry.y, entry.command);
+      else if ((entry->x >= Screen::WIDTH) || (entry->y >= Screen::HEIGHT)) {
+        LOG_E("add_line with a too large location: %d %d %d", entry->x, entry->y, entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
     #endif
 
-    display_list.push_back(std::move(entry));
+    display_list.push_front(entry);
   };
-
   
   line_width = line_height = glyphs_height = 0;
   clear_line_list();
@@ -503,51 +523,53 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space)
 {
   if (is_space && (line_width == 0)) return;
 
-  DisplayListEntry entry;
-  entry.command = GLYPH;
-  entry.kind.glyph_entry.glyph = glyph;
-  entry.x = entry.y = is_space ?  glyph->advance : 0;
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
+
+  entry->command = GLYPH;
+  entry->kind.glyph_entry.glyph = glyph;
+  entry->x = entry->y = is_space ? glyph->advance : 0;
   
-  if (glyphs_height < glyph->root->get_line_height()) glyphs_height= glyph->root->get_line_height();
+  if (glyphs_height < glyph->root->get_line_height()) glyphs_height = glyph->root->get_line_height();
 
   line_width += (glyph->advance);
 
-  line_list.push_back(std::move(entry));
+  line_list.push_front(entry);
 }
 
 void 
 Page::add_image_to_line(Image & image, int16_t advance, bool copy)
 {
-  DisplayListEntry entry;
-  entry.command = IMAGE;
-  entry.kind.image_entry.image   = image;
-  entry.kind.image_entry.advance = advance;
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
+
+  entry->command = IMAGE;
+  entry->kind.image_entry.image   = image;
+  entry->kind.image_entry.advance = advance;
   
   if (compute_mode == DISPLAY) {
     if (copy) {
       int32_t size = image.width * image.height;
       if (image.bitmap != nullptr) {
-        entry.kind.image_entry.image.bitmap = new unsigned char[size];
-        memcpy((void *) entry.kind.image_entry.image.bitmap, image.bitmap, size);
+        entry->kind.image_entry.image.bitmap = new unsigned char[size];
+        memcpy((void *) entry->kind.image_entry.image.bitmap, image.bitmap, size);
       }
       else {
-        entry.kind.image_entry.image.bitmap = nullptr;
+        entry->kind.image_entry.image.bitmap = nullptr;
       }
     }
     else {
-      entry.kind.image_entry.image.bitmap = image.bitmap;
+      entry->kind.image_entry.image.bitmap = image.bitmap;
     }
   }
   else {
-    entry.kind.image_entry.image.bitmap = nullptr;
+    entry->kind.image_entry.image.bitmap = nullptr;
   }
-  entry.x = entry.y = 0;
+  entry->x = entry->y = 0;
   
   if (glyphs_height < image.height) glyphs_height = image.height;
 
   line_width += advance;
 
-  line_list.push_back(std::move(entry));
+  line_list.push_front(entry);
 }
 
 #define NEXT_LINE_REQUIRED_SPACE (ypos + (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height())
@@ -563,7 +585,7 @@ Page::add_word(const char * word,  const Format & fmt)
 
   if (font == nullptr) return false;
 
-  if (line_list.size() == 0) {
+  if (line_list.empty()) {
     // We are about to start a new line. Check if it will fit on the page.
     screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
     if (screen_is_full) {
@@ -574,7 +596,7 @@ Page::add_word(const char * word,  const Format & fmt)
   int16_t width = 0;
   bool    first = true;
   while (*str) {
-    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first));
+    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first), compute_mode != LOCATION);
     if (glyph) width += glyph->advance;
     first = false;
   }
@@ -593,8 +615,8 @@ Page::add_word(const char * word,  const Format & fmt)
   first = true;
   while (*word) {
     if (font) {
-      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first))) == nullptr) {
-        glyph = font->get_glyph('?');
+      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first), compute_mode != LOCATION)) == nullptr) {
+        glyph = font->get_glyph('?', compute_mode != LOCATION);
       }
       if (glyph) {
         add_glyph_to_line(glyph, *font, false);
@@ -618,7 +640,7 @@ Page::add_char(const char * ch, const Format & fmt)
 
   if (screen_is_full) return false;
 
-  if (line_list.size() == 0) {
+  if (line_list.empty()) {
     
     // We are about to start a new line. Check if it will fit on the page.
 
@@ -630,7 +652,7 @@ Page::add_char(const char * ch, const Format & fmt)
 
   int32_t code = to_unicode(&ch, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code);
+  glyph = font->get_glyph(code, compute_mode != LOCATION);
 
   if (glyph != nullptr) {
     // Verify that there is enough space for the glyph on the line.
@@ -664,7 +686,7 @@ Page::add_image(Image & image, const Format & fmt)
   const char * str = "m";
   int32_t code = to_unicode(&str, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code);
+  glyph = font->get_glyph(code, compute_mode != LOCATION);
 
   // Compute available space to put the image.
 
@@ -786,22 +808,22 @@ void
 Page::put_image(Image & image, 
                 int16_t x, int16_t y)
 {
-  DisplayListEntry entry;
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
 
   if (compute_mode == DISPLAY) {
     int32_t size = image.width * image.height;
-    entry.kind.image_entry.image.bitmap = new unsigned char [size];
-    memcpy((void *)entry.kind.image_entry.image.bitmap, image.bitmap, size);
+    entry->kind.image_entry.image.bitmap = new unsigned char [size];
+    memcpy((void *)entry->kind.image_entry.image.bitmap, image.bitmap, size);
   }
   else {
-    entry.kind.image_entry.image.bitmap = nullptr;
+    entry->kind.image_entry.image.bitmap = nullptr;
   }
 
-  entry.command = IMAGE;
-  entry.kind.image_entry.image.width  = image.width;
-  entry.kind.image_entry.image.height = image.height;
-  entry.x       = x;
-  entry.y       = y;
+  entry->command = IMAGE;
+  entry->kind.image_entry.image.width  = image.width;
+  entry->kind.image_entry.image.height = image.height;
+  entry->x       = x;
+  entry->y       = y;
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
@@ -812,7 +834,7 @@ Page::put_image(Image & image,
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list.push_front(entry);
 }
 
 void 
@@ -820,13 +842,13 @@ Page::put_highlight(
             int16_t width, int16_t height, 
             int16_t x, int16_t y)
 {
-  DisplayListEntry entry;
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
 
-  entry.command = HIGHLIGHT_REGION;
-  entry.kind.region_entry.width   = width;
-  entry.kind.region_entry.height  = height;
-  entry.x       = x;
-  entry.y       = y;
+  entry->command = HIGHLIGHT_REGION;
+  entry->kind.region_entry.width   = width;
+  entry->kind.region_entry.height  = height;
+  entry->x       = x;
+  entry->y       = y;
 
   #if DEBUGGING
     if ((entry.x < 0) || (entry.y < 0)) {
@@ -837,7 +859,7 @@ Page::put_highlight(
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list.push_front(entry);
 }
 
 void 
@@ -845,27 +867,27 @@ Page::clear_region(
             int16_t width, int16_t height, 
             int16_t x, int16_t y)
 {
-  DisplayListEntry entry;
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
 
-  entry.command = CLEAR_REGION;
-  entry.kind.region_entry.width   = width;
-  entry.kind.region_entry.height  = height;
-  entry.x       = x;
-  entry.y       = y;
+  entry->command = CLEAR_REGION;
+  entry->kind.region_entry.width   = width;
+  entry->kind.region_entry.height  = height;
+  entry->x       = x;
+  entry->y       = y;
 
-  entry.x       = x;
-  entry.y       = y;
+  entry->x       = x;
+  entry->y       = y;
 
   #if DEBUGGING
-    if ((entry.x < 0) || (entry.y < 0)) {
-      LOG_E("Put_str_at with a negative location: %d %d", entry.x, entry.y);
+    if ((entry->x < 0) || (entry->y < 0)) {
+      LOG_E("Put_str_at with a negative location: %d %d", entry->x, entry->y);
     }
-    else if ((entry.x >= Screen::WIDTH) || (entry.y >= Screen::HEIGHT)) {
-      LOG_E("Put_str_at with a too large location: %d %d", entry.x, entry.y);
+    else if ((entry->x >= Screen::WIDTH) || (entry->y >= Screen::HEIGHT)) {
+      LOG_E("Put_str_at with a too large location: %d %d", entry->x, entry->y);
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list.push_front(entry);
 }
 
 bool

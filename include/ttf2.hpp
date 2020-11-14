@@ -1,7 +1,8 @@
-#ifndef _TTF_HPP_
-#define _TTF_HPP_
+#ifndef __TTF_HPP__
+#define __TTF_HPP__
 
 #include "logging.hpp"
+#include "memory_pool.hpp"
 
 #include <ft2build.h>
 
@@ -14,7 +15,6 @@
 class TTF
 {
   public:
-    //typedef FT_BitmapGlyph BitmapGlyph;
     struct BitmapGlyph {
       unsigned char * buffer;
       TTF * root;
@@ -48,7 +48,7 @@ class TTF
      * @param charcode Character code as a unicode number.
      * @return BitmapGlyph The glyph associated to the unicode character.
      */
-    BitmapGlyph * get_glyph(int32_t charcode);
+    BitmapGlyph * get_glyph(int32_t charcode, bool load_bitmap = true);
 
     /**
      * @brief Set the font size
@@ -106,6 +106,8 @@ class TTF
     typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
     typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
     GlyphsCache cache;
+
+    MemoryPool<BitmapGlyph> bitmap_glyph_pool;
 
     unsigned char * memory_font;                      ///< Buffer for memory fonts
     int current_size;

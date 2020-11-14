@@ -2,6 +2,7 @@
 #define __CSS_HPP__
 
 #include "global.hpp"
+#include "memory_pool.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -139,6 +140,7 @@ class CSS
       PropertyId id;
       Values     values;
     };
+
     typedef std::forward_list<Property *> Properties;
     // typedef std::vector<Properties> PropertySuites;
     typedef std::list<Properties *> PropertySuite;
@@ -160,6 +162,10 @@ class CSS
     std::string id;
     std::string file_folder_path; 
     const char * buffer_start;
+
+    static MemoryPool<Value> value_pool;
+    static MemoryPool<Property> property_pool;
+    static MemoryPool<Properties> properties_pool;
 
     const char * parse_selector(const char * str, std::string & selector);
     static const char * parse_property_name(const char * str, std::string & name);
@@ -183,6 +189,16 @@ class CSS
       // std::cout << "No" << std::endl;
       return nullptr;
     };
+
+    static inline void clear_properties(Properties * properties) {
+      for (auto * property : * properties) {
+        for (auto * value : property->values) {
+          value_pool.deleteElement(value);
+        }
+        property_pool.deleteElement(property);
+      }
+      properties_pool.deleteElement(properties);
+    }
 
     static const Values * get_values_from_suite(const PropertySuite & props, 
                                                 PropertyId id) {

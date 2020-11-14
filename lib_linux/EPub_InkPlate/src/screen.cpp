@@ -158,7 +158,7 @@ Screen::draw_rectangle(
   uint16_t height, 
   int16_t  x, 
   int16_t  y,
-  uint8_t color) //, bool show)
+  uint8_t  color) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
@@ -205,7 +205,7 @@ Screen::draw_glyph(
       //   setrgb(g, j, i, id.stride, v);
       // }
       uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-      setrgb(g, j, i, id.stride, v ? 0 : 255);
+      if (v) setrgb(g, j, i, id.stride, 0);
     }
   }
 }
@@ -318,7 +318,6 @@ Screen::setup()
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(select_button), TRUE,  TRUE,  0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(home_button  ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1), FALSE, FALSE, 0);
-
 
   gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(vbox1));
 

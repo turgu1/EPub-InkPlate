@@ -60,17 +60,12 @@ BookView::page_locs_recurse(xml_node node, Page::Format fmt)
     adjust_format(node, fmt, element_properties); // Adjust format from element attributes
 
     if (element_properties) {
-      for (auto * property : *element_properties) {
-        for (auto * val : property->values) {
-          delete val;
-        }
-        delete property;
-      }
-      delete element_properties;
+      CSS::clear_properties(element_properties);
       element_properties = nullptr;
     }
 
-    if ((element_it = elements.find(name)) != elements.end()) {
+    std::string the_name = name;
+    if ((element_it = elements.find(the_name)) != elements.end()) {
       
       switch (element_it->second) {
         case BODY:
@@ -622,7 +617,7 @@ BookView::build_page_recurse(pugi::xml_node node, Page::Format fmt)
     adjust_format(node, fmt, element_properties); // Adjust format from element attributes
 
     if (element_properties) {
-      delete element_properties;
+      CSS::clear_properties(element_properties);
       element_properties = nullptr;
     }
       

@@ -280,7 +280,7 @@ EPub::get_item(pugi::xml_node itemref)
     uint32_t size;
     extract_path(attr.value(), current_item_file_path);
 
-    LOG_D("current_item_file_path: %s.", current_item_file_path.c_str());
+    // LOG_D("current_item_file_path: %s.", current_item_file_path.c_str());
 
     if (!(current_item_data = retrieve_file(attr.value(), size))) ERR(5);
 

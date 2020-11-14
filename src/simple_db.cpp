@@ -100,7 +100,7 @@ SimpleDB::add_record(void * record, int32_t size)
 bool 
 SimpleDB::get_record(void * record, int32_t size) 
 {
-  LOG_D("Reading record of size %d", size);
+  // LOG_D("Reading record of size %d", size);
 
   if ((size <= 0) || (current_record_idx >= record_count)) return false;
   if (fseek(db_file, record_offset[current_record_idx] + sizeof(int32_t), SEEK_SET)) return false;
@@ -111,7 +111,7 @@ SimpleDB::get_record(void * record, int32_t size)
 bool 
 SimpleDB::get_partial_record(void * record, int32_t size, int32_t offset) 
 {
-  LOG_D("Reading partial record of size %d at offset %d", size, offset);
+  // LOG_D("Reading partial record of size %d at offset %d", size, offset);
 
   if ((size <= 0) || (current_record_idx >= record_count)) return false;
   if (fseek(db_file, record_offset[current_record_idx] + sizeof(int32_t) + offset, SEEK_SET)) return false;

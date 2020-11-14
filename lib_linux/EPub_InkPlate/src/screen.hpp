@@ -22,9 +22,9 @@
 class Screen : NonCopyable
 {
   public:
-    static const uint16_t WIDTH           = 600;
-    static const uint16_t HEIGHT          = 800;
-    static const uint16_t RESOLUTION      = 166;  ///< Pixels per inch
+    static const uint16_t WIDTH           =  600;
+    static const uint16_t HEIGHT          =  800;
+    static const uint16_t RESOLUTION      =  166;  ///< Pixels per inch
     static const uint8_t  HIGHLIGHT_COLOR = 0x00;
     static const uint8_t  WHITE_COLOR     = 0xFF;
     

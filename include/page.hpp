@@ -2,11 +2,12 @@
 #define __PAGE_HPP__
 
 #include <string>
-#include <list>
+#include <forward_list>
 
 #include "global.hpp"
 #include "fonts.hpp"
 #include "css.hpp"
+#include "memory_pool.hpp"
 
 /**
  * @brief Page preparation
@@ -48,18 +49,29 @@ class Page
       int16_t height;
     };
 
+    /**
+     * @brief Compute mode
+     * 
+     * Used to select the level of processing made by the Page class to help
+     * performance: LOCATION is used when computing the location of pages in
+     * the EPUB document. No screen updates, no images, no glyphs are 
+     * rasterized. MOVE is used when it's time to travel from the beginning 
+     * of a book item (often related to chapters) to the beginning of the 
+     * page to be shown. DISPLAY is used when preparing the page to be shown
+     * on screen. 
+     */
     enum ComputeMode { LOCATION, MOVE, DISPLAY };
 
   private:
     static constexpr char const * TAG = "Page";
 
-    enum DisplayListCommand { GLYPH, IMAGE, HIGHLIGHT_REGION, CLEAR_REGION };
+    enum DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT_REGION, CLEAR_REGION };
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
           TTF::BitmapGlyph * glyph;    ///< Glyph
         } glyph_entry;
-        struct ImageEntry {           ///< Used for IMAGE
+        struct ImageEntry {            ///< Used for IMAGE
           Image image;       
           int16_t advance;             ///< Horizontal advance on the baseline
         } image_entry;
@@ -71,7 +83,7 @@ class Page
       DisplayListCommand command;      ///< Command
     };
 
-    typedef std::list<DisplayListEntry> DisplayList;
+    typedef std::forward_list<DisplayListEntry *> DisplayList;
 
     /**
      * @brief Book Compute Mode
@@ -83,6 +95,8 @@ class Page
      * computations.
      */
     ComputeMode compute_mode;
+
+    MemoryPool <DisplayListEntry> display_list_entry_pool;
 
     DisplayList display_list; ///< The list of characters and their position to put on screen
     DisplayList line_list;    ///< Line preparation for paragraphs
@@ -109,7 +123,7 @@ class Page
    ~Page();
 
     void set_compute_mode(ComputeMode mode) { compute_mode = mode; }
-    ComputeMode get_compute_mode() { return compute_mode; }
+    inline ComputeMode get_compute_mode() { return compute_mode; }
 
     /**
      * @brief Start a new page

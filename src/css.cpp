@@ -6,6 +6,10 @@
 #include <cstring>
 #include <cctype>
 
+MemoryPool<CSS::Value> CSS::value_pool;
+MemoryPool<CSS::Property> CSS::property_pool;
+MemoryPool<CSS::Properties> CSS::properties_pool;
+
 CSS::PropertyMap CSS::property_map = {
   { "not-used",       CSS::NOT_USED       },
   { "font-family",    CSS::FONT_FAMILY    }, 
@@ -168,7 +172,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
 
   Property * property;
 
-  CSS::Properties * properties = new Properties;
+  CSS::Properties * properties = properties_pool.newElement();
 
   while (str < end) {
     str = parse_property_name(str, w);
@@ -190,7 +194,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
     bool skip_property = id == NOT_USED;
 
     if (!skip_property) {
-      property = new Property;
+      property = property_pool.newElement();
       property->values.clear();
       property->id = id;
     }
@@ -198,7 +202,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
     // parse values
 
     while (str < end) {
-      Value * v = skip_property ? nullptr : new Value;
+      Value * v = skip_property ? nullptr : value_pool.newElement();
 
       str = parse_value(str, v, buffer_start);
 
@@ -387,7 +391,7 @@ CSS::CSS(std::string folder_path,
         if (!ghost) suites.push_front(properties);
       }
       else if (properties) { // Is empty, but takes some bytes...
-        delete properties;
+        properties_pool.deleteElement(properties);
       }
     }
 
@@ -410,13 +414,7 @@ CSS::CSS(std::string folder_path,
 CSS::~CSS()
 {
   for (auto * properties : suites) {
-    for (auto * property : *properties) {
-      for (auto * val : property->values) {
-        delete val;
-      }
-      delete property;
-    }
-    delete properties;
+    clear_properties(properties);
   }
   suites.clear();
 }
