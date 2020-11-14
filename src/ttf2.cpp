@@ -25,7 +25,6 @@ TTF::TTF(const std::string & filename)
     }
   }
 
-  add_buff_to_byte_pool();
   set_font_face_from_file(filename);
   memory_font  = nullptr;
   current_size = -1;
@@ -42,7 +41,6 @@ TTF::TTF(unsigned char * buffer, int32_t size)
     }
   }
 
-  add_buff_to_byte_pool();
   set_font_face_from_memory(buffer, size);
   current_size = -1;
 }
@@ -72,7 +70,7 @@ TTF::byte_pool_alloc(uint16_t size)
     LOG_E("Byte Pool Size NOT BIG ENOUGH!!!");
     std::abort();
   }
-  if ((byte_pool_idx + size) > BYTE_POOL_SIZE) {
+  if (byte_pools.empty() || (byte_pool_idx + size) > BYTE_POOL_SIZE) {
     LOG_D("Adding new Byte Pool buffer.");
     add_buff_to_byte_pool();
   }
@@ -143,16 +141,6 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
         LOG_E("Unable to load glyph for charcode: %d", charcode);
         return nullptr;
       }
-      // else if (load_bitmap) {
-      //   if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP /* FT_GLYPH_FORMAT_BITMAP */) {
-      //     error = FT_Render_Glyph(face->glyph,            /* glyph slot  */
-      //                             FT_RENDER_MODE_MONO); /* render mode */
-      //     if (error) {
-      //       LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
-      //       return nullptr;
-      //     }
-      //   }
-      // }
     }
 
     BitmapGlyph * glyph = bitmap_glyph_pool.newElement();
@@ -164,35 +152,20 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
 
     FT_GlyphSlot slot = face->glyph;
 
-    glyph->root     =  this;
-    glyph->width    =  slot->metrics.width  >>  6;
-    glyph->rows     =  slot->metrics.height >>  6;
+    glyph->root  = this;
+    glyph->width = slot->metrics.width  >> 6;
+    glyph->rows  = slot->metrics.height >> 6;
 
     if (load_bitmap) {
 
-      if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP /* FT_GLYPH_FORMAT_BITMAP */) {
-        error = FT_Render_Glyph(face->glyph,            /* glyph slot  */
-                                FT_RENDER_MODE_MONO); /* render mode */
+      if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+        error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                FT_RENDER_MODE_MONO);   // render mode
         if (error) {
           LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
           return nullptr;
         }
       }
-
-      // FT_Glyph ft_glyph;
-
-      // if ((error = FT_Get_Glyph(face->glyph, (FT_Glyph *) &ft_glyph))) {
-      //   LOG_E("Unable to copy glyph... Out of memory?");
-      //   return nullptr;
-      // }
-
-      // glyph->pitch    =  ((FT_BitmapGlyph)ft_glyph)->bitmap.pitch;
-      // glyph->width    =  ((FT_BitmapGlyph)ft_glyph)->bitmap.width;
-      // glyph->rows     =  ((FT_BitmapGlyph)ft_glyph)->bitmap.rows;
-      // glyph->xoff     =  ((FT_BitmapGlyph)ft_glyph)->left;
-      // glyph->yoff     = -((FT_BitmapGlyph)ft_glyph)->top;
-      // glyph->advance  =  ((FT_BitmapGlyph)ft_glyph)->root.advance.x >> 16;
-      //glyph->left_side = ;
 
       glyph->pitch = slot->bitmap.pitch;
       glyph->rows  = slot->bitmap.rows;
@@ -212,23 +185,19 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
         // }
 
         memcpy(glyph->buffer, slot->bitmap.buffer, size);
-
-        // memcpy(glyph->buffer, ((FT_BitmapGlyph)ft_glyph)->bitmap.buffer, size);
       }
       else {
         glyph->buffer = nullptr;
       }
-
-      // FT_Done_Glyph(ft_glyph);
     }
     else {
-      glyph->buffer =  nullptr;
-      glyph->pitch  =  0;
+      glyph->buffer = nullptr;
+      glyph->pitch  = 0;
     }
 
-    glyph->xoff     =  slot->bitmap_left;
-    glyph->yoff     = -slot->bitmap_top;
-    glyph->advance  =  slot->advance.x >>  6;
+    glyph->xoff    =  slot->bitmap_left;
+    glyph->yoff    = -slot->bitmap_top;
+    glyph->advance =  slot->advance.x >>  6;
 
     // std::cout << "Glyph: " <<
     //   " w:"  << glyph->width <<
@@ -252,11 +221,11 @@ TTF::set_font_size(int16_t size)
   if (current_size == size) return true;
 
   int error = FT_Set_Char_Size(
-          face,                 /* handle to face object           */
-          0,                    /* char_width in 1/64th of points  */
-          size * 64,            /* char_height in 1/64th of points */
-          Screen::RESOLUTION,   /* horizontal device resolution    */
-          Screen::RESOLUTION);  /* vertical device resolution      */
+          face,                 // handle to face object
+          0,                    // char_width in 1/64th of points
+          size * 64,            // char_height in 1/64th of points
+          Screen::RESOLUTION,   // horizontal device resolution
+          Screen::RESOLUTION);  // vertical device resolution
 
   if (error) {
     LOG_E("Unable to set font size.");
@@ -318,20 +287,6 @@ TTF::set_font_face_from_file(const std::string font_filename)
 
     return set_font_face_from_memory(buffer, length);
   }
-
-  // if (face != nullptr) clear_face();
-
-  // int error = FT_New_Face(library, font_filename.c_str(), 0, &face);
-  // if (error == FT_Err_Unknown_File_Format) {
-  //   LOG_E("The font file format is unsupported: %s", font_filename.c_str());
-  //   return false;
-  // }
-  // else if (error) {
-  //   LOG_E("The font file could not be opened or read, or is broken: %s", font_filename.c_str());
-  //   return false;
-  // }
-
-  // return true;
 }
 
 bool 
