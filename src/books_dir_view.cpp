@@ -29,7 +29,7 @@ BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
   Page::Format fmt = {
       .line_height_factor = 0.8,
-      .font_index         = 0,
+      .font_index         = 1,
       .font_size          = TITLE_FONT_SIZE,
       .indent             = 0,
       .margin_left        = 0,
@@ -71,7 +71,7 @@ BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
                          xpos - 5, ypos);
     }
 
-    fmt.font_index    = 0;
+    fmt.font_index    = 1;
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::NORMAL;
     fmt.screen_top    = ypos,
@@ -82,7 +82,7 @@ BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     page.put_text(book->title, fmt);
     page.end_paragraph(fmt);
 
-    fmt.font_index = 2;
+    fmt.font_index = 3;
     fmt.font_size  = AUTHOR_FONT_SIZE;
     fmt.font_style = Fonts::ITALIC;
 
@@ -100,7 +100,7 @@ BooksDirView::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   TTF * font = fonts.get(0, PAGENBR_FONT_SIZE);
 
   fmt.line_height_factor = 1.0;
-  fmt.font_index         = 0;
+  fmt.font_index         = 1;
   fmt.font_size          = PAGENBR_FONT_SIZE;
   fmt.font_style         = Fonts::NORMAL;
   fmt.align              = CSS::CENTER_ALIGN;
@@ -140,7 +140,7 @@ BooksDirView::highlight(int16_t item_idx)
 
     Page::Format fmt = {
       .line_height_factor = 0.8,
-      .font_index         = 0,
+      .font_index         = 1,
       .font_size          = TITLE_FONT_SIZE,
       .indent             = 0,
       .margin_left        = 0,
@@ -164,9 +164,7 @@ BooksDirView::highlight(int16_t item_idx)
     page.put_text(book->title, fmt);
     page.end_paragraph(fmt);
 
-    // font = fonts.get(2, 8);
-
-    fmt.font_index = 2;
+    fmt.font_index = 3;
     fmt.font_size  = AUTHOR_FONT_SIZE;
     fmt.font_style = Fonts::ITALIC;
 
@@ -190,7 +188,7 @@ BooksDirView::highlight(int16_t item_idx)
                        xpos - 5, ypos);
 
 
-    fmt.font_index    = 0,
+    fmt.font_index    = 1,
     fmt.font_size     = TITLE_FONT_SIZE,
     fmt.font_style    = Fonts::NORMAL,
     fmt.screen_top    = ypos,
@@ -201,7 +199,7 @@ BooksDirView::highlight(int16_t item_idx)
     page.put_text(book->title, fmt);
     page.end_paragraph(fmt);
 
-    fmt.font_index = 2,
+    fmt.font_index = 3,
     fmt.font_size  = AUTHOR_FONT_SIZE,
     fmt.font_style = Fonts::ITALIC,
 

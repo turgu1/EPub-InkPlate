@@ -31,9 +31,10 @@ class Fonts
     };
 
     /**
-     * @brief Clear fonts loaded from book
+     * @brief Clear fonts loaded from a book
      * 
-     * This will keep the default fonts loaded from the application folder.
+     * This will keep the default fonts loaded from the application folder. It will clean
+     * all glyphs in all fonts caches.
      */
     void clear();
 

@@ -97,6 +97,8 @@ class TTF
       return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6); 
     }
 
+    void clear_cache();
+
   private:
     static constexpr uint16_t BYTE_POOL_SIZE = 4096;
 
@@ -120,8 +122,7 @@ class TTF
 
     static FT_Library library;
     void clear_face();
-    void clear_cache();
-
+    
     /**
      * @brief Set the font face object
      * 

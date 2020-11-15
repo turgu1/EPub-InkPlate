@@ -93,6 +93,8 @@ The EPub-InkPlate application requires that a micro-SD Card be present in the de
 
 You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `bin/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. Please choose fonts that do not take too much space in memory as they are loaded in memory at start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
 
+Another font is mandatory. It is located in `bin/fonts/drawings.ttf` and must be located in the micro-SD Card `fonts` directory. It contains the icons presented in parameter/option menus.
+
 ## On the complexity of EPUB page formatting
 
 The EPUB standard allows for the use of a very large amount of flexible formatting capabilities available with HTML/CSS engines. This is quite a challenge to pack a reasonable amount of interpretation of formatting scripts on a small processor.

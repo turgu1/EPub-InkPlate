@@ -274,7 +274,7 @@ BookView::build_page_locs()
     int16_t idx;
 
     if ((idx = fonts.get_index("Fontbase", Fonts::NORMAL)) == -1) {
-      idx = 0;
+      idx = 1;
     }
 
     Page::Format fmt = {
@@ -471,7 +471,7 @@ BookView::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite 
     }
     if (idx == -1) {
       fmt.font_style = Fonts::NORMAL;
-      fmt.font_index = 0;
+      fmt.font_index = 1;
     }
     else {
       fmt.font_index = idx;
@@ -837,7 +837,7 @@ BookView::build_page_at(const EPub::Location & loc)
     int16_t idx;
 
     if ((idx = fonts.get_index("Fontbase", Fonts::NORMAL)) == -1) {
-      idx = 0;
+      idx = 1;
     }
 
     Page::Format fmt = {
@@ -880,7 +880,7 @@ BookView::build_page_at(const EPub::Location & loc)
         TTF * font = fonts.get(0, 7);
 
         fmt.line_height_factor = 1.0;
-        fmt.font_index         = 0;
+        fmt.font_index         = 1;
         fmt.font_size          = 7;
         fmt.font_style         = Fonts::NORMAL;
         fmt.align              = CSS::CENTER_ALIGN;

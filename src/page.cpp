@@ -234,6 +234,8 @@ Page::paint()
   
   screen.clear();
 
+  display_list.reverse();
+
   for (auto * entry : display_list) {
     if (entry->command == GLYPH) {
       if (entry->kind.glyph_entry.glyph != nullptr) {

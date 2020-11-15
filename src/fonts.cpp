@@ -31,15 +31,20 @@ bool Fonts::setup()
   LOG_D("Fonts initialization");
 
   std::string def         = "Default";
+  std::string draw        = "Drawings";
+
+  std::string drawings    = FONTS_FOLDER "/drawings.ttf";
+  
   std::string normal      = FONTS_FOLDER "/" FONT_NAME "-Regular."    FONT_EXT;
   std::string bold        = FONTS_FOLDER "/" FONT_NAME "-Bold."       FONT_EXT;
   std::string italic      = FONTS_FOLDER "/" FONT_NAME "-Italic."     FONT_EXT;
   std::string bold_italic = FONTS_FOLDER "/" FONT_NAME "-BoldItalic." FONT_EXT;
 
-  if (!add(def, NORMAL,      normal     )) return false;
-  if (!add(def, BOLD,        bold       )) return false;
-  if (!add(def, ITALIC,      italic     )) return false;
-  if (!add(def, BOLD_ITALIC, bold_italic)) return false;   
+  if (!add(draw, NORMAL,      drawings   )) return false;
+  if (!add(def,  NORMAL,      normal     )) return false;
+  if (!add(def,  BOLD,        bold       )) return false;
+  if (!add(def,  ITALIC,      italic     )) return false;
+  if (!add(def,  BOLD_ITALIC, bold_italic)) return false;   
 
   return true;
 }
@@ -56,11 +61,12 @@ void
 Fonts::clear()
 {
   // LOG_D("Fonts Clear!");
-  // Keep the first 4 fonts as they are reused
+  // Keep the first 5 fonts as they are reused. Caches will be cleared.
   #if USE_EPUB_FONTS
     int i = 0;
     for (auto & entry : font_cache) {
-      if (i >= 4) delete entry.font;
+      if (i >= 5) delete entry.font;
+      else entry.font->clear_cache();
       i++;
     }
     font_cache.resize(4);
