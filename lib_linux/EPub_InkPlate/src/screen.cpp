@@ -184,6 +184,29 @@ Screen::draw_rectangle(
 }
 
 void 
+Screen::clear_region(
+  uint16_t width, 
+  uint16_t height, 
+  int16_t  x, 
+  int16_t  y) //, bool show)
+{
+  GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
+  guchar    * g  = gdk_pixbuf_get_pixels(pb);
+  
+  int16_t x_max = x + width;
+  int16_t y_max = y + height;
+
+  if (y_max > HEIGHT) y_max = HEIGHT;
+  if (x_max > WIDTH ) x_max = WIDTH;
+
+  for (int j = y; j < y_max; j++) {
+    for (int i = x; i < x_max; i++) {
+      setrgb(g, j, i, id.stride, WHITE_COLOR);
+    }
+  }
+}
+
+void 
 Screen::draw_glyph(
   const unsigned char * bitmap_data, 
   uint16_t width, 

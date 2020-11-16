@@ -13,13 +13,13 @@
   #include "freertos/task.h"
   #include "logging.hpp"
 
-  #include "books_dir_controller.hpp"
-  #include "app_controller.hpp"
-  #include "fonts.hpp"
+  #include "controllers/books_dir_controller.hpp"
+  #include "controllers/app_controller.hpp"
+  #include "models/fonts.hpp"
   #include "screen.hpp"
   #include "inkplate6_ctrl.hpp"
-  #include "epub.hpp"
-  #include "unzip.hpp"
+  #include "models/epub.hpp"
+  #include "helpers/unzip.hpp"
   #include "pugixml.hpp"
   #include "nvs_flash.h"
   #include "alloc.hpp"
@@ -85,9 +85,9 @@
 
   // Linux main function
 
-  #include "books_dir_controller.hpp"
-  #include "app_controller.hpp"
-  #include "fonts.hpp"
+  #include "controllers/books_dir_controller.hpp"
+  #include "controllers/app_controller.hpp"
+  #include "models/fonts.hpp"
   #include "screen.hpp"
 
   static const char * TAG = "Main";

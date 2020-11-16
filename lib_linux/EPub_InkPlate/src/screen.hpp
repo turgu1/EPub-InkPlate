@@ -41,6 +41,8 @@ class Screen : NonCopyable
     void draw_rectangle(uint16_t width, uint16_t height, 
                         int16_t x, int16_t y,
                         uint8_t color);
+    void clear_region(uint16_t width, uint16_t height, 
+                      int16_t x, int16_t y);
     void  clear();
     void update();
     void   test();

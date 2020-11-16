@@ -110,6 +110,26 @@ Screen::draw_rectangle(
 }
 
 void 
+Screen::clear_region(
+  uint16_t width, 
+  uint16_t height, 
+  int16_t  x, 
+  int16_t  y) //, bool show)
+{
+  int16_t x_max = x + width;
+  int16_t y_max = y + height;
+
+  if (y_max > HEIGHT) y_max = HEIGHT;
+  if (x_max > WIDTH ) x_max = WIDTH;
+
+  for (int j = y; j < y_max; j++) {
+    for (int i = x; i < x_max; i++) {
+      set_pixel(i, j, WHITE_COLOR);
+    }
+  }
+}
+
+void 
 Screen::draw_glyph(
   const unsigned char * bitmap_data, 
   uint16_t width, 
