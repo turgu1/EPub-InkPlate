@@ -109,12 +109,13 @@ Screen::draw_rectangle(
   }
 }
 
-void 
-Screen::clear_region(
+void
+Screen::colorize_region(
   uint16_t width, 
   uint16_t height, 
   int16_t  x, 
-  int16_t  y) //, bool show)
+  int16_t  y,
+  uint8_t  color) //, bool show)
 {
   int16_t x_max = x + width;
   int16_t y_max = y + height;
@@ -124,7 +125,7 @@ Screen::clear_region(
 
   for (int j = y; j < y_max; j++) {
     for (int i = x; i < x_max; i++) {
-      set_pixel(i, j, WHITE_COLOR);
+      set_pixel(i, j, color);
     }
   }
 }

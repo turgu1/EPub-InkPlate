@@ -256,7 +256,7 @@ Page::put_char_at(char ch, int16_t xpos, int16_t ypos, const Format & fmt)
 }
 
 void
-Page::paint(bool clear_screen)
+Page::paint(bool clear_screen, bool no_full)
 {
   if ((display_list.empty()) || (compute_mode != DISPLAY)) return;
   
@@ -304,15 +304,24 @@ Page::paint(bool clear_screen)
         Screen::WHITE_COLOR);
     }
     else if (entry->command == CLEAR_REGION) {
-      screen.clear_region(
+      screen.colorize_region(
         entry->kind.region_entry.width, 
         entry->kind.region_entry.height, 
         entry->x, 
-        entry->y);
+        entry->y,
+        Screen::WHITE_COLOR);
+    }
+    else if (entry->command == SET_REGION) {
+      screen.colorize_region(
+        entry->kind.region_entry.width, 
+        entry->kind.region_entry.height, 
+        entry->x, 
+        entry->y,
+        Screen::HIGHLIGHT_COLOR);
     }
   };
 
-  screen.update();
+  screen.update(no_full);
 }
 
 void
@@ -374,11 +383,8 @@ Page::line_break(const Format & fmt)
     xpos  = min_x;
   }
 
-  // xpos = min_x;
-  // ypos += font->line_height();
   screen_is_full = screen_is_full || ((ypos - font->get_descender_height()) >= max_y);
   if (screen_is_full) {
-    // std::cout << "Screen full:"; show_controls();
     return false;
   }
   return true;
@@ -396,7 +402,6 @@ Page::new_paragraph(const Format & fmt, bool recover)
                               (fmt.line_height_factor * font->get_line_height()) - 
                               font->get_descender_height()) > max_y);
     if (screen_is_full) { 
-      // std::cout << "Screen full:"; show_controls(); 
       return false; 
     }
   }
@@ -419,8 +424,6 @@ Page::new_paragraph(const Format & fmt, bool recover)
     para_indent = fmt.indent;
     top_margin  = fmt.margin_top;
   }
- 
-  // std::cout << "New Paragraph:"; show_controls();
 
   return true;
 }
@@ -438,7 +441,6 @@ Page::end_paragraph(const Format & fmt)
     screen_is_full = true;
     return false;
   }
-  // std::cout << "End Paragraph:"; show_controls();
 
   return true;
 }
@@ -460,15 +462,6 @@ Page::add_line(const Format & fmt, bool justifyable)
       show_fmt(fmt, "   ->  ");  
     }
   #endif
-
-  // std::cout << "New Line:"
-  //   " xpos:" << xpos <<
-  //   " ypos:" << ypos << 
-  //   " line_height:" << line_height << " ";
-
-  // show_fmt(fmt);
-
-  // book_view.line_added_at(ypos);
 
   // Get rid of space characters that are at the end of the line.
   // This is mainly required for the JUSTIFY alignment algo.
@@ -915,9 +908,6 @@ Page::clear_highlight(
   entry->x       = x;
   entry->y       = y;
 
-  entry->x       = x;
-  entry->y       = y;
-
   #if DEBUGGING
     if ((entry->x < 0) || (entry->y < 0)) {
       LOG_E("Put_str_at with a negative location: %d %d", entry->x, entry->y);
@@ -943,6 +933,29 @@ Page::clear_region(
   entry->x       = x;
   entry->y       = y;
 
+  #if DEBUGGING
+    if ((entry->x < 0) || (entry->y < 0)) {
+      LOG_E("Put_str_at with a negative location: %d %d", entry->x, entry->y);
+    }
+    else if ((entry->x >= Screen::WIDTH) || (entry->y >= Screen::HEIGHT)) {
+      LOG_E("Put_str_at with a too large location: %d %d", entry->x, entry->y);
+    }
+  #endif
+
+  display_list.push_front(entry);
+}
+
+
+void 
+Page::set_region( 
+            int16_t width, int16_t height, 
+            int16_t x, int16_t y)
+{
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
+
+  entry->command = SET_REGION;
+  entry->kind.region_entry.width   = width;
+  entry->kind.region_entry.height  = height;
   entry->x       = x;
   entry->y       = y;
 

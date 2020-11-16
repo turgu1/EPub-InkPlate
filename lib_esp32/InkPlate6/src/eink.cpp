@@ -389,7 +389,10 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
 void 
 EInk::partial_update(const Bitmap1Bit & bitmap)
 {
-  if (!partial_allowed) update_1bit(bitmap);
+  if (!partial_allowed) {
+    update_1bit(bitmap);
+    return;
+  }
 
   ESP_LOGD(TAG, "Partial update...");
 

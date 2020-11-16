@@ -37,13 +37,21 @@ parameters()
 static void
 wifi_mode()
 {
-
+  MsgViewer::show_progress_bar("Petit test %d livres...", 31);
+  MsgViewer::set_progress_bar(100);
 }
 
 static void
 about()
 {
-  MsgViewer::show(MsgViewer::INFO, "EPub-InkPlate EBook Reader");
+  MsgViewer::show(
+    MsgViewer::BOOK, 
+    false,
+    "About EPub-InkPlate", 
+    "EBook Reader Version %s for the InkPlate-6 e-paper display. "
+    "Made by Guy Turcotte, Quebec, Canada. "
+    "With great support from E-Radionica.",
+    APP_VERSION);
 }
 
 MenuViewer::MenuEntry menu[7] = {

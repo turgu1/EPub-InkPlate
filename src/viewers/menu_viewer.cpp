@@ -13,25 +13,25 @@ void MenuViewer::show(MenuEntry * the_menu)
   int16_t xpos = 10, ypos = 45;
 
   Page::Format fmt = {
-      .line_height_factor = 1.0,
-      .font_index         = 0,
-      .font_size          = 16,
-      .indent             = 0,
-      .margin_left        = 0,
-      .margin_right       = 0,
-      .margin_top         = 0,
-      .margin_bottom      = 0,
-      .screen_left        = 10,
-      .screen_right       = 10,
-      .screen_top         = 10,
-      .screen_bottom      = 100,
-      .width              = 0,
-      .height             = 0,
-      .trim               = true,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM
-    };
+    .line_height_factor = 1.0,
+    .font_index         =   0,
+    .font_size          =  16,
+    .indent             =   0,
+    .margin_left        =   0,
+    .margin_right       =   0,
+    .margin_top         =   0,
+    .margin_bottom      =   0,
+    .screen_left        =  10,
+    .screen_right       =  10,
+    .screen_top         =  10,
+    .screen_bottom      = 100,
+    .width              =   0,
+    .height             =   0,
+    .trim               = true,
+    .font_style         = Fonts::NORMAL,
+    .align              = CSS::LEFT_ALIGN,
+    .text_transform     = CSS::NO_TRANSFORM
+  };
 
   page.start(fmt);
 
@@ -83,25 +83,25 @@ void MenuViewer::event(EventMgr::KeyEvent key)
   uint8_t old_index = current_entry_index;
 
   Page::Format fmt = {
-      .line_height_factor = 1.0,
-      .font_index         = 0,
-      .font_size          = 16,
-      .indent             = 0,
-      .margin_left        = 0,
-      .margin_right       = 0,
-      .margin_top         = 0,
-      .margin_bottom      = 0,
-      .screen_left        = 10,
-      .screen_right       = 10,
-      .screen_top         = 10,
-      .screen_bottom      = 90,
-      .width              = 0,
-      .height             = 0,
-      .trim               = true,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM
-    };
+    .line_height_factor = 1.0,
+    .font_index         =   0,
+    .font_size          =  16,
+    .indent             =   0,
+    .margin_left        =   0,
+    .margin_right       =   0,
+    .margin_top         =   0,
+    .margin_bottom      =   0,
+    .screen_left        =  10,
+    .screen_right       =  10,
+    .screen_top         =  10,
+    .screen_bottom      =  90,
+    .width              =   0,
+    .height             =   0,
+    .trim               = true,
+    .font_style         = Fonts::NORMAL,
+    .align              = CSS::LEFT_ALIGN,
+    .text_transform     = CSS::NO_TRANSFORM
+  };
 
   page.start(fmt);
 

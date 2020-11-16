@@ -24,15 +24,17 @@ class MsgViewer {
   public:
     MsgViewer();
 
-    enum Severity       { INFO, ALERT, BUG };
-    static char icon_char[3];
+    enum Severity       { INFO, ALERT, BUG, BOOK };
+    static char icon_char[4];
 
-    static void show(Severity severity, const char * fmt_str, ...);
-    void hide();
-
-    void show_progress_bars(std::string msg, uint8_t count);
-    void set_progress_bar(uint8_t idx, uint8_t value);
-    void hide_progress_bar();
+    static void show(
+      Severity severity, 
+      bool press_a_key, 
+      const char * title, 
+      const char * fmt_str, ...);
+    
+    static void show_progress_bar(const char * title, ...);
+    static void set_progress_bar(uint8_t value);
 };
 
 #endif

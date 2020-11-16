@@ -22,11 +22,12 @@
 class Screen : NonCopyable
 {
   public:
-    static const uint16_t WIDTH           = EInk::HEIGHT;
-    static const uint16_t HEIGHT          = EInk::WIDTH;
-    static const uint16_t RESOLUTION      = 166;  ///< Pixels per inch
-    static const uint8_t  HIGHLIGHT_COLOR = 1;
-    static const uint8_t  WHITE_COLOR     = 0;
+    static constexpr uint16_t WIDTH                 = EInk::HEIGHT;
+    static constexpr uint16_t HEIGHT                = EInk::WIDTH;
+    static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
+    static constexpr uint8_t  HIGHLIGHT_COLOR       = 1;
+    static constexpr uint8_t  WHITE_COLOR           = 0;
+    static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 6;
     
     void draw_bitmap(const unsigned char * bitmap_data, 
                      uint16_t width, uint16_t height, 
@@ -37,19 +38,24 @@ class Screen : NonCopyable
     void draw_rectangle(uint16_t width, uint16_t height, 
                         int16_t x, int16_t y,
                         uint8_t color);
-    void clear_region(uint16_t width, uint16_t height, 
-                      int16_t x, int16_t y);
+    void colorize_region(uint16_t width, uint16_t height, 
+                         int16_t x, int16_t y, uint8_t color);
 
     inline void clear()  { EInk::clear_bitmap(*frame_buffer); }
-    inline void update() { 
-      if (partial_count == 0) {
-        //e_ink.clean(); 
-        e_ink.update(*frame_buffer);
-        partial_count = 6;
+    inline void update(bool no_full = false) { 
+      if (no_full) {
+        e_ink.partial_update(*frame_buffer);
+        partial_count = 0;
       }
       else {
-        e_ink.partial_update(*frame_buffer);
-        partial_count--;
+        if (partial_count <= 0) {
+          e_ink.update(*frame_buffer);
+          partial_count = PARTIAL_COUNT_ALLOWED;
+        }
+        else {
+          e_ink.partial_update(*frame_buffer);
+          partial_count--;
+        }
       }
     }
 
@@ -62,7 +68,7 @@ class Screen : NonCopyable
     Screen() : partial_count(0) { };
 
     EInk::Bitmap1Bit * frame_buffer;
-    uint8_t partial_count;
+    int8_t partial_count;
 
     // inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
     //   uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * (col + 1)) + (row >> 1)];

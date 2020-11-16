@@ -39,23 +39,13 @@ Screen::draw_bitmap(
   uint16_t width, 
   uint16_t height, 
   int16_t  x, 
-  int16_t  y) //, bool show)
+  int16_t  y)
 {
   if (bitmap_data == nullptr) return;
   
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  // if (show) {
-  //   unsigned char * p = bitmap_data;
-  //   for (int j = 0; j < image_height; j++) {
-  //     for (int i = 0; i < image_width; i++) {
-  //       std::cout << std::setw(2) << std::setfill('0') << std::hex << (int) *p++;
-  //     }
-  //     std::cout << std::endl;
-  //   }
-  // }   
-
   if (x < 0) x = 0;
   if (y < 0) y = 0;
 
@@ -90,72 +80,6 @@ Screen::draw_bitmap(
   }
 }
 
-// procedure dither ( width, height,      --size of image
-// get-pixel(x,y), set_output-pixel(x,y)  --access to pixels 
-// error_arr: array[0..width] of integer; --holds the errors 
-// error:integer;                         --error for current pixel 
-
-// j: integer <- 0; 
-// until j = height do 
-//   i: integer <- 0; 
-//   until i = width - 1 loop                          -- don't go all the way to edge 
-//     val <- get_pixel(x,y) + error_arr[x + 1];       -- pixel value with error 
-//     if val > 128                                    -- above threshold 
-//     then set_output_pixel(x,y); error <- val - 255; -- output white 
-//     else error <- val;                              -- leave output black 
-//     if x != O then                                  -- don't spread left at edge 
-//       error_arr[x - 1] <- error_arr[x - 1] + error / 8; --lower left pixel 
-//     error_arr[x] <- error arr[x] + 3 * error / 8;    --pixel below 
-//     error_arr[x + 1] <- error / 8; --initial error for lower right 
-//     error_arr[x + 2] <- error_arr[x + 2] + 3 * error / 8; --pixel to the right 
-//     x <- x + 1; 
-//   ­endloop; 
-//   y <- y + 1; 
-// endloop; 
-
-// void 
-// Screen::draw_bitmap(
-//   const unsigned char * bitmap_data, 
-//   uint16_t width, 
-//   uint16_t height, 
-//   int16_t  x, 
-//   int16_t  y) //, bool show)
-// {
-//   if (bitmap_data == nullptr) return;
-  
-
-//   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
-//   guchar    * g  = gdk_pixbuf_get_pixels(pb);
-  
-//   // if (show) {
-//   //   unsigned char * p = bitmap_data;
-//   //   for (int j = 0; j < image_height; j++) {
-//   //     for (int i = 0; i < image_width; i++) {
-//   //       std::cout << std::setw(2) << std::setfill('0') << std::hex << (int) *p++;
-//   //     }
-//   //     std::cout << std::endl;
-//   //   }
-//   // }   
-
-//   if (x < 0) x = 0;
-//   if (y < 0) y = 0;
-
-//   int16_t x_max = x + width;
-//   int16_t y_max = y + height;
-
-//   if (y_max > HEIGHT) y_max = HEIGHT;
-//   if (x_max > WIDTH ) x_max = WIDTH;
-//   for (int j = y, q = 0; j < y_max; j++, q++) {
-//     for (int i = x, p = q * width; i < x_max; i++, p++) {
-//       int v = bitmap_data[p];
-//       if (v != 255) {
-//         v &= 0xE0; // 8 levels of grayscale
-//         setrgb(g, j, i, id.stride, v);
-//       }
-//     }
-//   }
-// }
-
 void 
 Screen::draw_rectangle(
   uint16_t width, 
@@ -184,11 +108,12 @@ Screen::draw_rectangle(
 }
 
 void 
-Screen::clear_region(
+Screen::colorize_region(
   uint16_t width, 
   uint16_t height, 
   int16_t  x, 
-  int16_t  y) //, bool show)
+  int16_t  y,
+  uint8_t  color) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
@@ -201,7 +126,7 @@ Screen::clear_region(
 
   for (int j = y; j < y_max; j++) {
     for (int i = x; i < x_max; i++) {
-      setrgb(g, j, i, id.stride, WHITE_COLOR);
+      setrgb(g, j, i, id.stride, color);
     }
   }
 }
@@ -266,7 +191,7 @@ Screen::test()
 }
 
 void 
-Screen::update()
+Screen::update(bool no_full)
 {
   gtk_image_set_from_pixbuf(GTK_IMAGE(id.image), gtk_image_get_pixbuf(id.image));
 }

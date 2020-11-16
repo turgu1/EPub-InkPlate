@@ -69,7 +69,7 @@ class Page
   private:
     static constexpr char const * TAG = "Page";
 
-    enum DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION };
+    enum DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION };
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
@@ -79,7 +79,7 @@ class Page
           Image image;       
           int16_t advance;             ///< Horizontal advance on the baseline
         } image_entry;
-        struct RegionEntry {           ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT and CLEAR_REGION
+        struct RegionEntry {           ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CLEAR_REGION
           int16_t width, height;       ///< Region dimensions
         } region_entry;
       } kind;
@@ -252,8 +252,11 @@ class Page
      * 
      * The screen is first erased and the painting process is done using 
      * the content of the display list.
+     * 
+     * @param clear_screen Screen contain is erased before painting.
+     * @param no_full      Bypass partial update count control. Use with great caution!
      */
-    void paint(bool clear_screen = true);
+    void paint(bool clear_screen = true, bool no_full = false);
 
     int16_t paint_width() { return max_x - min_x; };
 
@@ -287,6 +290,8 @@ class Page
             int16_t x, int16_t y);  
     void clear_region(int16_t width, int16_t height, 
                       int16_t x, int16_t y);
+    void set_region(int16_t width, int16_t height, 
+                    int16_t x, int16_t y);
 
     inline bool is_full() { return screen_is_full; }
     void show_controls(const char * spaces) const {
