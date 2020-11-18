@@ -3,7 +3,11 @@
 // MIT License. Look at file licenses.txt for details.
 
 #ifndef LOG_LOCAL_LEVEL
-  #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+  #if DEBUGGING
+    #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+  #else
+    #define LOG_LOCAL_LEVEL ESP_LOG_ERROR
+  #endif
 #endif
 
 #include "esp_log.h"

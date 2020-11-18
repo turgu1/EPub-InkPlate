@@ -14,6 +14,7 @@ char MsgViewer::icon_char[4] = { 'I',  '!', 'H', 'E' };
 void MsgViewer::show(
   Severity severity, 
   bool press_a_key, 
+  bool clear_screen,
   const char * title, 
   const char * fmt_str, ...)
 {
@@ -103,7 +104,7 @@ void MsgViewer::show(
     page.end_paragraph(fmt);
   }
 
-  page.paint(false);
+  page.paint(clear_screen);
 }
 
 void MsgViewer::show_progress_bar(const char * title, ...)

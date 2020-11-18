@@ -12,6 +12,7 @@
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
+#include "esp_sleep.h"
 
 InkPlate6Ctrl InkPlate6Ctrl::singleton;
 
@@ -58,13 +59,30 @@ InkPlate6Ctrl::sd_card_setup()
 }
 
 bool
+InkPlate6Ctrl::touchpad_int_setup()
+{
+  mcp.set_int_pin(MCP::TOUCH_0, MCP::RISING);
+  mcp.set_int_pin(MCP::TOUCH_1, MCP::RISING);
+  mcp.set_int_pin(MCP::TOUCH_2, MCP::RISING);
+
+  mcp.set_int_output(MCP::INTPORTB, false, false, HIGH);
+
+  return true;
+}
+
+bool
 InkPlate6Ctrl::setup()
 {
+  wire.setup();
+
   // Mount and check the SD Card
   if (!sd_card_setup()) return false;
 
   // Setup the display
   if (!e_ink.setup()) return false;
+
+  // Setup Touch pad
+  if (!touchpad_int_setup()) return false;
 
   // Good to go
   return true;
@@ -74,6 +92,13 @@ uint8_t
 InkPlate6Ctrl::read_touchpad(uint8_t pad)
 {
   return mcp.digital_read((MCP::Pin)((pad & 3) + 10));
+}
+
+uint8_t 
+InkPlate6Ctrl::read_touchpads()
+{
+  uint16_t val = mcp.get_ports();
+  return (val >> 10) & 7;
 }
 
 double 
@@ -87,4 +112,31 @@ InkPlate6Ctrl::read_battery()
   ESP_LOGE(TAG, "Battery adc readout: %d.", adc);
   
   return ((double(adc) / 4095.0) * 3.3 * 2);
+}
+
+bool
+InkPlate6Ctrl::light_sleep(uint32_t minutes_to_sleep)
+{
+  esp_err_t err;
+  if ((err = esp_sleep_enable_timer_wakeup(minutes_to_sleep * 60e6)) != ESP_OK) {
+    LOG_E("Unable to program Light Sleep wait time: %d", err);
+  }
+  else if ((err = esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1)) != ESP_OK) {
+    LOG_E("Unable to set ext0 WakeUp for Light Sleep: %d", err);
+  } 
+  else if ((err = esp_light_sleep_start()) != ESP_OK) {
+    LOG_E("Unable to start Light Sleep mode: %d", err);
+  }
+
+  return esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER;
+}
+
+void 
+InkPlate6Ctrl::deep_sleep()
+{
+  esp_err_t err;
+  if ((err = esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1)) != ESP_OK) {
+    LOG_E("Unable to set ext0 WakeUp for Deep Sleep: %d", err);
+  }
+  esp_deep_sleep_start();
 }

@@ -1,25 +1,46 @@
 # EPub-InkPlate An EPub Reader for the InkPlate-6 device
 
-(Updated 2020.11.12)
+## Last news
 
-Work in progress... the application is not ready yet. This readme contains information that could be innacurate.
+(Updated 2020.11.17)
 
-The application is now using 1Bit planes (dithering on images, FreeType library for TrueType rasteriser). Currents results are promising. Still tests ongoing...
+Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
 
-Some steps remain to be done:
+The application is now using 1Bit planes (dithering on images, FreeType library for TrueType rasterizer). Current results are promising. Some issues remain: 
 
-- Integration of touch buttons
-- Options / Parameters menus
-- Error dialogs
-- Power management (Deep sleep after timeout, Light sleep between page refresh)
-- Current book location between restarts
-- Performance on new book scans
+- 1bit plane rasterizing of TrueType fonts doesn't give beautiful glyphs on screen. They are readable. No real answer exists to circumvent that problem, other than using one font rasterized by hand. That would take a lot of memory space and limit languages supported by the application.
+
+- The full refresh of screens must be launched every 6 partial updates. Future devices will have a better partial updates capability.
+
+Since I've got a first version working on the InkPlate-6, I'm completing the development effort. The following steps are completed:
+
+- [x] Integration of touch buttons
+- [x] Menu capability
+- [x] Options / Parameters menus
+- [x] Error dialogs
+- [x] About box
+- [x] TouchPad integration through interrupts
+- [x] Low Level InkPlate-6 Drivers refactoring
+- [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
+
+After some reflection, here are some of the steps remaining to be done:
+
+- [ ] Form tool to show/edit options / parameters
+- [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
+- [ ] books directory refresh dialog
+- [ ] Options / Parameters form
+- [ ] Configuration management (save/load from the SD-Card)
+- [ ] Error dialog use (10% completion)
+- [ ] Return to current book location between restarts
+- [ ] Performance on new book scans (50% completion)
+- [ ] Battery level display
+- [ ] WiFi access to update ebooks
+- [ ] Over the Air (OTA) updates (I hope... depends on the flash space availability)
+- [ ] User's Guide
 
 ----
 
-Translation of basic InkPlate-6 device driver classes is complete. The integration of the Linux version of the EPub application is complete. Debugging is ongoing.
-
-The driver classes are:
+Translation of basic InkPlate-6 device driver classes is complete. The integration of the Linux version of the EPub application is complete. The driver classes are:
 
 - EInk: The e-ink display panel class. (Arduino Inkplate equivalent)
 - MCP - MCP23017 16 bits IO expander class. (Arduino Mcp)
@@ -28,9 +49,7 @@ The driver classes are:
 - Inkplate6Ctrl - Will be a low-level class to control various modes of usage
   (like deep sleep, light sleep, sd card mounting, etc.)
 
-The hardware drivers have been copied from the Arduino implementation and have been modified extensively to be in line with the rest of the EPub-InkPlate code. There is still some refactoring to do. The source code can be found in folder lib_esp32/InkPlate6/src.
-
-All the code has been migrated and debugging is ongoing.
+The hardware drivers have been copied from the Arduino implementation and have been modified extensively to be in line with the rest of the EPub-InkPlate code. The source code can be found in folder lib_esp32/InkPlate6/src. All the code has been migrated and debugging is completed. A new GitHub project will be populated with the drivers and some example code.
 
 This is now done in a PlatformIO/Espressif32 development framework. PlatformIO offers the ESP-IDF but with some easier control of configuration (Sort of as there is still some configuration that must be done using the ESP-IDF menuconfig). This will allow for using the same source code for both InkPlate6 and Linux versions of the application.
 
@@ -91,9 +110,11 @@ And potentially many more...
 
 The EPub-InkPlate application requires that a micro-SD Card be present in the device. This micro-SD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub` in lowercase. 
 
-You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `bin/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. Please choose fonts that do not take too much space in memory as they are loaded in memory at start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
+You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `SDCard/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. The standard ASCII codes must be present in these fonts as the application uses them for all interactions with the user. Please choose fonts that do not take too much space in memory as they are loaded in memory at start time for performance purposes. At this point in time, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
 
-Another font is mandatory. It is located in `bin/fonts/drawings.ttf` and must be located in the micro-SD Card `fonts` directory. It contains the icons presented in parameter/option menus.
+Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameter/option menus.
+
+The `SDCard` folder under GitHub reflects what the micro-SD Card should looks like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time. This process is very long but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder.
 
 ## On the complexity of EPUB page formatting
 

@@ -30,6 +30,7 @@ class MsgViewer {
     static void show(
       Severity severity, 
       bool press_a_key, 
+      bool clear_screen,
       const char * title, 
       const char * fmt_str, ...);
     

@@ -20,9 +20,11 @@
   #include "inkplate6_ctrl.hpp"
   #include "models/epub.hpp"
   #include "helpers/unzip.hpp"
+  #include "viewers/msg_viewer.hpp"
   #include "pugixml.hpp"
   #include "nvs_flash.h"
   #include "alloc.hpp"
+  #include "esp.hpp"
 
   #include <stdio.h>
 
@@ -36,16 +38,21 @@
       LOG_E("Failed to initialise NVS Flash (%s).", esp_err_to_name(ret));
     } 
 
-    for (int i = 10; i > 0; i--) {
-      printf("\r%02d ...", i);
-      fflush(stdout);
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    printf("\n"); fflush(stdout);
+    #if DEBUGGING
+      for (int i = 10; i > 0; i--) {
+        printf("\r%02d ...", i);
+        fflush(stdout);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+      }
+      printf("\n"); fflush(stdout);
+    #endif
 
     if (!inkplate6_ctrl.setup()) {
-      LOG_E("Unable to setup the hardware environment!");
-      std::abort();
+      MsgViewer::show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+        "Unable to setup the hardware environment! Entering Deep Sleep. Press a key to restart."
+      );
+      ESP::delay(500);
+      inkplate6_ctrl.deep_sleep();
     }
 
     // epub.open_file("/sdcard/books/WarPeace.epub");
@@ -55,15 +62,18 @@
 
     if (fonts.setup()) {
       screen.setup();
+      event_mgr.setup();
       books_dir_controller.setup();
       LOG_D("Initialization completed");
       app_controller.start();
     }
 
-    while (1) {
-      printf("Allo!\n");
-      vTaskDelay(10000 / portTICK_PERIOD_MS);
-    }
+    #if DEBUGGING
+      while (1) {
+        printf("Allo!\n");
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+      }
+    #endif
   }
 
   #define STACK_SIZE 40000
@@ -97,6 +107,7 @@
   {
     if (fonts.setup()) {
       screen.setup();
+      event_mgr.setup();
       books_dir_controller.setup();
       // exit(0)  // Used for some Valgrind tests
       app_controller.start();

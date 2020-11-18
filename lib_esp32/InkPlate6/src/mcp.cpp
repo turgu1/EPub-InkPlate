@@ -44,7 +44,7 @@ void MCP::test()
   wire.begin_transmission(MCP_ADDRESS);
   wire.end_transmission();
 
-  read_registers(registers);
+  read_all_registers();
 
   printf("Registers after read:\n");
   for (int i = 0; i < 22; i++) {
@@ -59,70 +59,72 @@ bool MCP::setup()
   wire.begin_transmission(MCP_ADDRESS);
   wire.end_transmission();
     
-  read_registers(registers);
+  read_all_registers();
   registers[0] = 0xff;
   registers[1] = 0xff;
-  update_all_register(registers);
+  update_all_registers();
 
   return true;
 }
 
-void MCP::read_registers(uint8_t * k)
+void MCP::read_all_registers()
 {
   wire.begin_transmission(MCP_ADDRESS);
   wire.write(0x00);
   wire.end_transmission();
   wire.request_from(MCP_ADDRESS, (uint8_t) 22);
   for (int i = 0; i < 22; ++i) {
-    k[i] = wire.read();
+    registers[i] = wire.read();
   }
 }
 
-void MCP::read_registers(Reg reg, uint8_t * k, uint8_t count)
+void MCP::read_registers(Reg first_reg, uint8_t count)
 {
   wire.begin_transmission(MCP_ADDRESS);
-  wire.write(reg);
+  wire.write(first_reg);
   wire.end_transmission();
 
   wire.request_from(MCP_ADDRESS, count);
   for (int i = 0; i < count; ++i) {
-    k[reg + i] = wire.read();
+    registers[first_reg + i] = wire.read();
   }
 }
 
-void MCP::read_register(Reg reg, uint8_t * k)
+uint8_t MCP::read_register(Reg reg)
 {
   wire.begin_transmission(MCP_ADDRESS);
   wire.write(reg);
   wire.end_transmission();
   wire.request_from(MCP_ADDRESS, (uint8_t) 1);
-  k[reg] = wire.read();
+  registers[reg] = wire.read();
+
+  return registers[reg];
 }
 
-void MCP::update_all_register(uint8_t * k)
+void MCP::update_all_registers()
 {
   wire.begin_transmission(MCP_ADDRESS);
   wire.write(0x00);
   for (int i = 0; i < 22; ++i) {
-    wire.write(k[i]);
+    wire.write(registers[i]);
   }
   wire.end_transmission();
 }
 
-void MCP::update_register(Reg reg, uint8_t d)
+void MCP::update_register(Reg reg, uint8_t value)
 {
   wire.begin_transmission(MCP_ADDRESS);
   wire.write(reg);
-  wire.write(d);
+  wire.write(value);
   wire.end_transmission();
 }
 
-void MCP::update_register(Reg reg, uint8_t * k, uint8_t n)
+void MCP::update_registers(Reg first_reg, uint8_t count)
 {
   wire.begin_transmission(MCP_ADDRESS);
-  wire.write(reg);
-  for (int i = 0; i < n; ++i) {
-    wire.write(k[reg + i]);
+  wire.write(first_reg);
+  for (int i = 0; i < count; ++i) {
+    wire.write(registers[first_reg + i]);
   }
   wire.end_transmission();
 }
@@ -172,28 +174,28 @@ uint8_t MCP::digital_read(Pin pin)
 {
   uint8_t port = (pin >> 3) & 1;
   uint8_t p    =  pin & 7;
-  read_register((Reg)(GPIOA + port), registers);
-  return (registers[GPIOA + port] & (1 << p)) ? HIGH : LOW;
+  uint8_t r = read_register((Reg)(GPIOA + port));
+
+  return (r & (1 << p)) ? HIGH : LOW;
 }
 
-void MCP::set_int_output(uint8_t intPort, uint8_t mirroring, uint8_t openDrain, uint8_t polarity)
+void MCP::set_int_output(IntPort intPort, bool mirroring, bool openDrain, uint8_t polarity)
 {
-  intPort   &= 1;
-  mirroring &= 1;
-  openDrain &= 1;
+  uint8_t reg = IOCONA + intPort;
+
   polarity  &= 1;
 
-  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << mirroring);
-  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << openDrain);
-  registers[IOCONA + intPort] = (registers[IOCONA + intPort] & ~(1 << 6)) | (1 << polarity );
+  registers[reg] = (registers[reg] & ~(1 << 6)) | (mirroring << 6);
+  registers[reg] = (registers[reg] & ~(1 << 2)) | (openDrain << 2);
+  registers[reg] = (registers[reg] & ~(1 << 1)) | (polarity  << 1);
   
-  update_register((Reg)(IOCONA + intPort), registers[IOCONA + intPort]);
+  update_register((Reg)(reg), registers[reg]);
 }
 
 void MCP::set_int_pin(Pin pin, IntMode mode)
 {
-  uint8_t port = (pin / 8) & 1;
-  uint8_t p = pin % 8;
+  uint8_t port = (pin >> 3) & 1;
+  uint8_t p = pin & 7;
 
   switch (mode) {
     case CHANGE:
@@ -211,38 +213,38 @@ void MCP::set_int_pin(Pin pin, IntMode mode)
       break;
   }
   registers[GPINTENA + port] |= (1 << p);
-  update_register(GPINTENA, registers, 6);
+  update_registers(GPINTENA, 6);
 }
 
 void MCP::remove_int_pin(Pin pin)
 {
-  uint8_t port = (pin / 8) & 1;
-  uint8_t p = pin % 8;
+  uint8_t port = (pin >> 3) & 1;
+  uint8_t p = pin & 7;
   registers[GPINTENA + port] &= ~(1 << p);
-  update_register(GPINTENA, registers, 2);
+  update_registers(GPINTENA, 2);
 }
 
 uint16_t MCP::get_int()
 {
-  read_registers(INTFA, registers, 2);
+  read_registers(INTFA, 2);
   return ((registers[INTFB] << 8) | registers[INTFA]);
 }
 
 uint16_t MCP::get_int_state()
 {
-  read_registers(INTCAPA, registers, 2);
+  read_registers(INTCAPA, 2);
   return ((registers[INTCAPB] << 8) | registers[INTCAPA]);
 }
 
-void MCP::set_ports(uint16_t d)
+void MCP::set_ports(uint16_t values)
 {
-  registers[GPIOA] = d & 0xff;
-  registers[GPIOB] = (d >> 8) & 0xff;
-  update_register(GPIOA, registers, 2);
+  registers[GPIOA] = values & 0xff;
+  registers[GPIOB] = (values >> 8) & 0xff;
+  update_registers(GPIOA, 2);
 }
 
 uint16_t MCP::get_ports()
 {
-  read_registers(GPIOA, registers, 2);
+  read_registers(GPIOA, 2);
   return ((registers[GPIOB] << 8) | (registers[GPIOA]));
 }

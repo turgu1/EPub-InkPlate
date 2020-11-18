@@ -9,6 +9,7 @@
 #include "models/epub.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
+#include "viewers/msg_viewer.hpp"
 
 #include <string>
 
@@ -25,8 +26,11 @@ BookController::leave()
 }
 
 bool
-BookController::open_book_file(std::string & book_filename, int16_t book_idx)
+BookController::open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx)
 {
+  MsgViewer::show(MsgViewer::BOOK, false, true, "Loading a book",
+    "The book \" %s \" is loading. Please wait.", book_title.c_str());
+
   if (epub.open_file(book_filename)) {
     epub.retrieve_page_locs(book_idx);
     current_page = 0;
@@ -39,39 +43,47 @@ void
 BookController::key_event(EventMgr::KeyEvent key)
 {
   switch (key) {
-    case EventMgr::KEY_LEFT:
+    case EventMgr::KEY_PREV:
       if (current_page > 0) {
         book_viewer.show_page(--current_page);
       }
       break;
-    case EventMgr::KEY_UP:
+    case EventMgr::KEY_DBL_PREV:
       current_page -= 10;
       if (current_page < 0) current_page = 0;
       book_viewer.show_page(current_page);
       break;
-    case EventMgr::KEY_RIGHT:
+    case EventMgr::KEY_NEXT:
       current_page += 1;
       if (current_page >= epub.get_page_count()) {
         current_page = epub.get_page_count() - 1;
       }
       book_viewer.show_page(current_page);
       break;
-    case EventMgr::KEY_DOWN:
+    case EventMgr::KEY_DBL_NEXT:
       current_page += 10;
       if (current_page >= epub.get_page_count()) {
         current_page = epub.get_page_count() - 1;
       }
       book_viewer.show_page(current_page);
       break;
-    case EventMgr::KEY_SELECT: {
-        for (int i = 0; i < epub.get_page_count(); i++) {
-          current_page = i;
-          book_viewer.show_page(i);
+    
+    #if DEBUGGING
+      case EventMgr::KEY_SELECT: {
+          for (int i = 0; i < epub.get_page_count(); i++) {
+            current_page = i;
+            book_viewer.show_page(i);
+          }
         }
-      }
-      break;
-    case EventMgr::KEY_HOME:
+        break;
+    #else
+      case EventMgr::KEY_SELECT:
+    #endif
+
+    case EventMgr::KEY_DBL_SELECT:
       app_controller.set_controller(AppController::PARAM);
+      break;
+    case EventMgr::KEY_NONE:
       break;
   }
 }

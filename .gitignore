@@ -5,10 +5,10 @@
 .vscode/ipch
 example
 build
-bin/epub-test
-bin/books/Broken
-bin/books/Broken2
-bin/books/Done
-bin/books/temp
-bin/books/books_dir.db
-bin/books/test*
+SDCard/epub-test
+SDCard/books/Broken
+SDCard/books/Broken2
+SDCard/books/Done
+SDCard/books/temp
+SDCard/books/books_dir.db
+SDCard/books/test*

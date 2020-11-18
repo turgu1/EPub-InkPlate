@@ -47,17 +47,19 @@ BooksDirController::leave()
 void 
 BooksDirController::key_event(EventMgr::KeyEvent key)
 {
-  std::string book_filename;
+  static std::string book_filename;
+  static std::string book_title;
+
   int16_t book_idx;
   const BooksDir::EBookRecord * book;
 
   switch (key) {
-    case EventMgr::KEY_LEFT:
+    case EventMgr::KEY_DBL_PREV:
       if (page_nbr > 0) --page_nbr;
       current_index = 0;
       books_dir_viewer.show_page(page_nbr, current_index);   
       break;
-    case EventMgr::KEY_RIGHT:
+    case EventMgr::KEY_DBL_NEXT:
       if ((page_nbr + 1) < books_dir_viewer.page_count()) {
         current_index = 0;
         books_dir_viewer.show_page(++page_nbr, current_index);
@@ -67,7 +69,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KEY_UP:
+    case EventMgr::KEY_PREV:
       if (current_index == 0) {
         if (page_nbr > 0) {
           current_index = BooksDirViewer::BOOKS_PER_PAGE - 1;
@@ -79,7 +81,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KEY_DOWN:
+    case EventMgr::KEY_NEXT:
       if ((current_index + 1) >= BooksDirViewer::BOOKS_PER_PAGE) {
         if ((page_nbr + 1) < books_dir_viewer.page_count()) {
           page_nbr++;
@@ -104,15 +106,17 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         if (book != nullptr) {
           book_filename = BOOKS_FOLDER "/";
           book_filename += book->filename;
-        
-          if (book_controller.open_book_file(book_filename, book_idx)) {
+          book_title = book->title;
+          if (book_controller.open_book_file(book_title, book_filename, book_idx)) {
             app_controller.set_controller(AppController::BOOK);
           }
         }
       }
       break;
-    case EventMgr::KEY_HOME:
+    case EventMgr::KEY_DBL_SELECT:
       app_controller.set_controller(AppController::OPTION);
+      break;
+    case EventMgr::KEY_NONE:
       break;
   }
 }

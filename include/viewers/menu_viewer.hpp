@@ -6,7 +6,7 @@
 class MenuViewer
 {
   public:
-    static constexpr uint8_t MAX_MENU_ENTRY = 6;
+    static constexpr uint8_t MAX_MENU_ENTRY = 7;
 
     enum Icon { RETURN, REFRESH, BOOK, BOOK_LIST, PARAMS, POWEROFF, WIFI, INFO, END_MENU };
     char icon_char[END_MENU] = { '@', 'R', 'E', 'E', 'C', 'Z', 'S', 'I' };

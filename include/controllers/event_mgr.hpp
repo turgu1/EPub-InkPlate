@@ -9,15 +9,17 @@
 
 class EventMgr
 {
-  private:
+  public:
     static constexpr char const * TAG = "EventMgr";
 
-  public:
-    enum KeyEvent { KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_SELECT, KEY_HOME };
+    enum KeyEvent { KEY_NONE, KEY_NEXT, KEY_PREV, KEY_DBL_NEXT, KEY_DBL_PREV, KEY_SELECT, KEY_DBL_SELECT };
     EventMgr();
 
+    bool setup();
     void start_loop();
 
+    KeyEvent get_key();
+    
     void left();
     void right();
     void up();

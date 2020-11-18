@@ -6,7 +6,31 @@
 #include "controllers/param_controller.hpp"
 
 #include "controllers/app_controller.hpp"
-#include "models/epub.hpp"
+#include "controllers/common_actions.hpp"
+#include "viewers/menu_viewer.hpp"
+
+static void 
+books_list()
+{
+  app_controller.set_controller(AppController::DIR);
+}
+
+static void
+parameters()
+{
+
+}
+
+static MenuViewer::MenuEntry menu[8] = {
+  { MenuViewer::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
+  { MenuViewer::BOOK_LIST, "Books list",                          books_list                       },
+  { MenuViewer::PARAMS,    "EBook viewing parameters",            parameters                       },
+  { MenuViewer::WIFI,      "WiFi Access to the e-books folder",   CommonActions::wifi_mode         },
+  { MenuViewer::REFRESH,   "Refresh the e-books list",            CommonActions::refresh_books_dir },
+  { MenuViewer::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
+  { MenuViewer::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
+  { MenuViewer::END_MENU,  nullptr,                               nullptr                          }
+}; 
 
 ParamController::ParamController()
 {
@@ -16,7 +40,7 @@ ParamController::ParamController()
 void 
 ParamController::enter()
 {
-
+  menu_viewer.show(menu);
 }
 
 void 
@@ -28,20 +52,5 @@ ParamController::leave()
 void 
 ParamController::key_event(EventMgr::KeyEvent key)
 {
-  switch (key) {
-    case EventMgr::KEY_LEFT:
-      break;
-    case EventMgr::KEY_RIGHT:
-      break;
-    case EventMgr::KEY_UP:
-      break;
-    case EventMgr::KEY_DOWN:
-      break;
-    case EventMgr::KEY_SELECT:
-      break;
-    case EventMgr::KEY_HOME:
-      epub.close_file();
-      app_controller.set_controller(AppController::DIR);
-      break;
-  }
+  menu_viewer.event(key);  
 }

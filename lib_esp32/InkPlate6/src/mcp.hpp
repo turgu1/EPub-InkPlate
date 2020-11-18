@@ -43,22 +43,35 @@ class MCP : NonCopyable
   public:
     static inline MCP & get_singleton() noexcept { return singleton; }
 
-    enum PinMode : uint8_t { INPUT,  INPUT_PULLUP, OUTPUT };
-    enum IntMode : uint8_t { CHANGE, FALLING,      RISING };
+    enum PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
+    enum IntMode : uint8_t { CHANGE,   FALLING,      RISING };
+    enum IntPort : uint8_t { INTPORTA, INTPORTB             };
     enum Reg     : uint8_t {
       IODIRA   = 0x00,
+      IODIRB   = 0x01,
+      IPOLA    = 0x02,
+      IPOLB    = 0x03,
       GPINTENA = 0x04,
+      GPINTENB = 0x05,
       DEFVALA  = 0x06,
+      DEFVALB  = 0x07,
       INTCONA  = 0x08,
+      INTCONB  = 0x09,
       IOCONA   = 0x0A,
+      IOCONB   = 0x0B,
       GPPUA    = 0x0C,
+      GPPUB    = 0x0D,
       INTFA    = 0x0E,
       INTFB    = 0x0F,
       INTCAPA  = 0x10,
       INTCAPB  = 0x11,
       GPIOA    = 0x12,
-      GPIOB    = 0x13,  
+      GPIOB    = 0x13, 
+      OLATA    = 0x14,
+      OLATB    = 0x15 
     };
+
+    // The following are definitions taylored for the InkPlate-6 IO usage.
 
     enum Pin : uint8_t {
       OE             =  0,
@@ -78,27 +91,28 @@ class MCP : NonCopyable
     
     bool setup();
 
-    void read_registers(uint8_t * k);
-    void read_registers(Reg reg, uint8_t * k, uint8_t n);
-    void  read_register(Reg reg, uint8_t * k);
+    void read_all_registers();
     
-    void update_all_register(uint8_t * k);
+    void   read_registers(Reg first_reg, uint8_t count);
+    uint8_t read_register(Reg reg);
     
-    void  update_register(Reg reg, uint8_t   d);
-    void  update_register(Reg reg, uint8_t * k, uint8_t n);
+    void update_all_registers();
+    
+    void   update_register(Reg reg,       uint8_t  value);
+    void  update_registers(Reg first_reg, uint8_t  count);
 
     void    set_direction(Pin pin, PinMode mode);
     void    digital_write(Pin pin, uint8_t state);
     uint8_t  digital_read(Pin pin);
 
-    void set_int_output(uint8_t intPort, uint8_t mirroring, uint8_t openDrain, uint8_t polarity);
+    void set_int_output(IntPort intPort, bool mirroring, bool openDrain, uint8_t polarity);
     void    set_int_pin(Pin pin, IntMode mode);
     void remove_int_pin(Pin pin);
 
-    uint16_t      get_int();
+    uint16_t       get_int();
     uint16_t get_int_state();
 
-    void     set_ports(uint16_t d);
+    void     set_ports(uint16_t values);
     uint16_t get_ports();
 
     inline void oe_set()       { digital_write(OE,     HIGH); }

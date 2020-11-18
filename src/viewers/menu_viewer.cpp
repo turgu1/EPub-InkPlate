@@ -106,7 +106,7 @@ void MenuViewer::event(EventMgr::KeyEvent key)
   page.start(fmt);
 
   switch (key) {
-    case EventMgr::KEY_LEFT:
+    case EventMgr::KEY_PREV:
       if (current_entry_index > 0) {
         current_entry_index--;
       }
@@ -114,7 +114,7 @@ void MenuViewer::event(EventMgr::KeyEvent key)
         current_entry_index = max_index;
       }
       break;
-    case EventMgr::KEY_RIGHT:
+    case EventMgr::KEY_NEXT:
       if (current_entry_index < max_index) {
         current_entry_index++;
       }
@@ -122,14 +122,16 @@ void MenuViewer::event(EventMgr::KeyEvent key)
         current_entry_index = 0;
       }
       break;
-    case EventMgr::KEY_UP:
+    case EventMgr::KEY_DBL_PREV:
       return;
-    case EventMgr::KEY_DOWN:
+    case EventMgr::KEY_DBL_NEXT:
       return;
     case EventMgr::KEY_SELECT:
       if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
       return;
-    case EventMgr::KEY_HOME:
+    case EventMgr::KEY_DBL_SELECT:
+      return;
+    case EventMgr::KEY_NONE:
       return;
   }
 
