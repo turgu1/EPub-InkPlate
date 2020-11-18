@@ -54,7 +54,7 @@
   {
     KeyEvent key;
     uint32_t io_num;
-    uint8_t  pads;
+    uint8_t  pads, pads2;
 
     key = KEY_NONE;
 
@@ -63,21 +63,24 @@
         mcp.get_int_state();                     // This is re-activating interrupts...
       }
       else {
-        while (inkplate6_ctrl.read_touchpads() == pads) taskYIELD();
-        ESP::delay_microseconds(100E3); //Wait 100 millis...
+        while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD();
+        //ESP::delay_microseconds(20E3); //Wait 20 millis...
 
         mcp.get_int_state();                       // This is re-activating interrupts...
 
-        if (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(300))) {
-
+        bool found = false;
+        while (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(500))) {
+          if ((pads2 = inkplate6_ctrl.read_touchpads()) != 0) {
+            found = true;
+            break;
+          }
+          mcp.get_int_state();
+        }
+        if (found) {
+          
           // Double Click on a key
 
-          uint8_t pads2 = inkplate6_ctrl.read_touchpads();
-          if (pads2 == 0) {
-            mcp.get_int_state();                   // This is re-activating interrupts...
-            goto single;
-          }
-          while (inkplate6_ctrl.read_touchpads() == pads2) taskYIELD();
+          while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD();
 
           mcp.get_int_state();                     // This is re-activating interrupts...
 
@@ -88,7 +91,7 @@
         else {
 
           // Simple Click on a key
-  single:
+
           if      (pads & SELECT_PAD) key = KEY_SELECT;
           else if (pads & NEXT_PAD  ) key = KEY_NEXT;
           else if (pads & PREV_PAD  ) key = KEY_PREV;
@@ -180,12 +183,16 @@ EventMgr::setup()
       EventMgr::KeyEvent key;
 
       if ((key = get_key()) != KEY_NONE) {
+        LOG_I("Got key %d", key);
         app_controller.key_event(key);
       }
       else {
         // Nothing received in 5 seconds, put the device in Light Sleep Mode.
         // After some delay, the device will then be put in Deep Sleep Mode, 
         // rebooting after the user press a key.
+
+        LOG_I("Light Sleep for 15 minutes...");
+        ESP::delay(500);
 
         if (inkplate6_ctrl.light_sleep(15)) {
           LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");

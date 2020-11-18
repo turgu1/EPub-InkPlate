@@ -58,7 +58,7 @@ class BookViewer
         }
         if (idx == -1) {
           fmt.font_style = Fonts::NORMAL;
-          fmt.font_index = 0;
+          fmt.font_index = 1;
         }
         else {
           fmt.font_style = style;

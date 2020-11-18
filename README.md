@@ -14,12 +14,11 @@ The application is now using 1Bit planes (dithering on images, FreeType library 
 
 Since I've got a first version working on the InkPlate-6, I'm completing the development effort. The following steps are completed:
 
-- [x] Integration of touch buttons
+- [x] Integration of touch buttons through interrupts
 - [x] Menu capability
 - [x] Options / Parameters menus
 - [x] Error dialogs
 - [x] About box
-- [x] TouchPad integration through interrupts
 - [x] Low Level InkPlate-6 Drivers refactoring
 - [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
 
@@ -60,6 +59,7 @@ Memory availability is low. Some modifications maybe required to optimize memory
 Some pictures from the InkPlate-6 version:
 
 <img src="doc/pictures/IMG_1377.JPG" alt="picture" width="300"/><img src="doc/pictures/IMG_1378.JPG" alt="picture" width="300"/>
+<img src="doc/pictures/IMG_1381.JPG" alt="picture" width="300"/>
 
 Some pictures from the Linux version:
 
