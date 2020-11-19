@@ -2,15 +2,15 @@
 
 ## Last news
 
-(Updated 2020.11.17)
+(Updated 2020.11.19)
 
 Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
 
 The application is now using 1Bit planes (dithering on images, FreeType library for TrueType rasterizer). Current results are promising. Some issues remain: 
 
-- 1bit plane rasterizing of TrueType fonts doesn't give beautiful glyphs on screen. They are readable. No real answer exists to circumvent that problem, other than using one font rasterized by hand. That would take a lot of memory space and limit languages supported by the application.
+- 1bit plane rasterizing of TrueType fonts doesn't give beautiful glyphs on screen. They are readable. No real answer exists to circumvent that problem, other than using one font rasterized by hand. That would take a lot of memory space and limit the languages supported by the application.
 
-- The full refresh of screens must be launched every 6 partial updates. Future devices will have a better partial updates capability.
+- The full refresh of screens must be launched every 6 partial updates. Future devices will have better partial updates capability.
 
 Since I've got a first version working on the InkPlate-6, I'm completing the development effort. The following steps are completed:
 
@@ -19,8 +19,10 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [x] Options / Parameters menus
 - [x] Error dialogs
 - [x] About box
-- [x] Low Level InkPlate-6 Drivers refactoring
+- [x] Low-Level InkPlate-6 Drivers refactoring
 - [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
+- [x] Return to current book location between restarts
+- [x] Configuration management (save/load from the SD-Card)
 
 After some reflection, here are some of the steps remaining to be done:
 
@@ -28,9 +30,7 @@ After some reflection, here are some of the steps remaining to be done:
 - [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 - [ ] books directory refresh dialog
 - [ ] Options / Parameters form
-- [x] Configuration management (save/load from the SD-Card)
 - [ ] Error dialog use (30% completion)
-- [x] Return to current book location between restarts
 - [ ] Performance on new book scans (50% completion)
 - [ ] Battery level display
 - [ ] WiFi access to update ebooks
@@ -52,9 +52,9 @@ The hardware drivers have been copied from the Arduino implementation and have b
 
 This is now done in a PlatformIO/Espressif32 development framework. PlatformIO offers the ESP-IDF but with some easier control of configuration (Sort of as there is still some configuration that must be done using the ESP-IDF menuconfig). This will allow for using the same source code for both InkPlate6 and Linux versions of the application.
 
-Parameters that must be setup with menuconfig include PSRAM allocation choice and sd_card long filename support. Details to be explained later.
+Parameters that must be set up with menuconfig include PSRAM allocation choice and sd_card long filename support. Details to be explained later.
 
-Memory availability is low. Some modifications maybe required to optimize memory usage (memory pools instead of fine grained malloc/new).
+Memory availability is low. Some modifications may be required to optimize memory usage (memory pools instead of fine grained malloc/new).
 
 Some pictures from the InkPlate-6 version:
 
@@ -65,7 +65,7 @@ Some pictures from the Linux version:
 
 <img src="doc/pictures/books_select.png" alt="drawing" width="300"/><img src="doc/pictures/book_page.png" alt="drawing" width="300"/>
 
-A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that show the first working version of the EPub-InkPlate application.
+A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that shows the first working version of the EPub-InkPlate application.
 
 ## Characteristics
 
@@ -110,11 +110,11 @@ And potentially many more...
 
 The EPub-InkPlate application requires that a micro-SD Card be present in the device. This micro-SD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub` in lowercase. 
 
-You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `SDCard/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. The standard ASCII codes must be present in these fonts as the application uses them for all interactions with the user. Please choose fonts that do not take too much space in memory as they are loaded in memory at start time for performance purposes. At this point in time, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
+You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `SDCard/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. The standard ASCII codes must be present in these fonts as the application uses them for all interactions with the user. Please choose fonts that do not take too much space in memory as they are loaded in memory at the start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
 
-Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameter/option menus.
+Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
 
-The `SDCard` folder under GitHub reflects what the micro-SD Card should looks like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time. This process is very long but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder.
+The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time. This process is very long but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder.
 
 ## On the complexity of EPUB page formatting
 
@@ -132,16 +132,16 @@ Images that are integrated into a book may also be taking a lot of memory. 1600x
 
 [Visual Studio Code](https://code.visualstudio.com/) is the code editor I'm using. The [PlatformIO](https://platformio.org/) extension is used to manage application configuration for both Linux and the ESP32.
 
-All source code are located in various folders:
+All source code is located in various folders:
 
-- Source code used by both Linux and InkPlate are located in the `include` and `src` folders
-- Source code in support of Linux only are located in the `lib_linux` folder
-- Source code in support of the InkPlate-6 (ESP32) only are locate in the `lib_esp32` folder
-- The freetype library for ESP32 is in folder `lib_freetype`
+- Source code used by both Linux and InkPlate is located in the `include` and `src` folders
+- Source code in support of Linux only is located in the `lib_linux` folder
+- Source code in support of the InkPlate-6 (ESP32) only are located in the `lib_esp32` folder
+- The FreeType library for ESP32 is in folder `lib_freetype`
 
 The file `platformio.ini` contains the configuration options required to compile both Linux and InkPlate applications.
 
-Note that source code located in folders `old` and `test` are not used. They will be deleted from the project when the application developement will be completed.
+Note that source code located in folders `old` and `test` is not used. They will be deleted from the project when the application development will be completed.
 
 ### Dependencies
 
@@ -164,21 +164,21 @@ The following are imported C header and source files, that implement some algori
 
 The following libraries were used at first but replaced with counterparts:
 
-- [ZLib](https://zlib.net/) deflating (unzip). A file deflater is already supplied with `stb_image.h`.
+- [ZLib](https://zlib.net/) deflating (unzip). A file deflation function is already supplied with `stb_image.h`.
 - [RapidXML](http://rapidxml.sourceforge.net/index.htm) (For XML parsing) Too much stack space required. Replaced with PubiXML.
 - [SQLite3](https://www.sqlite.org/index.html) (The amalgamation version. For books simple database) Too many issues to get it runs on an ESP32. I built my own simple DB tool (look at `src/simple_db.cpp` and `include/simble_db.hpp`)
 
 ### FreeType library compilation for ESP32
 
-The FreeType library is using a complex makefile structure to simplify (!) the compilation process. Here are the steps taken to get a library suitable for integration in the EPub-InkPlate ESP32 application. As this process is already done, there is no need to run it again, unless a new version of the library is required or some changes to the modules selection is done.
+The FreeType library is using a complex makefile structure to simplify (!) the compilation process. Here are the steps used to get a library suitable for integration in the EPub-InkPlate ESP32 application. As this process is already done, there is no need to run it again, unless a new version of the library is required or some changes to the modules selection are done.
 
-1. The folder named `lib_freetype` is created to receive the library and its dependancies at install time:
+1. The folder named `lib_freetype` is created to receive the library and its dependencies at install time:
 
     ``` bash
     $ mkdir lib_freetype
     ```
 
-2. The ESP-IDF SDK must be installed in the main user folder. Usually it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
+2. The ESP-IDF SDK must be installed in the main user folder. Usually, it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
 
 3. The files `freetype-2.10.4/modules.cfg` and `freetype-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
 
@@ -193,18 +193,18 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
    $ make install
    ```
 
-   This will have created several files in folder `lib_freetype`.
+   This will have created several files in the folder `lib_freetype`.
 
 6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains `harfbuzz` reference.
 7. Voilà...
 
 ### ESP-IDF configuration specifics
 
-The EPub-InkPlate application requires some functionalities to be properly setup within the ESP-IDF. The following elements have been done (No need to do it again):
+The EPub-InkPlate application requires some functionalities to be properly set up within the ESP-IDF. The following elements have been done (No need to do it again):
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory, OTA_0 and OTA_1 have been set to be ~1.3MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.3MB OTA partitions.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory, OTA_0, and OTA_1 have been set to be ~1.3MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, which is the reason for 1.3MB OTA partitions.
   
-- **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offer 4MB+4MB of additional RAM. The first 4MB is readily available to integrate to the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
+- **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offers 4MB+4MB of additional RAM. The first 4MB is readily available to integrate into the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
 
   ```
   $ idf.py menuconfig
@@ -229,10 +229,10 @@ The EPub-InkPlate application requires some functionalities to be properly setup
 
   - Select `Component config` > `ESP32-Specific` > `CPU frequency` > `240 Mhz`
 
-- **FAT Filesystem Support**: The application requires usage of the micro SD card. This card must be formatted on a computer (Linux or Windows) with a FAT 32 partition. The following parameters must be adjusted in `sdkconfig`:
+- **FAT Filesystem Support**: The application requires the usage of the micro SD card. This card must be formatted on a computer (Linux or Windows) with a FAT 32 partition. The following parameters must be adjusted in `sdkconfig`:
 
   - Select `Component config` > `FAT Filesystem support` > `Max Long filename length` > `255`
-  - Select `Number of simultaneous open files protected  by lock function` > `5`
+  - Select `Number of simultaneously open files protected  by lock function` > `5`
   - Select `Prefer external RAM when allocating FATFS buffer`
 
 ## In Memoriam
