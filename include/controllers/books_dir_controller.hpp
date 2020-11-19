@@ -16,7 +16,7 @@ class BooksDirController
     int16_t page_nbr;
     int16_t current_index;
     
-    bool    book_was_showed;
+    bool    book_was_shown;
     int16_t book_page_nbr;
     int16_t book_index;
 

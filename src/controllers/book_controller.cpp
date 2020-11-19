@@ -26,13 +26,21 @@ BookController::enter()
 void 
 BookController::leave(bool going_to_deep_sleep)
 {
+  // As we leave, we keep the information required to return to the book
+  // in the NVS space. If this is called just before going to deep sleep, we
+  // set the "WAS_SHOWN" boolean to true, such that when the device will
+  // be booting, it will display the last book at the last page shown.
   #if EPUB_INKPLATE6_BUILD
     nvs_handle_t nvs_handle;
+    esp_err_t err;
   
     if (nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) {
       nvs_set_str(nvs_handle, "LAST_BOOK",  the_book_filename.c_str());
       nvs_set_i16(nvs_handle, "PAGE_NBR",   current_page);
-       nvs_set_i8(nvs_handle, "WAS_SHOWED", going_to_deep_sleep ? 1 : 0);
+       nvs_set_i8(nvs_handle, "WAS_SHOWN", going_to_deep_sleep ? 1 : 0);
+      if ((err = nvs_commit(nvs_handle)) != ESP_OK) {
+        LOG_E("NVS Commit error: %d", err);
+      }
       nvs_close(nvs_handle);
     }
   #else

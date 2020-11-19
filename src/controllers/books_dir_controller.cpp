@@ -30,7 +30,7 @@ BooksDirController::setup()
 
   book_index = -1;
   book_page_nbr = -1;
-  book_was_showed = false;
+  book_was_shown = false;
 
   #if EPUB_INKPLATE6_BUILD
     nvs_handle_t nvs_handle;
@@ -40,14 +40,14 @@ BooksDirController::setup()
       size_t size = 256;
       if ((err = nvs_get_str(nvs_handle, "LAST_BOOK", book_filename, &size)) == ESP_OK) {
         filename = book_filename;
-        int8_t was_showed;
+        int8_t was_shown;
         if (((err = nvs_get_i16(nvs_handle, "PAGE_NBR", &book_page_nbr) != ESP_OK)) ||
-            ((err = nvs_get_i8(nvs_handle, "WAS_SHOWED", &was_showed) != ESP_OK))) {
+            ((err = nvs_get_i8(nvs_handle, "WAS_SHOWN", &was_shown) != ESP_OK))) {
           filename = nullptr;
-          was_showed = 0;
+          was_shown = 0;
         }
         else {
-          book_was_showed = (bool) was_showed;
+          book_was_shown = (bool) was_shown;
         }
       }
       nvs_close(nvs_handle);
@@ -69,9 +69,9 @@ BooksDirController::setup()
           book_page_nbr = atoi(buffer);
 
           if (fgets(buffer, 20, f)) {
-            int8_t was_showed = atoi(buffer);
+            int8_t was_shown = atoi(buffer);
             filename = book_filename;
-            book_was_showed = (bool) was_showed;
+            book_was_shown = (bool) was_shown;
           }
         }
       }
@@ -90,14 +90,14 @@ BooksDirController::setup()
   page_nbr = 0;
   current_index = 0;
 
-  LOG_D("Book to show: idx:%d page:%d was_showed:%d", book_index, book_page_nbr, (int)book_was_showed);
+  LOG_D("Book to show: idx:%d page:%d was_shown:%d", book_index, book_page_nbr, (int)book_was_shown);
 }
 
 void 
 BooksDirController::enter()
 {
-  if (book_was_showed && (book_index != -1)) {
-    book_was_showed = false;
+  if (book_was_shown && (book_index != -1)) {
+    book_was_shown = false;
     static std::string book_filename;
     static std::string book_title;
     const BooksDir::EBookRecord * book;
