@@ -102,48 +102,15 @@
     return key;
   }
 
+#else
+
+  #include "screen.hpp"
+
 #endif
 
 EventMgr::EventMgr()
 {
   
-}
-
-bool
-EventMgr::setup()
-{
-  #if EPUB_LINUX_BUILD
-    g_signal_connect(G_OBJECT(  screen.left_button), "clicked", G_CALLBACK(  left_clicked), (gpointer) screen.window);
-    g_signal_connect(G_OBJECT( screen.right_button), "clicked", G_CALLBACK( right_clicked), (gpointer) screen.window);
-    g_signal_connect(G_OBJECT(    screen.up_button), "clicked", G_CALLBACK(    up_clicked), (gpointer) screen.window);
-    g_signal_connect(G_OBJECT(  screen.down_button), "clicked", G_CALLBACK(  down_clicked), (gpointer) screen.window);
-    g_signal_connect(G_OBJECT(screen.select_button), "clicked", G_CALLBACK(select_clicked), (gpointer) screen.window);
-    g_signal_connect(G_OBJECT(  screen.home_button), "clicked", G_CALLBACK(  home_clicked), (gpointer) screen.window);
-  #else
-
-    gpio_config_t io_conf;
-
-    io_conf.intr_type    = GPIO_INTR_POSEDGE;    // Interrupt of rising edge
-    io_conf.pin_bit_mask = 1ULL << GPIO_NUM_34;  // Bit mask of the pin, use GPIO34 here
-    io_conf.mode         = GPIO_MODE_INPUT;      // Set as input mode
-    io_conf.pull_up_en   = GPIO_PULLUP_ENABLE;  // Disable pull-up mode
-
-    gpio_config(&io_conf);
-    
-    touchpad_evt_queue = xQueueCreate(           //create a queue to handle gpio event from isr
-      10, sizeof(uint32_t));
-
-    gpio_install_isr_service(0);                 //install gpio isr service
-    
-    gpio_isr_handler_add(                        //hook isr handler for specific gpio pin
-      GPIO_NUM_34, 
-      touchpad_isr_handler, 
-      (void *) GPIO_NUM_34);
-
-    mcp.get_int_state();                         // This is activating interrupts...
-  #endif
-
-  return true;
 }
 
 #if EPUB_LINUX_BUILD
@@ -202,6 +169,7 @@ EventMgr::setup()
             "Deep Sleep", 
             "Timeout period exceeded. The device is now entering into Deep Sleep mode. Please press a key to restart.");
           ESP::delay(500);
+          app_controller.going_to_deep_sleep();
           inkplate6_ctrl.deep_sleep();
         }
       }
@@ -233,3 +201,40 @@ EventMgr::setup()
     // }  
   }
 #endif
+
+bool
+EventMgr::setup()
+{
+  #if EPUB_LINUX_BUILD
+    g_signal_connect(G_OBJECT(  screen.left_button), "clicked", G_CALLBACK(  left_clicked), (gpointer) screen.window);
+    g_signal_connect(G_OBJECT( screen.right_button), "clicked", G_CALLBACK( right_clicked), (gpointer) screen.window);
+    g_signal_connect(G_OBJECT(    screen.up_button), "clicked", G_CALLBACK(    up_clicked), (gpointer) screen.window);
+    g_signal_connect(G_OBJECT(  screen.down_button), "clicked", G_CALLBACK(  down_clicked), (gpointer) screen.window);
+    g_signal_connect(G_OBJECT(screen.select_button), "clicked", G_CALLBACK(select_clicked), (gpointer) screen.window);
+    g_signal_connect(G_OBJECT(  screen.home_button), "clicked", G_CALLBACK(  home_clicked), (gpointer) screen.window);
+  #else
+
+    gpio_config_t io_conf;
+
+    io_conf.intr_type    = GPIO_INTR_POSEDGE;    // Interrupt of rising edge
+    io_conf.pin_bit_mask = 1ULL << GPIO_NUM_34;  // Bit mask of the pin, use GPIO34 here
+    io_conf.mode         = GPIO_MODE_INPUT;      // Set as input mode
+    io_conf.pull_up_en   = GPIO_PULLUP_ENABLE;  // Disable pull-up mode
+
+    gpio_config(&io_conf);
+    
+    touchpad_evt_queue = xQueueCreate(           //create a queue to handle gpio event from isr
+      10, sizeof(uint32_t));
+
+    gpio_install_isr_service(0);                 //install gpio isr service
+    
+    gpio_isr_handler_add(                        //hook isr handler for specific gpio pin
+      GPIO_NUM_34, 
+      touchpad_isr_handler, 
+      (void *) GPIO_NUM_34);
+
+    mcp.get_int_state();                         // This is activating interrupts...
+  #endif
+
+  return true;
+}

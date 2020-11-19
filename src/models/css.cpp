@@ -114,6 +114,8 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
           else if ((st[last_idx - 1] == 'p') && (st[last_idx] == 'x')) v->value_type = PX;
           else if ((st[last_idx - 1] == 'e') && (st[last_idx] == 'm')) v->value_type = EM;
           else if ((st[last_idx - 1] == 'c') && (st[last_idx] == 'm')) v->value_type = CM;
+          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'h')) v->value_type = VH;
+          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'w')) v->value_type = VW;
           else if (!isdigit(st[last_idx])) {
             std::string val;
             val.assign(st, s - st);

@@ -16,12 +16,17 @@ class BooksDirController
     int16_t page_nbr;
     int16_t current_index;
     
+    bool    book_was_showed;
+    int16_t book_page_nbr;
+    int16_t book_index;
+
+
   public:
     BooksDirController();
     void setup();
     void key_event(EventMgr::KeyEvent key);
     void enter();
-    void leave();
+    void leave(bool going_to_deep_sleep = false);
 };
 
 #if __BOOKS_DIR_CONTROLLER__

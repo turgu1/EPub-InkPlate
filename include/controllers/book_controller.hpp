@@ -17,14 +17,16 @@ class BookController
     
     void key_event(EventMgr::KeyEvent key);
     void enter();
-    void leave();
-    bool open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx);
+    void leave(bool going_to_deep_sleep = false);
+    bool open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int16_t page_nbr = 0);
     void put_str(const char * str, int xpos, int ypos);
 
   private:
     static constexpr char const * TAG = "BookController";
 
     int16_t current_page;
+    int16_t the_book_idx;
+    std::string the_book_filename;
 };
 
 #if __BOOK_CONTROLLER__

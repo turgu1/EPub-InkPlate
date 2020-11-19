@@ -11,6 +11,10 @@
 #include "viewers/books_dir_viewer.hpp"
 #include "logging.hpp"
 
+#if EPUB_INKPLATE6_BUILD
+  #include "nvs.h"
+#endif
+
 #include <string>
 
 BooksDirController::BooksDirController()
@@ -21,25 +25,104 @@ BooksDirController::BooksDirController()
 void
 BooksDirController::setup()
 {
-  if (!books_dir.read_books_directory()) {
+  char book_filename[256];
+  char * filename = nullptr;
+
+  book_index = -1;
+  book_page_nbr = -1;
+  book_was_showed = false;
+
+  #if EPUB_INKPLATE6_BUILD
+    nvs_handle_t nvs_handle;
+    esp_err_t    err;
+  
+    if ((err = nvs_open("EPUB-InkPlate", NVS_READONLY, &nvs_handle)) == ESP_OK) {
+      size_t size = 256;
+      if ((err = nvs_get_str(nvs_handle, "LAST_BOOK", book_filename, &size)) == ESP_OK) {
+        filename = book_filename;
+        int8_t was_showed;
+        if (((err = nvs_get_i16(nvs_handle, "PAGE_NBR", &book_page_nbr) != ESP_OK)) ||
+            ((err = nvs_get_i8(nvs_handle, "WAS_SHOWED", &was_showed) != ESP_OK))) {
+          filename = nullptr;
+          was_showed = 0;
+        }
+        else {
+          book_was_showed = (bool) was_showed;
+        }
+      }
+      nvs_close(nvs_handle);
+    }
+    if (err != ESP_OK) {
+      LOG_E("Unable to process NVS readout: %d", err);
+    }
+  #else
+    FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "r");
+    filename = nullptr;
+    if (f != nullptr) {
+
+      if (fgets(book_filename, 256, f)) {
+        int16_t size = strlen(book_filename) - 1;
+        if (book_filename[size] == '\n') book_filename[size] = 0;
+
+        char buffer[20];
+        if (fgets(buffer, 20, f)) {
+          book_page_nbr = atoi(buffer);
+
+          if (fgets(buffer, 20, f)) {
+            int8_t was_showed = atoi(buffer);
+            filename = book_filename;
+            book_was_showed = (bool) was_showed;
+          }
+        }
+      }
+
+      fclose(f);
+    } 
+  #endif
+
+  int16_t db_idx = -1;
+  if (!books_dir.read_books_directory(filename, db_idx)) {
     LOG_E("There was issues reading books directory.");
   }
+  
+  if (db_idx != -1) book_index = books_dir.get_sorted_idx(db_idx);
+ 
   page_nbr = 0;
   current_index = 0;
+
+  LOG_D("Book to show: idx:%d page:%d was_showed:%d", book_index, book_page_nbr, (int)book_was_showed);
 }
 
 void 
 BooksDirController::enter()
 {
-  if (page_nbr >= books_dir_viewer.page_count()) {
-    page_nbr = 0;
-    current_index = 0;
+  if (book_was_showed && (book_index != -1)) {
+    book_was_showed = false;
+    static std::string book_filename;
+    static std::string book_title;
+    const BooksDir::EBookRecord * book;
+
+    book = books_dir.get_book_data(book_index);
+    if (book != nullptr) {
+      book_filename = BOOKS_FOLDER "/";
+      book_filename += book->filename;
+      book_title = book->title;
+      if (book_controller.open_book_file(book_title, book_filename, book_index, book_page_nbr)) {
+        app_controller.set_controller(AppController::BOOK);
+      }
+    }
   }
-  books_dir_viewer.show_page(page_nbr, current_index);
+  else {
+    if (page_nbr >= books_dir_viewer.page_count()) {
+      page_nbr = 0;
+      current_index = 0;
+    }
+    books_dir_viewer.show_page(page_nbr, current_index);
+  }
 }
 
 void 
-BooksDirController::leave()
+BooksDirController::leave(bool going_to_deep_sleep)
 {
 
 }

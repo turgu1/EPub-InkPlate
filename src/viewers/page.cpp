@@ -9,7 +9,7 @@
 
 //--- Image load to bitmap tool ---
 //
-// Keep only PNG, JPEG, BMP, GIF
+// Keep only PNG, JPEG
 // No load from a file (will come from the epub file as a char array)
 
 #define STBI_ONLY_JPEG
@@ -601,6 +601,12 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy)
   if (glyphs_height < image.height) glyphs_height = image.height;
 
   line_width += advance;
+
+  LOG_D(
+    "Image added to line: w:%d h:%d a:%d",
+    image.width, image.height,
+    entry->kind.image_entry.advance
+  );
 
   line_list.push_front(entry);
 }

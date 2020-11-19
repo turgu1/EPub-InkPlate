@@ -23,12 +23,8 @@
 #include <stdlib.h>
 #include <sstream>
 
-static const char * BOOKS_DIR_FILE = BOOKS_FOLDER "/books_dir.db";
-static const char * NEW_DIR_FILE   = BOOKS_FOLDER "/new_dir.db";
-static const char * APP_NAME       = "EPUB-INKPLATE";
-
 bool 
-BooksDir::read_books_directory()
+BooksDir::read_books_directory(char * book_filename, int16_t & book_index)
 {
   LOG_D("Reading books directory: %s.", BOOKS_DIR_FILE);
 
@@ -86,7 +82,7 @@ BooksDir::read_books_directory()
     }
   }
 
-  if (!refresh()) return false;
+  if (!refresh(book_filename, book_index)) return false;
 
   //show_db();
 
@@ -188,8 +184,21 @@ BooksDir::get_book_data(uint16_t idx)
   return &book;
 }
 
+const BooksDir::EBookRecord * 
+BooksDir::get_book_data_from_db_index(uint16_t idx)
+{
+  db.set_current_idx(idx);
+
+  if (!db.get_record(&book, sizeof(EBookRecord))) return nullptr;
+
+  current_book_idx = idx;
+
+  return &book;
+}
+
+
 bool
-BooksDir::refresh()
+BooksDir::refresh(char * book_filename, int16_t & book_index)
 {
   //  First look if existing entries in the database exists as ebook.
   //  Build a list of filenames for next step.
@@ -212,6 +221,7 @@ BooksDir::refresh()
   sorted_index.clear();
 
   db.goto_first(); // Go pass the DB version record
+
   while (db.goto_next()) {
     db.get_record(partial_record, sizeof(PartialRecord));
 
@@ -231,6 +241,9 @@ BooksDir::refresh()
       LOG_D("Title: %s", partial_record->title);
       index[partial_record->filename] = 0;
       sorted_index[partial_record->title] = db.get_current_idx();
+      if (book_filename) {
+        if (strcmp(book_filename, partial_record->filename) == 0) book_index = db.get_current_idx();
+      }
     }
   }
   
@@ -254,6 +267,9 @@ BooksDir::refresh()
         if (!new_db->add_record(data, size)) { free(data); goto error_clear; }
         if (!first) {
           sorted_index[data->title] = new_db->get_record_count() - 1;
+          if (book_filename) {
+            if (strcmp(book_filename, data->filename) == 0) book_index = new_db->get_record_count() - 1;
+          }
         }
         first = false;
         free(data);
@@ -388,6 +404,9 @@ BooksDir::refresh()
             }
 
             sorted_index[the_book->title] = db.get_record_count() - 1;
+            if (book_filename) {
+              if (strcmp(book_filename, the_book->filename) == 0) book_index = db.get_record_count() - 1;
+            }
 
             epub.close_file();
             free(the_book);

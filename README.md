@@ -28,9 +28,9 @@ After some reflection, here are some of the steps remaining to be done:
 - [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 - [ ] books directory refresh dialog
 - [ ] Options / Parameters form
-- [ ] Configuration management (save/load from the SD-Card)
-- [ ] Error dialog use (10% completion)
-- [ ] Return to current book location between restarts
+- [x] Configuration management (save/load from the SD-Card)
+- [ ] Error dialog use (30% completion)
+- [x] Return to current book location between restarts
 - [ ] Performance on new book scans (50% completion)
 - [ ] Battery level display
 - [ ] WiFi access to update ebooks
@@ -202,7 +202,7 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 The EPub-InkPlate application requires some functionalities to be properly setup within the ESP-IDF. The following elements have been done (No need to do it again):
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions OTA_0 and OTA_1 have been set to be 1.5MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.5MB OTA partitions.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory, OTA_0 and OTA_1 have been set to be ~1.3MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, that is the reason for 1.3MB OTA partitions.
   
 - **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offer 4MB+4MB of additional RAM. The first 4MB is readily available to integrate to the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
 

@@ -67,7 +67,10 @@ class BooksDir
     #pragma pack(pop)
 
   private:
-    static constexpr char const * TAG = "BooksDir";
+    static constexpr char const * TAG            = "BooksDir";
+    static constexpr char const * BOOKS_DIR_FILE = MAIN_FOLDER "/books_dir.db";
+    static constexpr char const * NEW_DIR_FILE   = MAIN_FOLDER "/new_dir.db";
+    static constexpr char const * APP_NAME       = "EPUB-INKPLATE";
 
     SimpleDB db;                       ///< The SimpleDB database
 
@@ -100,7 +103,19 @@ class BooksDir
      * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve the data.
      */
     const EBookRecord * get_book_data(uint16_t idx);
+    const EBookRecord * get_book_data_from_db_index(uint16_t idx);
 
+    int16_t get_sorted_idx(int16_t db_idx) {
+      int i = 0;
+      for (auto entry : sorted_index) {
+        if (entry.second == db_idx) {
+          return i;
+        }
+        i++;
+      }
+      return -1;
+    }
+    
     /**
      * @brief Get page locations
      * 
@@ -133,10 +148,12 @@ class BooksDir
      * 
      * Each book is identified using the file name et the file size.
      *  
+     * @param book_filename Filename for wich the calling method needs the index for
+     * @param book_index    The index corresponding to the book filename
      * @return true  The database has been updated and ready.
      * @return false Some error happened.
      */
-    bool read_books_directory();
+    bool read_books_directory(char * book_filename, int16_t & book_index);
 
     /**
      * @brief Refresh the database
@@ -144,10 +161,12 @@ class BooksDir
      * This method is called by the *read_books_directory()* method to refresh the database. It can also
      * be called by the user through some option menu entry to request a database refresh.
      * 
+     * @param book_filename Filename for wich the calling method needs the index for
+     * @param book_index    The index corresponding to the book filename
      * @return true  The refresh process completed successfully.
      * @return false Some error happened.
      */
-    bool refresh();
+    bool refresh(char * book_filename, int16_t & book_index);
 
     /**
      * @brief Close the SimpleDB database

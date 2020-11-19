@@ -17,7 +17,7 @@ class OptionController
     OptionController();
     void key_event(EventMgr::KeyEvent key);
     void enter();
-    void leave();
+    void leave(bool going_to_deep_sleep = false);
 };
 
 #if __OPTION_CONTROLLER__

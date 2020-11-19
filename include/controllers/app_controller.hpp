@@ -63,6 +63,8 @@ class AppController
      */
     void key_event(EventMgr::KeyEvent key);
 
+    void going_to_deep_sleep();
+
   private:
     static constexpr char const * TAG = "AppController";
 

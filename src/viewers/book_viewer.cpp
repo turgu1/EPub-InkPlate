@@ -77,25 +77,28 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         case SPAN:
         case A:
           break;
+      #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
-        // case IMG: {
-        //     xml_attribute attr = node.attribute("src");
-        //     if (attr != nullptr) {
-        //       std::string filename = attr.value();
-        //       image_is_present = get_image(filename, image);
-        //     }
-        //   }
-        //   break;
-        // case IMAGE: {
-        //     xml_attribute attr = node.attribute("xlink:href");
-        //     if (attr != nullptr) {
-        //       std::string filename = attr.value();
-        //       image_is_present = get_image(filename, image);
-        //     }
-        //   }
-        //   break;
+      #else
+        case IMG: {
+            xml_attribute attr = node.attribute("src");
+            if (attr != nullptr) {
+              std::string filename = attr.value();
+              image_is_present = get_image(filename, image);
+            }
+          }
+          break;
+        case IMAGE: {
+            xml_attribute attr = node.attribute("xlink:href");
+            if (attr != nullptr) {
+              std::string filename = attr.value();
+              image_is_present = get_image(filename, image);
+            }
+          }
+          break;
+      #endif
         case LI:
         case P:
           para = true; start_of_paragraph = true;
@@ -347,6 +350,10 @@ BookViewer::get_pixel_value(const CSS::Value & value, const Page::Format & fmt, 
       return ref * value.num;
     case CSS::CM:
       return (value.num * Screen::RESOLUTION) / 2.54;
+    case CSS::VH:
+      return (value.num * (fmt.screen_bottom - fmt.screen_top)) / 100;
+    case CSS::VW:
+      return (value.num * (fmt.screen_right - fmt.screen_left)) / 100;;
     case CSS::STR:
       // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
       return 0;
@@ -380,7 +387,11 @@ BookViewer::get_point_value(const CSS::Value & value, const Page::Format & fmt, 
       LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
       return 0;
       break;
-    default:
+    case CSS::VH:
+      return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
+    case CSS::VW:
+      return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
+     default:
       LOG_E("get_point_value(): Wrong data type!");
       return value.num;
   }
@@ -635,30 +646,33 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
         case SPAN:
         case A:
           break;
+      #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
-        // case IMAGE: {
-        //     xml_attribute attr = node.attribute("xlink:href");
-        //     if (attr != nullptr) {
-        //       std::string filename = attr.value();
-        //       image_is_present = get_image(filename, image);
-        //     }
-        //   }
-        //   break;
-        // case IMG: {
-        //     if (started) { 
-        //       xml_attribute attr = node.attribute("src");
-        //       if (attr != nullptr) {
-        //         std::string filename = attr.value();
-        //         image_is_present = get_image(filename, image);
-        //       }
-        //     }
-        //     else {
-        //       image_is_present = true;
-        //     }
-        //   }
-        //   break;
+      #else
+        case IMAGE: {
+            xml_attribute attr = node.attribute("xlink:href");
+            if (attr != nullptr) {
+              std::string filename = attr.value();
+              image_is_present = get_image(filename, image);
+            }
+          }
+          break;
+        case IMG: {
+            if (started) { 
+              xml_attribute attr = node.attribute("src");
+              if (attr != nullptr) {
+                std::string filename = attr.value();
+                image_is_present = get_image(filename, image);
+              }
+            }
+            else {
+              image_is_present = true;
+            }
+          }
+          break;
+      #endif
         case LI:
         case P:
           para = true; start_of_paragraph = true;
@@ -730,9 +744,11 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
           page.new_paragraph(fmt);
           start_of_paragraph = false;
         }
-        if (started && (current_offset < end_of_page_offset)) if (!page.add_image(image, fmt)) {
-          stbi_image_free((void *) image.bitmap);
-          return true;
+        if (started && (current_offset < end_of_page_offset)) {
+          if (!page.add_image(image, fmt)) {
+            stbi_image_free((void *) image.bitmap);
+            return true;
+          }
         }
         stbi_image_free((void *) image.bitmap);
 

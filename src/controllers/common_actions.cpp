@@ -4,8 +4,11 @@
 #include "controllers/app_controller.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/books_dir.hpp"
-#include "inkplate6_ctrl.hpp"
-#include "esp.hpp"
+
+#if EPUB_INKPLATE6_BUILD
+  #include "inkplate6_ctrl.hpp"
+  #include "esp.hpp"
+#endif
 
 void
 CommonActions::return_to_last()
@@ -16,16 +19,23 @@ CommonActions::return_to_last()
 void
 CommonActions::refresh_books_dir()
 {
-  books_dir.refresh();
+  int16_t temp;
+
+  books_dir.refresh(nullptr, temp);
 }
 
 void
 CommonActions::power_off()
 {
-  MsgViewer::show(MsgViewer::INFO, false, true, "Power OFF",
-    "Entering Deep Sleep mode. Please press a key to restart the device.");
-  ESP::delay(500);
-  inkplate6_ctrl.deep_sleep();
+  app_controller.going_to_deep_sleep();
+  #if EPUB_INKPLATE6_BUILD
+    MsgViewer::show(MsgViewer::INFO, false, true, "Power OFF",
+      "Entering Deep Sleep mode. Please press a key to restart the device.");
+    ESP::delay(500);
+    inkplate6_ctrl.deep_sleep();
+  #else
+    exit(0);
+  #endif
 }
 
 void

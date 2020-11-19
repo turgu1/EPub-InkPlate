@@ -11,6 +11,10 @@
 #include "viewers/page.hpp"
 #include "viewers/msg_viewer.hpp"
 
+#if EPUB_INKPLATE6_BUILD
+  #include "nvs.h"
+#endif
+
 #include <string>
 
 void 
@@ -20,20 +24,41 @@ BookController::enter()
 }
 
 void 
-BookController::leave()
+BookController::leave(bool going_to_deep_sleep)
 {
-
+  #if EPUB_INKPLATE6_BUILD
+    nvs_handle_t nvs_handle;
+  
+    if (nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) {
+      nvs_set_str(nvs_handle, "LAST_BOOK",  the_book_filename.c_str());
+      nvs_set_i16(nvs_handle, "PAGE_NBR",   current_page);
+       nvs_set_i8(nvs_handle, "WAS_SHOWED", going_to_deep_sleep ? 1 : 0);
+      nvs_close(nvs_handle);
+    }
+  #else
+    FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "w");
+    if (f != nullptr) {
+      fprintf(f, "%s\n%d\n%d\n",
+        the_book_filename.c_str(),
+        current_page,
+        going_to_deep_sleep ? 1 : 0
+      );
+      fclose(f);
+    } 
+  #endif  
 }
 
 bool
-BookController::open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx)
+BookController::open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int16_t page_nbr)
 {
   MsgViewer::show(MsgViewer::BOOK, false, true, "Loading a book",
     "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
   if (epub.open_file(book_filename)) {
     epub.retrieve_page_locs(book_idx);
-    current_page = 0;
+    the_book_filename = book_filename.substr(book_filename.find_last_of('/') + 1);
+    the_book_idx = book_idx;
+    current_page = page_nbr;
     return true;
   }
   return false;

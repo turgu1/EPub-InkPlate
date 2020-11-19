@@ -10,5 +10,7 @@ SDCard/books/Broken
 SDCard/books/Broken2
 SDCard/books/Done
 SDCard/books/temp
-SDCard/books/books_dir.db
+SDCard/books_dir.db
+SDCard/config.txt
+SDCard/last_book.txt
 SDCard/books/test*

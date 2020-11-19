@@ -118,7 +118,7 @@ class CSS
     CSS(std::string folder_path, const char * buffer, int32_t size, const std::string & css_id);
    ~CSS();
 
-    enum     ValueType : uint8_t { NOTHING, PT, PX, EM, CM, PERCENT, STR, URL, NOTYPE };
+    enum     ValueType : uint8_t { NOTHING, PT, PX, EM, CM, VH, VW, PERCENT, STR, URL, NOTYPE };
     enum         Align : uint8_t { LEFT_ALIGN = 0, CENTER_ALIGN, RIGHT_ALIGN, JUSTIFY };
     enum TextTransform : uint8_t { NO_TRANSFORM, UPPERCASE, LOWERCASE, CAPITALIZE };
     enum    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,

@@ -60,9 +60,12 @@ void MsgViewer::show(
     ((Screen::WIDTH  - WIDTH ) >> 1) + 2,
     ((Screen::HEIGHT - HEIGHT) >> 1) + 2);
 
+  TTF * font = fonts.get(0, 24);
+  TTF::BitmapGlyph * glyph = font->get_glyph(icon_char[severity]);
+
   page.put_char_at(
     icon_char[severity], 
-    ((Screen::WIDTH  - WIDTH ) >> 1) + 20, 
+    ((Screen::WIDTH  - WIDTH ) >> 1) + 50 - (glyph->width >> 1), 
     ( Screen::HEIGHT           >> 1) + 20,
     fmt);
 

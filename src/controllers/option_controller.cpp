@@ -7,11 +7,12 @@
 
 #include "controllers/common_actions.hpp"
 #include "viewers/menu_viewer.hpp"
+#include "viewers/msg_viewer.hpp"
 
 static void
 parameters()
 {
-
+  MsgViewer::show(MsgViewer::BUG, false, false, "Test", "Petit test pour voir...");
 }
 
 static MenuViewer::MenuEntry menu[7] = {
@@ -36,9 +37,8 @@ OptionController::enter()
 }
 
 void 
-OptionController::leave()
+OptionController::leave(bool going_to_deep_sleep)
 {
-
 }
 
 void 

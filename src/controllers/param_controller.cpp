@@ -44,7 +44,7 @@ ParamController::enter()
 }
 
 void 
-ParamController::leave()
+ParamController::leave(bool going_to_deep_sleep)
 {
 
 }
