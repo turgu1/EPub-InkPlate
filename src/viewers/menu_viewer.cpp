@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __MENU_VIEWER__ 1
 #include "viewers/menu_viewer.hpp"
 

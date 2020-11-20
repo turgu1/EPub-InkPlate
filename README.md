@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2020.11.19)
+(Updated 2020.11.20)
 
 Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
 
@@ -23,10 +23,10 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
 - [x] Return to current book location between restarts
 - [x] Configuration management (save/load from the SD-Card)
+- [x] Form tool to show / edit options / parameters
 
 After some reflection, here are some of the steps remaining to be done:
 
-- [ ] Form tool to show/edit options / parameters
 - [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 - [ ] books directory refresh dialog
 - [ ] Options / Parameters form

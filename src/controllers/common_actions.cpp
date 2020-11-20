@@ -2,6 +2,7 @@
 #include "controllers/common_actions.hpp"
 
 #include "controllers/app_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/books_dir.hpp"
 
@@ -14,6 +15,12 @@ void
 CommonActions::return_to_last()
 {
   app_controller.set_controller(AppController::LAST);
+}
+
+void
+CommonActions::show_last_book()
+{
+  books_dir_controller.show_last_book();
 }
 
 void
@@ -53,8 +60,8 @@ CommonActions::about()
     false,
     false,
     "About EPub-InkPlate", 
-    "EBook Reader Version %s for the InkPlate-6 e-paper display. "
-    "Made by Guy Turcotte, Quebec, QC, Canada. "
-    "With great support from E-Radionica.",
+    "EPub EBook Reader Version %s for the InkPlate-6 e-paper display device. "
+    "This application was made by Guy Turcotte, Quebec, QC, Canada, "
+    "with great support from e-radionica.",
     APP_VERSION);
 }

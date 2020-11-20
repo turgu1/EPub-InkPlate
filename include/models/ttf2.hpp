@@ -25,7 +25,7 @@ class TTF
       TTF * root;
       int16_t width, rows;
       int16_t xoff, yoff;
-      int16_t advance; //, left_side;
+      int16_t advance;
       int16_t pitch;
     };
     
@@ -99,6 +99,8 @@ class TTF
 
     void clear_cache();
 
+    void get_size(const char * str, int16_t & width, int16_t & height);
+
   private:
     static constexpr uint16_t BYTE_POOL_SIZE = 4096;
 
@@ -146,6 +148,7 @@ class TTF
      * @return false Some error (file not found, unsupported format).
      */
     bool set_font_face_from_memory(unsigned char * buffer, int32_t size);
+
 };
 
 #endif

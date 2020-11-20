@@ -7,6 +7,7 @@
 
 #include "models/fonts.hpp"
 #include "models/books_dir.hpp"
+#include "viewers/msg_viewer.hpp"
 #include "helpers/unzip.hpp"
 #include "logging.hpp"
 
@@ -202,13 +203,17 @@ EPub::retrieve_fonts_from_css(CSS & css)
 
   if (suite == nullptr) return;
 
+  bool first = true;
+
   for (auto & props : *suite) {
     const CSS::Values * values;
     if ((values = css.get_values_from_props(*props, CSS::FONT_FAMILY))) {
+
       Fonts::FaceStyle style = Fonts::NORMAL;
       std::string font_family = values->front()->str;
       Fonts::FaceStyle font_weight = Fonts::NORMAL;
       Fonts::FaceStyle font_style = Fonts::NORMAL;
+      
       if ((values = css.get_values_from_props(*props, CSS::FONT_STYLE))) {
         font_style = (Fonts::FaceStyle) values->front()->choice;
       }
@@ -222,6 +227,18 @@ EPub::retrieve_fonts_from_css(CSS & css)
         if ((values = css.get_values_from_props(*props, CSS::SRC)) &&
             (!values->empty()) &&
             (values->front()->value_type == CSS::URL)) {
+
+          if (first) {
+            first = false;
+            LOG_D("Displaying font loading msg.");
+            MsgViewer::show(
+              MsgViewer::INFO, 
+              false, false, 
+              "Retrieving Font(s)", 
+              "The application is retrieving font(s) from the EPub file. Please wait."
+            );
+          }
+
           std::string filename = css.get_folder_path();
           filename.append(values->front()->str);
           uint32_t size;

@@ -34,14 +34,22 @@
   void 
   mainTask(void * params) 
   {
-    esp_err_t ret = nvs_flash_init();
-    if (ret != ESP_OK) {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-        "Failed to initialise NVS Flash (%s). Entering Deep Sleep. Press a key to restart.",
-         esp_err_to_name(ret)
-      );
-      ESP::delay(500);
-      inkplate6_ctrl.deep_sleep();
+    esp_err_t err = nvs_flash_init();
+    if (err != ESP_OK) {
+      if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
+        LOG_D("Erasing NVS Partition... (Because of %s)", esp_err_to_name(err));
+        if ((err = nvs_flash_erase()) == ESP_OK) {
+          err = nvs_flash_init();
+        }
+      }
+      if (err != ESP_OK) {
+        MsgViewer::show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+          "Failed to initialise NVS Flash (%s). Entering Deep Sleep. Press a key to restart.",
+           esp_err_to_name(err)
+        );
+        ESP::delay(500);
+        inkplate6_ctrl.deep_sleep();
+      }
     } 
 
     #if DEBUGGING
@@ -84,7 +92,7 @@
     }
     else {
       MsgViewer::show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
-        "Unable to read default fonts. Entering Deep Sleep. Press a key to restart."
+        "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
       inkplate6_ctrl.deep_sleep();

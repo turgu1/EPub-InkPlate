@@ -6,6 +6,7 @@
 #include "controllers/book_controller.hpp"
 
 #include "controllers/app_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
 #include "models/epub.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
@@ -26,34 +27,7 @@ BookController::enter()
 void 
 BookController::leave(bool going_to_deep_sleep)
 {
-  // As we leave, we keep the information required to return to the book
-  // in the NVS space. If this is called just before going to deep sleep, we
-  // set the "WAS_SHOWN" boolean to true, such that when the device will
-  // be booting, it will display the last book at the last page shown.
-  #if EPUB_INKPLATE6_BUILD
-    nvs_handle_t nvs_handle;
-    esp_err_t err;
-  
-    if (nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) {
-      nvs_set_str(nvs_handle, "LAST_BOOK",  the_book_filename.c_str());
-      nvs_set_i16(nvs_handle, "PAGE_NBR",   current_page);
-       nvs_set_i8(nvs_handle, "WAS_SHOWN", going_to_deep_sleep ? 1 : 0);
-      if ((err = nvs_commit(nvs_handle)) != ESP_OK) {
-        LOG_E("NVS Commit error: %d", err);
-      }
-      nvs_close(nvs_handle);
-    }
-  #else
-    FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "w");
-    if (f != nullptr) {
-      fprintf(f, "%s\n%d\n%d\n",
-        the_book_filename.c_str(),
-        current_page,
-        going_to_deep_sleep ? 1 : 0
-      );
-      fclose(f);
-    } 
-  #endif  
+  books_dir_controller.save_last_book(current_page, going_to_deep_sleep);
 }
 
 bool
@@ -64,8 +38,6 @@ BookController::open_book_file(std::string & book_title, std::string & book_file
 
   if (epub.open_file(book_filename)) {
     epub.retrieve_page_locs(book_idx);
-    the_book_filename = book_filename.substr(book_filename.find_last_of('/') + 1);
-    the_book_idx = book_idx;
     current_page = page_nbr;
     return true;
   }

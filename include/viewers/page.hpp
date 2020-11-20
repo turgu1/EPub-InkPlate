@@ -233,7 +233,7 @@ class Page
      * @param ypos 
      * @param fmt Formatting parameters.
      */
-    void put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & fmt);
+    void put_str_at(const std::string & str, int16_t xpos, int16_t ypos, const Format & fmt);
 
     /**
      * @brief Put character to the screen.

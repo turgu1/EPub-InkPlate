@@ -25,8 +25,6 @@ class BookController
     static constexpr char const * TAG = "BookController";
 
     int16_t current_page;
-    int16_t the_book_idx;
-    std::string the_book_filename;
 };
 
 #if __BOOK_CONTROLLER__

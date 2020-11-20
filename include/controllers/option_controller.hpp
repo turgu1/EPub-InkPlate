@@ -12,12 +12,14 @@ class OptionController
 {
   private:
     static constexpr char const * TAG = "OptionController";
-
+    bool form_is_shown;
   public:
-    OptionController();
+    OptionController() : form_is_shown(false) { };
     void key_event(EventMgr::KeyEvent key);
     void enter();
     void leave(bool going_to_deep_sleep = false);
+
+    inline void set_form_is_shown() { form_is_shown = true; }
 };
 
 #if __OPTION_CONTROLLER__

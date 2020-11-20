@@ -14,11 +14,11 @@ class BooksDirViewer
   private:
     static constexpr char const * TAG = "BooksDirView";
 
-    static const int16_t FIRST_ENTRY_YPOS = 20;
-    static const int16_t LEFT_POS = 30;
-    static const int16_t TITLE_FONT_SIZE = 10;
-    static const int16_t AUTHOR_FONT_SIZE = 8;
-    static const int16_t PAGENBR_FONT_SIZE = 7;
+    static const int16_t FIRST_ENTRY_YPOS  = 20;
+    static const int16_t LEFT_POS          = 30;
+    static const int16_t TITLE_FONT_SIZE   = 11;
+    static const int16_t AUTHOR_FONT_SIZE  =  9;
+    static const int16_t PAGENBR_FONT_SIZE =  9;
 
     int16_t current_item_idx;
     int16_t current_page_nbr;

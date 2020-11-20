@@ -134,7 +134,7 @@ to_unicode(const char **str, CSS::TextTransform transform, bool first)
 }
 
 void 
-Page::put_str_at(std::string & str, int16_t xpos, int16_t ypos, const Format & fmt)
+Page::put_str_at(const std::string & str, int16_t xpos, int16_t ypos, const Format & fmt)
 {
   TTF::BitmapGlyph * glyph;
   

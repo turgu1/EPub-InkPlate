@@ -893,11 +893,11 @@ BookViewer::build_page_at(const EPub::Location & loc)
 
       if (build_page_recurse(node, fmt)) {
 
-        TTF * font = fonts.get(0, 7);
+        //TTF * font = fonts.get(0, 7);
 
         fmt.line_height_factor = 1.0;
         fmt.font_index         = 1;
-        fmt.font_size          = 7;
+        fmt.font_size          = 9;
         fmt.font_style         = Fonts::NORMAL;
         fmt.align              = CSS::CENTER_ALIGN;
 
