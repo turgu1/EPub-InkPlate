@@ -6,6 +6,7 @@
 #include "viewers/book_viewer.hpp"
 
 #include "models/ttf2.hpp"
+#include "viewers/msg_viewer.hpp"
 #include "screen.hpp"
 #include "alloc.hpp"
 
@@ -323,6 +324,8 @@ BookViewer::build_page_locs()
       }
 
       page_locs_end_page(fmt);
+      
+      //msg_viewer.add_dot(); // Show progression to the user
 
       done = !epub.get_next_item();
     }

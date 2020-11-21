@@ -43,7 +43,7 @@
         }
       }
       if (err != ESP_OK) {
-        MsgViewer::show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+        msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
           "Failed to initialise NVS Flash (%s). Entering Deep Sleep. Press a key to restart.",
            esp_err_to_name(err)
         );
@@ -62,7 +62,7 @@
     #endif
 
     if (!inkplate6_ctrl.setup()) {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+      msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
         "Unable to initialize InkPlate-6 drivers. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
@@ -70,7 +70,7 @@
     }
 
     if (!config.read()) {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Configuration Problem!",
+      msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
         "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
@@ -91,7 +91,7 @@
       app_controller.start();
     }
     else {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
+      msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
         "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
@@ -138,7 +138,7 @@
   main(int argc, char **argv) 
   {
     if (!config.read()) {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Configuration Problem!",
+      msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
         "Unable to read/save configuration file."
       );
 
@@ -158,7 +158,7 @@
       app_controller.start();
     }
     else {
-      MsgViewer::show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
+      msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
         "Unable to load default fonts."
       );
 

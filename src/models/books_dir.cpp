@@ -7,6 +7,7 @@
 
 #include "models/epub.hpp"
 #include "viewers/book_viewer.hpp"
+#include "viewers/msg_viewer.hpp"
 #include "logging.hpp"
 #include "alloc.hpp"
 
@@ -206,8 +207,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index)
   LOG_D("Refreshing database content");
 
   EBookRecord   * the_book = nullptr;
-  struct dirent * de = nullptr;
-  DIR           * dp = nullptr;
+  struct dirent * de       = nullptr;
+  DIR           * dp       = nullptr;
+  bool            first    = true;
+
   SortedIndex     index;
 
   bool some_added_record = false;
@@ -310,6 +313,14 @@ BooksDir::refresh(char * book_filename, int16_t & book_index)
 
           // The book is not in the database, we add it now
 
+          if (first) {
+            first = false;
+            //msg_viewer.show_progress("Computing new books page locations...");
+            msg_viewer.show(MsgViewer::INFO, false, true, 
+              "Computing page locations", 
+              "New books have been found. Please wait while we compute pages locations. "
+              "It will take between 1 and 3 minutes for each book.");
+          }
           some_added_record = true;
           
           LOG_D("New book found: %s", de->d_name);

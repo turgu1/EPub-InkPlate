@@ -9,11 +9,14 @@
 
 class EventMgr
 {
+  private:
+    bool stay_on;
+
   public:
     static constexpr char const * TAG = "EventMgr";
 
     enum KeyEvent { KEY_NONE, KEY_NEXT, KEY_PREV, KEY_DBL_NEXT, KEY_DBL_PREV, KEY_SELECT, KEY_DBL_SELECT };
-    EventMgr();
+    EventMgr() : stay_on(false) { }
 
     bool setup();
     void start_loop();
@@ -26,6 +29,8 @@ class EventMgr
     void down();
     void select();
     void home();
+
+    inline void set_stay_on(bool value) { stay_on = value; };
 };
 
 #if __EVENT_MGR__

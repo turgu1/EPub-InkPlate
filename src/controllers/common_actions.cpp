@@ -3,6 +3,7 @@
 
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
+#include "controllers/event_mgr.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/books_dir.hpp"
 
@@ -36,7 +37,7 @@ CommonActions::power_off()
 {
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE6_BUILD
-    MsgViewer::show(MsgViewer::INFO, false, true, "Power OFF",
+    msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. Please press a key to restart the device.");
     ESP::delay(500);
     inkplate6_ctrl.deep_sleep();
@@ -45,17 +46,24 @@ CommonActions::power_off()
   #endif
 }
 
+extern bool start_web_server();
+
 void
 CommonActions::wifi_mode()
 {
-  MsgViewer::show_progress_bar("Petit test %d livres...", 31);
-  MsgViewer::set_progress_bar(100);
+  event_mgr.set_stay_on(true); // DO NOT sleep
+
+  if (start_web_server()) {
+    msg_viewer.show(MsgViewer::INFO, true, true, 
+      "Web Server", 
+      "The Web server is now running. To stop it, please press a key.");
+  }
 }
 
 void
 CommonActions::about()
 {
-  MsgViewer::show(
+  msg_viewer.show(
     MsgViewer::BOOK, 
     false,
     false,

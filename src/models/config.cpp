@@ -7,15 +7,21 @@
 static int32_t  version;
 static char     ssid[32];
 static char     pwd[16];
+static int32_t  port;
+static int32_t  battery;
 static char     orientation[7];
 
-static int32_t  the_version = 1;
+static int32_t  the_version     =  1;
+static int32_t  default_port    = 80;
+static int32_t  default_battery =  0;
 
-std::array<Config::ConfigDescr, 4> Config::cfg = {{
- { VERSION,     INT,    "version",     &version,    &the_version,  0 },
- { SSID,        STRING, "wifi_ssid",   ssid,        "NONE",       32 },
- { PWD,         STRING, "wifi_pwd",    pwd,         "NONE",       16 },
- { ORIENTATION, STRING, "orientation", orientation, "LEFT",        7 }
+std::array<Config::ConfigDescr, 6> Config::cfg = {{
+ { VERSION,     INT,    "version",     &version,    &the_version,     0 },
+ { SSID,        STRING, "wifi_ssid",   ssid,        "NONE",          32 },
+ { PWD,         STRING, "wifi_pwd",    pwd,         "NONE",          16 },
+ { PORT,        INT,    "http_port",   &port,       &default_port,    0 },
+ { BATTERY,     INT,    "battery",     &battery,    &default_battery, 0 },
+ { ORIENTATION, STRING, "orientation", orientation, "LEFT",           7 }
 }};
 
 bool 
@@ -35,7 +41,7 @@ Config::get(Ident id, std::string & val)
 {
   for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == STRING)) {
-      val = * ((char *) entry.value);
+      val.assign(((char *) entry.value));
       return true;
     }
   }
@@ -89,11 +95,9 @@ Config::parse_line(char * buff, uint16_t max_size, char ** caption, char ** valu
       *str++ = 0;
     }
     else {
+      *str++ = 0;
       while (*str == ' ') str++;
-      if (*str == '=') {
-        *str++ = 0;
-      }
-      else return false;
+      if (*str++ != '=') return false;
     }
     while (*str == ' ') str++;
     if (*str == 0) return false;
@@ -142,6 +146,7 @@ Config::read()
   char * value;
 
   while (parse_line(buff, 128, &caption, &value)) {
+    LOG_D("Caption: %s, value: %s", caption, value);
     for (auto entry : cfg) {
       if (strcmp(caption, entry.caption) == 0) {
         if (entry.type == STRING) {
@@ -150,11 +155,13 @@ Config::read()
         else {
           *((int32_t *) entry.value) = atoi(value);
         }
+        break;
       }
     }
   }
 
   fclose(f);
+
   return true;
 }
 

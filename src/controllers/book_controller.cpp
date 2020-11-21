@@ -33,7 +33,7 @@ BookController::leave(bool going_to_deep_sleep)
 bool
 BookController::open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int16_t page_nbr)
 {
-  MsgViewer::show(MsgViewer::BOOK, false, true, "Loading a book",
+  msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
     "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
   if (epub.open_file(book_filename)) {

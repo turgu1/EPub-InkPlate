@@ -18,24 +18,40 @@
 class MsgViewer {
 
   private:
-    static constexpr uint16_t WIDTH  = Screen::WIDTH - 60;
-    static constexpr uint16_t HEIGHT = 240;
+    static constexpr uint16_t WIDTH   = Screen::WIDTH - 60;
+    static constexpr uint16_t HEIGHT  = 240;
+    static constexpr uint16_t HEIGHT2 = 400;
+
+    struct DotsZone {
+      int16_t xpos, ypos;
+      int16_t width, height;
+      int16_t max_dot_count;
+      int16_t dots_per_line;
+    } dot_zone;
+
+    int16_t dot_count;
 
   public:
-    MsgViewer();
+    MsgViewer() {};
 
     enum Severity       { INFO, ALERT, BUG, BOOK };
     static char icon_char[4];
 
-    static void show(
+    void show(
       Severity severity, 
       bool press_a_key, 
       bool clear_screen,
       const char * title, 
       const char * fmt_str, ...);
     
-    static void show_progress_bar(const char * title, ...);
-    static void set_progress_bar(uint8_t value);
+    void show_progress(const char * title, ...);
+    void add_dot();
 };
+
+#if __MSG_VIEWER__
+  MsgViewer msg_viewer;
+#else
+  extern MsgViewer msg_viewer;
+#endif
 
 #endif

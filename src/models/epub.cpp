@@ -231,7 +231,7 @@ EPub::retrieve_fonts_from_css(CSS & css)
           if (first) {
             first = false;
             LOG_D("Displaying font loading msg.");
-            MsgViewer::show(
+            msg_viewer.show(
               MsgViewer::INFO, 
               false, false, 
               "Retrieving Font(s)", 

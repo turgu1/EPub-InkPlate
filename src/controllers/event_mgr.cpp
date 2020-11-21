@@ -108,11 +108,6 @@
 
 #endif
 
-EventMgr::EventMgr()
-{
-  
-}
-
 #if EPUB_LINUX_BUILD
 
   #include <gtk/gtk.h>
@@ -158,19 +153,21 @@ EventMgr::EventMgr()
         // After some delay, the device will then be put in Deep Sleep Mode, 
         // rebooting after the user press a key.
 
-        LOG_I("Light Sleep for 15 minutes...");
-        ESP::delay(500);
-
-        if (inkplate6_ctrl.light_sleep(15)) {
-          LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
-          MsgViewer::show(
-            MsgViewer::INFO, 
-            false, true, 
-            "Deep Sleep", 
-            "Timeout period exceeded. The device is now entering into Deep Sleep mode. Please press a key to restart.");
+        if (!stay_on) {
+          LOG_I("Light Sleep for 15 minutes...");
           ESP::delay(500);
-          app_controller.going_to_deep_sleep();
-          inkplate6_ctrl.deep_sleep();
+
+          if (inkplate6_ctrl.light_sleep(15)) {
+            LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
+            msg_viewer.show(
+              MsgViewer::INFO, 
+              false, true, 
+              "Deep Sleep", 
+              "Timeout period exceeded. The device is now entering into Deep Sleep mode. Please press a key to restart.");
+            ESP::delay(500);
+            app_controller.going_to_deep_sleep();
+            inkplate6_ctrl.deep_sleep();
+          }
         }
       }
     }

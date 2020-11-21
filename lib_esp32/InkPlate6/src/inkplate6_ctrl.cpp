@@ -75,14 +75,14 @@ InkPlate6Ctrl::setup()
 {
   wire.setup();
 
-  // Mount and check the SD Card
-  if (!sd_card_setup()) return false;
-
   // Setup the display
   if (!e_ink.setup()) return false;
 
   // Setup Touch pad
   if (!touchpad_int_setup()) return false;
+
+  // Mount and check the SD Card
+  if (!sd_card_setup()) return false;
 
   // Good to go
   return true;

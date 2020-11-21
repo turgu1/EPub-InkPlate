@@ -9,7 +9,7 @@
 class Config
 {
   public:
-    enum Ident { SSID, PWD, ORIENTATION, VERSION };
+    enum Ident { SSID, PWD, PORT, BATTERY, ORIENTATION, VERSION };
 
   private:
     static constexpr char const * TAG = "Config"; 
@@ -26,7 +26,7 @@ class Config
     };
 
     FILE *f;
-    static std::array<Config::ConfigDescr, 4> cfg;
+    static std::array<Config::ConfigDescr, 6> cfg;
     bool modified;
 
     bool parse_line(

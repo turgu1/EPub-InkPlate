@@ -255,8 +255,9 @@ class Page
      * 
      * @param clear_screen Screen contain is erased before painting.
      * @param no_full      Bypass partial update count control. Use with great caution!
+     * @param do_it        Do the painting irrelevant of the compute mode
      */
-    void paint(bool clear_screen = true, bool no_full = false);
+    void paint(bool clear_screen = true, bool no_full = false, bool do_it = false);
 
     int16_t paint_width() { return max_x - min_x; };
 

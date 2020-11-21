@@ -256,9 +256,9 @@ Page::put_char_at(char ch, int16_t xpos, int16_t ypos, const Format & fmt)
 }
 
 void
-Page::paint(bool clear_screen, bool no_full)
+Page::paint(bool clear_screen, bool no_full, bool do_it)
 {
-  if ((display_list.empty()) || (compute_mode != DISPLAY)) return;
+  if (!do_it) if ((display_list.empty()) || (compute_mode != DISPLAY)) return;
   
   if (clear_screen) screen.clear();
 
@@ -478,10 +478,10 @@ Page::add_line(const Format & fmt, bool justifyable)
     else break;
   }
 
+  line_list.reverse();
+  
   if (!line_list.empty() && (compute_mode == DISPLAY)) {
   
-    line_list.reverse();
-
     if ((fmt.align == CSS::JUSTIFY) && justifyable) {
       int16_t target_width = (para_max_x - para_min_x - para_indent);
       int16_t loop_count = 0;
@@ -796,7 +796,13 @@ Page::add_image(Image & image, const Format & fmt)
     if (compute_mode == DISPLAY) {
       if ((image.width > 2) || (image.height > 2)) {
 
+        int32_t size = w * h;
+
+        if (size == 0) return false;
+
         resized_bitmap = new unsigned char[w * h];
+
+        if (resized_bitmap == nullptr) return false;
 
         stbir_resize_uint8(image.bitmap,   image.width, image.height, 0,
                           resized_bitmap, w,           h,            0,

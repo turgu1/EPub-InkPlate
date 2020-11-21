@@ -2,6 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+#define __MSG_VIEWER__ 1
 #include "viewers/msg_viewer.hpp"
 
 #include "viewers/page.hpp"
@@ -19,6 +20,8 @@ void MsgViewer::show(
   const char * fmt_str, ...)
 {
   char buff[200];
+
+  if (page.get_compute_mode() == Page::LOCATION) return; // Cannot be used durint location computation
 
   va_list args;
   va_start(args, fmt_str);
@@ -107,10 +110,10 @@ void MsgViewer::show(
     page.end_paragraph(fmt);
   }
 
-  page.paint(clear_screen);
+  page.paint(clear_screen, true, true);
 }
 
-void MsgViewer::show_progress_bar(const char * title, ...)
+void MsgViewer::show_progress(const char * title, ...)
 {
   Page::Format fmt = {
     .line_height_factor = 1.0,
@@ -121,10 +124,10 @@ void MsgViewer::show_progress_bar(const char * title, ...)
     .margin_right       =  10,
     .margin_top         =  30, // 70,
     .margin_bottom      =  10,
-    .screen_left        = (Screen::WIDTH  -   WIDTH) >> 1,
-    .screen_right       = (Screen::WIDTH  -   WIDTH) >> 1,
-    .screen_top         = (Screen::HEIGHT -     150) >> 1,
-    .screen_bottom      = (Screen::HEIGHT -     150) >> 1,
+    .screen_left        = (Screen::WIDTH  - WIDTH) >> 1,
+    .screen_right       = (Screen::WIDTH  - WIDTH) >> 1,
+    .screen_top         = (Screen::HEIGHT - HEIGHT2) >> 1,
+    .screen_bottom      = (Screen::HEIGHT - HEIGHT2) >> 1,
     .width              = 0,
     .height             = 0,
     .trim               = true,
@@ -144,15 +147,15 @@ void MsgViewer::show_progress_bar(const char * title, ...)
 
   page.clear_region(
     WIDTH, 
-    150, 
-    (Screen::WIDTH  - WIDTH ) >> 1, 
-    (Screen::HEIGHT - 150) >> 1);
+    HEIGHT2, 
+    (Screen::WIDTH  - WIDTH  ) >> 1, 
+    (Screen::HEIGHT - HEIGHT2) >> 1);
 
   page.put_highlight(
-    WIDTH  - 4, 
-    150    - 4, 
-    ((Screen::WIDTH  - WIDTH ) >> 1) + 2,
-    ((Screen::HEIGHT - 150) >> 1) + 2);
+    WIDTH   - 4, 
+    HEIGHT2 - 4, 
+    ((Screen::WIDTH  - WIDTH  ) >> 1) + 2,
+    ((Screen::HEIGHT - HEIGHT2) >> 1) + 2);
 
   // Title
 
@@ -162,19 +165,27 @@ void MsgViewer::show_progress_bar(const char * title, ...)
   page.put_text(buffer, fmt);
   page.end_paragraph(fmt);
 
-  // Progress bar
+  // Progress zone
 
   page.put_highlight(
-    WIDTH - 40,
-    30,
-    ((Screen::WIDTH  - WIDTH ) >> 1) + 20,
-    (Screen::HEIGHT >> 1) + 10
+    WIDTH   -   42,
+    HEIGHT2 -  100,
+    ((Screen::WIDTH - WIDTH) >> 1) +  23,
+     (Screen::HEIGHT         >> 1) - 120
   );
+
+  dot_zone.width  = WIDTH   -  46;
+  dot_zone.height = HEIGHT2 - 104;
+  dot_zone.xpos   = ((Screen::WIDTH - WIDTH) >> 1) +  25;
+  dot_zone.ypos   =  (Screen::HEIGHT         >> 1) - 118;
+  dot_zone.dots_per_line = (dot_zone.width + 1) / 9;
+  dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.height + 1) / 9);
+  dot_count = 0;
 
   page.paint(false);
 }
 
-void MsgViewer::set_progress_bar(uint8_t value)
+void MsgViewer::add_dot()
 {
   Page::Format fmt = {
     .line_height_factor = 1.0,
@@ -185,10 +196,10 @@ void MsgViewer::set_progress_bar(uint8_t value)
     .margin_right       =  10,
     .margin_top         =  30, // 70,
     .margin_bottom      =  10,
-    .screen_left        = (Screen::WIDTH  -   WIDTH ) >> 1,
-    .screen_right       = (Screen::WIDTH  -   WIDTH ) >> 1, // Screen::WIDTH  - ((Screen::WIDTH  - WIDTH ) >> 1),
-    .screen_top         = (Screen::HEIGHT -   HEIGHT) >> 1,
-    .screen_bottom      = (Screen::HEIGHT -   HEIGHT) >> 1, // Screen::HEIGHT - ((Screen::HEIGHT - HEIGHT) >> 1),
+    .screen_left        = (Screen::WIDTH  - WIDTH ) >> 1,
+    .screen_right       = (Screen::WIDTH  - WIDTH ) >> 1, // Screen::WIDTH  - ((Screen::WIDTH  - WIDTH ) >> 1),
+    .screen_top         = (Screen::HEIGHT - HEIGHT) >> 1,
+    .screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1, // Screen::HEIGHT - ((Screen::HEIGHT - HEIGHT) >> 1),
     .width              = 0,
     .height             = 0,
     .trim               = true,
@@ -199,13 +210,17 @@ void MsgViewer::set_progress_bar(uint8_t value)
 
   page.start(fmt);
 
-  int16_t size = ((int32_t)(WIDTH - 46)) * value / 100;
-  page.set_region(
-    size,
-    24,
-    ((Screen::WIDTH - WIDTH ) >> 1) + 23,
-    (Screen::HEIGHT >> 1) + 13
-  );
+  if (dot_count >= dot_zone.max_dot_count) {
+    page.clear_region(dot_zone.width, dot_zone.height, dot_zone.xpos, dot_zone.ypos);
+    dot_count = 0;
+  }
 
-  page.paint(false, true);
+  int16_t xpos = dot_zone.xpos + (dot_count % dot_zone.dots_per_line) * 9;
+  int16_t ypos = dot_zone.ypos + (dot_count / dot_zone.dots_per_line) * 9;
+
+  page.set_region(8, 8, xpos, ypos);
+
+  dot_count++;
+
+  page.paint(false, true, true);
 }
