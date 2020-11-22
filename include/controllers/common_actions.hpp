@@ -13,7 +13,6 @@ class CommonActions
     static void return_to_last();
     static void refresh_books_dir();
     static void power_off();
-    static void wifi_mode();
     static void show_last_book();
     static void about();
 };

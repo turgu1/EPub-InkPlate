@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2020.11.20)
+(Updated 2020.11.22)
 
 Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
 
@@ -26,15 +26,15 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [x] Form tool to show / edit options / parameters
 - [x] books directory refresh dialog
 - [!] Over the Air (OTA) updates (No hope... not enough flash space)
+- [x] WiFi access to update ebooks (This item only added 600KB of code!)
+- [x] Performance on new book scans (80% completion to be revisited after first release)
 
 After some reflection, here are some of the steps remaining to be done:
 
 - [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 - [ ] Options / Parameters form
-- [ ] Error dialog use (30% completion)
-- [ ] Performance on new book scans (50% completion)
+- [ ] Error dialog use (40% completion)
 - [ ] Battery level display
-- [ ] WiFi access to update ebooks (Requires 600KB of code!)
 - [ ] User's Guide
 
 ----
@@ -115,7 +115,7 @@ You can change the base fonts at your desire (TrueType or OpenType only). Some o
 
 Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
 
-The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time and when the user requires it to do so through the parameters menu. This process is very long but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a bif difference of duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied book is ~3 minutes. With a slow card (very old Sandisk 4GB), it tooks 8 minutes 20 seconds.
+The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time and when the user requires it to do so through the parameters menu. The refresh process is very long (between 1 and 3 minutes per book) but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a bif difference of duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied book is ~3 minutes. With a slow card (very old Sandisk 4GB), it tooks 8 minutes 20 seconds.
 
 ## Installation
 
@@ -123,13 +123,13 @@ The `SDCard` folder under GitHub reflects what the micro-SD Card should look lik
 
 Here is an example of an installation procedure that can be adapted depending on your requirements. It has been used from a Linux development platform. It may be used on a Mac computer, with small adjustments to the `upload.sh` script. More adjustments would certainly be required on a Windows platform. 
 
-The last version of the binaries for the Inkplate-6 are located in releases bundles that you will find with the application GitHub project. This procedure shows how to install it using the esptool upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
+The last version of the binaries for the Inkplate-6 are located in releases bundles that you will find with the application GitHub project. This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
 
-(You can also compile and upload the result within a VSCode/PlatformIO development environment. The default platformio.ini is already set up such that once the project is loaded in the IDE you can launch the builder and the uploader.)
+(You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
 
 ### Prerequesite
 
-The `esptool` is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both Python 2 and 3. Verify that you have Python installed on your computer. Then, to install esptool, the following command must be executed:
+The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* 2 and 3. Verify that you have *Python* and *pip* installed on your computer. Then, to install esptool, the following command must be executed:
 
 ```sh
 $ pip install esptool
@@ -190,7 +190,7 @@ turgu1@phobos:~/Dev/EPub-InkPlate/bin$
 
 Some options on the esptool command may have to be modified depending on your computer:
 
-- The usb device connected to the InkPlate-6 is expected to be named `/dev/ttyUSB0`. If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
+- The usb device connected to the InkPlate-6 is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu). If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
 
 - Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script. The speed (baud rate) is **230400** in the file. You can change it to **115200** or lower.
 
@@ -278,17 +278,21 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 ### ESP-IDF configuration specifics
 
-The EPub-InkPlate application requires some functionalities to be properly set up within the ESP-IDF. The following elements have been done (No need to do it again):
+The EPub-InkPlate application requires some functionalities to be properly set up within the ESP-IDF. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. 
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory, OTA_0, and OTA_1 have been set to be ~1.3MB in size. In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, which is the reason for 1.3MB OTA partitions.
-  
-- **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offers 4MB+4MB of additional RAM. The first 4MB is readily available to integrate into the dynamic memory allocation of the ESP-IDF SDK. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
+The ESP-IDF SDK must be installed in the main user folder. Usually, it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment).
+
+The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
 
   ```
   $ idf.py menuconfig
   ```
+  
+The application will show a list of configuration aspects. 
 
-  The application will show a list of configuration aspects. To configure PSRAM:
+The following elements have been done (No need to do it again):
+  
+- **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offers 4MB+4MB of additional RAM. The first 4MB is readily available to integrate into the dynamic memory allocation of the ESP-IDF SDK. To configure PSRAM:
 
   - Select `Component Config` > `ESP32-Specific` > `Support for external, SPI-Connected RAM`
   - Select `SPI RAM config` > `Initialize SPI RAM during startup`
@@ -307,13 +311,22 @@ The EPub-InkPlate application requires some functionalities to be properly set u
 
   - Select `Component config` > `ESP32-Specific` > `CPU frequency` > `240 Mhz`
 
-- **FAT Filesystem Support**: The application requires the usage of the micro SD card. This card must be formatted on a computer (Linux or Windows) with a FAT32 partition. The following parameters must be adjusted in `sdkconfig`:
+- **FAT Filesystem Support**: The application requires the usage of the micro SD card. This card must be formatted on a computer (Linux or Windows) with a FAT32 partition (maybe not required as this is the default format of brand new cards). The following parameters must be adjusted in `sdkconfig`:
 
   - Select `Component config` > `FAT Filesystem support` > `Max Long filename length` > `255`
   - Select `Number of simultaneously open files protected  by lock function` > `5`
   - Select `Prefer external RAM when allocating FATFS buffer`
-  - Depending on the language to be used, select the appropriate Code Page for filenames. Select `Component config` > `FAT Filesystem support` > `OEM Code Page...`
+  - Depending on the language to be used (My own choice is Latin-1 (CP850)), select the appropriate Code Page for filenames. Select `Component config` > `FAT Filesystem support` > `OEM Code Page...`. DO NOT use Dynamic as it will add ~480KB to the application!!
   - Also select `Component config` > `FAT Filesystem support` > `API character encoding` > `... UTF-8 ...`
+
+- **HTTP Server**: The application is supplying a Web server (through the use of HTTP) to the user to modify the list of books present on the SDCard. The following parameters must be adjusted:
+  - Select `Component config` > `HTTP Server` > `Max HTTP Request Header Length` > 1024
+  - Select `Component config` > `HTTP Server` > `Max HTTP URI Length` > 1024
+
+The followint is not configured through *menuconfig:*
+
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory has been set to be ~2.4MB in size (OTA is not possible as the application is too large to accomodate this feature; the OTA related partitions have been commented out...). In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, which is the reason for 1.3MB OTA partitions.
+    
 ## In Memoriam
 
 When I started this effort, I was aiming at supplying a tailored ebook reader for a friend of mine that has been impaired by a spinal cord injury for the last 13 years and a half. Reading books and looking at TV were the only activities she was able to do as she lost control of her body, from the neck down to the feet. After several years of physiotherapy, she was able to do some movement with her arms, without any control of her fingers. She was then able to push on buttons of an ebook reader with a lot of difficulties. I wanted to build a joystick-based interface to help her with any standard ebook reader but none of the commercially available readers allowed for this kind of integration.

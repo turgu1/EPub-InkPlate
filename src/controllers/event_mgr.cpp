@@ -58,7 +58,7 @@
 
     key = KEY_NONE;
 
-    if (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(5000))) {
+    if (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(15E3))) {
       if ((pads = inkplate6_ctrl.read_touchpads()) == 0) {
         mcp.get_int_state();                     // This is re-activating interrupts...
       }

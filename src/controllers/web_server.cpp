@@ -4,6 +4,7 @@
 #if EPUB_INKPLATE6_BUILD
 
 #include "logging.hpp"
+#include "viewers/msg_viewer.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -17,15 +18,17 @@
 
 #include "esp_vfs.h"
 #include "esp_http_server.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "freertos/event_groups.h"
 
+#include "esp_system.h"
 #include "esp_wifi.h"
-#include "tcpip_adapter.h"
+#include "esp_event.h"
 
-#include <lwip/sockets.h>
-#include <lwip/sys.h>
-#include <lwip/api.h>
-#include <lwip/netdb.h>
+#include "lwip/err.h"
+#include "lwip/sys.h"
 
 #include "models/config.hpp"
 
@@ -107,12 +110,41 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
       "<title>EPub-InkPlate Books Server</title>"
       "<style>"
       "table {font-family: Arial, Helvetica, sans-serif;}"
-      "table.list border-collapse: collapse;}"
+      "table.list {width: 100%;}"
+      "table.list {border-collapse: collapse;}"
       "table.list td {border: 1px solid #ddd; padding: 8px;}"
       "table.list tr:nth-child(even){background-color: #f2f2f2;}"
-      "table.list th {border: 0px; padding-top: 12px; padding-bottom: 12px; background-color: #077C95; color: white; }"
+      "table.list td:nth-child(1), table.list th:nth-child(1){text-align: left;}"
+      "table.list td:nth-child(2), table.list th:nth-child(2){text-align: center;}"
+      "table.list td:nth-child(3), table.list th:nth-child(3){text-align: right; }"
+      "table.list td:nth-child(4), table.list th:nth-child(4){text-align: center;}"
+      "table.list th {border: 1px solid #077C95; padding: 12px 8px; background-color: #077C95; color: white;}"
       "table.list tr:hover {background-color: #ddd;}"
       "</style>"
+      "<script>"
+      "function sortTable(n) {"
+      "var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;"
+      "table = document.getElementById(\"sorted\");"
+      "switching = true; dir = \"asc\";"
+      "while (switching) {"
+      "switching = false; rows = table.rows;"
+      "for (i = 1; i < (rows.length - 1); i++) {"
+      "shouldSwitch = false;"
+      "x = rows[i].getElementsByTagName(\"TD\")[n];"
+      "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
+      "if (dir == \"asc\") {"
+      "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {"
+      "shouldSwitch= true; break;"
+      "}} else if (dir == \"desc\") {"
+      "if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {"
+      "shouldSwitch = true; break;}}}"
+      "if (shouldSwitch) {"
+      "rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);"
+      "switching = true; switchcount ++; } else {"
+      "if (switchcount == 0 && dir == \"asc\") {"
+      "dir = \"desc\"; switching = true;"
+      "}}}}"
+      "</script>"
       "</head>"
       "<body>");
 
@@ -123,9 +155,9 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     httpd_resp_send_chunk(req, (const char *) upload_script_start, upload_script_size);
 
     httpd_resp_sendstr_chunk(req,
-        "<table class=\"fixed list\">"
-        "<col width=\"800px\"  style=\"text-align:left\"/><col width=\"100px\" style=\"text-align:center\"/><col width=\"150px\" style=\"text-align:right\"/><col width=\"100px\" style=\"text-align:center\"/>"
-        "<thead><tr><th>Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
+        "<table class=\"fixed list\" id=\"sorted\">"
+        "<colgroup><col width=\"70%\"/><col width=\"8%\"/><col width=\"14%\"/><col width=\"8%\"/></colgroup>"
+        "<thead><tr><th onclick=\"sortTable(0)\">Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
         "<tbody>");
 
     while ((entry = readdir(dir)) != NULL) {
@@ -160,9 +192,11 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     }
     closedir(dir);
 
-    httpd_resp_sendstr_chunk(req, "</tbody></table>");
+    httpd_resp_sendstr_chunk(req,"</tbody></table>");
 
-    httpd_resp_sendstr_chunk(req, "</body></html>");
+    httpd_resp_sendstr_chunk(req,
+      "<script>window.addEventListener(\"load\", function(){sortTable(0);}</script>" 
+      "</body></html>");
 
     httpd_resp_sendstr_chunk(req, NULL);
     return ESP_OK;
@@ -179,6 +213,15 @@ set_content_type_from_file(httpd_req_t * req, const char * filename)
     } 
 
     return httpd_resp_set_type(req, "text/plain");
+}
+
+static unsigned char 
+bin(char ch)
+{
+  if ((ch >= '0') && (ch <= '9')) return ch - '0';
+  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
+  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
+  return 0;
 }
 
 static const char * 
@@ -202,13 +245,14 @@ get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t 
 
     strcpy(dest, base_path);
     const char * str_in = uri;
-    char * str_out = dest + base_pathlen;
-    int count = pathlen + 1;
+    char *      str_out = dest + base_pathlen;
+    int           count = pathlen + 1;
+
     while (count > 0) {
-      if ((str_in[0] == '%') && (str_in[1] == '2') && (str_in[2] == '0')) {
-        *str_out++ = ' ';
+      if (str_in[0] == '%') {
+        *str_out++ = (bin(str_in[1]) << 4) + bin(str_in[2]);
+        count  -= 3;
         str_in += 3;
-        count -= 3;
       }
       else {
         *str_out++ = *str_in++;
@@ -488,6 +532,7 @@ http_server_stop()
 {
   httpd_stop(server);
   free(server_data);
+  server_data = nullptr;
 }
 
 // ----- sta_event_handler() -----
@@ -502,12 +547,13 @@ http_server_stop()
 
 // FreeRTOS event group to signal when we are connected
 
-static EventGroupHandle_t wifi_event_group;
+static EventGroupHandle_t wifi_event_group = nullptr;
 static bool wifi_first_start = true;
 
-#define ESP_MAXIMUM_RETRY  6
+static constexpr int8_t ESP_MAXIMUM_RETRY = 6;
 
 static int s_retry_num = 0;
+static esp_ip4_addr_t ip_address;
 
 static void sta_event_handler(void            * arg, 
                               esp_event_base_t  event_base,
@@ -543,8 +589,9 @@ static void sta_event_handler(void            * arg,
   }
   else if (event_base == IP_EVENT) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
-      ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+      ip_event_got_ip_t * event = (ip_event_got_ip_t*) event_data;
       ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+      ip_address = event->ip_info.ip;
       s_retry_num = 0;
       xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
       wifi_first_start = false;
@@ -558,32 +605,43 @@ static bool
 wifi_start(void)
 {
   bool connected = false;
+  wifi_first_start = true;
 
-  tcpip_adapter_init();
+  if (wifi_event_group == nullptr) wifi_event_group = xEventGroupCreate();
 
-  wifi_event_group = xEventGroupCreate();
+  ESP_ERROR_CHECK(esp_netif_init());
+
   ESP_ERROR_CHECK(esp_event_loop_create_default());
+  esp_netif_create_default_wifi_sta();
 
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-  ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,    &sta_event_handler, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT,   IP_EVENT_STA_GOT_IP, &sta_event_handler, NULL));
-
-  wifi_config_t wifi_config = {
-    .sta = {
-      .pmf_cfg = {
-        .capable = true,
-        .required = false
-      },
-    },
-  };
+  ESP_ERROR_CHECK(esp_event_handler_register(
+    WIFI_EVENT, 
+    ESP_EVENT_ANY_ID,    
+    &sta_event_handler, 
+    NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(
+    IP_EVENT,   
+    IP_EVENT_STA_GOT_IP, 
+    &sta_event_handler, 
+    NULL));
 
   std::string wifi_ssid;
   std::string wifi_pwd;
 
   config.get(Config::SSID, wifi_ssid);
   config.get(Config::PWD,  wifi_pwd );
+
+  wifi_config_t wifi_config;
+
+  bzero(&wifi_config, sizeof(wifi_config_t));
+
+  wifi_config.sta.bssid_set          = 0;
+  wifi_config.sta.pmf_cfg.capable    = true;
+  wifi_config.sta.pmf_cfg.required   = false;
+  wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
   strcpy((char *) wifi_config.sta.ssid,     wifi_ssid.c_str());
   strcpy((char *) wifi_config.sta.password, wifi_pwd.c_str());
@@ -599,13 +657,10 @@ wifi_start(void)
   // The bits are set by event_handler() (see above)
 
   EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
-          WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-          pdFALSE,
-          pdFALSE,
-          portMAX_DELAY);
-
-  // xEventGroupWaitBits() returns the bits before the call returned, 
-  // hence we can test which event actually happened.
+    WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+    pdFALSE,
+    pdFALSE,
+    portMAX_DELAY);
 
   if (bits & WIFI_CONNECTED_BIT) {
     ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
@@ -620,11 +675,6 @@ wifi_start(void)
     ESP_LOGE(TAG, "UNEXPECTED EVENT");
   }
 
-  // ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &sta_event_handler));
-  // ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &sta_event_handler));
-
-  // vEventGroupDelete(wifi_event_group);
-
   if (!connected) {
     ESP_ERROR_CHECK(esp_event_loop_delete_default());
   }
@@ -634,16 +684,49 @@ wifi_start(void)
 void
 wifi_stop()
 {
+  ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &sta_event_handler));
+  ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &sta_event_handler));
 
+  vEventGroupDelete(wifi_event_group);
+  wifi_event_group = nullptr;
+
+  esp_event_loop_delete_default();
+
+  esp_wifi_disconnect();
+  esp_wifi_stop();
+  esp_wifi_deinit();
 }
 
 bool
 start_web_server()
 {
-  if (wifi_start()) {
-    return http_server_start() == ESP_OK;
-  }
+  msg_viewer.show(MsgViewer::WIFI, false, true, 
+    "Web Server Starting", 
+    "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
+  if (wifi_start()) {
+    EventBits_t bits = xEventGroupWaitBits(
+      wifi_event_group,
+      WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+      pdFALSE,
+      pdFALSE,
+      portMAX_DELAY);
+
+    if (bits & WIFI_CONNECTED_BIT) {
+      msg_viewer.show(MsgViewer::WIFI, true, true, 
+        "Web Server", 
+        "The Web server is now running at ip " IPSTR ". To stop it, please press a key.", IP2STR(&ip_address));
+      return http_server_start() == ESP_OK;
+    }
+    else {
+      msg_viewer.show(MsgViewer::ALERT, true, true, 
+        "Web Server Failed", 
+        "The Web server was not able to start. Correct the situation and try again.", IP2STR(&ip_address));
+    }
+  }
+  else {
+    wifi_stop();
+  }
   return false;
 }
 

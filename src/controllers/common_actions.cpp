@@ -46,20 +46,6 @@ CommonActions::power_off()
   #endif
 }
 
-extern bool start_web_server();
-
-void
-CommonActions::wifi_mode()
-{
-  event_mgr.set_stay_on(true); // DO NOT sleep
-
-  if (start_web_server()) {
-    msg_viewer.show(MsgViewer::INFO, true, true, 
-      "Web Server", 
-      "The Web server is now running. To stop it, please press a key.");
-  }
-}
-
 void
 CommonActions::about()
 {

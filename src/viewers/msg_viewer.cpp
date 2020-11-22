@@ -10,7 +10,7 @@
 
 #include <cstdarg>
 
-char MsgViewer::icon_char[4] = { 'I',  '!', 'H', 'E' };
+char MsgViewer::icon_char[5] = { 'I',  '!', 'H', 'E', 'S' };
 
 void MsgViewer::show(
   Severity severity, 

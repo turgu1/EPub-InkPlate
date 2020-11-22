@@ -6,9 +6,13 @@
 #include "controllers/option_controller.hpp"
 
 #include "controllers/common_actions.hpp"
+#include "controllers/app_controller.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
+#include "models/books_dir.hpp"
+
+#include "esp_system.h"
 
 static FormViewer::Choice ok_cancel_choice[2] = {
   { "OK",     1 },
@@ -53,6 +57,19 @@ static FormViewer::FormEntry form_entries[5] = {
   { nullptr,                 &ok,            2, ok_cancel_choice,    FormViewer::HORIZONTAL_CHOICES }
 };
 
+extern bool start_web_server();
+extern bool stop_web_server();
+
+static void
+wifi_mode()
+{
+  event_mgr.set_stay_on(true); // DO NOT sleep
+
+  if (start_web_server()) {
+    option_controller.set_wait_for_key_after_wifi();
+  }
+}
+
 static void
 parameters()
 {
@@ -64,7 +81,7 @@ static MenuViewer::MenuEntry menu[8] = {
   { MenuViewer::RETURN,   "Return to the e-books list",          CommonActions::return_to_last    },
   { MenuViewer::BOOK,     "Return to the last book being read",  CommonActions::show_last_book    },
   { MenuViewer::PARAMS,   "EPub-InkPlate parameters",            parameters                       },
-  { MenuViewer::WIFI,     "WiFi Access to the e-books folder",   CommonActions::wifi_mode         },
+  { MenuViewer::WIFI,     "WiFi Access to the e-books folder",   wifi_mode                        },
   { MenuViewer::REFRESH,  "Refresh the e-books list",            CommonActions::refresh_books_dir },
   { MenuViewer::INFO,     "About the EPub-InkPlate application", CommonActions::about             },
   { MenuViewer::POWEROFF, "Power OFF (Deep Sleep)",              CommonActions::power_off         },
@@ -90,6 +107,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
     if (form_viewer.event(key)) {
       form_is_shown = false;
     }
+  }
+  else if (wait_for_key_after_wifi) {
+    wait_for_key_after_wifi = false;
+    stop_web_server();
+    esp_restart();
   }
   else {
     menu_viewer.event(key);
