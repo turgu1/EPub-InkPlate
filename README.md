@@ -327,9 +327,9 @@ The following elements have been done (No need to do it again):
   - Select `Component config` > `HTTP Server` > `Max HTTP Request Header Length` > 1024
   - Select `Component config` > `HTTP Server` > `Max HTTP URI Length` > 1024
 
-The followint is not configured through *menuconfig:*
+The following is not configured through *menuconfig:*
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The partitions factory has been set to be ~2.4MB in size (OTA is not possible as the application is too large to accomodate this feature; the OTA related partitions have been commented out...). In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration. The current size of the application is a bit larger than 1MB, which is the reason for 1.3MB OTA partitions.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The factory partition has been set to be ~2.4MB in size (OTA is not possible as the application is too large to accomodate this feature; the OTA related partitions have been commented out...). In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration.
     
 ## In Memoriam
 
