@@ -65,6 +65,10 @@ Some pictures from the Linux version:
 
 <img src="doc/pictures/books_select.png" alt="drawing" width="300"/><img src="doc/pictures/book_page.png" alt="drawing" width="300"/>
 
+A picture of the Web Server in a browser:
+
+<img src="doc/pictures/web_server.png" alt="drawing" width="500"/>
+
 A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that shows the first working version of the EPub-InkPlate application.
 
 ## Characteristics
