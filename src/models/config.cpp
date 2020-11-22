@@ -4,32 +4,51 @@
 #include "strlcpy.hpp"
 #include "logging.hpp"
 
-static int32_t  version;
+static int8_t   version;
 static char     ssid[32];
-static char     pwd[16];
+static char     pwd[32];
 static int32_t  port;
-static int32_t  battery;
-static char     orientation[7];
+static int8_t   battery;
+static int8_t   orientation;
+static int8_t   timeout;
+static int8_t   font_size;
 
-static int32_t  the_version     =  1;
-static int32_t  default_port    = 80;
-static int32_t  default_battery =  0;
+static int32_t  default_port        = 80;
+static int8_t   default_battery     =  0;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
+static int8_t   default_orientation =  0;  // 0 = LEFT, 1 = RIGHT, 2 = BOTTOM
+static int8_t   default_font_size   = 12;  // 8, 10, 12, 15 pts
+static int8_t   default_timeout     = 15;  // 5, 15, 30 minutes
+static int8_t   the_version         =  1;
 
-std::array<Config::ConfigDescr, 6> Config::cfg = {{
- { VERSION,     INT,    "version",     &version,    &the_version,     0 },
- { SSID,        STRING, "wifi_ssid",   ssid,        "NONE",          32 },
- { PWD,         STRING, "wifi_pwd",    pwd,         "NONE",          16 },
- { PORT,        INT,    "http_port",   &port,       &default_port,    0 },
- { BATTERY,     INT,    "battery",     &battery,    &default_battery, 0 },
- { ORIENTATION, STRING, "orientation", orientation, "LEFT",           7 }
+std::array<Config::ConfigDescr, 8> Config::cfg = {{
+ { VERSION,     BYTE,   "version",     &version,     &the_version,         0 },
+ { SSID,        STRING, "wifi_ssid",   ssid,         "NONE",              32 },
+ { PWD,         STRING, "wifi_pwd",    pwd,          "NONE",              32 },
+ { PORT,        INT,    "http_port",   &port,        &default_port,        0 },
+ { BATTERY,     BYTE,   "battery",     &battery,     &default_battery,     0 },
+ { TIMEOUT,     BYTE,   "timeout",     &timeout,     &default_timeout,     0 },
+ { FONT_SIZE,   BYTE,   "font_size",   &font_size,   &default_font_size,   0 },
+ { ORIENTATION, BYTE,   "orientation", &orientation, &default_orientation, 0 }
 }};
 
 bool 
-Config::get(Ident id, int32_t * val)
+Config::get(Ident id, int32_t & val)
 {
   for (auto entry : cfg) {
     if((entry.ident == id) && (entry.type == INT)) {
-      *val = * ((int32_t *) entry.value);
+      val = * ((int32_t *) entry.value);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool 
+Config::get(Ident id, int8_t & val)
+{
+  for (auto entry : cfg) {
+    if((entry.ident == id) && (entry.type == BYTE)) {
+      val = * ((int32_t *) entry.value);
       return true;
     }
   }
@@ -54,6 +73,18 @@ Config::put(Ident id, int32_t val)
   for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == INT)) {
       *((int32_t *) entry.value) = val;
+      modified = true;
+      return;
+    }
+  }
+}
+
+void 
+Config::put(Ident id, int8_t val)
+{
+  for (auto entry : cfg) {
+    if ((entry.ident == id) && (entry.type == BYTE)) {
+      *((int8_t *) entry.value) = val;
       modified = true;
       return;
     }
@@ -152,8 +183,11 @@ Config::read()
         if (entry.type == STRING) {
           strlcpy((char *) entry.value, value, entry.max_size);
         }
-        else {
+        else if (entry.type == INT) {
           *((int32_t *) entry.value) = atoi(value);
+        }
+        else  {
+          *((int8_t *) entry.value) = atoi(value);
         }
         break;
       }
@@ -196,8 +230,11 @@ Config::save(bool force)
       if (entry.type == STRING) {
         fprintf(f, "%s = \"%s\"\n", entry.caption, (char *) entry.value);
       }
-      else {
+      else if (entry.type == INT) {
         fprintf(f, "%s = %d\n", entry.caption, *(int32_t *) entry.value);
+      }
+      else {
+        fprintf(f, "%s = %d\n", entry.caption, *(int8_t *) entry.value);
       }
     }
     fclose(f);
@@ -216,8 +253,11 @@ Config::show()
     if (entry.type == STRING) {
       LOG_D("%s = \"%s\"", entry.caption, (char *) entry.value);
     }
-    else {
+    else if (entry.type == INT) {
       LOG_D("%s = %d", entry.caption, *(int32_t *) entry.value);
+    }
+    else {
+      LOG_D("%s = %d", entry.caption, *(int8_t *) entry.value);
     }
   }
   LOG_D("---");

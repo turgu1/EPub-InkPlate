@@ -85,6 +85,14 @@ class EPub
      */
     void retrieve_page_locs(int16_t idx) ;
 
+    /**
+     * @brief Get the page nbr from offset
+     * 
+     * @param offset The offset from the beginning of the book.
+     * @return int16_t The page number, or 0 if offset is too large.
+     */
+    int16_t get_page_nbr_from_offset(int32_t offset);
+
     CSSList     & get_css_cache() { return css_cache; };
     CSS         * get_current_item_css() { return current_item_css; };
     std::string & get_current_item_file_path() { return current_item_file_path; };

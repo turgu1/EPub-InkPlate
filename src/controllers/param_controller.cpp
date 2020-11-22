@@ -10,6 +10,7 @@
 #include "models/books_dir.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/form_viewer.hpp"
+#include "viewers/msg_viewer.hpp"
 
 #include "esp_system.h"
 
@@ -32,18 +33,16 @@ wifi_mode()
   }
 }
 
-static void
-parameters()
-{
+// static void
+// parameters()
+// {
 
-}
+// }
 
-static MenuViewer::MenuEntry menu[8] = {
+static MenuViewer::MenuEntry menu[6] = {
   { MenuViewer::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
   { MenuViewer::BOOK_LIST, "Books list",                          books_list                       },
-  { MenuViewer::PARAMS,    "EBook viewing parameters",            parameters                       },
   { MenuViewer::WIFI,      "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::REFRESH,   "Refresh the e-books list",            CommonActions::refresh_books_dir },
   { MenuViewer::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
   { MenuViewer::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
   { MenuViewer::END_MENU,  nullptr,                               nullptr                          }
@@ -70,6 +69,7 @@ ParamController::key_event(EventMgr::KeyEvent key)
     }
   }
   else if (wait_for_key_after_wifi) {
+    msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
     wait_for_key_after_wifi = false;
     stop_web_server();
     esp_restart();

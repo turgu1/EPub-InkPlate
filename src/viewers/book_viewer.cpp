@@ -6,7 +6,9 @@
 #include "viewers/book_viewer.hpp"
 
 #include "models/ttf2.hpp"
+#include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
+#include "viewers/battery_viewer.hpp"
 #include "screen.hpp"
 #include "alloc.hpp"
 
@@ -280,11 +282,14 @@ BookViewer::build_page_locs()
     if ((idx = fonts.get_index("Fontbase", Fonts::NORMAL)) == -1) {
       idx = 1;
     }
+    
+    int8_t font_size;
+    config.get(Config::FONT_SIZE, font_size);
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
       .font_index         = idx,
-      .font_size          = CSS::font_normal_size,
+      .font_size          = font_size,
       .indent             = 0,
       .margin_left        = 0,
       .margin_right       = 0,
@@ -859,10 +864,13 @@ BookViewer::build_page_at(const EPub::Location & loc)
       idx = 1;
     }
 
+    int8_t font_size;
+    config.get(Config::FONT_SIZE, font_size);
+
     Page::Format fmt = {
       .line_height_factor = 0.9,
       .font_index         = idx,
-      .font_size          = CSS::font_normal_size,
+      .font_size          = font_size,
       .indent             = 0,
       .margin_left        = 0,
       .margin_right       = 0,
@@ -909,6 +917,9 @@ BookViewer::build_page_at(const EPub::Location & loc)
         std::string str = ostr.str();
 
         page.put_str_at(str, -1, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+
+        BatteryViewer::show();
+
         page.paint();
       }
     }

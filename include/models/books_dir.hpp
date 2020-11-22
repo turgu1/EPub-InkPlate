@@ -163,10 +163,11 @@ class BooksDir
      * 
      * @param book_filename Filename for wich the calling method needs the index for
      * @param book_index    The index corresponding to the book filename
+     * @param force_init    Remove all entries and reindex all books
      * @return true  The refresh process completed successfully.
      * @return false Some error happened.
      */
-    bool refresh(char * book_filename, int16_t & book_index);
+    bool refresh(char * book_filename, int16_t & book_index, bool force_init = false);
 
     /**
      * @brief Close the SimpleDB database

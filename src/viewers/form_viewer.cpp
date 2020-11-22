@@ -11,7 +11,7 @@
 #include "screen.hpp"
 
 void
-FormViewer::show(FormViewer::FormEntries form_entries, int8_t size)
+FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::string & bottom_msg)
 {
   // Compute location of items on screen
 
@@ -110,8 +110,8 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size)
     .font_index         =   1,
     .font_size          = FONT_SIZE,
     .indent             =   0,
-    .margin_left        =   0,
-    .margin_right       =   0,
+    .margin_left        =   5,
+    .margin_right       =   5,
     .margin_top         =   0,
     .margin_bottom      =   0,
     .screen_left        =  20,
@@ -158,6 +158,17 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size)
     }
   }
 
+  fmt.screen_top = current_ypos + 40;
+  page.set_limits(fmt);
+  page.new_paragraph(fmt);
+  if (!bottom_msg.empty()) {
+    page.put_text(
+      bottom_msg,
+      fmt
+    );
+  }
+  page.end_paragraph(fmt);
+
   // Highlight current values
 
   for (int i = 0; i < entry_count; i++) {
@@ -172,19 +183,15 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size)
 
   // Set current entry, highlighting the set of choices for that entry
 
-  current_entry_idx = 0;
-  entry_selection = true;
+  current_entry_idx   = 0;
+  entry_selection     = true;
+  highlight_selection = false;
 
   page.put_highlight(
     all_choices_width + 20,
     entries_info[0].choices_height + 5,
     choice_loc[entries_info[0].first_choice_loc_idx].xpos - 10,
     choice_loc[entries_info[0].first_choice_loc_idx].ypos - 10);
-  page.put_highlight(
-    all_choices_width + 22,
-    entries_info[0].choices_height + 7,
-    choice_loc[entries_info[0].first_choice_loc_idx].xpos - 11,
-    choice_loc[entries_info[0].first_choice_loc_idx].ypos - 11);
 
   page.paint(false);
 }
@@ -216,7 +223,8 @@ FormViewer::event(EventMgr::KeyEvent key)
         break;
       case EventMgr::KEY_SELECT:
         entry_selection = false;
-        return false;
+        highlight_selection = true;
+        break;
       case EventMgr::KEY_NONE:
         return false;
       case EventMgr::KEY_DBL_SELECT:
@@ -244,7 +252,12 @@ FormViewer::event(EventMgr::KeyEvent key)
         break;
       case EventMgr::KEY_SELECT:
         entry_selection = true;
-        return false;
+        old_entry_idx = current_entry_idx;
+        current_entry_idx++;
+        if (current_entry_idx >= entry_count) {
+          current_entry_idx = 0;
+        }
+        break;
       case EventMgr::KEY_NONE:
         return false;
       case EventMgr::KEY_DBL_SELECT:
@@ -279,7 +292,7 @@ FormViewer::event(EventMgr::KeyEvent key)
   if (!completed) {
 
     if (entry_selection) {
-      if (current_entry_idx != old_entry_idx) {
+//      if (current_entry_idx != old_entry_idx) {
         page.clear_highlight(
           ((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
           entries_info[old_entry_idx].choices_height + 5,
@@ -290,20 +303,33 @@ FormViewer::event(EventMgr::KeyEvent key)
           entries_info[old_entry_idx].choices_height + 7,
           choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].xpos - 11,
           choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].ypos - 11);
+        page.clear_highlight(
+          ((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
+          entries_info[old_entry_idx].choices_height + 9,
+          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].xpos - 12,
+          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].ypos - 12);
 
         page.put_highlight(
           ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
           entries_info[current_entry_idx].choices_height + 5,
           choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 10,
           choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 10);
+//      }
+    }
+    else {
+      if (highlight_selection) {
+        highlight_selection = false;
         page.put_highlight(
           ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
           entries_info[current_entry_idx].choices_height + 7,
           choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 11,
           choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 11);
+        page.put_highlight(
+          ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
+          entries_info[current_entry_idx].choices_height + 9,
+          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 12,
+          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 12);
       }
-    }
-    else {
       if (choice_idx != old_choice_idx) {
         entries_info[current_entry_idx].choice_idx = choice_idx;
 

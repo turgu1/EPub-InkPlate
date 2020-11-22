@@ -8,6 +8,7 @@
 #include "controllers/event_mgr.hpp"
 
 #include "controllers/app_controller.hpp"
+#include "models/config.hpp"
 #include "logging.hpp"
 
 #if EPUB_INKPLATE6_BUILD
@@ -154,16 +155,21 @@
         // rebooting after the user press a key.
 
         if (!stay_on) {
-          LOG_I("Light Sleep for 15 minutes...");
+          int8_t light_sleep_duration;
+          config.get(Config::TIMEOUT, light_sleep_duration);
+
+          LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
 
-          if (inkplate6_ctrl.light_sleep(15)) {
+          if (inkplate6_ctrl.light_sleep(light_sleep_duration)) {
             LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
             msg_viewer.show(
               MsgViewer::INFO, 
               false, true, 
               "Deep Sleep", 
-              "Timeout period exceeded. The device is now entering into Deep Sleep mode. Please press a key to restart.");
+              "Timeout period exceeded (%d minutes). The device is now "
+              "entering into Deep Sleep mode. Please press a key to restart.",
+              light_sleep_duration);
             ESP::delay(500);
             app_controller.going_to_deep_sleep();
             inkplate6_ctrl.deep_sleep();

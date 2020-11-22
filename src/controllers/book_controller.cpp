@@ -27,7 +27,23 @@ BookController::enter()
 void 
 BookController::leave(bool going_to_deep_sleep)
 {
-  books_dir_controller.save_last_book(current_page, going_to_deep_sleep);
+  const EPub::Location & loc = epub.get_page_loc(current_page);
+  int32_t offset = loc.offset;
+  books_dir_controller.save_last_book(offset, going_to_deep_sleep);
+}
+
+bool
+BookController::open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int32_t page_offset)
+{
+  msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
+    "The book \" %s \" is loading. Please wait.", book_title.c_str());
+
+  if (epub.open_file(book_filename)) {
+    epub.retrieve_page_locs(book_idx);
+    current_page = epub.get_page_nbr_from_offset(page_offset);
+    return true;
+  }
+  return false;
 }
 
 bool

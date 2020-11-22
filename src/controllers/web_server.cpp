@@ -195,7 +195,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     httpd_resp_sendstr_chunk(req,"</tbody></table>");
 
     httpd_resp_sendstr_chunk(req,
-      "<script>window.addEventListener(\"load\", function(){sortTable(0);}</script>" 
+      "<script>window.addEventListener(\"load\", function(){sortTable(0);})</script>" 
       "</body></html>");
 
     httpd_resp_sendstr_chunk(req, NULL);
@@ -705,13 +705,7 @@ start_web_server()
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
   if (wifi_start()) {
-    EventBits_t bits = xEventGroupWaitBits(
-      wifi_event_group,
-      WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-      pdFALSE,
-      pdFALSE,
-      portMAX_DELAY);
-
+    EventBits_t bits = xEventGroupGetBits(wifi_event_group);
     if (bits & WIFI_CONNECTED_BIT) {
       msg_viewer.show(MsgViewer::WIFI, true, true, 
         "Web Server", 

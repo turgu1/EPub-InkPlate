@@ -106,14 +106,26 @@ InkPlate6Ctrl::read_battery()
 {
   mcp.digital_write(MCP::BATTERY_SWITCH, HIGH);
   ESP::delay(1);
-  int16_t adc = ESP::analog_read(ADC1_CHANNEL_7); // ADC 1 Channel 7 is GPIO port 35
-  mcp.digital_write(MCP::BATTERY_SWITCH, LOW);
-
-  ESP_LOGE(TAG, "Battery adc readout: %d.", adc);
   
-  return ((double(adc) / 4095.0) * 3.3 * 2);
+  adc1_config_width(ADC_WIDTH_BIT_12);
+  adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11);
+
+  int16_t adc = ESP::analog_read(ADC1_CHANNEL_7); // ADC 1 Channel 7 is GPIO port 35
+  
+  mcp.digital_write(MCP::BATTERY_SWITCH, LOW);
+  
+  return (double(adc) * 3.3 * 2) / 4095.0;
 }
 
+/**
+ * @brief Start light sleep
+ * 
+ * Will be waken up at the end of the time requested or when a key is pressed.
+ * 
+ * @param minutes_to_sleep Wait time in minutes
+ * @return true The timer when through the end
+ * @return false A key was pressed
+ */
 bool
 InkPlate6Ctrl::light_sleep(uint32_t minutes_to_sleep)
 {

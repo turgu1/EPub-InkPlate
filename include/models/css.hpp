@@ -134,8 +134,6 @@ class CSS
       ValueType value_type;
     };
 
-    static const uint8_t font_normal_size = 12;
-
     typedef std::string                Selector;
     typedef std::forward_list<Value *> Values;
     typedef std::list<Selector>        Selectors;

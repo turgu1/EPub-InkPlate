@@ -28,13 +28,14 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [!] Over the Air (OTA) updates (No hope... not enough flash space)
 - [x] WiFi access to update ebooks (This item only added 600KB of code!)
 - [x] Performance on new book scans (80% completion to be revisited after first release)
+- [x] Options / Parameters form
+- [x] Battery level display
 
 After some reflection, here are some of the steps remaining to be done:
 
 - [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
-- [ ] Options / Parameters form
 - [ ] Error dialog use (40% completion)
-- [ ] Battery level display
+
 - [ ] User's Guide
 
 ----
@@ -73,29 +74,32 @@ A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube t
 
 ## Characteristics
 
-The first release is expected to have basic functionalities (maybe less, depending on memory usage on the ESP32):
+The first release is expected to have basic functionalities:
 
 - Some pre-defined fonts (TBD) (selectable by the user as a font base to display the document)
 - TTF and OTF embedded fonts support
 - Normal, Bold, Italic, Bold+Italic face types
-- Bitmap images dithering display (JPEG, PNG, GIF, BMP)
+- Bitmap images dithering display (JPEG, PNG)
 - EPUB (V2, V3) ebook format subset
 - UTF-8 characters
 - Page progression direction: Left then Right
-- Portrait display
-- 3 or 6 button Keypad (3 buttons for the InkPlate-6 tactile keys, 6 for an EasyC interface keypad)
-- left, center, right, justify text alignments
+- Screen orientation (buttons in left, right, down positions)
+- InkPlate-6 tactile keys (single and double click to get 6 buttons)
+- left, center, right, and justify text alignments
 - indentation
-- Some basic parameters and options (font size, line space, margins...)
+- Some basic parameters and options
 - Books list in title alphabetical order
 - Limited CSS formatting
+- WiFi-based documents download
+- Battery management (light, deep sleep, battery level display)
 
 Some elements to consider in the future (no specific order of priority):
 
+- External keypad integration (through i2c)
 - Various views for the Books list
 - Table of content
 - Hyperlinks (inside a book)
-- WiFi-based documents download (Dropbox, Calibre, others)
+- Others document download method (Dropbox, Calibre, others)
 - Multiple fonts choices selectable by the user
 - More CSS formatting
 - Footnote management

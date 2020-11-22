@@ -665,3 +665,15 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
 
   return false;
 }
+
+int16_t 
+EPub::get_page_nbr_from_offset(int32_t offset)
+{ 
+  int16_t page_nbr = 0;
+  bool found = false;
+  for (auto loc : page_locs) {
+    if (loc.offset > offset) { found = true; break; }
+    page_nbr++;
+  }
+  return found ? page_nbr : 0;
+}

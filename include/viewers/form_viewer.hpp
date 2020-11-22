@@ -15,7 +15,7 @@ class FormViewer
   private:
     static constexpr uint8_t MAX_FORM_ENTRY   =  10;
     static constexpr uint8_t MAX_CHOICE_ENTRY =  30;
-    static constexpr uint8_t FONT_SIZE        =  12;
+    static constexpr uint8_t FONT_SIZE        =  10;
     static constexpr uint8_t TOP_YPOS         = 100;
     static constexpr uint8_t BOTTOM_YPOS      =  50;
 
@@ -38,6 +38,7 @@ class FormViewer
     int16_t last_choices_width;
     int8_t  current_entry_idx;
     bool    entry_selection;
+    bool    highlight_selection;
 
   public:
     enum FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
@@ -59,7 +60,7 @@ class FormViewer
 
     FormEntries entries;
 
-    void show(FormEntries form_entries, int8_t size);
+    void show(FormEntries form_entries, int8_t size, const std::string & bottom_msg);
     bool event(EventMgr::KeyEvent key);
 };
 

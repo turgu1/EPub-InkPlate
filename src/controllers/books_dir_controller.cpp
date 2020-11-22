@@ -35,7 +35,7 @@ BooksDirController::setup()
   char * filename = nullptr;
   book_fname[0]   = 0;
   book_index      = -1;
-  book_page_nbr   = -1;
+  book_offset     = -1;
   book_was_shown  = false;
 
   #if EPUB_INKPLATE6_BUILD
@@ -47,8 +47,8 @@ BooksDirController::setup()
       if ((err = nvs_get_str(nvs_handle, "LAST_BOOK", book_fname, &size)) == ESP_OK) {
         filename = book_fname;
         int8_t was_shown;
-        if (((err = nvs_get_i16(nvs_handle, "PAGE_NBR", &book_page_nbr) != ESP_OK)) ||
-            ((err = nvs_get_i8(nvs_handle, "WAS_SHOWN", &was_shown) != ESP_OK))) {
+        if (((err = nvs_get_i32(nvs_handle, "OFFSET",    &book_offset) != ESP_OK)) ||
+            ((err =  nvs_get_i8(nvs_handle, "WAS_SHOWN", &was_shown  ) != ESP_OK))) {
           filename = nullptr;
           was_shown = 0;
         }
@@ -63,8 +63,8 @@ BooksDirController::setup()
     }
 
     LOG_D("Last book filename: %s", book_fname);
-    LOG_D("Last book page nbr: %d", book_page_nbr);
-    LOG_D("Show it now: %d", book_was_shown);
+    LOG_D("Last book offset: %d",   book_offset);
+    LOG_D("Show it now: %d",        book_was_shown);
   #else
     FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "r");
     filename = nullptr;
@@ -76,11 +76,11 @@ BooksDirController::setup()
 
         char buffer[20];
         if (fgets(buffer, 20, f)) {
-          book_page_nbr = atoi(buffer);
+          book_offset = atoi(buffer);
 
           if (fgets(buffer, 20, f)) {
             int8_t was_shown = atoi(buffer);
-            filename = book_fname;
+            filename       = book_fname;
             book_was_shown = (bool) was_shown;
           }
         }
@@ -112,14 +112,14 @@ BooksDirController::setup()
 }
 
 void
-BooksDirController::save_last_book(int16_t current_page, bool going_to_deep_sleep)
+BooksDirController::save_last_book(int32_t current_page_offset, bool going_to_deep_sleep)
 {
   // As we leave, we keep the information required to return to the book
   // in the NVS space. If this is called just before going to deep sleep, we
   // set the "WAS_SHOWN" boolean to true, such that when the device will
   // be booting, it will display the last book at the last page shown.
 
-  book_page_nbr = current_page;
+  book_offset = current_page_offset;
 
   #if EPUB_INKPLATE6_BUILD
     nvs_handle_t nvs_handle;
@@ -127,8 +127,8 @@ BooksDirController::save_last_book(int16_t current_page, bool going_to_deep_slee
   
     if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) == ESP_OK) {
       nvs_set_str(nvs_handle, "LAST_BOOK",  book_filename.c_str());
-      nvs_set_i16(nvs_handle, "PAGE_NBR",   current_page);
-       nvs_set_i8(nvs_handle, "WAS_SHOWN", going_to_deep_sleep ? 1 : 0);
+      nvs_set_i32(nvs_handle, "OFFSET",     current_page_offset);
+       nvs_set_i8(nvs_handle, "WAS_SHOWN",  going_to_deep_sleep ? 1 : 0);
       if ((err = nvs_commit(nvs_handle)) != ESP_OK) {
         LOG_E("NVS Commit error: %s", esp_err_to_name(err));
       }
@@ -142,7 +142,7 @@ BooksDirController::save_last_book(int16_t current_page, bool going_to_deep_slee
     if (f != nullptr) {
       fprintf(f, "%s\n%d\n%d\n",
         book_filename.c_str(),
-        current_page,
+        current_page_offset,
         going_to_deep_sleep ? 1 : 0
       );
       fclose(f);
@@ -163,10 +163,10 @@ BooksDirController::show_last_book()
   book = books_dir.get_book_data(book_index);
 
   if (book != nullptr) {
-    book_fname = BOOKS_FOLDER "/";
+    book_fname  = BOOKS_FOLDER "/";
     book_fname += book->filename;
-    book_title = book->title;
-    if (book_controller.open_book_file(book_title, book_fname, book_index, book_page_nbr)) {
+    book_title  = book->title;
+    if (book_controller.open_book_file(book_title, book_fname, book_index, book_offset)) {
       app_controller.set_controller(AppController::BOOK);
     }
   }

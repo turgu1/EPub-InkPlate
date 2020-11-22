@@ -7,6 +7,7 @@
 
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
+#include "viewers/battery_viewer.hpp"
 #include "screen.hpp"
 
 #include <iomanip>
@@ -111,6 +112,9 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
   page.set_limits(fmt);
   page.put_str_at(str, -1, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+
+  BatteryViewer::show();
+
   page.paint();
 }
 
@@ -208,6 +212,8 @@ BooksDirViewer::highlight(int16_t item_idx)
     page.new_paragraph(fmt);
     page.put_text(book->author, fmt);
     page.end_paragraph(fmt);
+
+    BatteryViewer::show();
 
     page.paint(false);
   }

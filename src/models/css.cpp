@@ -6,6 +6,7 @@
 #include "models/css.hpp"
 
 #include "models/fonts.hpp"
+#include "models/config.hpp"
 
 #include <cstring>
 #include <cctype>
@@ -253,7 +254,9 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
             v->num = it->second;
           }
           else {
-            v->num = font_normal_size;
+            int8_t font_size;
+            config.get(Config::FONT_SIZE, font_size);
+            v->num = font_size;
           }
         }
 

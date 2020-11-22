@@ -199,7 +199,7 @@ BooksDir::get_book_data_from_db_index(uint16_t idx)
 
 
 bool
-BooksDir::refresh(char * book_filename, int16_t & book_index)
+BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 {
   //  First look if existing entries in the database exists as ebook.
   //  Build a list of filenames for next step.
@@ -215,42 +215,51 @@ BooksDir::refresh(char * book_filename, int16_t & book_index)
 
   bool some_added_record = false;
 
-  struct PartialRecord {
-    char    filename[FILENAME_SIZE];
-    int32_t file_size;
-    char    title[TITLE_SIZE];
-  } * partial_record = (PartialRecord *) malloc(sizeof(PartialRecord));
-
   sorted_index.clear();
 
-  db.goto_first(); // Go pass the DB version record
-
-  while (db.goto_next()) {
-    db.get_record(partial_record, sizeof(PartialRecord));
-
-    std::string fname = BOOKS_FOLDER "/";
-    fname.append(partial_record->filename);
-
-    struct stat stat_buffer;   
-
-    // if file with filename not found or the file size is not the same, 
-    // remove the database entry
-    if ((stat(fname.c_str(), &stat_buffer) != 0) || 
-        (stat_buffer.st_size != partial_record->file_size)) {
-      LOG_D("Book no longer available: %s", partial_record->filename);
+  if (force_init) {
+    // Remove all records
+    db.goto_first();
+    while (db.goto_next()) {
       db.set_deleted();
     }
-    else {
-      LOG_D("Title: %s", partial_record->title);
-      index[partial_record->filename] = 0;
-      sorted_index[partial_record->title] = db.get_current_idx();
-      if (book_filename) {
-        if (strcmp(book_filename, partial_record->filename) == 0) book_index = db.get_current_idx();
+  }
+  else {
+    struct PartialRecord {
+      char    filename[FILENAME_SIZE];
+      int32_t file_size;
+      char    title[TITLE_SIZE];
+    } * partial_record = (PartialRecord *) malloc(sizeof(PartialRecord));
+
+    db.goto_first(); // Go pass the DB version record
+
+    while (db.goto_next()) {
+      db.get_record(partial_record, sizeof(PartialRecord));
+
+      std::string fname = BOOKS_FOLDER "/";
+      fname.append(partial_record->filename);
+
+      struct stat stat_buffer;   
+
+      // if file with filename not found or the file size is not the same, 
+      // remove the database entry
+      if ((stat(fname.c_str(), &stat_buffer) != 0) || 
+          (stat_buffer.st_size != partial_record->file_size)) {
+        LOG_D("Book no longer available: %s", partial_record->filename);
+        db.set_deleted();
+      }
+      else {
+        LOG_D("Title: %s", partial_record->title);
+        index[partial_record->filename] = 0;
+        sorted_index[partial_record->title] = db.get_current_idx();
+        if (book_filename) {
+          if (strcmp(book_filename, partial_record->filename) == 0) book_index = db.get_current_idx();
+        }
       }
     }
+    
+    free(partial_record);
   }
-  
-  free(partial_record);
 
   if (db.is_some_record_deleted()) {
 
