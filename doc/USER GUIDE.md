@@ -21,7 +21,7 @@ Here are the main characteristics of the application:
 - Some basic parameters and options
 - Limited CSS formatting
 - WiFi-based documents download
-- Battery management (light, deep sleep, battery level display)
+- Battery state and power management (light, deep sleep, battery level display)
 
 ## 1 - Application startup
 
@@ -57,58 +57,58 @@ In the following text, the functions are called buttons.
 
 The application is having two main display modes:
 
-- E-Books List - Presents the list of books available on th SD-Card, showing for each e-book a small title page caption, the title and the author of the book.
+- E-Books List - Presents the list of books available on the SD-Card, showing for each e-book a small title page caption, the title, and the author of the book.
 - E-Book Reader - Presents an e-book content, one page at a time for reading.
 
-Each of the display modes is also supllying a list of specific functions that can be selected by the user. They are presented in the following sub-sections after the description of the display mode.
+Each of the display modes is also supplying a list of specific functions that can be selected by the user. They are presented in the following sub-sections after the description of the display mode.
 
 ### 2.1 - The E-Books List
 
 The list presents all e-books available to the user for reading. They are presented in alphabetical order and may require several pages depending on the number of books present on the SD-Card.
 
-Use the **NEXT** and the **PREVIOUS** buttons to select the appriate e-book that you want to read, then use the **SELECT** button to have the e-book loaded, presenting the first page of it.
+Use the **NEXT** and the **PREVIOUS** buttons to select the appropriate e-book that you want to read, then use the **SELECT** button to have the e-book loaded, presenting the first page of it.
 
-The **DOUBLE-CLICk-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons can be used to moved one page at a time in the list.
+The **DOUBLE-CLICk-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons can be used to move one page at a time in the list.
 
 The **DOUBLE-CLICK-SELECT** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
 - **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
 - **Return to the last book being read** - This will open the last book read by the user, to the last page shown on screen. 
-- **EPub-InkPlate parameters** - This will present a parameters' form, allowing the user to modify some elements pertaining to the application behaviour. It's content is described below.
-- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of e-books on the SD-Card, uploading, downloading and removing e-books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. 
-- **Refresh the e-books list** - This will lauhch the e-books database refresher, looking at potential new e-books to be added to the database. This operation is usually done automatically at application startup and is not usually required to be used.
+- **EPub-InkPlate parameters** - This will present a parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
+- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of e-books on the SD-Card, uploading, downloading, and removing e-books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. 
+- **Refresh the e-books list** - This will launch the e-books database refresher, looking at potential new e-books to be added to the database. This operation is usually done automatically at application startup and is not usually required to be used.
 - **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power Off (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
 
-The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute it's function. The **DOUBLE-CLICK-SELECT** button will simply get out of the options list, back to the list of books (Same behaviour as if the first entry of the options list is selected).
+The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **DOUBLE-CLICK-SELECT** button will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
 ### 2.2 - The E-Book reader
 
-The reader present the e-book selected by the user on page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons will go 10 pages at a time.
+The reader presents the e-book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons will go 10 pages at a time.
 
 As for the e-books list, the **DOUBLE-CLICK-SELECT** button will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
 - **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed e-book.
 - **E-Books List** - This will get you out of the e-book reader, returning to the e-books list.
-- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of e-books on the SD-Card, uploading, downloading and removing e-books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. 
+- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of e-books on the SD-Card, uploading, downloading, and removing e-books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. 
 - **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power Off (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
 
-The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute it's function. **DOUBLE-CLICK-SELECT** will simply get out of the options list, back to the list of books (Same behaviour as if the first entry of the options list is selected).
+The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. **DOUBLE-CLICK-SELECT** will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
 ### 2.3 - The Parameters Form
 
-As indicated in section 2.1, the EPub-InkPlate parameters' form allow for the modification of some items available to the user that will change some application behaviour. Each item is presented with a list of options selectable throuhg the use of the keys.
+As indicated in section 2.1, the EPub-InkPlate parameters' form allows for the modification of some items available to the user that will change some application behavior. Each item is presented with a list of options selectable through the use of the keys.
 
 The following items are displayed:
 
-- **Minutes before sleeping** - Options: 5, 10 or 15 minutes. This is the timeout period for which the application will wait before entering in a Deep Sleep state. Deep Sleep is a mean by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of a key. 
+- **Minutes before sleeping** - Options: 5, 10 or 15 minutes. This is the timeout period for which the application will wait before entering a Deep Sleep state. Deep Sleep is a means by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of a key. 
 - **Battery Visualisation** - Options: NONE, PERCENT, VOLTAGE, ICON. This option is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the e-books list and the e-book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). The ICON is shown for all options, but NONE.
-- **Default Font Size** - Options: 8, 10, 12, 15 points. This option will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Changing the size of the fonts will trigger refreshing the pages location for all e-books.
-- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This option select the orientation of the device, such that the keys will be located on the left, the right or the bottom of the screen. Changing the orientation may trigger refreshing the pages location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impact the amount of texte that will appears on each page of all books.
-- **OK and CANCEL** - When entering in the parameters form, the CANCEL option is selected. That means that none of the modification done in the form will ne kept. Before leaving the form, it is necessary to select the OK option to get the selection options been saved.
+- **Default Font Size** - Options: 8, 10, 12, 15 points. This option will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Changing the size of the fonts will trigger refreshing the page's location for all e-books.
+- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This option selects the orientation of the device, such that the keys will be located on the left, the right, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
+- **OK and CANCEL** - When entering in the parameters form, the CANCEL option is selected. That means that none of the modifications done in the form will be kept. Before leaving the form, it is necessary to select the OK option to get the selection options been saved.
 
-When the form is presented on screen, the current selected option of each item is surrounded with a small rectangle. A bigger rectangle appears around all options of the first item in the form. It is a thin lines rectangle, called the selecting box below, that can be moved from an item to the other.
+When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. A bigger rectangle appears around all options of the first item in the form. It is a thin line rectangle, called the selecting box below, that can be moved from an item to the other.
 
 To be able to modify an item, you must first move the selecting box from one item to the other using the **NEXT** and **PREVIOUS** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options. You can change the current option with the **NEXT** and **PREVIOUS** button. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
 
