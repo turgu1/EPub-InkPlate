@@ -30,7 +30,7 @@ class BooksDirController
     void enter();
     void leave(bool going_to_deep_sleep = false);
     void save_last_book(int32_t current_page_offset, bool going_to_deep_sleep);
-    void show_last_book();
+    bool show_last_book();
 };
 
 #if __BOOKS_DIR_CONTROLLER__

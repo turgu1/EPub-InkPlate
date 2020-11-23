@@ -34,23 +34,17 @@
   void 
   mainTask(void * params) 
   {
-    esp_err_t err = nvs_flash_init();
-    if (err != ESP_OK) {
-      if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
-        LOG_D("Erasing NVS Partition... (Because of %s)", esp_err_to_name(err));
-        if ((err = nvs_flash_erase()) == ESP_OK) {
-          err = nvs_flash_init();
+  
+    esp_err_t nvs_err = nvs_flash_init();
+    if (nvs_err != ESP_OK) {
+      if ((nvs_err == ESP_ERR_NVS_NO_FREE_PAGES) || (nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
+        LOG_D("Erasing NVS Partition... (Because of %s)", esp_err_to_name(nvs_err));
+        if ((nvs_err = nvs_flash_erase()) == ESP_OK) {
+          nvs_err = nvs_flash_init();
         }
       }
-      if (err != ESP_OK) {
-        msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-          "Failed to initialise NVS Flash (%s). Entering Deep Sleep. Press a key to restart.",
-           esp_err_to_name(err)
-        );
-        ESP::delay(500);
-        inkplate6_ctrl.deep_sleep();
-      }
     } 
+    if (nvs_err != ESP_OK) LOG_E("NVS Error: %s", esp_err_to_name(nvs_err));
 
     #if DEBUGGING
       for (int i = 10; i > 0; i--) {
@@ -61,21 +55,11 @@
       printf("\n"); fflush(stdout);
     #endif
 
-    if (!inkplate6_ctrl.setup()) {
-      msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-        "Unable to initialize InkPlate-6 drivers. Entering Deep Sleep. Press a key to restart."
-      );
-      ESP::delay(500);
-      inkplate6_ctrl.deep_sleep();
-    }
+    bool inkplate_err = !inkplate6_ctrl.setup();
+    if (inkplate_err) LOG_E("InkPlate6Ctrl Error.");
 
-    if (!config.read()) {
-      msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
-        "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
-      );
-      ESP::delay(500);
-      inkplate6_ctrl.deep_sleep();
-    }
+    bool config_err = !config.read();
+    if (config_err) LOG_E("Config Error.");
 
     #if DEBUGGING
       config.show();
@@ -84,13 +68,48 @@
     pugi::set_memory_management_functions(allocate, free);
 
     if (fonts.setup()) {
+      
+      Screen::Orientation orient;
+      config.get(Config::ORIENTATION, (int8_t *) &orient);
+      screen.set_orientation(orient);
+
       screen.setup();
+
       event_mgr.setup();
+      event_mgr.set_orientation(orient);
+
+      if (nvs_err != ESP_OK) {
+        msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+          "Failed to initialise NVS Flash (%s). Entering Deep Sleep. Press a key to restart.",
+           esp_err_to_name(nvs_err)
+        );
+
+        ESP::delay(500);
+        inkplate6_ctrl.deep_sleep();
+      }
+  
+      if (inkplate_err) {
+        msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+          "Unable to initialize InkPlate-6 drivers. Entering Deep Sleep. Press a key to restart."
+        );
+        ESP::delay(500);
+        inkplate6_ctrl.deep_sleep();
+      }
+
+      if (config_err) {
+        msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
+          "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
+        );
+        ESP::delay(500);
+        inkplate6_ctrl.deep_sleep();
+      }
+
       books_dir_controller.setup();
       LOG_D("Initialization completed");
       app_controller.start();
     }
     else {
+      LOG_E("Font loading error.");
       msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
         "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
       );
@@ -137,23 +156,31 @@
   int 
   main(int argc, char **argv) 
   {
-    if (!config.read()) {
-      msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
-        "Unable to read/save configuration file."
-      );
-
-      sleep(30);
-      return 1;
-    }
+    bool config_err = !config.read();
+    if (config_err) LOG_E("Config Error.");
 
     #if DEBUGGING
       config.show();
     #endif
 
     if (fonts.setup()) {
+
+      Screen::Orientation orient;
+      config.get(Config::ORIENTATION, (int8_t *) &orient);
+      screen.set_orientation(orient);
+
       screen.setup();
       event_mgr.setup();
       books_dir_controller.setup();
+
+      if (config_err) {
+        msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
+          "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
+        );
+        sleep(10);
+        exit(0);
+      }
+
       // exit(0)  // Used for some Valgrind tests
       app_controller.start();
     }

@@ -21,6 +21,8 @@ void MsgViewer::show(
 {
   char buff[200];
 
+  width = Screen::WIDTH - 60;
+
   if (page.get_compute_mode() == Page::LOCATION) return; // Cannot be used durint location computation
 
   va_list args;
@@ -35,32 +37,37 @@ void MsgViewer::show(
     .indent             =   0,
     .margin_left        =  10,
     .margin_right       =  10,
-    .margin_top         =  30, // 70,
+    .margin_top         =  30,
     .margin_bottom      =  10,
-    .screen_left        = (Screen::WIDTH  -   WIDTH ) >> 1,
-    .screen_right       = (Screen::WIDTH  -   WIDTH ) >> 1,
-    .screen_top         = (Screen::HEIGHT -   HEIGHT) >> 1,
-    .screen_bottom      = (Screen::HEIGHT -   HEIGHT) >> 1,
-    .width              = 0,
-    .height             = 0,
+    .screen_left        =   0,
+    .screen_right       =   0,
+    .screen_top         =   0,
+    .screen_bottom      =   0,
+    .width              =   0,
+    .height             =   0,
     .trim               = true,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
     .text_transform     = CSS::NO_TRANSFORM
   };
 
+  fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
+  fmt.screen_right       = (Screen::WIDTH  - width ) >> 1;
+  fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
+  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
+
   page.start(fmt);
 
   page.clear_region(
-    WIDTH, 
+    width, 
     HEIGHT, 
-    (Screen::WIDTH  - WIDTH ) >> 1, 
+    (Screen::WIDTH  - width ) >> 1, 
     (Screen::HEIGHT - HEIGHT) >> 1);
 
   page.put_highlight(
-    WIDTH  - 4, 
+    width  - 4, 
     HEIGHT - 4, 
-    ((Screen::WIDTH  - WIDTH ) >> 1) + 2,
+    ((Screen::WIDTH  - width ) >> 1) + 2,
     ((Screen::HEIGHT - HEIGHT) >> 1) + 2);
 
   TTF * font = fonts.get(0, 24);
@@ -68,7 +75,7 @@ void MsgViewer::show(
 
   page.put_char_at(
     icon_char[severity], 
-    ((Screen::WIDTH  - WIDTH ) >> 1) + 50 - (glyph->width >> 1), 
+    ((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->width >> 1), 
     ( Screen::HEIGHT           >> 1) + 20,
     fmt);
 
@@ -115,6 +122,8 @@ void MsgViewer::show(
 
 void MsgViewer::show_progress(const char * title, ...)
 {
+  width = Screen::WIDTH - 60;
+
   Page::Format fmt = {
     .line_height_factor = 1.0,
     .font_index         =   1,
@@ -124,17 +133,22 @@ void MsgViewer::show_progress(const char * title, ...)
     .margin_right       =  10,
     .margin_top         =  30, // 70,
     .margin_bottom      =  10,
-    .screen_left        = (Screen::WIDTH  - WIDTH) >> 1,
-    .screen_right       = (Screen::WIDTH  - WIDTH) >> 1,
-    .screen_top         = (Screen::HEIGHT - HEIGHT2) >> 1,
-    .screen_bottom      = (Screen::HEIGHT - HEIGHT2) >> 1,
-    .width              = 0,
-    .height             = 0,
+    .screen_left        =   0,
+    .screen_right       =   0,
+    .screen_top         =   0,
+    .screen_bottom      =   0,
+    .width              =   0,
+    .height             =   0,
     .trim               = true,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
     .text_transform     = CSS::NO_TRANSFORM
   };
+
+  fmt.screen_left        = (Screen::WIDTH  - width  ) >> 1;
+  fmt.screen_right       = (Screen::WIDTH  - width  ) >> 1;
+  fmt.screen_top         = (Screen::HEIGHT - HEIGHT2) >> 1;
+  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT2) >> 1;
 
   char buff[80];
 
@@ -146,15 +160,15 @@ void MsgViewer::show_progress(const char * title, ...)
   page.start(fmt);
 
   page.clear_region(
-    WIDTH, 
+    width, 
     HEIGHT2, 
-    (Screen::WIDTH  - WIDTH  ) >> 1, 
+    (Screen::WIDTH  - width  ) >> 1, 
     (Screen::HEIGHT - HEIGHT2) >> 1);
 
   page.put_highlight(
-    WIDTH   - 4, 
+    width   - 4, 
     HEIGHT2 - 4, 
-    ((Screen::WIDTH  - WIDTH  ) >> 1) + 2,
+    ((Screen::WIDTH  - width  ) >> 1) + 2,
     ((Screen::HEIGHT - HEIGHT2) >> 1) + 2);
 
   // Title
@@ -168,15 +182,15 @@ void MsgViewer::show_progress(const char * title, ...)
   // Progress zone
 
   page.put_highlight(
-    WIDTH   -   42,
+    width   -   42,
     HEIGHT2 -  100,
-    ((Screen::WIDTH - WIDTH) >> 1) +  23,
+    ((Screen::WIDTH - width) >> 1) +  23,
      (Screen::HEIGHT         >> 1) - 120
   );
 
-  dot_zone.width  = WIDTH   -  46;
+  dot_zone.width  = width   -  46;
   dot_zone.height = HEIGHT2 - 104;
-  dot_zone.xpos   = ((Screen::WIDTH - WIDTH) >> 1) +  25;
+  dot_zone.xpos   = ((Screen::WIDTH - width) >> 1) +  25;
   dot_zone.ypos   =  (Screen::HEIGHT         >> 1) - 118;
   dot_zone.dots_per_line = (dot_zone.width + 1) / 9;
   dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.height + 1) / 9);
@@ -187,6 +201,8 @@ void MsgViewer::show_progress(const char * title, ...)
 
 void MsgViewer::add_dot()
 {
+  width = Screen::WIDTH - 60;
+
   Page::Format fmt = {
     .line_height_factor = 1.0,
     .font_index         =   1,
@@ -196,17 +212,22 @@ void MsgViewer::add_dot()
     .margin_right       =  10,
     .margin_top         =  30, // 70,
     .margin_bottom      =  10,
-    .screen_left        = (Screen::WIDTH  - WIDTH ) >> 1,
-    .screen_right       = (Screen::WIDTH  - WIDTH ) >> 1, // Screen::WIDTH  - ((Screen::WIDTH  - WIDTH ) >> 1),
-    .screen_top         = (Screen::HEIGHT - HEIGHT) >> 1,
-    .screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1, // Screen::HEIGHT - ((Screen::HEIGHT - HEIGHT) >> 1),
-    .width              = 0,
-    .height             = 0,
+    .screen_left        =   0,
+    .screen_right       =   0,
+    .screen_top         =   0,
+    .screen_bottom      =   0,
+    .width              =   0,
+    .height             =   0,
     .trim               = true,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
     .text_transform     = CSS::NO_TRANSFORM
   };
+
+  fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
+  fmt.screen_right       = (Screen::WIDTH  - width ) >> 1;
+  fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
+  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
 
   page.start(fmt);
 

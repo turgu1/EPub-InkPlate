@@ -325,10 +325,18 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
           if (first) {
             first = false;
             //msg_viewer.show_progress("Computing new books page locations...");
-            msg_viewer.show(MsgViewer::INFO, false, true, 
-              "Computing page locations", 
-              "New books have been found. Please wait while we compute pages locations. "
-              "It will take between 1 and 3 minutes for each book.");
+            if (force_init) {
+              msg_viewer.show(MsgViewer::INFO, false, true, 
+                "Computing page locations", 
+                "System parameters changed requiring new page geometry. Please wait while we compute pages locations. "
+                "It will take between 1 and 3 minutes for each book.");
+            }
+            else {
+              msg_viewer.show(MsgViewer::INFO, false, true, 
+                "Computing page locations", 
+                "New books have been found. Please wait while we compute pages locations. "
+                "It will take between 1 and 3 minutes for each book.");
+            }
           }
           some_added_record = true;
           

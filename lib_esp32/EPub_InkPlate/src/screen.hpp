@@ -22,8 +22,9 @@
 class Screen : NonCopyable
 {
   public:
-    static constexpr uint16_t WIDTH                 = EInk::HEIGHT;
-    static constexpr uint16_t HEIGHT                = EInk::WIDTH;
+    static uint16_t WIDTH;
+    static uint16_t HEIGHT;
+    static enum Orientation : int8_t { O_LEFT, O_RIGHT, O_BOTTOM } orientation;
     static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     static constexpr uint8_t  HIGHLIGHT_COLOR       = 1;
     static constexpr uint8_t  WHITE_COLOR           = 0;
@@ -49,6 +50,7 @@ class Screen : NonCopyable
       }
       else {
         if (partial_count <= 0) {
+          e_ink.clean();
           e_ink.update(*frame_buffer);
           partial_count = PARTIAL_COUNT_ALLOWED;
         }
@@ -75,7 +77,7 @@ class Screen : NonCopyable
     //   *temp = col & 1 ? (*temp & 0x70) | color : (*temp & 0x07) | (color << 4);
     // }
 
-    inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
+    inline void set_pixel_o_left(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];
       if (color == 1)
         *temp = *temp | LUT1BIT_INV[row & 7];
@@ -83,9 +85,36 @@ class Screen : NonCopyable
         *temp = (*temp & ~LUT1BIT_INV[row & 7]);
     }
 
+    inline void set_pixel_o_right(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer)[(EInk::LINE_SIZE_1BIT * (col + 1)) - (row >> 3) - 1];
+      if (color == 1)
+        *temp = *temp | LUT1BIT[row & 7];
+      else
+        *temp = (*temp & ~LUT1BIT[row & 7]);
+    }
+
+    inline void set_pixel_o_bottom(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer)[EInk::LINE_SIZE_1BIT * row + (col >> 3)];
+      if (color == 1)
+        *temp = *temp | LUT1BIT_INV[col & 7];
+      else
+        *temp = (*temp & ~LUT1BIT_INV[col & 7]);
+    }
+
   public:
     static Screen & get_singleton() noexcept { return singleton; }
     void setup();
+    void set_orientation(Orientation orient) {
+      orientation = orient;
+      if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
+        WIDTH  = 600;
+        HEIGHT = 800;
+      }
+      else {
+        WIDTH  = 800;
+        HEIGHT = 600;
+      }
+    }
 };
 
 #if __SCREEN__

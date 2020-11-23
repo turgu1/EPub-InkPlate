@@ -26,8 +26,9 @@
 class Screen : NonCopyable
 {
   public:
-    static const uint16_t WIDTH           =  600;
-    static const uint16_t HEIGHT          =  800;
+    static uint16_t WIDTH;
+    static uint16_t HEIGHT;
+    static enum Orientation : int8_t { O_LEFT, O_RIGHT, O_BOTTOM } orientation;
     static const uint16_t RESOLUTION      =  166;  ///< Pixels per inch
     static const uint8_t  HIGHLIGHT_COLOR = 0x00;
     static const uint8_t  WHITE_COLOR     = 0xFF;
@@ -65,6 +66,17 @@ class Screen : NonCopyable
   public:
     static Screen & get_singleton() noexcept { return singleton; }
     void setup();
+    void set_orientation(Orientation orient) {
+      orientation = orient;
+      if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
+        WIDTH  = 600;
+        HEIGHT = 800;
+      }
+      else {
+        WIDTH  = 800;
+        HEIGHT = 600;
+      }
+    }
     
     GtkWidget
       * window, 

@@ -32,7 +32,7 @@ class AppController
      * LAST allows for the
      * selection of the last controller in charge before the current one.
      */
-    enum Ctrl { DIR, PARAM, BOOK, OPTION, LAST };
+    enum Ctrl { NONE, DIR, PARAM, BOOK, OPTION, LAST };
     
     AppController();
 
@@ -70,7 +70,10 @@ class AppController
 
     static const int LAST_COUNT = 4;
     Ctrl current_ctrl;
+    Ctrl next_ctrl;
     Ctrl last_ctrl[LAST_COUNT]; ///< LIFO of last controllers in use
+
+    void launch();
 };
 
 #if __APP_CONTROLLER__

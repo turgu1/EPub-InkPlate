@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2020.11.22)
+(Updated 2020.11.23)
 
 Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
 
@@ -30,11 +30,11 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [x] Performance on new book scans (80% completion to be revisited after first release)
 - [x] Options / Parameters form
 - [x] Battery level display
+- [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 
-After some reflection, here are some of the steps remaining to be done:
+Here are some of the steps remaining to be done:
 
-- [ ] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
-- [ ] Error dialog use (40% completion)
+- [ ] Error dialog use (80% completion)
 
 - [ ] User's Guide
 
@@ -114,8 +114,7 @@ Some elements to consider in the future (no specific order of priority):
 
 And potentially many more...
 
-
-## Runtime environment
+### Runtime environment
 
 The EPub-InkPlate application requires that a micro-SD Card be present in the device. This micro-SD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub` in lowercase. 
 
@@ -123,96 +122,7 @@ You can change the base fonts at your desire (TrueType or OpenType only). Some o
 
 Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
 
-The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time and when the user requires it to do so through the parameters menu. The refresh process is very long (between 1 and 3 minutes per book) but required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a bif difference of duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied book is ~3 minutes. With a slow card (very old Sandisk 4GB), it tooks 8 minutes 20 seconds.
-
-## Installation
-
-(This is a draft version. not complete yet)
-
-Here is an example of an installation procedure that can be adapted depending on your requirements. It has been used from a Linux development platform. It may be used on a Mac computer, with small adjustments to the `upload.sh` script. More adjustments would certainly be required on a Windows platform. 
-
-The last version of the binaries for the Inkplate-6 are located in releases bundles that you will find with the application GitHub project. This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
-
-(You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
-
-### Prerequesite
-
-The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* 2 and 3. Verify that you have *Python* and *pip* installed on your computer. Then, to install esptool, the following command must be executed:
-
-```sh
-$ pip install esptool
-```
-
-You then must retrieve the release from the Github repository.
-
-TBC
-
-### Preparing the SD-Card
-
-The SD-Card must be formatted with a FAT32 (or msdos or vfat) partition. This is usually the case with brand new cards. The release's `SDCard` folder contains everything required to initialize the card's content. As a first trial, you can copy it to the card as is.
-
-The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`) (as these parameters contain text information, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate-6 from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SDCard content through your computer.
-
-Once done, insert the card into the device.
-
-### Uploading the application program
-
-The release's `bin` folder contains the application, the bootloader, and the partitions binaries that must be downloaded to the device. To do so, connects the device to a USB port, turn it on, change your current directory to that folder, and execute the following command:
-
-```sh
-$ sh upload.sh
-```
-
-Here is an example output of the execution:
-
-```sh
-turgu1@phobos:~/Dev/EPub-InkPlate/bin$ sh upload.sh 
-esptool.py v3.0
-Serial port /dev/ttyUSB0
-Connecting......
-Chip is ESP32-D0WDQ6 (revision 1)
-Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
-Crystal is 40MHz
-MAC: fc:f5:c4:1b:4e:cc
-Uploading stub...
-Running stub...
-Stub running...
-Changing baud rate to 230400
-Changed.
-Configuring flash size...
-Auto-detected Flash size: 4MB
-Compressed 25136 bytes to 15148...
-Wrote 25136 bytes (15148 compressed) at 0x00001000 in 0.7 seconds (effective 297.9 kbit/s)...
-Hash of data verified.
-Compressed 3072 bytes to 143...
-Wrote 3072 bytes (143 compressed) at 0x00008000 in 0.0 seconds (effective 2244.8 kbit/s)...
-Hash of data verified.
-Compressed 1086128 bytes to 554716...
-Wrote 1086128 bytes (554716 compressed) at 0x00010000 in 24.9 seconds (effective 348.5 kbit/s)...
-Hash of data verified.
-
-Leaving...
-Hard resetting via RTS pin...
-turgu1@phobos:~/Dev/EPub-InkPlate/bin$ 
-```
-
-Some options on the esptool command may have to be modified depending on your computer:
-
-- The usb device connected to the InkPlate-6 is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu). If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
-
-- Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script. The speed (baud rate) is **230400** in the file. You can change it to **115200** or lower.
-
-## On the complexity of EPUB page formatting
-
-The EPUB standard allows for the use of a very large amount of flexible formatting capabilities available with HTML/CSS engines. This is quite a challenge to pack a reasonable amount of interpretation of formatting scripts on a small processor.
-
-I've chosen a *good-enough* approach by which I obtain a reasonable page formatting quality. The aim is to get something that will allow the user to read a book and enjoy it without too much effort. Another aspect is the memory required to prepare a book to be displayed. As performance is also a key factor, fonts are loaded and kept in memory by the application. The Inkplate-6 is limited in memory. Around 4.5 megabytes of memory are available. A part of it is dedicated to the screen buffer and the rest of it is mainly used by the application. If a book is using too many fonts or fonts that are too big (they may contain more glyphs than necessary for the book), it will not be possible to show the document with the original fonts.
-
-Images that are integrated into a book may also be taking a lot of memory. 1600x1200 images require close to 6 megabytes of memory. To get them in line with the screen resolution of the InkPlate-6 (that is 600x800), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. Even at this size, a 600x800 image will take close to 1.5 megabytes...
-
-There are cases for which the ebook content is way too complex to get good results...
-
-One way to circumvent the problems is to use the epub converter provided with the [Calibre](https://calibre-ebook.com/) book management application. This is a tool able to manage a large number of books on computers. There are versions for Windows, macOS, and Linux. Calibre supplies a conversion tool (called 'Convert books' on the main toolbar) that, when choosing to convert EPUB to EPUB, will simplify the coding of styling that would be more in line with the interpretation capability of EPUB-InkPlate. The convert tool of Calibre can also shrink fonts such that they only contain the glyphs required for the book (When the 'Convert books' tool is launched, the option is located in 'Look & feel' > 'Fonts' > 'Subset all embedded fonts'). I've seen some books having four of five fonts requiring 1.5 megabytes each shrunk to around 1 meg for all fonts by the convert tool (around 200 kilobytes per fonts). 
+The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time and when the user requires it to do so through the parameters menu. The refresh process is very long (between 1 and 3 minutes per book) but is required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a big difference in duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied e-books is ~3 minutes. With a slow card (very old Sandisk 4GB), it took 8 minutes 20 seconds.
 
 ## Development environment
 

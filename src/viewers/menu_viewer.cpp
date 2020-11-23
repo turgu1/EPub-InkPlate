@@ -9,6 +9,7 @@
 #include "models/ttf2.hpp"
 #include "viewers/page.hpp"
 #include "screen.hpp"
+#include "controllers/app_controller.hpp"
 
 void MenuViewer::show(MenuEntry * the_menu)
 {
@@ -82,7 +83,7 @@ void MenuViewer::show(MenuEntry * the_menu)
   page.paint(false);
 }
 
-void MenuViewer::event(EventMgr::KeyEvent key)
+bool MenuViewer::event(EventMgr::KeyEvent key)
 {
   uint8_t old_index = current_entry_index;
 
@@ -127,16 +128,16 @@ void MenuViewer::event(EventMgr::KeyEvent key)
       }
       break;
     case EventMgr::KEY_DBL_PREV:
-      return;
+      return false;
     case EventMgr::KEY_DBL_NEXT:
-      return;
+      return false;
     case EventMgr::KEY_SELECT:
       if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
-      return;
+      return false;
     case EventMgr::KEY_DBL_SELECT:
-      return;
+      return true;
     case EventMgr::KEY_NONE:
-      return;
+      return false;
   }
 
   if (current_entry_index != old_index) {
@@ -162,4 +163,5 @@ void MenuViewer::event(EventMgr::KeyEvent key)
   }
 
   page.paint(false);
+  return false;
 }

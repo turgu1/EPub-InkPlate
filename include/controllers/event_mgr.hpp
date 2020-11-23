@@ -7,6 +7,8 @@
 
 #include "global.hpp"
 
+#include "screen.hpp"
+
 class EventMgr
 {
   private:
@@ -19,7 +21,7 @@ class EventMgr
     EventMgr() : stay_on(false) { }
 
     bool setup();
-    void start_loop();
+    void loop();
 
     KeyEvent get_key();
     
@@ -31,6 +33,7 @@ class EventMgr
     void home();
 
     inline void set_stay_on(bool value) { stay_on = value; };
+    void set_orientation(Screen::Orientation orient);
 };
 
 #if __EVENT_MGR__

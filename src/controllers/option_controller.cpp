@@ -13,7 +13,9 @@
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 
-#include "esp_system.h"
+#if EPUB_INKPLATE6_BUILD
+  #include "esp_system.h"
+#endif
 
 static FormViewer::Choice ok_cancel_choice[2] = {
   { "OK",     1 },
@@ -53,20 +55,20 @@ static FormViewer::Choice orientation_choices[3] = {
 
 // static int8_t boolean_value;
 static int8_t font_size;
-static int8_t orientation;
+static Screen::Orientation orientation;
 static int8_t battery;
 static int8_t timeout;
 static int8_t ok;
 
-static int8_t old_orientation;
+static Screen::Orientation old_orientation;
 static int8_t old_font_size;
 
 static FormViewer::FormEntry form_entries[5] = {
-  { "Minutes before sleeping :", &timeout,       3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",   &battery,       4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
-  { "Default Font Size (*):",    &font_size,     4, font_size_choices,   FormViewer::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",     &orientation,   3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,            2, ok_cancel_choice,    FormViewer::HORIZONTAL_CHOICES }
+  { "Minutes before sleeping :", &timeout,                3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",   &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
+  { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::HORIZONTAL_CHOICES },
+  { "Buttons Position (*):",     (int8_t *) &orientation, 3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
+  { nullptr,                     &ok,                     2, ok_cancel_choice,    FormViewer::HORIZONTAL_CHOICES }
 };
 
 extern bool start_web_server();
@@ -75,10 +77,10 @@ extern bool stop_web_server();
 static void
 parameters()
 {
-  config.get(Config::FONT_SIZE,   font_size  );
-  config.get(Config::ORIENTATION, orientation);
-  config.get(Config::BATTERY,     battery    );
-  config.get(Config::TIMEOUT,     timeout    );
+  config.get(Config::FONT_SIZE,   &font_size             );
+  config.get(Config::ORIENTATION, (int8_t *) &orientation);
+  config.get(Config::BATTERY,     &battery               );
+  config.get(Config::TIMEOUT,     &timeout               );
 
   old_orientation = orientation;
   old_font_size   = font_size;
@@ -93,11 +95,13 @@ parameters()
 static void
 wifi_mode()
 {
-  event_mgr.set_stay_on(true); // DO NOT sleep
+  #if EPUB_INKPLATE6_BUILD  
+    event_mgr.set_stay_on(true); // DO NOT sleep
 
-  if (start_web_server()) {
-    option_controller.set_wait_for_key_after_wifi();
-  }
+    if (start_web_server()) {
+      option_controller.set_wait_for_key_after_wifi();
+    }
+  #endif
 }
 
 static MenuViewer::MenuEntry menu[8] = {
@@ -130,29 +134,38 @@ OptionController::key_event(EventMgr::KeyEvent key)
     if (form_viewer.event(key)) {
       form_is_shown = false;
       if (ok) {
-        config.put(Config::FONT_SIZE,   font_size  );
-        config.put(Config::ORIENTATION, orientation);
-        config.put(Config::BATTERY,     battery    );
-        config.put(Config::TIMEOUT,     timeout    );
+        config.put(Config::FONT_SIZE,   font_size           );
+        config.put(Config::ORIENTATION, (int8_t) orientation);
+        config.put(Config::BATTERY,     battery             );
+        config.put(Config::TIMEOUT,     timeout             );
         config.save();
+
+        if (old_orientation != orientation) {
+          screen.set_orientation(orientation);
+          event_mgr.set_orientation(orientation);
+        }
 
         if ((old_font_size != font_size) ||
             ((orientation != old_orientation) &&
-             ((old_orientation == 2) ||
-              (orientation     == 2)))) {
+             ((old_orientation == Screen::O_BOTTOM) ||
+              (orientation     == Screen::O_BOTTOM)))) {
           int16_t dummy;
           books_dir.refresh(nullptr, dummy, true);
         }
       }
     }
   }
-  else if (wait_for_key_after_wifi) {
-    msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
-    wait_for_key_after_wifi = false;
-    stop_web_server();
-    esp_restart();
-  }
+  #if EPUB_INKPLATE6_BUILD
+    else if (wait_for_key_after_wifi) {
+      msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
+      wait_for_key_after_wifi = false;
+      stop_web_server();
+      esp_restart();
+    }
+  #endif
   else {
-    menu_viewer.event(key);
+    if (menu_viewer.event(key)) {
+      app_controller.set_controller(AppController::LAST);
+    }
   }
 }

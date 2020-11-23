@@ -18,7 +18,7 @@
 class MsgViewer {
 
   private:
-    static constexpr uint16_t WIDTH   = Screen::WIDTH - 60;
+    uint16_t width;
     static constexpr uint16_t HEIGHT  = 240;
     static constexpr uint16_t HEIGHT2 = 400;
 

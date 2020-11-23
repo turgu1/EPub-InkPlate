@@ -150,10 +150,10 @@ BooksDirController::save_last_book(int32_t current_page_offset, bool going_to_de
   #endif  
 }
 
-void
+bool
 BooksDirController::show_last_book()
 {
-  if (book_index == -1) return;
+  if (book_index == -1) return false;
 
   static std::string book_fname;
   static std::string book_title;
@@ -168,8 +168,10 @@ BooksDirController::show_last_book()
     book_title  = book->title;
     if (book_controller.open_book_file(book_title, book_fname, book_index, book_offset)) {
       app_controller.set_controller(AppController::BOOK);
+      return true;
     }
   }
+  return false;
 }
 
 void 

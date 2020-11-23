@@ -19,6 +19,10 @@
 
 Screen Screen::singleton;
 
+uint16_t Screen::WIDTH;
+uint16_t Screen::HEIGHT;
+Screen::Orientation Screen::orientation;
+
 const uint8_t Screen::LUT1BIT[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 const uint8_t Screen::LUT1BIT_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
@@ -28,7 +32,7 @@ Screen::draw_bitmap(
   uint16_t width, 
   uint16_t height, 
   int16_t x, 
-  int16_t y) //, bool show)
+  int16_t y)
 {
   if (bitmap_data == nullptr) return;
   
@@ -51,36 +55,71 @@ Screen::draw_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  // for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // rows
-  //   for (uint32_t i = x, p = q * width; i < x_max; i++, p++) {  // columns
-  //     uint8_t v = bitmap_data[p];
-  //     if (v != 255) { // Do not paint white pixels
-  //       set_pixel(i, j, v >> 5);
-  //     }
-  //   }
-  // }
-
-  static int16_t err[601];
+  static int16_t err[801];
   int16_t error;
-  memset(err, 0, 601*2);
+  memset(err, 0, 801*2);
 
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
-      int32_t v = bitmap_data[p] + err[k + 1];
-      if (v > 128) {
-        error = (v - 255);
-        set_pixel(i, j, 0);
+  if (orientation == O_LEFT) {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+        int32_t v = bitmap_data[p] + err[k + 1];
+        if (v > 128) {
+          error = (v - 255);
+          set_pixel_o_left(i, j, 0);
+        }
+        else {
+          error = v;
+          set_pixel_o_left(i, j, 1);
+        }
+        if (k != 0) {
+          err[k - 1] += error / 8;
+        }
+        err[k]     += 3 * error / 8;
+        err[k + 1]  =     error / 8;
+        err[k + 2] += 3 * error / 8;
       }
-      else {
-        error = v;
-        set_pixel(i, j, 1);
+    }
+  }
+  else if (orientation == O_RIGHT) {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+        int32_t v = bitmap_data[p] + err[k + 1];
+        if (v > 128) {
+          error = (v - 255);
+          set_pixel_o_right(i, j, 0);
+        }
+        else {
+          error = v;
+          set_pixel_o_right(i, j, 1);
+        }
+        if (k != 0) {
+          err[k - 1] += error / 8;
+        }
+        err[k]     += 3 * error / 8;
+        err[k + 1]  =     error / 8;
+        err[k + 2] += 3 * error / 8;
       }
-      if (k != 0) {
-        err[k - 1] += error / 8;
+    }
+  }
+  else {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+        int32_t v = bitmap_data[p] + err[k + 1];
+        if (v > 128) {
+          error = (v - 255);
+          set_pixel_o_bottom(i, j, 0);
+        }
+        else {
+          error = v;
+          set_pixel_o_bottom(i, j, 1);
+        }
+        if (k != 0) {
+          err[k - 1] += error / 8;
+        }
+        err[k]     += 3 * error / 8;
+        err[k + 1]  =     error / 8;
+        err[k + 2] += 3 * error / 8;
       }
-      err[k]     += 3 * error / 8;
-      err[k + 1]  =     error / 8;
-      err[k + 2] += 3 * error / 8;
     }
   }
 }
@@ -99,13 +138,35 @@ Screen::draw_rectangle(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int i = x; i < x_max; i++) {
-    set_pixel(i,         y, color);
-    set_pixel(i, y_max - 1, color);
+  if (orientation == O_LEFT) {
+    for (int i = x; i < x_max; i++) {
+      set_pixel_o_left(i,         y, color);
+      set_pixel_o_left(i, y_max - 1, color);
+    }
+    for (int j = y; j < y_max; j++) {
+      set_pixel_o_left(    x,     j, color);
+      set_pixel_o_left(x_max - 1, j, color);
+    }
   }
-  for (int j = y; j < y_max; j++) {
-    set_pixel(    x,     j, color);
-    set_pixel(x_max - 1, j, color);
+  else if (orientation == O_RIGHT) {
+    for (int i = x; i < x_max; i++) {
+      set_pixel_o_right(i,         y, color);
+      set_pixel_o_right(i, y_max - 1, color);
+    }
+    for (int j = y; j < y_max; j++) {
+      set_pixel_o_right(    x,     j, color);
+      set_pixel_o_right(x_max - 1, j, color);
+    }
+  }
+  else {
+    for (int i = x; i < x_max; i++) {
+      set_pixel_o_bottom(i,         y, color);
+      set_pixel_o_bottom(i, y_max - 1, color);
+    }
+    for (int j = y; j < y_max; j++) {
+      set_pixel_o_bottom(    x,     j, color);
+      set_pixel_o_bottom(x_max - 1, j, color);
+    }
   }
 }
 
@@ -123,9 +184,25 @@ Screen::colorize_region(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int j = y; j < y_max; j++) {
-    for (int i = x; i < x_max; i++) {
-      set_pixel(i, j, color);
+  if (orientation == O_LEFT) {
+    for (int j = y; j < y_max; j++) {
+      for (int i = x; i < x_max; i++) {
+        set_pixel_o_left(i, j, color);
+      }
+    }
+  }
+  else if (orientation == O_RIGHT) {
+    for (int j = y; j < y_max; j++) {
+      for (int i = x; i < x_max; i++) {
+        set_pixel_o_right(i, j, color);
+      }
+    }
+  }
+  else {
+    for (int j = y; j < y_max; j++) {
+      for (int i = x; i < x_max; i++) {
+        set_pixel_o_bottom(i, j, color);
+      }
     }
   }
 }
@@ -145,10 +222,28 @@ Screen::draw_glyph(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // row
-    for (uint32_t i = x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
-      uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-      set_pixel(i, j, v ? 1 : 0);
+  if (orientation == O_LEFT) {
+    for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // row
+      for (uint32_t i = x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
+        uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+        set_pixel_o_left(i, j, v ? 1 : 0);
+      }
+    }
+  }
+  else if (orientation == O_RIGHT) {
+    for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // row
+      for (uint32_t i = x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
+        uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+        set_pixel_o_right(i, j, v ? 1 : 0);
+      }
+    }
+  }
+  else {
+    for (uint32_t j = y, q = 0; j < y_max; j++, q++) {  // row
+      for (uint32_t i = x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
+        uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+        set_pixel_o_bottom(i, j, v ? 1 : 0);
+      }
     }
   }
 }

@@ -17,6 +17,10 @@
 
 Screen Screen::singleton;
 
+uint16_t Screen::WIDTH;
+uint16_t Screen::HEIGHT;
+Screen::Orientation Screen::orientation;
+
 const uint8_t Screen::LUT1BIT[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
 void 
@@ -206,9 +210,10 @@ Screen::setup()
 {
   static GtkWidget 
     * vbox1,
-    * vbox2,
-    * hbox1,
-    * hbox2;
+    // * vbox2,
+    * hbox1
+    // * hbox2
+  ;
 
   gtk_init(nullptr, nullptr);
 
@@ -245,28 +250,26 @@ Screen::setup()
 
   vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL,    5);
   hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,  5);
-  vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL,    5);
-  hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,  5);
+  // vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL,    5);
+  // hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,  5);
 
   gtk_box_set_homogeneous(GTK_BOX(vbox1), FALSE);
   gtk_box_set_homogeneous(GTK_BOX(hbox1), FALSE);
-  gtk_box_set_homogeneous(GTK_BOX(vbox2), FALSE);
-  gtk_box_set_homogeneous(GTK_BOX(hbox2), TRUE);
+  // gtk_box_set_homogeneous(GTK_BOX(vbox2), FALSE);
+  // gtk_box_set_homogeneous(GTK_BOX(hbox2), TRUE);
 
-    left_button = gtk_button_new_with_label("Left"  );
-   right_button = gtk_button_new_with_label("Right" );
-      up_button = gtk_button_new_with_label("Up"    );
-    down_button = gtk_button_new_with_label("Down"  );
+    left_button = gtk_button_new_with_label(" < "   );
+   right_button = gtk_button_new_with_label(" > "   );
+      up_button = gtk_button_new_with_label(" << "  );
+    down_button = gtk_button_new_with_label(" >> "  );
   select_button = gtk_button_new_with_label("Select");
-    home_button = gtk_button_new_with_label("Home"  );
+    home_button = gtk_button_new_with_label("DClick-Select"  );
 
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(id.image     ), FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(up_button    ), FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(left_button  ), FALSE, TRUE,  0);
-  gtk_box_pack_start(GTK_BOX(hbox2), GTK_WIDGET(right_button ), FALSE, TRUE,  0);
-  gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(hbox2        ), FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(down_button  ), FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(vbox2        ), FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(up_button    ), FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(left_button  ), FALSE, TRUE,  0);
+  gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(right_button ), FALSE, TRUE,  0);
+  gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(down_button  ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(select_button), TRUE,  TRUE,  0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(home_button  ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1), FALSE, FALSE, 0);

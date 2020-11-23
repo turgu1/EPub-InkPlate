@@ -23,28 +23,41 @@ AppController::AppController()
 void
 AppController::start()
 {
-  books_dir_controller.enter();
+  current_ctrl = NONE;
+  next_ctrl    = DIR;
 
-  event_mgr.start_loop();
+  while (true) {
+    if (next_ctrl != NONE) launch();
+    event_mgr.loop();
+  }
 }
 
 void 
 AppController::set_controller(Ctrl new_ctrl) 
 {
-  if (((new_ctrl == LAST) && (last_ctrl[0] != current_ctrl)) || (new_ctrl != current_ctrl)) {
+  next_ctrl = new_ctrl;
+}
+
+void AppController::launch()
+{
+  Ctrl the_ctrl = next_ctrl;
+  next_ctrl = NONE;
+
+  if (((the_ctrl == LAST) && (last_ctrl[0] != current_ctrl)) || (the_ctrl != current_ctrl)) {
 
     switch (current_ctrl) {
       case DIR: books_dir_controller.leave(); break;
       case BOOK:     book_controller.leave(); break;
       case PARAM:   param_controller.leave(); break;
       case OPTION: option_controller.leave(); break;
+      case NONE:
       case LAST:                              break;
     }
 
     Ctrl tmp = current_ctrl;
-    current_ctrl = (new_ctrl == LAST) ? last_ctrl[0] : new_ctrl;
+    current_ctrl = (the_ctrl == LAST) ? last_ctrl[0] : the_ctrl;
 
-    if (new_ctrl == LAST) {
+    if (the_ctrl == LAST) {
       for (int i = 1; i < LAST_COUNT; i++) last_ctrl[i - 1] = last_ctrl[i];
       last_ctrl[LAST_COUNT - 1] = DIR;
     }
@@ -58,6 +71,7 @@ AppController::set_controller(Ctrl new_ctrl)
       case BOOK:     book_controller.enter(); break;
       case PARAM:   param_controller.enter(); break;
       case OPTION: option_controller.enter(); break;
+      case NONE:
       case LAST:                              break;
     }
   }
@@ -71,6 +85,7 @@ AppController::key_event(EventMgr::KeyEvent key)
     case BOOK:     book_controller.key_event(key); break;
     case PARAM:   param_controller.key_event(key); break;
     case OPTION: option_controller.key_event(key); break;
+    case NONE:
     case LAST:                                     break;
   }
 }
@@ -83,6 +98,7 @@ AppController::going_to_deep_sleep()
     case BOOK:     book_controller.leave(true); break;
     case PARAM:   param_controller.leave(true); break;
     case OPTION: option_controller.leave(true); break;
+    case NONE:
     case LAST:                                  break;
   }
 }

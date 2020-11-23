@@ -38,8 +38,8 @@ class Config
   public:
     Config() : f(nullptr), modified(false) {};
 
-    bool get(Ident id, int32_t & val);
-    bool get(Ident id, int8_t  & val);
+    bool get(Ident id, int32_t * val);
+    bool get(Ident id, int8_t  * val);
     bool get(Ident id, std::string & val);
     void put(Ident id, int32_t val);
     void put(Ident id, int8_t val);

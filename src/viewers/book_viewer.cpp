@@ -8,7 +8,11 @@
 #include "models/ttf2.hpp"
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
-#include "viewers/battery_viewer.hpp"
+
+#if EPUB_INKPLATE6_BUILD
+  #include "viewers/battery_viewer.hpp"
+#endif
+
 #include "screen.hpp"
 #include "alloc.hpp"
 
@@ -284,7 +288,7 @@ BookViewer::build_page_locs()
     }
     
     int8_t font_size;
-    config.get(Config::FONT_SIZE, font_size);
+    config.get(Config::FONT_SIZE, &font_size);
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -865,7 +869,7 @@ BookViewer::build_page_at(const EPub::Location & loc)
     }
 
     int8_t font_size;
-    config.get(Config::FONT_SIZE, font_size);
+    config.get(Config::FONT_SIZE, &font_size);
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -918,7 +922,9 @@ BookViewer::build_page_at(const EPub::Location & loc)
 
         page.put_str_at(str, -1, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
 
-        BatteryViewer::show();
+        #if EPUB_INKPLATE6_BUILD
+          BatteryViewer::show();
+        #endif
 
         page.paint();
       }

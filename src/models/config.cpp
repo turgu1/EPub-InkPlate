@@ -14,8 +14,8 @@ static int8_t   timeout;
 static int8_t   font_size;
 
 static int32_t  default_port        = 80;
-static int8_t   default_battery     =  0;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
-static int8_t   default_orientation =  0;  // 0 = LEFT, 1 = RIGHT, 2 = BOTTOM
+static int8_t   default_battery     =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
+static int8_t   default_orientation =  1;  // 0 = LEFT, 1 = RIGHT, 2 = BOTTOM
 static int8_t   default_font_size   = 12;  // 8, 10, 12, 15 pts
 static int8_t   default_timeout     = 15;  // 5, 15, 30 minutes
 static int8_t   the_version         =  1;
@@ -32,11 +32,11 @@ std::array<Config::ConfigDescr, 8> Config::cfg = {{
 }};
 
 bool 
-Config::get(Ident id, int32_t & val)
+Config::get(Ident id, int32_t * val)
 {
   for (auto entry : cfg) {
     if((entry.ident == id) && (entry.type == INT)) {
-      val = * ((int32_t *) entry.value);
+      *val = * ((int32_t *) entry.value);
       return true;
     }
   }
@@ -44,11 +44,11 @@ Config::get(Ident id, int32_t & val)
 }
 
 bool 
-Config::get(Ident id, int8_t & val)
+Config::get(Ident id, int8_t * val)
 {
   for (auto entry : cfg) {
     if((entry.ident == id) && (entry.type == BYTE)) {
-      val = * ((int32_t *) entry.value);
+      *val = * ((int8_t *) entry.value);
       return true;
     }
   }
@@ -163,8 +163,11 @@ Config::read()
     if (entry.type == STRING) {
       strlcpy((char *) entry.value, (char *) entry.default_value, entry.max_size);
     }
-    else {
+    else if (entry.type == INT) {
       *((int32_t *) entry.value) = *((int32_t *) entry.default_value);
+    }
+    else {
+      *((int8_t *) entry.value) = *((int8_t *) entry.default_value);
     }
   }
 

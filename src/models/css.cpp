@@ -255,7 +255,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
           }
           else {
             int8_t font_size;
-            config.get(Config::FONT_SIZE, font_size);
+            config.get(Config::FONT_SIZE, &font_size);
             v->num = font_size;
           }
         }

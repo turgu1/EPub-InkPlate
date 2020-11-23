@@ -25,21 +25,9 @@
   #define TOUCHPAD_RIGHT_POSITION 0
   #define  TOUCHPAD_DOWN_POSITION 0
 
-  #if TOUCHPAD_LEFT_POSITION
-    constexpr uint8_t   NEXT_PAD = 2;
-    constexpr uint8_t   PREV_PAD = 1;
-    constexpr uint8_t SELECT_PAD = 4;
-  #endif
-  #if TOUCHPAD_RIGHT_POSITION
-    constexpr uint8_t   NEXT_PAD = 2;
-    constexpr uint8_t   PREV_PAD = 4;
-    constexpr uint8_t SELECT_PAD = 1;
-  #endif
-  #if TOUCHPAD_DOWN_POSITION
-    constexpr uint8_t   NEXT_PAD = 4;
-    constexpr uint8_t   PREV_PAD = 2;
-    constexpr uint8_t SELECT_PAD = 1;
-  #endif
+  uint8_t   NEXT_PAD;
+  uint8_t   PREV_PAD;
+  uint8_t SELECT_PAD;
 
   static xQueueHandle touchpad_evt_queue  = NULL;
 
@@ -103,6 +91,26 @@
     return key;
   }
 
+void
+EventMgr::set_orientation(Screen::Orientation orient)
+{
+  if (orient == Screen::O_LEFT) {
+      NEXT_PAD = 2;
+      PREV_PAD = 1;
+    SELECT_PAD = 4;
+  } 
+  else if (orient == Screen::O_RIGHT) {
+      NEXT_PAD = 2;
+      PREV_PAD = 4;
+    SELECT_PAD = 1;
+  } 
+  else {
+      NEXT_PAD = 4;
+      PREV_PAD = 2;
+    SELECT_PAD = 1;
+  }
+}
+
 #else
 
   #include "screen.hpp"
@@ -134,13 +142,18 @@
   BUTTON_EVENT(select, "Select Clicked")
   BUTTON_EVENT(home,   "Home Clicked"  )
 
-  void EventMgr::start_loop()
+  void EventMgr::loop()
   {
-    gtk_main();
   }
 
+void
+EventMgr::set_orientation(Screen::Orientation orient)
+{
+  // Nothing to do...
+}
+
 #else
-  void EventMgr::start_loop()
+  void EventMgr::loop()
   {
     while (1) {
       EventMgr::KeyEvent key;
@@ -148,6 +161,7 @@
       if ((key = get_key()) != KEY_NONE) {
         LOG_I("Got key %d", key);
         app_controller.key_event(key);
+        return;
       }
       else {
         // Nothing received in 5 seconds, put the device in Light Sleep Mode.
@@ -156,7 +170,7 @@
 
         if (!stay_on) {
           int8_t light_sleep_duration;
-          config.get(Config::TIMEOUT, light_sleep_duration);
+          config.get(Config::TIMEOUT, &light_sleep_duration);
 
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
@@ -215,6 +229,9 @@ EventMgr::setup()
     g_signal_connect(G_OBJECT(  screen.down_button), "clicked", G_CALLBACK(  down_clicked), (gpointer) screen.window);
     g_signal_connect(G_OBJECT(screen.select_button), "clicked", G_CALLBACK(select_clicked), (gpointer) screen.window);
     g_signal_connect(G_OBJECT(  screen.home_button), "clicked", G_CALLBACK(  home_clicked), (gpointer) screen.window);
+
+    gtk_main();
+  
   #else
 
     gpio_config_t io_conf;

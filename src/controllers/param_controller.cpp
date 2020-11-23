@@ -12,7 +12,9 @@
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#include "esp_system.h"
+#if EPUB_INKPLATE6_BUILD
+  #include "esp_system.h"
+#endif
 
 static void 
 books_list()
@@ -26,11 +28,13 @@ extern bool stop_web_server();
 static void
 wifi_mode()
 {
-  event_mgr.set_stay_on(true); // DO NOT sleep
+  #if EPUB_INKPLATE6_BUILD
+    event_mgr.set_stay_on(true); // DO NOT sleep
 
-  if (start_web_server()) {
-    param_controller.set_wait_for_key_after_wifi();
-  }
+    if (start_web_server()) {
+      param_controller.set_wait_for_key_after_wifi();
+    }
+  #endif
 }
 
 // static void
@@ -41,7 +45,7 @@ wifi_mode()
 
 static MenuViewer::MenuEntry menu[6] = {
   { MenuViewer::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
-  { MenuViewer::BOOK_LIST, "Books list",                          books_list                       },
+  { MenuViewer::BOOK_LIST, "E-Books list",                        books_list                       },
   { MenuViewer::WIFI,      "WiFi Access to the e-books folder",   wifi_mode                        },
   { MenuViewer::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
   { MenuViewer::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
@@ -63,18 +67,22 @@ ParamController::leave(bool going_to_deep_sleep)
 void 
 ParamController::key_event(EventMgr::KeyEvent key)
 {
-   if (form_is_shown) {
+  if (form_is_shown) {
     if (form_viewer.event(key)) {
       form_is_shown = false;
     }
   }
-  else if (wait_for_key_after_wifi) {
-    msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
-    wait_for_key_after_wifi = false;
-    stop_web_server();
-    esp_restart();
-  }
+  #if EPUB_INKPLATE6_BUILD
+    else if (wait_for_key_after_wifi) {
+      msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
+      wait_for_key_after_wifi = false;
+      stop_web_server();
+      esp_restart();
+    }
+  #endif
   else {
-    menu_viewer.event(key);
+    if (menu_viewer.event(key)) {
+      app_controller.set_controller(AppController::LAST);
+    }
   }
 }

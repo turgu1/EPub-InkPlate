@@ -20,7 +20,7 @@ class MenuViewer
       void (*func)();
     };
     void  show(MenuEntry * the_menu);
-    void event(EventMgr::KeyEvent key);
+    bool event(EventMgr::KeyEvent key);
     
   private:
     static constexpr char const * TAG = "MenuViewer";
