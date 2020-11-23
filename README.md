@@ -4,17 +4,11 @@
 
 (Updated 2020.11.23)
 
-Work in progress... the application is not ready yet. This readme contains information that could be inaccurate.
+Work in progress... 
 
-The application is now using 1Bit planes (dithering on images, FreeType library for TrueType rasterizer). Current results are promising. Some issues remain: 
+The development is complete. The application is at version 0.9. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`.
 
-- 1bit plane rasterizing of TrueType fonts doesn't give beautiful glyphs on screen. They are readable. No real answer exists to circumvent that problem, other than using one font rasterized by hand. That would take a lot of memory space and limit the languages supported by the application.
-
-- The full refresh of screens must be launched every 6 partial updates. Future devices will have better partial updates capability.
-
-Since I've got a first version working on the InkPlate-6, I'm completing the development effort. The following steps are completed:
-
-- [x] Integration of touch buttons through interrupts
+- [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
 - [x] Menu capability
 - [x] Options / Parameters menus
 - [x] Error dialogs
@@ -31,31 +25,14 @@ Since I've got a first version working on the InkPlate-6, I'm completing the dev
 - [x] Options / Parameters form
 - [x] Battery level display
 - [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
+- [x] User's Guide and installation manuals
 
 Here are some of the steps remaining to be done:
 
 - [ ] Error dialog use (80% completion)
-
-- [ ] User's Guide
-
+- [ ] Debugging remaining issues
+  
 ----
-
-Translation of basic InkPlate-6 device driver classes is complete. The integration of the Linux version of the EPub application is complete. The driver classes are:
-
-- EInk: The e-ink display panel class. (Arduino Inkplate equivalent)
-- MCP - MCP23017 16 bits IO expander class. (Arduino Mcp)
-- ESP - Some methods similar to Arduino supplied methods, but in an ESP-IDF context
-- Wire - Similar to Arduino Wire, but built using i2c functions
-- Inkplate6Ctrl - Will be a low-level class to control various modes of usage
-  (like deep sleep, light sleep, sd card mounting, etc.)
-
-The hardware drivers have been copied from the Arduino implementation and have been modified extensively to be in line with the rest of the EPub-InkPlate code. The source code can be found in folder lib_esp32/InkPlate6/src. All the code has been migrated and debugging is completed. A new GitHub project will be populated with the drivers and some example code.
-
-This is now done in a PlatformIO/Espressif32 development framework. PlatformIO offers the ESP-IDF but with some easier control of configuration (Sort of as there is still some configuration that must be done using the ESP-IDF menuconfig). This will allow for using the same source code for both InkPlate6 and Linux versions of the application.
-
-Parameters that must be set up with menuconfig include PSRAM allocation choice and sd_card long filename support. Details to be explained later.
-
-Memory availability is low. Some modifications may be required to optimize memory usage (memory pools instead of fine grained malloc/new).
 
 Some pictures from the InkPlate-6 version:
 
@@ -74,9 +51,8 @@ A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube t
 
 ## Characteristics
 
-The first release is expected to have basic functionalities:
+The first release functionalities:
 
-- Some pre-defined fonts (TBD) (selectable by the user as a font base to display the document)
 - TTF and OTF embedded fonts support
 - Normal, Bold, Italic, Bold+Italic face types
 - Bitmap images dithering display (JPEG, PNG)
@@ -96,9 +72,9 @@ The first release is expected to have basic functionalities:
 Some elements to consider in the future (no specific order of priority):
 
 - External keypad integration (through i2c)
-- Various views for the Books list
+- Various views for the E-Books list
 - Table of content
-- Hyperlinks (inside a book)
+- Hyperlinks (inside an e-book)
 - Others document download method (Dropbox, Calibre, others)
 - Multiple fonts choices selectable by the user
 - More CSS formatting
@@ -109,7 +85,6 @@ Some elements to consider in the future (no specific order of priority):
 - Page progression direction: Right then left
 - Notes
 - Bookmarks
-- Landscape display selectable
 - Other elements proposed by users
 
 And potentially many more...
