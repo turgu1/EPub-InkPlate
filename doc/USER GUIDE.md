@@ -66,9 +66,9 @@ Each of the display modes is also supplying a list of specific functions that ca
 
 The list presents all e-books available to the user for reading. They are presented in alphabetical order and may require several pages depending on the number of books present on the SD-Card.
 
-Use the **NEXT** and the **PREVIOUS** buttons to select the appropriate e-book that you want to read, then use the **SELECT** button to have the e-book loaded, presenting the first page of it.
+Use the **NEXT** and the **PREVIOUS** buttons to highlight the appropriate e-book that you want to read, then use the **SELECT** button to have the e-book loaded, presenting the first page of it.
 
-The **DOUBLE-CLICk-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons can be used to move one page at a time in the list.
+The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons can be used to move one page at a time in the list.
 
 The **DOUBLE-CLICK-SELECT** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
