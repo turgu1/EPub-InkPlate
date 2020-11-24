@@ -23,9 +23,8 @@ The *esptool* is a Python program that is used to upload an application to an ES
 $ pip install esptool
 ```
 
-You then must retrieve the release from the Github repository.
+You then must retrieve the release from the Github repository. Look at this [location](https://github.com/turgu1/EPub-InkPlate/releases) on GitHub. The file to download is **release.Vxxxx.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in markdown format.
 
-TBC
 
 ### Preparing the SD-Card
 
