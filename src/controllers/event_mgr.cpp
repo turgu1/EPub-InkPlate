@@ -123,12 +123,12 @@ EventMgr::set_orientation(Screen::Orientation orient)
 
   #include "screen.hpp"
 
-  void EventMgr::left()   { app_controller.key_event(KEY_PREV);       }
-  void EventMgr::right()  { app_controller.key_event(KEY_NEXT);       }
-  void EventMgr::up()     { app_controller.key_event(KEY_DBL_PREV);   }
-  void EventMgr::down()   { app_controller.key_event(KEY_DBL_NEXT);   }
-  void EventMgr::select() { app_controller.key_event(KEY_SELECT);     }
-  void EventMgr::home()   { app_controller.key_event(KEY_DBL_SELECT); }
+  void EventMgr::left()   { app_controller.key_event(KEY_PREV);       app_controller.launch(); }
+  void EventMgr::right()  { app_controller.key_event(KEY_NEXT);       app_controller.launch(); }
+  void EventMgr::up()     { app_controller.key_event(KEY_DBL_PREV);   app_controller.launch(); }
+  void EventMgr::down()   { app_controller.key_event(KEY_DBL_NEXT);   app_controller.launch(); }
+  void EventMgr::select() { app_controller.key_event(KEY_SELECT);     app_controller.launch(); }
+  void EventMgr::home()   { app_controller.key_event(KEY_DBL_SELECT); app_controller.launch(); }
 
   #define BUTTON_EVENT(button, msg) \
     static void button##_clicked(GObject * button, GParamSpec * property, gpointer data) { \
@@ -144,6 +144,7 @@ EventMgr::set_orientation(Screen::Orientation orient)
 
   void EventMgr::loop()
   {
+    gtk_main(); // never return
   }
 
 void
@@ -230,8 +231,6 @@ EventMgr::setup()
     g_signal_connect(G_OBJECT(screen.select_button), "clicked", G_CALLBACK(select_clicked), (gpointer) screen.window);
     g_signal_connect(G_OBJECT(  screen.home_button), "clicked", G_CALLBACK(  home_clicked), (gpointer) screen.window);
 
-    gtk_main();
-  
   #else
 
     gpio_config_t io_conf;

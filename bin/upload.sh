@@ -1,4 +1,4 @@
-# /usr/bin/sh
+#!/bin/sh
 #
 # Script to upload a new application binary to an ESP32 device.
 #

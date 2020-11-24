@@ -675,5 +675,6 @@ EPub::get_page_nbr_from_offset(int32_t offset)
     if (loc.offset > offset) { found = true; break; }
     page_nbr++;
   }
+  LOG_D("get_page_nbr_from_offset: offset: %d, page: %d, found: %s", offset, page_nbr, found ? "YES" : "NO");
   return found ? page_nbr : 0;
 }

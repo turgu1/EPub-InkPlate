@@ -21,6 +21,7 @@ class EventMgr
     EventMgr() : stay_on(false) { }
 
     bool setup();
+    
     void loop();
 
     KeyEvent get_key();

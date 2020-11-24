@@ -26,10 +26,15 @@ AppController::start()
   current_ctrl = NONE;
   next_ctrl    = DIR;
 
-  while (true) {
-    if (next_ctrl != NONE) launch();
-    event_mgr.loop();
-  }
+  #if EPUB_LINUX_BUILD
+    launch();
+    event_mgr.loop(); // Will start gtk. Will not return.
+  #else
+    while (true) {
+      if (next_ctrl != NONE) launch();
+      event_mgr.loop();
+    }
+  #endif
 }
 
 void 
@@ -40,6 +45,10 @@ AppController::set_controller(Ctrl new_ctrl)
 
 void AppController::launch()
 {
+  #if EPUB_LINUX_BUILD
+    if (next_ctrl == NONE) return;
+  #endif
+  
   Ctrl the_ctrl = next_ctrl;
   next_ctrl = NONE;
 

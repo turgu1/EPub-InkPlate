@@ -1,7 +1,5 @@
-# EPub-InkPlate - An EPub Reader for the InkPlate-6 device
-
-## User's Guide - Version 0.9
-(Draft document)
+# EPub-InkPlate - User's Guide - Version 0.9
+**(Draft document)**
 
 The EPub-InkPlate is an EPub e-books reader application built specifically for the InkPlate-6 ESP32 based device.
 
@@ -26,6 +24,7 @@ Here are the main characteristics of the application:
 ## 1 - Application startup
 
 When the device is turned ON, the application executes the following tasks:
+
 - Initializes itself, verify the presence of e-books on the SD-Card, and updates its database if required. The e-books must be located in the `books` folder, be in the EPub V2 or V3 format and have a filename ending with the `.epub` extension.
 - Presents the list of e-books to the user, ready to let the user selects an e-book to read.
 
@@ -72,6 +71,8 @@ The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons can be used to m
 
 The **DOUBLE-CLICK-SELECT** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
+![E-Books List options](pictures/ebooks-list-options-menu.png){ width=50% }
+
 - **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
 - **Return to the last book being read** - This will open the last book read by the user, to the last page shown on screen. 
 - **EPub-InkPlate parameters** - This will present a parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
@@ -82,11 +83,13 @@ The **DOUBLE-CLICK-SELECT** will open a list of options. These options are prese
 
 The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **DOUBLE-CLICK-SELECT** button will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
-### 2.2 - The E-Book reader
+### 2.2 - The E-Book Reader
 
 The reader presents the e-book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons will go 10 pages at a time.
 
 As for the e-books list, the **DOUBLE-CLICK-SELECT** button will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
+
+![E-Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
 
 - **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed e-book.
 - **E-Books List** - This will get you out of the e-book reader, returning to the e-books list.
@@ -100,17 +103,21 @@ The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one op
 
 As indicated in section 2.1, the EPub-InkPlate parameters' form allows for the modification of some items available to the user that will change some application behavior. Each item is presented with a list of options selectable through the use of the keys.
 
+![The Parameters Form](pictures/Parameters-before-selection.png){ width=50% }
+
 The following items are displayed:
 
 - **Minutes before sleeping** - Options: 5, 10 or 15 minutes. This is the timeout period for which the application will wait before entering a Deep Sleep state. Deep Sleep is a means by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of a key. 
-- **Battery Visualisation** - Options: NONE, PERCENT, VOLTAGE, ICON. This option is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the e-books list and the e-book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). The ICON is shown for all options, but NONE.
-- **Default Font Size** - Options: 8, 10, 12, 15 points. This option will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Changing the size of the fonts will trigger refreshing the page's location for all e-books.
-- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This option selects the orientation of the device, such that the keys will be located on the left, the right, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
-- **OK and CANCEL** - When entering in the parameters form, the CANCEL option is selected. That means that none of the modifications done in the form will be kept. Before leaving the form, it is necessary to select the OK option to get the selection options been saved.
+- **Battery Visualisation** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the e-books list and the e-book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
+- **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Changing the size of the fonts will trigger refreshing the page's location for all e-books.
+- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This item selects the orientation of the device, such that the keys will be located on the left, the right, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
+- **OK and CANCEL** - When entering in the parameters form, the CANCEL option is selected. That means that none of the modifications done in the form will be kept. Before leaving the form, it is necessary to select the OK option to get the selected options been saved.
 
 When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. A bigger rectangle appears around all options of the first item in the form. It is a thin line rectangle, called the selecting box below, that can be moved from an item to the other.
 
 To be able to modify an item, you must first move the selecting box from one item to the other using the **NEXT** and **PREVIOUS** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options. You can change the current option with the **NEXT** and **PREVIOUS** button. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
+
+![Battery Visualisation is selected](pictures/parameters-after-selection.png){ width=50% }
 
 To quit the form, use the **DOUBLE-CLICK-SELECT** button. If the OK options as been selected before using that button, the new selected options will then be saved and applied by the application.
 

@@ -11,19 +11,19 @@ The installation consists of
 - Preparing an SD-Card with the appropriate information.
 - Uploading the application to the InkPlate-6 device.
   
-The last version of the binaries for the Inkplate-6 are located in release bundles that you will find with the application GitHub [project](https://github.com/turgu1/EPub-InkPlate). This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
+The last version of the binaries for the Inkplate-6 are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
 
 (You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
 
 ### Prerequesite
 
-The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 2 and 3. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: https://wiki.python.org/moin/BeginnersGuide/Download). Then, to install esptool, the following command must be executed (in a shell window):
+The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 2 and 3. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, to install esptool, the following command must be executed (in a shell window):
 
 ```sh
 $ pip install esptool
 ```
 
-You then must retrieve the release from the Github repository. Look at this [location](https://github.com/turgu1/EPub-InkPlate/releases) on GitHub. The file to download is **release.Vxxxx.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in markdown format.
+You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release.VX.X.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in markdown format.
 
 
 ### Preparing the SD-Card

@@ -64,6 +64,7 @@ class AppController
     void key_event(EventMgr::KeyEvent key);
 
     void going_to_deep_sleep();
+    void launch();
 
   private:
     static constexpr char const * TAG = "AppController";
@@ -72,8 +73,6 @@ class AppController
     Ctrl current_ctrl;
     Ctrl next_ctrl;
     Ctrl last_ctrl[LAST_COUNT]; ///< LIFO of last controllers in use
-
-    void launch();
 };
 
 #if __APP_CONTROLLER__
