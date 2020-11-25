@@ -17,6 +17,7 @@ class BooksDirController
     int16_t current_index;
     
     int32_t book_offset;
+    int16_t book_ref_idx;
     int16_t book_page_nbr;
     int16_t book_index;
     std::string book_filename;
@@ -29,7 +30,7 @@ class BooksDirController
     void key_event(EventMgr::KeyEvent key);
     void enter();
     void leave(bool going_to_deep_sleep = false);
-    void save_last_book(int32_t current_page_offset, bool going_to_deep_sleep);
+    void save_last_book(int16_t itemref_index, int32_t current_page_offset, bool going_to_deep_sleep);
     void show_last_book();
 };
 

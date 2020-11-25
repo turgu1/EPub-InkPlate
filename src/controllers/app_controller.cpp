@@ -89,6 +89,8 @@ void AppController::launch()
 void 
 AppController::key_event(EventMgr::KeyEvent key)
 {
+  if (next_ctrl != NONE) launch();
+
   switch (current_ctrl) {
     case DIR: books_dir_controller.key_event(key); break;
     case BOOK:     book_controller.key_event(key); break;
@@ -102,6 +104,8 @@ AppController::key_event(EventMgr::KeyEvent key)
 void
 AppController::going_to_deep_sleep()
 {
+  if (next_ctrl != NONE) launch();
+
   switch (current_ctrl) {
     case DIR: books_dir_controller.leave(true); break;
     case BOOK:     book_controller.leave(true); break;

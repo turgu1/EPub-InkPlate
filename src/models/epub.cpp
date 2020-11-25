@@ -25,6 +25,7 @@ EPub::EPub()
   file_is_open      = false;
   opf_base_path.clear();
   current_itemref   = xml_node(NULL);
+  current_filename.clear();
 }
 
 EPub::~EPub()
@@ -415,6 +416,7 @@ EPub::get_item(pugi::xml_node itemref)
 bool 
 EPub::open_file(const std::string & epub_filename)
 {
+  if (file_is_open && (current_filename == epub_filename)) return true;
   if (file_is_open) close_file();
 
   page_locs.clear();
@@ -442,6 +444,7 @@ EPub::open_file(const std::string & epub_filename)
   }
 
   current_itemref_index = 0;
+  current_filename = epub_filename;
   file_is_open = true;
 
   LOG_D("EPub file is now open.");
@@ -490,6 +493,7 @@ EPub::close_file()
   fonts.clear();
 
   file_is_open = false;
+  current_filename.clear();
 
   return true;
 }
@@ -667,14 +671,19 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
 }
 
 int16_t 
-EPub::get_page_nbr_from_offset(int32_t offset)
+EPub::get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset)
 { 
   int16_t page_nbr = 0;
   bool found = false;
   for (auto loc : page_locs) {
-    if (loc.offset > offset) { found = true; break; }
+    if ((loc.itemref_index == ref_idx) && (loc.offset >= offset)) { found = true; break; }
     page_nbr++;
   }
-  LOG_D("get_page_nbr_from_offset: offset: %d, page: %d, found: %s", offset, page_nbr, found ? "YES" : "NO");
+  LOG_D("get_page_nbr_from_ref_offset: ref index: %d offset: %d, page: %d, found: %s", 
+        ref_idx, 
+        offset, 
+        page_nbr, 
+        found ? "YES" : "NO");
+        
   return found ? page_nbr : 0;
 }

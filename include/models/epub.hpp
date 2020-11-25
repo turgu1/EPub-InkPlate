@@ -37,6 +37,7 @@ class EPub
     int16_t current_itemref_index;
     char *  opf_data;
     char *  current_item_data;
+    std::string current_filename;
     std::string opf_base_path;
     std::string current_item_file_path;
 
@@ -91,7 +92,7 @@ class EPub
      * @param offset The offset from the beginning of the book.
      * @return int16_t The page number, or 0 if offset is too large.
      */
-    int16_t get_page_nbr_from_offset(int32_t offset);
+    int16_t get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset);
 
     CSSList     & get_css_cache() { return css_cache; };
     CSS         * get_current_item_css() { return current_item_css; };
