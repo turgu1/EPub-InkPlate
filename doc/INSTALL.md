@@ -1,6 +1,4 @@
-# EPub-InkPlate - An EPub Reader for the InkPlate-6 device
-
-## Installation Guide
+# EPub-InkPlate - Installation Guide
 
 (This is a draft version. It will be adjusted to add information for installation from an MS Windows platform)
 
@@ -11,7 +9,7 @@ The installation consists of
 - Preparing an SD-Card with the appropriate information.
 - Uploading the application to the InkPlate-6 device.
   
-The last version of the binaries for the Inkplate-6 are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
+The last version of the binaries for the Inkplate-6 are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
 
 (You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
 
@@ -23,7 +21,7 @@ The *esptool* is a Python program that is used to upload an application to an ES
 $ pip install esptool
 ```
 
-You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release.VX.X.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in markdown format.
+You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release.VX.X.X.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in PDF format.
 
 
 ### Preparing the SD-Card
@@ -50,7 +48,8 @@ esptool.py v3.0
 Serial port /dev/ttyUSB0
 Connecting......
 Chip is ESP32-D0WDQ6 (revision 1)
-Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, 
+  > Coding Scheme None
 Crystal is 40MHz
 MAC: fc:f5:c4:1b:4e:cc
 Uploading stub...
@@ -61,13 +60,16 @@ Changed.
 Configuring flash size...
 Auto-detected Flash size: 4MB
 Compressed 25136 bytes to 15148...
-Wrote 25136 bytes (15148 compressed) at 0x00001000 in 0.7 seconds (effective 297.9 kbit/s)...
+Wrote 25136 bytes (15148 compressed) at 0x00001000 in 0.7 seconds
+  > (effective 297.9 kbit/s)...
 Hash of data verified.
 Compressed 3072 bytes to 143...
-Wrote 3072 bytes (143 compressed) at 0x00008000 in 0.0 seconds (effective 2244.8 kbit/s)...
+Wrote 3072 bytes (143 compressed) at 0x00008000 in 0.0 seconds
+  > (effective 2244.8 kbit/s)...
 Hash of data verified.
 Compressed 1086128 bytes to 554716...
-Wrote 1086128 bytes (554716 compressed) at 0x00010000 in 24.9 seconds (effective 348.5 kbit/s)...
+Wrote 1086128 bytes (554716 compressed) at 0x00010000 in 24.9 seconds
+  > (effective 348.5 kbit/s)...
 Hash of data verified.
 
 Leaving...

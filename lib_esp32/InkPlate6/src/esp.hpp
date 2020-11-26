@@ -34,9 +34,9 @@ class ESP
     static inline long millis() { return (unsigned long) (esp_timer_get_time() / 1000); }
 
     static void IRAM_ATTR delay_microseconds(uint32_t micro_seconds) {
-      uint32_t m = esp_timer_get_time();
-      if (micro_seconds > 0) {
-        uint32_t e = m + micro_seconds;
+      uint64_t m = esp_timer_get_time();
+      if (micro_seconds > 2) {
+        uint64_t e = m + micro_seconds;
         if (m > e) {
           while (esp_timer_get_time() > e) asm volatile ("nop"); // overflow...
         }
@@ -46,7 +46,7 @@ class ESP
 
     static void delay(uint32_t milliseconds) {
       if (milliseconds < portTICK_PERIOD_MS) {
-        taskYIELD();
+        //taskYIELD();
       }
       else {
         vTaskDelay(milliseconds / portTICK_PERIOD_MS);
@@ -78,8 +78,6 @@ class ESP
       ESP_LOGD(TAG, "+----- HEAPS DATA -----+");
       ESP_LOGD(TAG, "| Total heap:  %7d |",  heap_caps_get_total_size(MALLOC_CAP_8BIT  ));
       ESP_LOGD(TAG, "| Free heap:   %7d |",    heap_caps_get_free_size(MALLOC_CAP_8BIT  ));
-      ESP_LOGD(TAG, "| Total PSRAM: %7d |", heap_caps_get_total_size(MALLOC_CAP_SPIRAM));
-      ESP_LOGD(TAG, "| Free PSRAM:  %7d |",   heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
       ESP_LOGD(TAG, "+----------------------+");
     }
 };

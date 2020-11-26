@@ -9,6 +9,8 @@
 #include "logging.hpp"
 #include "driver/i2c.h"
 
+#include <cstring>
+
 Wire Wire::singleton;
 
 void
@@ -18,6 +20,8 @@ Wire::setup()
 
   if (!initialized) {
     i2c_config_t config;
+
+    memset(&config, 0, sizeof(i2c_config_t));
 
     config.mode             = I2C_MODE_MASTER;
     config.scl_io_num       = GPIO_NUM_22;

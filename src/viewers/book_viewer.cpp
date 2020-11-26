@@ -89,7 +89,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         case IMAGE:
           break;
       #else
-        case IMG: {
+        case IMG: if (show_images) {
             xml_attribute attr = node.attribute("src");
             if (attr != nullptr) {
               std::string filename = attr.value();
@@ -97,7 +97,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
             }
           }
           break;
-        case IMAGE: {
+        case IMAGE: if (show_images) {
             xml_attribute attr = node.attribute("xlink:href");
             if (attr != nullptr) {
               std::string filename = attr.value();
@@ -165,7 +165,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       }
     }
 
-    if (image_is_present) {
+    if (show_images && image_is_present) {
       if (!page.add_image(image, fmt)) {
         page_locs_end_page(fmt);
         if (start_of_paragraph) {
@@ -277,6 +277,10 @@ BookViewer::build_page_locs()
 
   page.set_compute_mode(Page::LOCATION);
 
+  int8_t images_are_shown;
+  config.get(Config::USE_FONTS_IN_BOOKS, &images_are_shown);
+  show_images = images_are_shown == 1;
+  
   epub.clear_page_locs(1500);
 
   if (epub.get_first_item()) {
@@ -340,6 +344,8 @@ BookViewer::build_page_locs()
     }
   }
 
+  page.set_compute_mode(Page::DISPLAY);
+  
   return done;
 }
 
@@ -663,7 +669,7 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
         case IMAGE:
           break;
       #else
-        case IMAGE: {
+        case IMAGE: if (show_images && started) {
             xml_attribute attr = node.attribute("xlink:href");
             if (attr != nullptr) {
               std::string filename = attr.value();
@@ -672,7 +678,7 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
           }
           break;
         case IMG: {
-            if (started) { 
+            if (show_images && started) { 
               xml_attribute attr = node.attribute("src");
               if (attr != nullptr) {
                 std::string filename = attr.value();
@@ -744,7 +750,7 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
     }
     
     if (current_offset >= end_of_page_offset) return true;
-    if (image_is_present) {
+    if (show_images && image_is_present) {
       if ((current_offset + 1) <= start_of_page_offset) {
         // As we move from the beginning of a file, we bypass everything that is there before
         // the start of the page offset
@@ -859,6 +865,10 @@ BookViewer::build_page_at(const EPub::Location & loc)
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
 
   page.set_compute_mode(Page::MOVE);
+
+  int8_t images_are_shown;
+  config.get(Config::USE_FONTS_IN_BOOKS, &images_are_shown);
+  show_images = images_are_shown == 1;
 
   if (epub.get_item_at_index(loc.itemref_index)) {
 

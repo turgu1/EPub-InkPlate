@@ -10,7 +10,8 @@ class Config
 {
   public:
     enum Ident { 
-      SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, VERSION 
+      SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, VERSION,
+      USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES 
     };
 
   private:
@@ -28,7 +29,7 @@ class Config
     };
 
     FILE *f;
-    static std::array<Config::ConfigDescr, 8> cfg;
+    static std::array<Config::ConfigDescr, 11> cfg;
     bool modified;
 
     bool parse_line(
@@ -42,7 +43,7 @@ class Config
     bool get(Ident id, int8_t  * val);
     bool get(Ident id, std::string & val);
     void put(Ident id, int32_t val);
-    void put(Ident id, int8_t val);
+    void put(Ident id, int8_t  val);
     void put(Ident id, std::string & val);
 
     bool read();

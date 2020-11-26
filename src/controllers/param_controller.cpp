@@ -14,6 +14,9 @@
 
 #if EPUB_INKPLATE6_BUILD
   #include "esp_system.h"
+  #include "eink.hpp"
+  #include "esp.hpp"
+  #include "soc/rtc.h"
 #endif
 
 static void 
@@ -36,12 +39,6 @@ wifi_mode()
     }
   #endif
 }
-
-// static void
-// parameters()
-// {
-
-// }
 
 static MenuViewer::MenuEntry menu[6] = {
   { MenuViewer::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },

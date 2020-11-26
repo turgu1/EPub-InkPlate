@@ -6,6 +6,7 @@
 example
 build
 test-books
+release*
 SDCard/epub-test
 SDCard/books/Broken
 SDCard/books/Broken2
@@ -13,4 +14,3 @@ SDCard/books/Done
 SDCard/books/temp
 SDCard/books_dir.db
 SDCard/last_book.txt
-SDCard/books/test*

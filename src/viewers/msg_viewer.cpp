@@ -56,6 +56,8 @@ void MsgViewer::show(
   fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
   fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
 
+  page.set_compute_mode(Page::DISPLAY);
+  
   page.start(fmt);
 
   page.clear_region(

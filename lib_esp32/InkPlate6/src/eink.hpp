@@ -90,10 +90,10 @@ class EInk : NonCopyable
     static const uint8_t  LUTW[16];
     static const uint8_t  LUTB[16];
 
-    static const uint8_t CL    = 0x01;
-    static const uint8_t CKV   = 0x01;
-    static const uint8_t SPH   = 0x02;
-    static const uint8_t LE    = 0x04;
+    static const uint32_t CL   = 0x01;
+    static const uint32_t CKV  = 0x01;
+    static const uint32_t SPH  = 0x02;
+    static const uint32_t LE   = 0x04;
 
     static const uint32_t DATA = 0x0E8C0030;
 

@@ -2,11 +2,11 @@
 
 ## Last news
 
-(Updated 2020.11.23)
+(Updated 2020.11.25)
 
 Work in progress... 
 
-The development is complete. The application is at version 0.9. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`.
+The development is complete. The application is at version 0.9.2. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
 - [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
 - [x] Menu capability
@@ -56,18 +56,16 @@ The first release functionalities:
 - TTF and OTF embedded fonts support
 - Normal, Bold, Italic, Bold+Italic face types
 - Bitmap images dithering display (JPEG, PNG)
-- EPUB (V2, V3) ebook format subset
+- EPub (V2, V3) book format subset
 - UTF-8 characters
-- Page progression direction: Left then Right
-- Screen orientation (buttons in left, right, down positions)
-- InkPlate-6 tactile keys (single and double click to get 6 buttons)
-- left, center, right, and justify text alignments
-- indentation
+- InkPlate-6 tactile keys (single and double click to get six buttons)
+- Screen orientation (buttons located to the left, right, down positions from the screen)
+- Left, center, right, and justify text alignments
+- Indentation
 - Some basic parameters and options
-- Books list in title alphabetical order
 - Limited CSS formatting
 - WiFi-based documents download
-- Battery management (light, deep sleep, battery level display)
+- Battery state and power management (light, deep sleep, battery level display)
 
 Some elements to consider in the future (no specific order of priority):
 

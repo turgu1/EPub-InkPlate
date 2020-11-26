@@ -50,7 +50,7 @@ class Screen : NonCopyable
       }
       else {
         if (partial_count <= 0) {
-          e_ink.clean();
+          //e_ink.clean();
           e_ink.update(*frame_buffer);
           partial_count = PARTIAL_COUNT_ALLOWED;
         }

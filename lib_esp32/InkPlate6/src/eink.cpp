@@ -117,11 +117,17 @@ EInk::setup()
     ESP_LOGD(TAG, "MCP initialized.");
   }
 
-  mcp.set_direction(MCP::WAKEUP, MCP::OUTPUT); ESP::delay(100);
-  mcp.wakeup_set();                            ESP::delay(100);
+  mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
+  mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
+  mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT); 
+  mcp.set_direction(MCP::GPIO0_ENABLE, MCP::OUTPUT);
+  mcp.digital_write(MCP::GPIO0_ENABLE, HIGH);
 
+  mcp.wakeup_set(); 
+ 
   //ESP_LOGD(TAG, "Power Mgr Init..."); fflush(stdout);
 
+  ESP::delay(1);
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x09);
   wire.write(0b00011011); // Power up seq.
@@ -134,11 +140,6 @@ EInk::setup()
   //ESP_LOGD(TAG, "Power init completed");
 
   mcp.wakeup_clear();
-
-  mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
-  mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
-  mcp.set_direction(MCP::GPIO0_ENABLE, MCP::OUTPUT);
-  mcp.digital_write(MCP::GPIO0_ENABLE, HIGH);
 
   // CONTROL PINS
   gpio_set_direction(GPIO_NUM_0,  GPIO_MODE_OUTPUT);
@@ -189,7 +190,8 @@ EInk::setup()
   return true;
 }
 
-void 
+#if 1
+void IRAM_ATTR 
 EInk::update_1bit(const Bitmap1Bit & bitmap)
 {
   ESP_LOGD(TAG, "update_1bit...");
@@ -209,11 +211,11 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   clean_fast(2,  1);
   clean_fast(0, 12);
 
-  for (int k = 0; k < 4; ++k) {
+  for (int8_t k = 0; k < 4; k++) {
     ptr = &bitmap[BITMAP_SIZE_1BIT - 1];
     vscan_start();
 
-    for (int i = 0; i < HEIGHT; i++) {
+    for (uint16_t i = 0; i < HEIGHT; i++) {
       dram = *ptr--;
       send = PIN_LUT[LUTB[dram >> 4]];
       hscan_start(send);
@@ -221,7 +223,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
       GPIO.out_w1ts = CL | send;
       GPIO.out_w1tc = CL | DATA;
 
-      for (int j = 0; j < LINE_SIZE_1BIT - 1; j++) {
+      for (uint16_t j = 0; j < LINE_SIZE_1BIT - 1; j++) {
         dram = *ptr--;
         send = PIN_LUT[LUTB[dram >> 4]];
         GPIO.out_w1ts = CL | send;
@@ -241,7 +243,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   ptr = &bitmap[BITMAP_SIZE_1BIT - 1];
   vscan_start();
 
-  for (int i = 0; i < HEIGHT; i++) {
+  for (uint16_t i = 0; i < HEIGHT; i++) {
     dram = *ptr--;
     send = PIN_LUT[LUT2[dram >> 4]];
     hscan_start(send);
@@ -249,7 +251,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
     GPIO.out_w1ts = CL | send;
     GPIO.out_w1tc = CL | DATA;
     
-    for (int j = 0; j < LINE_SIZE_1BIT - 1; j++) {
+    for (uint16_t j = 0; j < LINE_SIZE_1BIT - 1; j++) {
       dram = *ptr--;
       send = PIN_LUT[LUT2[dram >> 4]];
       GPIO.out_w1ts = CL | send;
@@ -268,7 +270,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   vscan_start();
 
   send = PIN_LUT[0];
-  for (int i = 0; i < HEIGHT; i++) {
+  for (uint16_t i = 0; i < HEIGHT; i++) {
     hscan_start(send);
     GPIO.out_w1ts = CL | send;
     GPIO.out_w1tc = CL | DATA;
@@ -294,7 +296,123 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   partial_allowed = true;
 }
 
-void 
+#else
+
+void IRAM_ATTR 
+EInk::update_1bit(const Bitmap1Bit & bitmap)
+{
+    memcpy(d_memory_new, bitmap, 60000);
+
+    uint32_t _send;
+    uint8_t data;
+    uint8_t dram;
+    turn_on();
+    
+    clean_fast(0, 1);
+    clean_fast(1, 21);
+    clean_fast(2, 1);
+    clean_fast(0, 12);
+    clean_fast(2, 1);
+    clean_fast(1, 21);
+    clean_fast(2, 1);
+    clean_fast(0, 12);
+    
+    for (int k = 0; k < 4; ++k)
+    {
+        uint8_t *DMemoryNewPtr = ((uint8_t *)&d_memory_new) + 59999;
+        vscan_start();
+        for (int i = 0; i < 600; ++i)
+        {
+            dram = *(DMemoryNewPtr--);
+            data = LUTB[dram >> 4];
+            _send = PIN_LUT[data];
+            hscan_start(_send);
+            data = LUTB[dram & 0x0F];
+            _send = PIN_LUT[data];
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+
+            for (int j = 0; j < 99; ++j)
+            {
+                dram = *(DMemoryNewPtr--);
+                data = LUTB[dram >> 4];
+                _send = PIN_LUT[data];
+                GPIO.out_w1ts = (_send) | CL;
+                GPIO.out_w1tc = DATA | CL;
+                data = LUTB[dram & 0x0F];
+                _send = PIN_LUT[data];
+                GPIO.out_w1ts = (_send) | CL;
+                GPIO.out_w1tc = DATA | CL;
+            }
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+            vscan_end();
+        }
+        ESP::delay_microseconds(230);
+    }
+
+    uint16_t _pos = 59999;
+    vscan_start();
+    for (int i = 0; i < 600; ++i)
+    {
+        dram = *(((uint8_t *)&d_memory_new) + _pos);
+        data = LUT2[dram >> 4];
+        _send = PIN_LUT[data];
+        hscan_start(_send);
+        data = LUT2[dram & 0x0F];
+        _send = PIN_LUT[data];
+        GPIO.out_w1ts = (_send) | CL;
+        GPIO.out_w1tc = DATA | CL;
+        _pos--;
+        for (int j = 0; j < 99; ++j)
+        {
+            dram = *(((uint8_t *)&d_memory_new) + _pos);
+            data = LUT2[dram >> 4];
+            _send = PIN_LUT[data];
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+            data = LUT2[dram & 0x0F];
+            _send = PIN_LUT[data];
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+            _pos--;
+        }
+        GPIO.out_w1ts = (_send) | CL;
+        GPIO.out_w1tc = DATA | CL;
+        vscan_end();
+    }
+    ESP::delay_microseconds(230);
+
+    vscan_start();
+    for (int i = 0; i < 600; ++i)
+    {
+        dram = *(((uint8_t *)&d_memory_new) + _pos);
+        data = 0;
+        _send = PIN_LUT[data];
+        hscan_start(_send);
+        data = 0;
+        GPIO.out_w1ts = (_send) | CL;
+        GPIO.out_w1tc = DATA | CL;
+        for (int j = 0; j < 99; ++j)
+        {
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+            GPIO.out_w1ts = (_send) | CL;
+            GPIO.out_w1tc = DATA | CL;
+        }
+        GPIO.out_w1ts = (_send) | CL;
+        GPIO.out_w1tc = DATA | CL;
+        vscan_end();
+    }
+    ESP::delay_microseconds(230);
+
+    vscan_start();
+    turn_off();
+    partial_allowed = true;
+}
+#endif
+
+void IRAM_ATTR 
 EInk::update_3bit(const Bitmap3Bit & bitmap)
 {
   ESP_LOGD(TAG, "Update_3bit...");
@@ -386,7 +504,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
   turn_off();
 }
 
-void 
+void IRAM_ATTR 
 EInk::partial_update(const Bitmap1Bit & bitmap)
 {
   if (!partial_allowed) {
@@ -458,36 +576,31 @@ EInk::clean()
   m++; clean_fast((WAVEFORM[m] >> 30) & 3, 10);
 }
 
-void 
+void IRAM_ATTR 
 EInk::clean_fast(uint8_t c, uint8_t rep)
 {
+  static uint8_t byte[4] = { 0b10101010, 0b01010101, 0b00000000, 0b11111111 };
+
   turn_on();
-  
-  uint8_t data = 0;
- 
-  if      (c == 0) data = 0b10101010;
-  else if (c == 1) data = 0b01010101;
-  else if (c == 2) data = 0b00000000;
-  else if (c == 3) data = 0b11111111;
 
-  uint32_t send = PIN_LUT[data];
+  uint32_t send = PIN_LUT[byte[c]];
 
-  for (int k = 0; k < rep; k++) {
+  for (int8_t k = 0; k < rep; k++) {
     vscan_start();
 
-    for (int i = 0; i < HEIGHT; i++) {
+    for (uint16_t i = 0; i < HEIGHT; i++) {
       hscan_start(send);
       GPIO.out_w1ts = CL | send;
-      GPIO.out_w1tc = CL | DATA;
+      GPIO.out_w1tc = CL;
 
-      for (int j = 0; j < LINE_SIZE_1BIT - 1; j++) {
-        GPIO.out_w1ts = CL | send;
-        GPIO.out_w1tc = CL | DATA;
-        GPIO.out_w1ts = CL | send;
-        GPIO.out_w1tc = CL | DATA;
+      for (uint16_t j = 0; j < LINE_SIZE_1BIT - 1; j++) {
+        GPIO.out_w1ts = CL;
+        GPIO.out_w1tc = CL;
+        GPIO.out_w1ts = CL;
+        GPIO.out_w1tc = CL;
       }
-      GPIO.out_w1ts = CL | send;
-      GPIO.out_w1tc = CL | DATA;
+      GPIO.out_w1ts = CL;
+      GPIO.out_w1tc = CL;
       vscan_end();
     }
 

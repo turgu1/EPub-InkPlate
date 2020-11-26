@@ -4,16 +4,24 @@
 
 #define __FONTS__ 1
 #include "models/fonts.hpp"
+#include "models/config.hpp"
 #include "alloc.hpp"
 
 #include <algorithm>
 
-#define FONT_NAME "CrimsonPro"
-//#define FONT_NAME "Caladea"
-//#define FONT_NAME "RedHatDisplay"
+static const char * font_names[4] = {
+  "CrimsonPro",
+  "Caladea",
+  "Asap",
+  "AsapCondensed"
+};
 
-#define FONT_EXT "ttf"
-//#define FONT_EXT "otf"
+static const char * font_ext[4] = {
+  "ttf",
+  "ttf",
+  "otf",
+  "ttf"
+};
 
 Fonts::Fonts()
 {
@@ -30,15 +38,21 @@ bool Fonts::setup()
 
   LOG_D("Fonts initialization");
 
+  clear(true);
+
+  int8_t font_index;
+  config.get(Config::DEFAULT_FONT, &font_index);
+  if ((font_index < 0) || (font_index > 3)) font_index = 0;
+
   std::string def         = "Default";
   std::string draw        = "Drawings";
 
   std::string drawings    = FONTS_FOLDER "/drawings.ttf";
   
-  std::string normal      = FONTS_FOLDER "/" FONT_NAME "-Regular."    FONT_EXT;
-  std::string bold        = FONTS_FOLDER "/" FONT_NAME "-Bold."       FONT_EXT;
-  std::string italic      = FONTS_FOLDER "/" FONT_NAME "-Italic."     FONT_EXT;
-  std::string bold_italic = FONTS_FOLDER "/" FONT_NAME "-BoldItalic." FONT_EXT;
+  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular."   ).append(font_ext[font_index]);
+  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold."      ).append(font_ext[font_index]);
+  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic."    ).append(font_ext[font_index]);
+  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.").append(font_ext[font_index]);
 
   if (!add(draw, NORMAL,      drawings   )) return false;
   if (!add(def,  NORMAL,      normal     )) return false;
@@ -58,18 +72,18 @@ Fonts::~Fonts()
 }
 
 void
-Fonts::clear()
+Fonts::clear(bool all)
 {
   // LOG_D("Fonts Clear!");
   // Keep the first 5 fonts as they are reused. Caches will be cleared.
   #if USE_EPUB_FONTS
     int i = 0;
     for (auto & entry : font_cache) {
-      if (i >= 5) delete entry.font;
+      if (all || (i >= 5)) delete entry.font;
       else entry.font->clear_cache();
       i++;
     }
-    font_cache.resize(4);
+    font_cache.resize(all ? 0 : 4);
     font_cache.reserve(20);
   #endif
 }

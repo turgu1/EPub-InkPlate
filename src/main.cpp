@@ -34,7 +34,6 @@
   void 
   mainTask(void * params) 
   {
-  
     esp_err_t nvs_err = nvs_flash_init();
     if (nvs_err != ESP_OK) {
       if ((nvs_err == ESP_ERR_NVS_NO_FREE_PAGES) || (nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {

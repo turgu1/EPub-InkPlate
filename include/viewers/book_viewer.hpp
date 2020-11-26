@@ -28,6 +28,7 @@ class BookViewer
     int32_t end_of_page_offset;
     int16_t current_page_nbr;
     int16_t page_bottom;
+    bool    show_images;
     
     CSS::Properties * last_props;
 

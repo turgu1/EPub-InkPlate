@@ -7,6 +7,7 @@
 
 #include "models/fonts.hpp"
 #include "models/books_dir.hpp"
+#include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "helpers/unzip.hpp"
 #include "logging.hpp"
@@ -200,6 +201,11 @@ void
 EPub::retrieve_fonts_from_css(CSS & css)
 {
 #if USE_EPUB_FONTS
+  int8_t use_fonts_in_books;
+  config.get(Config::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
+
+  if (use_fonts_in_books == 0) return;
+  
   const CSS::PropertySuite * suite = css.get_property_suite("@font-face");
 
   if (suite == nullptr) return;

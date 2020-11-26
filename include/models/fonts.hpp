@@ -35,8 +35,10 @@ class Fonts
      * 
      * This will keep the default fonts loaded from the application folder. It will clean
      * all glyphs in all fonts caches.
+     * 
+     * @param all If true, default fonts will also be removed
      */
-    void clear();
+    void clear(bool all = false);
 
     TTF * get(int16_t index, int16_t size) {
       TTF * f; 
