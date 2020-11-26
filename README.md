@@ -31,6 +31,8 @@ Here are some of the steps remaining to be done:
 
 - [ ] Error dialog use (80% completion)
 - [ ] Debugging remaining issues
+      - Images are not displayed properly
+      - e-ink update not as fast as expected
   
 ----
 
