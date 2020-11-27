@@ -15,7 +15,7 @@ class FormViewer
   private:
     static constexpr uint8_t MAX_FORM_ENTRY   =  10;
     static constexpr uint8_t MAX_CHOICE_ENTRY =  30;
-    static constexpr uint8_t FONT_SIZE        =  10;
+    static constexpr uint8_t FONT_SIZE        =   9;
     static constexpr uint8_t TOP_YPOS         = 100;
     static constexpr uint8_t BOTTOM_YPOS      =  50;
 
@@ -37,6 +37,7 @@ class FormViewer
     int16_t all_choices_width;
     int16_t last_choices_width;
     int8_t  current_entry_idx;
+    int8_t  line_height;
     bool    entry_selection;
     bool    highlight_selection;
 

@@ -305,13 +305,25 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t size)
 }
 
 void
-TTF::get_size(const char * str, int16_t & width, int16_t & height)
+TTF::get_size(const char * str, int16_t * width, int16_t * height)
 {
-  width  = 0;
-  height = get_line_height();
+  int16_t max_up   = 0;
+  int16_t max_down = 0;
+
+  *width  = 0;
 
   while (*str) {
     BitmapGlyph * glyph = get_glyph(*str++);
-    if (glyph) width += glyph->advance;
+    if (glyph) {
+      *width += glyph->advance;
+
+      int16_t up   = -glyph->yoff;
+      int16_t down =  glyph->rows + glyph->yoff;
+    
+      if (up   > max_up  ) max_up   = up;
+      if (down > max_down) max_down = down;
+    }
   }
+
+  *height = max_up + max_down;
 }

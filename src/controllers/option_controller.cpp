@@ -54,14 +54,14 @@ static FormViewer::Choice orientation_choices[3] = {
 };
 
 static FormViewer::Choice font_choices[8] = {
-  { "Caladea S",     0 },
-  { "Crimson S",     1 },
-  { "Asap",          2 },
-  { "Asap Cond",     3 },
-  { "DejaVu S",      4 },
-  { "DejaVu Cond S", 5 },
-  { "DejaVu",        6 },
-  { "DejaVu Cond",   7 }
+  { "CALADEA S",     0 },
+  { "CRIMSON S",     1 },
+  { "ASAP",          2 },
+  { "ASAP COND",     3 },
+  { "DEJAVU S",      4 },
+  { "DEJAVU COND S", 5 },
+  { "DEJAVU",        6 },
+  { "DEJAVU COND",   7 }
 };
 
 // static int8_t boolean_value;
@@ -80,15 +80,17 @@ static int8_t old_show_images;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 
-static FormViewer::FormEntry main_params_form_entries[5] = {
+static constexpr int8_t MAIN_FORM_SIZE = 5;
+static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { "Minutes before sleeping :", &timeout,                3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",   &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
   { "Buttons Position (*):",     (int8_t *) &orientation, 3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
   { "Show Images in books (*):", &show_images,            2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",   &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
   { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
 };
 
-static FormViewer::FormEntry font_params_form_entries[4] = {
+static constexpr int8_t FONT_FORM_SIZE = 4;
+static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::HORIZONTAL_CHOICES },
   { "Use fonts in books (*):",   &use_fonts_in_books,     2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
   { "Default font (*):",         &default_font,           8, font_choices,        FormViewer::VERTICAL_CHOICES   },
@@ -108,12 +110,10 @@ main_parameters()
 
   old_orientation = orientation;
   old_show_images = show_images;
-
   ok              = 0;
 
-  form_viewer.show(main_params_form_entries, 5, 
-    "(*) These items may trigger Books Pages Location Refresh.  "
-    "Double-click on Select button to leave the form.");
+  form_viewer.show(main_params_form_entries, MAIN_FORM_SIZE, 
+    "(*) These items may trigger Books Refresh.");
 
   option_controller.set_main_form_is_shown();
 }
@@ -131,9 +131,8 @@ font_parameters()
 
   ok                     = 0;
 
-  form_viewer.show(font_params_form_entries, 4, 
-    "(*) These items may trigger Books Pages Location Refresh.  "
-    "Double-click on Select button to leave the form.");
+  form_viewer.show(font_params_form_entries, FONT_FORM_SIZE, 
+    "(*) These items may trigger Books Refresh.");
 
   option_controller.set_font_form_is_shown();
 }

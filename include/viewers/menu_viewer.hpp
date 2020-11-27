@@ -27,6 +27,13 @@ class MenuViewer
 
     uint8_t current_entry_index;
     uint8_t max_index;
+    int16_t icon_height, 
+            icon_ypos, 
+            text_height, 
+            line_height,
+            text_ypos,
+            region_height;
+
     struct EntryLoc {
       int16_t x, y;
       uint8_t width, height;

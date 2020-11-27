@@ -99,7 +99,7 @@ class TTF
 
     void clear_cache();
 
-    void get_size(const char * str, int16_t & width, int16_t & height);
+    void get_size(const char * str, int16_t * width, int16_t * height);
 
   private:
     static constexpr uint16_t BYTE_POOL_SIZE = 4096;

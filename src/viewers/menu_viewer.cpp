@@ -13,9 +13,20 @@
 
 void MenuViewer::show(MenuEntry * the_menu)
 {
-  TTF * font = fonts.get(0, 16);
+  TTF * font = fonts.get(1, 12);
 
-  int16_t xpos = 10, ypos = 45;
+  line_height = font->get_line_height();
+  text_height = line_height - font->get_descender_height(); 
+
+  font = fonts.get(0, 16);
+  TTF::BitmapGlyph * icon = font->get_glyph('A', true);
+
+  icon_height = icon->rows;
+
+  icon_height   = icon->rows;
+  icon_ypos     = 10 + icon_height;
+  text_ypos     = icon_ypos + line_height + 10;
+  region_height = text_ypos + 20;
 
   Page::Format fmt = {
     .line_height_factor = 1.0,
@@ -40,12 +51,14 @@ void MenuViewer::show(MenuEntry * the_menu)
 
   page.start(fmt);
 
-  page.clear_region(Screen::WIDTH, fmt.screen_bottom, 0, 0);
+  page.clear_region(Screen::WIDTH, region_height, 0, 0);
 
   menu = the_menu;
 
   uint8_t idx = 0;
 
+  int16_t xpos = 10, ypos = icon_ypos;
+  
   while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != END_MENU)) {
 
     char ch = icon_char[menu[idx].icon];
@@ -58,7 +71,7 @@ void MenuViewer::show(MenuEntry * the_menu)
     entry_locs[idx].height = glyph->rows;
 
     page.put_char_at(ch, xpos, ypos, fmt);
-    xpos += 60;
+    xpos += 60; // space between icons
 
     idx++;
   }
@@ -76,9 +89,9 @@ void MenuViewer::show(MenuEntry * the_menu)
   fmt.font_size  = 12;
   
   std::string txt = menu[0].caption; 
-  page.put_str_at(txt, 10, 80, fmt);
+  page.put_str_at(txt, 10, text_ypos, fmt);
 
-  page.put_highlight(Screen::WIDTH - 20, 3, 10, 85);
+  page.put_highlight(Screen::WIDTH - 20, 3, 10, region_height - 12);
 
   page.paint(false);
 }
@@ -99,7 +112,7 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
     .screen_left        =  10,
     .screen_right       =  10,
     .screen_top         =  10,
-    .screen_bottom      =  90,
+    .screen_bottom      =   0,
     .width              =   0,
     .height             =   0,
     .trim               = true,
@@ -156,10 +169,10 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
     fmt.font_index = 1;
     fmt.font_size  = 12;
     
-    page.clear_region(Screen::WIDTH, 30, 0, 55);
+    page.clear_region(Screen::WIDTH, text_height, 0, text_ypos - line_height);
 
     std::string txt = menu[current_entry_index].caption; 
-    page.put_str_at(txt, 10, 75, fmt);
+    page.put_str_at(txt, 10, text_ypos, fmt);
   }
 
   page.paint(false);
