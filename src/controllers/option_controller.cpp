@@ -53,11 +53,15 @@ static FormViewer::Choice orientation_choices[3] = {
   { "BOTTOM", 2 }
 };
 
-static FormViewer::Choice font_choices[4] = {
-  { "CALADEA",        0 },
-  { "CRIMSON",        1 },
-  { "ASAP",           2 },
-  { "ASAP CONDENSED", 3 }
+static FormViewer::Choice font_choices[8] = {
+  { "Caladea S",     0 },
+  { "Crimson S",     1 },
+  { "Asap",          2 },
+  { "Asap Cond",     3 },
+  { "DejaVu S",      4 },
+  { "DejaVu Cond S", 5 },
+  { "DejaVu",        6 },
+  { "DejaVu Cond",   7 }
 };
 
 // static int8_t boolean_value;
@@ -87,7 +91,7 @@ static FormViewer::FormEntry main_params_form_entries[5] = {
 static FormViewer::FormEntry font_params_form_entries[4] = {
   { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::HORIZONTAL_CHOICES },
   { "Use fonts in books (*):",   &use_fonts_in_books,     2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,           4, font_choices,        FormViewer::VERTICAL_CHOICES   },
+  { "Default font (*):",         &default_font,           8, font_choices,        FormViewer::VERTICAL_CHOICES   },
   { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
 };
 

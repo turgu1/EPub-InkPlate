@@ -9,18 +9,15 @@
 
 #include <algorithm>
 
-static const char * font_names[4] = {
+static const char * font_names[8] = {
   "CrimsonPro",
   "Caladea",
   "Asap",
-  "AsapCondensed"
-};
-
-static const char * font_ext[4] = {
-  "ttf",
-  "ttf",
-  "otf",
-  "ttf"
+  "AsapCondensed",
+  "DejaVuSerif",
+  "DejaVuSerifCondensed",
+  "DejaVuSans",
+  "DejaVuSansCondensed",
 };
 
 Fonts::Fonts()
@@ -42,17 +39,17 @@ bool Fonts::setup()
 
   int8_t font_index;
   config.get(Config::DEFAULT_FONT, &font_index);
-  if ((font_index < 0) || (font_index > 3)) font_index = 0;
+  if ((font_index < 0) || (font_index > 7)) font_index = 0;
 
   std::string def         = "Default";
   std::string draw        = "Drawings";
 
-  std::string drawings    = FONTS_FOLDER "/drawings.ttf";
+  std::string drawings    = FONTS_FOLDER "/drawings.woff";
   
-  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular."   ).append(font_ext[font_index]);
-  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold."      ).append(font_ext[font_index]);
-  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic."    ).append(font_ext[font_index]);
-  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.").append(font_ext[font_index]);
+  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.woff"   );
+  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.woff"      );
+  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.woff"    );
+  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.woff");
 
   if (!add(draw, NORMAL,      drawings   )) return false;
   if (!add(def,  NORMAL,      normal     )) return false;

@@ -147,6 +147,9 @@ void
 InkPlate6Ctrl::deep_sleep()
 {
   esp_err_t err;
+  if ((err = esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER)) != ESP_OK) {
+    LOG_E("Unable to disable Sleep wait time: %d", err);
+  }
   if ((err = esp_sleep_enable_ext0_wakeup(GPIO_NUM_34, 1)) != ESP_OK) {
     LOG_E("Unable to set ext0 WakeUp for Deep Sleep: %d", err);
   }

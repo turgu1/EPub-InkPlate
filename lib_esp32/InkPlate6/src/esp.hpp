@@ -60,12 +60,6 @@ class ESP
       return adc1_get_raw(channel);
     }
 
-    // This needs option CONFIG_SPIRAM_USE in sdconfig to be 
-    // set to "Make RAM allocatable using heap_caps_malloc(…, MALLOC_CAP_SPIRAM)" 
-    //
-    // In sdconfig, the option can be found here:
-    //   Component config > ESP32-specific > CONFIG_ESP32_SPIRAM_SUPPORT > SPI RAM config
-    //
     static void * ps_malloc(uint32_t size) { 
       void * mem = heap_caps_malloc(size, MALLOC_CAP_SPIRAM); 
       if (mem == nullptr) {
