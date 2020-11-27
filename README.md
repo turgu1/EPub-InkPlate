@@ -2,11 +2,11 @@
 
 ## Last news
 
-(Updated 2020.11.25)
+(Updated 2020.11.27)
 
 Work in progress... 
 
-The development is complete. The application is at version 0.9.2. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
+The development is complete. The application is at version 0.9.3. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
 - [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
 - [x] Menu capability
@@ -55,7 +55,7 @@ A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube t
 
 The first release functionalities:
 
-- TTF and OTF embedded fonts support
+- TTF, and OTF embedded fonts support
 - Normal, Bold, Italic, Bold+Italic face types
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
@@ -93,11 +93,28 @@ And potentially many more...
 
 The EPub-InkPlate application requires that a micro-SD Card be present in the device. This micro-SD Card must be pre-formatted with a FAT32 partition. Two folders must be present in the partition: `fonts` and `books`. You must put the base fonts in the `fonts` folder and your EPub books in the `books` folder. The books must have the extension `.epub` in lowercase. 
 
-You can change the base fonts at your desire (TrueType or OpenType only). Some open fonts are available in the `SDCard/fonts` folder on the GitHub EPub-InkPlate project. Four fonts are mandatory to supply regular, italic, bold, and bold-italic glyphs. The standard ASCII codes must be present in these fonts as the application uses them for all interactions with the user. Please choose fonts that do not take too much space in memory as they are loaded in memory at the start time for performance purposes. At this point, the font filenames must be adjusted in file `src/fonts.cpp` in method `Fonts::setup()` if you want to use other default fonts than the ones currently defined. This will eventually be made easier to configure through a config file...
+Height font types are supplied with the application. For each type, there are four fonts supplied, to support regular, bold, oblique, and bold-italic glyphs. The application offers the user to select one of those font types as the default font. The fonts have been cleaned-up and contain only Latin-1 glyphs.
 
-Another font is mandatory. It can be found in `SDCard/fonts/drawings.ttf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
+Another font is mandatory. It can be found in `SDCard/fonts/drawings.otf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
 
-The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card. It is refreshed by the application at boot time and when the user requires it to do so through the parameters menu. The refresh process is very long (between 1 and 3 minutes per book) but is required to get fast changes between e-book displacement requests by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a big difference in duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied e-books is ~3 minutes. With a slow card (very old Sandisk 4GB), it took 8 minutes 20 seconds.
+The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card and is automatically maintained by the application. It is refreshed at boot time and when the user requires it to do so through the parameters menu. The refresh process is very long (between 1 and 3 minutes per book) but is required to get fast page changes as requested by the user. The update algorithm will scan only the new books appearing in the `books` folder. In this regard, there is a big difference in duration between using slow cards and fast cards. The author made some tests with cards in hands. With SanDisk Ultra cards (both 16GB and 32GB), the scan duration with the two supplied e-books is ~3 minutes. With a slow card (very old Sandisk 4GB), it took 8 minutes 20 seconds.
+
+### Fonts cleanup
+
+All fonts have been subsetted to Latin-1 plus some usual characters. The `fonts/orig` folder in the GitHub project contains all original fonts that are processed using the script `fonts/subsetter.sh`. This script uses the Python **pyftsubset** tool that is part of the **fontTools** package. To install the tool, you need to execute the following command:
+
+```bash
+$ pip install fonttools brotli zopfli
+```
+
+The script takes all font from the `orig` folder and generate the new subset fonts in `subset-latin1/otf` folder. The following commands must be executed:
+
+```bash
+$ cd fonts
+$ ./subsetter.sh
+```
+
+After that, all fonts in the `subset-latin1/otf` folder must be copied back in the `SDCard/fonts` folder.
 
 ## Development environment
 

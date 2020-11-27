@@ -17,7 +17,7 @@ static const char * font_names[8] = {
   "DejaVuSerif",
   "DejaVuSerifCondensed",
   "DejaVuSans",
-  "DejaVuSansCondensed",
+  "DejaVuSansCondensed"
 };
 
 Fonts::Fonts()
@@ -44,12 +44,12 @@ bool Fonts::setup()
   std::string def         = "Default";
   std::string draw        = "Drawings";
 
-  std::string drawings    = FONTS_FOLDER "/drawings.woff";
+  std::string drawings    = FONTS_FOLDER "/drawings.otf";
   
-  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.woff"   );
-  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.woff"      );
-  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.woff"    );
-  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.woff");
+  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.otf"   );
+  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.otf"      );
+  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
+  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
 
   if (!add(draw, NORMAL,      drawings   )) return false;
   if (!add(def,  NORMAL,      normal     )) return false;

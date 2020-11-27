@@ -204,6 +204,13 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   turn_on();
 
   clean_fast(0,  1);
+  clean_fast(1, 21);
+  clean_fast(2,  1);
+  clean_fast(0, 12);
+  clean_fast(2,  1);
+  clean_fast(1, 21);
+  clean_fast(2,  1);
+  clean_fast(0, 12);
 
   for (int8_t k = 0; k < 4; k++) {
     ptr = &bitmap[BITMAP_SIZE_1BIT - 1];

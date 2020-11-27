@@ -1,4 +1,4 @@
-# EPub-InkPlate - User's Guide - Version 0.9.2
+# EPub-InkPlate - User's Guide - Version 0.9.3
 **(Draft document)**
 
 The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate-6 ESP32 based device.
@@ -132,7 +132,7 @@ The following items are displayed:
 
 - **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Changing the size of the fonts will trigger refreshing the page's location for all books.
 - **Use fonts in books** - If a book contains embeded fonts, this item permits to indicate if those fonts are to be used to present the pages. Changing the use of fonts in books will trigger refreshing the page's location for all books.
-- **Default font** - Three fonts are supllied with the application. This item permits the selection of the font to be used by default. Changing the default font will trigger refreshing the page's location for all books.
+- **Default font** - Height fonts are supllied with the application. This item permits the selection of the font to be used by default. Changing the default font will trigger refreshing the page's location for all books. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
 
 - **OK and CANCEL** - When entering in the parameters form, the CANCEL option is selected. That means that none of the modifications done in the form will be kept. Before leaving the form, it is necessary to select the OK option to get the selected options been saved.
    

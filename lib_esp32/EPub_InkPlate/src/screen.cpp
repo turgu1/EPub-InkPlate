@@ -252,4 +252,5 @@ void Screen::setup()
 {
   frame_buffer = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
   clear();
+  e_ink.clean();
 }

@@ -5,7 +5,7 @@
 # This script is used to minify fonts loaded by the application
 # to optimize the use of the available memory. Latin-1 is the subset
 # targetted by this script. It can be updated to extract other subsets.
-# ALl input fonts are in TTF or OTF formats. The output format is WOFF and
+# All input fonts are in TTF or OTF formats. The output format is OTF and
 # greatly minimized as no special features are kept.
 #
 # Guy Turcotte, November 2020
@@ -17,6 +17,9 @@ FOLDER_OUT=subset-latin1
 
 FONTS=(Asap AsapCondensed Caladea CrimsonPro DejaVuSans DejaVuSansCondensed DejaVuSerif DejaVuSerifCondensed RedHatDisplay)
 SUBS=(Regular Bold BoldItalic Italic)
+
+mkdir $FOLDER_OUT/woff
+mkdir $FOLDER_OUT/otf
 
 for name in ${FONTS[@]}; do
   for sub in ${SUBS[@]}; do
@@ -34,9 +37,13 @@ for name in ${FONTS[@]}; do
       fi
     fi
     if [ -f $FOLDER_IN/$font_name.$ext ]; then
-      pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/$font_name.woff" --flavor=woff --layout-features='' --unicodes="$LATIN1"
+      pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/woff/$font_name.woff" --flavor=woff --layout-features='' --unicodes="$LATIN1"
+      ./woff2otf.py "$FOLDER_OUT/woff/$font_name.woff" "$FOLDER_OUT/otf/$font_name.otf"
     fi
   done
 done
 
-pyftsubset "$FOLDER_IN/drawings.ttf" --output-file="$FOLDER_OUT/drawings.woff" --flavor=woff --layout-features='' --unicodes='*'
+pyftsubset "$FOLDER_IN/drawings.ttf" --output-file="$FOLDER_OUT/woff/drawings.woff" --flavor=woff --layout-features='' --unicodes='*'
+./woff2otf.py "$FOLDER_OUT/woff/drawings.woff" "$FOLDER_OUT/otf/drawings.otf"
+
+rm "$FOLDER_OUT/woff/*"
