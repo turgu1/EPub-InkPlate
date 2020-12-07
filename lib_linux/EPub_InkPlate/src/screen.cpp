@@ -19,7 +19,6 @@ Screen Screen::singleton;
 
 uint16_t Screen::WIDTH;
 uint16_t Screen::HEIGHT;
-Screen::Orientation Screen::orientation;
 
 const uint8_t Screen::LUT1BIT[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
@@ -59,28 +58,37 @@ Screen::draw_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  static int16_t err[601];
-  int16_t error;
-  memset(err, 0, 601*2);
+  if (pixel_resolution == ONE_BIT) {
+    static int16_t err[601];
+    int16_t error;
+    memset(err, 0, 601*2);
 
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
-      int32_t v = bitmap_data[p] + err[k + 1];
-      if (v > 128) {
-        error = (v - 255);
-        setrgb(g, j, i, id.stride, 255);
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+        int32_t v = bitmap_data[p] + err[k + 1];
+        if (v > 128) {
+          error = (v - 255);
+          setrgb(g, j, i, id.stride, 255);
+        }
+        else {
+          error = v;
+          setrgb(g, j, i, id.stride, 0);
+        }
+        if (k != 0) {
+          err[k - 1] += error / 8;
+        }
+        err[k]     += 3 * error / 8;
+        err[k + 1]  =     error / 8;
+        err[k + 2] += 3 * error / 8;
       }
-      else {
-        error = v;
-        setrgb(g, j, i, id.stride, 0);
-      }
-      if (k != 0) {
-        err[k - 1] += error / 8;
-      }
-      err[k]     += 3 * error / 8;
-      err[k + 1]  =     error / 8;
-      err[k + 2] += 3 * error / 8;
     }
+  }
+  else {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * width; i < x_max; i++, p++) {
+        setrgb(g, j, i, id.stride, bitmap_data[p]);
+      }
+    }    
   }
 }
 
@@ -153,15 +161,30 @@ Screen::draw_glyph(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int j = y, q = 0; j < y_max; j++, q++) {
-    for (int i = x, p = (q * pitch) << 3; i < x_max; i++, p++) {
-      // int v = (255 - bitmap_data[p]);
-      // if (v != 255) {
-      //   v &= 0xE0; // 8 levels of grayscale
-      //   setrgb(g, j, i, id.stride, v);
-      // }
-      uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-      if (v) setrgb(g, j, i, id.stride, 0);
+  if (pixel_resolution == ONE_BIT) {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = (q * pitch) << 3; i < x_max; i++, p++) {
+        // int v = (255 - bitmap_data[p]);
+        // if (v != 255) {
+        //   v &= 0xE0; // 8 levels of grayscale
+        //   setrgb(g, j, i, id.stride, v);
+        // }
+        uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
+        if (v) setrgb(g, j, i, id.stride, 0);
+      }
+    }
+  }
+  else {
+    for (int j = y, q = 0; j < y_max; j++, q++) {
+      for (int i = x, p = q * pitch; i < x_max; i++, p++) {
+        // int v = (255 - bitmap_data[p]);
+        // if (v != 255) {
+        //   v &= 0xE0; // 8 levels of grayscale
+        //   setrgb(g, j, i, id.stride, v);
+        // }
+        uint8_t v = (255 - bitmap_data[p]) & 0xE0;
+        if (v != 0xE0) setrgb(g, j, i, id.stride, v);
+      }
     }
   }
 }
@@ -200,20 +223,19 @@ Screen::update(bool no_full)
   gtk_image_set_from_pixbuf(GTK_IMAGE(id.image), gtk_image_get_pixbuf(id.image));
 }
 
-static void destroy_app( GtkWidget *widget, gpointer   data )
+static void 
+destroy_app( GtkWidget *widget, gpointer   data )
 {
   gtk_main_quit();
 }
 
-void
-Screen::setup()
+void 
+Screen::setup(PixelResolution resolution, Orientation orientation)
 {
-  static GtkWidget 
-    * vbox1,
-    // * vbox2,
-    * hbox1
-    // * hbox2
-  ;
+  set_orientation(orientation);
+  set_pixel_resolution(resolution);
+
+  static GtkWidget * vbox1, * hbox1;
 
   gtk_init(nullptr, nullptr);
 
@@ -250,20 +272,16 @@ Screen::setup()
 
   vbox1 = gtk_box_new(GTK_ORIENTATION_VERTICAL,    5);
   hbox1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,  5);
-  // vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL,    5);
-  // hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,  5);
 
   gtk_box_set_homogeneous(GTK_BOX(vbox1), FALSE);
   gtk_box_set_homogeneous(GTK_BOX(hbox1), FALSE);
-  // gtk_box_set_homogeneous(GTK_BOX(vbox2), FALSE);
-  // gtk_box_set_homogeneous(GTK_BOX(hbox2), TRUE);
 
-    left_button = gtk_button_new_with_label(" < "   );
-   right_button = gtk_button_new_with_label(" > "   );
-      up_button = gtk_button_new_with_label(" << "  );
-    down_button = gtk_button_new_with_label(" >> "  );
-  select_button = gtk_button_new_with_label("Select");
-    home_button = gtk_button_new_with_label("DClick-Select"  );
+    left_button = gtk_button_new_with_label(" < "          );
+   right_button = gtk_button_new_with_label(" > "          );
+      up_button = gtk_button_new_with_label(" << "         );
+    down_button = gtk_button_new_with_label(" >> "         );
+  select_button = gtk_button_new_with_label("Select"       );
+    home_button = gtk_button_new_with_label("DClick-Select");
 
   gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(id.image     ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(up_button    ), FALSE, FALSE, 0);
@@ -272,11 +290,47 @@ Screen::setup()
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(down_button  ), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(select_button), TRUE,  TRUE,  0);
   gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(home_button  ), FALSE, FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1), FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1        ), FALSE, FALSE, 0);
 
   gtk_container_add (GTK_CONTAINER(window), GTK_WIDGET(vbox1));
 
   g_signal_connect(window, "destroy", G_CALLBACK(destroy_app), nullptr);
 
   gtk_widget_show_all(window);
+}
+
+void 
+Screen::set_pixel_resolution(PixelResolution resolution, bool force)
+{
+  if (force || (pixel_resolution != resolution)) {
+    pixel_resolution = resolution;
+    // if (pixel_resolution == ONE_BIT) {
+    //   if (frame_buffer_3bit != nullptr) {
+    //     free(frame_buffer_3bit);
+    //     frame_buffer_3bit = nullptr;
+    //   }
+    //   frame_buffer_1bit = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
+    // }
+    // else {
+    //   if (frame_buffer_1bit != nullptr) {
+    //     free(frame_buffer_1bit);
+    //     frame_buffer_1bit = nullptr;
+    //   }
+    //   frame_buffer_3bit = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
+    // }
+  }
+}
+
+void 
+Screen::set_orientation(Orientation orient) 
+{
+  orientation = orient;
+  if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
+    WIDTH  = 600;
+    HEIGHT = 800;
+  }
+  else {
+    WIDTH  = 800;
+    HEIGHT = 600;
+  }
 }

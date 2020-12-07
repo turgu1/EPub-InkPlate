@@ -46,6 +46,7 @@ class MsgViewer {
     
     void show_progress(const char * title, ...);
     void add_dot();
+    void out_of_memory(const char * raison);
 };
 
 #if __MSG_VIEWER__

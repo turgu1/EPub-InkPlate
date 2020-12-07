@@ -33,19 +33,6 @@ class MCP : NonCopyable
 {
   private:
     static constexpr char const * TAG = "MCP";
-
-    static const uint8_t MCP_ADDRESS = 0x20;
-    uint8_t registers[22];
-
-    static MCP singleton;
-    MCP() { memset(registers, 0, 22); }; // Not instanciable
-
-  public:
-    static inline MCP & get_singleton() noexcept { return singleton; }
-
-    enum PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
-    enum IntMode : uint8_t { CHANGE,   FALLING,      RISING };
-    enum IntPort : uint8_t { INTPORTA, INTPORTB             };
     enum Reg     : uint8_t {
       IODIRA   = 0x00,
       IODIRB   = 0x01,
@@ -71,6 +58,29 @@ class MCP : NonCopyable
       OLATB    = 0x15 
     };
 
+    static const uint8_t MCP_ADDRESS = 0x20;
+    uint8_t registers[22];
+
+    static MCP singleton;
+    MCP() { memset(registers, 0, 22); }; // Not instanciable
+
+    void read_all_registers();
+    
+    void   read_registers(Reg first_reg, uint8_t count);
+    uint8_t read_register(Reg reg);
+    
+    void update_all_registers();
+    
+    void   update_register(Reg reg,       uint8_t  value);
+    void  update_registers(Reg first_reg, uint8_t  count);
+
+  public:
+    static inline MCP & get_singleton() noexcept { return singleton; }
+
+    enum PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
+    enum IntMode : uint8_t { CHANGE,   FALLING,      RISING };
+    enum IntPort : uint8_t { INTPORTA, INTPORTB             };
+
     // The following are definitions taylored for the InkPlate-6 IO usage.
 
     enum Pin : uint8_t {
@@ -87,19 +97,12 @@ class MCP : NonCopyable
       TOUCH_2        = 12
     };
 
+    // BEFORE CALLING ANY OF THE FOLLOWING METHODS, ENSURE THAT THE Wire I2C
+    // CLASS IS PROTECTED THROUGH THE USE OF Wire::enter() and Wire::leave() METHODS.
+    
     void test();
     
     bool setup();
-
-    void read_all_registers();
-    
-    void   read_registers(Reg first_reg, uint8_t count);
-    uint8_t read_register(Reg reg);
-    
-    void update_all_registers();
-    
-    void   update_register(Reg reg,       uint8_t  value);
-    void  update_registers(Reg first_reg, uint8_t  count);
 
     void    set_direction(Pin pin, PinMode mode);
     void    digital_write(Pin pin, uint8_t state);

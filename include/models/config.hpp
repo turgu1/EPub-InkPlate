@@ -11,11 +11,11 @@ class Config
   public:
     enum Ident { 
       SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, VERSION,
-      USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES 
+      USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION 
     };
 
   private:
-    static constexpr char const * TAG = "Config"; 
+    static constexpr char const * TAG         = "Config"; 
     static constexpr char const * CONFIG_FILE = MAIN_FOLDER "/config.txt";
     enum EntryType { STRING, INT, BYTE };
 
@@ -29,7 +29,7 @@ class Config
     };
 
     FILE *f;
-    static std::array<Config::ConfigDescr, 11> cfg;
+    static std::array<Config::ConfigDescr, 12> cfg;
     bool modified;
 
     bool parse_line(
@@ -39,11 +39,11 @@ class Config
   public:
     Config() : f(nullptr), modified(false) {};
 
-    bool get(Ident id, int32_t * val);
-    bool get(Ident id, int8_t  * val);
+    bool get(Ident id, int32_t     * val);
+    bool get(Ident id, int8_t      * val);
     bool get(Ident id, std::string & val);
-    void put(Ident id, int32_t val);
-    void put(Ident id, int8_t  val);
+    void put(Ident id, int32_t       val);
+    void put(Ident id, int8_t        val);
     void put(Ident id, std::string & val);
 
     bool read();

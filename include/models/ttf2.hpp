@@ -39,7 +39,7 @@ class TTF
     TTF(unsigned char * buffer, int32_t size);
    ~TTF();
 
-    int16_t index;
+    int16_t fonts_cache_index;
     
     inline bool ready() const { return face != nullptr; }
     
@@ -86,7 +86,11 @@ class TTF
     int32_t get_em_width() { 
       return (face == nullptr) ? 0 : face->size->metrics.x_ppem; 
     }
-    
+
+    int32_t get_em_height() { 
+      return (face == nullptr) ? 0 : face->size->metrics.y_ppem; 
+    }
+
     /**
      * @brief Face descender height
      * 
@@ -102,7 +106,7 @@ class TTF
     void get_size(const char * str, int16_t * width, int16_t * height);
 
   private:
-    static constexpr uint16_t BYTE_POOL_SIZE = 4096;
+    static constexpr uint16_t BYTE_POOL_SIZE = 16384;
 
     typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
     typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;

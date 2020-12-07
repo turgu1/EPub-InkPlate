@@ -40,9 +40,11 @@
       .width              = 0,
       .height             = 0,
       .trim               = true,
+      .pre                = false,
       .font_style         = Fonts::NORMAL,
       .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM
+      .text_transform     = CSS::NO_TRANSFORM,
+      .display            = CSS::INLINE
     };
 
     // Show battery icon

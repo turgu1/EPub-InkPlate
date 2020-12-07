@@ -15,6 +15,7 @@ static int8_t   font_size;
 static int8_t   use_fonts_in_books;
 static int8_t   default_font;
 static int8_t   show_images;
+static int8_t   resolution;
 
 static int32_t  default_port               = 80;
 static int8_t   default_battery            =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
@@ -24,9 +25,10 @@ static int8_t   default_timeout            = 15;  // 5, 15, 30 minutes
 static int8_t   default_show_images        =  0;  // 0 = NO, 1 = YES
 static int8_t   default_use_fonts_in_books =  1;  // 0 = NO, 1 = YES
 static int8_t   default_default_font       =  1;  // 0 = CALADEA, 1 = CRIMSON, 2 = RED HAT, 3 = ASAP
+static int8_t   default_resolution         =  0;  // 0 = 1bit, 1 = 3bits
 static int8_t   the_version                =  1;
 
-std::array<Config::ConfigDescr, 11> Config::cfg = {{
+std::array<Config::ConfigDescr, 12> Config::cfg = {{
  { VERSION,            BYTE,   "version",            &version,            &the_version,                0 },
  { SSID,               STRING, "wifi_ssid",          ssid,                "NONE",                     32 },
  { PWD,                STRING, "wifi_pwd",           pwd,                 "NONE",                     32 },
@@ -37,7 +39,8 @@ std::array<Config::ConfigDescr, 11> Config::cfg = {{
  { DEFAULT_FONT,       BYTE,   "default_font",       &default_font,       &default_default_font,       0 },
  { USE_FONTS_IN_BOOKS, BYTE,   "use_fonts_in_books", &use_fonts_in_books, &default_use_fonts_in_books, 0 },
  { SHOW_IMAGES,        BYTE,   "show_images",        &show_images,        &default_show_images,        0 },
- { ORIENTATION,        BYTE,   "orientation",        &orientation,        &default_orientation,        0 }
+ { ORIENTATION,        BYTE,   "orientation",        &orientation,        &default_orientation,        0 },
+ { PIXEL_RESOLUTION,   BYTE,   "resolution",         &resolution,         &default_resolution,         0 }
 }};
 
 bool 

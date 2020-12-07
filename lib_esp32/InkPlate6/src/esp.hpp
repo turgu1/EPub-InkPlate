@@ -55,7 +55,7 @@ class ESP
 
     static int16_t analog_read(adc1_channel_t channel) {
       adc1_config_width(ADC_WIDTH_BIT_12);
-      adc1_config_channel_atten(channel, ADC_ATTEN_MAX);
+      adc1_config_channel_atten(channel, ADC_ATTEN_DB_11);
 
       return adc1_get_raw(channel);
     }
@@ -71,7 +71,7 @@ class ESP
     static void show_heaps_info() {
       ESP_LOGD(TAG, "+----- HEAPS DATA -----+");
       ESP_LOGD(TAG, "| Total heap:  %7d |",  heap_caps_get_total_size(MALLOC_CAP_8BIT  ));
-      ESP_LOGD(TAG, "| Free heap:   %7d |",    heap_caps_get_free_size(MALLOC_CAP_8BIT  ));
+      ESP_LOGD(TAG, "| Free heap:   %7d |",   heap_caps_get_free_size(MALLOC_CAP_8BIT  ));
       ESP_LOGD(TAG, "+----------------------+");
     }
 };

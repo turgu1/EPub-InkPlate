@@ -68,14 +68,14 @@
 
     if (fonts.setup()) {
       
-      Screen::Orientation orient;
-      config.get(Config::ORIENTATION, (int8_t *) &orient);
-      screen.set_orientation(orient);
-
-      screen.setup();
+      Screen::Orientation    orientation;
+      Screen::PixelResolution resolution;
+      config.get(Config::ORIENTATION,     (int8_t *) &orientation);
+      config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution);
+      screen.setup(resolution, orientation);
 
       event_mgr.setup();
-      event_mgr.set_orientation(orient);
+      event_mgr.set_orientation(orientation);
 
       if (nvs_err != ESP_OK) {
         msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
@@ -164,11 +164,12 @@
 
     if (fonts.setup()) {
 
-      Screen::Orientation orient;
-      config.get(Config::ORIENTATION, (int8_t *) &orient);
-      screen.set_orientation(orient);
+      Screen::Orientation    orientation;
+      Screen::PixelResolution resolution;
+      config.get(Config::ORIENTATION,     (int8_t *) &orientation);
+      config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution);
+      screen.setup(resolution, orientation);
 
-      screen.setup();
       event_mgr.setup();
       books_dir_controller.setup();
 

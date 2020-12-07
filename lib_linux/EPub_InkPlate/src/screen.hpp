@@ -28,11 +28,13 @@ class Screen : NonCopyable
   public:
     static uint16_t WIDTH;
     static uint16_t HEIGHT;
-    static enum Orientation : int8_t { O_LEFT, O_RIGHT, O_BOTTOM } orientation;
-    static const uint16_t RESOLUTION      =  166;  ///< Pixels per inch
-    static const uint8_t  HIGHLIGHT_COLOR = 0x00;
-    static const uint8_t  WHITE_COLOR     = 0xFF;
+    static const uint16_t RESOLUTION  =  166;  ///< Pixels per inch
+    static const uint8_t  BLACK_COLOR = 0x00;
+    static const uint8_t  WHITE_COLOR = 0xFF;
     
+    enum Orientation     : int8_t { O_LEFT, O_RIGHT, O_BOTTOM };
+    enum PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+
     void draw_bitmap(const unsigned char * bitmap_data, 
                     uint16_t width, uint16_t height, 
                     int16_t x, int16_t y);
@@ -62,21 +64,15 @@ class Screen : NonCopyable
       int rows, cols, stride;
     };
     ImageData id;
+    PixelResolution pixel_resolution;
+    Orientation     orientation;
 
   public:
     static Screen & get_singleton() noexcept { return singleton; }
-    void setup();
-    void set_orientation(Orientation orient) {
-      orientation = orient;
-      if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
-        WIDTH  = 600;
-        HEIGHT = 800;
-      }
-      else {
-        WIDTH  = 800;
-        HEIGHT = 600;
-      }
-    }
+    void setup(PixelResolution resolution, Orientation orientation);
+    void set_pixel_resolution(PixelResolution resolution, bool force = false);
+    void set_orientation(Orientation orient);
+    inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     
     GtkWidget
       * window, 

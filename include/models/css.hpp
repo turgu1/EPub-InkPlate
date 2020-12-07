@@ -7,6 +7,7 @@
 
 #include "global.hpp"
 #include "memory_pool.hpp"
+#include "logging.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -55,7 +56,7 @@
     counter-reset
     cursor
     direction
-    display
+ *  display
     empty-cells
     float
     font
@@ -121,10 +122,11 @@ class CSS
     enum     ValueType : uint8_t { NOTHING, PT, PX, EM, CM, VH, VW, PERCENT, STR, URL, NOTYPE };
     enum         Align : uint8_t { LEFT_ALIGN = 0, CENTER_ALIGN, RIGHT_ALIGN, JUSTIFY };
     enum TextTransform : uint8_t { NO_TRANSFORM, UPPERCASE, LOWERCASE, CAPITALIZE };
+    enum       Display : uint8_t { D_NONE, INLINE, BLOCK, INLINE_BLOCK };
     enum    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
                                    TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
                                    MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
-                                   WIDTH,      HEIGHT
+                                   WIDTH,      HEIGHT,      DISPLAY
                                   };
 
     struct Value {
@@ -182,13 +184,13 @@ class CSS
     void show() const;
 
     const PropertySuite * get_property_suite(const std::string & selector) const {
-      // std::cout << "Searching: " << selector << "... ";
+      //LOG_D("Searching: %s...", selector.c_str());
       CSS::RulesMap::const_iterator suite = rules_map.find(selector);
       if (suite != rules_map.end()) {
-        // std::cout << "FOUND!" << std::endl;
+        //LOG_D("FOUND!");
         return &suite->second;
       }
-      // std::cout << "No" << std::endl;
+      //LOG_D("No.");
       return nullptr;
     };
 
@@ -246,11 +248,11 @@ class CSS
       if (class_name.size() > 0) {
         suite = get_property_suite(element_name + "." + class_name);
         if (suite == nullptr) {
-          suite = get_property_suite(element_name);
-          if (suite == nullptr) {
-            suite = get_property_suite("." + class_name);
-            // DEBUG2("Searching:", sel, ((suite == nullptr) ? "NO" : "YES"));
-          }
+          suite = get_property_suite("." + class_name);
+          // if (suite == nullptr) {
+          //   // DEBUG2("Searching:", sel, ((suite == nullptr) ? "NO" : "YES"));
+          //   suite = get_property_suite(element_name);
+          // }
         }
       }
       else {

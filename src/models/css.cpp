@@ -7,6 +7,7 @@
 
 #include "models/fonts.hpp"
 #include "models/config.hpp"
+#include "viewers/msg_viewer.hpp"
 
 #include <cstring>
 #include <cctype>
@@ -32,7 +33,8 @@ CSS::PropertyMap CSS::property_map = {
   { "margin-left",    CSS::MARGIN_LEFT    },
   { "margin-right",   CSS::MARGIN_RIGHT   },
   { "width",          CSS::WIDTH          },
-  { "height",         CSS::HEIGHT         }
+  { "height",         CSS::HEIGHT         },
+  { "display",        CSS::DISPLAY        }
 };
 
 CSS::FontSizeMap CSS::font_size_map = {
@@ -180,6 +182,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
   Property * property;
 
   CSS::Properties * properties = properties_pool.newElement();
+  if (properties == nullptr) msg_viewer.out_of_memory("properties pool allocation");
 
   while (str < end) {
     str = parse_property_name(str, w);
@@ -201,7 +204,9 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
     bool skip_property = id == NOT_USED;
 
     if (!skip_property) {
-      property = property_pool.newElement();
+      if ((property = property_pool.newElement()) == nullptr) {
+        msg_viewer.out_of_memory("property pool allocation");
+      }
       property->values.clear();
       property->id = id;
     }
@@ -214,6 +219,7 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
       str = parse_value(str, v, buffer_start);
 
       if (!skip_property) {
+        if (v == nullptr) msg_viewer.out_of_memory("css pool allocation");
         v->choice = 0;
         if (property->id == TEXT_ALIGN) {
           if      (v->str.compare("left"     ) == 0) v->choice = LEFT_ALIGN;
@@ -245,6 +251,15 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
           else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice = Fonts::NORMAL;
           else {
             LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
+          }
+        }
+        else if (property->id == DISPLAY) {
+          if      (v->str.compare("none"        ) == 0) v->choice = D_NONE;
+          else if (v->str.compare("inline"      ) == 0) v->choice = INLINE;
+          else if (v->str.compare("block"       ) == 0) v->choice = BLOCK;
+          else if (v->str.compare("inline-block") == 0) v->choice = INLINE_BLOCK;
+          else {
+            LOG_E("display not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
           }
         }
         else if ((property->id == FONT_SIZE) && (v->value_type == STR)) {

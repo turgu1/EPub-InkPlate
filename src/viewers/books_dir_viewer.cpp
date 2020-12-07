@@ -48,9 +48,11 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
       .width              = 0,
       .height             = 0,
       .trim               = true,
+      .pre                = false,
       .font_style         = Fonts::NORMAL,
       .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM
+      .text_transform     = CSS::NO_TRANSFORM,
+      .display            = CSS::INLINE
     };
 
   page.start(fmt);
@@ -160,9 +162,11 @@ BooksDirViewer::highlight(int16_t item_idx)
       .width              = 0,
       .height             = 0,
       .trim               = true,
+      .pre                = false,
       .font_style         = Fonts::NORMAL,
       .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM
+      .text_transform     = CSS::NO_TRANSFORM,
+      .display            = CSS::INLINE
     };
 
     page.start(fmt);

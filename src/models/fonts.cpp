@@ -5,6 +5,7 @@
 #define __FONTS__ 1
 #include "models/fonts.hpp"
 #include "models/config.hpp"
+#include "viewers/msg_viewer.hpp"
 #include "alloc.hpp"
 
 #include <algorithm>
@@ -80,11 +81,18 @@ Fonts::clear(bool all)
       else entry.font->clear_cache();
       i++;
     }
-    font_cache.resize(all ? 0 : 4);
+    font_cache.resize(all ? 0 : 5);
     font_cache.reserve(20);
   #endif
 }
 
+void
+Fonts::clear_glyph_caches()
+{
+  for (auto & entry : font_cache) {
+    entry.font->clear_cache();
+  }
+}
 int16_t
 Fonts::get_index(const std::string & name, FaceStyle style)
 {
@@ -113,10 +121,15 @@ Fonts::add(const std::string & name,
   FontEntry f;
   if ((f.font = new TTF(filename))) {
     if (f.font->ready()) {
-      f.name        = name;
-      f.font->index = font_cache.size();
-      f.style       = style;
+      f.name                    = name;
+      f.font->fonts_cache_index = font_cache.size();
+      f.style                   = style;
       font_cache.push_back(f);
+
+      LOG_D("Font %s added to cache at index %d and style %d.",
+        f.name.c_str(), 
+        f.font->fonts_cache_index,
+        f.style);
       return true;
     }
     else {
@@ -125,6 +138,7 @@ Fonts::add(const std::string & name,
   }
   else {
     LOG_E("Unable to allocate memory.");
+    msg_viewer.out_of_memory("font allocation");
   }
 
   return false;
@@ -146,10 +160,15 @@ Fonts::add(const std::string & name,
 
   if ((f.font = new TTF(buffer, size))) {
     if (f.font->ready()) {
-      f.name        = name;
-      f.font->index = font_cache.size();
-      f.style       = style;
+      f.name                    = name;
+      f.font->fonts_cache_index = font_cache.size();
+      f.style                   = style;
       font_cache.push_back(f);
+
+      LOG_D("Font %s added to cache at index %d and style %d.",
+        f.name.c_str(), 
+        f.font->fonts_cache_index,
+        f.style);
       return true;
     }
     else {
@@ -158,6 +177,7 @@ Fonts::add(const std::string & name,
   }
   else {
     LOG_E("Unable to allocate memory.");
+    msg_viewer.out_of_memory("font allocation");
   }
 
   return false;

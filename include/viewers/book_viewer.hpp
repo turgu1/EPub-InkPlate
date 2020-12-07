@@ -32,7 +32,9 @@ class BookViewer
     
     CSS::Properties * last_props;
 
-    enum Element { BODY, P, LI, BR, H1, H2, H3, H4, H5, H6, B, I, A, IMG, IMAGE, EM, DIV, SPAN };
+    enum Element { BODY, P, LI, BR, H1, H2, H3, H4, H5, H6, 
+                   B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
+                   BLOCKQUOTE };
     
     typedef std::unordered_map<std::string, Element> Elements;
     Elements elements;
@@ -70,10 +72,10 @@ class BookViewer
   public:
 
     BookViewer() :
-      elements{{"p",     P}, {"div", DIV},     {"span", SPAN}, {"br",     BR}, {"h1",   H1},  
-               {"h2",   H2}, {"h3",   H3},     {"h4",     H4}, {"h5",     H5}, {"h6",   H6}, 
-               {"b",     B}, {"i",     I},     {"em",     EM}, {"body", BODY}, {"a",     A},
-               {"img", IMG}, {"image", IMAGE}, {"li",     LI}}
+      elements{{"p",     P}, {"div",     DIV}, {"span", SPAN}, {"br",     BR}, {"h1",                 H1},  
+               {"h2",   H2}, {"h3",       H3}, {"h4",     H4}, {"h5",     H5}, {"h6",                 H6}, 
+               {"b",     B}, {"i",         I}, {"em",     EM}, {"body", BODY}, {"a",                   A},
+               {"img", IMG}, {"image", IMAGE}, {"li",     LI}, { "pre",  PRE}, {"blockquote", BLOCKQUOTE}}
       {  }
 
     ~BookViewer() { }

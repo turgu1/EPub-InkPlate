@@ -77,6 +77,9 @@ BookController::key_event(EventMgr::KeyEvent key)
       if (current_page > 0) {
         book_viewer.show_page(--current_page);
       }
+      else {
+        current_page = epub.get_page_count() - 1;
+      }
       break;
     case EventMgr::KEY_DBL_PREV:
       current_page -= 10;
@@ -86,7 +89,7 @@ BookController::key_event(EventMgr::KeyEvent key)
     case EventMgr::KEY_NEXT:
       current_page += 1;
       if (current_page >= epub.get_page_count()) {
-        current_page = epub.get_page_count() - 1;
+        current_page = 0;
       }
       book_viewer.show_page(current_page);
       break;

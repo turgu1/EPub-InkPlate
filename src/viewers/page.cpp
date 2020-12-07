@@ -4,8 +4,10 @@
 
 #define __PAGE__ 1
 #include "viewers/page.hpp"
-
+#include "viewers/msg_viewer.hpp"
 #include "screen.hpp"
+
+#include <iostream>
 
 //--- Image load to bitmap tool ---
 //
@@ -20,12 +22,19 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STBIR_SATURATE_INT
 
 #include "stb_image.h"
 #include "stb_image_resize.h"
 
 #include <string>
 #include <algorithm>
+
+static void
+no_mem()
+{
+  msg_viewer.out_of_memory("display list allocation");
+}
 
 Page::Page() :
   compute_mode(DISPLAY), 
@@ -79,7 +88,7 @@ to_unicode(const char **str, CSS::TextTransform transform, bool first)
   if (*c == '&') {
     const uint8_t * s = ++c;
     uint8_t len = 0;
-    while ((len < 6) && (*s != ';')) { s++; len++; }
+    while ((len < 6) && (*s != 0) && (*s != ';')) { s++; len++; }
     if (*s == ';') {
       if      (strncmp("nbsp;", (const char *) c, 5) == 0) u = 160;
       else if (strncmp("lt;",   (const char *) c, 3) == 0) u =  60;
@@ -130,7 +139,7 @@ to_unicode(const char **str, CSS::TextTransform transform, bool first)
     else if (transform == CSS::LOWERCASE) u = tolower(u);
     else if (first && (transform == CSS::CAPITALIZE)) u = toupper(u);
   }
-  return done ? u : '?';
+  return done ? u : ' ';
 }
 
 void 
@@ -146,6 +155,7 @@ Page::put_str_at(const std::string & str, int16_t xpos, int16_t ypos, const Form
     while (*s) {
       if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
+        if (entry == nullptr) no_mem();
         entry->command = GLYPH;
         entry->kind.glyph_entry.glyph = glyph;
         entry->x = xpos + glyph->xoff;
@@ -204,6 +214,7 @@ Page::put_str_at(const std::string & str, int16_t xpos, int16_t ypos, const Form
       if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
         
         DisplayListEntry * entry = display_list_entry_pool.newElement();
+        if (entry == nullptr) no_mem();
         entry->command = GLYPH;
         entry->kind.glyph_entry.glyph = glyph;
         entry->x = x + glyph->xoff;
@@ -237,6 +248,7 @@ Page::put_char_at(char ch, int16_t xpos, int16_t ypos, const Format & fmt)
 
   if ((glyph = font->get_glyph(ch))) {
     DisplayListEntry * entry = display_list_entry_pool.newElement();
+    if (entry == nullptr) no_mem();
     entry->command = GLYPH;
     entry->kind.glyph_entry.glyph = glyph;
     entry->x = xpos + glyph->xoff;
@@ -293,7 +305,7 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         entry->kind.region_entry.height, 
         entry->x, 
         entry->y,
-        Screen::HIGHLIGHT_COLOR);
+        Screen::BLACK_COLOR);
     }
     else if (entry->command == CLEAR_HIGHLIGHT) {
       screen.draw_rectangle(
@@ -317,7 +329,7 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         entry->kind.region_entry.height, 
         entry->x, 
         entry->y,
-        Screen::HIGHLIGHT_COLOR);
+        Screen::BLACK_COLOR);
     }
   };
 
@@ -369,7 +381,7 @@ Page::set_limits(Format & fmt)
 }
 
 bool
-Page::line_break(const Format & fmt)
+Page::line_break(const Format & fmt, int8_t indent_next_line)
 {
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
   
@@ -380,7 +392,7 @@ Page::line_break(const Format & fmt)
   }
   else {
     ypos += font->get_line_height() * fmt.line_height_factor;
-    xpos  = min_x;
+    xpos  = min_x + indent_next_line;
   }
 
   screen_is_full = screen_is_full || ((ypos - font->get_descender_height()) >= max_y);
@@ -415,7 +427,7 @@ Page::new_paragraph(const Format & fmt, bool recover)
 
   // When recover == true, that means we are recovering the end of a paragraph that appears at the
   // beginning of a page. top_margin and indent must then be forgot as the have already been used at
-  // the start of the page of the page before...
+  // the end of the page before...
   
   if (recover) {
     para_indent = top_margin = 0;
@@ -433,13 +445,15 @@ Page::end_paragraph(const Format & fmt)
 {
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
 
-  if (!line_list.empty()) add_line(fmt, false);
+  if (!line_list.empty()) {
+    add_line(fmt, false);
 
-  ypos += fmt.margin_bottom - font->get_descender_height();
+    ypos += fmt.margin_bottom - font->get_descender_height();
 
-  if ((ypos - font->get_descender_height()) >= max_y) {
-    screen_is_full = true;
-    return false;
+    if ((ypos - font->get_descender_height()) >= max_y) {
+      screen_is_full = true;
+      return false;
+    }
   }
 
   return true;
@@ -450,6 +464,7 @@ Page::add_line(const Format & fmt, bool justifyable)
 {
   if (ypos == 0) ypos = min_y;
 
+  //show_display_list(line_list, "LINE");
   xpos = para_min_x + para_indent;
   if (xpos < min_x) xpos = min_x;
   int16_t line_height = glyphs_height * fmt.line_height_factor;
@@ -512,7 +527,7 @@ Page::add_line(const Format & fmt, bool justifyable)
   
   for (auto * entry : line_list) {
     if (entry->command == GLYPH) {
-      int16_t x = entry->x;
+      int16_t x = entry->x; // x may contains the calculated gap between words
       entry->x = xpos + entry->kind.glyph_entry.glyph->xoff;
       entry->y = ypos + entry->kind.glyph_entry.glyph->yoff;
       xpos += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
@@ -557,6 +572,7 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space)
   if (is_space && (line_width == 0)) return;
 
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = GLYPH;
   entry->kind.glyph_entry.glyph = glyph;
@@ -573,6 +589,7 @@ void
 Page::add_image_to_line(Image & image, int16_t advance, bool copy)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = IMAGE;
   entry->kind.image_entry.image   = image;
@@ -582,7 +599,9 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy)
     if (copy) {
       int32_t size = image.width * image.height;
       if (image.bitmap != nullptr) {
-        entry->kind.image_entry.image.bitmap = new unsigned char[size];
+        if ((entry->kind.image_entry.image.bitmap = new unsigned char[size]) == nullptr) {
+          msg_viewer.out_of_memory("image bitmap allocation");
+        }
         memcpy((void *) entry->kind.image_entry.image.bitmap, image.bitmap, size);
       }
       else {
@@ -602,17 +621,18 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy)
 
   line_width += advance;
 
-  LOG_D(
-    "Image added to line: w:%d h:%d a:%d",
-    image.width, image.height,
-    entry->kind.image_entry.advance
-  );
+  // LOG_D(
+  //   "Image added to line: w:%d h:%d a:%d",
+  //   image.width, image.height,
+  //   entry->kind.image_entry.advance
+  // );
 
   line_list.push_front(entry);
 }
 
 #define NEXT_LINE_REQUIRED_SPACE (ypos + (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height())
 
+// ToDo: Optimize this method...
 bool 
 Page::add_word(const char * word,  const Format & fmt)
 {
@@ -640,14 +660,20 @@ Page::add_word(const char * word,  const Format & fmt)
     first = false;
   }
 
+  if (width >= (para_max_x - para_min_x - para_indent)) {
+    if (strncasecmp(word, "http", 4) == 0) {
+      return add_word("[URL removed]", fmt);
+    }
+    else {
+      LOG_E("WORD TOO LARGE!! '%s'", word);
+    }
+  }
+
   if ((line_width + width) >= (para_max_x - para_min_x - para_indent)) {
     add_line(fmt, true);
     screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
     if (screen_is_full) {
       return false;
-    }
-    if (width >= (para_max_x - para_min_x - para_indent)) {
-      LOG_E("WORD TOO LARGE!! '%s'", word);
     }
   }
 
@@ -655,7 +681,7 @@ Page::add_word(const char * word,  const Format & fmt)
   while (*word) {
     if (font) {
       if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first), compute_mode != LOCATION)) == nullptr) {
-        glyph = font->get_glyph('?', compute_mode != LOCATION);
+        glyph = font->get_glyph(' ', compute_mode != LOCATION);
       }
       if (glyph) {
         add_glyph_to_line(glyph, *font, false);
@@ -732,21 +758,37 @@ Page::add_image(Image & image, const Format & fmt)
   int32_t w = 0;
   int32_t h = 0;
   int32_t advance;
+  int16_t gap = 0;
+
+  if (glyph != nullptr) {
+    gap = glyph->advance - glyph->width;
+  }
+  
+  // compute target w, h and advance for the image
 
   if (fmt.width || fmt.height) {
+
+    // fmt.width and/or fmt.height are the target size for the
+    // image. Compute w and h such that the image will fit in the prescribed size
     if (fmt.width) {
       // fmt.width -> image.width
       // h         -> image.height
       h = ((int32_t) image.height * fmt.width) / image.width;
       w = fmt.width;
+      if (fmt.height && (h > fmt.height)) {
+        // fmt.height -> image.height
+        // w          -> image.width
+        w = ((int32_t) image.width * fmt.height) / image.height;
+        h = fmt.height;
+      }
     } 
-    if (fmt.height && (h > fmt.height)) {
+    else {
       // fmt.height -> image.height
       // w          -> image.width
       w = ((int32_t) image.width * fmt.height) / image.height;
       h = fmt.height;
     }
-    advance = glyph->advance + w;
+    advance = w + gap;
   }
   else {
     int16_t avail_width = para_max_x - para_min_x - line_width;
@@ -768,26 +810,25 @@ Page::add_image(Image & image, const Format & fmt)
         w = ((int32_t) image.width * avail_height) / image.height;
       }
       
-      advance = (ypos == min_y) ? w : glyph->advance + w; 
+      advance = (ypos == min_y) ? w : w + gap; 
     }
     else {
       w = image.width;
       h = image.height;
-      advance = glyph->advance + w;
+      advance = w + gap;
     }
   }
 
   // Verify that there is enough room for the bitmap on the line
+
   if ((line_width + advance) >= (para_max_x - para_min_x - para_indent)) {
     add_line(fmt, true); 
 
-    int16_t the_height = (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height();
-    if (the_height < h) the_height = h;
-
-    screen_is_full = (ypos + h) > max_y;
-
-    if (screen_is_full) return false;
+    // int16_t the_height = (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height();
+    // if (the_height < h) the_height = h;
   }
+  
+  if ((screen_is_full = ((ypos + h) > max_y))) return false;
 
   if ((w != image.width) || (h != image.height)) {
 
@@ -800,9 +841,9 @@ Page::add_image(Image & image, const Format & fmt)
 
         if (size == 0) return false;
 
-        resized_bitmap = new unsigned char[w * h];
-
-        if (resized_bitmap == nullptr) return false;
+        if ((resized_bitmap = new unsigned char[w * h]) == nullptr) {
+          msg_viewer.out_of_memory("resized image allocation");
+        }
 
         stbir_resize_uint8(image.bitmap,   image.width, image.height, 0,
                           resized_bitmap, w,           h,            0,
@@ -829,6 +870,7 @@ Page::put_text(std::string str, const Format & fmt)
   Format myfmt = fmt;
 
   char * buff = new char[100];
+  if (buff == nullptr) msg_viewer.out_of_memory("temp buffer allocation");
   const char *s = str.c_str();
   while (*s) {
     if (uint8_t(*s) <= ' ') {
@@ -854,10 +896,13 @@ Page::put_image(Image & image,
                 int16_t x, int16_t y)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   if (compute_mode == DISPLAY) {
     int32_t size = image.width * image.height;
-    entry->kind.image_entry.image.bitmap = new unsigned char [size];
+    if ((entry->kind.image_entry.image.bitmap = new unsigned char [size]) == nullptr) {
+      msg_viewer.out_of_memory("image allocation");
+    }
     memcpy((void *)entry->kind.image_entry.image.bitmap, image.bitmap, size);
   }
   else {
@@ -888,6 +933,7 @@ Page::put_highlight(
             int16_t x, int16_t y)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = HIGHLIGHT;
   entry->kind.region_entry.width   = width;
@@ -913,6 +959,7 @@ Page::clear_highlight(
             int16_t x, int16_t y)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = CLEAR_HIGHLIGHT;
   entry->kind.region_entry.width   = width;
@@ -938,6 +985,7 @@ Page::clear_region(
             int16_t x, int16_t y)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = CLEAR_REGION;
   entry->kind.region_entry.width   = width;
@@ -964,6 +1012,7 @@ Page::set_region(
             int16_t x, int16_t y)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
 
   entry->command = SET_REGION;
   entry->kind.region_entry.width   = width;
@@ -1008,6 +1057,11 @@ Page::show_cover(unsigned char * data, int32_t size)
       // LOG_D("Image Parameters: %d %d %d %d", w, h, x, y);
 
       unsigned char * resized_bitmap = new unsigned char[w * h];
+      if (resized_bitmap == nullptr) {
+        stbi_image_free(bitmap_data);
+        LOG_D("Unable to load cover file");
+        return false;
+      }
 
       stbir_resize_uint8(bitmap_data,    image_width, image_height, 0,
                         resized_bitmap, w,           h,            0,
@@ -1019,11 +1073,63 @@ Page::show_cover(unsigned char * data, int32_t size)
       delete [] resized_bitmap;
     }
     else {
-      LOG_E("Unable to load cover file");
+      LOG_D("Unable to load cover file");
+      return false;
     }
 
     stbi_image_free(bitmap_data);
+    return true;
   }
 
-  return true;
+  return false;
+}
+
+void
+Page::show_display_list(const DisplayList & list, const char * title)
+{
+  std::cout << title << std::endl;
+  for (auto * entry : list) {
+    if (entry->command == GLYPH) {
+      std::cout << "GLYPH" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.glyph_entry.glyph->width <<
+        " h:" << entry->kind.glyph_entry.glyph->rows << std::endl;
+    }
+    else if (entry->command == IMAGE) {
+      std::cout << "IMAGE" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.image_entry.image.width <<
+        " h:" << entry->kind.image_entry.image.height << std::endl;
+    }
+    else if (entry->command == HIGHLIGHT) {
+      std::cout << "HIGHLIGHT" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.region_entry.width <<
+        " h:" << entry->kind.region_entry.height << std::endl;
+    }
+    else if (entry->command == CLEAR_HIGHLIGHT) {
+      std::cout << "CLEAR_HIGHLIGHT" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.region_entry.width <<
+        " h:" << entry->kind.region_entry.height << std::endl;
+    }
+    else if (entry->command == CLEAR_REGION) {
+      std::cout << "CLEAR_REGION" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.region_entry.width <<
+        " h:" << entry->kind.region_entry.height << std::endl;
+    }
+    else if (entry->command == SET_REGION) {
+      std::cout << "SET_REGION" <<
+        " x:" << entry->x <<
+        " y:" << entry->y <<
+        " w:" << entry->kind.region_entry.width <<
+        " h:" << entry->kind.region_entry.height << std::endl;
+    }
+  }
 }

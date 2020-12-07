@@ -2,11 +2,9 @@
 
 ## Last news
 
-(Updated 2020.11.27)
+(Updated 2020.12.01)
 
-Work in progress... 
-
-The development is complete. The application is at version 0.9.3. Some bugs remains to be corrected before passing to version 1.0, but it is in a state that someone can try it. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
+The development is complete. The application is at version 1.0.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
 - [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
 - [x] Menu capability
@@ -26,14 +24,9 @@ The development is complete. The application is at version 0.9.3. Some bugs rema
 - [x] Battery level display
 - [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
 - [x] User's Guide and installation manuals
+- [x] Error dialog use (100% completion)
+- [x] Debugging remaining issues
 
-Here are some of the steps remaining to be done:
-
-- [ ] Error dialog use (80% completion)
-- [ ] Debugging remaining issues
-      - Images are not displayed properly
-      - e-ink update not as fast as expected
-  
 ----
 
 Some pictures from the InkPlate-6 version:

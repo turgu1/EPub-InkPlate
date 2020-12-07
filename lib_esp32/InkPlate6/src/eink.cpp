@@ -119,6 +119,8 @@ EInk::setup()
     ESP_LOGD(TAG, "MCP initialized.");
   }
 
+  Wire::enter();
+  
   mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
   mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
   mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT); 
@@ -189,6 +191,8 @@ EInk::setup()
   memset(p_buffer,     0, 120000);
 
   initialized = true;
+
+  Wire::leave();
   return true;
 }
 
@@ -200,6 +204,8 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   const uint8_t * ptr;
   uint32_t        send;
   uint8_t         dram;
+
+  Wire::enter();
 
   turn_on();
 
@@ -293,6 +299,8 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
   vscan_start();
   turn_off();
   
+  Wire::leave();
+
   memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
   partial_allowed = true;
 }
@@ -302,6 +310,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
 {
   ESP_LOGD(TAG, "Update_3bit...");
 
+  Wire::enter();
   turn_on();
 
   clean_fast(0,  1);
@@ -388,6 +397,8 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
   clean_fast(3, 1);
   vscan_start();
   turn_off();
+
+  Wire::leave();
 }
 
 void
@@ -397,6 +408,8 @@ EInk::partial_update(const Bitmap1Bit & bitmap)
     update_1bit(bitmap);
     return;
   }
+
+  Wire::enter();
 
   ESP_LOGD(TAG, "Partial update...");
 
@@ -444,6 +457,7 @@ EInk::partial_update(const Bitmap1Bit & bitmap)
   vscan_start();
   turn_off();
 
+  Wire::leave();
   memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
 }
 
@@ -452,6 +466,7 @@ EInk::clean()
 {
   ESP_LOGD(TAG, "Clean...");
 
+  Wire::enter();
   turn_on();
 
   int m = 0;
@@ -461,6 +476,8 @@ EInk::clean()
   m++; clean_fast( WAVEFORM[m]        & 3,  8);
   m++; clean_fast((WAVEFORM[m] >>  6) & 3,  1);
   m++; clean_fast((WAVEFORM[m] >> 30) & 3, 10);
+
+  Wire::leave();
 }
 
 void
@@ -673,22 +690,27 @@ int8_t
 EInk::read_temperature()
 {
   int8_t temp;
-    
+  
   if (get_panel_state() == OFF) {
+    Wire::enter();
     mcp.wakeup_set();
     ESP::delay_microseconds(1800);
-     mcp.pwrup_set();
+    mcp.pwrup_set();
+    Wire::leave();
 
     ESP::delay(5);
   }
 
+  Wire::enter();
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x0D);
   wire.write(0b10000000);
   wire.end_transmission();
-    
+  Wire::leave();
+
   ESP::delay(5);
 
+  Wire::enter();
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x00);
   wire.end_transmission();
@@ -699,7 +721,12 @@ EInk::read_temperature()
   if (get_panel_state() == OFF) {
     mcp.pwrup_clear();
     mcp.wakeup_clear();
+    Wire::leave();
+
     ESP::delay(5);
+  }
+  else {
+    Wire::leave();
   }
 
   return temp;

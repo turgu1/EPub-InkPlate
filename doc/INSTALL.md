@@ -28,7 +28,7 @@ You then must retrieve the release from the Github repository. Look at this loca
 
 The SD-Card must be formatted with a FAT32 (or MS-DOS or VFAT) partition. This is usually the case with brand new cards. The release's `SDCard` folder contains everything required to initialize the card's content. Simply copy the content of the folder (including the sub-folders) to the card as is.
 
-The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`) (as these parameters contain text information, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate-6 from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer.
+The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`) (as these parameters contain text information or number, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate-6 from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer.
 
 Once done, insert the card into the device.
 

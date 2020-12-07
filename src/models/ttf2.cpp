@@ -4,6 +4,7 @@
 
 #define _TTF_ 1
 #include "models/ttf2.hpp"
+#include "viewers/msg_viewer.hpp"
 
 #include "screen.hpp"
 #include "alloc.hpp"
@@ -56,7 +57,7 @@ TTF::add_buff_to_byte_pool()
   BytePool * pool = (BytePool *) allocate(BYTE_POOL_SIZE);
   if (pool == nullptr) {
     LOG_E("Unable to allocated memory for bytes pool.");
-    std::abort();
+    msg_viewer.out_of_memory("ttf pool allocation");
   }
   byte_pools.push_front(pool);
 
@@ -129,7 +130,7 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
   else {
     int glyph_index = FT_Get_Char_Index(face, charcode);
     if (glyph_index == 0) {
-      LOG_E("Charcode not found in face: %d", charcode);
+      LOG_E("Charcode not found in face: %d, font_index: %d", charcode, fonts_cache_index);
       return nullptr;
     }
     else {
@@ -147,7 +148,7 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
-      return nullptr;
+      msg_viewer.out_of_memory("glyph allocation");
     }
 
     FT_GlyphSlot slot = face->glyph;
@@ -159,8 +160,14 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
     if (load_bitmap) {
 
       if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-        error = FT_Render_Glyph(face->glyph,            // glyph slot
-                                FT_RENDER_MODE_MONO);   // render mode
+        if (screen.get_pixel_resolution() == Screen::ONE_BIT) {
+          error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                  FT_RENDER_MODE_MONO);   // render mode
+        }
+        else {
+          error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                  FT_RENDER_MODE_NORMAL); // render mode
+        }
         if (error) {
           LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
           return nullptr;
@@ -178,7 +185,7 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
 
         if (glyph->buffer == nullptr) {
           LOG_E("Unable to allocate memory for glyph.");
-          return nullptr;
+          msg_viewer.out_of_memory("glyph allocation");
         }
         // else {
         //   LOG_D("Allocated %d bytes for glyph.", size)
@@ -263,7 +270,7 @@ TTF::set_font_face_from_file(const std::string font_filename)
 
     if (buffer == nullptr) {
       LOG_E("Unable to allocate font buffer: %d", (int32_t) (length + 1));
-      return false;
+      msg_viewer.out_of_memory("font buffer allocation");
     }
 
     if (fseek(font_file, 0, SEEK_SET)) {

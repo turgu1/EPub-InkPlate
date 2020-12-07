@@ -24,12 +24,14 @@ class Screen : NonCopyable
   public:
     static uint16_t WIDTH;
     static uint16_t HEIGHT;
-    static enum Orientation : int8_t { O_LEFT, O_RIGHT, O_BOTTOM } orientation;
     static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
-    static constexpr uint8_t  HIGHLIGHT_COLOR       = 1;
-    static constexpr uint8_t  WHITE_COLOR           = 0;
+    static constexpr uint8_t  BLACK_COLOR           = 0;
+    static constexpr uint8_t  WHITE_COLOR           = 7;
     static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 6;
     
+    enum Orientation    : int8_t { O_LEFT, O_RIGHT, O_BOTTOM };
+    enum PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+
     void draw_bitmap(const unsigned char * bitmap_data, 
                      uint16_t width, uint16_t height, 
                      int16_t x, int16_t y);
@@ -42,22 +44,35 @@ class Screen : NonCopyable
     void colorize_region(uint16_t width, uint16_t height, 
                          int16_t x, int16_t y, uint8_t color);
 
-    inline void clear()  { EInk::clear_bitmap(*frame_buffer); }
-    inline void update(bool no_full = false) { 
-      if (no_full) {
-        e_ink.partial_update(*frame_buffer);
-        partial_count = 0;
+    inline void clear()  {
+      if (pixel_resolution == ONE_BIT) { 
+        EInk::clear_bitmap(*frame_buffer_1bit);
       }
       else {
-        if (partial_count <= 0) {
-          //e_ink.clean();
-          e_ink.update(*frame_buffer);
-          partial_count = PARTIAL_COUNT_ALLOWED;
+        EInk::clear_bitmap(*frame_buffer_3bit);
+      } 
+    }
+    
+    inline void update(bool no_full = false) { 
+      if (pixel_resolution == ONE_BIT) {
+        if (no_full) {
+          e_ink.partial_update(*frame_buffer_1bit);
+          partial_count = 0;
         }
         else {
-          e_ink.partial_update(*frame_buffer);
-          partial_count--;
+          if (partial_count <= 0) {
+            //e_ink.clean();
+            e_ink.update(*frame_buffer_1bit);
+            partial_count = PARTIAL_COUNT_ALLOWED;
+          }
+          else {
+            e_ink.partial_update(*frame_buffer_1bit);
+            partial_count--;
+          }
         }
+      }
+      else {
+        e_ink.update(*frame_buffer_3bit);
       }
     }
 
@@ -67,54 +82,70 @@ class Screen : NonCopyable
     static const uint8_t LUT1BIT_INV[8];
 
     static Screen singleton;
-    Screen() : partial_count(0) { };
+    Screen() : partial_count(0), 
+               frame_buffer_1bit(nullptr), 
+               frame_buffer_3bit(nullptr) { };
 
-    EInk::Bitmap1Bit * frame_buffer;
     int8_t partial_count;
+    EInk::Bitmap1Bit * frame_buffer_1bit;
+    EInk::Bitmap3Bit * frame_buffer_3bit;
+    PixelResolution pixel_resolution;
+    Orientation     orientation;
 
-    // inline void set_pixel(uint32_t col, uint32_t row, uint8_t color) {
-    //   uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * (col + 1)) + (row >> 1)];
-    //   *temp = col & 1 ? (*temp & 0x70) | color : (*temp & 0x07) | (color << 4);
-    // }
-
-    inline void set_pixel_o_left(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];
+    inline void set_pixel_o_left_1bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_1bit)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];
       if (color == 1)
         *temp = *temp | LUT1BIT_INV[row & 7];
       else
         *temp = (*temp & ~LUT1BIT_INV[row & 7]);
     }
 
-    inline void set_pixel_o_right(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer)[(EInk::LINE_SIZE_1BIT * (col + 1)) - (row >> 3) - 1];
+    inline void set_pixel_o_right_1bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_1bit)[(EInk::LINE_SIZE_1BIT * (col + 1)) - (row >> 3) - 1];
       if (color == 1)
         *temp = *temp | LUT1BIT[row & 7];
       else
         *temp = (*temp & ~LUT1BIT[row & 7]);
     }
 
-    inline void set_pixel_o_bottom(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer)[EInk::LINE_SIZE_1BIT * row + (col >> 3)];
+    inline void set_pixel_o_bottom_1bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_1bit)[EInk::LINE_SIZE_1BIT * row + (col >> 3)];
       if (color == 1)
         *temp = *temp | LUT1BIT_INV[col & 7];
       else
         *temp = (*temp & ~LUT1BIT_INV[col & 7]);
     }
 
+    inline void set_pixel_o_left_3bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_3bit)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * (col + 1)) + (row >> 1)];
+      if (row & 1)
+        *temp = (*temp & 0x0F) | (color << 4);
+      else
+        *temp = (*temp & 0xF0) | color;
+    }
+
+    inline void set_pixel_o_right_3bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_3bit)[(EInk::LINE_SIZE_3BIT * (col + 1)) - (row >> 1) - 1];
+       if (row & 1)
+        *temp = (*temp & 0xF0) | color;
+      else
+        *temp = (*temp & 0x0F) | (color << 4);
+    }
+
+    inline void set_pixel_o_bottom_3bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(*frame_buffer_3bit)[EInk::LINE_SIZE_3BIT * row + (col >> 1)];
+      if (col & 1)
+        *temp = (*temp & 0xF0) | color;
+      else
+        *temp = (*temp & 0x0F) | (color << 4);
+     }
+
   public:
     static Screen & get_singleton() noexcept { return singleton; }
-    void setup();
-    void set_orientation(Orientation orient) {
-      orientation = orient;
-      if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
-        WIDTH  = 600;
-        HEIGHT = 800;
-      }
-      else {
-        WIDTH  = 800;
-        HEIGHT = 600;
-      }
-    }
+    void setup(PixelResolution resolution, Orientation orientation);
+    void set_pixel_resolution(PixelResolution resolution, bool force = false);
+    void set_orientation(Orientation orient);
+    inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
 };
 
 #if __SCREEN__

@@ -6,6 +6,7 @@
 #include "models/books_dir.hpp"
 
 #include "models/epub.hpp"
+#include "models/default_cover.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "logging.hpp"
@@ -231,6 +232,8 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       char    title[TITLE_SIZE];
     } * partial_record = (PartialRecord *) malloc(sizeof(PartialRecord));
 
+    if (partial_record == nullptr) msg_viewer.out_of_memory("partial record allocation");
+    
     db.goto_first(); // Go pass the DB version record
 
     while (db.goto_next()) {
@@ -367,6 +370,8 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             LOG_D("Streaming page_locs...");
             const EPub::PageLocs & page_locs = epub.get_page_locs();
 
+            LOG_D("Page count: %d", page_locs.size());
+            
             serialize(streamed_page_locs, page_locs);
 
             int32_t record_size = sizeof(EBookRecord) + streamed_page_locs.str().size();
@@ -402,7 +407,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
               std::string fname = filename;
               if (!epub.get_image(fname, image, channel_count)) {
-                LOG_E("Unable to retrieve cover file: %s", filename);
+                LOG_D("Unable to retrieve cover file: %s", filename);
+                memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
+                the_book->cover_width  = default_cover_width;
+                the_book->cover_height = default_cover_height;
               }
               else {
                 LOG_D("Image: width: %d height: %d channel_count: %d", 

@@ -13,6 +13,11 @@
 #include "logging.hpp"
 
 #include "stb_image.h"
+#include "image_info.hpp"
+
+#if EPUB_INKPLATE6_BUILD
+  #include "esp_heap_caps.h"
+#endif
 
 #include <cstring>
 #include <string>
@@ -168,11 +173,34 @@ EPub::get_opf(std::string & filename)
   return completed;
 }
 
+unsigned char 
+bin(char ch)
+{
+  if ((ch >= '0') && (ch <= '9')) return ch - '0';
+  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
+  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
+  return 0;
+}
+
 char *
 EPub::retrieve_file(const char * fname, uint32_t & size)
 {
+  char name[256];
+  uint8_t idx = 0;
+  const char * s = fname;
+  while ((idx < 255) && (*s != 0)) {
+    if (*s == '%') {
+      name[idx++] = (bin(s[1]) << 4) + bin(s[2]);
+      s += 3;
+    }
+    else {
+      name[idx++] = *s++;
+    }
+  }
+  name[idx] = 0;
+
   std::string filename = opf_base_path;
-  filename.append(fname);
+  filename.append(name);
 
   // LOG_D("Retrieving file %s", filename.c_str());
 
@@ -365,6 +393,7 @@ EPub::get_item(pugi::xml_node itemref)
                 std::string path;
                 extract_path(fname.c_str(), path);
                 CSS * css_tmp = new CSS(path, data, size, css_id);
+                if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
                 free(data);
                 // css_tmp->show();
                 retrieve_fonts_from_css(*css_tmp);
@@ -385,6 +414,7 @@ EPub::get_item(pugi::xml_node itemref)
       if ((node = current_item.child("html").child("head").child("style"))) {
         do {
           CSS * css_tmp = new CSS(current_item_file_path, node.value(), strlen(node.value()) , "current-item");
+          if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
           retrieve_fonts_from_css(*css_tmp);
           // css_tmp->show();
           temp_css_cache.push_back(css_tmp);
@@ -395,7 +425,9 @@ EPub::get_item(pugi::xml_node itemref)
       // the identified css files in the <meta> portion of the html file.
 
       if (current_item_css != nullptr) delete current_item_css;
-      current_item_css = new CSS("", nullptr, 0, "MergedForItem");
+      if ((current_item_css = new CSS("", nullptr, 0, "MergedForItem")) == nullptr) {
+        msg_viewer.out_of_memory("css allocation");
+      }
       for (auto * css : current_item_css_list) {
         current_item_css->retrieve_data_from_css(*css);
       }
@@ -582,7 +614,7 @@ EPub::get_first_item()
   if (!((node = opf.child("package").child("spine").child("itemref"))))
     return false;
 
-  LOG_D("Getting item %s...", node.attribute("idref").value());
+  // LOG_D("Getting item %s...", node.attribute("idref").value());
 
   if ((current_itemref != node) && (!get_item(node))) return false;
   current_itemref_index = 0;
@@ -597,7 +629,7 @@ EPub::get_next_item()
   xml_node node = current_itemref.next_sibling("itemref");
 
   if (node) {
-    LOG_D("Getting item %s...", node.attribute("idref").value());
+    // LOG_D("Getting item %s...", node.attribute("idref").value());
   
     current_itemref_index++;
     return get_item(node);
@@ -655,12 +687,25 @@ bool
 EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_count)
 {
   uint32_t size;
-  unsigned char * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
+  uint8_t * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
 
   if (data == NULL) {
-    LOG_E("Unable to retrieve cover file: %s", filename.c_str());
+    LOG_E("Unable to retrieve image file: %s", filename.c_str());
   }
   else {
+    ImageInfo * info = get_image_info(data, size);
+    #if EPUB_INKPLATE6_BUILD
+      uint32_t max_size = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT) - 100e3;
+    #else
+      uint32_t max_size = 25e5;
+    #endif
+
+    if ((info == nullptr) || (info->size > max_size)) {
+      free(data);
+      LOG_E("Image is not valid or too large to load. Space available: %d", max_size);
+      return false; // image format not supported or not valid
+    }
+
     int w, h, c;
     image.bitmap = stbi_load_from_memory(data, size, &w, &h, &c, 1);
  

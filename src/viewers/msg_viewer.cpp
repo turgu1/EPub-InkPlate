@@ -10,6 +10,11 @@
 
 #include <cstdarg>
 
+#if EPUB_INKPLATE6_BUILD
+  #include "nvs.h"
+  #include "inkplate6_ctrl.hpp"
+#endif
+
 char MsgViewer::icon_char[5] = { 'I',  '!', 'H', 'E', 'S' };
 
 void MsgViewer::show(
@@ -46,9 +51,11 @@ void MsgViewer::show(
     .width              =   0,
     .height             =   0,
     .trim               = true,
+    .pre                = false,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM
+    .text_transform     = CSS::NO_TRANSFORM,
+    .display            = CSS::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
@@ -142,9 +149,11 @@ void MsgViewer::show_progress(const char * title, ...)
     .width              =   0,
     .height             =   0,
     .trim               = true,
+    .pre                = false,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM
+    .text_transform     = CSS::NO_TRANSFORM,
+    .display            = CSS::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width  ) >> 1;
@@ -221,9 +230,11 @@ void MsgViewer::add_dot()
     .width              =   0,
     .height             =   0,
     .trim               = true,
+    .pre                = false,
     .font_style         = Fonts::NORMAL,
     .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM
+    .text_transform     = CSS::NO_TRANSFORM,
+    .display            = CSS::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
@@ -246,4 +257,34 @@ void MsgViewer::add_dot()
   dot_count++;
 
   page.paint(false, true, true);
+}
+
+void 
+MsgViewer::out_of_memory(const char * raison)
+{
+  #if EPUB_INKPLATE6_BUILD
+    nvs_handle_t nvs_handle;
+    esp_err_t    err;
+
+    if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) == ESP_OK) {
+      if (nvs_erase_all(nvs_handle) == ESP_OK) {
+        nvs_commit(nvs_handle);
+      }
+      nvs_close(nvs_handle);
+    }
+  #endif
+
+  show(ALERT, true, true, "OUT OF MEMORY!!",
+    "It's a bit sad that the device is now out of "
+    "memory to continue. The reason: %s. "
+    "The device is now entering into Deep Sleep. "
+    "Press any key to restart.",
+    raison
+  );
+
+  #if EPUB_INKPLATE6_BUILD
+    inkplate6_ctrl.deep_sleep(); // Never return
+  #else
+    exit(0);
+  #endif
 }

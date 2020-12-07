@@ -12,6 +12,8 @@
 #include <cstring>
 
 Wire Wire::singleton;
+SemaphoreHandle_t Wire::mutex = nullptr;
+StaticSemaphore_t Wire::mutex_buffer;
 
 void
 Wire::setup()
@@ -19,6 +21,9 @@ Wire::setup()
   ESP_LOGD(TAG, "Initializing...");
 
   if (!initialized) {
+
+    mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
+
     i2c_config_t config;
 
     memset(&config, 0, sizeof(i2c_config_t));

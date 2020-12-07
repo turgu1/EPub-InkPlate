@@ -17,6 +17,8 @@
   #include "freertos/task.h"
   #include "freertos/queue.h"
   #include "driver/gpio.h"
+
+  #include "wire.hpp"
   #include "mcp.hpp"
   #include "inkplate6_ctrl.hpp"
   #include "viewers/msg_viewer.hpp"
@@ -30,8 +32,7 @@
   uint8_t SELECT_PAD;
 
   static xQueueHandle touchpad_evt_queue  = NULL;
-
-  // uint64_t t1, t2, t3, t4;
+  static xQueueHandle touchpad_key_queue  = NULL;
 
   static void IRAM_ATTR 
   touchpad_isr_handler(void * arg)
@@ -40,29 +41,35 @@
     xQueueSendFromISR(touchpad_evt_queue, &gpio_num, NULL);
   }
 
-  EventMgr::KeyEvent 
-  EventMgr::get_key()
+  void
+  get_key_task(void * param)
   {
-    KeyEvent key;
+    EventMgr::KeyEvent key;
     uint32_t io_num;
     uint8_t  pads, pads2;
 
-    key = KEY_NONE;
+    while (true) {
+    
+      key = EventMgr::KEY_NONE;
 
-    if (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(15E3))) {
+      xQueueReceive(touchpad_evt_queue, &io_num, portMAX_DELAY);
 
       // A key interrupt happened. Retrieve pads information.
       // t1 = esp_timer_get_time();
       if ((pads = inkplate6_ctrl.read_touchpads()) == 0) {
         // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
-        mcp.get_int_state();  
+        Wire::enter();
+        mcp.get_int_state();
+        Wire::leave();  
       }
       else {
         // Wait until there is no key
         while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD(); 
 
         // Re-activating interrupts.
-        mcp.get_int_state();  
+        Wire::enter();
+        mcp.get_int_state();
+        Wire::leave();  
 
         // Wait for potential second key
         bool found = false; 
@@ -73,7 +80,9 @@
           }
 
           // There was no key, re-activate interrupts
+          Wire::enter();
           mcp.get_int_state();
+          Wire::leave();  
         }
         // t2 = esp_timer_get_time();
 
@@ -84,24 +93,40 @@
           while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD();
 
           // Re-activating interrupts
+          Wire::enter();
           mcp.get_int_state();
+          Wire::leave();  
 
-          if      (pads2 & SELECT_PAD) key = KEY_DBL_SELECT;
-          else if (pads2 & NEXT_PAD  ) key = KEY_DBL_NEXT;
-          else if (pads2 & PREV_PAD  ) key = KEY_DBL_PREV;
+          if      (pads2 & SELECT_PAD) key = EventMgr::KEY_DBL_SELECT;
+          else if (pads2 & NEXT_PAD  ) key = EventMgr::KEY_DBL_NEXT;
+          else if (pads2 & PREV_PAD  ) key = EventMgr::KEY_DBL_PREV;
         }
         else {
 
           // Simple Click on a key
 
-          if      (pads & SELECT_PAD) key = KEY_SELECT;
-          else if (pads & NEXT_PAD  ) key = KEY_NEXT;
-          else if (pads & PREV_PAD  ) key = KEY_PREV;
+          if      (pads & SELECT_PAD) key = EventMgr::KEY_SELECT;
+          else if (pads & NEXT_PAD  ) key = EventMgr::KEY_NEXT;
+          else if (pads & PREV_PAD  ) key = EventMgr::KEY_PREV;
         }
       }
-    }     
 
-    return key;
+      if (key != EventMgr::KEY_NONE) {
+        xQueueSend(touchpad_key_queue, &key, 0);
+      }  
+    }     
+  }
+
+  EventMgr::KeyEvent 
+  EventMgr::get_key() 
+  {
+    KeyEvent key;
+    if (xQueueReceive(touchpad_key_queue, &key, pdMS_TO_TICKS(15E3))) {
+      return key;
+    }
+    else {
+      return KEY_NONE;
+    }
   }
 
   void
@@ -173,21 +198,17 @@ EventMgr::set_orientation(Screen::Orientation orient)
       EventMgr::KeyEvent key;
 
       if ((key = get_key()) != KEY_NONE) {
-        // t3 = esp_timer_get_time();
         LOG_D("Got key %d", key);
         app_controller.key_event(key);
-        // t4 = esp_timer_get_time();
-        // std::cout << "Timings: " << t2 - t1 << "  " << t3 - t2 << "  " << t4 - t3 << std::endl;
-        // fflush(stdout);
         ESP::show_heaps_info();
         return;
       }
       else {
-        // Nothing received in 5 seconds, put the device in Light Sleep Mode.
+        // Nothing received in 15 seconds, put the device in Light Sleep Mode.
         // After some delay, the device will then be put in Deep Sleep Mode, 
         // rebooting after the user press a key.
 
-        if (!stay_on) {
+        if (!stay_on) { // Unless somebody wants to keep us awake...
           int8_t light_sleep_duration;
           config.get(Config::TIMEOUT, &light_sleep_duration);
 
@@ -212,31 +233,6 @@ EventMgr::set_orientation(Screen::Orientation orient)
         }
       }
     }
-
-    // Simple Uart based keyboard entry
-    //
-    //  a   s    d   f
-    //  <<  <    >   >>
-    //
-    //  Select:        Space bar
-    //  Double Select: Return
-    // 
-    // while(1) {
-		//   uint8_t ch = fgetc(stdin);
-	  //   if (ch != 0xFF) {
-    //     switch (ch) {
-    //       case 'a'  : app_controller.key_event(KEY_DBL_LEFT);   break;
-    //       case 's'  : app_controller.key_event(KEY_LEFT);       break;
-    //       case 'd'  : app_controller.key_event(KEY_PREV);       break;
-    //       case 'f'  : app_controller.key_event(KEY_DBL_PREV);   break;
-    //       case ' '  : app_controller.key_event(KEY_SELECT);     break;
-    //       case '\r'  : app_controller.key_event(KEY_DBL_SELECT); break;
-    //       default: 
-    //         fputc('!', stdout);
-    //         break;
-    //     }
-	  //   }
-    // }  
   }
 #endif
 
@@ -264,6 +260,11 @@ EventMgr::setup()
     
     touchpad_evt_queue = xQueueCreate(          //create a queue to handle gpio event from isr
       10, sizeof(uint32_t));
+    touchpad_key_queue = xQueueCreate(          //create a queue to handle key event from task
+      10, sizeof(EventMgr::KeyEvent));
+
+    TaskHandle_t xHandle = NULL;
+    xTaskCreate(get_key_task, "GetKey", 2000, nullptr, 10, &xHandle);
 
     gpio_install_isr_service(0);                //install gpio isr service
     
@@ -272,7 +273,9 @@ EventMgr::setup()
       touchpad_isr_handler, 
       (void *) GPIO_NUM_34);
 
+    Wire::enter();
     mcp.get_int_state();                        // This is activating interrupts...
+    Wire::leave();
   #endif
 
   return true;

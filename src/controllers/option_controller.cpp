@@ -12,6 +12,7 @@
 #include "viewers/form_viewer.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
+#include "models/epub.hpp"
 
 #if EPUB_INKPLATE6_BUILD
   #include "esp_system.h"
@@ -25,6 +26,11 @@ static FormViewer::Choice ok_cancel_choices[2] = {
 static FormViewer::Choice yes_no_choices[2] = {
   { "YES", 1 },
   { "NO",  0 }
+};
+
+static FormViewer::Choice resolution_choices[2] = {
+  { "1Bit",  0 },
+  { "3Bits", 1 }
 };
 
 static FormViewer::Choice timeout_choices[3] = {
@@ -66,7 +72,8 @@ static FormViewer::Choice font_choices[8] = {
 
 // static int8_t boolean_value;
 static int8_t font_size;
-static Screen::Orientation orientation;
+static Screen::Orientation      orientation;
+static Screen::PixelResolution resolution;
 static int8_t battery;
 static int8_t timeout;
 static int8_t show_images;
@@ -74,19 +81,21 @@ static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t ok;
 
-static Screen::Orientation old_orientation;
+static Screen::Orientation      old_orientation;
+static Screen::PixelResolution old_resolution;
 static int8_t old_font_size;
 static int8_t old_show_images;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 
-static constexpr int8_t MAIN_FORM_SIZE = 5;
+static constexpr int8_t MAIN_FORM_SIZE = 6;
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes before sleeping :", &timeout,                3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",     (int8_t *) &orientation, 3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
-  { "Show Images in books (*):", &show_images,            2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",   &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
+  { "Minutes before sleeping :",   &timeout,                3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
+  { "Buttons Position (*):",       (int8_t *) &orientation, 3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
+  { "Show Images in books (*):",   &show_images,            2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
+  { "Pixel Resolution :",          (int8_t *) &resolution,  2, resolution_choices,  FormViewer::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",     &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
+  { nullptr,                       &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
 };
 
 static constexpr int8_t FONT_FORM_SIZE = 4;
@@ -103,16 +112,20 @@ extern bool stop_web_server();
 static void
 main_parameters()
 {
-  config.get(Config::ORIENTATION, (int8_t *) &orientation);
-  config.get(Config::BATTERY,     &battery               );
-  config.get(Config::TIMEOUT,     &timeout               );
-  config.get(Config::SHOW_IMAGES, &show_images           );
+  config.get(Config::ORIENTATION,      (int8_t *) &orientation);
+  config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution );
+  config.get(Config::BATTERY,          &battery               );
+  config.get(Config::TIMEOUT,          &timeout               );
+  config.get(Config::SHOW_IMAGES,      &show_images           );
 
   old_orientation = orientation;
   old_show_images = show_images;
+  old_resolution  = resolution;
   ok              = 0;
 
-  form_viewer.show(main_params_form_entries, MAIN_FORM_SIZE, 
+  form_viewer.show(
+    main_params_form_entries, 
+    MAIN_FORM_SIZE, 
     "(*) These items may trigger Books Refresh.");
 
   option_controller.set_main_form_is_shown();
@@ -121,17 +134,18 @@ main_parameters()
 static void
 font_parameters()
 {
-  config.get(Config::FONT_SIZE,          &font_size             );
-  config.get(Config::USE_FONTS_IN_BOOKS, &use_fonts_in_books    );
-  config.get(Config::DEFAULT_FONT,       &default_font          );
+  config.get(Config::FONT_SIZE,          &font_size         );
+  config.get(Config::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
+  config.get(Config::DEFAULT_FONT,       &default_font      );
   
   old_use_fonts_in_books = use_fonts_in_books;
   old_default_font       = default_font;
   old_font_size          = font_size;
-
   ok                     = 0;
 
-  form_viewer.show(font_params_form_entries, FONT_FORM_SIZE, 
+  form_viewer.show(
+    font_params_form_entries, 
+    FONT_FORM_SIZE, 
     "(*) These items may trigger Books Refresh.");
 
   option_controller.set_font_form_is_shown();
@@ -141,6 +155,10 @@ static void
 wifi_mode()
 {
   #if EPUB_INKPLATE6_BUILD  
+    epub.close_file();
+    fonts.clear();
+    fonts.clear_glyph_caches();
+    
     event_mgr.set_stay_on(true); // DO NOT sleep
 
     if (start_web_server()) {
@@ -181,10 +199,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
     if (form_viewer.event(key)) {
       main_form_is_shown = false;
       if (ok) {
-        config.put(Config::SHOW_IMAGES, show_images         );
-        config.put(Config::ORIENTATION, (int8_t) orientation);
-        config.put(Config::BATTERY,     battery             );
-        config.put(Config::TIMEOUT,     timeout             );
+        config.put(Config::SHOW_IMAGES,      show_images         );
+        config.put(Config::ORIENTATION,      (int8_t) orientation);
+        config.put(Config::PIXEL_RESOLUTION, (int8_t) resolution );
+        config.put(Config::BATTERY,          battery             );
+        config.put(Config::TIMEOUT,          timeout             );
         config.save();
 
         if (old_orientation != orientation) {
@@ -192,8 +211,13 @@ OptionController::key_event(EventMgr::KeyEvent key)
           event_mgr.set_orientation(orientation);
         }
 
+        if (old_resolution != resolution) {
+          fonts.clear_glyph_caches();
+          screen.set_pixel_resolution(resolution);
+        }
+
         if ((old_show_images != show_images) ||
-            ((orientation != old_orientation) &&
+            ((old_orientation != orientation) &&
              ((old_orientation == Screen::O_BOTTOM) ||
               (orientation     == Screen::O_BOTTOM)))) {
           books_refresh_needed = true;  

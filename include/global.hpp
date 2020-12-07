@@ -10,7 +10,7 @@
 
 #include "strlcpy.hpp"
 
-#define APP_VERSION "0.9.3"
+#define APP_VERSION "1.0.0"
 
 #if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE6_BUILD)) 
   #error "BUILD_TYPE Not Set."
@@ -56,7 +56,7 @@
 #define DEBUGGING_AID  0   ///< 1: Allow for specific page debugging output
 
 #if DEBUGGING_AID
-  #define PAGE_TO_SHOW_LOCATION 706
+  #define PAGE_TO_SHOW_LOCATION 2
   #define SET_PAGE_TO_SHOW(val) { show_location = val == PAGE_TO_SHOW_LOCATION; }
   #define SHOW_LOCATION(msg) { if (show_location) { \
     std::cout << msg << " Offset:" << current_offset << " "; \
@@ -64,7 +64,7 @@
     std::cout << "     "; \
     page.show_fmt(fmt, "  ");  }}
 
-  #if _GLOBAL_
+  #if __GLOBAL__
     bool show_location = false;
   #else
     extern bool show_location;

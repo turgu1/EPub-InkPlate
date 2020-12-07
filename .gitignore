@@ -5,6 +5,7 @@
 .vscode/ipch
 example
 build
+test/*
 test-books
 release*
 SDCard/epub-test

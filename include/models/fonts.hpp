@@ -77,6 +77,8 @@ class Fonts
       } 
     };
 
+    void clear_glyph_caches();
+
   private:
     typedef std::vector<FontEntry> FontCache;
     FontCache font_cache;

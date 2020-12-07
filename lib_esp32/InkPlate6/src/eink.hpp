@@ -82,6 +82,19 @@ class EInk : NonCopyable
     void pins_z_state();
     void pins_as_outputs();
 
+    void turn_on();
+    void turn_off();
+
+    void clean_fast(uint8_t c, uint8_t rep);
+
+    uint8_t read_power_good();
+
+    inline void  set_panel_state(PanelState s) { panel_state = s; }
+
+    inline void allow_partial() { partial_allowed = true;  }
+    inline void block_partial() { partial_allowed = false; }
+    inline bool is_partial_allowed() { return partial_allowed; }
+
     static const uint32_t PIN_LUT[256];
 
     static const uint8_t  WAVEFORM_3BIT[8][8]; 
@@ -116,34 +129,30 @@ class EInk : NonCopyable
 
     static inline EInk & get_singleton() noexcept { return singleton; }
 
-    bool setup();
-
-    inline void       set_panel_state(PanelState s) { panel_state = s; }
     inline PanelState get_panel_state() { return panel_state; }
-
     inline bool        is_initialized() { return initialized; }
 
     static inline void clear_bitmap(Bitmap1Bit & bitmap) { memset(&bitmap,    0, sizeof(Bitmap1Bit)); }
     static inline void clear_bitmap(Bitmap3Bit & bitmap) { memset(&bitmap, 0x77, sizeof(Bitmap3Bit)); }
+
+    // All the following methods are protecting the I2C device trough
+    // the Wire::enter() and Wire::leave() methods. These are implementing a
+    // Mutex semaphore access control.
+    //
+    // If you ever add public methods, you *MUST* consider adding calls to Wire::enter()
+    // and Wire::leave() and insure no deadlock will happen... or modifu the mutex to use
+    // a recursive mutex.
+
+    bool setup();
 
     inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
     inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }
 
     void partial_update(const Bitmap1Bit & bitmap);
 
-    void turn_on();
-    void turn_off();
-
-    inline void allow_partial() { partial_allowed = true;  }
-    inline void block_partial() { partial_allowed = false; }
-    inline bool is_partial_allowed() { return partial_allowed; }
-
-    uint8_t read_power_good();
-
     void clean();
-    void clean_fast(uint8_t c, uint8_t rep);
 
-    int8_t read_temperature();
+    int8_t  read_temperature();
 };
 
 #if __EINK__

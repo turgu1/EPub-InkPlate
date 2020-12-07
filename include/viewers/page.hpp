@@ -42,9 +42,11 @@ class Page
       int16_t            width;         ///< In pixels
       int16_t            height;        ///< In pixels
       bool trim;
+      bool pre;
       Fonts::FaceStyle   font_style;
       CSS::Align         align;
       CSS::TextTransform text_transform;
+      CSS::Display       display;
     };
 
     struct Image {
@@ -102,7 +104,7 @@ class Page
 
     MemoryPool <DisplayListEntry> display_list_entry_pool;
 
-    DisplayList display_list; ///< The list of characters and their position to put on screen
+    DisplayList display_list; ///< The list of artefacts and their position to put on screen
     DisplayList line_list;    ///< Line preparation for paragraphs
 
     bool screen_is_full;                 ///< True if screen no more space to add characters
@@ -126,7 +128,7 @@ class Page
     Page();
    ~Page();
 
-    void set_compute_mode(ComputeMode mode) { compute_mode = mode; }
+    inline void set_compute_mode(ComputeMode mode) { compute_mode = mode; }
     inline ComputeMode get_compute_mode() { return compute_mode; }
 
     /**
@@ -164,6 +166,8 @@ class Page
      * @brief End the current paragraph
      * 
      * @param fmt Formatting parameters.
+     * @return true There is room for the end of paragraph.
+     * @return false There is **no** room available the end of paragraph.
      */
     bool end_paragraph(const Format & fmt);
 
@@ -174,10 +178,11 @@ class Page
      * additional space will be ignored.
      * 
      * @param fmt Formatting parameters.
+     * @param indent_next_line How many pixels to indent next line.
      * @return true The line break has been added to the paragraph.
      * @return false There is not enough space for a line break on page
      */
-    bool line_break(const Format & fmt);
+    bool line_break(const Format & fmt, int8_t indent_next_line = 0);
 
     /**
      * @brief Add a UTF-8 word to the paragraph.
@@ -278,6 +283,10 @@ class Page
         " sr:"        << fmt.screen_right       << 
         " st:"        << fmt.screen_top         << 
         " tr:"        << fmt.trim               << 
+        " pr:"        << fmt.pre                << 
+        " tr:"        << fmt.trim               << 
+        " tt:"        << fmt.text_transform     <<
+        " di:"        << fmt.display            <<
         std::endl;
     }
 
@@ -295,6 +304,7 @@ class Page
                     int16_t x, int16_t y);
 
     inline bool is_full() { return screen_is_full; }
+    inline bool is_empty() { return display_list.empty(); }
     void show_controls(const char * spaces) const {
       std::cout         << spaces      <<
         " xpos:"        << xpos        <<
@@ -311,6 +321,13 @@ class Page
     }
 
     inline bool some_data_waiting() const { return !line_list.empty(); }
+
+    void show_display_list(const DisplayList & list, const char * title);
+
+    const DisplayList & get_display_list() { return display_list; }
+    const DisplayList & get_line_list() { return line_list; }
+
+    int16_t get_ypos() { return ypos; }
 };
 
 #if __PAGE__

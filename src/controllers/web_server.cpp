@@ -5,6 +5,7 @@
 
 #include "logging.hpp"
 #include "viewers/msg_viewer.hpp"
+#include "models/config.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -35,10 +36,10 @@
 static constexpr char const * TAG = "WebServer";
 
 static constexpr int32_t      FILE_PATH_MAX     = 256;
-static constexpr int32_t      MAX_FILE_SIZE     = 15*1024*1024;
+static constexpr int32_t      MAX_FILE_SIZE     = 25*1024*1024;
 static constexpr int32_t      SCRATCH_BUFSIZE   = 8192;
 
-#define                       MAX_FILE_SIZE_STR   "15MB"
+#define                       MAX_FILE_SIZE_STR   "25MB"
 
 static httpd_handle_t server = nullptr;
 
@@ -215,14 +216,7 @@ set_content_type_from_file(httpd_req_t * req, const char * filename)
     return httpd_resp_set_type(req, "text/plain");
 }
 
-static unsigned char 
-bin(char ch)
-{
-  if ((ch >= '0') && (ch <= '9')) return ch - '0';
-  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
-  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
-  return 0;
-}
+extern unsigned char bin(char ch); // 
 
 static const char * 
 get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t destsize)
@@ -488,12 +482,15 @@ http_server_start()
     }
     strcpy(server_data->base_path, "/sdcard/books");
 
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
 
-    config.uri_match_fn = httpd_uri_match_wildcard;
+    int32_t port;
+    config.get(Config::PORT, &port);
+    httpd_config.uri_match_fn = httpd_uri_match_wildcard;
+    httpd_config.server_port = (uint16_t) port;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
-    if (httpd_start(&server, &config) != ESP_OK) {
+    if (httpd_start(&server, &httpd_config) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start file server!");
         return ESP_FAIL;
     }

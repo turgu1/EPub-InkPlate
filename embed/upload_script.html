@@ -42,8 +42,8 @@ function upload() {
     alert("File path on server is not set!");
   } else if (filePath[filePath.length-1] == '/') {
     alert("File name not specified after path!");
-  } else if (fileInput[0].size > 15*1024*1024) {
-    alert("File size must be less than 15MB!");
+  } else if (fileInput[0].size > 25*1024*1024) {
+    alert("File size must be less than 25MB!");
   } else {
     document.getElementById("newfile" ).disabled = true;
     document.getElementById("filepath").disabled = true;
