@@ -39,21 +39,19 @@ setrgb(guchar * a, int row, int col, int stride,
 void 
 Screen::draw_bitmap(
   const unsigned char * bitmap_data, 
-  uint16_t width, 
-  uint16_t height, 
-  int16_t  x, 
-  int16_t  y)
+  Dim                   dim, 
+  Pos                   pos)
 {
   if (bitmap_data == nullptr) return;
   
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  if (x < 0) x = 0;
-  if (y < 0) y = 0;
+  if (pos.x < 0) pos.x = 0;
+  if (pos.y < 0) pos.y = 0;
 
-  int16_t x_max = x + width;
-  int16_t y_max = y + height;
+  int16_t x_max = pos.x + dim.width;
+  int16_t y_max = pos.y + dim.height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
@@ -63,8 +61,8 @@ Screen::draw_bitmap(
     int16_t error;
     memset(err, 0, 601*2);
 
-    for (int j = y, q = 0; j < y_max; j++, q++) {
-      for (int i = x, p = q * width, k = 0; i < (x_max - 1); i++, p++, k++) {
+    for (int j = pos.y, q = 0; j < y_max; j++, q++) {
+      for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
         int32_t v = bitmap_data[p] + err[k + 1];
         if (v > 128) {
           error = (v - 255);
@@ -84,8 +82,8 @@ Screen::draw_bitmap(
     }
   }
   else {
-    for (int j = y, q = 0; j < y_max; j++, q++) {
-      for (int i = x, p = q * width; i < x_max; i++, p++) {
+    for (int j = pos.y, q = 0; j < y_max; j++, q++) {
+      for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
         setrgb(g, j, i, id.stride, bitmap_data[p]);
       }
     }    
@@ -94,50 +92,46 @@ Screen::draw_bitmap(
 
 void 
 Screen::draw_rectangle(
-  uint16_t width, 
-  uint16_t height, 
-  int16_t  x, 
-  int16_t  y,
+  Dim      dim,
+  Pos      pos,
   uint8_t  color) //, bool show)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  int16_t x_max = x + width;
-  int16_t y_max = y + height;
+  int16_t x_max = pos.x + dim.width;
+  int16_t y_max = pos.y + dim.height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int i = x; i < x_max; i++) {
-    setrgb(g, y, i, id.stride, color);
+  for (int i = pos.x; i < x_max; i++) {
+    setrgb(g, pos.y, i, id.stride, color);
     setrgb(g, y_max - 1, i, id.stride, color);
   }
-  for (int j = y; j < y_max; j++) {
-    setrgb(g, j, x, id.stride, color);
+  for (int j = pos.y; j < y_max; j++) {
+    setrgb(g, j, pos.x, id.stride, color);
     setrgb(g, j, x_max - 1, id.stride, color);
   }
 }
 
 void 
 Screen::colorize_region(
-  uint16_t width, 
-  uint16_t height, 
-  int16_t  x, 
-  int16_t  y,
-  uint8_t  color) //, bool show)
+  Dim      dim,
+  Pos      pos,
+  uint8_t  color)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  int16_t x_max = x + width;
-  int16_t y_max = y + height;
+  int16_t x_max = pos.x + dim.width;
+  int16_t y_max = pos.y + dim.height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  for (int j = y; j < y_max; j++) {
-    for (int i = x; i < x_max; i++) {
+  for (int j = pos.y; j < y_max; j++) {
+    for (int i = pos.x; i < x_max; i++) {
       setrgb(g, j, i, id.stride, color);
     }
   }
@@ -146,24 +140,22 @@ Screen::colorize_region(
 void 
 Screen::draw_glyph(
   const unsigned char * bitmap_data, 
-  uint16_t width, 
-  uint16_t height, 
-  uint16_t pitch,
-  int16_t x, 
-  int16_t y) //, bool show)
+  Dim                   dim,
+  Pos                   pos,  
+  uint16_t              pitch)
 {
   GdkPixbuf * pb = gtk_image_get_pixbuf(id.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
 
-  int x_max = x + width;
-  int y_max = y + height;
+  int x_max = pos.x + dim.width;
+  int y_max = pos.y + dim.height;
 
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
   if (pixel_resolution == ONE_BIT) {
-    for (int j = y, q = 0; j < y_max; j++, q++) {
-      for (int i = x, p = (q * pitch) << 3; i < x_max; i++, p++) {
+    for (int j = pos.y, q = 0; j < y_max; j++, q++) {
+      for (int i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) {
         // int v = (255 - bitmap_data[p]);
         // if (v != 255) {
         //   v &= 0xE0; // 8 levels of grayscale
@@ -175,8 +167,8 @@ Screen::draw_glyph(
     }
   }
   else {
-    for (int j = y, q = 0; j < y_max; j++, q++) {
-      for (int i = x, p = q * pitch; i < x_max; i++, p++) {
+    for (int j = pos.y, q = 0; j < y_max; j++, q++) {
+      for (int i = pos.x, p = q * pitch; i < x_max; i++, p++) {
         // int v = (255 - bitmap_data[p]);
         // if (v != 255) {
         //   v &= 0xE0; // 8 levels of grayscale

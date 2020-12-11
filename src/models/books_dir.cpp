@@ -414,17 +414,17 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
               }
               else {
                 LOG_D("Image: width: %d height: %d channel_count: %d", 
-                  image.width, image.height, channel_count);
+                  image.dim.width, image.dim.height, channel_count);
 
                 int32_t w = max_cover_width;
-                int32_t h = image.height * max_cover_width / image.width;
+                int32_t h = image.dim.height * max_cover_width / image.dim.width;
 
                 if (h > max_cover_height) {
                   h = max_cover_height;
-                  w = image.width * max_cover_height / image.height;
+                  w = image.dim.width * max_cover_height / image.dim.height;
                 }
 
-                stbir_resize_uint8(image.bitmap, image.width, image.height, 0,
+                stbir_resize_uint8(image.bitmap, image.dim.width, image.dim.height, 0,
                                   (unsigned char *) (the_book->cover_bitmap), w, h, 0,
                                   1);
 
@@ -475,52 +475,54 @@ error_clear:
 void
 BooksDir::show_db()
 {
-  VersionRecord  version_record;
-  EBookRecord    book;
-  EPub::PageLocs page_locs;
+  #if DEBUGGING
+    VersionRecord  version_record;
+    EBookRecord    book;
+    EPub::PageLocs page_locs;
 
-  if (!db.goto_first()) return;
-  
-  if (!db.get_record(&version_record, sizeof(VersionRecord))) return;
-
-  std::cout << 
-    "DB Version: "    << version_record.version  << 
-    " app: "          << version_record.app_name << 
-    " record count: " << db.get_record_count() - 1 << std::endl;
-
-  while (db.goto_next()) {
-    if (!db.get_record(&book, sizeof(EBookRecord))) return;
-    std::cout 
-      << "Book: "          << book.filename        << std::endl
-      << "  record size: " << db.get_record_size() << std::endl
-      << "  title: "       << book.title           << std::endl
-      << "  author: "      << book.author          << std::endl
-      << "  description: " << book.description     << std::endl
-      << "  bitmap size: " << +book.cover_width << " " << +book.cover_height << std::endl;
-
-    int32_t size = db.get_record_size() - sizeof(EBookRecord);
-
-    if (size <= 0) return;
-
-    unsigned char * data = (unsigned char *) allocate(size);
-
-    std::stringstream str;
+    if (!db.goto_first()) return;
     
-    if (!db.get_partial_record(data, size, sizeof(EBookRecord))) return;
+    if (!db.get_record(&version_record, sizeof(VersionRecord))) return;
 
-    str.write((const char *) data, size);
+    std::cout << 
+      "DB Version: "    << version_record.version  << 
+      " app: "          << version_record.app_name << 
+      " record count: " << db.get_record_count() - 1 << std::endl;
 
-    deserialize(str, page_locs);
+    while (db.goto_next()) {
+      if (!db.get_record(&book, sizeof(EBookRecord))) return;
+      std::cout 
+        << "Book: "          << book.filename        << std::endl
+        << "  record size: " << db.get_record_size() << std::endl
+        << "  title: "       << book.title           << std::endl
+        << "  author: "      << book.author          << std::endl
+        << "  description: " << book.description     << std::endl
+        << "  bitmap size: " << +book.cover_width << " " << +book.cover_height << std::endl;
 
-    std::cout << "Page locs: qty: " << page_locs.size() << std::endl;
+      int32_t size = db.get_record_size() - sizeof(EBookRecord);
 
-    for (auto & loc : page_locs) {
-      std::cout << 
-        "ItemRef Index: " << loc.itemref_index <<
-        " offset: " << loc.offset <<
-        " size: " << loc.size << std::endl;
+      if (size <= 0) return;
+
+      unsigned char * data = (unsigned char *) allocate(size);
+
+      std::stringstream str;
+      
+      if (!db.get_partial_record(data, size, sizeof(EBookRecord))) return;
+
+      str.write((const char *) data, size);
+
+      deserialize(str, page_locs);
+
+      std::cout << "Page locs: qty: " << page_locs.size() << std::endl;
+
+      for (auto & loc : page_locs) {
+        std::cout << 
+          "ItemRef Index: " << loc.itemref_index <<
+          " offset: " << loc.offset <<
+          " size: " << loc.size << std::endl;
+      }
+
+      free(data);
     }
-
-    free(data);
-  }
+  #endif
 }

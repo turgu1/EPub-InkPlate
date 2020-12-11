@@ -20,17 +20,19 @@ class FormViewer
     static constexpr uint8_t BOTTOM_YPOS      =  50;
 
     struct ChoiceLoc {
-      int16_t xpos, ypos;
-      int16_t width, height;
+      Pos pos;
+      Dim dim;
+      ChoiceLoc() {}
     } choice_loc[MAX_CHOICE_ENTRY];
 
     struct EntryLoc {
-      int16_t xpos, ypos;
-      int16_t width, height;
-      int16_t choices_height;
+      Pos         pos;
+      Dim         dim;
+      int16_t     choices_height;
       ChoiceLoc * choices_loc;
-      int8_t first_choice_loc_idx;
-      int8_t choice_idx;
+      int8_t      first_choice_loc_idx;
+      int8_t      choice_idx;
+      EntryLoc() {}
     } entries_info[MAX_FORM_ENTRY];
 
     uint8_t entry_count;
@@ -45,15 +47,15 @@ class FormViewer
     enum FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
     struct Choice {
       const char * caption;
-      int8_t value;
+      int8_t       value;
     };
     typedef Choice * Choices;
 
     struct FormEntry {
-      const char * caption;
-      int8_t * value;
-      int8_t choice_count;
-      Choices choices;
+      const char  * caption;
+      int8_t      * value;
+      int8_t        choice_count;
+      Choices       choices;
       FormEntryType entry_type;
     };
 

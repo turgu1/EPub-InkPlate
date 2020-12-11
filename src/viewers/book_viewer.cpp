@@ -56,20 +56,23 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
   if (node == nullptr) return false;
   
   const char * name;
-  bool         image_is_present = false;
-  Page::Image  image;
+  const char * str = nullptr;
+  std::string image_filename;
 
-  if (*(name = node.name())) { // A name is attached to the node.
+  image_filename.clear();
+
+  Elements::iterator element_it = elements.end();
+  
+  bool named_element = *(name = node.name()) != 0;
+
+  if (named_element) { // A name is attached to the node.
 
     fmt.display = CSS::INLINE;
 
-    Elements::iterator element_it;
     if ((element_it = elements.find(name)) != elements.end()) {
-      
-      LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_ypos());
-      // if (current_offset == 920) {
-      //   LOG_D("Got it");
-      // }
+
+      LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_pos_y());
+
       switch (element_it->second) {
         case BODY:
         case SPAN:
@@ -80,22 +83,23 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         case IMAGE:
           break;
       #else
-        case IMG: if (show_images) {
+        case IMG: 
+          if (show_images) {
             xml_attribute attr = node.attribute("src");
-            if (attr != nullptr) {
-              std::string filename = attr.value();
-              if ((image_is_present = get_image(filename, image)) == false) {
-                LOG_E("Unable to find image or image too large!");
-              }
-            }
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
+          }
+          else {
+            xml_attribute attr = node.attribute("alt");
+            if (attr != nullptr) str = attr.value();
+            else current_offset++;
           }
           break;
-        case IMAGE: if (show_images) {
+        case IMAGE: 
+          if (show_images) {
             xml_attribute attr = node.attribute("xlink:href");
-            if (attr != nullptr) {
-              std::string filename = attr.value();
-              image_is_present = get_image(filename, image);
-            }
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
           }
           break;
       #endif
@@ -186,24 +190,52 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       element_properties = nullptr;
     }
 
-    if (show_images && image_is_present) {
-      if ((fmt.display == CSS::BLOCK) && page.some_data_waiting()) {
-        SHOW_LOCATION("End Paragraph 1");
+    if (fmt.display == CSS::BLOCK) {
+      if (page.some_data_waiting()) {
+        SHOW_LOCATION("End Paragraph 3");
         if (!page.end_paragraph(fmt)) {
           page_locs_end_page(fmt);
-          SHOW_LOCATION("End Paragraph 2");
-          page.end_paragraph(fmt);
+
+          if (page.some_data_waiting()) {
+            SHOW_LOCATION("End Paragraph 4");
+            page.end_paragraph(fmt);
+          }
         }
       }
-      if ((current_offset == start_of_page_offset) && start_of_paragraph) {
-        SHOW_LOCATION("New Paragraph 1");
-        if (!page.new_paragraph(fmt)) {
-          page_locs_end_page(fmt);
-          SHOW_LOCATION("New Paragraph 2");
-          page.new_paragraph(fmt);
-        }
-        start_of_paragraph = false;
+      SHOW_LOCATION("New Paragraph 4");
+      if (!page.new_paragraph(fmt)) {
+        page_locs_end_page(fmt);
+        SHOW_LOCATION("New Paragraph 5");
+        page.new_paragraph(fmt);
       }
+    } 
+
+    // if ((fmt.display == CSS::BLOCK) && page.some_data_waiting()) {
+    //   SHOW_LOCATION("End Paragraph 1");
+    //   if (!page.end_paragraph(fmt)) {
+    //     page_locs_end_page(fmt);
+    //     SHOW_LOCATION("End Paragraph 2");
+    //     page.end_paragraph(fmt);
+    //   }
+    // }
+    // if ((current_offset == start_of_page_offset) && start_of_paragraph) {
+    //   SHOW_LOCATION("New Paragraph 1");
+    //   if (!page.new_paragraph(fmt)) {
+    //     page_locs_end_page(fmt);
+    //     SHOW_LOCATION("New Paragraph 2");
+    //     page.new_paragraph(fmt);
+    //   }
+    //   start_of_paragraph = false;
+    // }
+  }
+  else {
+    //This is a node inside a named node. It is contaning some text to show.
+    str = fmt.pre ? node.text().get() : node.value();
+  }
+
+  if (show_images && !image_filename.empty()) {
+    Page::Image image;
+    if (get_image(image_filename, image)) {
       if (!page.add_image(image, fmt)) {
         page_locs_end_page(fmt);
         if (start_of_paragraph) {
@@ -214,69 +246,12 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         page.add_image(image, fmt);
       }
       stbi_image_free((void *) image.bitmap);
-
-      current_offset++;
     }
-    else {
-      if (fmt.display == CSS::BLOCK) {
-        if (page.some_data_waiting()) {
-          SHOW_LOCATION("End Paragraph 3");
-          if (!page.end_paragraph(fmt)) {
-            page_locs_end_page(fmt);
-
-            if (page.some_data_waiting()) {
-              SHOW_LOCATION("End Paragraph 4");
-              page.end_paragraph(fmt);
-            }
-          }
-        }
-        SHOW_LOCATION("New Paragraph 4");
-        if (!page.new_paragraph(fmt)) {
-          page_locs_end_page(fmt);
-          SHOW_LOCATION("New Paragraph 5");
-          page.new_paragraph(fmt);
-        }
-      } 
-
-      xml_node sub = node.first_child();
-      while (sub) {
-        page_locs_recurse(sub, fmt);
-        sub = sub. next_sibling();
-      }
-
-      if (fmt.display == CSS::BLOCK) {
-        if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
-          SHOW_LOCATION("End Paragraph 5");
-          if (!page.end_paragraph(fmt)) {
-            page_locs_end_page(fmt);
-            if (page.some_data_waiting()) {
-              SHOW_LOCATION("End Paragraph 6");
-              page.end_paragraph(fmt);
-            }
-          }
-        }
-        start_of_paragraph = false;
-      } 
-
-      // In case that we are at the end of an html file and there remains
-      // characters in the page pipeline, we call end_paragraph() to get them out on the page...
-      if ((element_it != elements.end()) && (element_it->second == BODY)) {
-        SHOW_LOCATION("End Paragraph 7");
-        if (!page.end_paragraph(fmt)) {
-          page_locs_end_page(fmt);
-          if (page.some_data_waiting()) {
-            SHOW_LOCATION("End Paragraph 8");
-            page.end_paragraph(fmt);
-          }
-        }
-      }
-    }
+    current_offset++;
   }
-  else {
-    //This is a node inside a named node. It is contaning some text to show.
-    const char * str = fmt.pre ? node.text().get() : node.value();
-    SHOW_LOCATION("->");
 
+  if (str) {
+    SHOW_LOCATION("->");
     while (*str) {
       if (uint8_t(*str) <= ' ') {
         if (*str == ' ') {
@@ -320,11 +295,66 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         current_offset += count;
         start_of_paragraph = false;
       }
-    }
+    } 
   }
- 
+
+  if (named_element) {
+
+    xml_node sub = node.first_child();
+    while (sub) {
+      page_locs_recurse(sub, fmt);
+      sub = sub.next_sibling();
+    }
+
+    if (fmt.display == CSS::BLOCK) {
+      if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
+        SHOW_LOCATION("End Paragraph 5");
+        if (!page.end_paragraph(fmt)) {
+          page_locs_end_page(fmt);
+          if (page.some_data_waiting()) {
+            SHOW_LOCATION("End Paragraph 6");
+            page.end_paragraph(fmt);
+          }
+        }
+      }
+      start_of_paragraph = false;
+    } 
+
+    // In case that we are at the end of an html file and there remains
+    // characters in the page pipeline, we call end_paragraph() to get them out on the page...
+    if ((element_it != elements.end()) && (element_it->second == BODY)) {
+      SHOW_LOCATION("End Paragraph 7");
+      if (!page.end_paragraph(fmt)) {
+        page_locs_end_page(fmt);
+        if (page.some_data_waiting()) {
+          SHOW_LOCATION("End Paragraph 8");
+          page.end_paragraph(fmt);
+        }
+      }
+    }
+  } 
   return true;
 }
+
+      // if (fmt.display == CSS::BLOCK) {
+      //   if (page.some_data_waiting()) {
+      //     SHOW_LOCATION("End Paragraph 3");
+      //     if (!page.end_paragraph(fmt)) {
+      //       page_locs_end_page(fmt);
+
+      //       if (page.some_data_waiting()) {
+      //         SHOW_LOCATION("End Paragraph 4");
+      //         page.end_paragraph(fmt);
+      //       }
+      //     }
+      //   }
+      //   SHOW_LOCATION("New Paragraph 4");
+      //   if (!page.new_paragraph(fmt)) {
+      //     page_locs_end_page(fmt);
+      //     SHOW_LOCATION("New Paragraph 5");
+      //     page.new_paragraph(fmt);
+      //   }
+      // } 
 
 bool
 BookViewer::build_page_locs()
@@ -336,7 +366,7 @@ BookViewer::build_page_locs()
   page.set_compute_mode(Page::LOCATION);
 
   int8_t images_are_shown;
-  config.get(Config::USE_FONTS_IN_BOOKS, &images_are_shown);
+  config.get(Config::SHOW_IMAGES, &images_are_shown);
   show_images = images_are_shown == 1;
   
   epub.clear_page_locs(1500);
@@ -383,7 +413,7 @@ BookViewer::build_page_locs()
 
       current_offset       = 0;
       start_of_page_offset = 0;
-      xml_node node = epub.current_item.child("html");
+      xml_node node = epub.get_current_item().child("html");
 
       if (node && 
          (node = node.child("body"))) {
@@ -675,20 +705,20 @@ BookViewer::get_image(std::string & filename, Page::Image & image)
   if (epub.get_image(fname, image, channel_count)) {
     if (channel_count != 1) {
       bool all_zero = true;
-      for (int i = 0; i < (image.width * image.height); i++) {
+      for (int i = 0; i < (image.dim.width * image.dim.height); i++) {
         if (image.bitmap[i] != 0) { all_zero = false; break; }
       }
       if (all_zero) {
         LOG_E("Bitmap is all zeroes...");
       }
 
-      unsigned char * bitmap2 = (unsigned char *) allocate(image.width * image.height);
+      unsigned char * bitmap2 = (unsigned char *) allocate(image.dim.width * image.dim.height);
       if (bitmap2 == nullptr) {
         stbi_image_free((void *) image.bitmap);
         return false;
       }
-      stbir_resize_uint8(image.bitmap, image.width, image.height, 0, 
-                         bitmap2,      image.width, image.height, 0,
+      stbir_resize_uint8(image.bitmap, image.dim.width, image.dim.height, 0, 
+                         bitmap2,      image.dim.width, image.dim.height, 0,
                          1);
 
       stbi_image_free((void *) image.bitmap);
@@ -701,37 +731,40 @@ BookViewer::get_image(std::string & filename, Page::Image & image)
 }
 
 bool
-BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
+BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 {
   if (node == nullptr) return false;
   if (page.is_full()) return true;
 
   const char * name;
-  bool image_is_present = false;
-  Page::Image image;
+  const char * str = nullptr;
+  std::string image_filename;
+
+  image_filename.clear();
 
   // If node->name() is not an empty string, this is the start of a named element
 
-  if (*(name = node.name())) { 
+  Elements::iterator element_it = elements.end();
+
+  bool named_element = *(name = node.name()) != 0;
+
+  if (current_offset >= end_of_page_offset) return true;
+
+  bool started = current_offset >= start_of_page_offset;
+
+  if (started) page.set_compute_mode(Page::DISPLAY);
+
+  if (named_element) { 
 
     // LOG_D("Node name: %s", name);
 
     // Do it only if we are now in the current page content
     
-    if (current_offset >= end_of_page_offset) return true;
-
-    bool started = current_offset >= start_of_page_offset;
-
-    if (started) {
-      page.set_compute_mode(Page::DISPLAY);
-    }
-
     fmt.display = CSS::INLINE;
 
-    Elements::iterator element_it;
     if ((element_it = elements.find(std::string(name))) != elements.end()) {
 
-      LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_ypos());
+      LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_pos_y());
 
       switch (element_it->second) {
         case BODY:
@@ -743,32 +776,29 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
         case IMAGE:
           break;
       #else
-        case IMAGE: if (show_images) {
-            if (started) {
-              xml_attribute attr = node.attribute("xlink:href");
-              if (attr != nullptr) {
-                std::string filename = attr.value();
-                image_is_present     = get_image(filename, image);
-              }
-              else {
-                current_offset++;
-              }
+        case IMG:
+          if (show_images) {
+            if (started) { 
+              xml_attribute attr = node.attribute("src");
+              if (attr != nullptr) image_filename = attr.value();
+              else current_offset++;
             }
+            else current_offset++;
+          }
+          else {
+            xml_attribute attr = node.attribute("alt");
+            if (attr != nullptr) str = attr.value();
+            else current_offset++;
           }
           break;
-        case IMG: {
-            if (show_images) {
-              if (started) { 
-                xml_attribute attr = node.attribute("src");
-                if (attr != nullptr) {
-                  std::string filename = attr.value();
-                  image_is_present     = get_image(filename, image);
-                }
-              }
-              else {
-                current_offset++;
-              }
+        case IMAGE: 
+          if (show_images) {
+            if (started) {
+              xml_attribute attr = node.attribute("xlink:href");
+              if (attr != nullptr) image_filename = attr.value();
+              else current_offset++;
             }
+            else current_offset++;
           }
           break;
       #endif
@@ -857,28 +887,50 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
       CSS::clear_properties(element_properties);
       element_properties = nullptr;
     }
-      
-    if (current_offset >= end_of_page_offset) return true;
-    
-    if (show_images && image_is_present) {
-      if (current_offset < start_of_page_offset) {
-        // As we move from the beginning of a file, we bypass everything that is there before
-        // the start of the page offset
-        current_offset++;
+
+    if (started && (fmt.display == CSS::BLOCK)) {
+
+      if (page.some_data_waiting()) {
+        SHOW_LOCATION("End Paragraph 1");
+        if (!page.end_paragraph(fmt)) return true;
       }
-      else {
-        if ((fmt.display == CSS::BLOCK) && page.some_data_waiting()) {
-          SHOW_LOCATION("End Paragraph 1");
-          if (!page.end_paragraph(fmt)) {
-            stbi_image_free((void *) image.bitmap);
-            return true;
-          }
-        }
-        if ((current_offset == start_of_page_offset) && start_of_paragraph) {
-          SHOW_LOCATION("New Paragraph 1");
-          page.new_paragraph(fmt);
-          start_of_paragraph = false;
-        }
+
+      SHOW_LOCATION("New Paragraph 1");
+      if (page.new_paragraph(fmt)) start_of_paragraph = false;
+      else return true;
+    }
+
+    // }
+    // else {
+    //   if (started && (fmt.display == CSS::BLOCK)) {
+    //     if (page.some_data_waiting()) {
+    //       SHOW_LOCATION("End Paragraph 2");
+    //       if (!page.end_paragraph(fmt)) return true;
+    //     }
+    //     SHOW_LOCATION("New Paragraph 2");
+    //     if (page.new_paragraph(fmt)) {
+    //       start_of_paragraph = false;
+    //     }
+    //     // else return true;
+    //   }
+    // }
+  }
+  else {
+    // We look now at the node content and prepare the glyphs to be put on a page.
+    str = fmt.pre ? node.text().get() : node.value();
+  }
+
+  if (current_offset >= end_of_page_offset) return true;
+
+  if (show_images && !image_filename.empty()) {
+    if (current_offset < start_of_page_offset) {
+      // As we move from the beginning of a file, we bypass everything that is there before
+      // the start of the page offset
+      current_offset++;
+    }
+    else {
+      Page::Image image;
+      if (get_image(image_filename, image)) {
         if (started && (current_offset < end_of_page_offset)) {
           if (!page.add_image(image, fmt)) {
             stbi_image_free((void *) image.bitmap);
@@ -886,58 +938,14 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
           }
         }
         stbi_image_free((void *) image.bitmap);
-
-        current_offset++;
       }
-    }
-    else {
-      if (started && (fmt.display == CSS::BLOCK)) {
-        if (page.some_data_waiting()) {
-          SHOW_LOCATION("End Paragraph 2");
-          if (!page.end_paragraph(fmt)) return true;
-        }
-        SHOW_LOCATION("New Paragraph 2");
-        if (page.new_paragraph(fmt)) {
-          start_of_paragraph = false;
-        }
-        // else return true;
-      }
-
-      xml_node sub = node.first_child();
-      while (sub) {
-        if (page.is_full() || (current_offset >= end_of_page_offset)) return true;
-        if (!build_page_recurse(sub, fmt)) {
-          if (page.is_full() || (current_offset >= end_of_page_offset)) return true;
-          return false;
-        }
-        sub = sub.next_sibling();
-      }
-
-      if (current_offset >= start_of_page_offset) {
-        page.set_compute_mode(Page::DISPLAY);
-        if (fmt.display == CSS::BLOCK) {
-          if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
-            SHOW_LOCATION("End Paragraph 3");
-            page.end_paragraph(fmt);
-          }
-          start_of_paragraph = false;
-        }
-        // In case that we are at the end of an html file and there remains
-        // characters in the page pipeline, to get them out on the page...
-        if ((element_it != elements.end()) && (element_it->second == BODY)) {
-          SHOW_LOCATION("End Paragraph 4");
-          page.end_paragraph(fmt);
-        }
-      }
+      current_offset++;
     }
   }
-  else {
-    // We look now at the node content and prepare the glyphs to be put on a page.
-    const char * str = fmt.pre ? node.text().get() : node.value();
+
+  if (str) {
     int16_t size;
-
-    if (current_offset >= end_of_page_offset) return true;
-
+    
     if (current_offset + (size = strlen(str)) <= start_of_page_offset) {
       // As we move from the beginning of a file, we bypass everything that is there before
       // the start of the page offset
@@ -975,14 +983,8 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
             page.set_compute_mode(Page::DISPLAY);
             std::string word;
             word.assign(w, count);
-            // if (word == "Party") {
-            //   LOG_D("Found");
-            // }
             if (!page.add_word(word.c_str(), fmt)) break;
-            if (word == "Identity") {
-              //page.show_display_list(page.get_line_list(), "IDENTITY");
-            }
-          }
+         }
           current_offset += count;
           start_of_paragraph = false;
         }
@@ -991,6 +993,37 @@ BookViewer::build_page_recurse(pugi::xml_node node, Page::Format fmt)
     }
   }
 
+  if (named_element) {
+
+    xml_node sub = node.first_child();
+    while (sub) {
+      if (page.is_full() || (current_offset >= end_of_page_offset)) return true;
+      if (!build_page_recurse(sub, fmt)) {
+        if (page.is_full() || (current_offset >= end_of_page_offset)) return true;
+        return false;
+      }
+      sub = sub.next_sibling();
+    }
+
+    if (current_offset >= start_of_page_offset) {
+      page.set_compute_mode(Page::DISPLAY);
+      if (fmt.display == CSS::BLOCK) {
+        if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
+          SHOW_LOCATION("End Paragraph 3");
+          page.end_paragraph(fmt);
+        }
+        start_of_paragraph = false;
+      }
+
+      // In case that we are at the end of an html file and there remains
+      // characters in the page pipeline, to get them out on the page...
+      if ((element_it != elements.end()) && (element_it->second == BODY)) {
+        SHOW_LOCATION("End Paragraph 4");
+        page.end_paragraph(fmt);
+      }
+    }
+
+  }
   return true;
 }
 
@@ -1003,8 +1036,8 @@ BookViewer::build_page_at(const EPub::Location & loc)
   page.set_compute_mode(Page::MOVE);
 
   int8_t images_are_shown;
-  config.get(Config::USE_FONTS_IN_BOOKS, &images_are_shown);
-  show_images = images_are_shown == 1;
+  config.get(Config::SHOW_IMAGES, &images_are_shown);
+  show_images = images_are_shown != 0;
 
   if (epub.get_item_at_index(loc.itemref_index)) {
 
@@ -1045,7 +1078,7 @@ BookViewer::build_page_at(const EPub::Location & loc)
     current_offset       = 0;
     start_of_page_offset = loc.offset;
     end_of_page_offset   = loc.offset + loc.size;
-    xml_node node        = epub.current_item.child("html");
+    xml_node node        = epub.get_current_item().child("html");
 
     SET_PAGE_TO_SHOW(current_page_nbr);
 
@@ -1074,7 +1107,7 @@ BookViewer::build_page_at(const EPub::Location & loc)
         ostr << current_page_nbr + 1 << " / " << epub.get_page_count();
         std::string str = ostr.str();
 
-        page.put_str_at(str, -1, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+        page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
 
         #if EPUB_INKPLATE6_BUILD
           BatteryViewer::show();
@@ -1138,7 +1171,7 @@ BookViewer::show_page(int16_t page_nbr)
         page.start(fmt);
 
         page.new_paragraph(fmt, false);
-        page.put_text(author, fmt);
+        page.add_text(author, fmt);
         page.end_paragraph(fmt);
 
         fmt.font_index =   1;
@@ -1148,7 +1181,7 @@ BookViewer::show_page(int16_t page_nbr)
 
         page.set_limits(fmt);
         page.new_paragraph(fmt, false);
-        page.put_text(title, fmt);
+        page.add_text(title, fmt);
         page.end_paragraph(fmt);
 
         page.paint();

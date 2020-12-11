@@ -709,8 +709,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
     int w, h, c;
     image.bitmap = stbi_load_from_memory(data, size, &w, &h, &c, 1);
  
-    image.width   = w;
-    image.height  = h;
+    image.dim = Dim(w, h);
     channel_count = c;
 
     free(data);
@@ -722,10 +721,11 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
 }
 
 int16_t 
-EPub::get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset)
+EPub::get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset) const
 { 
   int16_t page_nbr = 0;
-  bool found = false;
+  bool    found    = false;
+
   for (auto loc : page_locs) {
     if ((loc.itemref_index == ref_idx) && (loc.offset >= offset)) { found = true; break; }
     page_nbr++;

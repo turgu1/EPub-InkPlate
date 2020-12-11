@@ -68,24 +68,19 @@ void MsgViewer::show(
   page.start(fmt);
 
   page.clear_region(
-    width, 
-    HEIGHT, 
-    (Screen::WIDTH  - width ) >> 1, 
-    (Screen::HEIGHT - HEIGHT) >> 1);
+    Dim(width, HEIGHT), 
+    Pos((Screen::WIDTH  - width ) >> 1, (Screen::HEIGHT - HEIGHT) >> 1));
 
   page.put_highlight(
-    width  - 4, 
-    HEIGHT - 4, 
-    ((Screen::WIDTH  - width ) >> 1) + 2,
-    ((Screen::HEIGHT - HEIGHT) >> 1) + 2);
+    Dim(width - 4, HEIGHT - 4), 
+    Pos(((Screen::WIDTH - width ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT) >> 1) + 2));
 
   TTF * font = fonts.get(0, 24);
   TTF::BitmapGlyph * glyph = font->get_glyph(icon_char[severity]);
 
   page.put_char_at(
     icon_char[severity], 
-    ((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->width >> 1), 
-    ( Screen::HEIGHT           >> 1) + 20,
+    Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
     fmt);
 
   fmt.font_index =  1;
@@ -96,7 +91,7 @@ void MsgViewer::show(
   page.set_limits(fmt);
   page.new_paragraph(fmt);
   std::string buffer = title;
-  page.put_text(buffer, fmt);
+  page.add_text(buffer, fmt);
   page.end_paragraph(fmt);
 
   // Message
@@ -108,7 +103,7 @@ void MsgViewer::show(
   page.set_limits(fmt);
   page.new_paragraph(fmt);
   buffer = buff;
-  page.put_text(buffer, fmt);
+  page.add_text(buffer, fmt);
   page.end_paragraph(fmt);
 
   // Press a Key option
@@ -122,7 +117,7 @@ void MsgViewer::show(
     page.set_limits(fmt);
     page.new_paragraph(fmt);
     buffer = "[Press a key]";
-    page.put_text(buffer, fmt);
+    page.add_text(buffer, fmt);
     page.end_paragraph(fmt);
   }
 
@@ -171,40 +166,32 @@ void MsgViewer::show_progress(const char * title, ...)
   page.start(fmt);
 
   page.clear_region(
-    width, 
-    HEIGHT2, 
-    (Screen::WIDTH  - width  ) >> 1, 
-    (Screen::HEIGHT - HEIGHT2) >> 1);
+    Dim(width, HEIGHT2), 
+    Pos((Screen::WIDTH  - width  ) >> 1, (Screen::HEIGHT - HEIGHT2) >> 1));
 
   page.put_highlight(
-    width   - 4, 
-    HEIGHT2 - 4, 
-    ((Screen::WIDTH  - width  ) >> 1) + 2,
-    ((Screen::HEIGHT - HEIGHT2) >> 1) + 2);
+    Dim(width - 4, HEIGHT2 - 4), 
+    Pos(((Screen::WIDTH - width  ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT2) >> 1) + 2));
 
   // Title
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
   std::string buffer = buff;
-  page.put_text(buffer, fmt);
+  page.add_text(buffer, fmt);
   page.end_paragraph(fmt);
 
   // Progress zone
 
   page.put_highlight(
-    width   -   42,
-    HEIGHT2 -  100,
-    ((Screen::WIDTH - width) >> 1) +  23,
-     (Screen::HEIGHT         >> 1) - 120
+    Dim(width - 42, HEIGHT2 - 100), 
+    Pos(((Screen::WIDTH - width) >> 1) +  23, (Screen::HEIGHT >> 1) - 120)
   );
 
-  dot_zone.width  = width   -  46;
-  dot_zone.height = HEIGHT2 - 104;
-  dot_zone.xpos   = ((Screen::WIDTH - width) >> 1) +  25;
-  dot_zone.ypos   =  (Screen::HEIGHT         >> 1) - 118;
-  dot_zone.dots_per_line = (dot_zone.width + 1) / 9;
-  dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.height + 1) / 9);
+  dot_zone.dim  = Dim(width -  46, HEIGHT2 - 104);
+  dot_zone.pos  = Pos(((Screen::WIDTH - width) >> 1) +  25, (Screen::HEIGHT >> 1) - 118);
+  dot_zone.dots_per_line = (dot_zone.dim.width + 1) / 9;
+  dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.dim.height + 1) / 9);
   dot_count = 0;
 
   page.paint(false);
@@ -245,14 +232,14 @@ void MsgViewer::add_dot()
   page.start(fmt);
 
   if (dot_count >= dot_zone.max_dot_count) {
-    page.clear_region(dot_zone.width, dot_zone.height, dot_zone.xpos, dot_zone.ypos);
+    page.clear_region(dot_zone.dim, dot_zone.pos);
     dot_count = 0;
   }
 
-  int16_t xpos = dot_zone.xpos + (dot_count % dot_zone.dots_per_line) * 9;
-  int16_t ypos = dot_zone.ypos + (dot_count / dot_zone.dots_per_line) * 9;
+  Pos pos(dot_zone.pos.x + (dot_count % dot_zone.dots_per_line) * 9,
+          dot_zone.pos.y + (dot_count / dot_zone.dots_per_line) * 9);
 
-  page.set_region(8, 8, xpos, ypos);
+  page.set_region(Dim{ 8, 8 }, pos);
 
   dot_count++;
 

@@ -159,7 +159,8 @@ CSS::parse_property_name(const char * str, std::string & name)
   const char * s = str;
 
   name.clear();
-  while (strchr("@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-", *s)) s++;
+  // while (strchr("@ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-", *s)) s++;
+  while (isalpha(*s) || (*s == '-') || (*s == '@')) s++;
   if (s != str) {
     name.assign(str, s - str);
   }
@@ -446,46 +447,49 @@ CSS::~CSS()
 void
 CSS::show_properties(const Properties & props) const
 {
+  #if DEBUGGING
+    std::cout << " { ";
 
-  std::cout << " { ";
+    bool first1 = true;
+    for (auto & property : props) {
+      if (first1) first1 = false; else std::cout << "; ";
+      std::cout << property->id << ": ";
 
-  bool first1 = true;
-  for (auto & property : props) {
-    if (first1) first1 = false; else std::cout << "; ";
-    std::cout << property->id << ": ";
-
-    bool first2 = true;
-    for (auto * value : property->values) {
-      if (first2) first2 = false; else std::cout << ", ";
-      if (value->value_type == STR) {
-        std::cout << value->str;
-      }
-      else if (value->value_type == URL) {
-        std::cout << "url(" << value->str << ')';
-      }
-      else {
-        std::cout << value->num;
-        if (value->value_type == PX) std::cout << "px";
-        else if (value->value_type == PT) std::cout << "pt"; 
-        else if (value->value_type == EM) std::cout << "em"; 
-        else if (value->value_type == PERCENT) std::cout << "%"; 
+      bool first2 = true;
+      for (auto * value : property->values) {
+        if (first2) first2 = false; else std::cout << ", ";
+        if (value->value_type == STR) {
+          std::cout << value->str;
+        }
+        else if (value->value_type == URL) {
+          std::cout << "url(" << value->str << ')';
+        }
+        else {
+          std::cout << value->num;
+          if (value->value_type == PX) std::cout << "px";
+          else if (value->value_type == PT) std::cout << "pt"; 
+          else if (value->value_type == EM) std::cout << "em"; 
+          else if (value->value_type == PERCENT) std::cout << "%"; 
+        } 
       } 
-    } 
-  }   
-  std::cout << " }" << std::endl;
+    }   
+    std::cout << " }" << std::endl;
+  #endif
 };
 
 void
 CSS::show() const
 {
-  std::cout << "CSS Content (Size: " << rules_map.size() << ") :" << std::endl;
+  #if DEBUGGING
+    std::cout << "CSS Content (Size: " << rules_map.size() << ") :" << std::endl;
 
-  for (auto & rule : rules_map) {
+    for (auto & rule : rules_map) {
 
-    for (auto & bundle : rule.second) {
-      std::cout << rule.first;
-      show_properties(*bundle);
+      for (auto & bundle : rule.second) {
+        std::cout << rule.first;
+        show_properties(*bundle);
+      }
     }
-  }
-  std::cout << "[End]" << std::endl;
+    std::cout << "[End]" << std::endl;
+  #endif
 }

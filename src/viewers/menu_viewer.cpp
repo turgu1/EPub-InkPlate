@@ -21,9 +21,9 @@ void MenuViewer::show(MenuEntry * the_menu)
   font = fonts.get(0, 16);
   TTF::BitmapGlyph * icon = font->get_glyph('A', true);
 
-  icon_height = icon->rows;
+  icon_height = icon->dim.height;
 
-  icon_height   = icon->rows;
+  icon_height   = icon->dim.height;
   icon_ypos     = 10 + icon_height;
   text_ypos     = icon_ypos + line_height + 10;
   region_height = text_ypos + 20;
@@ -53,13 +53,13 @@ void MenuViewer::show(MenuEntry * the_menu)
 
   page.start(fmt);
 
-  page.clear_region(Screen::WIDTH, region_height, 0, 0);
+  page.clear_region(Dim{ Screen::WIDTH, region_height }, Pos{ 0, 0 });
 
   menu = the_menu;
 
   uint8_t idx = 0;
 
-  int16_t xpos = 10, ypos = icon_ypos;
+  Pos pos(10, icon_ypos);
   
   while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != END_MENU)) {
 
@@ -67,13 +67,12 @@ void MenuViewer::show(MenuEntry * the_menu)
     TTF::BitmapGlyph * glyph;
     glyph = font->get_glyph(ch);
 
-    entry_locs[idx].x = xpos;
-    entry_locs[idx].y = ypos + glyph->yoff;
-    entry_locs[idx].width  = glyph->width;
-    entry_locs[idx].height = glyph->rows;
+    entry_locs[idx].pos.x = pos.x;
+    entry_locs[idx].pos.y = pos.y + glyph->yoff;
+    entry_locs[idx].dim   = glyph->dim;
 
-    page.put_char_at(ch, xpos, ypos, fmt);
-    xpos += 60; // space between icons
+    page.put_char_at(ch, pos, fmt);
+    pos.x += 60; // space between icons
 
     idx++;
   }
@@ -82,18 +81,18 @@ void MenuViewer::show(MenuEntry * the_menu)
   current_entry_index = 0;
 
   page.put_highlight(
-    entry_locs[0].width  + 8, 
-    entry_locs[0].height + 8, 
-    entry_locs[0].x - 4, 
-    entry_locs[0].y - 4);
+    Dim(entry_locs[0].dim.width  + 8, entry_locs[0].dim.height + 8), 
+    Pos(entry_locs[0].pos.x      - 4, entry_locs[0].pos.y - 4));
 
   fmt.font_index = 1;
   fmt.font_size  = 12;
   
   std::string txt = menu[0].caption; 
-  page.put_str_at(txt, 10, text_ypos, fmt);
+  page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
 
-  page.put_highlight(Screen::WIDTH - 20, 3, 10, region_height - 12);
+  page.put_highlight(
+    Dim(Screen::WIDTH - 20, 3), 
+    Pos(10, region_height - 12));
 
   page.paint(false);
 }
@@ -159,24 +158,20 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
 
   if (current_entry_index != old_index) {
     page.clear_highlight(
-      entry_locs[old_index].width  + 8, 
-      entry_locs[old_index].height + 8, 
-      entry_locs[old_index].x - 4, 
-      entry_locs[old_index].y - 4);
+      Dim(entry_locs[old_index].dim.width + 8, entry_locs[old_index].dim.height + 8), 
+      Pos(entry_locs[old_index].pos.x - 4,     entry_locs[old_index].pos.y - 4     ));
       
     page.put_highlight(
-      entry_locs[current_entry_index].width  + 8, 
-      entry_locs[current_entry_index].height + 8, 
-      entry_locs[current_entry_index].x - 4, 
-      entry_locs[current_entry_index].y - 4);
+      Dim(entry_locs[current_entry_index].dim.width  + 8, entry_locs[current_entry_index].dim.height + 8),
+      Pos(entry_locs[current_entry_index].pos.x - 4,      entry_locs[current_entry_index].pos.y - 4     ));
 
     fmt.font_index = 1;
     fmt.font_size  = 12;
     
-    page.clear_region(Screen::WIDTH, text_height, 0, text_ypos - line_height);
+    page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 
     std::string txt = menu[current_entry_index].caption; 
-    page.put_str_at(txt, 10, text_ypos, fmt);
+    page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
   }
 
   page.paint(false);

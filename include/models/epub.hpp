@@ -33,28 +33,30 @@ class EPub
    static constexpr char const * TAG = "EPub";
 
     pugi::xml_document opf;    ///< The OPF document description.
-    pugi::xml_node current_itemref;
-    int16_t current_itemref_index;
-    char *  opf_data;
-    char *  current_item_data;
-    std::string current_filename;
-    std::string opf_base_path;
-    std::string current_item_file_path;
+    pugi::xml_node     current_itemref;
+    pugi::xml_document current_item;
 
-    PageLocs page_locs;              ///< Pages location list for the current document.
+    int16_t            current_itemref_index;
+    char *             opf_data;
+    char *             current_item_data;
+    std::string        current_filename;
+    std::string        opf_base_path;
+    std::string        current_item_file_path;
 
-    CSSList   css_cache;             ///< All css files in the ebook are maintained here.
-    CSSList   temp_css_cache;        ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
-    CSSList   current_item_css_list; ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
-    CSS *     current_item_css;      ///< Ghost CSS created through merging css suites from current_item_css_list.
+    PageLocs           page_locs;              ///< Pages location list for the current document.
+
+    CSSList            css_cache;             ///< All css files in the ebook are maintained here.
+    CSSList            temp_css_cache;        ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
+    CSSList            current_item_css_list; ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
+    CSS *              current_item_css;      ///< Ghost CSS created through merging css suites from current_item_css_list.
  
-    MediaType item_media_type;
-    bool      file_is_open;
+    MediaType          item_media_type;
+    bool               file_is_open;
 
-    const char * get_meta(const std::string & name);
-    bool         get_opf(std::string & filename);
-    bool         check_mimetype();
-    bool         get_opf_filename(std::string & filename);
+    const char *                get_meta(const std::string & name);
+    bool                         get_opf(std::string & filename);
+    bool                  check_mimetype();
+    bool                get_opf_filename(std::string & filename);
     void         retrieve_fonts_from_css(CSS & css);
 
   public:
@@ -63,16 +65,9 @@ class EPub
 
     void clear_item_data();
     
-    pugi::xml_document current_item;
-
     bool open_file(const std::string & epub_filename);
     bool close_file();
 
-    int16_t       get_itemref_index() { return current_itemref_index;      };
-    const char *  get_title()         { return get_meta("dc:title");       };
-    const char *  get_author()        { return get_meta("dc:creator");     };
-    const char *  get_description()   { return get_meta("dc:description"); };
-    
     bool    get_image(std::string & filename, Page::Image & image, int16_t & channel_count);
   
     char *  retrieve_file(const char * fname, uint32_t & size);
@@ -92,16 +87,12 @@ class EPub
      * @param offset The offset from the beginning of the book.
      * @return int16_t The page number, or 0 if offset is too large.
      */
-    int16_t get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset);
+    int16_t get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset) const;
 
-    CSSList     & get_css_cache() { return css_cache; };
-    CSS         * get_current_item_css() { return current_item_css; };
-    std::string & get_current_item_file_path() { return current_item_file_path; };
-
-    bool get_first_item();
-    bool get_next_item();
+    bool    get_first_item();
+    bool     get_next_item();
     bool get_previous_item();
-    bool get_item(pugi::xml_node itemref);
+    bool          get_item(pugi::xml_node itemref);
     bool get_item_at_index(int16_t itemref_index);
 
     /**
@@ -114,16 +105,20 @@ class EPub
      */
     const char * get_cover_filename();
     
-    /**
-     * @brief Get the current ebook page count
-     * 
-     * @return int16_t The number of pages in the book, or 0 if no file opened.
-     */
-    inline int16_t  get_page_count() { return file_is_open ? page_locs.size() : 0; }
-    inline void       add_page_loc(Location & loc) { page_locs.push_back(loc); }
-    inline void    clear_page_locs(int16_t initial_size) { page_locs.clear(); page_locs.reserve(initial_size); }
-    inline const Location & get_page_loc(int16_t page_nbr) { return page_locs[page_nbr]; }
-    inline const PageLocs & get_page_locs() const { return page_locs; }
+    inline void                add_page_loc(Location & loc)       { page_locs.push_back(loc);                             }
+    inline void             clear_page_locs(int16_t initial_size) { page_locs.clear(); page_locs.reserve(initial_size);   }
+
+    inline const Location &                  get_page_loc(int16_t page_nbr) const { return page_locs[page_nbr];                 }
+    inline const PageLocs &                 get_page_locs() const                 { return page_locs;                           }
+    inline int16_t                         get_page_count() const                 { return file_is_open ? page_locs.size() : 0; }
+    inline const CSSList &                  get_css_cache() const                 { return css_cache;                           }
+    inline CSS *                     get_current_item_css() const                 { return current_item_css;                    }
+    inline const std::string & get_current_item_file_path() const                 { return current_item_file_path;              }
+    inline int16_t                      get_itemref_index() const                 { return current_itemref_index;               }
+    inline const char *                         get_title()                       { return get_meta("dc:title");                }
+    inline const char *                        get_author()                       { return get_meta("dc:creator");              }
+    inline const char *                   get_description()                       { return get_meta("dc:description");          }
+    inline const pugi::xml_document &    get_current_item()                       { return current_item;                        }
   };
 
 #if __EPUB__

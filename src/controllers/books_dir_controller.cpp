@@ -114,7 +114,7 @@ BooksDirController::setup()
     book_filename = book_fname;
   }
  
-  page_nbr = 0;
+  page_nbr      = 0;
   current_index = 0;
 
   LOG_D("Book to show: idx:%d page:%d was_shown:%s", 
@@ -129,7 +129,8 @@ BooksDirController::save_last_book(int16_t itemref_index, int32_t current_page_o
   // set the "WAS_SHOWN" boolean to true, such that when the device will
   // be booting, it will display the last book at the last page shown.
 
-  book_offset = current_page_offset;
+  book_offset  = current_page_offset;
+  book_ref_idx = itemref_index;
 
   #if EPUB_INKPLATE6_BUILD
     nvs_handle_t nvs_handle;
@@ -169,8 +170,8 @@ BooksDirController::show_last_book()
 {
   if (book_index == -1) return;
 
-  static std::string book_fname;
-  static std::string book_title;
+  static std::string            book_fname;
+  static std::string            book_title;
   const BooksDir::EBookRecord * book;
 
   book_was_shown = false;  
@@ -270,6 +271,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
           book_fname   += book->filename;
           book_title    = book->title;
           book_filename = book->filename;
+          
           if (book_controller.open_book_file(book_title, book_fname, book_index)) {
             app_controller.set_controller(AppController::BOOK);
           }

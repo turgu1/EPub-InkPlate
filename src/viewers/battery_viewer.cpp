@@ -58,10 +58,19 @@
 
     TTF::BitmapGlyph * glyph = font->get_glyph(icons[icon_index]);
 
-    page.clear_region(100, -font->get_descender_height(), 4, Screen::HEIGHT + font->get_descender_height() - 2);
+    Dim dim;
+    dim.width  =  100;
+    dim.height = -font->get_descender_height();
+
+    Pos pos;
+    pos.x = 4;
+    pos.y = Screen::HEIGHT + font->get_descender_height() - 2;
+
+    page.clear_region(dim, pos);
 
     fmt.font_index = 0;  
-    page.put_char_at(icons[icon_index], 5, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+    pos.x          = 5;
+    page.put_char_at(icons[icon_index], pos, fmt);
 
     // LOG_E("Battery icon index: %d (%c)", icon_index, icons[icon_index]);
 
@@ -81,7 +90,8 @@
 
       font = fonts.get(1, 9);
       fmt.font_index = 1;  
-      page.put_str_at(str, 5 + glyph->advance + 5, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+      pos.x = 5 + glyph->advance + 5;
+      page.put_str_at(str, pos, fmt);
     }
   }
 #endif

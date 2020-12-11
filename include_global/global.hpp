@@ -31,6 +31,9 @@
 #define FONTS_FOLDER MAIN_FOLDER "/fonts"
 #define BOOKS_FOLDER MAIN_FOLDER "/books"
 
+#ifndef DEBUGGING
+  #define DEBUGGING 0
+#endif
 
 // Debugging aid
 //
@@ -73,5 +76,25 @@
   #define SET_PAGE_TO_SHOW(val)
   #define SHOW_LOCATION(msg)
 #endif
+
+
+struct Dim { 
+  uint16_t width; 
+  uint16_t height; 
+  Dim(uint16_t w, uint16_t h) { 
+    width = w; 
+    height = h;
+  }
+  Dim() {}
+};
+
+struct Pos { 
+  int16_t x; 
+  int16_t y; 
+  Pos(int16_t xpos, int16_t ypos) { 
+    x = xpos; y = ypos; 
+  }
+  Pos() {}
+};
 
 #endif

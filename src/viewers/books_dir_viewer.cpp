@@ -67,15 +67,13 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     
     Page::Image image = (Page::Image) {
       .bitmap = (uint8_t *) book->cover_bitmap,
-      .width  = book->cover_width,
-      .height = book->cover_height
+      .dim    = Dim(book->cover_width, book->cover_height)
     };
-    page.put_image(image, 10, ypos);
+    page.put_image(image, Pos(10, ypos));
 
     if (item_idx == current_item_idx) {
-      page.put_highlight(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
-                         BooksDir::max_cover_height, 
-                         xpos - 5, ypos);
+      page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height), 
+                         Pos(xpos - 5, ypos));
     }
 
     fmt.font_index    = 1;
@@ -86,7 +84,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
-    page.put_text(book->title, fmt);
+    page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 
     fmt.font_index = 3;
@@ -94,7 +92,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     fmt.font_style = Fonts::ITALIC;
 
     page.new_paragraph(fmt);
-    page.put_text(book->author, fmt);
+    page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
 
     ypos = top_pos + BooksDir::max_cover_height + 6;
@@ -117,7 +115,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   fmt.screen_bottom      = 10;
 
   page.set_limits(fmt);
-  page.put_str_at(str, -1, Screen::HEIGHT + font->get_descender_height() - 2, fmt);
+  page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
 
   #if EPUB_INKPLATE6_BUILD
     BatteryViewer::show();
@@ -171,13 +169,13 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     page.start(fmt);
 
-    page.clear_highlight(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
-                      BooksDir::max_cover_height, 
-                      xpos - 5, ypos);
+    page.clear_highlight(
+      Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+      Pos(xpos - 5, ypos));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
-    page.put_text(book->title, fmt);
+    page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 
     fmt.font_index = 3;
@@ -185,7 +183,7 @@ BooksDirViewer::highlight(int16_t item_idx)
     fmt.font_style = Fonts::ITALIC;
 
     page.new_paragraph(fmt);
-    page.put_text(book->author, fmt);
+    page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
     
     // Highlight the new current item
@@ -199,9 +197,9 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     if (book == nullptr) return;
     
-    page.put_highlight(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
-                       BooksDir::max_cover_height, 
-                       xpos - 5, ypos);
+    page.put_highlight(
+      Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+      Pos(xpos - 5, ypos));
 
 
     fmt.font_index    = 1,
@@ -212,7 +210,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
-    page.put_text(book->title, fmt);
+    page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 
     fmt.font_index = 3,
@@ -220,7 +218,7 @@ BooksDirViewer::highlight(int16_t item_idx)
     fmt.font_style = Fonts::ITALIC,
 
     page.new_paragraph(fmt);
-    page.put_text(book->author, fmt);
+    page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
 
     #if EPUB_INKPLATE6_BUILD

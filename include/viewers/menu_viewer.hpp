@@ -25,18 +25,18 @@ class MenuViewer
   private:
     static constexpr char const * TAG = "MenuViewer";
 
-    uint8_t current_entry_index;
-    uint8_t max_index;
-    int16_t icon_height, 
-            icon_ypos, 
-            text_height, 
-            line_height,
-            text_ypos,
-            region_height;
+    uint8_t  current_entry_index;
+    uint8_t  max_index;
+    uint16_t icon_height, 
+             text_height, 
+             line_height,
+             region_height;
+    int16_t  icon_ypos,
+             text_ypos;
 
     struct EntryLoc {
-      int16_t x, y;
-      uint8_t width, height;
+      Pos pos;
+      Dim dim;
     } entry_locs[MAX_MENU_ENTRY];
     MenuEntry * menu;
 };

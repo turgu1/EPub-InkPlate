@@ -5,6 +5,7 @@
 #ifndef __SCREEN_HPP__
 #define __SCREEN_HPP__
 
+#include "global.hpp"
 #include "noncopyable.hpp"
 #include "eink.hpp"
 
@@ -32,17 +33,10 @@ class Screen : NonCopyable
     enum Orientation    : int8_t { O_LEFT, O_RIGHT, O_BOTTOM };
     enum PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
-    void draw_bitmap(const unsigned char * bitmap_data, 
-                     uint16_t width, uint16_t height, 
-                     int16_t x, int16_t y);
-    void  draw_glyph(const unsigned char * bitmap_data, 
-                     uint16_t width, uint16_t height, uint16_t pitch,
-                     int16_t x, int16_t y);
-    void draw_rectangle(uint16_t width, uint16_t height, 
-                        int16_t x, int16_t y,
-                        uint8_t color);
-    void colorize_region(uint16_t width, uint16_t height, 
-                         int16_t x, int16_t y, uint8_t color);
+    void     draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
+    void      draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
+    void  draw_rectangle(Dim dim, Pos pos, uint8_t color);
+    void colorize_region(Dim dim, Pos pos, uint8_t color);
 
     inline void clear()  {
       if (pixel_resolution == ONE_BIT) { 
@@ -78,19 +72,19 @@ class Screen : NonCopyable
 
   private:
     static constexpr char const * TAG = "Screen";
-    static const uint8_t LUT1BIT[8];
-    static const uint8_t LUT1BIT_INV[8];
+    static const uint8_t          LUT1BIT[8];
+    static const uint8_t          LUT1BIT_INV[8];
 
     static Screen singleton;
     Screen() : partial_count(0), 
                frame_buffer_1bit(nullptr), 
                frame_buffer_3bit(nullptr) { };
 
-    int8_t partial_count;
+    int8_t             partial_count;
     EInk::Bitmap1Bit * frame_buffer_1bit;
     EInk::Bitmap3Bit * frame_buffer_3bit;
-    PixelResolution pixel_resolution;
-    Orientation     orientation;
+    PixelResolution    pixel_resolution;
+    Orientation        orientation;
 
     inline void set_pixel_o_left_1bit(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(*frame_buffer_1bit)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];

@@ -4,7 +4,7 @@
 
 #define __UNZIP__ 1
 #include "helpers/unzip.hpp"
-
+#include "viewers/msg_viewer.hpp"
 #include "logging.hpp"
 #include "alloc.hpp"
 
@@ -17,6 +17,7 @@
 #include <cstring>
 #include <sys/types.h>
 #include <unistd.h>
+#include <chrono>
 
 #define ZLIB 0
 
@@ -327,11 +328,25 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
 
     data = (char *) allocate((*fe)->size + 1);
 
-    if (data == nullptr) ERR(25);
+    if (data == nullptr) msg_viewer.out_of_memory("file retrieval from epub");
     data[(*fe)->size] = 0;
 
+    #if SHOW_TIMING
+      uint64_t a = 0, b = 0, c = 0;
+    #endif
+
     if ((*fe)->method == 0) {
+
+      #if SHOW_TIMING
+        a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+      #endif
+
       if (fread(data, (*fe)->size, 1, file) != 1) ERR(26);
+
+      #if SHOW_TIMING
+        b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+      #endif
+
       //LOG_E("Unzip: read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
     }
     else if ((*fe)->method == 8) {
@@ -393,12 +408,27 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         inflateEnd(&zstr);
       #else
         char * compressed_data = (char *) allocate((*fe)->compressed_size + 2);
-        if (compressed_data == nullptr) ERR(27);
+        if (compressed_data == nullptr) msg_viewer.out_of_memory("compressed data retrieval from epub");
+
+        #if SHOW_TIMING
+          a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        #endif
+
         if (fread(compressed_data, (*fe)->compressed_size, 1, file) != 1) ERR(28);
-        compressed_data[(*fe)->compressed_size] = 0;
+
+        #if SHOW_TIMING
+          b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        #endif
+
+        compressed_data[(*fe)->compressed_size]     = 0;
         compressed_data[(*fe)->compressed_size + 1] = 0;
 
         int32_t result = stbi_zlib_decode_noheader_buffer(data, (*fe)->size, compressed_data, (*fe)->compressed_size + 2);
+
+        #if SHOW_TIMING
+          c = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        #endif
+
         if (result != (*fe)->size) {
           ERR(29);
         }
@@ -408,6 +438,12 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
       #endif
     }
     else break;
+
+    #if SHOW_TIMING
+      std::cout << "unzip.get_file timings: get file: " << b - a;
+      if (c != 0) std::cout << " unzip: " << c - b;
+      std::cout << std::endl;
+    #endif
 
     completed = true;
     break;

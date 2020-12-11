@@ -17,10 +17,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   entries = form_entries;
 
-  TTF * font = fonts.get(1, FONT_SIZE);
-  TTF::BitmapGlyph * glyph = font->get_glyph('M');
-
-  uint8_t base_line_offset = -glyph->yoff;
+  TTF * font                        = fonts.get(1, FONT_SIZE);
+  TTF::BitmapGlyph * glyph          = font->get_glyph('M');
+  uint8_t base_line_offset          = -glyph->yoff;
   uint8_t next_available_choice_loc = 0;
 
   line_height = font->get_line_height();
@@ -30,18 +29,17 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   for (int i = 0; i < entry_count; i++) {
     if (i < (entry_count - 1)) { // Don't do last entry (OK / CANCEL)
-      font->get_size(entries[i].caption, &entries_info[i].width, &entries_info[i].height);
+      font->get_size(entries[i].caption, &entries_info[i].dim);
     }
     else {
-      entries_info[i].width = entries_info[i].height = 0;
+      entries_info[i].dim.width = entries_info[i].dim.height = 0;
     }
     entries_info[i].first_choice_loc_idx = next_available_choice_loc;
 
     for (int j = 0, k = next_available_choice_loc; j < entries[i].choice_count; j++, k++) {
       font->get_size(
         entries[i].choices[j].caption, 
-        &choice_loc[k].width,
-        &choice_loc[k].height);
+        &choice_loc[k].dim);
       if (entries[i].choices[j].value == *entries[i].value) {
         entries_info[i].choice_idx = k;
       }
@@ -61,16 +59,16 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     int16_t last_height = 0;
     if (entries[i].entry_type == HORIZONTAL_CHOICES) {     
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        if (choices_height < choice_loc[k].height) choices_height = choice_loc[k].height;
-        choices_width += choice_loc[k].width + separator;
+        if (choices_height < choice_loc[k].dim.height) choices_height = choice_loc[k].dim.height;
+        choices_width += choice_loc[k].dim.width + separator;
         separator = 20;
       }
     }
     else { // VERTICAL_CHOICES
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        if (choices_width < choice_loc[k].width) choices_width = choice_loc[k].width;
+        if (choices_width < choice_loc[k].dim.width) choices_width = choice_loc[k].dim.width;
         choices_height += line_height;
-        last_height = choice_loc[k].height;
+        last_height     = choice_loc[k].dim.height;
       }
       choices_height += last_height - line_height;
     }
@@ -84,31 +82,31 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     if (entries[i].entry_type == HORIZONTAL_CHOICES) {     
       int16_t left_pos = right_xpos - all_choices_width - 10;
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        choice_loc[k].xpos = left_pos;
-        choice_loc[k].ypos = current_ypos + 10;
-        left_pos += choice_loc[k].width + 20;
+        choice_loc[k].pos.x = left_pos;
+        choice_loc[k].pos.y = current_ypos + 10;
+        left_pos += choice_loc[k].dim.width + 20;
       }
     }
     else { // VERTICAL_CHOICES
       int16_t top_ypos = current_ypos + 10;
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        choice_loc[k].xpos = right_xpos - all_choices_width - 10;
-        choice_loc[k].ypos = top_ypos;
+        choice_loc[k].pos.x = right_xpos - all_choices_width - 10;
+        choice_loc[k].pos.y = top_ypos;
         top_ypos += line_height;
       }
     }
-    entries_info[i].xpos = right_xpos - all_choices_width - 35 - entries_info[i].width;
-    entries_info[i].ypos = current_ypos + 10;
-    current_ypos += entries_info[i].choices_height + 20;
+    entries_info[i].pos.x = right_xpos - all_choices_width - 35 - entries_info[i].dim.width;
+    entries_info[i].pos.y = current_ypos + 10;
+    current_ypos         += entries_info[i].choices_height + 20;
   }
 
   current_ypos += 20;
   int k = entries_info[entry_count - 1].first_choice_loc_idx;
-  choice_loc[k].ypos = choice_loc[k + 1].ypos = current_ypos;
-  choice_loc[k].xpos = (Screen::WIDTH >> 1) - choice_loc[k].width - 20;
-  choice_loc[k + 1].xpos = (Screen::WIDTH >> 1) + 20;
-  entries_info[entry_count - 1].choices_height = choice_loc[k].height;
-  last_choices_width = choice_loc[k].width + choice_loc[k + 1].width + 40;
+  choice_loc[k].pos.y     = choice_loc[k + 1].pos.y = current_ypos;
+  choice_loc[k].pos.x     = (Screen::WIDTH >> 1) - choice_loc[k].dim.width - 20;
+  choice_loc[k + 1].pos.x = (Screen::WIDTH >> 1) + 20;
+  entries_info[entry_count - 1].choices_height = choice_loc[k].dim.height;
+  last_choices_width = choice_loc[k].dim.width + choice_loc[k + 1].dim.width + 40;
 
   // Display the form
 
@@ -140,14 +138,12 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   // The large rectangle into which the form will be drawn
 
   page.clear_region(
-    Screen::WIDTH - 40, 
-    Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top,
-    20, TOP_YPOS);
+    Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+    Pos(20, TOP_YPOS));
 
   page.put_highlight(
-    Screen::WIDTH - 44, 
-    Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top + 4,
-    22, TOP_YPOS + 2);
+    Dim(Screen::WIDTH - 44, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top + 4),
+    Pos(22, TOP_YPOS + 2));
 
   // Show all captions (but the last one (OK / CANCEL))
 
@@ -155,16 +151,14 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     if (i < (entry_count - 1)) {
       page.put_str_at(
         entries[i].caption, 
-        entries_info[i].xpos, 
-        entries_info[i].ypos + base_line_offset, 
+        Pos(entries_info[i].pos.x, entries_info[i].pos.y + base_line_offset), 
         fmt);
     }
 
     for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
       page.put_str_at(
         entries[i].choices[j].caption,
-        choice_loc[k].xpos,
-        choice_loc[k].ypos + base_line_offset,
+        Pos(choice_loc[k].pos.x, choice_loc[k].pos.y + base_line_offset),
         fmt);
     }
   }
@@ -173,7 +167,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   page.set_limits(fmt);
   page.new_paragraph(fmt);
   if (!bottom_msg.empty()) {
-    page.put_text(
+    page.add_text(
       bottom_msg,
       fmt
     );
@@ -186,10 +180,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     int8_t k = entries_info[i].choice_idx;
 
     page.put_highlight(
-      entries[i].entry_type == HORIZONTAL_CHOICES ? choice_loc[k].width + 10 : all_choices_width + 10,
-      choice_loc[k].height + 10,
-      choice_loc[k].xpos - 5,
-      choice_loc[k].ypos - 5);
+      Dim(entries[i].entry_type == HORIZONTAL_CHOICES ? choice_loc[k].dim.width + 10 : all_choices_width + 10,
+          choice_loc[k].dim.height + 10),
+      Pos(choice_loc[k].pos.x - 5, choice_loc[k].pos.y - 5));
   }
 
   // Set current entry, highlighting the set of choices for that entry
@@ -199,10 +192,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   highlight_selection = false;
 
   page.put_highlight(
-    all_choices_width + 20,
-    entries_info[0].choices_height + 20,
-    choice_loc[entries_info[0].first_choice_loc_idx].xpos - 10,
-    choice_loc[entries_info[0].first_choice_loc_idx].ypos - 10);
+    Dim(all_choices_width + 20,
+        entries_info[0].choices_height + 20),
+    Pos(choice_loc[entries_info[0].first_choice_loc_idx].pos.x - 10,
+        choice_loc[entries_info[0].first_choice_loc_idx].pos.y - 10));
 
   page.paint(false);
 }
@@ -307,56 +300,54 @@ FormViewer::event(EventMgr::KeyEvent key)
     if (entry_selection) {
 //      if (current_entry_idx != old_entry_idx) {
         page.clear_highlight(
-          ((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
-          entries_info[old_entry_idx].choices_height + 20,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].xpos - 10,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].ypos - 10);
+          Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
+              entries_info[old_entry_idx].choices_height + 20),
+          Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 10,
+              choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 10));
         page.clear_highlight(
-          ((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
-          entries_info[old_entry_idx].choices_height + 22,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].xpos - 11,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].ypos - 11);
+          Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
+              entries_info[old_entry_idx].choices_height + 22),
+          Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 11,
+              choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 11));
         page.clear_highlight(
-          ((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
-          entries_info[old_entry_idx].choices_height + 24,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].xpos - 12,
-          choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].ypos - 12);
+          Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
+              entries_info[old_entry_idx].choices_height + 24),
+          Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 12,
+              choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 12));
 
         page.put_highlight(
-          ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
-          entries_info[current_entry_idx].choices_height + 20,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 10,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 10);
+          Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
+              entries_info[current_entry_idx].choices_height + 20),
+          Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 10,
+              choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 10));
 //      }
     }
     else {
       if (highlight_selection) {
         highlight_selection = false;
         page.put_highlight(
-          ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
-          entries_info[current_entry_idx].choices_height + 22,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 11,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 11);
+          Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
+              entries_info[current_entry_idx].choices_height + 22),
+          Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 11,
+              choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 11));
         page.put_highlight(
-          ((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
-          entries_info[current_entry_idx].choices_height + 24,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].xpos - 12,
-          choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].ypos - 12);
+          Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
+              entries_info[current_entry_idx].choices_height + 24),
+          Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 12,
+              choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 12));
       }
       if (choice_idx != old_choice_idx) {
         entries_info[current_entry_idx].choice_idx = choice_idx;
 
         page.clear_highlight(
-          entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[old_choice_idx].width + 10 : all_choices_width + 10,
-          choice_loc[old_choice_idx].height + 10,
-          choice_loc[old_choice_idx].xpos - 5,
-          choice_loc[old_choice_idx].ypos - 5);
+          Dim(entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[old_choice_idx].dim.width + 10 : all_choices_width + 10,
+              choice_loc[old_choice_idx].dim.height + 10),
+          Pos(choice_loc[old_choice_idx].pos.x - 5, choice_loc[old_choice_idx].pos.y - 5));
 
         page.put_highlight(
-          entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[choice_idx].width + 10 : all_choices_width + 10,
-          choice_loc[choice_idx].height + 10,
-          choice_loc[choice_idx].xpos - 5,
-          choice_loc[choice_idx].ypos - 5);
+          Dim(entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[choice_idx].dim.width + 10 : all_choices_width + 10,
+              choice_loc[choice_idx].dim.height + 10),
+          Pos(choice_loc[choice_idx].pos.x - 5, choice_loc[choice_idx].pos.y - 5));
       }
     }
 
@@ -368,9 +359,8 @@ FormViewer::event(EventMgr::KeyEvent key)
       *entries[i].value = entries[i].choices[k].value;
     }
     page.clear_region(
-      Screen::WIDTH - 40, 
-      Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top,
-      20, TOP_YPOS);
+      Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+      Pos(20, TOP_YPOS));
 
     page.paint(false);
   }

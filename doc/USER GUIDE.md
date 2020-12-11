@@ -88,13 +88,15 @@ The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one op
 
 The reader presents the book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-CLICK-NEXT** and **DOUBLE-CLICK-PREVIOUS** buttons will go 10 pages at a time.
 
+If the user presses the **PREVIOUS** button when the first page of a book is presented, the reader will display the last page of the book. If the **NEXT** button is pressed when the last page of a book is presented, the reader will display the first page of the book.
+
 As for the books list, the **DOUBLE-CLICK-SELECT** button will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
 ![E-Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
 
 - **Return to the book reader** - This will simply get out of the options list, back to the page being read in the currently displayed book.
 - **E-Books List** - This will get you out of the book reader, returning to the books list.
-- **WiFi access to the books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. 
+- **WiFi access to the books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled). 
 - **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power Off (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
 
@@ -157,7 +159,9 @@ One way to circumvent the problems is to use the epub converter provided with th
 
 The convert tool of *Calibre* can also shrink fonts such that they only contain the glyphs required for the book (When the 'Convert books' tool is launched, the option is located in 'Look & feel' > 'Fonts' > 'Subset all embedded fonts'). I've seen some books having four of five fonts requiring 1.5 megabytes each shrunk to around 1 meg for all fonts by the convert tool (around 200 kilobytes per fonts). 
 
-For images, to get them in line with the screen resolution of the InkPlate-6 (that is 600x800), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. Even at this size, a 600x800 image will take close to 500 kilobytes.
+For images, to get them in line with the screen resolution of the InkPlate-6 (that is 600x800), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. Even at this size, a 600x800 image will take close to 500 kilobytes. 
+
+It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more memory to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 600x800 pixels. This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
 
 ### 3.3 In case of out of memory situation
 
@@ -168,8 +172,8 @@ As performance is a key factor, fonts are loaded and kept in memory by the appli
 Here are some steps that can be used to minimize the amount of memory that would be required to present the content of books:
 
 - **Convert the book** - As indicated in the previous section, the *Calibre Convert* tool can be used to minimize both fonts and image size.
-- **Use 1bit pixels** - The frame buffer used to render pages on screen is using a  good chunk of memory: 240 kilobytes for 3bits pixels, 60 kilobytes for 1bit pixels. You can select the pixel resolution in the Main Parameters.
-- **Desactivate images** - In the Main Parameters, you can request not to present images on the screen.
-- **Desactivate book fonts** - In the Font Parameters, you can request not to use fonts supplied in a book.
+- **Use 1bit pixels** - The frame buffer used to render pages on screen is using a good chunk of memory: 240 kilobytes for 3bits pixels, 60 kilobytes for 1bit pixels. You can select the pixel resolution in the Main Parameters.
+- **Desactivate images** - In the Main Parameters, you can request not to show images on the screen.
+- **Desactivate book fonts** - In the Font Parameters, you can request not to use fonts supplied with a book.
 
 If an internal problem related to memory allocation is found by the application, a message will appear on the screen and the device will be put in a Deep Sleep state. The message will indicate the reason why the allocation was not successful. This can be used as a hint to use one or more steps indicated above.

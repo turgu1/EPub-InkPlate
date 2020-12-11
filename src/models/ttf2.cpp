@@ -29,6 +29,7 @@ TTF::TTF(const std::string & filename)
   set_font_face_from_file(filename);
   memory_font  = nullptr;
   current_size = -1;
+  cache_it     = cache.end();
 }
 
 TTF::TTF(unsigned char * buffer, int32_t size)
@@ -44,6 +45,7 @@ TTF::TTF(unsigned char * buffer, int32_t size)
 
   set_font_face_from_memory(buffer, size);
   current_size = -1;
+  cache_it     = cache.end();
 }
 
 TTF::~TTF()
@@ -91,6 +93,7 @@ TTF::clear_face()
   free(memory_font);
   
   current_size = -1;
+  cache_it     = cache.end();
 }
 
 void
@@ -109,20 +112,20 @@ TTF::clear_cache()
   
   cache.clear();
   cache.reserve(50);
+  cache_it = cache.end();
 }
 
 TTF::BitmapGlyph *
 TTF::get_glyph(int32_t charcode, bool load_bitmap)
 {
   int error;
-  GlyphsCache::iterator cit;
+
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
 
-  cit = cache.find(current_size);
-  bool found = (cit != cache.end()) &&
-               ((git = cit->second.find(charcode)) != cit->second.end());
+  bool found = (cache_it != cache.end()) &&
+               ((git = cache_it->second.find(charcode)) != cache_it->second.end());
 
   if (found) {
     return git->second;
@@ -153,9 +156,9 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
 
     FT_GlyphSlot slot = face->glyph;
 
-    glyph->root  = this;
-    glyph->width = slot->metrics.width  >> 6;
-    glyph->rows  = slot->metrics.height >> 6;
+    glyph->root       = this;
+    glyph->dim.width  = slot->metrics.width  >> 6;
+    glyph->dim.height = slot->metrics.height >> 6;
 
     if (load_bitmap) {
 
@@ -174,11 +177,11 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
         }
       }
 
-      glyph->pitch = slot->bitmap.pitch;
-      glyph->rows  = slot->bitmap.rows;
-      glyph->width = slot->bitmap.width;
+      glyph->pitch      = slot->bitmap.pitch;
+      glyph->dim.height = slot->bitmap.rows;
+      glyph->dim.width  = slot->bitmap.width;
 
-      int32_t size = glyph->pitch * glyph->rows;
+      int32_t size = glyph->pitch * glyph->dim.height;
 
       if (size > 0) {
         glyph->buffer = byte_pool_alloc(size);
@@ -207,9 +210,9 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
     glyph->advance =  slot->advance.x >>  6;
 
     // std::cout << "Glyph: " <<
-    //   " w:"  << glyph->width <<
+    //   " w:"  << glyph->dim.width <<
     //   " bw:" << slot->bitmap.width <<
-    //   " r:"  << glyph->rows <<
+    //   " h:"  << glyph->dim.height <<
     //   " br:" << slot->bitmap.rows <<
     //   " p:"  << glyph->pitch <<
     //   " x:"  << glyph->xoff <<
@@ -217,6 +220,7 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
     //   " a:"  << glyph->advance << std::endl;
 
     cache[current_size][charcode] = glyph;
+    cache_it = cache.find(current_size);
     return glyph;
   }
 }
@@ -240,6 +244,8 @@ TTF::set_font_size(int16_t size)
   }
 
   current_size = size;
+  cache_it     = cache.find(current_size);
+   
   return true;
 }
 
@@ -312,25 +318,25 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t size)
 }
 
 void
-TTF::get_size(const char * str, int16_t * width, int16_t * height)
+TTF::get_size(const char * str, Dim * dim)
 {
   int16_t max_up   = 0;
   int16_t max_down = 0;
 
-  *width  = 0;
+  dim->width  = 0;
 
   while (*str) {
     BitmapGlyph * glyph = get_glyph(*str++);
     if (glyph) {
-      *width += glyph->advance;
+      dim->width += glyph->advance;
 
       int16_t up   = -glyph->yoff;
-      int16_t down =  glyph->rows + glyph->yoff;
+      int16_t down =  glyph->dim.height + glyph->yoff;
     
       if (up   > max_up  ) max_up   = up;
       if (down > max_down) max_down = down;
     }
   }
 
-  *height = max_up + max_down;
+  dim->height = max_up + max_down;
 }

@@ -23,8 +23,8 @@ class MsgViewer {
     static constexpr uint16_t HEIGHT2 = 400;
 
     struct DotsZone {
-      int16_t xpos, ypos;
-      int16_t width, height;
+      Pos pos;
+      Dim dim;
       int16_t max_dot_count;
       int16_t dots_per_line;
     } dot_zone;

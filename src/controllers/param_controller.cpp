@@ -32,6 +32,10 @@ static void
 wifi_mode()
 {
   #if EPUB_INKPLATE6_BUILD
+    epub.close_file();
+    fonts.clear();
+    fonts.clear_glyph_caches();
+    
     event_mgr.set_stay_on(true); // DO NOT sleep
 
     if (start_web_server()) {

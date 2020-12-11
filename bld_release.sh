@@ -38,6 +38,11 @@ then
   rm "$folder/SDCard/last_book.txt"
 fi
 
+if [ -d "$folder/SDCard/books/temp" ]
+then
+  rm -rf "$folder/SDCard/books/temp"
+fi
+
 
 cd doc
 ./gener.sh
@@ -45,6 +50,8 @@ cd ..
 
 cp "doc/USER GUIDE.pdf" "$folder"
 cp "doc/INSTALL.pdf" "$folder"
+
+cp adjust_size.sh "$folder"
 
 zip -r "$folder.zip" "$folder"
 
