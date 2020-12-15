@@ -13,6 +13,7 @@
 #include "pugixml.hpp"
 #include "viewers/page.hpp"
 #include "models/epub.hpp"
+#include "models/page_locs.hpp"
 #include "models/css.hpp"
 #include "models/fonts.hpp"
 
@@ -26,9 +27,9 @@ class BookViewer
     int32_t current_offset;          ///< Where we are in current item
     int32_t start_of_page_offset;
     int32_t end_of_page_offset;
-    int16_t current_page_nbr;
     int16_t page_bottom;
     bool    show_images;
+    PageLocs::PageId current_page_id;
     
     CSS::Properties * last_props;
 
@@ -47,7 +48,7 @@ class BookViewer
     bool page_locs_recurse(pugi::xml_node node, Page::Format fmt);
     void page_locs_end_page(Page::Format & fmt);
     bool build_page_recurse(pugi::xml_node node, Page::Format fmt);
-    void build_page_at(const EPub::Location & loc);
+    void build_page_at(const PageLocs::PageId & page_id);
     int16_t get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
     int16_t get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
     float get_factor_value(const CSS::Value & value, const Page::Format & fmt, float ref);
@@ -80,6 +81,8 @@ class BookViewer
 
     ~BookViewer() { }
 
+    void init() { current_page_id = PageLocs::PageId(-1, -1); }
+
     /**
      * @brief Build the pages location vector
      * 
@@ -99,7 +102,7 @@ class BookViewer
      * 
      * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
      */
-    void show_page(int16_t page_nbr);
+    void show_page(const PageLocs::PageId & page_id);
 
     void line_added_at(int16_t ypos) {
       LOG_D("Line added: %d %d", current_offset, ypos);

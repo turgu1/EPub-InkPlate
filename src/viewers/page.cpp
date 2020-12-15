@@ -143,7 +143,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
   if (fmt.align == CSS::LEFT_ALIGN) {
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
         entry->command = GLYPH;
@@ -173,7 +173,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
     while (*s) {
       bool first = true;
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
         size += glyph->advance;
       }
       first = false;
@@ -201,7 +201,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
     s = str.c_str();
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), compute_mode != LOCATION))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
         
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
@@ -619,7 +619,6 @@ Page::add_word(const char * word,  const Format & fmt)
   TTF::BitmapGlyph * glyph;
   const char * str = word;
   int16_t height;
-  bool cmode = compute_mode != LOCATION;
 
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
 
@@ -636,8 +635,8 @@ Page::add_word(const char * word,  const Format & fmt)
   bool    first = true;
 
   while (*str) {
-    if ((glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first), cmode)) == nullptr) {
-      glyph = font->get_glyph(' ', cmode);
+    if ((glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first))) == nullptr) {
+      glyph = font->get_glyph(' ');
     }
     if (glyph) {
       width += glyph->advance;
@@ -713,7 +712,7 @@ Page::add_word(const char * word,  const Format & fmt)
   int16_t width = 0;
   bool    first = true;
   while (*str) {
-    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first), compute_mode != LOCATION);
+    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first));
     if (glyph) width += glyph->advance;
     first = false;
   }
@@ -738,8 +737,8 @@ Page::add_word(const char * word,  const Format & fmt)
   first = true;
   while (*word) {
     if (font) {
-      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first), compute_mode != LOCATION)) == nullptr) {
-        glyph = font->get_glyph(' ', compute_mode != LOCATION);
+      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first))) == nullptr) {
+        glyph = font->get_glyph(' ');
       }
       if (glyph) {
         add_glyph_to_line(glyph, *font, false);
@@ -776,7 +775,7 @@ Page::add_char(const char * ch, const Format & fmt)
 
   int32_t code = to_unicode(&ch, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code, compute_mode != LOCATION);
+  glyph = font->get_glyph(code);
 
   if (glyph != nullptr) {
     // Verify that there is enough space for the glyph on the line.
@@ -810,7 +809,7 @@ Page::add_image(Image & image, const Format & fmt)
   const char * str = "m";
   int32_t code = to_unicode(&str, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code, compute_mode != LOCATION);
+  glyph = font->get_glyph(code);
 
   // Compute available space to put the image.
 

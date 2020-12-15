@@ -7,25 +7,26 @@
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
+#include "models/epub.hpp"
+#include "models/page_locs.hpp"
 
 #include <string>
 
 class BookController
 {
   public:
-    BookController() : current_page(0) {}
+    BookController() : current_page_id(nullptr) {}
     
     void key_event(EventMgr::KeyEvent key);
     void enter();
     void leave(bool going_to_deep_sleep = false);
-    bool open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int16_t ref_idx, int32_t page_offset);
-    bool open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, int16_t page_nbr = 0);
+    bool open_book_file(std::string & book_title, std::string & book_filename, int16_t book_idx, const PageLocs::PageId & page_id);
     void put_str(const char * str, int xpos, int ypos);
 
   private:
     static constexpr char const * TAG = "BookController";
 
-    int16_t current_page;
+    const PageLocs::PageId * current_page_id;
 };
 
 #if __BOOK_CONTROLLER__

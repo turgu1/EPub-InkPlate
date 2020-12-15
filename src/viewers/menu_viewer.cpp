@@ -19,7 +19,7 @@ void MenuViewer::show(MenuEntry * the_menu)
   text_height = line_height - font->get_descender_height(); 
 
   font = fonts.get(0, 16);
-  TTF::BitmapGlyph * icon = font->get_glyph('A', true);
+  TTF::BitmapGlyph * icon = font->get_glyph('A');
 
   icon_height = icon->dim.height;
 

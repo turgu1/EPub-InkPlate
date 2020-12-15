@@ -8,7 +8,9 @@
 #include "models/fonts.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
+#include "viewers/book_viewer.hpp"
 #include "helpers/unzip.hpp"
 #include "logging.hpp"
 
@@ -207,22 +209,6 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
   char * str = unzip.get_file(filename.c_str(), size);
 
   return str;
-}
-
-void 
-EPub::retrieve_page_locs(int16_t idx)
-{
-  books_dir.get_page_locs(page_locs, idx);
-
-  // int16_t page_nbr = 0;
-  // for (auto & page : page_locs) {
-  //   std::cout << 
-  //     "Page " << page_nbr << 
-  //     " ref:" << page.itemref_index << 
-  //     " off:" << page.offset <<
-  //     " siz:" << page.size << std::endl;
-  //   page_nbr++;
-  // }
 }
 
 void
@@ -482,8 +468,10 @@ EPub::open_file(const std::string & epub_filename)
   }
 
   current_itemref_index = 0;
-  current_filename = epub_filename;
-  file_is_open = true;
+  current_filename      = epub_filename;
+  file_is_open          = true;
+
+  page_locs.set_item_count(get_item_count());
 
   LOG_D("EPub file is now open.");
 
@@ -639,6 +627,24 @@ EPub::get_next_item()
   return false;
 }
 
+int16_t 
+EPub::get_item_count()
+{
+  if (!file_is_open) return 0;
+
+  xml_node node;
+
+  if (!((node = opf.child("package").child("spine").child("itemref"))))
+    return 0;
+  
+  int16_t count = 0;
+  do {
+    count++;
+  } while (node = node.next_sibling("itemref"));
+
+  return count;
+}
+
 bool 
 EPub::get_item_at_index(int16_t itemref_index)
 {
@@ -665,22 +671,6 @@ EPub::get_item_at_index(int16_t itemref_index)
     return get_item(node);
   }
   return true;
-}
-
-bool 
-EPub::get_previous_item()
-{
-  if (!file_is_open) return false;
-  if (current_itemref.empty()) return false;
-  xml_node node = current_itemref.previous_sibling("itemref");
-
-  if (node) {
-    current_itemref_index--;
-    return get_item(node);
-  }
-
-  current_itemref_index = 0;
-  return false;
 }
 
 bool
@@ -718,23 +708,4 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
   }
 
   return false;
-}
-
-int16_t 
-EPub::get_page_nbr_from_ref_offset(int16_t ref_idx, int32_t offset) const
-{ 
-  int16_t page_nbr = 0;
-  bool    found    = false;
-
-  for (auto loc : page_locs) {
-    if ((loc.itemref_index == ref_idx) && (loc.offset >= offset)) { found = true; break; }
-    page_nbr++;
-  }
-  LOG_D("get_page_nbr_from_ref_offset: ref index: %d offset: %d, page: %d, found: %s", 
-        ref_idx, 
-        offset, 
-        page_nbr, 
-        found ? "YES" : "NO");
-        
-  return found ? page_nbr : 0;
 }

@@ -116,7 +116,7 @@ TTF::clear_cache()
 }
 
 TTF::BitmapGlyph *
-TTF::get_glyph(int32_t charcode, bool load_bitmap)
+TTF::get_glyph(int32_t charcode)
 {
   int error;
 
@@ -160,49 +160,43 @@ TTF::get_glyph(int32_t charcode, bool load_bitmap)
     glyph->dim.width  = slot->metrics.width  >> 6;
     glyph->dim.height = slot->metrics.height >> 6;
 
-    if (load_bitmap) {
 
-      if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-        if (screen.get_pixel_resolution() == Screen::ONE_BIT) {
-          error = FT_Render_Glyph(face->glyph,            // glyph slot
-                                  FT_RENDER_MODE_MONO);   // render mode
-        }
-        else {
-          error = FT_Render_Glyph(face->glyph,            // glyph slot
-                                  FT_RENDER_MODE_NORMAL); // render mode
-        }
-        if (error) {
-          LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
-          return nullptr;
-        }
-      }
-
-      glyph->pitch      = slot->bitmap.pitch;
-      glyph->dim.height = slot->bitmap.rows;
-      glyph->dim.width  = slot->bitmap.width;
-
-      int32_t size = glyph->pitch * glyph->dim.height;
-
-      if (size > 0) {
-        glyph->buffer = byte_pool_alloc(size);
-
-        if (glyph->buffer == nullptr) {
-          LOG_E("Unable to allocate memory for glyph.");
-          msg_viewer.out_of_memory("glyph allocation");
-        }
-        // else {
-        //   LOG_D("Allocated %d bytes for glyph.", size)
-        // }
-
-        memcpy(glyph->buffer, slot->bitmap.buffer, size);
+    if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+      if (screen.get_pixel_resolution() == Screen::ONE_BIT) {
+        error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                FT_RENDER_MODE_MONO);   // render mode
       }
       else {
-        glyph->buffer = nullptr;
+        error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                FT_RENDER_MODE_NORMAL); // render mode
       }
+      if (error) {
+        LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
+        return nullptr;
+      }
+    }
+
+    glyph->pitch      = slot->bitmap.pitch;
+    glyph->dim.height = slot->bitmap.rows;
+    glyph->dim.width  = slot->bitmap.width;
+
+    int32_t size = glyph->pitch * glyph->dim.height;
+
+    if (size > 0) {
+      glyph->buffer = byte_pool_alloc(size);
+
+      if (glyph->buffer == nullptr) {
+        LOG_E("Unable to allocate memory for glyph.");
+        msg_viewer.out_of_memory("glyph allocation");
+      }
+      // else {
+      //   LOG_D("Allocated %d bytes for glyph.", size)
+      // }
+
+      memcpy(glyph->buffer, slot->bitmap.buffer, size);
     }
     else {
       glyph->buffer = nullptr;
-      glyph->pitch  = 0;
     }
 
     glyph->xoff    =  slot->bitmap_left;

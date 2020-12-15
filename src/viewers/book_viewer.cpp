@@ -32,13 +32,10 @@ void
 BookViewer::page_locs_end_page(Page::Format & fmt)
 {
   if (!page.is_empty()) {
-    EPub::Location loc;
 
-    loc.itemref_index = epub.get_itemref_index();
-    loc.offset        = start_of_page_offset;
-    loc.size          = current_offset - start_of_page_offset;
-
-    epub.add_page_loc(loc);
+    PageLocs::PageId page_id = PageLocs::PageId(epub.get_itemref_index(), start_of_page_offset);
+    PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_of_page_offset, -1);
+    page_locs.insert(page_id, page_info);
 
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
  
@@ -369,7 +366,7 @@ BookViewer::build_page_locs()
   config.get(Config::SHOW_IMAGES, &images_are_shown);
   show_images = images_are_shown == 1;
   
-  epub.clear_page_locs(1500);
+  page_locs.clear();
 
   if (epub.get_first_item()) {
 
@@ -1028,7 +1025,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 }
 
 void
-BookViewer::build_page_at(const EPub::Location & loc)
+BookViewer::build_page_at(const PageLocs::PageId & page_id)
 {
   TTF * font = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
@@ -1039,7 +1036,7 @@ BookViewer::build_page_at(const EPub::Location & loc)
   config.get(Config::SHOW_IMAGES, &images_are_shown);
   show_images = images_are_shown != 0;
 
-  if (epub.get_item_at_index(loc.itemref_index)) {
+  if (epub.get_item_at_index(page_id.itemref_index)) {
 
     int16_t idx;
 
@@ -1075,9 +1072,13 @@ BookViewer::build_page_at(const EPub::Location & loc)
 
     last_props        = nullptr;
 
+    const PageLocs::PageInfo * page_info = page_locs.get_page_info(page_id);
+    if (page_info == nullptr) return;
+
     current_offset       = 0;
-    start_of_page_offset = loc.offset;
-    end_of_page_offset   = loc.offset + loc.size;
+    start_of_page_offset = page_id.offset;
+    end_of_page_offset   = page_id.offset + page_info->size;
+
     xml_node node        = epub.get_current_item().child("html");
 
     SET_PAGE_TO_SHOW(current_page_nbr);
@@ -1097,17 +1098,23 @@ BookViewer::build_page_at(const EPub::Location & loc)
 
         //TTF * font = fonts.get(0, 7);
 
-        fmt.line_height_factor = 1.0;
-        fmt.font_index         =   1;
-        fmt.font_size          =   9;
-        fmt.font_style         = Fonts::NORMAL;
-        fmt.align              = CSS::CENTER_ALIGN;
+        int16_t page_nbr   = page_locs.page_nbr(page_id);
+        int16_t page_count = page_locs.page_count();
 
-        std::ostringstream ostr;
-        ostr << current_page_nbr + 1 << " / " << epub.get_page_count();
-        std::string str = ostr.str();
+        if ((page_nbr != -1) && (page_count != -1)) {
 
-        page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+          fmt.line_height_factor = 1.0;
+          fmt.font_index         =   1;
+          fmt.font_size          =   9;
+          fmt.font_style         = Fonts::NORMAL;
+          fmt.align              = CSS::CENTER_ALIGN;
+
+          std::ostringstream ostr;
+          ostr << page_nbr + 1 << " / " << page_count;
+          std::string str = ostr.str();
+
+          page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+        }
 
         #if EPUB_INKPLATE6_BUILD
           BatteryViewer::show();
@@ -1127,12 +1134,16 @@ BookViewer::build_page_at(const EPub::Location & loc)
 }
 
 void
-BookViewer::show_page(int16_t page_nbr)
+BookViewer::show_page(const PageLocs::PageId & page_id)
 {
   // LOG_D("Page: %d", page_nbr + 1);
- 
-  current_page_nbr = page_nbr;
-  if (page_nbr == 0) {
+
+  if ((current_page_id.itemref_index == page_id.itemref_index) &&
+      (current_page_id.offset        == page_id.offset)) return;
+
+  current_page_id = page_id;
+  
+  if (page_locs.page_nbr(page_id) == 0) {
     const char * filename = epub.get_cover_filename();
     if (filename != nullptr) {
       // LOG_D("Cover filename: %s", filename);
@@ -1193,7 +1204,7 @@ BookViewer::show_page(int16_t page_nbr)
       LOG_D("There doesn't seems to have any cover.");
     }
   }
-  else if (page_nbr < epub.get_page_count()) {
-    build_page_at(epub.get_page_loc(page_nbr));
+  else {
+    build_page_at(page_id);
   }
 }

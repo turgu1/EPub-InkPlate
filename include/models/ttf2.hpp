@@ -54,7 +54,7 @@ class TTF
      * @param charcode Character code as a unicode number.
      * @return BitmapGlyph The glyph associated to the unicode character.
      */
-    BitmapGlyph * get_glyph(int32_t charcode, bool load_bitmap = true);
+    BitmapGlyph * get_glyph(int32_t charcode);
 
     /**
      * @brief Set the font size

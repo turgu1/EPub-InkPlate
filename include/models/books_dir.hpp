@@ -27,7 +27,7 @@
 class BooksDir
 {
   public:
-    static const uint16_t BOOKS_DIR_DB_VERSION =   2;
+    static const uint16_t BOOKS_DIR_DB_VERSION =   3;
 
     static const uint8_t  FILENAME_SIZE        = 128;
     static const uint8_t  TITLE_SIZE           = 128;
@@ -57,7 +57,6 @@ class BooksDir
       uint8_t  cover_bitmap[MAX_COVER_WIDTH][MAX_COVER_HEIGHT];  ///< Cover bitmap shrinked for books list presentation
       uint8_t  cover_width;                   ///< Width of the cover bitmap
       uint8_t  cover_height;                  ///< Height of the cover bitmap
-      uint8_t  pages_data[0];                 ///< Blob of pages data
     };
 
     struct VersionRecord {
@@ -98,7 +97,7 @@ class BooksDir
      * 
      * This method retrieve the meta-data related to a book index. 
      * 
-     * @param idx The index is a sequential number in the list of books, ranging 0 .. get_book_count()-1.
+     * @param idx The index is a sequential number in the sorted list of books, ranging 0 .. get_book_count()-1.
      * 
      * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve the data.
      */
@@ -115,18 +114,6 @@ class BooksDir
       }
       return -1;
     }
-    
-    /**
-     * @brief Get page locations
-     * 
-     * This method retrieve a PageLocs vector from the database, related to a book index.
-     * 
-     * @param page_locs The vector that will be receiving the list of pages location.
-     * @param idx  The index is a sequential number in the list of books, ranging 0 .. get_book_count()-1.
-     * @return true  Retrieval is successful.
-     * @return false Some error happened in retrieval.
-     */
-    bool get_page_locs(EPub::PageLocs & page_locs, int16_t idx);
 
     static const int16_t max_cover_width  = MAX_COVER_WIDTH;  ///< Bitmap width in pixels to present a book cover in the list
     static const int16_t max_cover_height = MAX_COVER_HEIGHT; ///< Bitmap height in pixels
@@ -143,10 +130,7 @@ class BooksDir
      * A version record is present in the database. In case of structure update, the version will be changed in
      * the application and will trigger the reconstruction of the database.
      * 
-     * The process can be long as each new book is scanned to compute the location of pages. This is required
-     * to get a responsive interaction with the users when reading books.
-     * 
-     * Each book is identified using the file name et the file size.
+     * Each book is identified using the file name and the file size.
      *  
      * @param book_filename Filename for wich the calling method needs the index for
      * @param book_index    The index corresponding to the book filename

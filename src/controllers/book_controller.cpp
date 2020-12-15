@@ -21,14 +21,13 @@
 void 
 BookController::enter()
 {
-  book_viewer.show_page(current_page);
+  book_viewer.show_page(*current_page_id);
 }
 
 void 
 BookController::leave(bool going_to_deep_sleep)
 {
-  const EPub::Location & loc = epub.get_page_loc(current_page);
-  books_dir_controller.save_last_book(loc.itemref_index, loc.offset, going_to_deep_sleep);
+  books_dir_controller.save_last_book(*current_page_id, going_to_deep_sleep);
 }
 
 bool
@@ -36,35 +35,18 @@ BookController::open_book_file(
   std::string & book_title, 
   std::string & book_filename, 
   int16_t book_idx, 
-  int16_t ref_idx, 
-  int32_t page_offset)
+  const PageLocs::PageId & page_id)
 {
-  msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
-    "The book \" %s \" is loading. Please wait.", book_title.c_str());
+  // msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
+  //   "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
   if (epub.open_file(book_filename)) {
-    epub.retrieve_page_locs(book_idx);
-    current_page = epub.get_page_nbr_from_ref_offset(ref_idx, page_offset);
-    book_viewer.show_page(current_page);
-    return true;
-  }
-  return false;
-}
-
-bool
-BookController::open_book_file(
-  std::string & book_title, 
-  std::string & book_filename, 
-  int16_t book_idx, 
-  int16_t page_nbr)
-{
-  msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
-    "The book \" %s \" is loading. Please wait.", book_title.c_str());
-
-  if (epub.open_file(book_filename)) {
-    epub.retrieve_page_locs(book_idx);
-    current_page = page_nbr;
-    return true;
+    book_viewer.init();
+    current_page_id = page_locs.get_page_id(page_id);
+    if (current_page_id != nullptr) {
+      book_viewer.show_page(*current_page_id);
+      return true;
+    }
   }
   return false;
 }
@@ -74,46 +56,31 @@ BookController::key_event(EventMgr::KeyEvent key)
 {
   switch (key) {
     case EventMgr::KEY_PREV:
-      if (current_page > 0) {
-        book_viewer.show_page(--current_page);
-      }
-      else {
-        current_page = epub.get_page_count() - 1;
-        book_viewer.show_page(current_page);
+      current_page_id = page_locs.get_prev_page_id(*current_page_id);
+      if (current_page_id != nullptr) {
+        book_viewer.show_page(*current_page_id);
       }
       break;
     case EventMgr::KEY_DBL_PREV:
-      current_page -= 10;
-      if (current_page < 0) current_page = 0;
-      book_viewer.show_page(current_page);
+      current_page_id = page_locs.get_prev_page_id(*current_page_id, 10);
+      if (current_page_id != nullptr) {
+        book_viewer.show_page(*current_page_id);
+      }
       break;
     case EventMgr::KEY_NEXT:
-      current_page += 1;
-      if (current_page >= epub.get_page_count()) {
-        current_page = 0;
+      current_page_id = page_locs.get_next_page_id(*current_page_id);
+      if (current_page_id != nullptr) {
+        book_viewer.show_page(*current_page_id);
       }
-      book_viewer.show_page(current_page);
       break;
     case EventMgr::KEY_DBL_NEXT:
-      current_page += 10;
-      if (current_page >= epub.get_page_count()) {
-        current_page = epub.get_page_count() - 1;
+      current_page_id = page_locs.get_next_page_id(*current_page_id, 10);
+      if (current_page_id != nullptr) {
+        book_viewer.show_page(*current_page_id);
       }
-      book_viewer.show_page(current_page);
       break;
     
-    #if DEBUGGING
-      case EventMgr::KEY_SELECT: {
-          for (int i = 0; i < epub.get_page_count(); i++) {
-            current_page = i;
-            book_viewer.show_page(i);
-          }
-        }
-        break;
-    #else
-      case EventMgr::KEY_SELECT:
-    #endif
-
+    case EventMgr::KEY_SELECT:
     case EventMgr::KEY_DBL_SELECT:
       app_controller.set_controller(AppController::PARAM);
       break;

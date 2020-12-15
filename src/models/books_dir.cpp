@@ -92,6 +92,7 @@ BooksDir::read_books_directory(char * book_filename, int16_t & book_index)
   return true;
 }
 
+#if 0 // no more required
 template<typename POD>
 std::ostream & serialize(std::ostream & os, std::vector<POD> const & v)
 {
@@ -118,50 +119,7 @@ std::istream & deserialize(std::istream & is, std::vector<POD> & v)
     is.read(reinterpret_cast<char *>(v.data()), v.size() * sizeof(POD));
     return is;
 }
-
-bool 
-BooksDir::get_page_locs(EPub::PageLocs & page_locs, int16_t idx)
-{
-  page_locs.clear();
-
-  if (idx >= sorted_index.size()) return false;
-
-  int i = 0;
-  int16_t index = -1;
-
-  for (auto & entry : sorted_index) {
-    if (idx == i) { index = entry.second; break; }
-    i++;
-  }
-  if (index == -1) return false;
-
-  db.set_current_idx(index);
-
-  int32_t size = db.get_record_size() - sizeof(EBookRecord);
-
-  if (size <= 0) return false;
-
-  unsigned char * data = (unsigned char *) allocate(size);
-
-  std::stringstream str;
-  
-  if (!db.get_partial_record(data, size, sizeof(EBookRecord))) return false;
-
-  str.write((const char *) data, size);
-
-  deserialize(str, page_locs);
-
-  // for (auto & loc : page_locs) {
-  //   std::cout << 
-  //     "ItemRef Index: " << loc.itemref_index <<
-  //     " offset: " << loc.offset <<
-  //     " size: " << loc.size << std::endl;
-  // }
-
-  free(data);
-
-  return true;
-}
+#endif
 
 const BooksDir::EBookRecord * 
 BooksDir::get_book_data(uint16_t idx)
@@ -363,30 +321,14 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
           if (epub.open_file(fname)) {
             const char * str;
 
-            LOG_D("Building page_locs...");
-            book_viewer.build_page_locs(); // This build epub::page_locs vector
-            std::stringstream streamed_page_locs;
-
-            LOG_D("Streaming page_locs...");
-            const EPub::PageLocs & page_locs = epub.get_page_locs();
-
-            LOG_D("Page count: %d", page_locs.size());
-            
-            serialize(streamed_page_locs, page_locs);
-
-            int32_t record_size = sizeof(EBookRecord) + streamed_page_locs.str().size();
-            the_book = (EBookRecord *) allocate(record_size);
+            the_book = (EBookRecord *) allocate(sizeof(EBookRecord));
             
             if (the_book == nullptr) {
-              LOG_E("Not enough memory for new book: %d bytes required.", record_size);
+              LOG_E("Not enough memory for new book: %d bytes required.", sizeof(EBookRecord));
               goto error_clear;
             }
 
             memset(the_book, 0, sizeof(EBookRecord));
-            memcpy(
-              &the_book->pages_data[0], 
-              streamed_page_locs.str().c_str(), 
-              streamed_page_locs.str().size());
 
             LOG_D("Retrieving metadata and cover");
             strlcpy(the_book->filename, de->d_name, FILENAME_SIZE);
@@ -435,7 +377,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
               }
             }
         
-            if (!db.add_record(the_book, record_size)) {
+            if (!db.add_record(the_book, sizeof(EBookRecord))) {
               goto error_clear;
             }
 
@@ -478,7 +420,6 @@ BooksDir::show_db()
   #if DEBUGGING
     VersionRecord  version_record;
     EBookRecord    book;
-    EPub::PageLocs page_locs;
 
     if (!db.goto_first()) return;
     
@@ -493,36 +434,10 @@ BooksDir::show_db()
       if (!db.get_record(&book, sizeof(EBookRecord))) return;
       std::cout 
         << "Book: "          << book.filename        << std::endl
-        << "  record size: " << db.get_record_size() << std::endl
         << "  title: "       << book.title           << std::endl
         << "  author: "      << book.author          << std::endl
         << "  description: " << book.description     << std::endl
         << "  bitmap size: " << +book.cover_width << " " << +book.cover_height << std::endl;
-
-      int32_t size = db.get_record_size() - sizeof(EBookRecord);
-
-      if (size <= 0) return;
-
-      unsigned char * data = (unsigned char *) allocate(size);
-
-      std::stringstream str;
-      
-      if (!db.get_partial_record(data, size, sizeof(EBookRecord))) return;
-
-      str.write((const char *) data, size);
-
-      deserialize(str, page_locs);
-
-      std::cout << "Page locs: qty: " << page_locs.size() << std::endl;
-
-      for (auto & loc : page_locs) {
-        std::cout << 
-          "ItemRef Index: " << loc.itemref_index <<
-          " offset: " << loc.offset <<
-          " size: " << loc.size << std::endl;
-      }
-
-      free(data);
     }
   #endif
 }

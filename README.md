@@ -2,9 +2,9 @@
 
 ## Last news
 
-(Updated 2020.12.01)
+(Updated 2020.12.14)
 
-The development is complete. The application is at version 1.0.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
+The development is complete. The application is at version 1.1.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
 - [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
 - [x] Menu capability
