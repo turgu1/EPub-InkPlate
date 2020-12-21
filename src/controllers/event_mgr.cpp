@@ -50,7 +50,7 @@
 
     while (true) {
     
-      key = EventMgr::KEY_NONE;
+      key = EventMgr::KeyEvent::NONE;
 
       xQueueReceive(touchpad_evt_queue, &io_num, portMAX_DELAY);
 
@@ -97,21 +97,21 @@
           mcp.get_int_state();
           Wire::leave();  
 
-          if      (pads2 & SELECT_PAD) key = EventMgr::KEY_DBL_SELECT;
-          else if (pads2 & NEXT_PAD  ) key = EventMgr::KEY_DBL_NEXT;
-          else if (pads2 & PREV_PAD  ) key = EventMgr::KEY_DBL_PREV;
+          if      (pads2 & SELECT_PAD) key = EventMgr::KeyEvent::DBL_SELECT;
+          else if (pads2 & NEXT_PAD  ) key = EventMgr::KeyEvent::DBL_NEXT;
+          else if (pads2 & PREV_PAD  ) key = EventMgr::KeyEvent::DBL_PREV;
         }
         else {
 
           // Simple Click on a key
 
-          if      (pads & SELECT_PAD) key = EventMgr::KEY_SELECT;
-          else if (pads & NEXT_PAD  ) key = EventMgr::KEY_NEXT;
-          else if (pads & PREV_PAD  ) key = EventMgr::KEY_PREV;
+          if      (pads & SELECT_PAD) key = EventMgr::KeyEvent::SELECT;
+          else if (pads & NEXT_PAD  ) key = EventMgr::KeyEvent::NEXT;
+          else if (pads & PREV_PAD  ) key = EventMgr::KeyEvent::PREV;
         }
       }
 
-      if (key != EventMgr::KEY_NONE) {
+      if (key != EventMgr::KeyEvent::NONE) {
         xQueueSend(touchpad_key_queue, &key, 0);
       }  
     }     
@@ -125,19 +125,19 @@
       return key;
     }
     else {
-      return KEY_NONE;
+      return KeyEvent::NONE;
     }
   }
 
   void
   EventMgr::set_orientation(Screen::Orientation orient)
   {
-    if (orient == Screen::O_LEFT) {
+    if (orient == Screen::Orientation::LEFT) {
         NEXT_PAD = 2;
         PREV_PAD = 1;
       SELECT_PAD = 4;
     } 
-    else if (orient == Screen::O_RIGHT) {
+    else if (orient == Screen::Orientation::RIGHT) {
         NEXT_PAD = 2;
         PREV_PAD = 4;
       SELECT_PAD = 1;
@@ -161,12 +161,12 @@
 
   #include "screen.hpp"
 
-  void EventMgr::left()   { app_controller.key_event(KEY_PREV);       app_controller.launch(); }
-  void EventMgr::right()  { app_controller.key_event(KEY_NEXT);       app_controller.launch(); }
-  void EventMgr::up()     { app_controller.key_event(KEY_DBL_PREV);   app_controller.launch(); }
-  void EventMgr::down()   { app_controller.key_event(KEY_DBL_NEXT);   app_controller.launch(); }
-  void EventMgr::select() { app_controller.key_event(KEY_SELECT);     app_controller.launch(); }
-  void EventMgr::home()   { app_controller.key_event(KEY_DBL_SELECT); app_controller.launch(); }
+  void EventMgr::left()   { app_controller.key_event(KeyEvent::PREV);       app_controller.launch(); }
+  void EventMgr::right()  { app_controller.key_event(KeyEvent::NEXT);       app_controller.launch(); }
+  void EventMgr::up()     { app_controller.key_event(KeyEvent::DBL_PREV);   app_controller.launch(); }
+  void EventMgr::down()   { app_controller.key_event(KeyEvent::DBL_NEXT);   app_controller.launch(); }
+  void EventMgr::select() { app_controller.key_event(KeyEvent::SELECT);     app_controller.launch(); }
+  void EventMgr::home()   { app_controller.key_event(KeyEvent::DBL_SELECT); app_controller.launch(); }
 
   #define BUTTON_EVENT(button, msg) \
     static void button##_clicked(GObject * button, GParamSpec * property, gpointer data) { \
@@ -197,8 +197,8 @@ EventMgr::set_orientation(Screen::Orientation orient)
     while (1) {
       EventMgr::KeyEvent key;
 
-      if ((key = get_key()) != KEY_NONE) {
-        LOG_D("Got key %d", key);
+      if ((key = get_key()) != KeyEvent::NONE) {
+        LOG_D("Got key %d", (int)key);
         app_controller.key_event(key);
         ESP::show_heaps_info();
         return;
@@ -210,7 +210,7 @@ EventMgr::set_orientation(Screen::Orientation orient)
 
         if (!stay_on) { // Unless somebody wants to keep us awake...
           int8_t light_sleep_duration;
-          config.get(Config::TIMEOUT, &light_sleep_duration);
+          config.get(Config::Ident::TIMEOUT, &light_sleep_duration);
 
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);

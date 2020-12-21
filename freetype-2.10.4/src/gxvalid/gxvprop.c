@@ -61,7 +61,7 @@
 #define GXV_PROP_FLOATER                      0x8000U
 #define GXV_PROP_USE_COMPLEMENTARY_BRACKET    0x1000U
 #define GXV_PROP_COMPLEMENTARY_BRACKET_OFFSET 0x0F00U
-#define GXV_PROP_ATTACHING_TO_RIGHT           0x0080U
+#define GXV_PROP_ATTACHING_TRIGHT           0x0080U
 #define GXV_PROP_RESERVED                     0x0060U
 #define GXV_PROP_DIRECTIONALITY_CLASS         0x001FU
 
@@ -157,7 +157,7 @@
     }
 
     /* this is introduced in version 2.0 */
-    if ( property & GXV_PROP_ATTACHING_TO_RIGHT )
+    if ( property & GXV_PROP_ATTACHING_TRIGHT )
     {
       if ( GXV_PROP_DATA( version ) == 0x00010000UL )
       {

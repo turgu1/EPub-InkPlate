@@ -45,10 +45,10 @@ void MenuViewer::show(MenuEntry * the_menu)
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::LEFT_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::LEFT,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   page.start(fmt);
@@ -61,9 +61,9 @@ void MenuViewer::show(MenuEntry * the_menu)
 
   Pos pos(10, icon_ypos);
   
-  while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != END_MENU)) {
+  while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != Icon::END_MENU)) {
 
-    char ch = icon_char[menu[idx].icon];
+    char ch = icon_char[(int)menu[idx].icon];
     TTF::BitmapGlyph * glyph;
     glyph = font->get_glyph(ch);
 
@@ -118,16 +118,16 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::LEFT_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::LEFT,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   page.start(fmt);
 
   switch (key) {
-    case EventMgr::KEY_PREV:
+    case EventMgr::KeyEvent::PREV:
       if (current_entry_index > 0) {
         current_entry_index--;
       }
@@ -135,7 +135,7 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
         current_entry_index = max_index;
       }
       break;
-    case EventMgr::KEY_NEXT:
+    case EventMgr::KeyEvent::NEXT:
       if (current_entry_index < max_index) {
         current_entry_index++;
       }
@@ -143,16 +143,16 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
         current_entry_index = 0;
       }
       break;
-    case EventMgr::KEY_DBL_PREV:
+    case EventMgr::KeyEvent::DBL_PREV:
       return false;
-    case EventMgr::KEY_DBL_NEXT:
+    case EventMgr::KeyEvent::DBL_NEXT:
       return false;
-    case EventMgr::KEY_SELECT:
+    case EventMgr::KeyEvent::SELECT:
       if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
       return false;
-    case EventMgr::KEY_DBL_SELECT:
+    case EventMgr::KeyEvent::DBL_SELECT:
       return true;
-    case EventMgr::KEY_NONE:
+    case EventMgr::KeyEvent::NONE:
       return false;
   }
 

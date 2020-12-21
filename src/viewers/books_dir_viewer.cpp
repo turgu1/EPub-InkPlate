@@ -25,7 +25,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   int16_t book_idx = page_nbr * BOOKS_PER_PAGE;
   int16_t last     = book_idx + BOOKS_PER_PAGE;
 
-  page.set_compute_mode(Page::DISPLAY);
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (last > books_dir.get_book_count()) last = books_dir.get_book_count();
 
@@ -49,10 +49,10 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
       .height             = 0,
       .trim               = true,
       .pre                = false,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM,
-      .display            = CSS::INLINE
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
     };
 
   page.start(fmt);
@@ -78,7 +78,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     fmt.font_index    = 1;
     fmt.font_size     = TITLE_FONT_SIZE;
-    fmt.font_style    = Fonts::NORMAL;
+    fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos,
     fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
 
@@ -89,7 +89,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     fmt.font_index = 3;
     fmt.font_size  = AUTHOR_FONT_SIZE;
-    fmt.font_style = Fonts::ITALIC;
+    fmt.font_style = Fonts::FaceStyle::ITALIC;
 
     page.new_paragraph(fmt);
     page.add_text(book->author, fmt);
@@ -107,8 +107,8 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   fmt.line_height_factor = 1.0;
   fmt.font_index         = 1;
   fmt.font_size          = PAGENBR_FONT_SIZE;
-  fmt.font_style         = Fonts::NORMAL;
-  fmt.align              = CSS::CENTER_ALIGN;
+  fmt.font_style         = Fonts::FaceStyle::NORMAL;
+  fmt.align              = CSS::Align::CENTER;
   fmt.screen_left        = 10;
   fmt.screen_right       = 10; 
   fmt.screen_top         = 10;
@@ -127,7 +127,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 void 
 BooksDirViewer::highlight(int16_t item_idx)
 {
-  page.set_compute_mode(Page::DISPLAY);
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (current_item_idx != item_idx) {
 
@@ -161,10 +161,10 @@ BooksDirViewer::highlight(int16_t item_idx)
       .height             = 0,
       .trim               = true,
       .pre                = false,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM,
-      .display            = CSS::INLINE
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
     };
 
     page.start(fmt);
@@ -180,7 +180,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     fmt.font_index = 3;
     fmt.font_size  = AUTHOR_FONT_SIZE;
-    fmt.font_style = Fonts::ITALIC;
+    fmt.font_style = Fonts::FaceStyle::ITALIC;
 
     page.new_paragraph(fmt);
     page.add_text(book->author, fmt);
@@ -204,7 +204,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     fmt.font_index    = 1,
     fmt.font_size     = TITLE_FONT_SIZE,
-    fmt.font_style    = Fonts::NORMAL,
+    fmt.font_style    = Fonts::FaceStyle::NORMAL,
     fmt.screen_top    = ypos,
     fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
 
@@ -215,7 +215,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     fmt.font_index = 3,
     fmt.font_size  = AUTHOR_FONT_SIZE,
-    fmt.font_style = Fonts::ITALIC,
+    fmt.font_style = Fonts::FaceStyle::ITALIC,
 
     page.new_paragraph(fmt);
     page.add_text(book->author, fmt);

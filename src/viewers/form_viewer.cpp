@@ -57,7 +57,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     int16_t choices_width = 0, choices_height = 0;
     int16_t separator   = 0;
     int16_t last_height = 0;
-    if (entries[i].entry_type == HORIZONTAL_CHOICES) {     
+    if (entries[i].entry_type == FormEntryType::HORIZONTAL_CHOICES) {     
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
         if (choices_height < choice_loc[k].dim.height) choices_height = choice_loc[k].dim.height;
         choices_width += choice_loc[k].dim.width + separator;
@@ -79,7 +79,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   // Compute xpos, ypos
 
   for (int i = 0; i < entry_count - 1; i++) {
-    if (entries[i].entry_type == HORIZONTAL_CHOICES) {     
+    if (entries[i].entry_type == FormEntryType::HORIZONTAL_CHOICES) {     
       int16_t left_pos = right_xpos - all_choices_width - 10;
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
         choice_loc[k].pos.x = left_pos;
@@ -127,10 +127,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::LEFT_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::LEFT,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   page.start(fmt);
@@ -180,7 +180,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     int8_t k = entries_info[i].choice_idx;
 
     page.put_highlight(
-      Dim(entries[i].entry_type == HORIZONTAL_CHOICES ? choice_loc[k].dim.width + 10 : all_choices_width + 10,
+      Dim(entries[i].entry_type == FormEntryType::HORIZONTAL_CHOICES ? choice_loc[k].dim.width + 10 : all_choices_width + 10,
           choice_loc[k].dim.height + 10),
       Pos(choice_loc[k].pos.x - 5, choice_loc[k].pos.y - 5));
   }
@@ -211,27 +211,27 @@ FormViewer::event(EventMgr::KeyEvent key)
 
   if (entry_selection) {
     switch (key) {
-      case EventMgr::KEY_DBL_PREV:
-      case EventMgr::KEY_PREV:
+      case EventMgr::KeyEvent::DBL_PREV:
+      case EventMgr::KeyEvent::PREV:
         current_entry_idx--;
         if (current_entry_idx < 0) {
           current_entry_idx = entry_count - 1;
         }
         break;
-      case EventMgr::KEY_DBL_NEXT:
-      case EventMgr::KEY_NEXT:
+      case EventMgr::KeyEvent::DBL_NEXT:
+      case EventMgr::KeyEvent::NEXT:
         current_entry_idx++;
         if (current_entry_idx >= entry_count) {
           current_entry_idx = 0;
         }
         break;
-      case EventMgr::KEY_SELECT:
+      case EventMgr::KeyEvent::SELECT:
         entry_selection = false;
         highlight_selection = true;
         break;
-      case EventMgr::KEY_NONE:
+      case EventMgr::KeyEvent::NONE:
         return false;
-      case EventMgr::KEY_DBL_SELECT:
+      case EventMgr::KeyEvent::DBL_SELECT:
         completed = true;
         break;
     }
@@ -240,21 +240,21 @@ FormViewer::event(EventMgr::KeyEvent key)
     old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
 
     switch (key) {
-      case EventMgr::KEY_DBL_PREV:
-      case EventMgr::KEY_PREV:
+      case EventMgr::KeyEvent::DBL_PREV:
+      case EventMgr::KeyEvent::PREV:
         choice_idx--;
         if (choice_idx < entries_info[current_entry_idx].first_choice_loc_idx) {
           choice_idx = entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
         }
         break;
-      case EventMgr::KEY_DBL_NEXT:
-      case EventMgr::KEY_NEXT:
+      case EventMgr::KeyEvent::DBL_NEXT:
+      case EventMgr::KeyEvent::NEXT:
         choice_idx++;
         if (choice_idx >= entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count) {
           choice_idx = entries_info[current_entry_idx].first_choice_loc_idx;
         }
         break;
-      case EventMgr::KEY_SELECT:
+      case EventMgr::KeyEvent::SELECT:
         entry_selection = true;
         old_entry_idx = current_entry_idx;
         current_entry_idx++;
@@ -262,9 +262,9 @@ FormViewer::event(EventMgr::KeyEvent key)
           current_entry_idx = 0;
         }
         break;
-      case EventMgr::KEY_NONE:
+      case EventMgr::KeyEvent::NONE:
         return false;
-      case EventMgr::KEY_DBL_SELECT:
+      case EventMgr::KeyEvent::DBL_SELECT:
         completed = true;
         break;
     }
@@ -287,10 +287,10 @@ FormViewer::event(EventMgr::KeyEvent key)
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::LEFT_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::LEFT,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   page.start(fmt);
@@ -340,12 +340,12 @@ FormViewer::event(EventMgr::KeyEvent key)
         entries_info[current_entry_idx].choice_idx = choice_idx;
 
         page.clear_highlight(
-          Dim(entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[old_choice_idx].dim.width + 10 : all_choices_width + 10,
+          Dim(entries[current_entry_idx].entry_type == FormEntryType::HORIZONTAL_CHOICES ? choice_loc[old_choice_idx].dim.width + 10 : all_choices_width + 10,
               choice_loc[old_choice_idx].dim.height + 10),
           Pos(choice_loc[old_choice_idx].pos.x - 5, choice_loc[old_choice_idx].pos.y - 5));
 
         page.put_highlight(
-          Dim(entries[current_entry_idx].entry_type == HORIZONTAL_CHOICES ? choice_loc[choice_idx].dim.width + 10 : all_choices_width + 10,
+          Dim(entries[current_entry_idx].entry_type == FormEntryType::HORIZONTAL_CHOICES ? choice_loc[choice_idx].dim.width + 10 : all_choices_width + 10,
               choice_loc[choice_idx].dim.height + 10),
           Pos(choice_loc[choice_idx].pos.x - 5, choice_loc[choice_idx].pos.y - 5));
       }

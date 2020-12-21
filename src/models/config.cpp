@@ -29,25 +29,25 @@ static int8_t   default_resolution         =  0;  // 0 = 1bit, 1 = 3bits
 static int8_t   the_version                =  1;
 
 std::array<Config::ConfigDescr, 12> Config::cfg = {{
- { VERSION,            BYTE,   "version",            &version,            &the_version,                0 },
- { SSID,               STRING, "wifi_ssid",          ssid,                "NONE",                     32 },
- { PWD,                STRING, "wifi_pwd",           pwd,                 "NONE",                     32 },
- { PORT,               INT,    "http_port",          &port,               &default_port,               0 },
- { BATTERY,            BYTE,   "battery",            &battery,            &default_battery,            0 },
- { TIMEOUT,            BYTE,   "timeout",            &timeout,            &default_timeout,            0 },
- { FONT_SIZE,          BYTE,   "font_size",          &font_size,          &default_font_size,          0 },
- { DEFAULT_FONT,       BYTE,   "default_font",       &default_font,       &default_default_font,       0 },
- { USE_FONTS_IN_BOOKS, BYTE,   "use_fonts_in_books", &use_fonts_in_books, &default_use_fonts_in_books, 0 },
- { SHOW_IMAGES,        BYTE,   "show_images",        &show_images,        &default_show_images,        0 },
- { ORIENTATION,        BYTE,   "orientation",        &orientation,        &default_orientation,        0 },
- { PIXEL_RESOLUTION,   BYTE,   "resolution",         &resolution,         &default_resolution,         0 }
+ { Ident::VERSION,            EntryType::BYTE,   "version",            &version,            &the_version,                0 },
+ { Ident::SSID,               EntryType::STRING, "wifi_ssid",          ssid,                "NONE",                     32 },
+ { Ident::PWD,                EntryType::STRING, "wifi_pwd",           pwd,                 "NONE",                     32 },
+ { Ident::PORT,               EntryType::INT,    "http_port",          &port,               &default_port,               0 },
+ { Ident::BATTERY,            EntryType::BYTE,   "battery",            &battery,            &default_battery,            0 },
+ { Ident::TIMEOUT,            EntryType::BYTE,   "timeout",            &timeout,            &default_timeout,            0 },
+ { Ident::FONT_SIZE,          EntryType::BYTE,   "font_size",          &font_size,          &default_font_size,          0 },
+ { Ident::DEFAULT_FONT,       EntryType::BYTE,   "default_font",       &default_font,       &default_default_font,       0 },
+ { Ident::USE_FONTS_IN_BOOKS, EntryType::BYTE,   "use_fonts_in_books", &use_fonts_in_books, &default_use_fonts_in_books, 0 },
+ { Ident::SHOW_IMAGES,        EntryType::BYTE,   "show_images",        &show_images,        &default_show_images,        0 },
+ { Ident::ORIENTATION,        EntryType::BYTE,   "orientation",        &orientation,        &default_orientation,        0 },
+ { Ident::PIXEL_RESOLUTION,   EntryType::BYTE,   "resolution",         &resolution,         &default_resolution,         0 }
 }};
 
 bool 
 Config::get(Ident id, int32_t * val)
 {
   for (auto entry : cfg) {
-    if((entry.ident == id) && (entry.type == INT)) {
+    if((entry.ident == id) && (entry.type == EntryType::INT)) {
       *val = * ((int32_t *) entry.value);
       return true;
     }
@@ -59,7 +59,7 @@ bool
 Config::get(Ident id, int8_t * val)
 {
   for (auto entry : cfg) {
-    if((entry.ident == id) && (entry.type == BYTE)) {
+    if((entry.ident == id) && (entry.type == EntryType::BYTE)) {
       *val = * ((int8_t *) entry.value);
       return true;
     }
@@ -71,7 +71,7 @@ bool
 Config::get(Ident id, std::string & val)
 {
   for (auto entry : cfg) {
-    if ((entry.ident == id) && (entry.type == STRING)) {
+    if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       val.assign(((char *) entry.value));
       return true;
     }
@@ -83,7 +83,7 @@ void
 Config::put(Ident id, int32_t val)
 {
   for (auto entry : cfg) {
-    if ((entry.ident == id) && (entry.type == INT)) {
+    if ((entry.ident == id) && (entry.type == EntryType::INT)) {
       *((int32_t *) entry.value) = val;
       modified = true;
       return;
@@ -95,7 +95,7 @@ void
 Config::put(Ident id, int8_t val)
 {
   for (auto entry : cfg) {
-    if ((entry.ident == id) && (entry.type == BYTE)) {
+    if ((entry.ident == id) && (entry.type == EntryType::BYTE)) {
       *((int8_t *) entry.value) = val;
       modified = true;
       return;
@@ -107,7 +107,7 @@ void
 Config::put(Ident id, std::string & val)
 {
   for (auto entry : cfg) {
-    if ((entry.ident == id) && (entry.type == STRING)) {
+    if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       strlcpy((char *) entry.value, val.c_str(), entry.max_size);
       modified = true;
       return;
@@ -172,10 +172,10 @@ Config::read()
   // First, initialize all configs to default values
 
   for (auto entry : cfg) {
-    if (entry.type == STRING) {
+    if (entry.type == EntryType::STRING) {
       strlcpy((char *) entry.value, (char *) entry.default_value, entry.max_size);
     }
-    else if (entry.type == INT) {
+    else if (entry.type == EntryType::INT) {
       *((int32_t *) entry.value) = *((int32_t *) entry.default_value);
     }
     else {
@@ -195,10 +195,10 @@ Config::read()
     LOG_D("Caption: %s, value: %s", caption, value);
     for (auto entry : cfg) {
       if (strcmp(caption, entry.caption) == 0) {
-        if (entry.type == STRING) {
+        if (entry.type == EntryType::STRING) {
           strlcpy((char *) entry.value, value, entry.max_size);
         }
-        else if (entry.type == INT) {
+        else if (entry.type == EntryType::INT) {
           *((int32_t *) entry.value) = atoi(value);
         }
         else  {
@@ -242,10 +242,10 @@ Config::save(bool force)
     fprintf(f, "# ---\n\n");
 
     for (auto entry : cfg) {
-      if (entry.type == STRING) {
+      if (entry.type == EntryType::STRING) {
         fprintf(f, "%s = \"%s\"\n", entry.caption, (char *) entry.value);
       }
-      else if (entry.type == INT) {
+      else if (entry.type == EntryType::INT) {
         fprintf(f, "%s = %d\n", entry.caption, *(int32_t *) entry.value);
       }
       else {
@@ -265,10 +265,10 @@ Config::show()
   LOG_D("Configuration");
   LOG_D("-------------");
   for (auto entry : cfg) {
-    if (entry.type == STRING) {
+    if (entry.type == EntryType::STRING) {
       LOG_D("%s = \"%s\"", entry.caption, (char *) entry.value);
     }
-    else if (entry.type == INT) {
+    else if (entry.type == EntryType::INT) {
       LOG_D("%s = %d", entry.caption, *(int32_t *) entry.value);
     }
     else {

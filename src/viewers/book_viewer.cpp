@@ -64,23 +64,23 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
 
   if (named_element) { // A name is attached to the node.
 
-    fmt.display = CSS::INLINE;
+    fmt.display = CSS::Display::INLINE;
 
     if ((element_it = elements.find(name)) != elements.end()) {
 
       LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_pos_y());
 
       switch (element_it->second) {
-        case BODY:
-        case SPAN:
-        case A:
+        case Element::BODY:
+        case Element::SPAN:
+        case Element::A:
           break;
       #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
       #else
-        case IMG: 
+        case Element::IMG: 
           if (show_images) {
             xml_attribute attr = node.attribute("src");
             if (attr != nullptr) image_filename = attr.value();
@@ -92,7 +92,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
-        case IMAGE: 
+        case Element::IMAGE: 
           if (show_images) {
             xml_attribute attr = node.attribute("xlink:href");
             if (attr != nullptr) image_filename = attr.value();
@@ -100,18 +100,18 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
           }
           break;
       #endif
-        case PRE:
+        case Element::PRE:
           fmt.pre = start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case LI:
-        case DIV:
-        case BLOCKQUOTE:
-        case P:
+        case Element::LI:
+        case Element::DIV:
+        case Element::BLOCKQUOTE:
+        case Element::P:
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case BR:
+        case Element::BR:
           SHOW_LOCATION("Page Break");
           if (!page.line_break(fmt)) {
             page_locs_end_page(fmt);
@@ -120,54 +120,54 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
           }
           current_offset++;
           break;
-        case B: {
+        case Element::B: {
             Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::NORMAL) style = Fonts::BOLD;
-            else if (style == Fonts::ITALIC) style = Fonts::BOLD_ITALIC;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
+            else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
             reset_font_index(fmt, style);
           }
           break;
-        case I:
-        case EM: {
+        case Element::I:
+        case Element::EM: {
             Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::NORMAL) style = Fonts::ITALIC;
-            else if (style == Fonts::BOLD  ) style = Fonts::BOLD_ITALIC;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
+            else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
             reset_font_index(fmt, style);
           }
           break;
-        case H1:
+        case Element::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H2:
+        case Element::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H3:
+        case Element::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H4:
+        case Element::H4:
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H5:
+        case Element::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H6:
+        case Element::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
       }
     }
@@ -187,7 +187,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       element_properties = nullptr;
     }
 
-    if (fmt.display == CSS::BLOCK) {
+    if (fmt.display == CSS::Display::BLOCK) {
       if (page.some_data_waiting()) {
         SHOW_LOCATION("End Paragraph 3");
         if (!page.end_paragraph(fmt)) {
@@ -207,7 +207,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       }
     } 
 
-    // if ((fmt.display == CSS::BLOCK) && page.some_data_waiting()) {
+    // if ((fmt.display == CSS::Display::BLOCK) && page.some_data_waiting()) {
     //   SHOW_LOCATION("End Paragraph 1");
     //   if (!page.end_paragraph(fmt)) {
     //     page_locs_end_page(fmt);
@@ -303,7 +303,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       sub = sub.next_sibling();
     }
 
-    if (fmt.display == CSS::BLOCK) {
+    if (fmt.display == CSS::Display::BLOCK) {
       if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
         SHOW_LOCATION("End Paragraph 5");
         if (!page.end_paragraph(fmt)) {
@@ -319,7 +319,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
 
     // In case that we are at the end of an html file and there remains
     // characters in the page pipeline, we call end_paragraph() to get them out on the page...
-    if ((element_it != elements.end()) && (element_it->second == BODY)) {
+    if ((element_it != elements.end()) && (element_it->second == Element::BODY)) {
       SHOW_LOCATION("End Paragraph 7");
       if (!page.end_paragraph(fmt)) {
         page_locs_end_page(fmt);
@@ -333,7 +333,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
   return true;
 }
 
-      // if (fmt.display == CSS::BLOCK) {
+      // if (fmt.display == CSS::Display::BLOCK) {
       //   if (page.some_data_waiting()) {
       //     SHOW_LOCATION("End Paragraph 3");
       //     if (!page.end_paragraph(fmt)) {
@@ -360,10 +360,10 @@ BookViewer::build_page_locs()
   TTF * font  = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
 
-  page.set_compute_mode(Page::LOCATION);
+  page.set_compute_mode(Page::ComputeMode::LOCATION);
 
   int8_t images_are_shown;
-  config.get(Config::SHOW_IMAGES, &images_are_shown);
+  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
   show_images = images_are_shown == 1;
   
   page_locs.clear();
@@ -372,12 +372,12 @@ BookViewer::build_page_locs()
 
     int16_t idx;
 
-    if ((idx = fonts.get_index("Fontbase", Fonts::NORMAL)) == -1) {
+    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
       idx = 1;
     }
     
     int8_t font_size;
-    config.get(Config::FONT_SIZE, &font_size);
+    config.get(Config::Ident::FONT_SIZE, &font_size);
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -396,10 +396,10 @@ BookViewer::build_page_locs()
       .height             = 0,
       .trim               = true,
       .pre                = false,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM,
-      .display            = CSS::INLINE
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
     };
 
     last_props        = nullptr;
@@ -433,7 +433,7 @@ BookViewer::build_page_locs()
     }
   }
 
-  page.set_compute_mode(Page::DISPLAY);
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
   return done;
 }
@@ -442,26 +442,26 @@ int16_t
 BookViewer::get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref)
 {
   switch (value.value_type) {
-    case CSS::PX:
+    case CSS::ValueType::PX:
       return value.num;
-    case CSS::PT:
+    case CSS::ValueType::PT:
       return (value.num * Screen::RESOLUTION) / 72;
-    case CSS::EM:
+    case CSS::ValueType::EM:
       {
         TTF * f = fonts.get(fmt.font_index, fmt.font_size);
         return value.num * f->get_em_width();
       }
-    case CSS::PERCENT:
+    case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100;
-    case CSS::NOTYPE:
+    case CSS::ValueType::NOTYPE:
       return ref * value.num;
-    case CSS::CM:
+    case CSS::ValueType::CM:
       return (value.num * Screen::RESOLUTION) / 2.54;
-    case CSS::VH:
+    case CSS::ValueType::VH:
       return (value.num * (fmt.screen_bottom - fmt.screen_top)) / 100;
-    case CSS::VW:
+    case CSS::ValueType::VW:
       return (value.num * (fmt.screen_right - fmt.screen_left)) / 100;;
-    case CSS::STR:
+    case CSS::ValueType::STR:
       // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
       return 0;
       break;
@@ -476,16 +476,16 @@ int16_t
 BookViewer::get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref)
 {
   int8_t normal_size;
-  config.get(Config::FONT_SIZE, &normal_size);
+  config.get(Config::Ident::FONT_SIZE, &normal_size);
 
   switch (value.value_type) {
-    case CSS::PX:
+    case CSS::ValueType::PX:
       //  pixels -> Screen HResolution per inch
       //    x    ->    72 pixels per inch
       return (value.num * 72) / Screen::RESOLUTION; // convert pixels in points
-    case CSS::PT:
+    case CSS::ValueType::PT:
       return value.num;  // Already in points
-    case CSS::EM: {
+    case CSS::ValueType::EM: {
           // TTF * font = fonts.get(1, normal_size);
           // if (font != nullptr) {
           //   return (value.num * font->get_em_height()) * 72 / Screen::RESOLUTION;
@@ -494,19 +494,19 @@ BookViewer::get_point_value(const CSS::Value & value, const Page::Format & fmt, 
             return value.num * ref;
           // }
         }
-    case CSS::CM:
+    case CSS::ValueType::CM:
       return (value.num * 72) / 2.54;
-    case CSS::PERCENT:
+    case CSS::ValueType::PERCENT:
       return (value.num * normal_size) / 100;
-    case CSS::NOTYPE:
+    case CSS::ValueType::NOTYPE:
       return normal_size * value.num;
-    case CSS::STR:
+    case CSS::ValueType::STR:
       LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
       return 0;
       break;
-    case CSS::VH:
+    case CSS::ValueType::VH:
       return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
-    case CSS::VW:
+    case CSS::ValueType::VW:
       return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
      default:
       LOG_E("get_point_value(): Wrong data type!");
@@ -519,14 +519,14 @@ float
 BookViewer::get_factor_value(const CSS::Value & value, const Page::Format & fmt, float ref)
 {
   switch (value.value_type) {
-    case CSS::PX:
-    case CSS::PT:
-    case CSS::STR:
+    case CSS::ValueType::PX:
+    case CSS::ValueType::PT:
+    case CSS::ValueType::STR:
       return 1.0;  
-    case CSS::EM:
-    case CSS::NOTYPE:
+    case CSS::ValueType::EM:
+    case CSS::ValueType::NOTYPE:
       return value.num;
-    case CSS::PERCENT:
+    case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100.0;
     default:
       // LOG_E("get_factor_value: Wrong data type!");
@@ -580,28 +580,34 @@ BookViewer::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuit
 
   // LOG_D("Found!");
 
-  Fonts::FaceStyle font_weight = ((fmt.font_style == Fonts::BOLD) || (fmt.font_style == Fonts::BOLD_ITALIC)) ? Fonts::BOLD : Fonts::NORMAL;
-  Fonts::FaceStyle font_style = ((fmt.font_style == Fonts::ITALIC) || (fmt.font_style == Fonts::BOLD_ITALIC)) ? Fonts::ITALIC : Fonts::NORMAL;
+  Fonts::FaceStyle font_weight = ((fmt.font_style == Fonts::FaceStyle::BOLD) || 
+                                  (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC)) ? 
+                                     Fonts::FaceStyle::BOLD : 
+                                     Fonts::FaceStyle::NORMAL;
+  Fonts::FaceStyle font_style = ((fmt.font_style == Fonts::FaceStyle::ITALIC) || 
+                                 (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC)) ? 
+                                     Fonts::FaceStyle::ITALIC : 
+                                     Fonts::FaceStyle::NORMAL;
   
-  if ((vals = CSS::get_values_from_suite(suite, CSS::FONT_STYLE))) {
-    font_style = (Fonts::FaceStyle) vals->front()->choice;
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_STYLE))) {
+    font_style = (Fonts::FaceStyle) vals->front()->choice.face_style;
   }
-  if ((vals = CSS::get_values_from_suite(suite, CSS::FONT_WEIGHT))) {
-    font_weight = (Fonts::FaceStyle) vals->front()->choice;
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_WEIGHT))) {
+    font_weight = (Fonts::FaceStyle) vals->front()->choice.face_style;
   }
   Fonts::FaceStyle new_style = fonts.adjust_font_style(fmt.font_style, font_style, font_weight);
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::FONT_FAMILY))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
     for (auto & font_name : *vals) {
       if ((idx = fonts.get_index(font_name->str, new_style)) != -1) break;
     }
     if (idx == -1) {
-      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), new_style);
+      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), (int)new_style);
       idx = fonts.get_index("Default", new_style);
     }
     if (idx == -1) {
-      fmt.font_style = Fonts::NORMAL;
+      fmt.font_style = Fonts::FaceStyle::NORMAL;
       fmt.font_index = 1;
     }
     else {
@@ -616,26 +622,26 @@ BookViewer::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuit
 
   fonts.check(fmt.font_index, fmt.font_style);
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::TEXT_ALIGN))) {
-    fmt.align = (CSS::Align) vals->front()->choice;
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_ALIGN))) {
+    fmt.align = (CSS::Align) vals->front()->choice.align;
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::TEXT_INDENT))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_INDENT))) {
     fmt.indent = get_pixel_value(*(vals->front()), fmt, page.paint_width());
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::FONT_SIZE))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_SIZE))) {
     fmt.font_size = get_point_value(*(vals->front()), fmt, fmt.font_size);
     if (fmt.font_size == 0) {
       LOG_E("adjust_format_from_suite: setting fmt.font_size to 0!!!");
     }
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::LINE_HEIGHT))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::LINE_HEIGHT))) {
     fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN))) {
     int16_t size = 0;
     for (auto val __attribute__ ((unused)) : *vals) size++;
     CSS::Values::const_iterator it = vals->begin();
@@ -660,36 +666,36 @@ BookViewer::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuit
     }
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::DISPLAY))) {
-    fmt.display = (CSS::Display) vals->front()->choice;
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::DISPLAY))) {
+    fmt.display = (CSS::Display) vals->front()->choice.display;
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN_LEFT))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_LEFT))) {
     fmt.margin_left = get_pixel_value(*(vals->front()), fmt, fmt.margin_left);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN_RIGHT))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_RIGHT))) {
     fmt.margin_right = get_pixel_value(*(vals->front()), fmt, fmt.margin_right);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN_TOP))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_TOP))) {
     fmt.margin_top = get_pixel_value(*(vals->front()), fmt, fmt.margin_top);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::MARGIN_BOTTOM))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_BOTTOM))) {
     fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, fmt.margin_bottom);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::WIDTH))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::WIDTH))) {
     fmt.width = get_pixel_value(*(vals->front()), fmt, Screen::WIDTH - fmt.screen_left - fmt.screen_right);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::HEIGHT))) {
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::HEIGHT))) {
     fmt.height = get_pixel_value(*(vals->front()), fmt, Screen::HEIGHT - fmt.screen_top - fmt.screen_bottom);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::TEXT_TRANSFORM))) {
-    fmt.text_transform = (CSS::TextTransform) vals->front()->choice;
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_TRANSFORM))) {
+    fmt.text_transform = (CSS::TextTransform) vals->front()->choice.text_transform;
   }
 }
 
@@ -749,7 +755,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 
   bool started = current_offset >= start_of_page_offset;
 
-  if (started) page.set_compute_mode(Page::DISPLAY);
+  if (started) page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (named_element) { 
 
@@ -757,23 +763,23 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 
     // Do it only if we are now in the current page content
     
-    fmt.display = CSS::INLINE;
+    fmt.display = CSS::Display::INLINE;
 
     if ((element_it = elements.find(std::string(name))) != elements.end()) {
 
       LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_pos_y());
 
       switch (element_it->second) {
-        case BODY:
-        case SPAN:
-        case A:
+        case Element::BODY:
+        case Element::SPAN:
+        case Element::A:
           break;
       #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
       #else
-        case IMG:
+        case Element::IMG:
           if (show_images) {
             if (started) { 
               xml_attribute attr = node.attribute("src");
@@ -788,7 +794,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
-        case IMAGE: 
+        case Element::IMAGE: 
           if (show_images) {
             if (started) {
               xml_attribute attr = node.attribute("xlink:href");
@@ -799,73 +805,73 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           }
           break;
       #endif
-        case PRE:
+        case Element::PRE:
           fmt.pre = start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case LI:
-        case DIV:
-        case BLOCKQUOTE:
-        case P:
+        case Element::LI:
+        case Element::DIV:
+        case Element::BLOCKQUOTE:
+        case Element::P:
           start_of_paragraph = true;
           // LOG_D("Para: %d %d", fmt.font_index, fmt.font_size);
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case BR:
+        case Element::BR:
           if (started) {
             SHOW_LOCATION("Page Break");
             if (!page.line_break(fmt)) return true;
           }
           current_offset++;
           break;
-        case B: {
+        case Element::B: {
             Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::NORMAL) style = Fonts::BOLD;
-            else if (style == Fonts::ITALIC) style = Fonts::BOLD_ITALIC;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
+            else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
             reset_font_index(fmt, style);
           }
           break; 
-        case I:
-        case EM: {
+        case Element::I:
+        case Element::EM: {
             Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::NORMAL) style = Fonts::ITALIC;
-            else if (style == Fonts::BOLD  ) style = Fonts::BOLD_ITALIC;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
+            else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
             reset_font_index(fmt, style);
           }
           break;
-        case H1:
+        case Element::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H2:
+        case Element::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H3:
+        case Element::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H4:
+        case Element::H4:
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H5:
+        case Element::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
-        case H6:
+        case Element::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
           start_of_paragraph = true;
-          fmt.display = CSS::BLOCK;
+          fmt.display = CSS::Display::BLOCK;
           break;
       }
     }
@@ -885,7 +891,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
       element_properties = nullptr;
     }
 
-    if (started && (fmt.display == CSS::BLOCK)) {
+    if (started && (fmt.display == CSS::Display::BLOCK)) {
 
       if (page.some_data_waiting()) {
         SHOW_LOCATION("End Paragraph 1");
@@ -959,7 +965,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
         // }
         if (uint8_t(*str) <= ' ') {
           if (current_offset >= start_of_page_offset) {
-            page.set_compute_mode(Page::DISPLAY);
+            page.set_compute_mode(Page::ComputeMode::DISPLAY);
             if (*str == ' ') {
               fmt.trim = !fmt.pre; // white spaces will be trimmed at the beginning and the end of a line
               if (!page.add_char(str, fmt)) break;
@@ -977,7 +983,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           int16_t count = 0;
           while (uint8_t(*str) > ' ') { str++; count++; }
           if (current_offset >= start_of_page_offset) {
-            page.set_compute_mode(Page::DISPLAY);
+            page.set_compute_mode(Page::ComputeMode::DISPLAY);
             std::string word;
             word.assign(w, count);
             if (!page.add_word(word.c_str(), fmt)) break;
@@ -1003,8 +1009,8 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
     }
 
     if (current_offset >= start_of_page_offset) {
-      page.set_compute_mode(Page::DISPLAY);
-      if (fmt.display == CSS::BLOCK) {
+      page.set_compute_mode(Page::ComputeMode::DISPLAY);
+      if (fmt.display == CSS::Display::BLOCK) {
         if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
           SHOW_LOCATION("End Paragraph 3");
           page.end_paragraph(fmt);
@@ -1014,7 +1020,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 
       // In case that we are at the end of an html file and there remains
       // characters in the page pipeline, to get them out on the page...
-      if ((element_it != elements.end()) && (element_it->second == BODY)) {
+      if ((element_it != elements.end()) && (element_it->second == Element::BODY)) {
         SHOW_LOCATION("End Paragraph 4");
         page.end_paragraph(fmt);
       }
@@ -1030,22 +1036,22 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
   TTF * font = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
 
-  page.set_compute_mode(Page::MOVE);
+  page.set_compute_mode(Page::ComputeMode::MOVE);
 
   int8_t images_are_shown;
-  config.get(Config::SHOW_IMAGES, &images_are_shown);
+  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
   show_images = images_are_shown != 0;
 
   if (epub.get_item_at_index(page_id.itemref_index)) {
 
     int16_t idx;
 
-    if ((idx = fonts.get_index("Fontbase", Fonts::NORMAL)) == -1) {
+    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
       idx = 1;
     }
 
     int8_t font_size;
-    config.get(Config::FONT_SIZE, &font_size);
+    config.get(Config::Ident::FONT_SIZE, &font_size);
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -1064,10 +1070,10 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .height             = 0,
       .trim               = true,
       .pre                = false,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM,
-      .display            = CSS::INLINE
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
     };
 
     last_props        = nullptr;
@@ -1106,8 +1112,8 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
           fmt.line_height_factor = 1.0;
           fmt.font_index         =   1;
           fmt.font_size          =   9;
-          fmt.font_style         = Fonts::NORMAL;
-          fmt.align              = CSS::CENTER_ALIGN;
+          fmt.font_style         = Fonts::FaceStyle::NORMAL;
+          fmt.align              = CSS::Align::CENTER;
 
           std::ostringstream ostr;
           ostr << page_nbr + 1 << " / " << page_count;
@@ -1170,10 +1176,10 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
           .height             =   0,
           .trim               = true,
           .pre                = false,
-          .font_style         = Fonts::ITALIC,
-          .align              = CSS::CENTER_ALIGN,
-          .text_transform     = CSS::NO_TRANSFORM,
-          .display            = CSS::INLINE
+          .font_style         = Fonts::FaceStyle::ITALIC,
+          .align              = CSS::Align::CENTER,
+          .text_transform     = CSS::TextTransform::NONE,
+          .display            = CSS::Display::INLINE
         };
 
         std::string title  = epub.get_title();
@@ -1188,7 +1194,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
         fmt.font_index =   1;
         fmt.font_size  =  18;
         fmt.screen_top = 200;
-        fmt.font_style = Fonts::NORMAL;
+        fmt.font_style = Fonts::FaceStyle::NORMAL;
 
         page.set_limits(fmt);
         page.new_paragraph(fmt, false);

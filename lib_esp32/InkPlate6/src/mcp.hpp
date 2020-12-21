@@ -33,7 +33,7 @@ class MCP : NonCopyable
 {
   private:
     static constexpr char const * TAG = "MCP";
-    enum Reg     : uint8_t {
+    enum class Reg : uint8_t {
       IODIRA   = 0x00,
       IODIRB   = 0x01,
       IPOLA    = 0x02,
@@ -77,13 +77,13 @@ class MCP : NonCopyable
   public:
     static inline MCP & get_singleton() noexcept { return singleton; }
 
-    enum PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
-    enum IntMode : uint8_t { CHANGE,   FALLING,      RISING };
-    enum IntPort : uint8_t { INTPORTA, INTPORTB             };
+    enum class PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
+    enum class IntMode : uint8_t { CHANGE,   FALLING,      RISING };
+    enum class IntPort : uint8_t { INTPORTA, INTPORTB             };
 
     // The following are definitions taylored for the InkPlate-6 IO usage.
 
-    enum Pin : uint8_t {
+    enum class Pin : uint8_t {
       OE             =  0,
       GMOD           =  1,
       SPV            =  2,
@@ -118,23 +118,23 @@ class MCP : NonCopyable
     void     set_ports(uint16_t values);
     uint16_t get_ports();
 
-    inline void oe_set()       { digital_write(OE,     HIGH); }
-    inline void oe_clear()     { digital_write(OE,     LOW ); }
+    inline void oe_set()       { digital_write(Pin::OE,     HIGH); }
+    inline void oe_clear()     { digital_write(Pin::OE,     LOW ); }
 
-    inline void gmod_set()     { digital_write(GMOD,   HIGH); }
-    inline void gmod_clear()   { digital_write(GMOD,   LOW ); }
+    inline void gmod_set()     { digital_write(Pin::GMOD,   HIGH); }
+    inline void gmod_clear()   { digital_write(Pin::GMOD,   LOW ); }
 
-    inline void spv_set()      { digital_write(SPV,    HIGH); }
-    inline void spv_clear()    { digital_write(SPV,    LOW ); }
+    inline void spv_set()      { digital_write(Pin::SPV,    HIGH); }
+    inline void spv_clear()    { digital_write(Pin::SPV,    LOW ); }
 
-    inline void wakeup_set()   { digital_write(WAKEUP, HIGH); }
-    inline void wakeup_clear() { digital_write(WAKEUP, LOW ); }
+    inline void wakeup_set()   { digital_write(Pin::WAKEUP, HIGH); }
+    inline void wakeup_clear() { digital_write(Pin::WAKEUP, LOW ); }
 
-    inline void pwrup_set()    { digital_write(PWRUP,  HIGH); }
-    inline void pwrup_clear()  { digital_write(PWRUP,  LOW ); }
+    inline void pwrup_set()    { digital_write(Pin::PWRUP,  HIGH); }
+    inline void pwrup_clear()  { digital_write(Pin::PWRUP,  LOW ); }
 
-    inline void vcom_set()     { digital_write(VCOM,   HIGH); }
-    inline void vcom_clear()   { digital_write(VCOM,   LOW ); }
+    inline void vcom_set()     { digital_write(Pin::VCOM,   HIGH); }
+    inline void vcom_clear()   { digital_write(Pin::VCOM,   LOW ); }
 };
 
 // Singleton

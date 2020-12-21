@@ -28,7 +28,7 @@ void MsgViewer::show(
 
   width = Screen::WIDTH - 60;
 
-  if (page.get_compute_mode() == Page::LOCATION) return; // Cannot be used durint location computation
+  if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return; // Cannot be used durint location computation
 
   va_list args;
   va_start(args, fmt_str);
@@ -52,10 +52,10 @@ void MsgViewer::show(
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::CENTER,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
@@ -63,7 +63,7 @@ void MsgViewer::show(
   fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
   fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
 
-  page.set_compute_mode(Page::DISPLAY);
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
   page.start(fmt);
 
@@ -96,7 +96,7 @@ void MsgViewer::show(
 
   // Message
 
-  fmt.align       = CSS::LEFT_ALIGN;
+  fmt.align       = CSS::Align::LEFT;
   fmt.margin_top  = 80;
   fmt.margin_left = 90;
 
@@ -109,7 +109,7 @@ void MsgViewer::show(
   // Press a Key option
 
   if (press_a_key) {
-    fmt.align = CSS::CENTER_ALIGN;
+    fmt.align = CSS::Align::CENTER;
     fmt.font_size   =   9;
     fmt.margin_left =  10;
     fmt.margin_top  = 200;
@@ -145,10 +145,10 @@ void MsgViewer::show_progress(const char * title, ...)
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::CENTER,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width  ) >> 1;
@@ -218,10 +218,10 @@ void MsgViewer::add_dot()
     .height             =   0,
     .trim               = true,
     .pre                = false,
-    .font_style         = Fonts::NORMAL,
-    .align              = CSS::CENTER_ALIGN,
-    .text_transform     = CSS::NO_TRANSFORM,
-    .display            = CSS::INLINE
+    .font_style         = Fonts::FaceStyle::NORMAL,
+    .align              = CSS::Align::CENTER,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
   };
 
   fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;

@@ -39,7 +39,7 @@ bool Fonts::setup()
   clear(true);
 
   int8_t font_index;
-  config.get(Config::DEFAULT_FONT, &font_index);
+  config.get(Config::Ident::DEFAULT_FONT, &font_index);
   if ((font_index < 0) || (font_index > 7)) font_index = 0;
 
   std::string def         = "Default";
@@ -52,11 +52,11 @@ bool Fonts::setup()
   std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
   std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
 
-  if (!add(draw, NORMAL,      drawings   )) return false;
-  if (!add(def,  NORMAL,      normal     )) return false;
-  if (!add(def,  BOLD,        bold       )) return false;
-  if (!add(def,  ITALIC,      italic     )) return false;
-  if (!add(def,  BOLD_ITALIC, bold_italic)) return false;   
+  if (!add(draw, FaceStyle::NORMAL,      drawings   )) return false;
+  if (!add(def,  FaceStyle::NORMAL,      normal     )) return false;
+  if (!add(def,  FaceStyle::BOLD,        bold       )) return false;
+  if (!add(def,  FaceStyle::ITALIC,      italic     )) return false;
+  if (!add(def,  FaceStyle::BOLD_ITALIC, bold_italic)) return false;   
 
   return true;
 }
@@ -129,7 +129,7 @@ Fonts::add(const std::string & name,
       LOG_D("Font %s added to cache at index %d and style %d.",
         f.name.c_str(), 
         f.font->fonts_cache_index,
-        f.style);
+        (int)f.style);
       return true;
     }
     else {
@@ -168,7 +168,7 @@ Fonts::add(const std::string & name,
       LOG_D("Font %s added to cache at index %d and style %d.",
         f.name.c_str(), 
         f.font->fonts_cache_index,
-        f.style);
+        (int)f.style);
       return true;
     }
     else {
@@ -186,37 +186,37 @@ Fonts::add(const std::string & name,
 Fonts::FaceStyle
 Fonts::adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight)
 {
-  if (font_style == ITALIC) { 
+  if (font_style == FaceStyle::ITALIC) { 
     // NORMAL -> ITALIC
     // BOLD -> BOLD_ITALIC
     // ITALIC (no change)
     // BOLD_ITALIC (no change)
-    if      (style == NORMAL) style = ITALIC;
-    else if (style == BOLD  ) style = BOLD_ITALIC;
+    if      (style == FaceStyle::NORMAL) style = FaceStyle::ITALIC;
+    else if (style == FaceStyle::BOLD  ) style = FaceStyle::BOLD_ITALIC;
   }
-  else if (font_style == NORMAL) { 
+  else if (font_style == FaceStyle::NORMAL) { 
     // NORMAL
     // BOLD
     // ITALIC -> NORMAL
     // BOLD_ITALIC -> BOLD
-    if      (style == BOLD_ITALIC) style = BOLD;
-    else if (style == ITALIC     ) style = NORMAL;
+    if      (style == FaceStyle::BOLD_ITALIC) style = FaceStyle::BOLD;
+    else if (style == FaceStyle::ITALIC     ) style = FaceStyle::NORMAL;
   }
-  if (font_weight == BOLD) { 
+  if (font_weight == FaceStyle::BOLD) { 
     // NORMAL -> BOLD
     // BOLD
     // ITALIC -> BOLD_ITALIC
     // BOLD_ITALIC
-    if      (style == ITALIC) style = BOLD_ITALIC;
-    else if (style == NORMAL) style = BOLD;
+    if      (style == FaceStyle::ITALIC) style = FaceStyle::BOLD_ITALIC;
+    else if (style == FaceStyle::NORMAL) style = FaceStyle::BOLD;
   }
-  else if (font_weight == NORMAL) { 
+  else if (font_weight == FaceStyle::NORMAL) { 
     // NORMAL
     // BOLD -> NORMAL
     // ITALIC
     // BOLD_ITALIC -> ITALIC
-    if      (style == BOLD       ) style = NORMAL;
-    else if (style == BOLD_ITALIC) style = ITALIC;
+    if      (style == FaceStyle::BOLD       ) style = FaceStyle::NORMAL;
+    else if (style == FaceStyle::BOLD_ITALIC) style = FaceStyle::ITALIC;
   }
 
   return style;

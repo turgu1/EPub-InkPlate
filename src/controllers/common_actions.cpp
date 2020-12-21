@@ -15,7 +15,7 @@
 void
 CommonActions::return_to_last()
 {
-  app_controller.set_controller(AppController::LAST);
+  app_controller.set_controller(AppController::Ctrl::LAST);
 }
 
 void

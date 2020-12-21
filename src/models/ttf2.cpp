@@ -162,7 +162,7 @@ TTF::get_glyph(int32_t charcode)
 
 
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-      if (screen.get_pixel_resolution() == Screen::ONE_BIT) {
+      if (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) {
         error = FT_Render_Glyph(face->glyph,            // glyph slot
                                 FT_RENDER_MODE_MONO);   // render mode
       }

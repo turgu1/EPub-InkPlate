@@ -55,36 +55,36 @@ void
 BookController::key_event(EventMgr::KeyEvent key)
 {
   switch (key) {
-    case EventMgr::KEY_PREV:
+    case EventMgr::KeyEvent::PREV:
       current_page_id = page_locs.get_prev_page_id(*current_page_id);
       if (current_page_id != nullptr) {
         book_viewer.show_page(*current_page_id);
       }
       break;
-    case EventMgr::KEY_DBL_PREV:
+    case EventMgr::KeyEvent::DBL_PREV:
       current_page_id = page_locs.get_prev_page_id(*current_page_id, 10);
       if (current_page_id != nullptr) {
         book_viewer.show_page(*current_page_id);
       }
       break;
-    case EventMgr::KEY_NEXT:
+    case EventMgr::KeyEvent::NEXT:
       current_page_id = page_locs.get_next_page_id(*current_page_id);
       if (current_page_id != nullptr) {
         book_viewer.show_page(*current_page_id);
       }
       break;
-    case EventMgr::KEY_DBL_NEXT:
+    case EventMgr::KeyEvent::DBL_NEXT:
       current_page_id = page_locs.get_next_page_id(*current_page_id, 10);
       if (current_page_id != nullptr) {
         book_viewer.show_page(*current_page_id);
       }
       break;
     
-    case EventMgr::KEY_SELECT:
-    case EventMgr::KEY_DBL_SELECT:
-      app_controller.set_controller(AppController::PARAM);
+    case EventMgr::KeyEvent::SELECT:
+    case EventMgr::KeyEvent::DBL_SELECT:
+      app_controller.set_controller(AppController::Ctrl::PARAM);
       break;
-    case EventMgr::KEY_NONE:
+    case EventMgr::KeyEvent::NONE:
       break;
   }
 }

@@ -62,11 +62,11 @@ bool
 InkPlate6Ctrl::touchpad_int_setup()
 {
   Wire::enter();
-  mcp.set_int_pin(MCP::TOUCH_0, MCP::RISING);
-  mcp.set_int_pin(MCP::TOUCH_1, MCP::RISING);
-  mcp.set_int_pin(MCP::TOUCH_2, MCP::RISING);
+  mcp.set_int_pin(MCP::Pin::TOUCH_0, MCP::IntMode::RISING);
+  mcp.set_int_pin(MCP::Pin::TOUCH_1, MCP::IntMode::RISING);
+  mcp.set_int_pin(MCP::Pin::TOUCH_2, MCP::IntMode::RISING);
 
-  mcp.set_int_output(MCP::INTPORTB, false, false, HIGH);
+  mcp.set_int_output(MCP::IntPort::INTPORTB, false, false, HIGH);
   Wire::leave();
   return true;
 }
@@ -112,7 +112,7 @@ double
 InkPlate6Ctrl::read_battery()
 {
   Wire::enter();
-  mcp.digital_write(MCP::BATTERY_SWITCH, HIGH);
+  mcp.digital_write(MCP::Pin::BATTERY_SWITCH, HIGH);
   Wire::leave();
 
   ESP::delay(1);
@@ -123,7 +123,7 @@ InkPlate6Ctrl::read_battery()
   int16_t adc = ESP::analog_read(ADC1_CHANNEL_7); // ADC 1 Channel 7 is GPIO port 35
   
   Wire::enter();
-  mcp.digital_write(MCP::BATTERY_SWITCH, LOW);
+  mcp.digital_write(MCP::Pin::BATTERY_SWITCH, LOW);
   Wire::leave();
 
   return (double(adc) * 3.3 * 2) / 4095.0;

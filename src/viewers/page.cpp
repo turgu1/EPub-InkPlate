@@ -35,7 +35,7 @@ no_mem()
 }
 
 Page::Page() :
-  compute_mode(DISPLAY), 
+  compute_mode(ComputeMode::DISPLAY), 
   screen_is_full(false)
 {
   clear_display_list();
@@ -52,7 +52,7 @@ void
 Page::clear_display_list()
 {
   for (auto * entry: display_list) {
-    if (entry->command == IMAGE) {
+    if (entry->command == DisplayListCommand::IMAGE) {
       if (entry->kind.image_entry.image.bitmap) {
         delete [] entry->kind.image_entry.image.bitmap;
       }
@@ -124,10 +124,10 @@ to_unicode(const char **str, CSS::TextTransform transform, bool first)
     break;
   }
   *str = (char *) c;
-  if (transform != CSS::NO_TRANSFORM) {
-    if      (transform == CSS::UPPERCASE) u = toupper(u);
-    else if (transform == CSS::LOWERCASE) u = tolower(u);
-    else if (first && (transform == CSS::CAPITALIZE)) u = toupper(u);
+  if (transform != CSS::TextTransform::NONE) {
+    if      (transform == CSS::TextTransform::UPPERCASE) u = toupper(u);
+    else if (transform == CSS::TextTransform::LOWERCASE) u = tolower(u);
+    else if (first && (transform == CSS::TextTransform::CAPITALIZE)) u = toupper(u);
   }
   return done ? u : ' ';
 }
@@ -140,13 +140,13 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
   TTF * font = fonts.get(fmt.font_index, fmt.font_size);
 
   const char * s = str.c_str(); 
-  if (fmt.align == CSS::LEFT_ALIGN) {
+  if (fmt.align == CSS::Align::LEFT) {
     bool first = true;
     while (*s) {
       if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
-        entry->command = GLYPH;
+        entry->command = DisplayListCommand::GLYPH;
         entry->kind.glyph_entry.glyph = glyph;
         entry->pos.x = pos.x + glyph->xoff;
         entry->pos.y = pos.y + glyph->yoff;
@@ -182,18 +182,18 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
     int16_t x;
 
     if (pos.x == -1) {
-      if (fmt.align == CSS::CENTER_ALIGN) {
+      if (fmt.align == CSS::Align::CENTER) {
         x = min_x + ((max_x - min_x) >> 1) - (size >> 1);
       }
-      else { // RIGHT_ALIGN
+      else { // RIGHT
         x = max_x - size;
       }
     }
     else {
-      if (fmt.align == CSS::CENTER_ALIGN) {
+      if (fmt.align == CSS::Align::CENTER) {
         x = pos.x - (size >> 1);
       }
-      else { // RIGHT_ALIGN
+      else { // RIGHT
         x = pos.x - size;
       }
     }
@@ -206,7 +206,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
 
-        entry->command                = GLYPH;
+        entry->command                = DisplayListCommand::GLYPH;
         entry->kind.glyph_entry.glyph = glyph;
         entry->pos.x                  = x + glyph->xoff;
         entry->pos.y                  = pos.y + glyph->yoff;
@@ -239,7 +239,7 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
   if ((glyph = font->get_glyph(ch))) {
     DisplayListEntry * entry = display_list_entry_pool.newElement();
     if (entry == nullptr) no_mem();
-    entry->command                = GLYPH;
+    entry->command                = DisplayListCommand::GLYPH;
     entry->kind.glyph_entry.glyph = glyph;
     entry->pos.x                  = pos.x + glyph->xoff;
     entry->pos.y                  = pos.y + glyph->yoff;
@@ -260,14 +260,14 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
 void
 Page::paint(bool clear_screen, bool no_full, bool do_it)
 {
-  if (!do_it) if ((display_list.empty()) || (compute_mode != DISPLAY)) return;
+  if (!do_it) if ((display_list.empty()) || (compute_mode != ComputeMode::DISPLAY)) return;
   
   if (clear_screen) screen.clear();
 
   display_list.reverse();
 
   for (auto * entry : display_list) {
-    if (entry->command == GLYPH) {
+    if (entry->command == DisplayListCommand::GLYPH) {
       if (entry->kind.glyph_entry.glyph != nullptr) {
         screen.draw_glyph(
           entry->kind.glyph_entry.glyph->buffer,
@@ -279,31 +279,31 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         LOG_E("DISPLAY LIST CORRUPTED!!");
       }
     }
-    else if (entry->command == IMAGE) {
+    else if (entry->command == DisplayListCommand::IMAGE) {
       screen.draw_bitmap(
         entry->kind.image_entry.image.bitmap, 
         entry->kind.image_entry.image.dim,  
         entry->pos);
     }
-    else if (entry->command == HIGHLIGHT) {
+    else if (entry->command == DisplayListCommand::HIGHLIGHT) {
       screen.draw_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos, 
         Screen::BLACK_COLOR);
     }
-    else if (entry->command == CLEAR_HIGHLIGHT) {
+    else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
       screen.draw_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos,
         Screen::WHITE_COLOR);
     }
-    else if (entry->command == CLEAR_REGION) {
+    else if (entry->command == DisplayListCommand::CLEAR_REGION) {
       screen.colorize_region(
         entry->kind.region_entry.dim, 
         entry->pos,
         Screen::WHITE_COLOR);
     }
-    else if (entry->command == SET_REGION) {
+    else if (entry->command == DisplayListCommand::SET_REGION) {
       screen.colorize_region(
         entry->kind.region_entry.dim, 
         entry->pos,
@@ -462,7 +462,7 @@ Page::add_line(const Format & fmt, bool justifyable)
   while (!line_list.empty()) {
     if ((*(line_list.begin()))->pos.y > 0) {
       DisplayListEntry * entry = *(line_list.begin());
-      if (entry->command == IMAGE) {
+      if (entry->command == DisplayListCommand::IMAGE) {
         if (entry->kind.image_entry.image.bitmap) delete [] entry->kind.image_entry.image.bitmap;
       }
       display_list_entry_pool.deleteElement(entry);
@@ -473,9 +473,9 @@ Page::add_line(const Format & fmt, bool justifyable)
 
   line_list.reverse();
   
-  if (!line_list.empty() && (compute_mode == DISPLAY)) {
+  if (!line_list.empty() && (compute_mode == ComputeMode::DISPLAY)) {
   
-    if ((fmt.align == CSS::JUSTIFY) && justifyable) {
+    if ((fmt.align == CSS::Align::JUSTIFY) && justifyable) {
       int16_t target_width = (para_max_x - para_min_x - para_indent);
       int16_t loop_count = 0;
       while ((line_width < target_width) && (++loop_count < 50)) {
@@ -494,29 +494,29 @@ Page::add_line(const Format & fmt, bool justifyable)
       }
     }
     else {
-      if (fmt.align == CSS::RIGHT_ALIGN) {
+      if (fmt.align == CSS::Align::RIGHT) {
         pos.x = para_max_x - line_width;
       } 
-      else if (fmt.align == CSS::CENTER_ALIGN) {
+      else if (fmt.align == CSS::Align::CENTER) {
         pos.x = para_min_x + ((para_max_x - para_min_x) >> 1) - (line_width >> 1);
       }
     }
   }
   
   for (auto * entry : line_list) {
-    if (entry->command == GLYPH) {
+    if (entry->command == DisplayListCommand::GLYPH) {
       int16_t x = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x = pos.x + entry->kind.glyph_entry.glyph->xoff;
       entry->pos.y = pos.y + entry->kind.glyph_entry.glyph->yoff;
       pos.x += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
     }
-    else if (entry->command == IMAGE) {
+    else if (entry->command == DisplayListCommand::IMAGE) {
       entry->pos.x = pos.x;
       entry->pos.y = pos.y - entry->kind.image_entry.image.dim.height;
       pos.x += entry->kind.image_entry.advance;
     }
     else {
-      LOG_E("Wrong entry type for add_line: %d", entry->command);
+      LOG_E("Wrong entry type for add_line: %d", (int)entry->command);
     }
 
     #if DEBUGGING
@@ -552,7 +552,7 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space)
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command = GLYPH;
+  entry->command = DisplayListCommand::GLYPH;
   entry->kind.glyph_entry.glyph = glyph;
   entry->pos.x = entry->pos.y = is_space ? glyph->advance : 0;
   
@@ -569,11 +569,11 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy, float line_he
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command = IMAGE;
+  entry->command = DisplayListCommand::IMAGE;
   entry->kind.image_entry.image   = image;
   entry->kind.image_entry.advance = advance;
   
-  if (compute_mode == DISPLAY) {
+  if (compute_mode == ComputeMode::DISPLAY) {
     if (copy) {
       int32_t size = image.dim.width * image.dim.height;
       if (image.bitmap != nullptr) {
@@ -645,7 +645,7 @@ Page::add_word(const char * word,  const Format & fmt)
       DisplayListEntry * entry = display_list_entry_pool.newElement();
       if (entry == nullptr) no_mem();
 
-      entry->command                = GLYPH;
+      entry->command                = DisplayListCommand::GLYPH;
       entry->kind.glyph_entry.glyph = glyph;
       entry->pos.x = entry->pos.y   = 0;
 
@@ -869,7 +869,7 @@ Page::add_image(Image & image, const Format & fmt)
 
     unsigned char * resized_bitmap = nullptr;
 
-    if (compute_mode == DISPLAY) {
+    if (compute_mode == ComputeMode::DISPLAY) {
       if ((image.dim.width > 2) || (image.dim.height > 2)) {
 
         int32_t size = w * h;
@@ -932,7 +932,7 @@ Page::put_image(Image & image,
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  if (compute_mode == DISPLAY) {
+  if (compute_mode == ComputeMode::DISPLAY) {
     int32_t size = image.dim.width * image.dim.height;
     if ((entry->kind.image_entry.image.bitmap = new unsigned char [size]) == nullptr) {
       msg_viewer.out_of_memory("image allocation");
@@ -943,7 +943,7 @@ Page::put_image(Image & image,
     entry->kind.image_entry.image.bitmap = nullptr;
   }
 
-  entry->command                     = IMAGE;
+  entry->command                     = DisplayListCommand::IMAGE;
   entry->kind.image_entry.image.dim  = image.dim;
   entry->pos                         = pos;
 
@@ -965,7 +965,7 @@ Page::put_highlight(Dim dim, Pos pos)
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command               = HIGHLIGHT;
+  entry->command               = DisplayListCommand::HIGHLIGHT;
   entry->kind.region_entry.dim = dim;
   entry->pos                   = pos;
 
@@ -987,7 +987,7 @@ Page::clear_highlight(Dim dim, Pos pos)
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command               = CLEAR_HIGHLIGHT;
+  entry->command               = DisplayListCommand::CLEAR_HIGHLIGHT;
   entry->kind.region_entry.dim = dim;
   entry->pos                   = pos;
 
@@ -1009,7 +1009,7 @@ Page::clear_region(Dim dim, Pos pos)
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command               = CLEAR_REGION;
+  entry->command               = DisplayListCommand::CLEAR_REGION;
   entry->kind.region_entry.dim = dim;
   entry->pos                   = pos;
 
@@ -1032,7 +1032,7 @@ Page::set_region(Dim dim, Pos pos)
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command               = SET_REGION;
+  entry->command               = DisplayListCommand::SET_REGION;
   entry->kind.region_entry.dim = dim;
   entry->pos                   = pos;
 
@@ -1051,7 +1051,7 @@ Page::set_region(Dim dim, Pos pos)
 bool
 Page::show_cover(unsigned char * data, int32_t size)
 {
-  if (compute_mode == DISPLAY) {
+  if (compute_mode == ComputeMode::DISPLAY) {
     int32_t image_width, image_height, channel_count;
 
     unsigned char * bitmap_data = stbi_load_from_memory(data, size, &image_width, &image_height, &channel_count, 1);
@@ -1109,42 +1109,42 @@ Page::show_display_list(const DisplayList & list, const char * title) const
   #if DEBUGGING
     std::cout << title << std::endl;
     for (auto * entry : list) {
-      if (entry->command == GLYPH) {
+      if (entry->command == DisplayListCommand::GLYPH) {
         std::cout << "GLYPH" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.glyph_entry.glyph->dim.width  <<
           " h:" << entry->kind.glyph_entry.glyph->dim.height << std::endl;
       }
-      else if (entry->command == IMAGE) {
+      else if (entry->command == DisplayListCommand::IMAGE) {
         std::cout << "IMAGE" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.image_entry.image.dim.width  <<
           " h:" << entry->kind.image_entry.image.dim.height << std::endl;
       }
-      else if (entry->command == HIGHLIGHT) {
+      else if (entry->command == DisplayListCommand::HIGHLIGHT) {
         std::cout << "HIGHLIGHT" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.region_entry.dim.width  <<
           " h:" << entry->kind.region_entry.dim.height << std::endl;
       }
-      else if (entry->command == CLEAR_HIGHLIGHT) {
+      else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
         std::cout << "CLEAR_HIGHLIGHT" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.region_entry.dim.width  <<
           " h:" << entry->kind.region_entry.dim.height << std::endl;
       }
-      else if (entry->command == CLEAR_REGION) {
+      else if (entry->command == DisplayListCommand::CLEAR_REGION) {
         std::cout << "CLEAR_REGION" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.region_entry.dim.width  <<
           " h:" << entry->kind.region_entry.dim.height << std::endl;
       }
-      else if (entry->command == SET_REGION) {
+      else if (entry->command == DisplayListCommand::SET_REGION) {
         std::cout << "SET_REGION" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<

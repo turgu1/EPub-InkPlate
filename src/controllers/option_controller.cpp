@@ -90,20 +90,20 @@ static int8_t old_default_font;
 
 static constexpr int8_t MAIN_FORM_SIZE = 6;
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes before sleeping :",   &timeout,                3, timeout_choices,     FormViewer::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",       (int8_t *) &orientation, 3, orientation_choices, FormViewer::VERTICAL_CHOICES   },
-  { "Show Images in books (*):",   &show_images,            2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
-  { "Pixel Resolution :",          (int8_t *) &resolution,  2, resolution_choices,  FormViewer::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",     &battery,                4, battery_visual,      FormViewer::VERTICAL_CHOICES   },
-  { nullptr,                       &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
+  { "Minutes before sleeping :",   &timeout,                3, timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Buttons Position (*):",       (int8_t *) &orientation, 3, orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in books (*):",   &show_images,            2, yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Pixel Resolution :",          (int8_t *) &resolution,  2, resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",     &battery,                4, battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                       &ok,                     2, ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 static constexpr int8_t FONT_FORM_SIZE = 4;
 static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::HORIZONTAL_CHOICES },
-  { "Use fonts in books (*):",   &use_fonts_in_books,     2, yes_no_choices,      FormViewer::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,           8, font_choices,        FormViewer::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::HORIZONTAL_CHOICES }
+  { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in books (*):",   &use_fonts_in_books,     2, yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default font (*):",         &default_font,           8, font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 extern bool start_web_server();
@@ -112,11 +112,11 @@ extern bool stop_web_server();
 static void
 main_parameters()
 {
-  config.get(Config::ORIENTATION,      (int8_t *) &orientation);
-  config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution );
-  config.get(Config::BATTERY,          &battery               );
-  config.get(Config::TIMEOUT,          &timeout               );
-  config.get(Config::SHOW_IMAGES,      &show_images           );
+  config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
+  config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution );
+  config.get(Config::Ident::BATTERY,          &battery               );
+  config.get(Config::Ident::TIMEOUT,          &timeout               );
+  config.get(Config::Ident::SHOW_IMAGES,      &show_images           );
 
   old_orientation = orientation;
   old_show_images = show_images;
@@ -134,9 +134,9 @@ main_parameters()
 static void
 font_parameters()
 {
-  config.get(Config::FONT_SIZE,          &font_size         );
-  config.get(Config::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
-  config.get(Config::DEFAULT_FONT,       &default_font      );
+  config.get(Config::Ident::FONT_SIZE,          &font_size         );
+  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
+  config.get(Config::Ident::DEFAULT_FONT,       &default_font      );
   
   old_use_fonts_in_books = use_fonts_in_books;
   old_default_font       = default_font;
@@ -168,15 +168,15 @@ wifi_mode()
 }
 
 static MenuViewer::MenuEntry menu[9] = {
-  { MenuViewer::RETURN,      "Return to the e-books list",          CommonActions::return_to_last    },
-  { MenuViewer::BOOK,        "Return to the last book being read",  CommonActions::show_last_book    },
-  { MenuViewer::MAIN_PARAMS, "Main parameters",                     main_parameters                  },
-  { MenuViewer::FONT_PARAMS, "Font parameters",                     font_parameters                  },
-  { MenuViewer::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::REFRESH,     "Refresh the e-books list",            CommonActions::refresh_books_dir },
-  { MenuViewer::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
-  { MenuViewer::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },
-  { MenuViewer::END_MENU,    nullptr,                               nullptr                          }
+  { MenuViewer::Icon::RETURN,      "Return to the e-books list",          CommonActions::return_to_last    },
+  { MenuViewer::Icon::BOOK,        "Return to the last book being read",  CommonActions::show_last_book    },
+  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                     main_parameters                  },
+  { MenuViewer::Icon::FONT_PARAMS, "Font parameters",                     font_parameters                  },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
+  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",            CommonActions::refresh_books_dir },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },
+  { MenuViewer::Icon::END_MENU,    nullptr,                               nullptr                          }
 };
 
 void 
@@ -199,11 +199,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
     if (form_viewer.event(key)) {
       main_form_is_shown = false;
       if (ok) {
-        config.put(Config::SHOW_IMAGES,      show_images         );
-        config.put(Config::ORIENTATION,      (int8_t) orientation);
-        config.put(Config::PIXEL_RESOLUTION, (int8_t) resolution );
-        config.put(Config::BATTERY,          battery             );
-        config.put(Config::TIMEOUT,          timeout             );
+        config.put(Config::Ident::SHOW_IMAGES,      show_images         );
+        config.put(Config::Ident::ORIENTATION,      (int8_t) orientation);
+        config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
+        config.put(Config::Ident::BATTERY,          battery             );
+        config.put(Config::Ident::TIMEOUT,          timeout             );
         config.save();
 
         if (old_orientation != orientation) {
@@ -218,8 +218,8 @@ OptionController::key_event(EventMgr::KeyEvent key)
 
         if ((old_show_images != show_images) ||
             ((old_orientation != orientation) &&
-             ((old_orientation == Screen::O_BOTTOM) ||
-              (orientation     == Screen::O_BOTTOM)))) {
+             ((old_orientation == Screen::Orientation::BOTTOM) ||
+              (orientation     == Screen::Orientation::BOTTOM)))) {
           books_refresh_needed = true;  
         }
       }
@@ -229,9 +229,9 @@ OptionController::key_event(EventMgr::KeyEvent key)
     if (form_viewer.event(key)) {
       font_form_is_shown = false;
       if (ok) {
-        config.put(Config::FONT_SIZE,          font_size         );
-        config.put(Config::DEFAULT_FONT,       default_font      );
-        config.put(Config::USE_FONTS_IN_BOOKS, use_fonts_in_books);
+        config.put(Config::Ident::FONT_SIZE,          font_size         );
+        config.put(Config::Ident::DEFAULT_FONT,       default_font      );
+        config.put(Config::Ident::USE_FONTS_IN_BOOKS, use_fonts_in_books);
         config.save();
 
         if ((old_font_size          != font_size   ) ||
@@ -265,7 +265,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
         int16_t dummy;
         books_dir.refresh(nullptr, dummy, true);
       }
-      app_controller.set_controller(AppController::LAST);
+      app_controller.set_controller(AppController::Ctrl::LAST);
     }
   }
 }

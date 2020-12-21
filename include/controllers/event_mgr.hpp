@@ -17,7 +17,7 @@ class EventMgr
   public:
     static constexpr char const * TAG = "EventMgr";
 
-    enum KeyEvent { KEY_NONE, KEY_NEXT, KEY_PREV, KEY_DBL_NEXT, KEY_DBL_PREV, KEY_SELECT, KEY_DBL_SELECT };
+    enum class KeyEvent { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
     EventMgr() : stay_on(false) { }
 
     bool setup();

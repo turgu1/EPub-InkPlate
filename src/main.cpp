@@ -70,8 +70,8 @@
       
       Screen::Orientation    orientation;
       Screen::PixelResolution resolution;
-      config.get(Config::ORIENTATION,     (int8_t *) &orientation);
-      config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution);
+      config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
+      config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
       screen.setup(resolution, orientation);
 
       event_mgr.setup();
@@ -166,8 +166,8 @@
 
       Screen::Orientation    orientation;
       Screen::PixelResolution resolution;
-      config.get(Config::ORIENTATION,     (int8_t *) &orientation);
-      config.get(Config::PIXEL_RESOLUTION, (int8_t *) &resolution);
+      config.get(Config::Ident::ORIENTATION,     (int8_t *) &orientation);
+      config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
       screen.setup(resolution, orientation);
 
       event_mgr.setup();

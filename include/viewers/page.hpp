@@ -65,12 +65,12 @@ class Page
      * page to be shown. DISPLAY is used when preparing the page to be shown
      * on screen. 
      */
-    enum ComputeMode { LOCATION, MOVE, DISPLAY };
+    enum class ComputeMode { LOCATION, MOVE, DISPLAY };
 
   private:
     static constexpr char const * TAG = "Page";
 
-    enum DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION };
+    enum class DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION };
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
@@ -259,26 +259,26 @@ class Page
 
     void show_fmt(const Format & fmt, const char * spaces) const {
       #if DEBUGGING
-        std::cout       << spaces                 <<
-          "Fmt: align:" << fmt.align              << 
-          " fntIdx:"    << fmt.font_index         << 
-          " fntSz:"     << fmt.font_size          << 
-          " fntSt:"     << fmt.font_style         << 
-          " ind:"       << fmt.indent             << 
-          " lhf:"       << fmt.line_height_factor << 
-          " mb:"        << fmt.margin_bottom      << 
-          " ml:"        << fmt.margin_left        << 
-          " mr:"        << fmt.margin_right       << 
-          " mt:"        << fmt.margin_top         << 
-          " sb:"        << fmt.screen_bottom      << 
-          " sl:"        << fmt.screen_left        << 
-          " sr:"        << fmt.screen_right       << 
-          " st:"        << fmt.screen_top         << 
-          " tr:"        << fmt.trim               << 
-          " pr:"        << fmt.pre                << 
-          " tr:"        << fmt.trim               << 
-          " tt:"        << fmt.text_transform     <<
-          " di:"        << fmt.display            <<
+        std::cout       << spaces                  <<
+          "Fmt: align:" << (int)fmt.align          << 
+          " fntIdx:"    << fmt.font_index          << 
+          " fntSz:"     << fmt.font_size           << 
+          " fntSt:"     << (int)fmt.font_style     << 
+          " ind:"       << fmt.indent              << 
+          " lhf:"       << fmt.line_height_factor  << 
+          " mb:"        << fmt.margin_bottom       << 
+          " ml:"        << fmt.margin_left         << 
+          " mr:"        << fmt.margin_right        << 
+          " mt:"        << fmt.margin_top          << 
+          " sb:"        << fmt.screen_bottom       << 
+          " sl:"        << fmt.screen_left         << 
+          " sr:"        << fmt.screen_right        << 
+          " st:"        << fmt.screen_top          << 
+          " tr:"        << fmt.trim                << 
+          " pr:"        << fmt.pre                 << 
+          " tr:"        << fmt.trim                << 
+          " tt:"        << (int)fmt.text_transform <<
+          " di:"        << (int)fmt.display        <<
           std::endl;
       #endif
     }

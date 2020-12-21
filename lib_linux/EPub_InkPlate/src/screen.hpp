@@ -33,8 +33,8 @@ class Screen : NonCopyable
     static const uint8_t  BLACK_COLOR = 0x00;
     static const uint8_t  WHITE_COLOR = 0xFF;
     
-    enum Orientation     : int8_t { O_LEFT, O_RIGHT, O_BOTTOM };
-    enum PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+    enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
+    enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
     void     draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
     void      draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);

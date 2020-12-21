@@ -32,7 +32,7 @@ class AppController
      * LAST allows for the
      * selection of the last controller in charge before the current one.
      */
-    enum Ctrl { NONE, DIR, PARAM, BOOK, OPTION, LAST };
+    enum class Ctrl { NONE, DIR, PARAM, BOOK, OPTION, LAST };
     
     AppController();
 

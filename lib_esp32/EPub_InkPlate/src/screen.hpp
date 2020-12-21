@@ -30,8 +30,8 @@ class Screen : NonCopyable
     static constexpr uint8_t  WHITE_COLOR           = 7;
     static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 6;
     
-    enum Orientation    : int8_t { O_LEFT, O_RIGHT, O_BOTTOM };
-    enum PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+    enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
+    enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
     void     draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
     void      draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
@@ -39,7 +39,7 @@ class Screen : NonCopyable
     void colorize_region(Dim dim, Pos pos, uint8_t color);
 
     inline void clear()  {
-      if (pixel_resolution == ONE_BIT) { 
+      if (pixel_resolution == PixelResolution::ONE_BIT) { 
         EInk::clear_bitmap(*frame_buffer_1bit);
       }
       else {
@@ -48,7 +48,7 @@ class Screen : NonCopyable
     }
     
     inline void update(bool no_full = false) { 
-      if (pixel_resolution == ONE_BIT) {
+      if (pixel_resolution == PixelResolution::ONE_BIT) {
         if (no_full) {
           e_ink.partial_update(*frame_buffer_1bit);
           partial_count = 0;

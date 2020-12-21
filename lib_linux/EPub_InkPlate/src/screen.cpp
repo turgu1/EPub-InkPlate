@@ -56,7 +56,7 @@ Screen::draw_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  if (pixel_resolution == ONE_BIT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
     static int16_t err[601];
     int16_t error;
     memset(err, 0, 601*2);
@@ -153,7 +153,7 @@ Screen::draw_glyph(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  if (pixel_resolution == ONE_BIT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
     for (int j = pos.y, q = 0; j < y_max; j++, q++) {
       for (int i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) {
         // int v = (255 - bitmap_data[p]);
@@ -317,7 +317,7 @@ void
 Screen::set_orientation(Orientation orient) 
 {
   orientation = orient;
-  if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
+  if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
     WIDTH  = 600;
     HEIGHT = 800;
   }

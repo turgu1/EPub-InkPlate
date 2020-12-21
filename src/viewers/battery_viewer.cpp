@@ -16,7 +16,7 @@
   BatteryViewer::show()
   {
     int8_t view_mode;
-    config.get(Config::BATTERY, &view_mode);
+    config.get(Config::Ident::BATTERY, &view_mode);
 
     if (view_mode == 0) return;
 
@@ -41,10 +41,10 @@
       .height             = 0,
       .trim               = true,
       .pre                = false,
-      .font_style         = Fonts::NORMAL,
-      .align              = CSS::LEFT_ALIGN,
-      .text_transform     = CSS::NO_TRANSFORM,
-      .display            = CSS::INLINE
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
     };
 
     // Show battery icon

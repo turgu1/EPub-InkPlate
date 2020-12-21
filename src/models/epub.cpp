@@ -216,7 +216,7 @@ EPub::retrieve_fonts_from_css(CSS & css)
 {
 #if USE_EPUB_FONTS
   int8_t use_fonts_in_books;
-  config.get(Config::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
+  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
 
   if (use_fonts_in_books == 0) return;
   
@@ -228,26 +228,26 @@ EPub::retrieve_fonts_from_css(CSS & css)
 
   for (auto & props : *suite) {
     const CSS::Values * values;
-    if ((values = css.get_values_from_props(*props, CSS::FONT_FAMILY))) {
+    if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_FAMILY))) {
 
-      Fonts::FaceStyle style = Fonts::NORMAL;
+      Fonts::FaceStyle style = Fonts::FaceStyle::NORMAL;
       std::string font_family = values->front()->str;
-      Fonts::FaceStyle font_weight = Fonts::NORMAL;
-      Fonts::FaceStyle font_style = Fonts::NORMAL;
+      Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
+      Fonts::FaceStyle font_style = Fonts::FaceStyle::NORMAL;
       
-      if ((values = css.get_values_from_props(*props, CSS::FONT_STYLE))) {
-        font_style = (Fonts::FaceStyle) values->front()->choice;
+      if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_STYLE))) {
+        font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
       }
-      if ((values = css.get_values_from_props(*props, CSS::FONT_WEIGHT))) {
-        font_weight = (Fonts::FaceStyle) values->front()->choice;
+      if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_WEIGHT))) {
+        font_weight = (Fonts::FaceStyle) values->front()->choice.face_style;
       }
       style = fonts.adjust_font_style(style, font_style, font_weight);
       // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
       if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
-        if ((values = css.get_values_from_props(*props, CSS::SRC)) &&
+        if ((values = css.get_values_from_props(*props, CSS::PropertyId::SRC)) &&
             (!values->empty()) &&
-            (values->front()->value_type == CSS::URL)) {
+            (values->front()->value_type == CSS::ValueType::URL)) {
 
           if (first) {
             first = false;
@@ -307,11 +307,11 @@ EPub::get_item(pugi::xml_node itemref)
     if (!(attr = node.attribute("media-type"))) ERR(3);
     const char * media_type = attr.value();
     
-    if (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = XML;
-    else if (strcmp(media_type, "image/jpeg") == 0) item_media_type = JPEG;
-    else if (strcmp(media_type, "image/png" ) == 0) item_media_type =  PNG;
-    else if (strcmp(media_type, "image/bmp" ) == 0) item_media_type =  BMP;
-    else if (strcmp(media_type, "image/gif" ) == 0) item_media_type =  GIF;
+    if (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = MediaType::XML;
+    else if (strcmp(media_type, "image/jpeg") == 0) item_media_type =  MediaType::JPEG;
+    else if (strcmp(media_type, "image/png" ) == 0) item_media_type =  MediaType::PNG;
+    else if (strcmp(media_type, "image/bmp" ) == 0) item_media_type =  MediaType::BMP;
+    else if (strcmp(media_type, "image/gif" ) == 0) item_media_type =  MediaType::GIF;
     else ERR(4);
 
     if (!(attr = node.attribute("href"))) ERR(4);
@@ -325,7 +325,7 @@ EPub::get_item(pugi::xml_node itemref)
 
     if (!(current_item_data = retrieve_file(attr.value(), size))) ERR(5);
 
-    if (item_media_type == XML) {
+    if (item_media_type == MediaType::XML) {
 
       // LOG_D("Reading file %s", attr.value().c_str());
 
@@ -640,7 +640,7 @@ EPub::get_item_count()
   int16_t count = 0;
   do {
     count++;
-  } while (node = node.next_sibling("itemref"));
+  } while ((node = node.next_sibling("itemref")));
 
   return count;
 }

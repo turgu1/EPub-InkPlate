@@ -121,11 +121,11 @@ EInk::setup()
 
   Wire::enter();
   
-  mcp.set_direction(MCP::VCOM,         MCP::OUTPUT);
-  mcp.set_direction(MCP::PWRUP,        MCP::OUTPUT);
-  mcp.set_direction(MCP::WAKEUP,       MCP::OUTPUT); 
-  mcp.set_direction(MCP::GPIO0_ENABLE, MCP::OUTPUT);
-  mcp.digital_write(MCP::GPIO0_ENABLE, HIGH);
+  mcp.set_direction(MCP::Pin::VCOM,         MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::PWRUP,        MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::WAKEUP,       MCP::PinMode::OUTPUT); 
+  mcp.set_direction(MCP::Pin::GPIO0_ENABLE, MCP::PinMode::OUTPUT);
+  mcp.digital_write(MCP::Pin::GPIO0_ENABLE, HIGH);
 
   mcp.wakeup_set(); 
  
@@ -151,9 +151,9 @@ EInk::setup()
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
 
-  mcp.set_direction(MCP::OE,      MCP::OUTPUT);
-  mcp.set_direction(MCP::GMOD,    MCP::OUTPUT);
-  mcp.set_direction(MCP::SPV,     MCP::OUTPUT);
+  mcp.set_direction(MCP::Pin::OE,      MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::GMOD,    MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::SPV,     MCP::PinMode::OUTPUT);
 
   // DATA PINS
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_OUTPUT); // D0
@@ -166,12 +166,12 @@ EInk::setup()
   gpio_set_direction(GPIO_NUM_27, GPIO_MODE_OUTPUT); // D7
 
   // TOUCHPAD PINS
-  mcp.set_direction(MCP::TOUCH_0, MCP::INPUT);
-  mcp.set_direction(MCP::TOUCH_1, MCP::INPUT);
-  mcp.set_direction(MCP::TOUCH_2, MCP::INPUT);
+  mcp.set_direction(MCP::Pin::TOUCH_0, MCP::PinMode::INPUT);
+  mcp.set_direction(MCP::Pin::TOUCH_1, MCP::PinMode::INPUT);
+  mcp.set_direction(MCP::Pin::TOUCH_2, MCP::PinMode::INPUT);
 
   // Battery voltage Switch MOSFET
-  mcp.set_direction(MCP::BATTERY_SWITCH, MCP::OUTPUT);
+  mcp.set_direction(MCP::Pin::BATTERY_SWITCH, MCP::PinMode::OUTPUT);
 
   d_memory_new = (Bitmap1Bit *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
   p_buffer     = (uint8_t *)    ESP::ps_malloc(120000);
@@ -520,7 +520,7 @@ EInk::clean_fast(uint8_t c, uint8_t rep)
 void 
 EInk::turn_off()
 {
-  if (get_panel_state() == OFF) return;
+  if (get_panel_state() == PanelState::OFF) return;
  
       mcp.oe_clear();
     mcp.gmod_clear();
@@ -544,7 +544,7 @@ EInk::turn_off()
   } while ((read_power_good() != 0) && (ESP::millis() - timer) < 250);
 
   pins_z_state();
-  set_panel_state(OFF);
+  set_panel_state(PanelState::OFF);
 }
 
 // Turn on supply for epaper display (TPS65186) 
@@ -552,7 +552,7 @@ EInk::turn_off()
 void 
 EInk::turn_on()
 {
-  if (get_panel_state() == ON) return;
+  if (get_panel_state() == PanelState::ON) return;
 
   mcp.wakeup_set();
   ESP::delay_microseconds(1800);
@@ -590,7 +590,7 @@ EInk::turn_on()
   }
 
   mcp.oe_set();
-  set_panel_state(ON);
+  set_panel_state(PanelState::ON);
 }
 
 uint8_t 
@@ -650,9 +650,9 @@ EInk::pins_z_state()
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_INPUT);
 
-  mcp.set_direction(MCP::OE,   MCP::INPUT);
-  mcp.set_direction(MCP::GMOD, MCP::INPUT);
-  mcp.set_direction(MCP::SPV,  MCP::INPUT);
+  mcp.set_direction(MCP::Pin::OE,   MCP::PinMode::INPUT);
+  mcp.set_direction(MCP::Pin::GMOD, MCP::PinMode::INPUT);
+  mcp.set_direction(MCP::Pin::SPV,  MCP::PinMode::INPUT);
 
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_5,  GPIO_MODE_INPUT);
@@ -672,9 +672,9 @@ EInk::pins_as_outputs()
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
 
-  mcp.set_direction(MCP::OE,   MCP::OUTPUT);
-  mcp.set_direction(MCP::GMOD, MCP::OUTPUT);
-  mcp.set_direction(MCP::SPV,  MCP::OUTPUT);
+  mcp.set_direction(MCP::Pin::OE,   MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::GMOD, MCP::PinMode::OUTPUT);
+  mcp.set_direction(MCP::Pin::SPV,  MCP::PinMode::OUTPUT);
 
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_5,  GPIO_MODE_OUTPUT);
@@ -691,7 +691,7 @@ EInk::read_temperature()
 {
   int8_t temp;
   
-  if (get_panel_state() == OFF) {
+  if (get_panel_state() == PanelState::OFF) {
     Wire::enter();
     mcp.wakeup_set();
     ESP::delay_microseconds(1800);
@@ -718,7 +718,7 @@ EInk::read_temperature()
   wire.request_from(PWRMGR_ADDRESS, 1);
   temp = wire.read();
     
-  if (get_panel_state() == OFF) {
+  if (get_panel_state() == PanelState::OFF) {
     mcp.pwrup_clear();
     mcp.wakeup_clear();
     Wire::leave();

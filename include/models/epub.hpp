@@ -20,7 +20,7 @@
 class EPub
 {
   public:
-    enum MediaType { XML, JPEG, PNG, GIF, BMP };
+    enum class MediaType { XML, JPEG, PNG, GIF, BMP };
 
     typedef std::list<CSS *> CSSList;
 

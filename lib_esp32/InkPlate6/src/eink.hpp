@@ -53,7 +53,7 @@ class EInk : NonCopyable
     typedef uint8_t Bitmap3Bit [BITMAP_SIZE_3BIT];
     typedef uint8_t Bitmap1Bit [BITMAP_SIZE_1BIT];
 
-    enum PanelState  { OFF, ON };
+    enum class PanelState  { OFF, ON };
 
   private:
     static constexpr char const * TAG = "EInk";
@@ -68,7 +68,7 @@ class EInk : NonCopyable
 
     static EInk singleton;
     EInk() :
-      panel_state(OFF), 
+      panel_state(PanelState::OFF), 
       initialized(false),
       partial_allowed(false) { }  // Private constructor
 

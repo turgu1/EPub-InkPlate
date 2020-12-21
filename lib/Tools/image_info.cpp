@@ -42,7 +42,7 @@ read_jpeg(uint8_t * mem_image)
              (marker != 0xffc4) && 
              (marker != 0xffc8)) {
 
-      image_info.image_type = JPEG;
+      image_info.image_type = ImageType::JPEG;
       image_info.pixel_size = mem_image[offset] * mem_image[offset + 5];
       image_info.width      = get_short_big_endian(&mem_image[offset + 3]);
       image_info.height     = get_short_big_endian(&mem_image[offset + 1]);
@@ -63,7 +63,7 @@ read_png(uint8_t * mem_image)
   constexpr uint8_t PNG_MAGIC[6] = { 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
   if (memcmp(&mem_image[2], PNG_MAGIC, 6) != 0) return false;
 
-  image_info.image_type = PNG;
+  image_info.image_type = ImageType::PNG;
   image_info.width      = get_int_big_endian(&mem_image[16]);
   image_info.height     = get_int_big_endian(&mem_image[20]);
   image_info.pixel_size = mem_image[24];

@@ -23,7 +23,7 @@ class Fonts
     
     bool setup();
 
-    enum FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
+    enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
     struct FontEntry {
       std::string name;
       TTF *       font;

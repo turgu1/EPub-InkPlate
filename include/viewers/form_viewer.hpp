@@ -44,7 +44,7 @@ class FormViewer
     bool    highlight_selection;
 
   public:
-    enum FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
+    enum class FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
     struct Choice {
       const char * caption;
       int8_t       value;

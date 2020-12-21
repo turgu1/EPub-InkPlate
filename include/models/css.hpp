@@ -8,6 +8,7 @@
 #include "global.hpp"
 #include "memory_pool.hpp"
 #include "logging.hpp"
+#include "models/fonts.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -119,21 +120,26 @@ class CSS
     CSS(std::string folder_path, const char * buffer, int32_t size, const std::string & css_id);
    ~CSS();
 
-    enum     ValueType : uint8_t { NOTHING, PT, PX, EM, CM, VH, VW, PERCENT, STR, URL, NOTYPE };
-    enum         Align : uint8_t { LEFT_ALIGN = 0, CENTER_ALIGN, RIGHT_ALIGN, JUSTIFY };
-    enum TextTransform : uint8_t { NO_TRANSFORM, UPPERCASE, LOWERCASE, CAPITALIZE };
-    enum       Display : uint8_t { D_NONE, INLINE, BLOCK, INLINE_BLOCK };
-    enum    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
-                                   TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
-                                   MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
-                                   WIDTH,      HEIGHT,      DISPLAY
-                                  };
+    enum class     ValueType : uint8_t { NOTHING, PT, PX, EM, CM, VH, VW, PERCENT, STR, URL, NOTYPE };
+    enum class         Align : uint8_t { LEFT = 0, CENTER, RIGHT, JUSTIFY };
+    enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE };
+    enum class       Display : uint8_t { NONE, INLINE, BLOCK, INLINE_BLOCK };
+    enum class    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
+                                         TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
+                                         MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
+                                         WIDTH,      HEIGHT,      DISPLAY
+                                       };
 
     struct Value {
-      float num;
-      int32_t choice;
+      float       num;
       std::string str;
-      ValueType value_type;
+      ValueType   value_type;
+      union {
+        Display          display;
+        Align            align;
+        TextTransform    text_transform;
+        Fonts::FaceStyle face_style;
+      } choice;
     };
 
     typedef std::string                Selector;

@@ -33,9 +33,9 @@ class BookViewer
     
     CSS::Properties * last_props;
 
-    enum Element { BODY, P, LI, BR, H1, H2, H3, H4, H5, H6, 
-                   B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
-                   BLOCKQUOTE };
+    enum class Element { BODY, P, LI, BR, H1, H2, H3, H4, H5, H6, 
+                         B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
+                         BLOCKQUOTE };
     
     typedef std::unordered_map<std::string, Element> Elements;
     Elements elements;
@@ -61,7 +61,7 @@ class BookViewer
           idx = fonts.get_index("Default", style);
         }
         if (idx == -1) {
-          fmt.font_style = Fonts::NORMAL;
+          fmt.font_style = Fonts::FaceStyle::NORMAL;
           fmt.font_index = 1;
         }
         else {
@@ -73,10 +73,10 @@ class BookViewer
   public:
 
     BookViewer() :
-      elements{{"p",     P}, {"div",     DIV}, {"span", SPAN}, {"br",     BR}, {"h1",                 H1},  
-               {"h2",   H2}, {"h3",       H3}, {"h4",     H4}, {"h5",     H5}, {"h6",                 H6}, 
-               {"b",     B}, {"i",         I}, {"em",     EM}, {"body", BODY}, {"a",                   A},
-               {"img", IMG}, {"image", IMAGE}, {"li",     LI}, { "pre",  PRE}, {"blockquote", BLOCKQUOTE}}
+      elements{{"p",     Element::P}, {"div",     Element::DIV}, {"span", Element::SPAN}, {"br",     Element::BR}, {"h1",                 Element::H1},  
+               {"h2",   Element::H2}, {"h3",       Element::H3}, {"h4",     Element::H4}, {"h5",     Element::H5}, {"h6",                 Element::H6}, 
+               {"b",     Element::B}, {"i",         Element::I}, {"em",     Element::EM}, {"body", Element::BODY}, {"a",                   Element::A},
+               {"img", Element::IMG}, {"image", Element::IMAGE}, {"li",     Element::LI}, { "pre",  Element::PRE}, {"blockquote", Element::BLOCKQUOTE}}
       {  }
 
     ~BookViewer() { }

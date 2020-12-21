@@ -7,7 +7,7 @@
 
 #include <cinttypes>
 
-enum ImageType { UNKNOWN, JPEG, PNG };
+enum class ImageType { UNKNOWN, JPEG, PNG };
 
 struct ImageInfo {
   uint32_t  size;

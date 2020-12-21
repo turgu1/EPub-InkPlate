@@ -485,7 +485,7 @@ http_server_start()
     httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
 
     int32_t port;
-    config.get(Config::PORT, &port);
+    config.get(Config::Ident::PORT, &port);
     httpd_config.uri_match_fn = httpd_uri_match_wildcard;
     httpd_config.server_port = (uint16_t) port;
 
@@ -628,8 +628,8 @@ wifi_start(void)
   std::string wifi_ssid;
   std::string wifi_pwd;
 
-  config.get(Config::SSID, wifi_ssid);
-  config.get(Config::PWD,  wifi_pwd );
+  config.get(Config::Ident::SSID, wifi_ssid);
+  config.get(Config::Ident::PWD,  wifi_pwd );
 
   wifi_config_t wifi_config;
 

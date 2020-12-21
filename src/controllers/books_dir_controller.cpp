@@ -182,7 +182,7 @@ BooksDirController::show_last_book()
     book_fname += book->filename;
     book_title  = book->title;
     if (book_controller.open_book_file(book_title, book_fname, book_index, book_page_id)) {
-      app_controller.set_controller(AppController::BOOK);
+      app_controller.set_controller(AppController::Ctrl::BOOK);
     }
   }
 }
@@ -217,12 +217,12 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
   const BooksDir::EBookRecord * book;
 
   switch (key) {
-    case EventMgr::KEY_DBL_PREV:
+    case EventMgr::KeyEvent::DBL_PREV:
       if (page_nbr > 0) --page_nbr;
       current_index = 0;
       books_dir_viewer.show_page(page_nbr, current_index);   
       break;
-    case EventMgr::KEY_DBL_NEXT:
+    case EventMgr::KeyEvent::DBL_NEXT:
       if ((page_nbr + 1) < books_dir_viewer.page_count()) {
         current_index = 0;
         books_dir_viewer.show_page(++page_nbr, current_index);
@@ -232,7 +232,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KEY_PREV:
+    case EventMgr::KeyEvent::PREV:
       if (current_index == 0) {
         if (page_nbr > 0) {
           current_index = BooksDirViewer::BOOKS_PER_PAGE - 1;
@@ -244,7 +244,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KEY_NEXT:
+    case EventMgr::KeyEvent::NEXT:
       if ((current_index + 1) >= BooksDirViewer::BOOKS_PER_PAGE) {
         if ((page_nbr + 1) < books_dir_viewer.page_count()) {
           page_nbr++;
@@ -262,7 +262,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KEY_SELECT:
+    case EventMgr::KeyEvent::SELECT:
       book_index = (page_nbr * BooksDirViewer::BOOKS_PER_PAGE) + current_index;
       if (book_index < books_dir.get_book_count()) {
         book = books_dir.get_book_data(book_index);
@@ -275,15 +275,15 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
           PageLocs::PageId page_id = { 0, 0 };
           
           if (book_controller.open_book_file(book_title, book_fname, book_index, page_id)) {
-            app_controller.set_controller(AppController::BOOK);
+            app_controller.set_controller(AppController::Ctrl::BOOK);
           }
         }
       }
       break;
-    case EventMgr::KEY_DBL_SELECT:
-      app_controller.set_controller(AppController::OPTION);
+    case EventMgr::KeyEvent::DBL_SELECT:
+      app_controller.set_controller(AppController::Ctrl::OPTION);
       break;
-    case EventMgr::KEY_NONE:
+    case EventMgr::KeyEvent::NONE:
       break;
   }
 }

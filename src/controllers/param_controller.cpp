@@ -22,7 +22,7 @@
 static void 
 books_list()
 {
-  app_controller.set_controller(AppController::DIR);
+  app_controller.set_controller(AppController::Ctrl::DIR);
 }
 
 extern bool start_web_server();
@@ -45,12 +45,12 @@ wifi_mode()
 }
 
 static MenuViewer::MenuEntry menu[6] = {
-  { MenuViewer::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
-  { MenuViewer::BOOK_LIST, "E-Books list",                        books_list                       },
-  { MenuViewer::WIFI,      "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
-  { MenuViewer::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
-  { MenuViewer::END_MENU,  nullptr,                               nullptr                          }
+  { MenuViewer::Icon::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
+  { MenuViewer::Icon::BOOK_LIST, "E-Books list",                        books_list                       },
+  { MenuViewer::Icon::WIFI,      "WiFi Access to the e-books folder",   wifi_mode                        },
+  { MenuViewer::Icon::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
+  { MenuViewer::Icon::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
+  { MenuViewer::Icon::END_MENU,  nullptr,                               nullptr                          }
 }; 
 
 void 
@@ -83,7 +83,7 @@ ParamController::key_event(EventMgr::KeyEvent key)
   #endif
   else {
     if (menu_viewer.event(key)) {
-      app_controller.set_controller(AppController::LAST);
+      app_controller.set_controller(AppController::Ctrl::LAST);
     }
   }
 }

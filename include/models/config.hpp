@@ -9,7 +9,7 @@
 class Config
 {
   public:
-    enum Ident { 
+    enum class Ident { 
       SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, VERSION,
       USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION 
     };
@@ -17,7 +17,7 @@ class Config
   private:
     static constexpr char const * TAG         = "Config"; 
     static constexpr char const * CONFIG_FILE = MAIN_FOLDER "/config.txt";
-    enum EntryType { STRING, INT, BYTE };
+    enum class EntryType { STRING, INT, BYTE };
 
     struct ConfigDescr {
       Ident        ident;

@@ -3,47 +3,47 @@
 
 #include "viewers/book_viewer.hpp"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+// #include "FreeRTOS.h"
+// #include "task.h"
+// #include "queue.h"
 
-xQueueHandle page_locs_cmd_queue;
-xQueueHandle page_locs_ans_queue;
+// xQueueHandle page_locs_cmd_queue;
+// xQueueHandle page_locs_ans_queue;
 
-void
-page_locs_task(void * param)
-{
-  int16_t itemref_index;
-  int16_t start_index = -1;
-  int16_t current_index;
+// void
+// page_locs_task(void * param)
+// {
+//   int16_t requested_index;
+//   int16_t start_index = -1;
+//   int16_t current_index;
 
-  // Values received:
-  // 0..n : Get itemref_index in priority
-  // -1   : Stop retrieval
+//   // Values received:
+//   // 0..n : Get itemref_index in priority
+//   // -1   : Stop retrieval
 
-  while (true) {
-    if (start_index == -1) {
-      // Wait for a first request for retrieval
-      xQueueReceive(page_locs_cmd_queue, &requested_index, portMAX_DELAY);
-      if (requested_index != -1) {
-        start_index = current_index = requested_index;
-      }
-      else {
-        xQueueSend(page_locs_ans_queue, &requested_index);
-      }
-    }
-    else if (xQueueMessagesWaiting(page_locs_cmd_queue) > 0) {
-      // A priority just entered, retrieve it
-      xQueueReceive(page_locs_cmd_queue, &requested_index, 0);
-    }
+//   while (true) {
+//     if (start_index == -1) {
+//       // Wait for a first request for retrieval
+//       xQueueReceive(page_locs_cmd_queue, &requested_index, portMAX_DELAY);
+//       if (requested_index != -1) {
+//         start_index = current_index = requested_index;
+//       }
+//       else {
+//         xQueueSend(page_locs_ans_queue, &requested_index, 0);
+//       }
+//     }
+//     else if (uxQueueMessagesWaiting(page_locs_cmd_queue) > 0) {
+//       // A priority just entered, retrieve it
+//       xQueueReceive(page_locs_cmd_queue, &requested_index, 0);
+//     }
 
-    // if (!page_locs.loaded(itemref_index)) {
+//     // if (!page_locs.loaded(itemref_index)) {
 
-    // }
+//     // }
 
-    xQueueSend(page_locs_ans_queue, &requested_index, 0);
-  }
-}
+//     xQueueSend(page_locs_ans_queue, &requested_index, 0);
+//   }
+// }
 
 bool 
 PageLocs::retrieve_asap(int16_t itemref_index) {

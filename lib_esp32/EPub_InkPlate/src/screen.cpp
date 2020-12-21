@@ -52,12 +52,12 @@ Screen::draw_bitmap(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  if (pixel_resolution == ONE_BIT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
     static int16_t err[801];
     int16_t error;
     memset(err, 0, 801*2);
 
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
           int32_t v = bitmap_data[p] + err[k + 1];
@@ -78,7 +78,7 @@ Screen::draw_bitmap(
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
           int32_t v = bitmap_data[p] + err[k + 1];
@@ -99,7 +99,7 @@ Screen::draw_bitmap(
         }
       }
     }
-    else { // O_BOTTOM
+    else { // Orientation::BOTTOM
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
           int32_t v = bitmap_data[p] + err[k + 1];
@@ -122,7 +122,7 @@ Screen::draw_bitmap(
     }
   }
   else {
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
           int8_t v = bitmap_data[p] >> 5;
@@ -130,7 +130,7 @@ Screen::draw_bitmap(
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
           int8_t v = bitmap_data[p] >> 5;
@@ -138,7 +138,7 @@ Screen::draw_bitmap(
         }
       }
     }
-    else { // O_BOTTOM
+    else { // BOTTOM
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {
         for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
           int8_t v = bitmap_data[p] >> 5;
@@ -161,10 +161,10 @@ Screen::draw_rectangle(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
   
-  if (pixel_resolution == ONE_BIT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
     uint8_t col = color == BLACK_COLOR ? 1 : 0;
   
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int i = pos.x; i < x_max; i++) {
         set_pixel_o_left_1bit(i, pos.y, col);
         set_pixel_o_left_1bit(i, y_max - 1, col);
@@ -174,7 +174,7 @@ Screen::draw_rectangle(
         set_pixel_o_left_1bit(x_max - 1, j, col);
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int i = pos.x; i < x_max; i++) {
         set_pixel_o_right_1bit(i, pos.y, col);
         set_pixel_o_right_1bit(i, y_max - 1, col);
@@ -196,7 +196,7 @@ Screen::draw_rectangle(
     }
   }
   else {
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int i = pos.x; i < x_max; i++) {
         set_pixel_o_left_3bit(i, pos.y, color);
         set_pixel_o_left_3bit(i, y_max - 1, color);
@@ -206,7 +206,7 @@ Screen::draw_rectangle(
         set_pixel_o_left_3bit(x_max - 1, j, color);
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int i = pos.x; i < x_max; i++) {
         set_pixel_o_right_3bit(i, pos.y, color);
         set_pixel_o_right_3bit(i, y_max - 1, color);
@@ -241,16 +241,16 @@ Screen::colorize_region(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  if (pixel_resolution == ONE_BIT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
     int8_t col = color == BLACK_COLOR ? 1 : 0;
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int j = pos.y; j < y_max; j++) {
         for (int i = pos.x; i < x_max; i++) {
           set_pixel_o_left_1bit(i, j, color);
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int j = pos.y; j < y_max; j++) {
         for (int i = pos.x; i < x_max; i++) {
           set_pixel_o_right_1bit(i, j, col);
@@ -266,14 +266,14 @@ Screen::colorize_region(
     }
   }
   else {
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (int j = pos.y; j < y_max; j++) {
         for (int i = pos.x; i < x_max; i++) {
           set_pixel_o_left_3bit(i, j, color);
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (int j = pos.y; j < y_max; j++) {
         for (int i = pos.x; i < x_max; i++) {
           set_pixel_o_right_3bit(i, j, color);
@@ -303,8 +303,8 @@ Screen::draw_glyph(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
-  if (pixel_resolution == ONE_BIT) {
-    if (orientation == O_LEFT) {
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
+    if (orientation == Orientation::LEFT) {
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
           uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
@@ -312,7 +312,7 @@ Screen::draw_glyph(
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
           uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
@@ -330,7 +330,7 @@ Screen::draw_glyph(
     }
   }
   else {
-    if (orientation == O_LEFT) {
+    if (orientation == Orientation::LEFT) {
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
           uint8_t v = 7 - (bitmap_data[p] >> 5);
@@ -338,7 +338,7 @@ Screen::draw_glyph(
         }
       }
     }
-    else if (orientation == O_RIGHT) {
+    else if (orientation == Orientation::RIGHT) {
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
           uint8_t v = 7 - (bitmap_data[p] >> 5);
@@ -371,7 +371,7 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
 {
   if (force || (pixel_resolution != resolution)) {
     pixel_resolution = resolution;
-    if (pixel_resolution == ONE_BIT) {
+    if (pixel_resolution == PixelResolution::ONE_BIT) {
       if (frame_buffer_3bit != nullptr) {
         free(frame_buffer_3bit);
         frame_buffer_3bit = nullptr;
@@ -393,7 +393,7 @@ void
 Screen::set_orientation(Orientation orient) 
 {
   orientation = orient;
-  if ((orientation == O_LEFT) || (orientation == O_RIGHT)) {
+  if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
     WIDTH  = 600;
     HEIGHT = 800;
   }

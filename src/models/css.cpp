@@ -17,24 +17,24 @@ MemoryPool<CSS::Property> CSS::property_pool;
 MemoryPool<CSS::Properties> CSS::properties_pool;
 
 CSS::PropertyMap CSS::property_map = {
-  { "not-used",       CSS::NOT_USED       },
-  { "font-family",    CSS::FONT_FAMILY    }, 
-  { "font-size",      CSS::FONT_SIZE      }, 
-  { "font-style",     CSS::FONT_STYLE     },
-  { "font-weight",    CSS::FONT_WEIGHT    },
-  { "text-align",     CSS::TEXT_ALIGN     },
-  { "text-indent",    CSS::TEXT_INDENT    },
-  { "text-transform", CSS::TEXT_TRANSFORM },
-  { "line-height",    CSS::LINE_HEIGHT    },
-  { "src",            CSS::SRC            },
-  { "margin",         CSS::MARGIN         },
-  { "margin-top",     CSS::MARGIN_TOP     },
-  { "margin-bottom",  CSS::MARGIN_BOTTOM  },
-  { "margin-left",    CSS::MARGIN_LEFT    },
-  { "margin-right",   CSS::MARGIN_RIGHT   },
-  { "width",          CSS::WIDTH          },
-  { "height",         CSS::HEIGHT         },
-  { "display",        CSS::DISPLAY        }
+  { "not-used",       CSS::PropertyId::NOT_USED       },
+  { "font-family",    CSS::PropertyId::FONT_FAMILY    }, 
+  { "font-size",      CSS::PropertyId::FONT_SIZE      }, 
+  { "font-style",     CSS::PropertyId::FONT_STYLE     },
+  { "font-weight",    CSS::PropertyId::FONT_WEIGHT    },
+  { "text-align",     CSS::PropertyId::TEXT_ALIGN     },
+  { "text-indent",    CSS::PropertyId::TEXT_INDENT    },
+  { "text-transform", CSS::PropertyId::TEXT_TRANSFORM },
+  { "line-height",    CSS::PropertyId::LINE_HEIGHT    },
+  { "src",            CSS::PropertyId::SRC            },
+  { "margin",         CSS::PropertyId::MARGIN         },
+  { "margin-top",     CSS::PropertyId::MARGIN_TOP     },
+  { "margin-bottom",  CSS::PropertyId::MARGIN_BOTTOM  },
+  { "margin-left",    CSS::PropertyId::MARGIN_LEFT    },
+  { "margin-right",   CSS::PropertyId::MARGIN_RIGHT   },
+  { "width",          CSS::PropertyId::WIDTH          },
+  { "height",         CSS::PropertyId::HEIGHT         },
+  { "display",        CSS::PropertyId::DISPLAY        }
 };
 
 CSS::FontSizeMap CSS::font_size_map = {
@@ -106,30 +106,30 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
     if (!skip_value) {
       if (s == st) {
         LOG_E("parse_value(): nothing to parse");
-        v->value_type = NOTHING;
+        v->value_type = ValueType::NOTHING;
       }
       else {
         if (isdigit(*st) || (*st == '-') || (*st == '+') || (*st == '.')) {
           int16_t last_idx = s - st - 1;
           v->num = atof(st);
-          if (st[last_idx] == '%') v->value_type = PERCENT;
-          else if ((st[last_idx - 1] == 'p') && (st[last_idx] == 't')) v->value_type = PT;
-          else if ((st[last_idx - 1] == 'p') && (st[last_idx] == 'x')) v->value_type = PX;
-          else if ((st[last_idx - 1] == 'e') && (st[last_idx] == 'm')) v->value_type = EM;
-          else if ((st[last_idx - 1] == 'c') && (st[last_idx] == 'm')) v->value_type = CM;
-          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'h')) v->value_type = VH;
-          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'w')) v->value_type = VW;
+          if (st[last_idx] == '%') v->value_type = ValueType::PERCENT;
+          else if ((st[last_idx - 1] == 'p') && (st[last_idx] == 't')) v->value_type = ValueType::PT;
+          else if ((st[last_idx - 1] == 'p') && (st[last_idx] == 'x')) v->value_type = ValueType::PX;
+          else if ((st[last_idx - 1] == 'e') && (st[last_idx] == 'm')) v->value_type = ValueType::EM;
+          else if ((st[last_idx - 1] == 'c') && (st[last_idx] == 'm')) v->value_type = ValueType::CM;
+          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'h')) v->value_type = ValueType::VH;
+          else if ((st[last_idx - 1] == 'v') && (st[last_idx] == 'w')) v->value_type = ValueType::VW;
           else if (!isdigit(st[last_idx])) {
             std::string val;
             val.assign(st, s - st);
             LOG_E("Unknown value type: '%s' at offset: %d", val.c_str(), (int32_t)(s - buffer_start));
-            v->value_type = NOTHING;
+            v->value_type = ValueType::NOTHING;
           }
-          else v->value_type = NOTYPE;
+          else v->value_type = ValueType::NOTYPE;
         }
         else {
           v->str.assign(st, s - st);
-          v->value_type = STR;
+          v->value_type = ValueType::STR;
         }
       }
     }
@@ -143,10 +143,10 @@ CSS::parse_value(const char * str, Value * v, const char * buffer_start)
       else {
         v->str.assign(v->str.substr(4, v->str.length() - 5));
       }
-      v->value_type = URL;
+      v->value_type = ValueType::URL;
     }
     else {
-      v->value_type = STR;
+      v->value_type = ValueType::STR;
     }
   }
 
@@ -200,9 +200,9 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
 
     PropertyId id;
     PropertyMap::iterator it = property_map.find(w);
-    id = (it == property_map.end()) ? NOT_USED : it->second;
+    id = (it == property_map.end()) ? PropertyId::NOT_USED : it->second;
 
-    bool skip_property = id == NOT_USED;
+    bool skip_property = id == PropertyId::NOT_USED;
 
     if (!skip_property) {
       if ((property = property_pool.newElement()) == nullptr) {
@@ -221,57 +221,56 @@ CSS::parse_properties(const char **buffer, const char * end, const char * buffer
 
       if (!skip_property) {
         if (v == nullptr) msg_viewer.out_of_memory("css pool allocation");
-        v->choice = 0;
-        if (property->id == TEXT_ALIGN) {
-          if      (v->str.compare("left"     ) == 0) v->choice = LEFT_ALIGN;
-          else if (v->str.compare("center"   ) == 0) v->choice = CENTER_ALIGN;
-          else if (v->str.compare("right"    ) == 0) v->choice = RIGHT_ALIGN;
-          else if (v->str.compare("justify"  ) == 0) v->choice = JUSTIFY;
-          else if (v->str.compare("justified") == 0) v->choice = JUSTIFY;
+        if (property->id == PropertyId::TEXT_ALIGN) {
+          if      (v->str.compare("left"     ) == 0) v->choice.align = Align::LEFT;
+          else if (v->str.compare("center"   ) == 0) v->choice.align = Align::CENTER;
+          else if (v->str.compare("right"    ) == 0) v->choice.align = Align::RIGHT;
+          else if (v->str.compare("justify"  ) == 0) v->choice.align = Align::JUSTIFY;
+          else if (v->str.compare("justified") == 0) v->choice.align = Align::JUSTIFY;
           else {
             LOG_E("text-align not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
-        else if (property->id == TEXT_TRANSFORM) {
-          if      (v->str.compare("lowercase"   ) == 0) v->choice = LOWERCASE;
-          else if (v->str.compare("uppercase"   ) == 0) v->choice = UPPERCASE;
-          else if (v->str.compare("capitalize"  ) == 0) v->choice = CAPITALIZE;
+        else if (property->id == PropertyId::TEXT_TRANSFORM) {
+          if      (v->str.compare("lowercase"   ) == 0) v->choice.text_transform = TextTransform::LOWERCASE;
+          else if (v->str.compare("uppercase"   ) == 0) v->choice.text_transform = TextTransform::UPPERCASE;
+          else if (v->str.compare("capitalize"  ) == 0) v->choice.text_transform = TextTransform::CAPITALIZE;
           else {
             LOG_E("text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
-        else if (property->id == FONT_WEIGHT) {
-          if      ((v->str.compare("bold"  ) == 0) || (v->str.compare("bolder" ) == 0)) v->choice = Fonts::BOLD;
-          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice = Fonts::NORMAL;
+        else if (property->id == PropertyId::FONT_WEIGHT) {
+          if      ((v->str.compare("bold"  ) == 0) || (v->str.compare("bolder" ) == 0)) v->choice.face_style = Fonts::FaceStyle::BOLD;
+          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice.face_style = Fonts::FaceStyle::NORMAL;
           else {
             LOG_E("font-weight not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
           }
         }
-        else if (property->id == FONT_STYLE) {
-          if      ((v->str.compare("italic") == 0) || (v->str.compare("oblique") == 0)) v->choice = Fonts::ITALIC;
-          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice = Fonts::NORMAL;
+        else if (property->id == PropertyId::FONT_STYLE) {
+          if      ((v->str.compare("italic") == 0) || (v->str.compare("oblique") == 0)) v->choice.face_style = Fonts::FaceStyle::ITALIC;
+          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0)) v->choice.face_style = Fonts::FaceStyle::NORMAL;
           else {
             LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
           }
         }
-        else if (property->id == DISPLAY) {
-          if      (v->str.compare("none"        ) == 0) v->choice = D_NONE;
-          else if (v->str.compare("inline"      ) == 0) v->choice = INLINE;
-          else if (v->str.compare("block"       ) == 0) v->choice = BLOCK;
-          else if (v->str.compare("inline-block") == 0) v->choice = INLINE_BLOCK;
+        else if (property->id == PropertyId::DISPLAY) {
+          if      (v->str.compare("none"        ) == 0) v->choice.display = Display::NONE;
+          else if (v->str.compare("inline"      ) == 0) v->choice.display = Display::INLINE;
+          else if (v->str.compare("block"       ) == 0) v->choice.display = Display::BLOCK;
+          else if (v->str.compare("inline-block") == 0) v->choice.display = Display::INLINE_BLOCK;
           else {
             LOG_E("display not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str - buffer_start));
           }
         }
-        else if ((property->id == FONT_SIZE) && (v->value_type == STR)) {
-          v->value_type = PT;
+        else if ((property->id == PropertyId::FONT_SIZE) && (v->value_type == ValueType::STR)) {
+          v->value_type = ValueType::PT;
           FontSizeMap::iterator it = font_size_map.find(v->str);
           if (it != font_size_map.end()) {
             v->num = it->second;
           }
           else {
             int8_t font_size;
-            config.get(Config::FONT_SIZE, &font_size);
+            config.get(Config::Ident::FONT_SIZE, &font_size);
             v->num = font_size;
           }
         }
@@ -453,23 +452,23 @@ CSS::show_properties(const Properties & props) const
     bool first1 = true;
     for (auto & property : props) {
       if (first1) first1 = false; else std::cout << "; ";
-      std::cout << property->id << ": ";
+      std::cout << (int)property->id << ": ";
 
       bool first2 = true;
       for (auto * value : property->values) {
         if (first2) first2 = false; else std::cout << ", ";
-        if (value->value_type == STR) {
+        if (value->value_type == ValueType::STR) {
           std::cout << value->str;
         }
-        else if (value->value_type == URL) {
+        else if (value->value_type == ValueType::URL) {
           std::cout << "url(" << value->str << ')';
         }
         else {
           std::cout << value->num;
-          if (value->value_type == PX) std::cout << "px";
-          else if (value->value_type == PT) std::cout << "pt"; 
-          else if (value->value_type == EM) std::cout << "em"; 
-          else if (value->value_type == PERCENT) std::cout << "%"; 
+          if      (value->value_type == ValueType::PX     ) std::cout << "px";
+          else if (value->value_type == ValueType::PT     ) std::cout << "pt"; 
+          else if (value->value_type == ValueType::EM     ) std::cout << "em"; 
+          else if (value->value_type == ValueType::PERCENT) std::cout << "%"; 
         } 
       } 
     }   
