@@ -12,7 +12,7 @@
 
 #if EPUB_INKPLATE6_BUILD
   #include "nvs.h"
-  #include "inkplate6_ctrl.hpp"
+  #include "inkplate_platform.hpp"
 #endif
 
 char MsgViewer::icon_char[5] = { 'I',  '!', 'H', 'E', 'S' };
@@ -270,7 +270,7 @@ MsgViewer::out_of_memory(const char * raison)
   );
 
   #if EPUB_INKPLATE6_BUILD
-    inkplate6_ctrl.deep_sleep(); // Never return
+    inkplate_platform.deep_sleep(); // Never return
   #else
     exit(0);
   #endif

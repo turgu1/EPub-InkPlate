@@ -29,6 +29,21 @@ Distributed as-is; no warranty is given.
 #include "noncopyable.hpp"
 #include "esp.hpp"
 
+#include <array>
+
+// this is a new kind of array which accepts and requires its indices to be enums
+template<typename E, class T, std::size_t N>
+class enum_array : public std::array<T, N> {
+public:
+    T & operator[] (E e) {
+        return std::array<T, N>::operator[]((std::size_t)e);
+    }
+
+    const T & operator[] (E e) const {
+        return std::array<T, N>::operator[]((std::size_t)e);
+    }
+};
+
 class MCP : NonCopyable
 {
   private:
@@ -59,10 +74,13 @@ class MCP : NonCopyable
     };
 
     static const uint8_t MCP_ADDRESS = 0x20;
-    uint8_t registers[22];
+    enum_array<Reg, uint8_t, 22> registers;
+ 
+    // Adjust Register, adding offset p
+    inline Reg R(Reg r, uint8_t p) { return (Reg)((uint8_t)r + p); }
 
     static MCP singleton;
-    MCP() { memset(registers, 0, 22); }; // Not instanciable
+    MCP() { std::fill(registers.begin(), registers.end(), 0); }; // Not instanciable
 
     void read_all_registers();
     
@@ -80,21 +98,25 @@ class MCP : NonCopyable
     enum class PinMode : uint8_t { INPUT,    INPUT_PULLUP, OUTPUT };
     enum class IntMode : uint8_t { CHANGE,   FALLING,      RISING };
     enum class IntPort : uint8_t { INTPORTA, INTPORTB             };
-
-    // The following are definitions taylored for the InkPlate-6 IO usage.
+    enum class SignalLevel { LOW, HIGH };
 
     enum class Pin : uint8_t {
-      OE             =  0,
-      GMOD           =  1,
-      SPV            =  2,
-      WAKEUP         =  3,
-      PWRUP          =  4,
-      VCOM           =  5,
-      GPIO0_ENABLE   =  8,
-      BATTERY_SWITCH =  9,
-      TOUCH_0        = 10,
-      TOUCH_1        = 11,
-      TOUCH_2        = 12
+      IOPIN_0,
+      IOPIN_1,
+      IOPIN_2,
+      IOPIN_3,
+      IOPIN_4,
+      IOPIN_5,
+      IOPIN_6,
+      IOPIN_7,
+      IOPIN_8,
+      IOPIN_9,
+      IOPIN_10,
+      IOPIN_11,
+      IOPIN_12,
+      IOPIN_13,
+      IOPIN_14,
+      IOPIN_15
     };
 
     // BEFORE CALLING ANY OF THE FOLLOWING METHODS, ENSURE THAT THE Wire I2C
@@ -104,11 +126,11 @@ class MCP : NonCopyable
     
     bool setup();
 
-    void    set_direction(Pin pin, PinMode mode);
-    void    digital_write(Pin pin, uint8_t state);
-    uint8_t  digital_read(Pin pin);
+    void        set_direction(Pin pin, PinMode     mode );
+    void        digital_write(Pin pin, SignalLevel state);
+    SignalLevel  digital_read(Pin pin);
 
-    void set_int_output(IntPort intPort, bool mirroring, bool openDrain, uint8_t polarity);
+    void set_int_output(IntPort intPort, bool mirroring, bool openDrain, SignalLevel polarity);
     void    set_int_pin(Pin pin, IntMode mode);
     void remove_int_pin(Pin pin);
 
@@ -117,24 +139,6 @@ class MCP : NonCopyable
 
     void     set_ports(uint16_t values);
     uint16_t get_ports();
-
-    inline void oe_set()       { digital_write(Pin::OE,     HIGH); }
-    inline void oe_clear()     { digital_write(Pin::OE,     LOW ); }
-
-    inline void gmod_set()     { digital_write(Pin::GMOD,   HIGH); }
-    inline void gmod_clear()   { digital_write(Pin::GMOD,   LOW ); }
-
-    inline void spv_set()      { digital_write(Pin::SPV,    HIGH); }
-    inline void spv_clear()    { digital_write(Pin::SPV,    LOW ); }
-
-    inline void wakeup_set()   { digital_write(Pin::WAKEUP, HIGH); }
-    inline void wakeup_clear() { digital_write(Pin::WAKEUP, LOW ); }
-
-    inline void pwrup_set()    { digital_write(Pin::PWRUP,  HIGH); }
-    inline void pwrup_clear()  { digital_write(Pin::PWRUP,  LOW ); }
-
-    inline void vcom_set()     { digital_write(Pin::VCOM,   HIGH); }
-    inline void vcom_clear()   { digital_write(Pin::VCOM,   LOW ); }
 };
 
 // Singleton

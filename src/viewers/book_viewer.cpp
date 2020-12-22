@@ -111,7 +111,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
-        case Element::BR:
+        case Element::BREAK:
           SHOW_LOCATION("Page Break");
           if (!page.line_break(fmt)) {
             page_locs_end_page(fmt);
@@ -817,7 +817,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           // LOG_D("Para: %d %d", fmt.font_index, fmt.font_size);
           fmt.display = CSS::Display::BLOCK;
           break;
-        case Element::BR:
+        case Element::BREAK:
           if (started) {
             SHOW_LOCATION("Page Break");
             if (!page.line_break(fmt)) return true;

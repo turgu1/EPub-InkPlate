@@ -8,6 +8,7 @@
 #include "global.hpp"
 #include "noncopyable.hpp"
 #include "eink.hpp"
+#include "eink6.hpp"
 
 /**
  * @brief Low level logical Screen display
@@ -40,10 +41,10 @@ class Screen : NonCopyable
 
     inline void clear()  {
       if (pixel_resolution == PixelResolution::ONE_BIT) { 
-        EInk::clear_bitmap(*frame_buffer_1bit);
+        frame_buffer_1bit->clear();
       }
       else {
-        EInk::clear_bitmap(*frame_buffer_3bit);
+        frame_buffer_3bit->clear();
       } 
     }
     
@@ -80,14 +81,14 @@ class Screen : NonCopyable
                frame_buffer_1bit(nullptr), 
                frame_buffer_3bit(nullptr) { };
 
-    int8_t             partial_count;
-    EInk::Bitmap1Bit * frame_buffer_1bit;
-    EInk::Bitmap3Bit * frame_buffer_3bit;
-    PixelResolution    pixel_resolution;
-    Orientation        orientation;
+    int8_t            partial_count;
+    Bitmap1Bit      * frame_buffer_1bit;
+    Bitmap3Bit      * frame_buffer_3bit;
+    PixelResolution   pixel_resolution;
+    Orientation       orientation;
 
     inline void set_pixel_o_left_1bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_1bit)[EInk::BITMAP_SIZE_1BIT - (EInk::LINE_SIZE_1BIT * (col + 1)) + (row >> 3)];
+      uint8_t * temp = &(frame_buffer_1bit->get_data())[frame_buffer_1bit->get_data_size() - (frame_buffer_1bit->get_line_size() * (col + 1)) + (row >> 3)];
       if (color == 1)
         *temp = *temp | LUT1BIT_INV[row & 7];
       else
@@ -95,7 +96,7 @@ class Screen : NonCopyable
     }
 
     inline void set_pixel_o_right_1bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_1bit)[(EInk::LINE_SIZE_1BIT * (col + 1)) - (row >> 3) - 1];
+      uint8_t * temp = &(frame_buffer_1bit->get_data())[(frame_buffer_1bit->get_line_size() * (col + 1)) - (row >> 3) - 1];
       if (color == 1)
         *temp = *temp | LUT1BIT[row & 7];
       else
@@ -103,7 +104,7 @@ class Screen : NonCopyable
     }
 
     inline void set_pixel_o_bottom_1bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_1bit)[EInk::LINE_SIZE_1BIT * row + (col >> 3)];
+      uint8_t * temp = &(frame_buffer_1bit->get_data())[frame_buffer_1bit->get_line_size() * row + (col >> 3)];
       if (color == 1)
         *temp = *temp | LUT1BIT_INV[col & 7];
       else
@@ -111,7 +112,7 @@ class Screen : NonCopyable
     }
 
     inline void set_pixel_o_left_3bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_3bit)[EInk::BITMAP_SIZE_3BIT - (EInk::LINE_SIZE_3BIT * (col + 1)) + (row >> 1)];
+      uint8_t * temp = &(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_data_size() - (frame_buffer_3bit->get_line_size() * (col + 1)) + (row >> 1)];
       if (row & 1)
         *temp = (*temp & 0x0F) | (color << 4);
       else
@@ -119,7 +120,7 @@ class Screen : NonCopyable
     }
 
     inline void set_pixel_o_right_3bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_3bit)[(EInk::LINE_SIZE_3BIT * (col + 1)) - (row >> 1) - 1];
+      uint8_t * temp = &(frame_buffer_3bit->get_data())[(frame_buffer_3bit->get_line_size() * (col + 1)) - (row >> 1) - 1];
        if (row & 1)
         *temp = (*temp & 0xF0) | color;
       else
@@ -127,7 +128,7 @@ class Screen : NonCopyable
     }
 
     inline void set_pixel_o_bottom_3bit(uint32_t col, uint32_t row, uint8_t color) {
-      uint8_t * temp = &(*frame_buffer_3bit)[EInk::LINE_SIZE_3BIT * row + (col >> 1)];
+      uint8_t * temp = &(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_line_size() * row + (col >> 1)];
       if (col & 1)
         *temp = (*temp & 0xF0) | color;
       else

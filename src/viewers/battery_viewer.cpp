@@ -4,7 +4,7 @@
 #if EPUB_INKPLATE6_BUILD
   #include "viewers/page.hpp"
   #include "models/config.hpp"
-  #include "inkplate6_ctrl.hpp"
+  #include "battery.hpp"
   #include "screen.hpp"
   #include "logging.hpp"
 
@@ -20,7 +20,7 @@
 
     if (view_mode == 0) return;
 
-    float voltage = inkplate6_ctrl.read_battery();
+    float voltage = battery.read_level();
 
     LOG_D("Battery voltage: %5.3f", voltage);
 

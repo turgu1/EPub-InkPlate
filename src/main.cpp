@@ -17,7 +17,7 @@
   #include "controllers/app_controller.hpp"
   #include "models/fonts.hpp"
   #include "screen.hpp"
-  #include "inkplate6_ctrl.hpp"
+  #include "inkplate_platform.hpp"
   #include "models/epub.hpp"
   #include "models/config.hpp"
   #include "helpers/unzip.hpp"
@@ -54,7 +54,7 @@
       printf("\n"); fflush(stdout);
     #endif
 
-    bool inkplate_err = !inkplate6_ctrl.setup();
+    bool inkplate_err = !inkplate_platform.setup();
     if (inkplate_err) LOG_E("InkPlate6Ctrl Error.");
 
     bool config_err = !config.read();
@@ -84,7 +84,7 @@
         );
 
         ESP::delay(500);
-        inkplate6_ctrl.deep_sleep();
+        inkplate_platform.deep_sleep();
       }
   
       if (inkplate_err) {
@@ -92,7 +92,7 @@
           "Unable to initialize InkPlate-6 drivers. Entering Deep Sleep. Press a key to restart."
         );
         ESP::delay(500);
-        inkplate6_ctrl.deep_sleep();
+        inkplate_platform.deep_sleep();
       }
 
       if (config_err) {
@@ -100,7 +100,7 @@
           "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
         );
         ESP::delay(500);
-        inkplate6_ctrl.deep_sleep();
+        inkplate_platform.deep_sleep();
       }
 
       books_dir_controller.setup();
@@ -113,7 +113,7 @@
         "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
-      inkplate6_ctrl.deep_sleep();
+      inkplate_platform.deep_sleep();
     }
 
     #if DEBUGGING

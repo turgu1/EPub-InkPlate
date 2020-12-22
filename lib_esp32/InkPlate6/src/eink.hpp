@@ -1,139 +1,49 @@
-/*
-eink.h
-Inkplate 6 ESP-IDF
-
-Modified by Guy Turcotte 
-November 12, 2020
-
-from the Arduino Library:
-
-David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ e-radionica.com
-September 24, 2020
-https://github.com/e-radionicacom/Inkplate-6-Arduino-library
-
-For support, please reach over forums: forum.e-radionica.com/en
-For more info about the product, please check: www.inkplate.io
-
-This code is released under the GNU Lesser General Public License v3.0: https://www.gnu.org/licenses/lgpl-3.0.en.html
-Please review the LICENSE file included with this example.
-If you have any questions about licensing, please contact techsupport@e-radionica.com
-Distributed as-is; no warranty is given.
-*/
-
 #ifndef __EINK_HPP__
 #define __EINK_HPP__
 
-#include <cinttypes>
-#include <cstring>
+class Bitmap 
+{
+  protected:
+    const int16_t width, height, data_size, line_size;
+    const uint8_t init_value;
 
-#include "noncopyable.hpp"
-#include "driver/gpio.h"
+  public:
+    Bitmap(int16_t w, int16_t h, int16_t s, uint8_t i) : 
+      width(w), height(h), data_size(s), line_size(s / h), init_value(i) {}
 
-/**
- * @brief Low level e-Ink display
- * 
- * This class implements the low level methods required to control
- * and access the e-ink display of the InkPlate-6 device.
- * 
- * This is a singleton. It cannot be instanciated elsewhere. It is not 
- * instanciated in the heap. This is reinforced by the C++ construction
- * below. It also cannot be copied through the NonCopyable derivation.
- */
+    inline int16_t       get_width() { return width;      }
+    inline int16_t      get_height() { return height;     }
+    inline int16_t   get_data_size() { return data_size;  }
+    inline int16_t   get_line_size() { return line_size;  }
+    inline uint8_t  get_init_value() { return init_value; }
+    
+    virtual void             clear() = 0;
+    virtual inline uint8_t * get_data() = 0;
+};
 
-class EInk : NonCopyable
+class Bitmap1Bit : public Bitmap 
 {
   public:
-    static const uint16_t WIDTH  = 800; // In pixels
-    static const uint16_t HEIGHT = 600; // In pixels
-    static const uint16_t BITMAP_SIZE_1BIT = (WIDTH * HEIGHT) >> 3;            // In bytes
-    static const uint32_t BITMAP_SIZE_3BIT = ((uint32_t) WIDTH * HEIGHT) >> 1; // In bytes
-    static const uint16_t LINE_SIZE_1BIT   = WIDTH >> 3;                       // In bytes
-    static const uint16_t LINE_SIZE_3BIT   = WIDTH >> 1;                       // In bytes
+    Bitmap1Bit(int16_t w, int16_t h, int16_t s) : Bitmap(w, h, s, 0) {}
+};
 
-    typedef uint8_t Bitmap3Bit [BITMAP_SIZE_3BIT];
-    typedef uint8_t Bitmap1Bit [BITMAP_SIZE_1BIT];
+class Bitmap3Bit : public Bitmap 
+{
+  public:
+    Bitmap3Bit(int16_t w, int16_t h, int16_t s) : Bitmap(w, h, s, (uint8_t) 0x77) {}
+};
 
-    enum class PanelState  { OFF, ON };
-
-  private:
-    static constexpr char const * TAG = "EInk";
-
-    static const uint8_t PWRMGR_ADDRESS = 0x48;
-    static const uint8_t PWR_GOOD_OK    = 0b11111010;
-
-    PanelState panel_state;
-    bool       initialized;
-    bool       partial_allowed;
-
-
-    static EInk singleton;
-    EInk() :
-      panel_state(PanelState::OFF), 
-      initialized(false),
-      partial_allowed(false) { }  // Private constructor
-
-    void update_1bit(const Bitmap1Bit & bitmap);
-    void update_3bit(const Bitmap3Bit & bitmap);
-
-    void vscan_start();
-    void vscan_end();
-    void hscan_start(uint32_t d = 0);
-    
-    void pins_z_state();
-    void pins_as_outputs();
-
-    void turn_on();
-    void turn_off();
-
-    void clean_fast(uint8_t c, uint8_t rep);
-
-    uint8_t read_power_good();
-
-    inline void  set_panel_state(PanelState s) { panel_state = s; }
-
-    inline void allow_partial() { partial_allowed = true;  }
-    inline void block_partial() { partial_allowed = false; }
-    inline bool is_partial_allowed() { return partial_allowed; }
-
-    static const uint32_t PIN_LUT[256];
-
-    static const uint8_t  WAVEFORM_3BIT[8][8]; 
-    static const uint32_t WAVEFORM[50]; 
-    static const uint8_t  LUT2[16];
-    static const uint8_t  LUTW[16];
-    static const uint8_t  LUTB[16];
-
-    static const uint32_t CL   = 0x01;
-    static const uint32_t CKV  = 0x01;
-    static const uint32_t SPH  = 0x02;
-    static const uint32_t LE   = 0x04;
-
-    static const uint32_t DATA = 0x0E8C0030;
-
-    uint8_t * p_buffer;
-    Bitmap1Bit * d_memory_new;
-
-    inline void cl_set()    { GPIO.out_w1ts = CL; }
-    inline void cl_clear()  { GPIO.out_w1tc = CL; }
-
-    inline void ckv_set()   { GPIO.out1_w1ts.val = CKV; }
-    inline void ckv_clear() { GPIO.out1_w1tc.val = CKV; }
-
-    inline void sph_set()   { GPIO.out1_w1ts.val = SPH; }
-    inline void sph_clear() { GPIO.out1_w1tc.val = SPH; }
-
-    inline void le_set()    { GPIO.out_w1ts = LE; }
-    inline void le_clear()  { GPIO.out_w1tc = LE; }
-
+class EInk
+{
   public:
 
-    static inline EInk & get_singleton() noexcept { return singleton; }
+    enum class PanelState  { OFF, ON };
 
     inline PanelState get_panel_state() { return panel_state; }
     inline bool        is_initialized() { return initialized; }
 
-    static inline void clear_bitmap(Bitmap1Bit & bitmap) { memset(&bitmap,    0, sizeof(Bitmap1Bit)); }
-    static inline void clear_bitmap(Bitmap3Bit & bitmap) { memset(&bitmap, 0x77, sizeof(Bitmap3Bit)); }
+    virtual inline Bitmap1Bit * new_bitmap1bit() = 0;
+    virtual inline Bitmap3Bit * new_bitmap3bit() = 0;
 
     // All the following methods are protecting the I2C device trough
     // the Wire::enter() and Wire::leave() methods. These are implementing a
@@ -143,22 +53,30 @@ class EInk : NonCopyable
     // and Wire::leave() and insure no deadlock will happen... or modifu the mutex to use
     // a recursive mutex.
 
-    bool setup();
+    virtual bool setup() = 0;
 
     inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
     inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }
 
-    void partial_update(const Bitmap1Bit & bitmap);
+    virtual void partial_update(const Bitmap1Bit & bitmap) = 0;
 
-    void clean();
+    virtual void clean() = 0;
 
-    int8_t  read_temperature();
+    int8_t read_temperature();
+
+  protected:                     
+    
+    EInk() : 
+      panel_state(PanelState::OFF), 
+      initialized(false),
+      partial_allowed(false) {}
+
+    PanelState panel_state;
+    bool       initialized;
+    bool       partial_allowed;
+
+    virtual void update_1bit(const Bitmap1Bit & bitmap) = 0;
+    virtual void update_3bit(const Bitmap3Bit & bitmap) = 0;
 };
-
-#if __EINK__
-  EInk & e_ink = EInk::get_singleton();
-#else
-  extern EInk & e_ink;
-#endif
 
 #endif

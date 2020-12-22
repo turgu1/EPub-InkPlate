@@ -20,8 +20,8 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
-#define __EINK__ 1
-#include "eink.hpp"
+#define __EINK6__ 1
+#include "eink6.hpp"
 
 #include "logging.hpp"
 
@@ -31,14 +31,14 @@ Distributed as-is; no warranty is given.
 
 #include <iostream>
 
-EInk EInk::singleton;
+EInk6 EInk6::singleton;
 
-const uint8_t EInk::WAVEFORM_3BIT[8][8] = {
+const uint8_t EInk6::WAVEFORM_3BIT[8][8] = {
   {0, 0, 0, 0, 1, 1, 1, 0}, {1, 2, 2, 2, 1, 1, 1, 0}, {0, 1, 2, 1, 1, 2, 1, 0},
   {0, 2, 1, 2, 1, 2, 1, 0}, {0, 0, 0, 1, 1, 1, 2, 0}, {2, 1, 1, 1, 2, 1, 2, 0},
   {1, 1, 1, 2, 1, 2, 2, 0}, {0, 0, 0, 0, 0, 0, 2, 0} };
 
-const uint32_t EInk::WAVEFORM[50] = {
+const uint32_t EInk6::WAVEFORM[50] = {
     0x00000008, 0x00000008, 0x00200408, 0x80281888, 0x60A81898, 0x60A8A8A8, 0x60A8A8A8, 0x6068A868, 0x6868A868,
     0x6868A868, 0x68686868, 0x6A686868, 0x5A686868, 0x5A686868, 0x5A586A68, 0x5A5A6A68, 0x5A5A6A68, 0x55566A68,
     0x55565A64, 0x55555654, 0x55555556, 0x55555556, 0x55555556, 0x55555516, 0x55555596, 0x15555595, 0x95955595,
@@ -46,15 +46,15 @@ const uint32_t EInk::WAVEFORM[50] = {
     0x84848484, 0x84848484, 0xA5A48484, 0xA9A4A4A8, 0xA9A8A8A8, 0xA5A9A9A4, 0xA5A5A5A4, 0xA1A5A5A1, 0xA9A9A9A9,
     0xA9A9A9A9, 0xA9A9A9A9, 0xA9A9A9A9, 0x15151515, 0x11111111 };
 
-const uint8_t EInk::LUT2[16] = {
+const uint8_t EInk6::LUT2[16] = {
   0xAA, 0xA9, 0xA6, 0xA5, 0x9A, 0x99, 0x96, 0x95,
   0x6A, 0x69, 0x66, 0x65, 0x5A, 0x59, 0x56, 0x55 };
 
-const uint8_t EInk::LUTW[16] = {
+const uint8_t EInk6::LUTW[16] = {
   0xFF, 0xFE, 0xFB, 0xFA, 0xEF, 0xEE, 0xEB, 0xEA,
   0xBF, 0xBE, 0xBB, 0xBA, 0xAF, 0xAE, 0xAB, 0xAA };
 
-const uint8_t EInk::LUTB[16] = {
+const uint8_t EInk6::LUTB[16] = {
   0xFF, 0xFD, 0xF7, 0xF5, 0xDF, 0xDD, 0xD7, 0xD5,
   0x7F, 0x7D, 0x77, 0x75, 0x5F, 0x5D, 0x57, 0x55 };
 
@@ -67,7 +67,7 @@ const uint8_t EInk::LUTB[16] = {
 //                (((i & 0b11100000) >> 5) << 25);
 // }
 
-const uint32_t EInk::PIN_LUT[256] = {
+const uint32_t EInk6::PIN_LUT[256] = {
   0x00000000, 0x00000010, 0x00000020, 0x00000030, 0x00040000, 0x00040010, 0x00040020, 0x00040030, 
   0x00080000, 0x00080010, 0x00080020, 0x00080030, 0x000c0000, 0x000c0010, 0x000c0020, 0x000c0030, 
   0x00800000, 0x00800010, 0x00800020, 0x00800030, 0x00840000, 0x00840010, 0x00840020, 0x00840030, 
@@ -103,7 +103,7 @@ const uint32_t EInk::PIN_LUT[256] = {
 };
 
 bool 
-EInk::setup()
+EInk6::setup()
 {
   ESP_LOGD(TAG, "Initializing...");
 
@@ -121,13 +121,13 @@ EInk::setup()
 
   Wire::enter();
   
-  mcp.set_direction(MCP::Pin::VCOM,         MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::PWRUP,        MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::WAKEUP,       MCP::PinMode::OUTPUT); 
-  mcp.set_direction(MCP::Pin::GPIO0_ENABLE, MCP::PinMode::OUTPUT);
-  mcp.digital_write(MCP::Pin::GPIO0_ENABLE, HIGH);
+  mcp.set_direction(VCOM,         MCP::PinMode::OUTPUT);
+  mcp.set_direction(PWRUP,        MCP::PinMode::OUTPUT);
+  mcp.set_direction(WAKEUP,       MCP::PinMode::OUTPUT); 
+  mcp.set_direction(GPIO0_ENABLE, MCP::PinMode::OUTPUT);
+  mcp.digital_write(GPIO0_ENABLE, MCP::SignalLevel::HIGH);
 
-  mcp.wakeup_set(); 
+  wakeup_set(); 
  
   //ESP_LOGD(TAG, "Power Mgr Init..."); fflush(stdout);
 
@@ -143,7 +143,7 @@ EInk::setup()
 
   //ESP_LOGD(TAG, "Power init completed");
 
-  mcp.wakeup_clear();
+  wakeup_clear();
 
   // CONTROL PINS
   gpio_set_direction(GPIO_NUM_0,  GPIO_MODE_OUTPUT);
@@ -151,9 +151,9 @@ EInk::setup()
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
 
-  mcp.set_direction(MCP::Pin::OE,      MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::GMOD,    MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::SPV,     MCP::PinMode::OUTPUT);
+  mcp.set_direction(OE,      MCP::PinMode::OUTPUT);
+  mcp.set_direction(GMOD,    MCP::PinMode::OUTPUT);
+  mcp.set_direction(SPV,     MCP::PinMode::OUTPUT);
 
   // DATA PINS
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_OUTPUT); // D0
@@ -164,14 +164,6 @@ EInk::setup()
   gpio_set_direction(GPIO_NUM_25, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_26, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_27, GPIO_MODE_OUTPUT); // D7
-
-  // TOUCHPAD PINS
-  mcp.set_direction(MCP::Pin::TOUCH_0, MCP::PinMode::INPUT);
-  mcp.set_direction(MCP::Pin::TOUCH_1, MCP::PinMode::INPUT);
-  mcp.set_direction(MCP::Pin::TOUCH_2, MCP::PinMode::INPUT);
-
-  // Battery voltage Switch MOSFET
-  mcp.set_direction(MCP::Pin::BATTERY_SWITCH, MCP::PinMode::OUTPUT);
 
   d_memory_new = (Bitmap1Bit *) ESP::ps_malloc(BITMAP_SIZE_1BIT);
   p_buffer     = (uint8_t *)    ESP::ps_malloc(120000);
@@ -197,7 +189,7 @@ EInk::setup()
 }
 
 void
-EInk::update_1bit(const Bitmap1Bit & bitmap)
+EInk6::update_1bit(const Bitmap1Bit & bitmap)
 {
   ESP_LOGD(TAG, "update_1bit...");
  
@@ -306,7 +298,7 @@ EInk::update_1bit(const Bitmap1Bit & bitmap)
 }
 
 void
-EInk::update_3bit(const Bitmap3Bit & bitmap)
+EInk6::update_3bit(const Bitmap3Bit & bitmap)
 {
   ESP_LOGD(TAG, "Update_3bit...");
 
@@ -402,7 +394,7 @@ EInk::update_3bit(const Bitmap3Bit & bitmap)
 }
 
 void
-EInk::partial_update(const Bitmap1Bit & bitmap)
+EInk6::partial_update(const Bitmap1Bit & bitmap)
 {
   if (!partial_allowed) {
     update_1bit(bitmap);
@@ -462,7 +454,7 @@ EInk::partial_update(const Bitmap1Bit & bitmap)
 }
 
 void 
-EInk::clean()
+EInk6::clean()
 {
   ESP_LOGD(TAG, "Clean...");
 
@@ -481,7 +473,7 @@ EInk::clean()
 }
 
 void
-EInk::clean_fast(uint8_t c, uint8_t rep)
+EInk6::clean_fast(uint8_t c, uint8_t rep)
 {
   static uint8_t byte[4] = { 0b10101010, 0b01010101, 0b00000000, 0b11111111 };
 
@@ -518,24 +510,24 @@ EInk::clean_fast(uint8_t c, uint8_t rep)
 
 // Turn off epaper power supply and put all digital IO pins in high Z state
 void 
-EInk::turn_off()
+EInk6::turn_off()
 {
   if (get_panel_state() == PanelState::OFF) return;
  
-      mcp.oe_clear();
-    mcp.gmod_clear();
+    oe_clear();
+  gmod_clear();
 
   GPIO.out &= ~(DATA | LE | CL);
   
-         ckv_clear();
-         sph_clear();
-     mcp.spv_clear();
-    mcp.vcom_clear();
+   ckv_clear();
+   sph_clear();
+   spv_clear();
+  vcom_clear();
 
-        ESP::delay(6);
+  ESP::delay(6);
 
-   mcp.pwrup_clear();
-  mcp.wakeup_clear();
+   pwrup_clear();
+  wakeup_clear();
 
   unsigned long timer = ESP::millis();
 
@@ -550,13 +542,13 @@ EInk::turn_off()
 // Turn on supply for epaper display (TPS65186) 
 // [+15 VDC, -15VDC, +22VDC, -20VDC, +3.3VDC, VCOM]
 void 
-EInk::turn_on()
+EInk6::turn_on()
 {
   if (get_panel_state() == PanelState::ON) return;
 
-  mcp.wakeup_set();
+  wakeup_set();
   ESP::delay_microseconds(1800);
-  mcp.pwrup_set();
+  pwrup_set();
 
   // Enable all rails
   wire.begin_transmission(PWRMGR_ADDRESS);
@@ -566,15 +558,15 @@ EInk::turn_on()
 
   pins_as_outputs();
 
-      le_clear();
-  mcp.oe_clear();
-      cl_clear();
-       sph_set();
-  mcp.gmod_set();
-   mcp.spv_set();
-     ckv_clear();
-  mcp.oe_clear();
-  mcp.vcom_set();
+    le_clear();
+    oe_clear();
+    cl_clear();
+   sph_set();
+  gmod_set();
+   spv_set();
+   ckv_clear();
+    oe_clear();
+  vcom_set();
 
   unsigned long timer = ESP::millis();
 
@@ -583,18 +575,18 @@ EInk::turn_on()
   } while ((read_power_good() != PWR_GOOD_OK) && (ESP::millis() - timer) < 250);
 
   if ((ESP::millis() - timer) >= 250) {
-    mcp.wakeup_clear();
-      mcp.vcom_clear();
-     mcp.pwrup_clear();
+    wakeup_clear();
+      vcom_clear();
+     pwrup_clear();
     return;
   }
 
-  mcp.oe_set();
+  oe_set();
   set_panel_state(PanelState::ON);
 }
 
 uint8_t 
-EInk::read_power_good()
+EInk6::read_power_good()
 {
   wire.begin_transmission(PWRMGR_ADDRESS);
   wire.write(0x0F);
@@ -607,13 +599,13 @@ EInk::read_power_good()
 // LOW LEVEL FUNCTIONS
 
 void 
-EInk::vscan_start()
+EInk6::vscan_start()
 {
         ckv_set(); ESP::delay_microseconds( 7);
-  mcp.spv_clear(); ESP::delay_microseconds(10);
+      spv_clear(); ESP::delay_microseconds(10);
       ckv_clear(); ESP::delay_microseconds( 0);
         ckv_set(); ESP::delay_microseconds( 8);
-    mcp.spv_set(); ESP::delay_microseconds(10);
+        spv_set(); ESP::delay_microseconds(10);
       ckv_clear(); ESP::delay_microseconds( 0);
         ckv_set(); ESP::delay_microseconds(18);
       ckv_clear(); ESP::delay_microseconds( 0);
@@ -623,7 +615,7 @@ EInk::vscan_start()
 }
 
 void 
-EInk::hscan_start(uint32_t d)
+EInk6::hscan_start(uint32_t d)
 {
   sph_clear();
   GPIO.out_w1ts = CL | d   ;
@@ -633,7 +625,7 @@ EInk::hscan_start(uint32_t d)
 }
 
 void 
-EInk::vscan_end()
+EInk6::vscan_end()
 {
   ckv_clear();
      le_set();
@@ -643,16 +635,16 @@ EInk::vscan_end()
 }
 
 void 
-EInk::pins_z_state()
+EInk6::pins_z_state()
 {
   gpio_set_direction(GPIO_NUM_0,  GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_2,  GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_INPUT);
 
-  mcp.set_direction(MCP::Pin::OE,   MCP::PinMode::INPUT);
-  mcp.set_direction(MCP::Pin::GMOD, MCP::PinMode::INPUT);
-  mcp.set_direction(MCP::Pin::SPV,  MCP::PinMode::INPUT);
+  mcp.set_direction(OE,   MCP::PinMode::INPUT);
+  mcp.set_direction(GMOD, MCP::PinMode::INPUT);
+  mcp.set_direction(SPV,  MCP::PinMode::INPUT);
 
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_INPUT);
   gpio_set_direction(GPIO_NUM_5,  GPIO_MODE_INPUT);
@@ -665,16 +657,16 @@ EInk::pins_z_state()
 }
 
 void 
-EInk::pins_as_outputs()
+EInk6::pins_as_outputs()
 {
   gpio_set_direction(GPIO_NUM_0,  GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_2,  GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_32, GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
 
-  mcp.set_direction(MCP::Pin::OE,   MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::GMOD, MCP::PinMode::OUTPUT);
-  mcp.set_direction(MCP::Pin::SPV,  MCP::PinMode::OUTPUT);
+  mcp.set_direction(OE,   MCP::PinMode::OUTPUT);
+  mcp.set_direction(GMOD, MCP::PinMode::OUTPUT);
+  mcp.set_direction(SPV,  MCP::PinMode::OUTPUT);
 
   gpio_set_direction(GPIO_NUM_4,  GPIO_MODE_OUTPUT);
   gpio_set_direction(GPIO_NUM_5,  GPIO_MODE_OUTPUT);
@@ -687,15 +679,15 @@ EInk::pins_as_outputs()
 }
 
 int8_t 
-EInk::read_temperature()
+EInk6::read_temperature()
 {
   int8_t temp;
   
   if (get_panel_state() == PanelState::OFF) {
     Wire::enter();
-    mcp.wakeup_set();
+    wakeup_set();
     ESP::delay_microseconds(1800);
-    mcp.pwrup_set();
+    pwrup_set();
     Wire::leave();
 
     ESP::delay(5);
@@ -719,8 +711,8 @@ EInk::read_temperature()
   temp = wire.read();
     
   if (get_panel_state() == PanelState::OFF) {
-    mcp.pwrup_clear();
-    mcp.wakeup_clear();
+    pwrup_clear();
+    wakeup_clear();
     Wire::leave();
 
     ESP::delay(5);

@@ -15,9 +15,6 @@
 
 #include "logging.hpp"
 
-static const uint8_t HIGH = 1;
-static const uint8_t LOW  = 0;
-
 /**
  * @brief ESP-IDF support methods
  * 

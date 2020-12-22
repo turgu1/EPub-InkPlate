@@ -20,7 +20,8 @@
 
   #include "wire.hpp"
   #include "mcp.hpp"
-  #include "inkplate6_ctrl.hpp"
+  #include "touch_keys.hpp"
+  #include "inkplate_platform.hpp"
   #include "viewers/msg_viewer.hpp"
 
   #define  TOUCHPAD_LEFT_POSITION 1
@@ -56,7 +57,7 @@
 
       // A key interrupt happened. Retrieve pads information.
       // t1 = esp_timer_get_time();
-      if ((pads = inkplate6_ctrl.read_touchpads()) == 0) {
+      if ((pads = touch_keys.read_all_keys()) == 0) {
         // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
         Wire::enter();
         mcp.get_int_state();
@@ -64,7 +65,7 @@
       }
       else {
         // Wait until there is no key
-        while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD(); 
+        while (touch_keys.read_all_keys() != 0) taskYIELD(); 
 
         // Re-activating interrupts.
         Wire::enter();
@@ -74,7 +75,7 @@
         // Wait for potential second key
         bool found = false; 
         while (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(400))) {
-          if ((pads2 = inkplate6_ctrl.read_touchpads()) != 0) {
+          if ((pads2 = touch_keys.read_all_keys()) != 0) {
             found = true;
             break;
           }
@@ -90,7 +91,7 @@
           
           // Double Click on a key
 
-          while (inkplate6_ctrl.read_touchpads() != 0) taskYIELD();
+          while (touch_keys.read_all_keys() != 0) taskYIELD();
 
           // Re-activating interrupts
           Wire::enter();
@@ -215,7 +216,7 @@ EventMgr::set_orientation(Screen::Orientation orient)
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
 
-          if (inkplate6_ctrl.light_sleep(light_sleep_duration)) {
+          if (inkplate_platform.light_sleep(light_sleep_duration)) {
 
             app_controller.going_to_deep_sleep();
             
@@ -228,7 +229,7 @@ EventMgr::set_orientation(Screen::Orientation orient)
               "entering into Deep Sleep mode. Please press a key to restart.",
               light_sleep_duration);
             ESP::delay(500);
-            inkplate6_ctrl.deep_sleep();
+            inkplate_platform.deep_sleep();
           }
         }
       }

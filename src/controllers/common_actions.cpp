@@ -8,7 +8,7 @@
 #include "models/books_dir.hpp"
 
 #if EPUB_INKPLATE6_BUILD
-  #include "inkplate6_ctrl.hpp"
+  #include "inkplate_platform.hpp"
   #include "esp.hpp"
 #endif
 
@@ -40,7 +40,7 @@ CommonActions::power_off()
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. Please press a key to restart the device.");
     ESP::delay(500);
-    inkplate6_ctrl.deep_sleep();
+    inkplate_platform.deep_sleep();
   #else
     exit(0);
   #endif
