@@ -179,7 +179,8 @@ EInk6::setup()
     } while (true);
   }
 
-  memset(d_memory_new, 0, BITMAP_SIZE_1BIT);
+  d_memory_new->clear();
+
   memset(p_buffer,     0, 120000);
 
   initialized = true;
@@ -189,7 +190,7 @@ EInk6::setup()
 }
 
 void
-EInk6::update_1bit(const Bitmap1Bit & bitmap)
+EInk6::update_1bit(Bitmap1Bit & bitmap)
 {
   ESP_LOGD(TAG, "update_1bit...");
  
@@ -210,8 +211,10 @@ EInk6::update_1bit(const Bitmap1Bit & bitmap)
   clean_fast(2,  1);
   clean_fast(0, 12);
 
+  uint8_t * data = bitmap.get_data();
+
   for (int8_t k = 0; k < 4; k++) {
-    ptr = &bitmap[BITMAP_SIZE_1BIT - 1];
+    ptr = &data[BITMAP_SIZE_1BIT - 1];
     vscan_start();
 
     for (uint16_t i = 0; i < HEIGHT; i++) {
@@ -239,7 +242,7 @@ EInk6::update_1bit(const Bitmap1Bit & bitmap)
     ESP::delay_microseconds(230);
   }
 
-  ptr = &bitmap[BITMAP_SIZE_1BIT - 1];
+  ptr = &data[BITMAP_SIZE_1BIT - 1];
   vscan_start();
  
   for (uint16_t i = 0; i < HEIGHT; i++) {
@@ -293,12 +296,12 @@ EInk6::update_1bit(const Bitmap1Bit & bitmap)
   
   Wire::leave();
 
-  memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
+  memcpy(d_memory_new->get_data(), bitmap.get_data(), BITMAP_SIZE_1BIT);
   partial_allowed = true;
 }
 
 void
-EInk6::update_3bit(const Bitmap3Bit & bitmap)
+EInk6::update_3bit(Bitmap3Bit & bitmap)
 {
   ESP_LOGD(TAG, "Update_3bit...");
 
@@ -314,9 +317,11 @@ EInk6::update_3bit(const Bitmap3Bit & bitmap)
   clean_fast(2,  1);
   clean_fast(0, 12);
 
+  uint8_t * data = bitmap.get_data();
+
   for (int k = 0; k < 8; k++) {
 
-    const uint8_t * dp = &bitmap[BITMAP_SIZE_3BIT - 1];
+    const uint8_t * dp = &data[BITMAP_SIZE_3BIT - 1];
     uint32_t send;
     uint8_t  pix1;
     uint8_t  pix2;
@@ -394,7 +399,7 @@ EInk6::update_3bit(const Bitmap3Bit & bitmap)
 }
 
 void
-EInk6::partial_update(const Bitmap1Bit & bitmap)
+EInk6::partial_update(Bitmap1Bit & bitmap)
 {
   if (!partial_allowed) {
     update_1bit(bitmap);
@@ -410,10 +415,13 @@ EInk6::partial_update(const Bitmap1Bit & bitmap)
   uint16_t pos = BITMAP_SIZE_1BIT - 1;
   uint8_t  diffw, diffb;
 
+  uint8_t * idata = bitmap.get_data();
+  uint8_t * odata = d_memory_new->get_data();
+
   for (int i = 0; i < HEIGHT; i++) {
     for (int j = 0; j < LINE_SIZE_1BIT; j++) {
-      diffw =  (*d_memory_new)[pos] & ~bitmap[pos];
-      diffb = ~(*d_memory_new)[pos] &  bitmap[pos];
+      diffw =  odata[pos] & ~idata[pos];
+      diffb = ~odata[pos] &  idata[pos];
       pos--;
       p_buffer[n--] = LUTW[diffw >>   4] & (LUTB[diffb >>   4]);
       p_buffer[n--] = LUTW[diffw & 0x0F] & (LUTB[diffb & 0x0F]);
@@ -450,7 +458,7 @@ EInk6::partial_update(const Bitmap1Bit & bitmap)
   turn_off();
 
   Wire::leave();
-  memcpy(d_memory_new, &bitmap, BITMAP_SIZE_1BIT);
+  memcpy(d_memory_new->get_data(), bitmap.get_data(), BITMAP_SIZE_1BIT);
 }
 
 void 

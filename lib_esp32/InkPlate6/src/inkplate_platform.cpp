@@ -7,6 +7,7 @@
 #include "mcp.hpp"
 #include "esp.hpp"
 #include "eink.hpp"
+#include "eink6.hpp"
 #include "touch_keys.hpp"
 #include "battery.hpp"
 #include "sd_card.hpp"

@@ -376,7 +376,7 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
         free(frame_buffer_3bit);
         frame_buffer_3bit = nullptr;
       }
-      frame_buffer_1bit = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
+      frame_buffer_1bit = e_ink.new_bitmap1bit();
       partial_count = 0;
     }
     else {
@@ -384,7 +384,7 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
         free(frame_buffer_1bit);
         frame_buffer_1bit = nullptr;
       }
-      frame_buffer_3bit = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
+      frame_buffer_3bit = e_ink.new_bitmap3bit();
     }
   }
 }

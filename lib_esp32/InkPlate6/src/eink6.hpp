@@ -42,7 +42,7 @@ Distributed as-is; no warranty is given.
  * below. It also cannot be copied through the NonCopyable derivation.
  */
 
-class EInk6 : EInk, NonCopyable
+class EInk6 : public EInk, NonCopyable
 {
   public:
     static const uint16_t WIDTH  = 800; // In pixels
@@ -51,9 +51,6 @@ class EInk6 : EInk, NonCopyable
     static const uint32_t BITMAP_SIZE_3BIT = ((uint32_t) WIDTH * HEIGHT) >> 1; // In bytes
     static const uint16_t LINE_SIZE_1BIT   = WIDTH >> 3;                       // In bytes
     static const uint16_t LINE_SIZE_3BIT   = WIDTH >> 1;                       // In bytes
-
-    typedef uint8_t Bitmap3Bit [BITMAP_SIZE_3BIT];
-    typedef uint8_t Bitmap1Bit [BITMAP_SIZE_1BIT];
 
     static inline EInk6 & get_singleton() noexcept { return singleton; }
 
@@ -70,9 +67,8 @@ class EInk6 : EInk, NonCopyable
         uint8_t data[BITMAP_SIZE_1BIT];
       public:
         Bitmap1Bit6() : Bitmap1Bit(WIDTH, HEIGHT, BITMAP_SIZE_1BIT) {}
-
-        void                clear() { memset(data, get_init_value(), get_data_size()); }        
-        inline uint8_t * get_data() { return data; };
+       
+        uint8_t * get_data() { return data; }
     };
 
     class Bitmap3Bit6 : public Bitmap3Bit {
@@ -80,16 +76,15 @@ class EInk6 : EInk, NonCopyable
         uint8_t data[BITMAP_SIZE_3BIT];
       public:
         Bitmap3Bit6() : Bitmap3Bit(WIDTH, HEIGHT, BITMAP_SIZE_3BIT) {}
-            
-        void                clear() { memset(data, get_init_value(), get_data_size()); }
-        inline uint8_t * get_data() { return data; };
+
+        uint8_t * get_data() { return data; }
     };
 
     EInk6() : EInk()
       { }  // Private constructor
 
-    void update_1bit(const Bitmap1Bit & bitmap);
-    void update_3bit(const Bitmap3Bit & bitmap);
+    void update_1bit(Bitmap1Bit & bitmap);
+    void update_3bit(Bitmap3Bit & bitmap);
 
     void vscan_start();
     void vscan_end();
@@ -137,17 +132,17 @@ class EInk6 : EInk, NonCopyable
     const MCP::Pin VCOM           = MCP::Pin::IOPIN_5;
     const MCP::Pin GPIO0_ENABLE   = MCP::Pin::IOPIN_8;
   
-    inline void cl_set()    { GPIO.out_w1ts = CL; }
-    inline void cl_clear()  { GPIO.out_w1tc = CL; }
+    inline void cl_set()       { GPIO.out_w1ts = CL; }
+    inline void cl_clear()     { GPIO.out_w1tc = CL; }
 
-    inline void ckv_set()   { GPIO.out1_w1ts.val = CKV; }
-    inline void ckv_clear() { GPIO.out1_w1tc.val = CKV; }
+    inline void ckv_set()      { GPIO.out1_w1ts.val = CKV; }
+    inline void ckv_clear()    { GPIO.out1_w1tc.val = CKV; }
 
-    inline void sph_set()   { GPIO.out1_w1ts.val = SPH; }
-    inline void sph_clear() { GPIO.out1_w1tc.val = SPH; }
+    inline void sph_set()      { GPIO.out1_w1ts.val = SPH; }
+    inline void sph_clear()    { GPIO.out1_w1tc.val = SPH; }
 
-    inline void le_set()    { GPIO.out_w1ts = LE; }
-    inline void le_clear()  { GPIO.out_w1tc = LE; }
+    inline void le_set()       { GPIO.out_w1ts = LE; }
+    inline void le_clear()     { GPIO.out_w1tc = LE; }
 
     inline void oe_set()       { mcp.digital_write(OE,     MCP::SignalLevel::HIGH); }
     inline void oe_clear()     { mcp.digital_write(OE,     MCP::SignalLevel::LOW ); }
@@ -172,8 +167,8 @@ class EInk6 : EInk, NonCopyable
     inline PanelState get_panel_state() { return panel_state; }
     inline bool        is_initialized() { return initialized; }
 
-    static inline void clear_bitmap(Bitmap1Bit & bitmap) { memset(&bitmap,    0, sizeof(Bitmap1Bit)); }
-    static inline void clear_bitmap(Bitmap3Bit & bitmap) { memset(&bitmap, 0x77, sizeof(Bitmap3Bit)); }
+    virtual inline Bitmap1Bit * new_bitmap1bit() { return new Bitmap1Bit6; }
+    virtual inline Bitmap3Bit * new_bitmap3bit() { return new Bitmap3Bit6; }
 
     // All the following methods are protecting the I2C device trough
     // the Wire::enter() and Wire::leave() methods. These are implementing a
@@ -185,10 +180,10 @@ class EInk6 : EInk, NonCopyable
 
     bool setup();
 
-    inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
-    inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }
+    inline void update(Bitmap1Bit & bitmap) { update_1bit(bitmap); }
+    inline void update(Bitmap3Bit & bitmap) { update_3bit(bitmap); }
 
-    void partial_update(const Bitmap1Bit & bitmap);
+    void partial_update(Bitmap1Bit & bitmap);
 
     void clean();
 

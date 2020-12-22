@@ -4,12 +4,13 @@
 class Bitmap 
 {
   protected:
-    const int16_t width, height, data_size, line_size;
+    const int32_t data_size;
+    const int16_t width, height, line_size;
     const uint8_t init_value;
 
   public:
-    Bitmap(int16_t w, int16_t h, int16_t s, uint8_t i) : 
-      width(w), height(h), data_size(s), line_size(s / h), init_value(i) {}
+    Bitmap(int16_t w, int16_t h, int32_t s, uint8_t i) : 
+      data_size(s), width(w), height(h), line_size(s / h), init_value(i) {}
 
     inline int16_t       get_width() { return width;      }
     inline int16_t      get_height() { return height;     }
@@ -17,20 +18,21 @@ class Bitmap
     inline int16_t   get_line_size() { return line_size;  }
     inline uint8_t  get_init_value() { return init_value; }
     
-    virtual void             clear() = 0;
-    virtual inline uint8_t * get_data() = 0;
+    void              clear() { memset(get_data(), get_init_value(), get_data_size()); } 
+
+    virtual uint8_t * get_data() = 0;
 };
 
 class Bitmap1Bit : public Bitmap 
 {
   public:
-    Bitmap1Bit(int16_t w, int16_t h, int16_t s) : Bitmap(w, h, s, 0) {}
+    Bitmap1Bit(int16_t w, int16_t h, int32_t s) : Bitmap(w, h, s, 0) {}
 };
 
 class Bitmap3Bit : public Bitmap 
 {
   public:
-    Bitmap3Bit(int16_t w, int16_t h, int16_t s) : Bitmap(w, h, s, (uint8_t) 0x77) {}
+    Bitmap3Bit(int16_t w, int16_t h, int32_t s) : Bitmap(w, h, s, (uint8_t) 0x77) {}
 };
 
 class EInk
@@ -55,10 +57,10 @@ class EInk
 
     virtual bool setup() = 0;
 
-    inline void update(const Bitmap1Bit & bitmap) { update_1bit(bitmap); }
-    inline void update(const Bitmap3Bit & bitmap) { update_3bit(bitmap); }
+    inline void update(Bitmap1Bit & bitmap) { update_1bit(bitmap); }
+    inline void update(Bitmap3Bit & bitmap) { update_3bit(bitmap); }
 
-    virtual void partial_update(const Bitmap1Bit & bitmap) = 0;
+    virtual void partial_update(Bitmap1Bit & bitmap) = 0;
 
     virtual void clean() = 0;
 
@@ -75,8 +77,8 @@ class EInk
     bool       initialized;
     bool       partial_allowed;
 
-    virtual void update_1bit(const Bitmap1Bit & bitmap) = 0;
-    virtual void update_3bit(const Bitmap3Bit & bitmap) = 0;
+    virtual void update_1bit(Bitmap1Bit & bitmap) = 0;
+    virtual void update_3bit(Bitmap3Bit & bitmap) = 0;
 };
 
 #endif
