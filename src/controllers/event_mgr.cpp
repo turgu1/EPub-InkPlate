@@ -11,7 +11,7 @@
 #include "models/config.hpp"
 #include "logging.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -19,7 +19,6 @@
   #include "driver/gpio.h"
 
   #include "wire.hpp"
-  #include "mcp.hpp"
   #include "touch_keys.hpp"
   #include "inkplate_platform.hpp"
   #include "viewers/msg_viewer.hpp"
@@ -60,7 +59,7 @@
       if ((pads = touch_keys.read_all_keys()) == 0) {
         // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
         Wire::enter();
-        mcp.get_int_state();
+        mcp_int.get_int_state();
         Wire::leave();  
       }
       else {
@@ -69,7 +68,7 @@
 
         // Re-activating interrupts.
         Wire::enter();
-        mcp.get_int_state();
+        mcp_int.get_int_state();
         Wire::leave();  
 
         // Wait for potential second key
@@ -82,7 +81,7 @@
 
           // There was no key, re-activate interrupts
           Wire::enter();
-          mcp.get_int_state();
+          mcp_int.get_int_state();
           Wire::leave();  
         }
         // t2 = esp_timer_get_time();
@@ -95,7 +94,7 @@
 
           // Re-activating interrupts
           Wire::enter();
-          mcp.get_int_state();
+          mcp_int.get_int_state();
           Wire::leave();  
 
           if      (pads2 & SELECT_PAD) key = EventMgr::KeyEvent::DBL_SELECT;
@@ -275,7 +274,7 @@ EventMgr::setup()
       (void *) GPIO_NUM_34);
 
     Wire::enter();
-    mcp.get_int_state();                        // This is activating interrupts...
+    mcp_int.get_int_state();                        // This is activating interrupts...
     Wire::leave();
   #endif
 

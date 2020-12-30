@@ -12,11 +12,11 @@
 
 #define APP_VERSION "1.1.0"
 
-#if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE6_BUILD)) 
+#if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE_BUILD)) 
   #error "BUILD_TYPE Not Set."
 #else
-  #if !(EPUB_LINUX_BUILD || EPUB_INKPLATE6_BUILD)
-    #error "One of EPUB_LINUX_BUILD or EPUB_INKPLATE6_BUILD must be set to 1"
+  #if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD)
+    #error "One of EPUB_LINUX_BUILD or EPUB_INKPLATE_BUILD must be set to 1"
   #endif
 #endif
 

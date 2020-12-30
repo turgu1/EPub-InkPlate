@@ -7,6 +7,8 @@
 
 #include "logging.hpp"
 
+#include <sys/stat.h>
+
 bool 
 SimpleDB::open(std::string filename) 
 {
@@ -20,27 +22,26 @@ SimpleDB::open(std::string filename)
   if ((db_file = fopen(filename.c_str(), "r+")) == nullptr) return create(filename);
 
   bool done = false;
-  while (true) {
-    if (fseek(db_file, 0, SEEK_END)) break;
-    file_size = ftell(db_file);
-    if (fseek(db_file, 0, SEEK_SET)) break;
 
-    uint16_t idx    = 0;
-    int32_t  offset = 0;
-  
-    while ((idx < MAX_RECORD_COUNT) && (offset < file_size)) {
-      record_offset[idx] = offset;
-      is_deleted[idx]    = false;
-      int32_t size;
-      if (fread(&size, sizeof(int32_t), 1, db_file) != 1) goto error;
-      offset += size + sizeof(int32_t);
-      if (offset < file_size) if (fseek(db_file, offset, SEEK_SET)) goto error;
-      idx++;
-    }
-    done = true;
-    record_count = idx;
-    break;
+  struct stat stat_buf;
+  fstat(fileno(db_file), &stat_buf);
+  uint32_t file_size = stat_buf.st_size;
+
+  uint16_t idx    = 0;
+  int32_t  offset = 0;
+
+  while ((idx < MAX_RECORD_COUNT) && (offset < file_size)) {
+    record_offset[idx] = offset;
+    is_deleted[idx]    = false;
+    int32_t size;
+    if (fread(&size, sizeof(int32_t), 1, db_file) != 1) goto error;
+    offset += size + sizeof(int32_t);
+    if (offset < file_size) if (fseek(db_file, offset, SEEK_SET)) goto error;
+    idx++;
   }
+  done = true;
+  record_count = idx;
+
 error:
   if (!done) {
     fclose(db_file);

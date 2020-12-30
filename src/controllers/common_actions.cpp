@@ -7,7 +7,7 @@
 #include "viewers/msg_viewer.hpp"
 #include "models/books_dir.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "inkplate_platform.hpp"
   #include "esp.hpp"
 #endif
@@ -36,7 +36,7 @@ void
 CommonActions::power_off()
 {
   app_controller.going_to_deep_sleep();
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. Please press a key to restart the device.");
     ESP::delay(500);

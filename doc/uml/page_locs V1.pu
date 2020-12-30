@@ -1,0 +1,51 @@
+@startuml
+  participant Requester
+  participant PageLocsMgr
+  control AsapQueue
+  participant StateTask
+  control TaskQueue
+  control DoneQueue
+  participant RetrieverTask
+
+  RetrieverTask <- PageLocsMgr : Startup
+
+  TaskQueue <- PageLocsMgr : start_document_retrieval(doc)
+  TaskQueue -> RetrieverTask : start_document_retrieval(doc)
+  activate RetrieverTask
+
+  RetrieverTask -> RetrieverTask : do item
+
+  DoneQueue <- RetrieverTask : item_retrieved(item)
+
+  RetrieverTask -> RetrieverTask : do item
+  StateTask <- DoneQueue : item_retrieved(item)
+
+  DoneQueue <- RetrieverTask : item_retrieved(item)
+  StateTask <- DoneQueue : item_retrieved(item)
+
+  == Item already known ==
+  Requester -> PageLocsMgr: get_page_loc(item, offset)
+  activate PageLocsMgr
+
+  Requester <-- PageLocsMgr: got_it(start_offset, size)
+  deactivate PageLocsMgr
+
+  == Item needs to be retrieved ==
+
+  Requester -> PageLocsMgr: get_page_loc(item, offset)
+  activate PageLocsMgr
+  PageLocsMgr -> TaskQueue
+  TaskQueue -> RetrieverTask : retrieve_asap(item)
+  RetrieverTask -> RetrieverTask : do_asap item
+  activate RetrieverTask
+  DoneQueue <- RetrieverTask : completed_asap(item)
+  deactivate RetrieverTask
+  StateTask <- DoneQueue : got_asap(item)
+  AsapQueue <- StateTask : got_asap(item)
+  PageLocsMgr <- AsapQueue : got_asap(item)
+  Requester <- PageLocsMgr : got_it(start_offset, size) 
+  deactivate PageLocsMgr
+  TaskQueue <- RetrieverTask : document_completed()
+  deactivate RetrieverTask
+  StateTask <- TaskQueue : completed()
+@enduml

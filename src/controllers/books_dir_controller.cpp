@@ -12,7 +12,7 @@
 #include "viewers/book_viewer.hpp"
 #include "logging.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "nvs.h"
 #endif
 
@@ -41,7 +41,7 @@ BooksDirController::setup()
 
   book_was_shown  = false;
 
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     nvs_handle_t nvs_handle;
     esp_err_t    err;
   
@@ -132,7 +132,7 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
 
   book_page_id = page_id;
 
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     nvs_handle_t nvs_handle;
     esp_err_t err;
   

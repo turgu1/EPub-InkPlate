@@ -8,7 +8,7 @@
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "viewers/battery_viewer.hpp"
 #endif
 
@@ -117,7 +117,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   page.set_limits(fmt);
   page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
 
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     BatteryViewer::show();
   #endif
 
@@ -221,7 +221,7 @@ BooksDirViewer::highlight(int16_t item_idx)
     page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
 
-    #if EPUB_INKPLATE6_BUILD
+    #if EPUB_INKPLATE_BUILD
       BatteryViewer::show();
     #endif
 

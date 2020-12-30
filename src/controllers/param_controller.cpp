@@ -12,7 +12,7 @@
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "esp_system.h"
   #include "eink.hpp"
   #include "esp.hpp"
@@ -31,7 +31,7 @@ extern bool stop_web_server();
 static void
 wifi_mode()
 {
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     epub.close_file();
     fonts.clear();
     fonts.clear_glyph_caches();
@@ -73,7 +73,7 @@ ParamController::key_event(EventMgr::KeyEvent key)
       form_is_shown = false;
     }
   }
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
       msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
       wait_for_key_after_wifi = false;

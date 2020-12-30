@@ -12,7 +12,7 @@
 #include "logging.hpp"
 #include "alloc.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "esp.hpp"
 #endif
 
@@ -262,7 +262,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
   LOG_D("Looking at book files in folder %s", BOOKS_FOLDER);
  
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     ESP::show_heaps_info();
   #endif
   

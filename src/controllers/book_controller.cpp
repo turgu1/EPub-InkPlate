@@ -12,7 +12,7 @@
 #include "viewers/page.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "nvs.h"
 #endif
 

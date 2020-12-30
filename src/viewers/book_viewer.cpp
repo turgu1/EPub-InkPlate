@@ -10,7 +10,7 @@
 #include "viewers/msg_viewer.hpp"
 #include "image_info.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "viewers/battery_viewer.hpp"
 #endif
 
@@ -33,13 +33,14 @@ BookViewer::page_locs_end_page(Page::Format & fmt)
 {
   if (!page.is_empty()) {
 
-    PageLocs::PageId page_id = PageLocs::PageId(epub.get_itemref_index(), start_of_page_offset);
+    PageLocs::PageId   page_id   = PageLocs::PageId(epub.get_itemref_index(), start_of_page_offset);
     PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_of_page_offset, -1);
+    
     page_locs.insert(page_id, page_info);
 
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
  
-    SET_PAGE_TO_SHOW(epub.get_page_count())
+    SET_PAGE_TO_SHOW(epub.get_page_count()) // Denugging stuff
   }
 
   start_of_page_offset = current_offset;
@@ -438,6 +439,86 @@ BookViewer::build_page_locs()
   return done;
 }
 
+bool
+BookViewer::build_page_locs(int16_t index)
+{
+  TTF * font  = fonts.get(0, 10);
+  page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
+
+  page.set_compute_mode(Page::ComputeMode::LOCATION);
+
+  int8_t images_are_shown;
+  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
+  show_images = images_are_shown == 1;
+
+  bool done = false;
+
+  if (epub.get_item_at_index(index)) {
+
+    int16_t idx;
+
+    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
+      idx = 1;
+    }
+    
+    int8_t font_size;
+    config.get(Config::Ident::FONT_SIZE, &font_size);
+
+    Page::Format fmt = {
+      .line_height_factor = 0.9,
+      .font_index         = idx,
+      .font_size          = font_size,
+      .indent             = 0,
+      .margin_left        = 0,
+      .margin_right       = 0,
+      .margin_top         = 0,
+      .margin_bottom      = 0,
+      .screen_left        = 10,
+      .screen_right       = 10,
+      .screen_top         = 10,
+      .screen_bottom      = page_bottom,
+      .width              = 0,
+      .height             = 0,
+      .trim               = true,
+      .pre                = false,
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
+    };
+
+    last_props        = nullptr;
+
+    while (!done) {
+
+      current_offset       = 0;
+      start_of_page_offset = 0;
+      xml_node node = epub.get_current_item().child("html");
+
+      if (node && 
+         (node = node.child("body"))) {
+
+        page.start(fmt);
+
+        if (!page_locs_recurse(node, fmt)) break;
+
+        if (page.some_data_waiting()) page.end_paragraph(fmt);
+      }
+      else {
+        break;
+      }
+
+      page_locs_end_page(fmt);
+
+      done = true;
+    }
+  }
+
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+  
+  return done;
+}
+
 int16_t
 BookViewer::get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref)
 {
@@ -537,8 +618,8 @@ BookViewer::get_factor_value(const CSS::Value & value, const Page::Format & fmt,
 
 void
 BookViewer::adjust_format(xml_node node, 
-                        Page::Format & fmt,
-                        CSS::Properties * element_properties)
+                          Page::Format & fmt,
+                          CSS::Properties * element_properties)
 {
   xml_attribute attr = node.attribute("class");
 
@@ -1122,7 +1203,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
           page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
         }
 
-        #if EPUB_INKPLATE6_BUILD
+        #if EPUB_INKPLATE_BUILD
           BatteryViewer::show();
         #endif
 

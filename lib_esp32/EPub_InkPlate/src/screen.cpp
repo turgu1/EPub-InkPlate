@@ -363,7 +363,6 @@ Screen::setup(PixelResolution resolution, Orientation orientation)
   set_orientation(orientation);
   set_pixel_resolution(resolution, true);
   clear();
-  e_ink.clean();
 }
 
 void 
@@ -376,7 +375,9 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
         free(frame_buffer_3bit);
         frame_buffer_3bit = nullptr;
       }
-      frame_buffer_1bit = e_ink.new_bitmap1bit();
+      if ((frame_buffer_1bit = e_ink.new_frame_buffer_1bit()) != nullptr) {
+        frame_buffer_1bit->clear();
+      }
       partial_count = 0;
     }
     else {
@@ -384,7 +385,9 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
         free(frame_buffer_1bit);
         frame_buffer_1bit = nullptr;
       }
-      frame_buffer_3bit = e_ink.new_bitmap3bit();
+      if ((frame_buffer_3bit = e_ink.new_frame_buffer_3bit()) != nullptr) {
+        frame_buffer_3bit->clear();
+      }
     }
   }
 }

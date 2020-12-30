@@ -10,7 +10,7 @@
 
 #include <cstdarg>
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "nvs.h"
   #include "inkplate_platform.hpp"
 #endif
@@ -249,7 +249,7 @@ void MsgViewer::add_dot()
 void 
 MsgViewer::out_of_memory(const char * raison)
 {
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     nvs_handle_t nvs_handle;
     esp_err_t    err;
 
@@ -269,7 +269,7 @@ MsgViewer::out_of_memory(const char * raison)
     raison
   );
 
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     inkplate_platform.deep_sleep(); // Never return
   #else
     exit(0);

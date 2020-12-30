@@ -3,7 +3,7 @@
 
 #include "global.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   namespace BatteryViewer {
 
     #if __BATTERY_VIEWER__

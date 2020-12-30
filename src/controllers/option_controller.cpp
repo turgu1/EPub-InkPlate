@@ -14,7 +14,7 @@
 #include "models/config.hpp"
 #include "models/epub.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "esp_system.h"
 #endif
 
@@ -74,7 +74,7 @@ static FormViewer::Choice font_choices[8] = {
 static int8_t font_size;
 static Screen::Orientation      orientation;
 static Screen::PixelResolution resolution;
-static int8_t battery;
+static int8_t show_battery;
 static int8_t timeout;
 static int8_t show_images;
 static int8_t use_fonts_in_books;
@@ -94,7 +94,7 @@ static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { "Buttons Position (*):",       (int8_t *) &orientation, 3, orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
   { "Show Images in books (*):",   &show_images,            2, yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
   { "Pixel Resolution :",          (int8_t *) &resolution,  2, resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",     &battery,                4, battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Battery Visualisation :",     &show_battery,           4, battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
   { nullptr,                       &ok,                     2, ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
@@ -114,7 +114,7 @@ main_parameters()
 {
   config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution );
-  config.get(Config::Ident::BATTERY,          &battery               );
+  config.get(Config::Ident::BATTERY,          &show_battery          );
   config.get(Config::Ident::TIMEOUT,          &timeout               );
   config.get(Config::Ident::SHOW_IMAGES,      &show_images           );
 
@@ -154,7 +154,7 @@ font_parameters()
 static void
 wifi_mode()
 {
-  #if EPUB_INKPLATE6_BUILD  
+  #if EPUB_INKPLATE_BUILD  
     epub.close_file();
     fonts.clear();
     fonts.clear_glyph_caches();
@@ -202,7 +202,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
         config.put(Config::Ident::SHOW_IMAGES,      show_images         );
         config.put(Config::Ident::ORIENTATION,      (int8_t) orientation);
         config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
-        config.put(Config::Ident::BATTERY,          battery             );
+        config.put(Config::Ident::BATTERY,          show_battery        );
         config.put(Config::Ident::TIMEOUT,          timeout             );
         config.save();
 
@@ -245,7 +245,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
       }
     }
   }
-  #if EPUB_INKPLATE6_BUILD
+  #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
       msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
       wait_for_key_after_wifi = false;

@@ -3,9 +3,36 @@
 
 #include "viewers/book_viewer.hpp"
 
-// #include "FreeRTOS.h"
-// #include "task.h"
-// #include "queue.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/event_groups.h"
+
+static xQueueHandle asap_queue;
+static xQueueHandle retrieval_task_queue;
+static xQueueHandle retrieval_done_queue;
+
+static void
+state_task(void * param)
+{
+  while (true) {
+
+  }
+}
+
+static void
+retrieval_task(void * param)
+{
+  int16_t requested_index;
+
+  while (true) {
+    xQueueReceive(retrieval_task_queue, &requested_index, portMAX_DELAY);
+
+    if (!book_viewer.build_page_locs(requested_index)) requested_index = -requested_index;
+
+    xQueueSend(retrieval_done_queue, &requested_index, 0);
+  }
+}
 
 // xQueueHandle page_locs_cmd_queue;
 // xQueueHandle page_locs_ans_queue;

@@ -521,12 +521,12 @@ Page::add_line(const Format & fmt, bool justifyable)
 
     #if DEBUGGING
       if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-        LOG_E("add_line entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y, entry->command);
+        LOG_E("add_line entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
       else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
-        LOG_E("add_line with a too large location: %d %d %d", entry->pos.x, entry->pos.y, entry->command);
+        LOG_E("add_line with a too large location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }

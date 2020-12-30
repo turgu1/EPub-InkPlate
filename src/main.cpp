@@ -5,7 +5,7 @@
 #define __GLOBAL__ 1
 #include "global.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
 
   // InkPlate6 main function and main task
   
@@ -34,6 +34,8 @@
   void 
   mainTask(void * params) 
   {
+    LOG_I("EPub-Inkplate Startup.");
+    
     esp_err_t nvs_err = nvs_flash_init();
     if (nvs_err != ESP_OK) {
       if ((nvs_err == ESP_ERR_NVS_NO_FREE_PAGES) || (nvs_err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {

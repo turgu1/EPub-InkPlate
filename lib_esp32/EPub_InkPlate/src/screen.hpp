@@ -7,8 +7,7 @@
 
 #include "global.hpp"
 #include "noncopyable.hpp"
-#include "eink.hpp"
-#include "eink6.hpp"
+#include "inkplate_platform.hpp"
 
 /**
  * @brief Low level logical Screen display
@@ -82,8 +81,8 @@ class Screen : NonCopyable
                frame_buffer_3bit(nullptr) { };
 
     int8_t            partial_count;
-    Bitmap1Bit      * frame_buffer_1bit;
-    Bitmap3Bit      * frame_buffer_3bit;
+    FrameBuffer1Bit * frame_buffer_1bit;
+    FrameBuffer3Bit * frame_buffer_3bit;
     PixelResolution   pixel_resolution;
     Orientation       orientation;
 

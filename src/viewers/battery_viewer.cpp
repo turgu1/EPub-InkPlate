@@ -1,7 +1,7 @@
 #define __BATTERY_VIEWER__ 1
 #include "viewers/battery_viewer.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "viewers/page.hpp"
   #include "models/config.hpp"
   #include "battery.hpp"

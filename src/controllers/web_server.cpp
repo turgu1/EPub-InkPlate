@@ -1,7 +1,7 @@
 
 #include "global.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
 
 #include "logging.hpp"
 #include "viewers/msg_viewer.hpp"

@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <ostream>
+#include <sys/stat.h>
 
 FT_Library TTF::library{ nullptr };
 
@@ -256,13 +257,9 @@ TTF::set_font_face_from_file(const std::string font_filename)
   else {
     uint8_t * buffer;
 
-    if (fseek(font_file, 0, SEEK_END)) {
-      LOG_E("set_font_face_from_file: Unable to seek to the end of file");
-      fclose(font_file);
-      return false;
-    }
-
-    int32_t length = ftell(font_file);
+    struct stat stat_buf;
+    fstat(fileno(font_file), &stat_buf);
+    int32_t length = stat_buf.st_size;
     
     LOG_D("Font File Length: %d", length);
 
@@ -273,21 +270,13 @@ TTF::set_font_face_from_file(const std::string font_filename)
       msg_viewer.out_of_memory("font buffer allocation");
     }
 
-    if (fseek(font_file, 0, SEEK_SET)) {
-      LOG_E("set_font_face_from_file: Unable to seek to the beginning of file");
+    if (fread(buffer, length, 1, font_file) != 1) {
+      LOG_E("set_font_face_from_file: Unable to read file content");
       fclose(font_file);
       free(buffer);
       return false;
     }
-    else {
-      if (fread(buffer, length, 1, font_file) != 1) {
-        LOG_E("set_font_face_from_file: Unable to read file content");
-        fclose(font_file);
-        free(buffer);
-        return false;
-      }
-    }
-    
+
     fclose(font_file);
 
     buffer[length] = 0;

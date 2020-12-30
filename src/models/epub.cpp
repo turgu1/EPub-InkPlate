@@ -17,7 +17,7 @@
 #include "stb_image.h"
 #include "image_info.hpp"
 
-#if EPUB_INKPLATE6_BUILD
+#if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
 #endif
 
@@ -684,7 +684,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
   }
   else {
     ImageInfo * info = get_image_info(data, size);
-    #if EPUB_INKPLATE6_BUILD
+    #if EPUB_INKPLATE_BUILD
       uint32_t max_size = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT) - 100e3;
     #else
       uint32_t max_size = 25e5;
