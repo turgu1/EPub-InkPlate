@@ -97,8 +97,8 @@ class BookViewer
      * 
      */
     bool build_page_locs();
-    bool build_page_locs(int16_t index);
-    
+    bool build_page_locs(int16_t itemref_index);
+
     /**
      * @brief Show a page on the display.
      * 

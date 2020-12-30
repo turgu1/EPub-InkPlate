@@ -8,9 +8,26 @@
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 
-static xQueueHandle asap_queue;
-static xQueueHandle retrieval_task_queue;
-static xQueueHandle retrieval_done_queue;
+static xQueueHandle state_req_queue;
+static xQueueHandle state_ans_queue;
+static xQueueHandle retrieval_req_queue;
+static xQueueHandle retrieval_ans_queue;
+
+static enum class StateReq  : int16_t { START_DOCUMENT, GET_ASAP   };
+static enum class StateAns  : int16_t { END_DOCUMENT,   ITEM_READY };
+
+struct StateRequest {
+  StateReq req;
+  union {
+    int16_t itemref_index;
+    int16_t itemref_count;
+  } param;
+};
+
+struct StateAnswer {
+  StateAns ans;
+  int16_t itemref_index;
+};
 
 static void
 state_task(void * param)
@@ -28,7 +45,10 @@ retrieval_task(void * param)
   while (true) {
     xQueueReceive(retrieval_task_queue, &requested_index, portMAX_DELAY);
 
-    if (!book_viewer.build_page_locs(requested_index)) requested_index = -requested_index;
+    if (!book_viewer.build_page_locs(requested_index)) {
+      // Unable to retrieve pages location for the requested index. Send back
+      // a negative value to indicate the issue to the state task
+      requested_index = -requested_index;
 
     xQueueSend(retrieval_done_queue, &requested_index, 0);
   }

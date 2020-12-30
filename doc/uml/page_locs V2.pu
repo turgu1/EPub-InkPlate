@@ -1,7 +1,8 @@
 @startuml
   participant Requester
   participant PageLocsMgr
-  control AsapQueue
+  control AnsQueue
+  control CmdQueue
   participant StateTask
   control DoneQueue
   control TaskQueue
@@ -10,7 +11,8 @@
   RetrieverTask   <- PageLocsMgr : Startup
   StateTask       <- PageLocsMgr : Startup
 
-  StateTask       <- PageLocsMgr : start_retrieval(doc, first_item)
+  CmdQueue        <- PageLocsMgr : start(doc, first_item, item_count)
+  CmdQueue        -> StateTask : start_document(...)
   activate StateTask
 
   note left
@@ -30,33 +32,35 @@
   end
 
   == Item already known ==
-  Requester      -> PageLocsMgr: get_page_loc(item, offset)
+  Requester       -> PageLocsMgr: get_page_loc(item, offset)
   activate PageLocsMgr
 
-  Requester      <- PageLocsMgr: got_it(start_offset, size)
+  Requester       <- PageLocsMgr: got_it(start_offset, size)
   deactivate PageLocsMgr
 
   == Item needs to be retrieved (no yet in the list) ==
 
-  Requester     -> PageLocsMgr: get_page_loc(item, offset)
+  Requester       -> PageLocsMgr: get_page_loc(item, offset)
   activate PageLocsMgr
-  PageLocsMgr   -> StateTask : retrieve_asap(item)
+  PageLocsMgr     -> CmdQueue : retrieve_asap(item)
+  CmdQueue        -> StateTask : retrieve_asap(item)
 
-  StateTask     -> TaskQueue : retrieve(item)
-  TaskQueue     -> RetrieverTask : retrieve(item)
+  StateTask       -> TaskQueue : retrieve(item)
+  TaskQueue       -> RetrieverTask : retrieve(item)
   activate RetrieverTask
-  RetrieverTask -> RetrieverTask : do item
-  DoneQueue     <- RetrieverTask : item_retrieved(item)
+  RetrieverTask   -> RetrieverTask : do item
+  DoneQueue       <- RetrieverTask : item_retrieved(item)
   deactivate RetrieverTask
-  StateTask     <- DoneQueue : item_retrieved(item)
+  StateTask       <- DoneQueue : item_retrieved(item)
 
 
-  AsapQueue     <- StateTask : got_asap(item)
-  PageLocsMgr   <- AsapQueue : got_asap(item)
-  Requester     <- PageLocsMgr : got_it(start_offset, size) 
+  AsapQueue       <- StateTask : got_asap(item)
+  PageLocsMgr     <- AsapQueue : got_asap(item)
+  Requester       <- PageLocsMgr : got_it(start_offset, size) 
   deactivate PageLocsMgr
 
-  StateTask     <- StateTask : document_completed()
-  PageLocsMgr   <- StateTask : stopped()
+  AnsQueue        <- StateTask : end_document()
   deactivate StateTask
+  PageLocsMgr     <- AnsQueue : end_document()
+  
 @enduml

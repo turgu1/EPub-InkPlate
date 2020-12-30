@@ -427,8 +427,6 @@ BookViewer::build_page_locs()
       }
 
       page_locs_end_page(fmt);
-      
-      //msg_viewer.add_dot(); // Show progression to the user
 
       done = !epub.get_next_item();
     }
@@ -440,7 +438,7 @@ BookViewer::build_page_locs()
 }
 
 bool
-BookViewer::build_page_locs(int16_t index)
+BookViewer::build_page_locs(int16_t itemref_index)
 {
   TTF * font  = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
@@ -453,7 +451,7 @@ BookViewer::build_page_locs(int16_t index)
 
   bool done = false;
 
-  if (epub.get_item_at_index(index)) {
+  if (epub.get_item_at_index(itemref_index)) {
 
     int16_t idx;
 
