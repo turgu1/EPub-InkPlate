@@ -1,18 +1,17 @@
 @startuml
   participant Requester
   participant PageLocsMgr
-  control AnsQueue
-  control CmdQueue
+  control     MgrQueue
   participant StateTask
-  control DoneQueue
-  control TaskQueue
+  control     StateQueue
+  control     RetrieveQueue
   participant RetrieverTask
 
   RetrieverTask   <- PageLocsMgr : Startup
   StateTask       <- PageLocsMgr : Startup
 
-  CmdQueue        <- PageLocsMgr : start(doc, first_item, item_count)
-  CmdQueue        -> StateTask : start_document(...)
+  StateQueue    <- PageLocsMgr : start(doc, first_item, item_count)
+  StateQueue    -> StateTask : start_document(...)
   activate StateTask
 
   note left
@@ -22,13 +21,13 @@
     how the user interacts.
   end note
   loop All Items
-    StateTask     -> TaskQueue : retrieve(item)
-    TaskQueue     -> RetrieverTask : retrieve(item)
+    StateTask     -> RetrieveQueue : retrieve(item)
+    RetrieveQueue     -> RetrieverTask : retrieve(item)
     activate RetrieverTask
     RetrieverTask -> RetrieverTask : do item
-    DoneQueue     <- RetrieverTask : item_retrieved(item)
+    StateQueue  <- RetrieverTask : item_retrieved(item)
     deactivate RetrieverTask
-    StateTask     <- DoneQueue : item_retrieved(item)
+    StateTask     <- StateQueue : item_retrieved(item)
   end
 
   == Item already known ==
@@ -42,25 +41,25 @@
 
   Requester       -> PageLocsMgr: get_page_loc(item, offset)
   activate PageLocsMgr
-  PageLocsMgr     -> CmdQueue : retrieve_asap(item)
-  CmdQueue        -> StateTask : retrieve_asap(item)
+  PageLocsMgr     -> StateQueue : retrieve_asap(item)
+  StateQueue    -> StateTask : retrieve_asap(item)
 
-  StateTask       -> TaskQueue : retrieve(item)
-  TaskQueue       -> RetrieverTask : retrieve(item)
+  StateTask       -> RetrieveQueue : retrieve(item)
+  RetrieveQueue       -> RetrieverTask : retrieve(item)
   activate RetrieverTask
   RetrieverTask   -> RetrieverTask : do item
-  DoneQueue       <- RetrieverTask : item_retrieved(item)
+  StateQueue    <- RetrieverTask : item_retrieved(item)
   deactivate RetrieverTask
-  StateTask       <- DoneQueue : item_retrieved(item)
+  StateTask       <- StateQueue : item_retrieved(item)
 
 
-  AsapQueue       <- StateTask : got_asap(item)
-  PageLocsMgr     <- AsapQueue : got_asap(item)
+  MgrQueue        <- StateTask : got_asap(item)
+  PageLocsMgr     <- MgrQueue : got_asap(item)
   Requester       <- PageLocsMgr : got_it(start_offset, size) 
   deactivate PageLocsMgr
 
-  AnsQueue        <- StateTask : end_document()
+  MgrQueue        <- StateTask : end_document()
   deactivate StateTask
-  PageLocsMgr     <- AnsQueue : end_document()
+  PageLocsMgr     <- MgrQueue : end_document()
   
 @enduml

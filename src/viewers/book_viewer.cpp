@@ -28,6 +28,9 @@
 
 using namespace pugi;
 
+SemaphoreHandle_t BookViewer::mutex = nullptr;
+StaticSemaphore_t BookViewer::mutex_buffer;
+
 void 
 BookViewer::page_locs_end_page(Page::Format & fmt)
 {
@@ -40,7 +43,7 @@ BookViewer::page_locs_end_page(Page::Format & fmt)
 
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
  
-    SET_PAGE_TO_SHOW(epub.get_page_count()) // Denugging stuff
+    SET_PAGE_TO_SHOW(epub.get_page_count()) // Debugging stuff
   }
 
   start_of_page_offset = current_offset;
@@ -433,7 +436,7 @@ BookViewer::build_page_locs()
   }
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
-  
+
   return done;
 }
 
@@ -443,6 +446,8 @@ BookViewer::build_page_locs(int16_t itemref_index)
   TTF * font  = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
 
+  enter();
+  
   page.set_compute_mode(Page::ComputeMode::LOCATION);
 
   int8_t images_are_shown;
@@ -514,6 +519,8 @@ BookViewer::build_page_locs(int16_t itemref_index)
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
+  leave();
+
   return done;
 }
 
@@ -1223,73 +1230,77 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
 {
   // LOG_D("Page: %d", page_nbr + 1);
 
-  if ((current_page_id.itemref_index == page_id.itemref_index) &&
-      (current_page_id.offset        == page_id.offset)) return;
+  enter();
 
-  current_page_id = page_id;
-  
-  if (page_locs.page_nbr(page_id) == 0) {
-    const char * filename = epub.get_cover_filename();
-    if (filename != nullptr) {
-      // LOG_D("Cover filename: %s", filename);
-      uint32_t size;
-      unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
+  if ((current_page_id.itemref_index != page_id.itemref_index) ||
+      (current_page_id.offset        != page_id.offset)) {
 
-      if ((data == NULL) || !page.show_cover(data, size)) {
-        LOG_D("Unable to retrieve cover file: %s", filename);
+    current_page_id = page_id;
+    
+    if (page_locs.page_nbr(page_id) == 0) {
+      const char * filename = epub.get_cover_filename();
+      if (filename != nullptr) {
+        // LOG_D("Cover filename: %s", filename);
+        uint32_t size;
+        unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
-        Page::Format fmt = {
-          .line_height_factor = 1.0,
-          .font_index         =   3,
-          .font_size          =  14,
-          .indent             =   0,
-          .margin_left        =   0,
-          .margin_right       =   0,
-          .margin_top         =   0,
-          .margin_bottom      =   0,
-          .screen_left        =  10,
-          .screen_right       =  10,
-          .screen_top         = 100,
-          .screen_bottom      =  30,
-          .width              =   0,
-          .height             =   0,
-          .trim               = true,
-          .pre                = false,
-          .font_style         = Fonts::FaceStyle::ITALIC,
-          .align              = CSS::Align::CENTER,
-          .text_transform     = CSS::TextTransform::NONE,
-          .display            = CSS::Display::INLINE
-        };
+        if ((data == NULL) || !page.show_cover(data, size)) {
+          LOG_D("Unable to retrieve cover file: %s", filename);
 
-        std::string title  = epub.get_title();
-        std::string author = epub.get_author();
+          Page::Format fmt = {
+            .line_height_factor = 1.0,
+            .font_index         =   3,
+            .font_size          =  14,
+            .indent             =   0,
+            .margin_left        =   0,
+            .margin_right       =   0,
+            .margin_top         =   0,
+            .margin_bottom      =   0,
+            .screen_left        =  10,
+            .screen_right       =  10,
+            .screen_top         = 100,
+            .screen_bottom      =  30,
+            .width              =   0,
+            .height             =   0,
+            .trim               = true,
+            .pre                = false,
+            .font_style         = Fonts::FaceStyle::ITALIC,
+            .align              = CSS::Align::CENTER,
+            .text_transform     = CSS::TextTransform::NONE,
+            .display            = CSS::Display::INLINE
+          };
 
-        page.start(fmt);
+          std::string title  = epub.get_title();
+          std::string author = epub.get_author();
 
-        page.new_paragraph(fmt, false);
-        page.add_text(author, fmt);
-        page.end_paragraph(fmt);
+          page.start(fmt);
 
-        fmt.font_index =   1;
-        fmt.font_size  =  18;
-        fmt.screen_top = 200;
-        fmt.font_style = Fonts::FaceStyle::NORMAL;
+          page.new_paragraph(fmt, false);
+          page.add_text(author, fmt);
+          page.end_paragraph(fmt);
 
-        page.set_limits(fmt);
-        page.new_paragraph(fmt, false);
-        page.add_text(title, fmt);
-        page.end_paragraph(fmt);
+          fmt.font_index =   1;
+          fmt.font_size  =  18;
+          fmt.screen_top = 200;
+          fmt.font_style = Fonts::FaceStyle::NORMAL;
 
-        page.paint();
+          page.set_limits(fmt);
+          page.new_paragraph(fmt, false);
+          page.add_text(title, fmt);
+          page.end_paragraph(fmt);
+
+          page.paint();
+        }
+        
+        if (data) free(data);
       }
-      
-      if (data) free(data);
+      else {
+        LOG_D("There doesn't seems to have any cover.");
+      }
     }
     else {
-      LOG_D("There doesn't seems to have any cover.");
+      build_page_at(page_id);
     }
   }
-  else {
-    build_page_at(page_id);
-  }
+  leave();
 }

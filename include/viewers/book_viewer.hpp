@@ -5,6 +5,10 @@
 #ifndef __BOOK_VIEWER_HPP__
 #define __BOOK_VIEWER_HPP__
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -24,13 +28,15 @@ class BookViewer
   private:
     static constexpr char const * TAG = "BookViewer";
 
-    int32_t current_offset;          ///< Where we are in current item
-    int32_t start_of_page_offset;
-    int32_t end_of_page_offset;
-    int16_t page_bottom;
-    bool    show_images;
-    PageLocs::PageId current_page_id;
-    
+    static SemaphoreHandle_t mutex;
+    static StaticSemaphore_t mutex_buffer;
+
+    int32_t           current_offset;          ///< Where we are in current item
+    int32_t           start_of_page_offset;
+    int32_t           end_of_page_offset;
+    int16_t           page_bottom;
+    bool              show_images;
+    PageLocs::PageId  current_page_id;
     CSS::Properties * last_props;
 
     // BREAK is BR... A defined BR in esp-idf is the cause of this!!
@@ -43,16 +49,19 @@ class BookViewer
     bool start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
     bool indent_paragraph;
 
-    bool get_image(std::string & filename, Page::Image & image);
-    void adjust_format(pugi::xml_node node, Page::Format & fmt, CSS::Properties * element_properties);
+    bool                get_image(std::string & filename, Page::Image & image);
+    void            adjust_format(pugi::xml_node node, Page::Format & fmt, CSS::Properties * element_properties);
     void adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite & suite);
-    bool page_locs_recurse(pugi::xml_node node, Page::Format fmt);
-    void page_locs_end_page(Page::Format & fmt);
-    bool build_page_recurse(pugi::xml_node node, Page::Format fmt);
-    void build_page_at(const PageLocs::PageId & page_id);
-    int16_t get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
-    int16_t get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
-    float get_factor_value(const CSS::Value & value, const Page::Format & fmt, float ref);
+    bool        page_locs_recurse(pugi::xml_node node, Page::Format fmt);
+    void       page_locs_end_page(Page::Format & fmt);
+    bool       build_page_recurse(pugi::xml_node node, Page::Format fmt);
+    void            build_page_at(const PageLocs::PageId & page_id);
+    int16_t       get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
+    int16_t       get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
+    float        get_factor_value(const CSS::Value & value, const Page::Format & fmt, float ref);
+
+    inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
+    inline static void leave() { xSemaphoreGive(mutex); }
 
     inline void reset_font_index(Page::Format & fmt, Fonts::FaceStyle style) {
       if (style != fmt.font_style) {
@@ -78,7 +87,7 @@ class BookViewer
                {"h2",   Element::H2}, {"h3",       Element::H3}, {"h4",     Element::H4}, {"h5",     Element::H5}, {"h6",                 Element::H6}, 
                {"b",     Element::B}, {"i",         Element::I}, {"em",     Element::EM}, {"body", Element::BODY}, {"a",                   Element::A},
                {"img", Element::IMG}, {"image", Element::IMAGE}, {"li",     Element::LI}, {"pre",   Element::PRE}, {"blockquote", Element::BLOCKQUOTE}}
-      {  }
+      { mutex = xSemaphoreCreateMutexStatic(&mutex_buffer); }
 
     ~BookViewer() { }
 

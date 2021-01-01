@@ -70,6 +70,8 @@ class PageLocs
   public:
     PageLocs() : completed(false), item_count(0) { };
 
+    void setup();
+    
     const PageId * get_next_page_id(const PageId & page_id, int16_t count = 1);
     const PageId * get_prev_page_id(const PageId & page_id, int     count = 1);
     const PageId *      get_page_id(const PageId & page_id                   );

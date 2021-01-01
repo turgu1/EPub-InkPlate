@@ -8,89 +8,271 @@
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 
-static xQueueHandle state_req_queue;
-static xQueueHandle state_ans_queue;
-static xQueueHandle retrieval_req_queue;
-static xQueueHandle retrieval_ans_queue;
+#include "logging.hpp"
 
-static enum class StateReq  : int16_t { START_DOCUMENT, GET_ASAP   };
-static enum class StateAns  : int16_t { END_DOCUMENT,   ITEM_READY };
+static constexpr char const * TAG = "PageLocs";
 
-struct StateRequest {
-  StateReq req;
-  union {
-    int16_t itemref_index;
-    int16_t itemref_count;
-  } param;
-};
+static xQueueHandle mgr_queue;
+static xQueueHandle state_queue;
+static xQueueHandle retrieve_queue;
 
-struct StateAnswer {
-  StateAns ans;
+enum class MgrReq : int8_t { DOCUMENT_COMPLETED, ASAP_READY };
+
+struct MgrQueueData {
+  MgrReq req;
   int16_t itemref_index;
 };
+
+enum class StateReq  : int8_t { STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY };
+
+struct StateQueueData {
+  StateReq req;
+  int16_t itemref_index;
+  int16_t itemref_count;
+};
+
+enum class RetrieveReq  : int8_t { RETRIEVE_ITEM, GET_ASAP };
+
+struct RetrieveQueueData {
+  RetrieveReq req;
+  int16_t itemref_index;
+};
+
+static int16_t   itemref_count       = -1;      // Number of items in the document
+static int16_t   waiting_for_itemref = -1;      // Current item being processed by retrieval task
+static int16_t   next_itemref_to_get = -1;      // Non prioritize item to get next
+static int16_t   asap_itemref        = -1;      // Prioritize item to get next
+static uint8_t * bitset              = nullptr; // Set of all items processed so far
+static uint8_t   bitset_size         =  0;      // bitset byte length
+static bool      forget_retrieval    = false;   // Forget current item begin processed by retrieval task
+
+static StateQueueData       state_queue_data;
+static RetrieveQueueData retrieve_queue_data;
+static MgrQueueData           mgr_queue_data;
+
+/**
+ * @brief Request next item to be retrieved
+ * 
+ * This function is called to identify and send the
+ * next request for retrieval of page locations. It also
+ * identify when the whole process is completed, as all items from
+ * the document have been done. It will then send this information
+ * to the appliction through the Mgr queue.
+ * 
+ * When this function is called, the retrieval task is waiting for
+ * the next task to do.
+ * 
+ * @param itemref The last itemref index that was processed
+ */
+static void
+request_next_item(int16_t itemref, bool already_sent_to_mgr = false)
+{
+  if (asap_itemref != -1) {
+    if (itemref == asap_itemref) {
+      asap_itemref = -1;
+      if (!already_sent_to_mgr) {
+        mgr_queue_data.itemref_index = itemref;
+        mgr_queue_data.req = MgrReq::ASAP_READY;
+        xQueueSend(mgr_queue, &mgr_queue_data, 0);
+      }
+    }
+    else {
+      waiting_for_itemref = asap_itemref;
+      asap_itemref        = -1;
+      retrieve_queue_data.req = RetrieveReq::GET_ASAP;
+      retrieve_queue_data.itemref_index = waiting_for_itemref;
+      xQueueSend(retrieve_queue, &retrieve_queue_data, 0);
+      return;
+    }
+  }
+  if (next_itemref_to_get != -1) {
+    waiting_for_itemref = next_itemref_to_get;
+    next_itemref_to_get = -1;
+    retrieve_queue_data.req = RetrieveReq::RETRIEVE_ITEM;
+    retrieve_queue_data.itemref_index = waiting_for_itemref;
+    xQueueSend(retrieve_queue, &retrieve_queue_data, 0);
+  }
+  else {
+    int16_t newref;
+    if (itemref != -1) {
+      newref = (itemref + 1) % itemref_count;
+    }
+    else {
+      itemref = 0;
+      newref  = 0;
+    }
+    while ((bitset[newref >> 3] & (1 << (newref & 7))) != 0) {
+      newref = (newref + 1) % itemref_count;
+      if (newref == itemref) break;
+    }
+    if (newref != itemref) {
+      waiting_for_itemref = newref;
+      retrieve_queue_data.req = RetrieveReq::RETRIEVE_ITEM;
+      retrieve_queue_data.itemref_index = waiting_for_itemref;
+      xQueueSend(retrieve_queue, &retrieve_queue_data, 0);
+    }
+    else {
+      mgr_queue_data.req = MgrReq::DOCUMENT_COMPLETED;
+      xQueueSend(mgr_queue, &mgr_queue_data, 0);
+    } 
+  }
+}
 
 static void
 state_task(void * param)
 {
-  while (true) {
+  for (;;) {
+    xQueueReceive(state_queue, &state_queue_data, portMAX_DELAY);
+    switch (state_queue_data.req) {
+      case StateReq::STOP:
+        itemref_count = -1;
+        forget_retrieval = true;
+        if (bitset != nullptr) delete [] bitset;
+        break;
 
+      case StateReq::START_DOCUMENT:
+        if (bitset) delete [] bitset;
+        itemref_count = state_queue_data.itemref_count;
+        bitset_size   = (itemref_count + 7) >> 3;
+        bitset        = new uint8_t[bitset_size];
+        if (bitset) {
+          memset(bitset, 0, bitset_size);
+          if (waiting_for_itemref == -1) {
+            forget_retrieval = false;
+            retrieve_queue_data.req = RetrieveReq::RETRIEVE_ITEM;
+            waiting_for_itemref = retrieve_queue_data.itemref_index = state_queue_data.itemref_index;
+            xQueueSend(retrieve_queue, &retrieve_queue_data, 0);
+          }
+          else {
+            forget_retrieval = true;
+            next_itemref_to_get = state_queue_data.itemref_index;
+          }
+        }
+        else {
+          itemref_count = -1;
+        }
+        break;
+
+      case StateReq::GET_ASAP:
+        // Mgr request a specific item. If document retrieval not started, 
+        // return a negative value.
+        // If already done, let it know it a.s.a.p. If currently being processed,
+        // keep a mark when it will be back. If not, queue the request.
+        if (itemref_count == -1) {
+          mgr_queue_data.req           = MgrReq::ASAP_READY;
+          mgr_queue_data.itemref_index = -(state_queue_data.itemref_index + 1);
+          xQueueSend(mgr_queue, &mgr_queue_data, 0);
+        }
+        else {
+          int16_t itemref = state_queue_data.itemref_index;
+          if ((bitset[itemref >> 3] & ( 1 << (itemref & 7))) != 0) {
+            mgr_queue_data.req           = MgrReq::ASAP_READY;
+            mgr_queue_data.itemref_index = itemref;
+            xQueueSend(mgr_queue, &mgr_queue_data, 0);
+          }
+          else if (waiting_for_itemref != -1) {
+            asap_itemref = itemref;
+          }
+          else {
+            asap_itemref                      = -1;
+            waiting_for_itemref               = itemref;
+            retrieve_queue_data.req           = RetrieveReq::GET_ASAP;
+            retrieve_queue_data.itemref_index = itemref;
+            xQueueSend(retrieve_queue, &retrieve_queue_data, 0);             
+          }
+        }
+        break;
+
+      // This is sent by the retrieval task, indicating that an item has been
+      // processed.
+      case StateReq::ITEM_READY:
+        waiting_for_itemref = -1;
+        if (itemref_count != -1) {
+          int16_t itemref = -1;
+          if (forget_retrieval) {
+            forget_retrieval    = false;
+          }
+          else {
+            itemref = state_queue_data.itemref_index;
+            if (itemref < 0) {
+              itemref = -(itemref + 1);
+              LOG_I("Unable to retrieve page locations for item %d", itemref);
+            }
+            bitset[itemref >> 3] |= (1 << (itemref & 7));
+          }
+          request_next_item(itemref);
+        }
+        break;
+
+      // This is sent by the retrieval task, indicating that an ASAP item has been
+      // processed.
+      case StateReq::ASAP_READY:
+        waiting_for_itemref = -1;
+        if (itemref_count != -1) {
+          int16_t itemref              = state_queue_data.itemref_index;
+          mgr_queue_data.itemref_index = itemref;
+          mgr_queue_data.req           = MgrReq::ASAP_READY;
+          xQueueSend(mgr_queue, &mgr_queue_data, 0);
+          if (itemref < 0) {
+            itemref = -(itemref + 1);
+            LOG_I("Unable to retrieve page locations for item %d", itemref);
+          }
+          bitset[itemref >> 3] |= (1 << (itemref & 7));
+          request_next_item(itemref, true);
+        }
+        break;
+    }
   }
 }
 
 static void
-retrieval_task(void * param)
+retriever_task(void * param)
 {
-  int16_t requested_index;
+  RetrieveQueueData retrieve_queue_data;
+  StateQueueData    state_queue_data;
 
-  while (true) {
-    xQueueReceive(retrieval_task_queue, &requested_index, portMAX_DELAY);
+  for (;;) {
+    xQueueReceive(retrieve_queue, &retrieve_queue_data, portMAX_DELAY);
 
-    if (!book_viewer.build_page_locs(requested_index)) {
+    LOG_I("Retrieving itemref %d", retrieve_queue_data.itemref_index);
+
+    if (!book_viewer.build_page_locs(retrieve_queue_data.itemref_index)) {
       // Unable to retrieve pages location for the requested index. Send back
       // a negative value to indicate the issue to the state task
-      requested_index = -requested_index;
+      state_queue_data.itemref_index = -(retrieve_queue_data.itemref_index + 1);
+    }
+    else {
+      state_queue_data.itemref_index = retrieve_queue_data.itemref_index;
+    }
 
-    xQueueSend(retrieval_done_queue, &requested_index, 0);
+    state_queue_data.req = 
+      retrieve_queue_data.req == RetrieveReq::GET_ASAP ? 
+        StateReq::ASAP_READY : StateReq::ITEM_READY;
+
+    xQueueSend(state_queue, &state_queue_data, 0);
   }
 }
 
-// xQueueHandle page_locs_cmd_queue;
-// xQueueHandle page_locs_ans_queue;
+void
+PageLocs::setup()
+{
+  mgr_queue      = xQueueCreate(5, sizeof(MgrQueueData));
+  state_queue    = xQueueCreate(5, sizeof(StateQueueData));
+  retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
 
-// void
-// page_locs_task(void * param)
-// {
-//   int16_t requested_index;
-//   int16_t start_index = -1;
-//   int16_t current_index;
+  TaskHandle_t xHandle = NULL;
 
-//   // Values received:
-//   // 0..n : Get itemref_index in priority
-//   // -1   : Stop retrieval
+  xTaskCreate(state_task, "stateTask", 10000, (void *) 1, tskIDLE_PRIORITY, &xHandle);
+  configASSERT(xHandle);
 
-//   while (true) {
-//     if (start_index == -1) {
-//       // Wait for a first request for retrieval
-//       xQueueReceive(page_locs_cmd_queue, &requested_index, portMAX_DELAY);
-//       if (requested_index != -1) {
-//         start_index = current_index = requested_index;
-//       }
-//       else {
-//         xQueueSend(page_locs_ans_queue, &requested_index, 0);
-//       }
-//     }
-//     else if (uxQueueMessagesWaiting(page_locs_cmd_queue) > 0) {
-//       // A priority just entered, retrieve it
-//       xQueueReceive(page_locs_cmd_queue, &requested_index, 0);
-//     }
-
-//     // if (!page_locs.loaded(itemref_index)) {
-
-//     // }
-
-//     xQueueSend(page_locs_ans_queue, &requested_index, 0);
-//   }
-// }
+  #if EPUB_LINUX_BUILD
+    xTaskCreate(retriever_task, "retrieverTask", 40000, (void *) 1, tskIDLE_PRIORITY, &xHandle);
+    configASSERT(xHandle);
+  #else
+    xTaskCreatePinnedToCore(retriever_task, "retrieverTask", 40000, (void *) 1, tskIDLE_PRIORITY, &xHandle, 1);
+    configASSERT(xHandle);
+  #endif
+} 
 
 bool 
 PageLocs::retrieve_asap(int16_t itemref_index) {
