@@ -3,6 +3,17 @@
 
 #include "global.hpp"
 
+#if EPUB_LINUX_BUILD
+  #include <pthread.h>
+  #include <fcntl.h>
+  #include <mqueue.h>
+  #include <sys/stat.h>
+#else
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
+  #include "freertos/semphr.h"
+#endif
+
 #include <map>
 #include <set>
 
@@ -42,6 +53,18 @@ class PageLocs
     typedef std::map<PageId, PageInfo, PageCompare> PagesMap;
     typedef std::set<int16_t> ItemsSet;
 
+    #if EPUB_LINUX_BUILD
+      static pthread_mutex_t mutex;
+      inline static void enter() {   pthread_mutex_lock(&mutex); }
+      inline static void leave() { pthread_mutex_unlock(&mutex); }
+    #else
+      static SemaphoreHandle_t mutex;
+      static StaticSemaphore_t mutex_buffer;
+
+      inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
+      inline static void leave() { xSemaphoreGive(mutex); }
+    #endif
+
     PagesMap pages_map;
     ItemsSet items_set;
     int16_t item_count;
@@ -60,15 +83,17 @@ class PageLocs
 
     bool retrieve_asap(int16_t itemref_index);
 
-    PagesMap::iterator check_and_find(const PageId & page_id) {
-      if (!completed && (items_set.find(page_id.itemref_index) == items_set.end())) {
-        if (!retrieve_asap(page_id.itemref_index)) return pages_map.end();
-      }
-      return pages_map.find(page_id);
-    }
+    PagesMap::iterator check_and_find(const PageId & page_id);
 
   public:
-    PageLocs() : completed(false), item_count(0) { };
+
+    PageLocs() : completed(false), item_count(0) { 
+      #if EPUB_LINUX_BUILD
+        mutex = PTHREAD_MUTEX_INITIALIZER;
+      #else
+        mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
+      #endif 
+    };
 
     void setup();
     
@@ -82,8 +107,10 @@ class PageLocs
     }
 
     inline void insert(PageId & id, PageInfo & info) {
+      enter();
       pages_map.insert(std::make_pair(id, info));
       items_set.insert(id.itemref_index);
+      leave();
     }
 
     inline void clear() { 
@@ -106,7 +133,7 @@ class PageLocs
 
     inline int16_t page_count() { return completed ? pages_map.size() : -1; }
 
-    inline void set_item_count(int16_t count) { item_count = count; }
+    void start_new_document(int16_t count);
 
     inline int16_t page_nbr(const PageId & id) {
       if (!completed) return -1; 

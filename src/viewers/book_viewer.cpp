@@ -28,8 +28,12 @@
 
 using namespace pugi;
 
-SemaphoreHandle_t BookViewer::mutex = nullptr;
-StaticSemaphore_t BookViewer::mutex_buffer;
+#if EPUB_LINUX_BUILD
+  pthread_mutex_t BookViewer::mutex;
+#else
+  SemaphoreHandle_t BookViewer::mutex = nullptr;
+  StaticSemaphore_t BookViewer::mutex_buffer;
+#endif
 
 void 
 BookViewer::page_locs_end_page(Page::Format & fmt)
@@ -443,10 +447,12 @@ BookViewer::build_page_locs()
 bool
 BookViewer::build_page_locs(int16_t itemref_index)
 {
+  LOG_D("Entering...");
+  enter();
+  LOG_D("Entered.");
+
   TTF * font  = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
-
-  enter();
   
   page.set_compute_mode(Page::ComputeMode::LOCATION);
 
@@ -503,11 +509,15 @@ BookViewer::build_page_locs(int16_t itemref_index)
 
         page.start(fmt);
 
-        if (!page_locs_recurse(node, fmt)) break;
+        if (!page_locs_recurse(node, fmt)) {
+          LOG_D("html parsing issue");
+          break;
+        }
 
         if (page.some_data_waiting()) page.end_paragraph(fmt);
       }
       else {
+        LOG_D("No <body>");
         break;
       }
 
@@ -519,7 +529,9 @@ BookViewer::build_page_locs(int16_t itemref_index)
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
+  LOG_D("Leaving...");
   leave();
+  LOG_D("Left.");
 
   return done;
 }
@@ -697,7 +709,7 @@ BookViewer::adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuit
       fmt.font_index = 1;
     }
     else {
-      LOG_D("Font index: %d", idx);
+      // LOG_D("Font index: %d", idx);
       fmt.font_index = idx;
       fmt.font_style = new_style;
     }
@@ -1230,7 +1242,9 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
 {
   // LOG_D("Page: %d", page_nbr + 1);
 
+  LOG_D("Entering 2...");
   enter();
+  LOG_D("Entered 2.");
 
   if ((current_page_id.itemref_index != page_id.itemref_index) ||
       (current_page_id.offset        != page_id.offset)) {
@@ -1302,5 +1316,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
       build_page_at(page_id);
     }
   }
+  LOG_D("Leaving 2...");
   leave();
+  LOG_D("Left 2.");
 }

@@ -261,7 +261,7 @@ clean_fname(const char * filename)
 char * 
 Unzip::get_file(const char * filename, uint32_t & file_size)
 {
-  // LOG_D("get_file: %s", filename);
+  LOG_D("get_file: %s", filename);
   
   char * data = nullptr;
   int    err  = 0;

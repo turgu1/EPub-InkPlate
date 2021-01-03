@@ -467,11 +467,11 @@ EPub::open_file(const std::string & epub_filename)
     return false;
   }
 
-  current_itemref_index = 0;
+  current_itemref_index = -1;
   current_filename      = epub_filename;
   file_is_open          = true;
 
-  page_locs.set_item_count(get_item_count());
+  page_locs.start_new_document(get_item_count());
 
   LOG_D("EPub file is now open.");
 

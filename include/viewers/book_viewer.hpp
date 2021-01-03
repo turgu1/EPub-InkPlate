@@ -5,9 +5,13 @@
 #ifndef __BOOK_VIEWER_HPP__
 #define __BOOK_VIEWER_HPP__
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
+#if EPUB_LINUX_BUILD
+
+#else
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
+  #include "freertos/semphr.h"
+#endif
 
 #include <vector>
 #include <string>
@@ -28,8 +32,16 @@ class BookViewer
   private:
     static constexpr char const * TAG = "BookViewer";
 
-    static SemaphoreHandle_t mutex;
-    static StaticSemaphore_t mutex_buffer;
+    #if EPUB_LINUX_BUILD
+      static pthread_mutex_t mutex;
+      inline static void enter() {   pthread_mutex_lock(&mutex); }
+      inline static void leave() { pthread_mutex_unlock(&mutex); }
+    #else
+      static SemaphoreHandle_t mutex;
+      static StaticSemaphore_t mutex_buffer;
+      inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
+      inline static void leave() { xSemaphoreGive(mutex); }
+    #endif
 
     int32_t           current_offset;          ///< Where we are in current item
     int32_t           start_of_page_offset;
@@ -60,9 +72,6 @@ class BookViewer
     int16_t       get_point_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
     float        get_factor_value(const CSS::Value & value, const Page::Format & fmt, float ref);
 
-    inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
-    inline static void leave() { xSemaphoreGive(mutex); }
-
     inline void reset_font_index(Page::Format & fmt, Fonts::FaceStyle style) {
       if (style != fmt.font_style) {
         int16_t idx = -1;
@@ -87,7 +96,13 @@ class BookViewer
                {"h2",   Element::H2}, {"h3",       Element::H3}, {"h4",     Element::H4}, {"h5",     Element::H5}, {"h6",                 Element::H6}, 
                {"b",     Element::B}, {"i",         Element::I}, {"em",     Element::EM}, {"body", Element::BODY}, {"a",                   Element::A},
                {"img", Element::IMG}, {"image", Element::IMAGE}, {"li",     Element::LI}, {"pre",   Element::PRE}, {"blockquote", Element::BLOCKQUOTE}}
-      { mutex = xSemaphoreCreateMutexStatic(&mutex_buffer); }
+      { 
+        #if EPUB_LINUX_BUILD
+          mutex = PTHREAD_MUTEX_INITIALIZER;
+        #else
+          mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
+        #endif 
+      }
 
     ~BookViewer() { }
 

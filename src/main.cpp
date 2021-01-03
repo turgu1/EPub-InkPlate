@@ -16,10 +16,10 @@
   #include "controllers/books_dir_controller.hpp"
   #include "controllers/app_controller.hpp"
   #include "models/fonts.hpp"
-  #include "screen.hpp"
-  #include "inkplate_platform.hpp"
   #include "models/epub.hpp"
   #include "models/config.hpp"
+  #include "screen.hpp"
+  #include "inkplate_platform.hpp"
   #include "helpers/unzip.hpp"
   #include "viewers/msg_viewer.hpp"
   #include "pugixml.hpp"
@@ -150,6 +150,7 @@
   #include "viewers/msg_viewer.hpp"
   #include "models/fonts.hpp"
   #include "models/config.hpp"
+  #include "models/page_locs.hpp"
   #include "screen.hpp"
 
   static const char * TAG = "Main";
@@ -164,6 +165,8 @@
       config.show();
     #endif
 
+    page_locs.setup();
+    
     if (fonts.setup()) {
 
       Screen::Orientation    orientation;
