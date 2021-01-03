@@ -6,7 +6,7 @@
 #define __BOOK_VIEWER_HPP__
 
 #if EPUB_LINUX_BUILD
-
+  #include <mutex>
 #else
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -33,9 +33,7 @@ class BookViewer
     static constexpr char const * TAG = "BookViewer";
 
     #if EPUB_LINUX_BUILD
-      static pthread_mutex_t mutex;
-      inline static void enter() {   pthread_mutex_lock(&mutex); }
-      inline static void leave() { pthread_mutex_unlock(&mutex); }
+      std::mutex mutex;
     #else
       static SemaphoreHandle_t mutex;
       static StaticSemaphore_t mutex_buffer;
@@ -98,7 +96,7 @@ class BookViewer
                {"img", Element::IMG}, {"image", Element::IMAGE}, {"li",     Element::LI}, {"pre",   Element::PRE}, {"blockquote", Element::BLOCKQUOTE}}
       { 
         #if EPUB_LINUX_BUILD
-          mutex = PTHREAD_MUTEX_INITIALIZER;
+          //mutex = PTHREAD_MUTEX_INITIALIZER;
         #else
           mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
         #endif 

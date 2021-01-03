@@ -28,9 +28,7 @@
 
 using namespace pugi;
 
-#if EPUB_LINUX_BUILD
-  pthread_mutex_t BookViewer::mutex;
-#else
+#if !EPUB_LINUX_BUILD
   SemaphoreHandle_t BookViewer::mutex = nullptr;
   StaticSemaphore_t BookViewer::mutex_buffer;
 #endif
@@ -76,7 +74,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
 
     if ((element_it = elements.find(name)) != elements.end()) {
 
-      LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_pos_y());
+      //LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_pos_y());
 
       switch (element_it->second) {
         case Element::BODY:
@@ -447,9 +445,7 @@ BookViewer::build_page_locs()
 bool
 BookViewer::build_page_locs(int16_t itemref_index)
 {
-  LOG_D("Entering...");
-  enter();
-  LOG_D("Entered.");
+  std::scoped_lock guard(mutex);
 
   TTF * font  = fonts.get(0, 10);
   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
@@ -528,10 +524,6 @@ BookViewer::build_page_locs(int16_t itemref_index)
   }
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
-  
-  LOG_D("Leaving...");
-  leave();
-  LOG_D("Left.");
 
   return done;
 }
@@ -1240,11 +1232,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 void
 BookViewer::show_page(const PageLocs::PageId & page_id)
 {
-  // LOG_D("Page: %d", page_nbr + 1);
-
-  LOG_D("Entering 2...");
-  enter();
-  LOG_D("Entered 2.");
+  std::scoped_lock guard(mutex);
 
   if ((current_page_id.itemref_index != page_id.itemref_index) ||
       (current_page_id.offset        != page_id.offset)) {
@@ -1316,7 +1304,4 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
       build_page_at(page_id);
     }
   }
-  LOG_D("Leaving 2...");
-  leave();
-  LOG_D("Left 2.");
 }
