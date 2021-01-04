@@ -2,7 +2,15 @@
 
 ## Last news
 
-(Updated 2020.12.14)
+(Updated 2021.01.03)
+
+This is in preparation for version 1.1. The main ongoing modifications are
+
+- [x] Support of the new Inkplate-10 upcoming device
+- [ ] Just in time calculation of pages locations through multithreading
+- [x] Integration with the ESP-IDF-Inkplate library
+
+-----
 
 The development is complete. The application is at version 1.1.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
