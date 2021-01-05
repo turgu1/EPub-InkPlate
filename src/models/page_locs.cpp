@@ -57,6 +57,9 @@ struct RetrieveQueueData {
 #endif
 
 
+// Both Linux and ESP32 algorithm versions must be synchronized by hand. As std::thread is not 
+// close enough to the functionalities offered by FreeRTOS (Stack size control, core
+// selection), no choice to use differents means on both platform.
 #if EPUB_LINUX_BUILD
   class StateTask
   {

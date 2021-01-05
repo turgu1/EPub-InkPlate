@@ -230,11 +230,11 @@ EPub::retrieve_fonts_from_css(CSS & css)
     const CSS::Values * values;
     if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_FAMILY))) {
 
-      Fonts::FaceStyle style = Fonts::FaceStyle::NORMAL;
-      std::string font_family = values->front()->str;
+      Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
       Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
-      Fonts::FaceStyle font_style = Fonts::FaceStyle::NORMAL;
-      
+      Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
+      std::string      font_family = values->front()->str;
+
       if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_STYLE))) {
         font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
       }
@@ -278,21 +278,106 @@ EPub::retrieve_fonts_from_css(CSS & css)
 #endif
 }
 
+void
+EPub::retrieve_css(pugi::xml_document & item_doc, 
+                   CSSList & item_css_list, 
+                   CSS ** item_css)
+{
+  xml_node      node;
+  xml_attribute attr;
+  
+  if ((node = item_doc.child("html").child("head").child("link"))) {
+    do {
+      if ((attr = node.attribute("type")) &&
+          (strcmp(attr.value(), "text/css") == 0) &&
+          (attr = node.attribute("href"))) {
+
+        std::string css_id = attr.value(); // uses href as id
+
+        // search the list of css files to see if it already been parsed
+        int16_t idx = 0;
+        CSSList::iterator css_cache_it = css_cache.begin();
+
+        while (css_cache_it != css_cache.end()) {
+          if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
+          css_cache_it++;
+          idx++;
+        }
+        if (css_cache_it == css_cache.end()) {
+
+          // The css file was not found. Load it in the cache.
+          uint32_t size;
+          std::string fname = current_item_file_path;
+          fname.append(css_id.c_str());
+          char * data = retrieve_file(fname.c_str(), size);
+
+          if (data != nullptr) {
+#if COMPUTE_SIZE
+            memory_used += size;
+#endif
+            // LOG_D("CSS Filename: %s", fname.c_str());
+            std::string path;
+            extract_path(fname.c_str(), path);
+            CSS * css_tmp = new CSS(path, data, size, css_id);
+            if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
+            free(data);
+
+            // css_tmp->show();
+            
+            retrieve_fonts_from_css(*css_tmp);
+                css_cache.push_back(css_tmp);
+            item_css_list.push_back(css_tmp);
+          }
+        } 
+        else {
+          item_css_list.push_back(*css_cache_it);
+        }
+      }
+    } while ((node = node.next_sibling("link")));
+  }
+
+  // Now look at <style> tags presents in the <html><head>, creating a temporary
+  // css object for each of them.
+
+  if ((node = item_doc.child("html").child("head").child("style"))) {
+    do {
+      CSS * css_tmp = new CSS(current_item_file_path, node.value(), strlen(node.value()) , "current-item");
+      if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
+      retrieve_fonts_from_css(*css_tmp);
+      // css_tmp->show();
+      temp_css_cache.push_back(css_tmp);
+    } while ((node = node.next_sibling("style")));
+  }
+
+  // Populate the current_item css structure with property suites present in
+  // the identified css files in the <meta> portion of the html file.
+
+  if (*item_css != nullptr) delete *item_css;
+  if ((*item_css = new CSS("", nullptr, 0, "MergedForItem")) == nullptr) {
+    msg_viewer.out_of_memory("css allocation");
+  }
+  for (auto * css : item_css_list ) (*item_css)->retrieve_data_from_css(*css);
+  for (auto * css : temp_css_cache) (*item_css)->retrieve_data_from_css(*css);
+  // (*item_css)->show();
+}
+
+
 char * 
-EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
+EPub::get_item(pugi::xml_node itemref, pugi::xml_document & item_doc)
 {
   int err = 0;
   #define ERR(e) { err = e; break; }
 
   if (!file_is_open) return nullptr;
 
-  // if ((current_item_data != nullptr) && (current_itemref == itemref)) return true;
-  
-  //clear_item_data();
+  // if ((current_item_data != nullptr) && (current_itemref == itemref))
+  // return true;
 
-  char      * item_data;
-  xml_node         node;
-  xml_attribute    attr;
+  // clear_item_data();
+
+  char *        item_data = nullptr;
+  xml_node      node;
+  xml_attribute attr;
 
   const char * id = itemref.attribute("idref").value();
 
@@ -306,8 +391,8 @@ EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
     if (!node) ERR(2);
 
     if (!(attr = node.attribute("media-type"))) ERR(3);
-    const char * media_type = attr.value();
-    
+    const char* media_type = attr.value();
+
     MediaType item_media_type;
 
     if      (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = MediaType::XML;
@@ -326,7 +411,7 @@ EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
 
     // LOG_D("current_item_file_path: %s.", current_item_file_path.c_str());
 
-    if (!(item_data = retrieve_file(attr.value(), size))) ERR(5);
+    if ((item_data = retrieve_file(attr.value(), size)) == nullptr) ERR(5);
 
     if (item_media_type == MediaType::XML) {
 
@@ -336,93 +421,17 @@ EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
       if (res.status != status_ok) {
         LOG_E("item_doc xml load error: %d", res.status);
         item_doc.reset();
-        free(item_data);
+        if (item_data != nullptr) free(item_data);
         return nullptr;
       }
 
       // current_item.parse<0>(current_item_data);
-      
-      //if (css.size() > 0) css.clear(); 
+
+      // if (css.size() > 0) css.clear();
 
       // Retrieve css files, puting them in the css_cache vector (as a cache).
       // The properties are then merged into the current_css map for the item
       // being processed.
-
-      if ((node = item_doc.child("html").child("head").child("link"))) {
-        do {
-          if ((attr = node.attribute("type")) &&
-              (strcmp(attr.value(), "text/css") == 0) &&
-              (attr = node.attribute("href"))) {
-
-            std::string css_id = attr.value(); // uses href as id
-
-            // search the list of css files to see if it already been
-            // parsed
-            int16_t idx = 0;
-            CSSList::iterator css_cache_it = css_cache.begin();
-            while (css_cache_it != css_cache.end()) {
-              if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
-              css_cache_it++;
-              idx++;
-            }
-            if (css_cache_it == css_cache.end()) {
-
-              // The css file was not found. Load it in the cache.
-              uint32_t size;
-              std::string fname = current_item_file_path;
-              fname.append(css_id.c_str());
-              char * data = retrieve_file(fname.c_str(), size);
-              
-              if (data != nullptr) {
-                #if COMPUTE_SIZE
-                  memory_used += size;
-                #endif
-                // LOG_D("CSS Filename: %s", fname.c_str());
-                std::string path;
-                extract_path(fname.c_str(), path);
-                CSS * css_tmp = new CSS(path, data, size, css_id);
-                if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-                free(data);
-                // css_tmp->show();
-                retrieve_fonts_from_css(*css_tmp);
-                css_cache.push_back(css_tmp);
-                current_item_css_list.push_back(css_tmp);
-              }
-            }
-            else {
-              current_item_css_list.push_back(*css_cache_it);
-            }
-          }
-        } while ((node = node.next_sibling("link")));
-      }
-
-      // Now look at <style> tags presents in the <html><head>, creating a temporary
-      // css object for each of them.
-
-      if ((node = item_doc.child("html").child("head").child("style"))) {
-        do {
-          CSS * css_tmp = new CSS(current_item_file_path, node.value(), strlen(node.value()) , "current-item");
-          if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-          retrieve_fonts_from_css(*css_tmp);
-          // css_tmp->show();
-          temp_css_cache.push_back(css_tmp);
-        } while ((node = node.next_sibling("style")));
-      }
-
-      // Populate the current_item css structure with property suites present in
-      // the identified css files in the <meta> portion of the html file.
-
-      if (current_item_css != nullptr) delete current_item_css;
-      if ((current_item_css = new CSS("", nullptr, 0, "MergedForItem")) == nullptr) {
-        msg_viewer.out_of_memory("css allocation");
-      }
-      for (auto * css : current_item_css_list) {
-        current_item_css->retrieve_data_from_css(*css);
-      }
-      for (auto * css : temp_css_cache) {
-        current_item_css->retrieve_data_from_css(*css);
-      }
-      // current_item_css->show();
     }
 
     completed = true;
@@ -430,9 +439,9 @@ EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
 
   if (!completed) {
     LOG_E("EPub get_current_item error: %d", err);
-    if (item_data != nullptr) {
-      free(item_data);
-      item_data = nullptr;
+    item_doc.reset();
+    if (item_data != nullptr) free(item_data);
+    item_data = nullptr;
     //clear_item_data();
   }
   else {
@@ -515,9 +524,8 @@ EPub::close_file()
   opf_base_path.clear();
   unzip.close_zip_file();
 
-  for (auto * css : css_cache) {
-    delete css;
-  }
+  for (auto * css : css_cache) delete css;
+
   css_cache.clear();
   fonts.clear();
 
@@ -556,7 +564,7 @@ EPub::get_cover_filename()
           (attr = node.attribute("content")) &&
           (itemref = attr.value())) {
 
-        xml_node n;
+        xml_node      n;
         xml_attribute a;
 
         if ((n = opf.child("package").child("manifest").child("item"))) {
@@ -609,6 +617,7 @@ EPub::get_first_item()
 
   clear_item_data();
   if ((current_itemref != node) && ((current_item_data = get_item(node, current_item)) == nullptr)) return false;
+  retrieve_css(current_item, current_item_css_list, &current_item_css);
   current_itemref_index = 0;
   return true;
 }
@@ -629,6 +638,7 @@ EPub::get_next_item()
   }
 
   if (current_item_data != nullptr) {
+    retrieve_css(current_item, current_item_css_list, &current_item_css);
     return true;
   }
   else {
@@ -680,12 +690,19 @@ EPub::get_item_at_index(int16_t itemref_index)
     current_itemref_index = index;
     clear_item_data();
     current_item_data = get_item(node, current_item);
+    if (current_item_data != nullptr) {
+      retrieve_css(current_item, current_item_css_list, &current_item_css);
+    }
   }
   return current_item_data != nullptr;
 }
 
 bool 
-EPub::get_item_at_index(int16_t itemref_index, char ** item_data, xml_document & item_doc)
+EPub::get_item_at_index(int16_t        itemref_index, 
+                        char **        item_data, 
+                        xml_document & item_doc,
+                        CSSList &      item_css_list,
+                        CSS **         item_css)
 {
   if (!file_is_open) return false;
 
@@ -704,7 +721,9 @@ EPub::get_item_at_index(int16_t itemref_index, char ** item_data, xml_document &
   if (node == nullptr) return false;
 
   *item_data = get_item(node, item_doc);
-
+  if (*item_data != nullptr) {
+    retrieve_css(current_item, item_css_list, item_css);
+  }
   return *item_data != nullptr;
 }
 

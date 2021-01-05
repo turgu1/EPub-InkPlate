@@ -55,41 +55,48 @@ class EPub
     EPub();
    ~EPub();
 
-    void clear_item_data();
-    
-    bool open_file(const std::string & epub_filename);
-    bool close_file();
-
-    bool    get_image(std::string & filename, Page::Image & image, int16_t & channel_count);
-  
-    char *  retrieve_file(const char * fname, uint32_t & size);
-
-    bool       get_first_item();
-    bool        get_next_item();
-    char *           get_item(pugi::xml_node itemref, xml_document & item_doc);
-    bool    get_item_at_index(int16_t itemref_index);
-    bool    get_item_at_index(int16_t itemref_index, char ** item_data, xml_document & item_doc);
-    int16_t    get_item_count();
+    void      retrieve_css(pugi::xml_document & item_doc,
+                           CSSList &            item_css_list,
+                           CSS **               item_css);
+    void   clear_item_data();
+    bool         open_file(const std::string & epub_filename);
+    bool        close_file();
+    bool         get_image(std::string & filename,
+                           Page::Image & image,
+                           int16_t &     channel_count);
+    char*    retrieve_file(const char * fname, uint32_t& size);
+    bool    get_first_item();
+    bool     get_next_item();
+    char *        get_item(pugi::xml_node       itemref, 
+                           pugi::xml_document & item_doc);
+    bool get_item_at_index(int16_t itemref_index);
+    bool get_item_at_index(int16_t              itemref_index,
+                           char **              item_data,
+                           pugi::xml_document & item_doc,
+                           CSSList &            item_css_list,
+                           CSS **               item_css);
+    int16_t get_item_count();
 
     /**
      * @brief Retrieve cover's filename
-     * 
-     * Look inside the opf file to grab the cover filename. First search in the metadata. If
-     * not found, search in the manifest for an entry with type cover-image
-     * 
-     * @return char * filename, or nullptr if not found 
+     *
+     * Look inside the opf file to grab the cover filename. First search in the
+     * metadata. If not found, search in the manifest for an entry with type
+     * cover-image
+     *
+     * @return char * filename, or nullptr if not found
      */
-    const char * get_cover_filename();
+    const char* get_cover_filename();
 
-    inline const CSSList &                  get_css_cache() const { return css_cache;                  }
-    inline CSS *                     get_current_item_css() const { return current_item_css;           }
-    inline const std::string & get_current_item_file_path() const { return current_item_file_path;     }
-    inline int16_t                      get_itemref_index() const { return current_itemref_index;      }
-    inline const char *                         get_title()       { return get_meta("dc:title");       }
-    inline const char *                        get_author()       { return get_meta("dc:creator");     }
-    inline const char *                   get_description()       { return get_meta("dc:description"); }
-    inline const pugi::xml_document &    get_current_item()       { return current_item;               }
-    inline const std::string &       get_current_filename()       { return current_filename;           }
+    inline const CSSList &                   get_css_cache() const { return css_cache;                  }
+    inline CSS *                      get_current_item_css() const { return current_item_css;           }
+    inline const std::string &  get_current_item_file_path() const { return current_item_file_path;     }
+    inline int16_t                       get_itemref_index() const { return current_itemref_index;      }
+    inline const char *                          get_title()       { return get_meta("dc:title");       }
+    inline const char *                         get_author()       { return get_meta("dc:creator");     }
+    inline const char *                    get_description()       { return get_meta("dc:description"); }
+    inline const pugi::xml_document &     get_current_item()       { return current_item;               }
+    inline const std::string &        get_current_filename()       { return current_filename;           }
   };
 
 #if __EPUB__
