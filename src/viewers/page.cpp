@@ -69,7 +69,7 @@ Page::clear_display_list()
 // 00010000 -- 001FFFFF: 	11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
 int32_t 
-to_unicode(const char **str, CSS::TextTransform transform, bool first) 
+Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) const
 {
   const uint8_t * c    = (uint8_t *) *str;
   int32_t         u    = 0;

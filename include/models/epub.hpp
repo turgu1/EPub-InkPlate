@@ -43,7 +43,6 @@ class EPub
     CSSList            current_item_css_list; ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
     CSS *              current_item_css;      ///< Ghost CSS created through merging css suites from current_item_css_list.
  
-    MediaType          item_media_type;
     bool               file_is_open;
 
     const char *        get_meta(const std::string & name);
@@ -67,8 +66,9 @@ class EPub
 
     bool       get_first_item();
     bool        get_next_item();
-    bool             get_item(pugi::xml_node itemref);
+    char *           get_item(pugi::xml_node itemref, xml_document & item_doc);
     bool    get_item_at_index(int16_t itemref_index);
+    bool    get_item_at_index(int16_t itemref_index, char ** item_data, xml_document & item_doc);
     int16_t    get_item_count();
 
     /**
@@ -81,14 +81,15 @@ class EPub
      */
     const char * get_cover_filename();
 
-    inline const CSSList &                  get_css_cache() const                 { return css_cache;                           }
-    inline CSS *                     get_current_item_css() const                 { return current_item_css;                    }
-    inline const std::string & get_current_item_file_path() const                 { return current_item_file_path;              }
-    inline int16_t                      get_itemref_index() const                 { return current_itemref_index;               }
-    inline const char *                         get_title()                       { return get_meta("dc:title");                }
-    inline const char *                        get_author()                       { return get_meta("dc:creator");              }
-    inline const char *                   get_description()                       { return get_meta("dc:description");          }
-    inline const pugi::xml_document &    get_current_item()                       { return current_item;                        }
+    inline const CSSList &                  get_css_cache() const { return css_cache;                  }
+    inline CSS *                     get_current_item_css() const { return current_item_css;           }
+    inline const std::string & get_current_item_file_path() const { return current_item_file_path;     }
+    inline int16_t                      get_itemref_index() const { return current_itemref_index;      }
+    inline const char *                         get_title()       { return get_meta("dc:title");       }
+    inline const char *                        get_author()       { return get_meta("dc:creator");     }
+    inline const char *                   get_description()       { return get_meta("dc:description"); }
+    inline const pugi::xml_document &    get_current_item()       { return current_item;               }
+    inline const std::string &       get_current_filename()       { return current_filename;           }
   };
 
 #if __EPUB__

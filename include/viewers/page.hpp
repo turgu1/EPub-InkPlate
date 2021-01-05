@@ -116,12 +116,13 @@ class Page
     int16_t line_width,  glyphs_height;
     int16_t para_indent, top_margin;
 
-    void clear_display_list();
     inline void clear_line_list() { line_list.clear(); }
 
-    void add_line(const Format & fmt, bool justifyable);
-    void add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space);
-    void add_image_to_line(Image & image, int16_t advance, bool copy, float line_height_factor);
+    void clear_display_list();
+    void           add_line(const Format & fmt, bool justifyable);
+    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space);
+    void  add_image_to_line(Image & image, int16_t advance, bool copy, float line_height_factor);
+    int32_t      to_unicode(const char **str, CSS::TextTransform transform, bool first) const;
 
   public:
 
@@ -283,12 +284,13 @@ class Page
       #endif
     }
 
-    bool      show_cover(unsigned char * data, int32_t size);
-    void       put_image(Image & image, Pos pos); 
-    void   put_highlight(Dim dim, Pos pos);  
-    void clear_highlight(Dim dim, Pos pos);  
-    void    clear_region(Dim dim, Pos pos);
-    void      set_region(Dim dim, Pos pos);
+    void show_display_list(const DisplayList & list, const char * title) const;
+    bool        show_cover(unsigned char * data, int32_t size);
+    void         put_image(Image & image, Pos pos); 
+    void     put_highlight(Dim dim, Pos pos);  
+    void   clear_highlight(Dim dim, Pos pos);  
+    void      clear_region(Dim dim, Pos pos);
+    void        set_region(Dim dim, Pos pos);
 
     void show_controls(const char * spaces) const {
       #if DEBUGGING
@@ -307,18 +309,17 @@ class Page
       #endif
     }
 
-    void show_display_list(const DisplayList & list, const char * title) const;
 
     inline void                 set_compute_mode(ComputeMode mode) { compute_mode = mode; }
 
-    inline ComputeMode          get_compute_mode() const { return compute_mode;         }
-    inline int16_t                   paint_width() const { return max_x - min_x;        }
-    inline bool                          is_full() const { return screen_is_full;       }
-    inline bool                         is_empty() const { return display_list.empty(); }
-    inline bool                some_data_waiting() const { return !line_list.empty();   }
-    inline const DisplayList &  get_display_list() const { return display_list;         }
-    inline const DisplayList &     get_line_list() const { return line_list;            }
-    inline int16_t                     get_pos_y() const { return pos.y;                }
+    inline ComputeMode          get_compute_mode() const { return compute_mode;           }
+    inline int16_t                   paint_width() const { return max_x - min_x;          }
+    inline bool                          is_full() const { return screen_is_full;         }
+    inline bool                         is_empty() const { return display_list.empty();   }
+    inline bool                some_data_waiting() const { return !line_list.empty();     }
+    inline const DisplayList &  get_display_list() const { return display_list;           }
+    inline const DisplayList &     get_line_list() const { return line_list;              }
+    inline int16_t                     get_pos_y() const { return pos.y;                  }
 };
 
 #if __PAGE__

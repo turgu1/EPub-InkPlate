@@ -40,7 +40,12 @@ BookController::open_book_file(
   // msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
   //   "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
+  bool new_document = book_filename != epub.get_current_filename();
+
+  if (new_document) page_locs.stop_document();
+
   if (epub.open_file(book_filename)) {
+    if (new_document) page_locs.start_new_document(epub.get_item_count(), page_id.itemref_index);
     book_viewer.init();
     current_page_id = page_locs.get_page_id(page_id);
     if (current_page_id != nullptr) {

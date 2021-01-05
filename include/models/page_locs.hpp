@@ -10,6 +10,7 @@
   #include <mqueue.h>
   #include <sys/stat.h>
 #else
+  #include <mutex>
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
   #include "freertos/semphr.h"
@@ -56,16 +57,16 @@ class PageLocs
     typedef std::map<PageId, PageInfo, PageCompare> PagesMap;
     typedef std::set<int16_t> ItemsSet;
 
+    std::recursive_timed_mutex  mutex;
     #if EPUB_LINUX_BUILD
       std::thread state_thread;
       std::thread retriever_thread;
-      std::recursive_mutex  mutex;
     #else
-      static SemaphoreHandle_t mutex;
-      static StaticSemaphore_t mutex_buffer;
+      //static SemaphoreHandle_t mutex;
+      //static StaticSemaphore_t mutex_buffer;
 
-      inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
-      inline static void leave() { xSemaphoreGive(mutex); }
+      //inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
+      //inline static void leave() { xSemaphoreGive(mutex); }
     #endif
 
     PagesMap pages_map;
@@ -80,7 +81,7 @@ class PageLocs
 
     PageLocs() : completed(false), item_count(0) { 
       #if !EPUB_LINUX_BUILD
-        mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
+        //mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
       #endif 
     };
 
@@ -91,19 +92,16 @@ class PageLocs
     const PageId *      get_page_id(const PageId & page_id                   );
 
     void computation_completed();
-    void    start_new_document(int16_t count);
+    void    start_new_document(int16_t count, int16_t itemref_index);
+    void         stop_document();
 
-    inline const PageInfo* get_page_info(const PageId& page_id) {
+    inline const PageInfo* get_page_info(const PageId & page_id) {
       std::scoped_lock guard(mutex);
       PagesMap::iterator it = check_and_find(page_id);
       return it == pages_map.end() ? nullptr : &it->second;
     }
 
-    inline void insert(PageId & id, PageInfo & info) {
-      std::scoped_lock guard(mutex);
-      pages_map.insert(std::make_pair(id, info));
-      items_set.insert(id.itemref_index);
-    }
+    bool insert(PageId & id, PageInfo & info);
 
     inline void clear() { 
       std::scoped_lock guard(mutex);

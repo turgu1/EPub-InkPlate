@@ -28,20 +28,21 @@
 
 using namespace pugi;
 
-#if !EPUB_LINUX_BUILD
-  SemaphoreHandle_t BookViewer::mutex = nullptr;
-  StaticSemaphore_t BookViewer::mutex_buffer;
-#endif
+// #if !EPUB_LINUX_BUILD
+//   SemaphoreHandle_t BookViewer::mutex = nullptr;
+//   StaticSemaphore_t BookViewer::mutex_buffer;
+// #endif
 
-void 
+bool 
 BookViewer::page_locs_end_page(Page::Format & fmt)
 {
+  bool res = true;
   if (!page.is_empty()) {
 
     PageLocs::PageId   page_id   = PageLocs::PageId(epub.get_itemref_index(), start_of_page_offset);
     PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_of_page_offset, -1);
     
-    page_locs.insert(page_id, page_info);
+    res = page_locs.insert(page_id, page_info);
 
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
  
@@ -51,6 +52,8 @@ BookViewer::page_locs_end_page(Page::Format & fmt)
   start_of_page_offset = current_offset;
 
   page.start(fmt);
+
+  return res;
 }
 
 bool
@@ -120,7 +123,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         case Element::BREAK:
           SHOW_LOCATION("Page Break");
           if (!page.line_break(fmt)) {
-            page_locs_end_page(fmt);
+            if (!page_locs_end_page(fmt)) return false;
             SHOW_LOCATION("Page Break");
             page.line_break(fmt);
           }
@@ -197,7 +200,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       if (page.some_data_waiting()) {
         SHOW_LOCATION("End Paragraph 3");
         if (!page.end_paragraph(fmt)) {
-          page_locs_end_page(fmt);
+          if (!page_locs_end_page(fmt)) return false;
 
           if (page.some_data_waiting()) {
             SHOW_LOCATION("End Paragraph 4");
@@ -207,7 +210,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       }
       SHOW_LOCATION("New Paragraph 4");
       if (!page.new_paragraph(fmt)) {
-        page_locs_end_page(fmt);
+        if (!page_locs_end_page(fmt)) return false;
         SHOW_LOCATION("New Paragraph 5");
         page.new_paragraph(fmt);
       }
@@ -240,7 +243,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
     Page::Image image;
     if (get_image(image_filename, image)) {
       if (!page.add_image(image, fmt)) {
-        page_locs_end_page(fmt);
+        if (!page_locs_end_page(fmt)) return false;
         if (start_of_paragraph) {
           SHOW_LOCATION("New Paragraph 3");
           page.new_paragraph(fmt);
@@ -260,7 +263,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         if (*str == ' ') {
           fmt.trim = !fmt.pre;
           if (!page.add_char(str, fmt)) {
-            page_locs_end_page(fmt);
+            if (!page_locs_end_page(fmt)) return false;
             if (start_of_paragraph) {
               SHOW_LOCATION("New Paragraph 6");
               page.new_paragraph(fmt, false);
@@ -284,7 +287,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
         std::string word;
         word.assign(w, count);
         if (!page.add_word(word.c_str(), fmt)) {
-          page_locs_end_page(fmt);
+          if (!page_locs_end_page(fmt)) return false;
           if (start_of_paragraph) {
             SHOW_LOCATION("New Paragraph 8");
             page.new_paragraph(fmt, false);
@@ -305,7 +308,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
 
     xml_node sub = node.first_child();
     while (sub) {
-      page_locs_recurse(sub, fmt);
+      if (!page_locs_recurse(sub, fmt)) return false;
       sub = sub.next_sibling();
     }
 
@@ -313,7 +316,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
         SHOW_LOCATION("End Paragraph 5");
         if (!page.end_paragraph(fmt)) {
-          page_locs_end_page(fmt);
+          if (!page_locs_end_page(fmt)) return false;
           if (page.some_data_waiting()) {
             SHOW_LOCATION("End Paragraph 6");
             page.end_paragraph(fmt);
@@ -328,7 +331,7 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
     if ((element_it != elements.end()) && (element_it->second == Element::BODY)) {
       SHOW_LOCATION("End Paragraph 7");
       if (!page.end_paragraph(fmt)) {
-        page_locs_end_page(fmt);
+        if (!page_locs_end_page(fmt)) return false;
         if (page.some_data_waiting()) {
           SHOW_LOCATION("End Paragraph 8");
           page.end_paragraph(fmt);
@@ -359,88 +362,88 @@ BookViewer::page_locs_recurse(xml_node node, Page::Format fmt)
       //   }
       // } 
 
-bool
-BookViewer::build_page_locs()
-{
-  bool done   = false;
-  TTF * font  = fonts.get(0, 10);
-  page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
+// bool
+// BookViewer::build_page_locs()
+// {
+//   bool done   = false;
+//   TTF * font  = fonts.get(0, 10);
+//   page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
 
-  page.set_compute_mode(Page::ComputeMode::LOCATION);
+//   page.set_compute_mode(Page::ComputeMode::LOCATION);
 
-  int8_t images_are_shown;
-  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
-  show_images = images_are_shown == 1;
+//   int8_t images_are_shown;
+//   config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
+//   show_images = images_are_shown == 1;
   
-  page_locs.clear();
+//   page_locs.clear();
 
-  if (epub.get_first_item()) {
+//   if (epub.get_first_item()) {
 
-    int16_t idx;
+//     int16_t idx;
 
-    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
-      idx = 1;
-    }
+//     if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
+//       idx = 1;
+//     }
     
-    int8_t font_size;
-    config.get(Config::Ident::FONT_SIZE, &font_size);
+//     int8_t font_size;
+//     config.get(Config::Ident::FONT_SIZE, &font_size);
 
-    Page::Format fmt = {
-      .line_height_factor = 0.9,
-      .font_index         = idx,
-      .font_size          = font_size,
-      .indent             = 0,
-      .margin_left        = 0,
-      .margin_right       = 0,
-      .margin_top         = 0,
-      .margin_bottom      = 0,
-      .screen_left        = 10,
-      .screen_right       = 10,
-      .screen_top         = 10,
-      .screen_bottom      = page_bottom,
-      .width              = 0,
-      .height             = 0,
-      .trim               = true,
-      .pre                = false,
-      .font_style         = Fonts::FaceStyle::NORMAL,
-      .align              = CSS::Align::LEFT,
-      .text_transform     = CSS::TextTransform::NONE,
-      .display            = CSS::Display::INLINE
-    };
+//     Page::Format fmt = {
+//       .line_height_factor = 0.9,
+//       .font_index         = idx,
+//       .font_size          = font_size,
+//       .indent             = 0,
+//       .margin_left        = 0,
+//       .margin_right       = 0,
+//       .margin_top         = 0,
+//       .margin_bottom      = 0,
+//       .screen_left        = 10,
+//       .screen_right       = 10,
+//       .screen_top         = 10,
+//       .screen_bottom      = page_bottom,
+//       .width              = 0,
+//       .height             = 0,
+//       .trim               = true,
+//       .pre                = false,
+//       .font_style         = Fonts::FaceStyle::NORMAL,
+//       .align              = CSS::Align::LEFT,
+//       .text_transform     = CSS::TextTransform::NONE,
+//       .display            = CSS::Display::INLINE
+//     };
 
-    last_props        = nullptr;
+//     last_props        = nullptr;
 
-    while (!done) {
+//     while (!done) {
 
-      // Process for each file part of the document
+//       // Process for each file part of the document
 
-      current_offset       = 0;
-      start_of_page_offset = 0;
-      xml_node node = epub.get_current_item().child("html");
+//       current_offset       = 0;
+//       start_of_page_offset = 0;
+//       xml_node node = epub.get_current_item().child("html");
 
-      if (node && 
-         (node = node.child("body"))) {
+//       if (node && 
+//          (node = node.child("body"))) {
 
-        page.start(fmt);
+//         page.start(fmt);
 
-        if (!page_locs_recurse(node, fmt)) break;
+//         if (!page_locs_recurse(node, fmt)) break;
 
-        if (page.some_data_waiting()) page.end_paragraph(fmt);
-      }
-      else {
-        break;
-      }
+//         if (page.some_data_waiting()) page.end_paragraph(fmt);
+//       }
+//       else {
+//         break;
+//       }
 
-      page_locs_end_page(fmt);
+//       page_locs_end_page(fmt);
 
-      done = !epub.get_next_item();
-    }
-  }
+//       done = !epub.get_next_item();
+//     }
+//   }
 
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+//   page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
-  return done;
-}
+//   return done;
+// }
 
 bool
 BookViewer::build_page_locs(int16_t itemref_index)
@@ -506,7 +509,7 @@ BookViewer::build_page_locs(int16_t itemref_index)
         page.start(fmt);
 
         if (!page_locs_recurse(node, fmt)) {
-          LOG_D("html parsing issue");
+          LOG_D("html parsing issue or aborted by Mgr");
           break;
         }
 
@@ -857,7 +860,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 
     if ((element_it = elements.find(std::string(name))) != elements.end()) {
 
-      LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_pos_y());
+      // LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_pos_y());
 
       switch (element_it->second) {
         case Element::BODY:
@@ -1234,74 +1237,71 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
 {
   std::scoped_lock guard(mutex);
 
-  if ((current_page_id.itemref_index != page_id.itemref_index) ||
-      (current_page_id.offset        != page_id.offset)) {
-
-    current_page_id = page_id;
+  current_page_id = page_id;
     
-    if (page_locs.page_nbr(page_id) == 0) {
-      const char * filename = epub.get_cover_filename();
-      if (filename != nullptr) {
-        // LOG_D("Cover filename: %s", filename);
-        uint32_t size;
-        unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
+//if (page_locs.page_nbr(page_id) == 0) {
+  if ((page_id.itemref_index == 0) && (page_id.offset == 0)) {
+    const char * filename = epub.get_cover_filename();
+    if (filename != nullptr) {
+      // LOG_D("Cover filename: %s", filename);
+      uint32_t size;
+      unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
-        if ((data == NULL) || !page.show_cover(data, size)) {
-          LOG_D("Unable to retrieve cover file: %s", filename);
+      if ((data == NULL) || !page.show_cover(data, size)) {
+        LOG_D("Unable to retrieve cover file: %s", filename);
 
-          Page::Format fmt = {
-            .line_height_factor = 1.0,
-            .font_index         =   3,
-            .font_size          =  14,
-            .indent             =   0,
-            .margin_left        =   0,
-            .margin_right       =   0,
-            .margin_top         =   0,
-            .margin_bottom      =   0,
-            .screen_left        =  10,
-            .screen_right       =  10,
-            .screen_top         = 100,
-            .screen_bottom      =  30,
-            .width              =   0,
-            .height             =   0,
-            .trim               = true,
-            .pre                = false,
-            .font_style         = Fonts::FaceStyle::ITALIC,
-            .align              = CSS::Align::CENTER,
-            .text_transform     = CSS::TextTransform::NONE,
-            .display            = CSS::Display::INLINE
-          };
+        Page::Format fmt = {
+          .line_height_factor = 1.0,
+          .font_index         =   3,
+          .font_size          =  14,
+          .indent             =   0,
+          .margin_left        =   0,
+          .margin_right       =   0,
+          .margin_top         =   0,
+          .margin_bottom      =   0,
+          .screen_left        =  10,
+          .screen_right       =  10,
+          .screen_top         = 100,
+          .screen_bottom      =  30,
+          .width              =   0,
+          .height             =   0,
+          .trim               = true,
+          .pre                = false,
+          .font_style         = Fonts::FaceStyle::ITALIC,
+          .align              = CSS::Align::CENTER,
+          .text_transform     = CSS::TextTransform::NONE,
+          .display            = CSS::Display::INLINE
+        };
 
-          std::string title  = epub.get_title();
-          std::string author = epub.get_author();
+        std::string title  = epub.get_title();
+        std::string author = epub.get_author();
 
-          page.start(fmt);
+        page.start(fmt);
 
-          page.new_paragraph(fmt, false);
-          page.add_text(author, fmt);
-          page.end_paragraph(fmt);
+        page.new_paragraph(fmt, false);
+        page.add_text(author, fmt);
+        page.end_paragraph(fmt);
 
-          fmt.font_index =   1;
-          fmt.font_size  =  18;
-          fmt.screen_top = 200;
-          fmt.font_style = Fonts::FaceStyle::NORMAL;
+        fmt.font_index =   1;
+        fmt.font_size  =  18;
+        fmt.screen_top = 200;
+        fmt.font_style = Fonts::FaceStyle::NORMAL;
 
-          page.set_limits(fmt);
-          page.new_paragraph(fmt, false);
-          page.add_text(title, fmt);
-          page.end_paragraph(fmt);
+        page.set_limits(fmt);
+        page.new_paragraph(fmt, false);
+        page.add_text(title, fmt);
+        page.end_paragraph(fmt);
 
-          page.paint();
-        }
-        
-        if (data) free(data);
+        page.paint();
       }
-      else {
-        LOG_D("There doesn't seems to have any cover.");
-      }
+      
+      if (data) free(data);
     }
     else {
-      build_page_at(page_id);
+      LOG_D("There doesn't seems to have any cover.");
     }
+  }
+  else {
+    build_page_at(page_id);
   }
 }

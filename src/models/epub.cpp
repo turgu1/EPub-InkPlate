@@ -278,20 +278,21 @@ EPub::retrieve_fonts_from_css(CSS & css)
 #endif
 }
 
-bool 
-EPub::get_item(pugi::xml_node itemref)
+char * 
+EPub::get_item(pugi::xml_node itemref, xml_document & item_doc)
 {
   int err = 0;
   #define ERR(e) { err = e; break; }
 
-  if (!file_is_open) return false;
+  if (!file_is_open) return nullptr;
 
-  if ((current_item_data != nullptr) && (current_itemref == itemref)) return true;
+  // if ((current_item_data != nullptr) && (current_itemref == itemref)) return true;
   
-  clear_item_data();
+  //clear_item_data();
 
-  xml_node      node;
-  xml_attribute attr;
+  char      * item_data;
+  xml_node         node;
+  xml_attribute    attr;
 
   const char * id = itemref.attribute("idref").value();
 
@@ -307,11 +308,13 @@ EPub::get_item(pugi::xml_node itemref)
     if (!(attr = node.attribute("media-type"))) ERR(3);
     const char * media_type = attr.value();
     
-    if (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = MediaType::XML;
-    else if (strcmp(media_type, "image/jpeg") == 0) item_media_type =  MediaType::JPEG;
-    else if (strcmp(media_type, "image/png" ) == 0) item_media_type =  MediaType::PNG;
-    else if (strcmp(media_type, "image/bmp" ) == 0) item_media_type =  MediaType::BMP;
-    else if (strcmp(media_type, "image/gif" ) == 0) item_media_type =  MediaType::GIF;
+    MediaType item_media_type;
+
+    if      (strcmp(media_type, "application/xhtml+xml") == 0) item_media_type = MediaType::XML;
+    else if (strcmp(media_type, "image/jpeg"           ) == 0) item_media_type = MediaType::JPEG;
+    else if (strcmp(media_type, "image/png"            ) == 0) item_media_type = MediaType::PNG;
+    else if (strcmp(media_type, "image/bmp"            ) == 0) item_media_type = MediaType::BMP;
+    else if (strcmp(media_type, "image/gif"            ) == 0) item_media_type = MediaType::GIF;
     else ERR(4);
 
     if (!(attr = node.attribute("href"))) ERR(4);
@@ -323,19 +326,18 @@ EPub::get_item(pugi::xml_node itemref)
 
     // LOG_D("current_item_file_path: %s.", current_item_file_path.c_str());
 
-    if (!(current_item_data = retrieve_file(attr.value(), size))) ERR(5);
+    if (!(item_data = retrieve_file(attr.value(), size))) ERR(5);
 
     if (item_media_type == MediaType::XML) {
 
       // LOG_D("Reading file %s", attr.value().c_str());
 
-      xml_parse_result res = current_item.load_buffer_inplace(current_item_data, size);
+      xml_parse_result res = item_doc.load_buffer_inplace(item_data, size);
       if (res.status != status_ok) {
-        LOG_E("current_item xml load error: %d", res.status);
-        current_item.reset();
-        free(current_item_data);
-        current_item_data = nullptr;
-        return false;
+        LOG_E("item_doc xml load error: %d", res.status);
+        item_doc.reset();
+        free(item_data);
+        return nullptr;
       }
 
       // current_item.parse<0>(current_item_data);
@@ -346,7 +348,7 @@ EPub::get_item(pugi::xml_node itemref)
       // The properties are then merged into the current_css map for the item
       // being processed.
 
-      if ((node = current_item.child("html").child("head").child("link"))) {
+      if ((node = item_doc.child("html").child("head").child("link"))) {
         do {
           if ((attr = node.attribute("type")) &&
               (strcmp(attr.value(), "text/css") == 0) &&
@@ -397,7 +399,7 @@ EPub::get_item(pugi::xml_node itemref)
       // Now look at <style> tags presents in the <html><head>, creating a temporary
       // css object for each of them.
 
-      if ((node = current_item.child("html").child("head").child("style"))) {
+      if ((node = item_doc.child("html").child("head").child("style"))) {
         do {
           CSS * css_tmp = new CSS(current_item_file_path, node.value(), strlen(node.value()) , "current-item");
           if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
@@ -428,13 +430,16 @@ EPub::get_item(pugi::xml_node itemref)
 
   if (!completed) {
     LOG_E("EPub get_current_item error: %d", err);
-    clear_item_data();
+    if (item_data != nullptr) {
+      free(item_data);
+      item_data = nullptr;
+    //clear_item_data();
   }
   else {
     //LOG_D("EPub get_item retrieved item id: %s", id);
     current_itemref = itemref;
   }
-  return completed;
+  return item_data;
 }
 
 bool 
@@ -470,8 +475,6 @@ EPub::open_file(const std::string & epub_filename)
   current_itemref_index = -1;
   current_filename      = epub_filename;
   file_is_open          = true;
-
-  page_locs.start_new_document(get_item_count());
 
   LOG_D("EPub file is now open.");
 
@@ -604,7 +607,8 @@ EPub::get_first_item()
 
   // LOG_D("Getting item %s...", node.attribute("idref").value());
 
-  if ((current_itemref != node) && (!get_item(node))) return false;
+  clear_item_data();
+  if ((current_itemref != node) && ((current_item_data = get_item(node, current_item)) == nullptr)) return false;
   current_itemref_index = 0;
   return true;
 }
@@ -616,15 +620,21 @@ EPub::get_next_item()
   if (current_itemref.empty()) return false;
   xml_node node = current_itemref.next_sibling("itemref");
 
+  clear_item_data();
   if (node) {
     // LOG_D("Getting item %s...", node.attribute("idref").value());
   
     current_itemref_index++;
-    return get_item(node);
+    current_item_data = get_item(node, current_item);
   }
 
-  current_itemref_index = 0;
-  return false;
+  if (current_item_data != nullptr) {
+    return true;
+  }
+  else {
+    current_itemref_index = 0;
+    return false;
+  }
 }
 
 int16_t 
@@ -668,9 +678,34 @@ EPub::get_item_at_index(int16_t itemref_index)
 
   if ((current_item_data == nullptr) || (current_itemref != node)) {
     current_itemref_index = index;
-    return get_item(node);
+    clear_item_data();
+    current_item_data = get_item(node, current_item);
   }
-  return true;
+  return current_item_data != nullptr;
+}
+
+bool 
+EPub::get_item_at_index(int16_t itemref_index, char ** item_data, xml_document & item_doc)
+{
+  if (!file_is_open) return false;
+
+  xml_node node;
+
+  if (!((node = opf.child("package").child("spine").child("itemref"))))
+    return false;
+
+  int16_t index = 0;
+
+  while (node && (index < itemref_index)) {
+    node = node.next_sibling("itemref");
+    index++;
+  }
+
+  if (node == nullptr) return false;
+
+  *item_data = get_item(node, item_doc);
+
+  return *item_data != nullptr;
 }
 
 bool

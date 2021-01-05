@@ -68,6 +68,8 @@
 
     pugi::set_memory_management_functions(allocate, free);
 
+    page_locs.setup();
+
     if (fonts.setup()) {
       
       Screen::Orientation    orientation;

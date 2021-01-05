@@ -5,8 +5,9 @@
 #ifndef __BOOK_VIEWER_HPP__
 #define __BOOK_VIEWER_HPP__
 
+#include <mutex>
+
 #if EPUB_LINUX_BUILD
-  #include <mutex>
 #else
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -32,13 +33,13 @@ class BookViewer
   private:
     static constexpr char const * TAG = "BookViewer";
 
+    std::mutex mutex;
     #if EPUB_LINUX_BUILD
-      std::mutex mutex;
     #else
-      static SemaphoreHandle_t mutex;
-      static StaticSemaphore_t mutex_buffer;
-      inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
-      inline static void leave() { xSemaphoreGive(mutex); }
+      //static SemaphoreHandle_t mutex;
+      //static StaticSemaphore_t mutex_buffer;
+      //inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
+      //inline static void leave() { xSemaphoreGive(mutex); }
     #endif
 
     int32_t           current_offset;          ///< Where we are in current item
@@ -63,7 +64,7 @@ class BookViewer
     void            adjust_format(pugi::xml_node node, Page::Format & fmt, CSS::Properties * element_properties);
     void adjust_format_from_suite(Page::Format & fmt, const CSS::PropertySuite & suite);
     bool        page_locs_recurse(pugi::xml_node node, Page::Format fmt);
-    void       page_locs_end_page(Page::Format & fmt);
+    bool       page_locs_end_page(Page::Format & fmt);
     bool       build_page_recurse(pugi::xml_node node, Page::Format fmt);
     void            build_page_at(const PageLocs::PageId & page_id);
     int16_t       get_pixel_value(const CSS::Value & value, const Page::Format & fmt, int16_t ref);
@@ -98,7 +99,7 @@ class BookViewer
         #if EPUB_LINUX_BUILD
           //mutex = PTHREAD_MUTEX_INITIALIZER;
         #else
-          mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
+          //mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
         #endif 
       }
 
@@ -118,7 +119,7 @@ class BookViewer
      * ToDo: Make it runs as a thread.
      * 
      */
-    bool build_page_locs();
+    //bool build_page_locs();
     bool build_page_locs(int16_t itemref_index);
 
     /**

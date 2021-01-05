@@ -35,4 +35,4 @@ default_font = 1
 use_fonts_in_books = 1
 show_images = 1
 orientation = 1
-resolution = 1
+resolution = 0
