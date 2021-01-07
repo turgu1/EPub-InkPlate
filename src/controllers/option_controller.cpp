@@ -18,92 +18,42 @@
   #include "esp_system.h"
 #endif
 
-static FormViewer::Choice ok_cancel_choices[2] = {
-  { "OK",     1 },
-  { "CANCEL", 0 }
-};
-
-static FormViewer::Choice yes_no_choices[2] = {
-  { "YES", 1 },
-  { "NO",  0 }
-};
-
-static FormViewer::Choice resolution_choices[2] = {
-  { "1Bit",  0 },
-  { "3Bits", 1 }
-};
-
-static FormViewer::Choice timeout_choices[3] = {
-  { "5",   5 },
-  { "15", 15 },
-  { "30", 30 }
-};
-
-static FormViewer::Choice battery_visual[4] = {
-  { "NONE",    0 },
-  { "PERCENT", 1 },
-  { "VOLTAGE", 2 },
-  { "ICON",    3 }
-};
-
-static FormViewer::Choice font_size_choices[4] = {
-  { "8",   8 },
-  { "10", 10 },
-  { "12", 12 },
-  { "15", 15 }
-};
-
-static FormViewer::Choice orientation_choices[3] = {
-  { "LEFT",   0 },
-  { "RIGHT",  1 },
-  { "BOTTOM", 2 }
-};
-
-static FormViewer::Choice font_choices[8] = {
-  { "CALADEA S",     0 },
-  { "CRIMSON S",     1 },
-  { "ASAP",          2 },
-  { "ASAP COND",     3 },
-  { "DEJAVU S",      4 },
-  { "DEJAVU COND S", 5 },
-  { "DEJAVU",        6 },
-  { "DEJAVU COND",   7 }
-};
 
 // static int8_t boolean_value;
-static int8_t font_size;
+
 static Screen::Orientation      orientation;
 static Screen::PixelResolution resolution;
 static int8_t show_battery;
 static int8_t timeout;
 static int8_t show_images;
+static int8_t font_size;
 static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t ok;
 
 static Screen::Orientation      old_orientation;
 static Screen::PixelResolution old_resolution;
-static int8_t old_font_size;
 static int8_t old_show_images;
+static int8_t old_font_size;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 
 static constexpr int8_t MAIN_FORM_SIZE = 6;
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes before sleeping :",   &timeout,                3, timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",       (int8_t *) &orientation, 3, orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Images in books (*):",   &show_images,            2, yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Pixel Resolution :",          (int8_t *) &resolution,  2, resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",     &show_battery,           4, battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { nullptr,                       &ok,                     2, ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Minutes before sleeping :",   &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Buttons Position (*):",       (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in books (*):",   &show_images,            2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Pixel Resolution :",          (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",     &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                       &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 static constexpr int8_t FONT_FORM_SIZE = 4;
 static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",    &font_size,              4, font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use fonts in books (*):",   &use_fonts_in_books,     2, yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,           8, font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,                     2, ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Default Font Size (*):",    &font_size,              4, FormViewer::font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in books (*):",   &use_fonts_in_books,     2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default font (*):",         &default_font,           8, FormViewer::font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 extern bool start_web_server();

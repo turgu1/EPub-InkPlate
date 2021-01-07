@@ -12,6 +12,65 @@
 
 class FormViewer
 {
+  public:
+    struct Choice {
+      const char * caption;
+      int8_t       value;
+    };
+    typedef Choice * Choices;
+
+    static constexpr Choice ok_cancel_choices[2] = {
+      { "OK",     1 },
+      { "CANCEL", 0 }
+    };
+
+    static constexpr Choice yes_no_choices[2] = {
+      { "YES", 1 },
+      { "NO",  0 }
+    };
+
+    static constexpr Choice resolution_choices[2] = {
+      { "1Bit",  0 },
+      { "3Bits", 1 }
+    };
+
+    static constexpr Choice timeout_choices[3] = {
+      { "5",   5 },
+      { "15", 15 },
+      { "30", 30 }
+    };
+
+    static constexpr Choice battery_visual[4] = {
+      { "NONE",    0 },
+      { "PERCENT", 1 },
+      { "VOLTAGE", 2 },
+      { "ICON",    3 }
+    };
+
+    static constexpr Choice font_size_choices[4] = {
+      { "8",   8 },
+      { "10", 10 },
+      { "12", 12 },
+      { "15", 15 }
+    };
+
+    static constexpr Choice orientation_choices[3] = {
+      { "LEFT",   0 },
+      { "RIGHT",  1 },
+      { "BOTTOM", 2 }
+    };
+
+    static constexpr Choice font_choices[8] = {
+      { "CALADEA S",     0 },
+      { "CRIMSON S",     1 },
+      { "ASAP",          2 },
+      { "ASAP COND",     3 },
+      { "DEJAVU S",      4 },
+      { "DEJAVU COND S", 5 },
+      { "DEJAVU",        6 },
+      { "DEJAVU COND",   7 }
+    };
+
   private:
     static constexpr uint8_t MAX_FORM_ENTRY   =  10;
     static constexpr uint8_t MAX_CHOICE_ENTRY =  30;
@@ -45,18 +104,13 @@ class FormViewer
 
   public:
     enum class FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
-    struct Choice {
-      const char * caption;
-      int8_t       value;
-    };
-    typedef Choice * Choices;
 
     struct FormEntry {
-      const char  * caption;
-      int8_t      * value;
-      int8_t        choice_count;
-      Choices       choices;
-      FormEntryType entry_type;
+      const char   * caption;
+      int8_t       * value;
+      int8_t         choice_count;
+      const Choice * choices;
+      FormEntryType  entry_type;
     };
 
     typedef FormEntry * FormEntries;

@@ -19,6 +19,25 @@
   #include "soc/rtc.h"
 #endif
 
+static int8_t show_images;
+static int8_t font_size;
+static int8_t use_fonts_in_books;
+static int8_t default_font;
+static int8_t ok;
+
+static int8_t old_font_size;
+static int8_t old_show_images;
+static int8_t old_use_fonts_in_books;
+static int8_t old_default_font;
+
+static constexpr int8_t FONT_FORM_SIZE = 4;
+static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
+  { "Default Font Size (*):",    &font_size,              4, FormViewer::font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in books (*):",   &use_fonts_in_books,     2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default font (*):",         &default_font,           8, FormViewer::font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+};
+
 static void 
 books_list()
 {
