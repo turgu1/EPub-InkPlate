@@ -3,11 +3,15 @@
 // MIT License. Look at file licenses.txt for details.
 
 #define __PAGE__ 1
+#include "models/epub.hpp"
 #include "viewers/page.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "screen.hpp"
+#include "alloc.hpp"
 
 #include <iostream>
+#include <string>
+#include <sstream>
 
 //--- Image load to bitmap tool ---
 //
@@ -918,7 +922,7 @@ Page::add_text(std::string str, const Format & fmt)
       int16_t count = 0;
       while (uint8_t(*s) > ' ') { buff[count++] = *s++; }
       buff[count] = 0;
-      if (!page.add_word(buff, myfmt)) break;
+      if (!add_word(buff, myfmt)) break;
     }
   }
 
@@ -1153,4 +1157,300 @@ Page::show_display_list(const DisplayList & list, const char * title) const
       }
     }
   #endif
+}
+
+int16_t
+Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
+{
+  switch (value.value_type) {
+    case CSS::ValueType::PX:
+      return value.num;
+    case CSS::ValueType::PT:
+      return (value.num * Screen::RESOLUTION) / 72;
+    case CSS::ValueType::EM:
+      {
+        TTF * f = fonts.get(fmt.font_index, fmt.font_size);
+        return value.num * f->get_em_width();
+      }
+    case CSS::ValueType::PERCENT:
+      return (value.num * ref) / 100;
+    case CSS::ValueType::NOTYPE:
+      return ref * value.num;
+    case CSS::ValueType::CM:
+      return (value.num * Screen::RESOLUTION) / 2.54;
+    case CSS::ValueType::VH:
+      return (value.num * (fmt.screen_bottom - fmt.screen_top)) / 100;
+    case CSS::ValueType::VW:
+      return (value.num * (fmt.screen_right - fmt.screen_left)) / 100;;
+    case CSS::ValueType::STR:
+      // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
+      return 0;
+      break;
+    default:
+      // LOG_D("get_pixel_value: Wrong data type!: %d", value.value_type);
+      return value.num;
+  }
+  return 0;
+}
+
+int16_t
+Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
+{
+  int8_t normal_size;
+  config.get(Config::Ident::FONT_SIZE, &normal_size);
+
+  switch (value.value_type) {
+    case CSS::ValueType::PX:
+      //  pixels -> Screen HResolution per inch
+      //    x    ->    72 pixels per inch
+      return (value.num * 72) / Screen::RESOLUTION; // convert pixels in points
+    case CSS::ValueType::PT:
+      return value.num;  // Already in points
+    case CSS::ValueType::EM: {
+          // TTF * font = fonts.get(1, normal_size);
+          // if (font != nullptr) {
+          //   return (value.num * font->get_em_height()) * 72 / Screen::RESOLUTION;
+          // }
+          // else {
+            return value.num * ref;
+          // }
+        }
+    case CSS::ValueType::CM:
+      return (value.num * 72) / 2.54;
+    case CSS::ValueType::PERCENT:
+      return (value.num * normal_size) / 100;
+    case CSS::ValueType::NOTYPE:
+      return normal_size * value.num;
+    case CSS::ValueType::STR:
+      LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
+      return 0;
+      break;
+    case CSS::ValueType::VH:
+      return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
+    case CSS::ValueType::VW:
+      return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
+     default:
+      LOG_E("get_point_value(): Wrong data type!");
+      return value.num;
+  }
+  return 0;
+}
+
+float
+Page::get_factor_value(const CSS::Value & value, const Format & fmt, float ref)
+{
+  switch (value.value_type) {
+    case CSS::ValueType::PX:
+    case CSS::ValueType::PT:
+    case CSS::ValueType::STR:
+      return 1.0;  
+    case CSS::ValueType::EM:
+    case CSS::ValueType::NOTYPE:
+      return value.num;
+    case CSS::ValueType::PERCENT:
+      return (value.num * ref) / 100.0;
+    default:
+      // LOG_E("get_factor_value: Wrong data type!");
+      return 1.0;
+  }
+  return 0;
+}
+
+void
+Page::adjust_format(pugi::xml_node node, 
+                    Format & fmt,
+                    CSS::Properties * element_properties,
+                    CSS * item_css)
+{
+  pugi::xml_attribute attr = node.attribute("class");
+
+  const CSS::PropertySuite * suite = nullptr;
+  // const CSS * current_item_css = epub.get_current_item_css();
+
+  std::string element_name = node.name();
+
+  suite = item_css->search(element_name, "");
+  if (suite) adjust_format_from_suite(fmt, *suite);
+
+  if (item_css) {
+    if (attr) {
+      std::stringstream ss(attr.value());
+      std::string       class_name;
+
+      while (std::getline(ss, class_name, ' ')) {
+        suite = item_css->search(element_name, class_name);
+        if (suite) adjust_format_from_suite(fmt, *suite);
+      }
+    }
+    else {
+      if (!suite) suite = item_css->search(element_name, "");
+      if (suite) adjust_format_from_suite(fmt, *suite);
+    }
+  }
+
+  if (element_properties) {
+    CSS::PropertySuite suite;
+    suite.push_front(element_properties);
+    adjust_format_from_suite(fmt, suite);
+  }
+}
+
+void
+Page::adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite)
+{  
+  const CSS::Values * vals;
+
+  // LOG_D("Found!");
+
+  Fonts::FaceStyle font_weight = ((fmt.font_style == Fonts::FaceStyle::BOLD) || 
+                                  (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC)) ? 
+                                     Fonts::FaceStyle::BOLD : 
+                                     Fonts::FaceStyle::NORMAL;
+  Fonts::FaceStyle font_style = ((fmt.font_style == Fonts::FaceStyle::ITALIC) || 
+                                 (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC)) ? 
+                                     Fonts::FaceStyle::ITALIC : 
+                                     Fonts::FaceStyle::NORMAL;
+  
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_STYLE))) {
+    font_style = (Fonts::FaceStyle) vals->front()->choice.face_style;
+  }
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_WEIGHT))) {
+    font_weight = (Fonts::FaceStyle) vals->front()->choice.face_style;
+  }
+  Fonts::FaceStyle new_style = fonts.adjust_font_style(fmt.font_style, font_style, font_weight);
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_FAMILY))) {
+    int16_t idx = -1;
+    for (auto & font_name : *vals) {
+      if ((idx = fonts.get_index(font_name->str, new_style)) != -1) break;
+    }
+    if (idx == -1) {
+      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), (int)new_style);
+      idx = fonts.get_index("Default", new_style);
+    }
+    if (idx == -1) {
+      fmt.font_style = Fonts::FaceStyle::NORMAL;
+      fmt.font_index = 1;
+    }
+    else {
+      // LOG_D("Font index: %d", idx);
+      fmt.font_index = idx;
+      fmt.font_style = new_style;
+    }
+  }
+  else if (new_style != fmt.font_style) {
+    reset_font_index(fmt, new_style);
+  }
+
+  fonts.check(fmt.font_index, fmt.font_style);
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_ALIGN))) {
+    fmt.align = (CSS::Align) vals->front()->choice.align;
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_INDENT))) {
+    fmt.indent = get_pixel_value(*(vals->front()), fmt, paint_width());
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_SIZE))) {
+    fmt.font_size = get_point_value(*(vals->front()), fmt, fmt.font_size);
+    if (fmt.font_size == 0) {
+      LOG_E("adjust_format_from_suite: setting fmt.font_size to 0!!!");
+    }
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::LINE_HEIGHT))) {
+    fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN))) {
+    int16_t size = 0;
+    for (auto val __attribute__ ((unused)) : *vals) size++;
+    CSS::Values::const_iterator it = vals->begin();
+    if (size == 1) {
+      fmt.margin_top   = fmt.margin_bottom = 
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(*(vals->front()), fmt, fmt.margin_left  );
+    }
+    else if (size == 2) {
+      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(**it++, fmt, fmt.margin_top   );
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it,   fmt, fmt.margin_right );
+    }
+    else if (size == 3) {
+      fmt.margin_top                       = get_pixel_value(**it++, fmt, fmt.margin_top   );
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it++, fmt, fmt.margin_left  );
+      fmt.margin_bottom                    = get_pixel_value(**it,   fmt, fmt.margin_bottom);
+    }
+    else if (size == 4) {
+      fmt.margin_top                       = get_pixel_value(**it++, fmt, fmt.margin_top   );
+      fmt.margin_right                     = get_pixel_value(**it++, fmt, fmt.margin_right );
+      fmt.margin_bottom                    = get_pixel_value(**it++, fmt, fmt.margin_bottom);
+      fmt.margin_left                      = get_pixel_value(**it,   fmt, fmt.margin_left  );
+    }
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::DISPLAY))) {
+    fmt.display = (CSS::Display) vals->front()->choice.display;
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_LEFT))) {
+    fmt.margin_left = get_pixel_value(*(vals->front()), fmt, fmt.margin_left);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_RIGHT))) {
+    fmt.margin_right = get_pixel_value(*(vals->front()), fmt, fmt.margin_right);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_TOP))) {
+    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, fmt.margin_top);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_BOTTOM))) {
+    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, fmt.margin_bottom);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::WIDTH))) {
+    fmt.width = get_pixel_value(*(vals->front()), fmt, Screen::WIDTH - fmt.screen_left - fmt.screen_right);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::HEIGHT))) {
+    fmt.height = get_pixel_value(*(vals->front()), fmt, Screen::HEIGHT - fmt.screen_top - fmt.screen_bottom);
+  }
+
+  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_TRANSFORM))) {
+    fmt.text_transform = (CSS::TextTransform) vals->front()->choice.text_transform;
+  }
+}
+
+bool 
+Page::get_image(std::string & filename, Image & image)
+{
+  int16_t channel_count;
+  std::string fname = epub.get_current_item_file_path();
+  fname.append(filename);
+  if (epub.get_image(fname, image, channel_count)) {
+    if (channel_count != 1) {
+      bool all_zero = true;
+      for (int i = 0; i < (image.dim.width * image.dim.height); i++) {
+        if (image.bitmap[i] != 0) { all_zero = false; break; }
+      }
+      if (all_zero) {
+        LOG_E("Bitmap is all zeroes...");
+      }
+
+      unsigned char * bitmap2 = (unsigned char *) allocate(image.dim.width * image.dim.height);
+      if (bitmap2 == nullptr) {
+        stbi_image_free((void *) image.bitmap);
+        return false;
+      }
+      stbir_resize_uint8(image.bitmap, image.dim.width, image.dim.height, 0, 
+                         bitmap2,      image.dim.width, image.dim.height, 0,
+                         1);
+
+      stbi_image_free((void *) image.bitmap);
+      image.bitmap = bitmap2; 
+    }
+    return true;
+  }
+
+  return false;
 }

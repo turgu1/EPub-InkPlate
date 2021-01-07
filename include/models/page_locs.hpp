@@ -16,6 +16,9 @@
   #include "freertos/semphr.h"
 #endif
 
+#include "models/epub.hpp"
+#include "pugixml.hpp"
+
 #include <map>
 #include <set>
 
@@ -69,13 +72,26 @@ class PageLocs
       //inline static void leave() { xSemaphoreGive(mutex); }
     #endif
 
-    PagesMap pages_map;
-    ItemsSet items_set;
-    int16_t item_count;
+    PagesMap  pages_map;
+    ItemsSet  items_set;
+    int16_t  item_count;
 
     void show();
     bool retrieve_asap(int16_t itemref_index);
     PagesMap::iterator check_and_find(const PageId & page_id);
+
+    // ----- Page Locations computation -----
+    
+    EPub::ItemInfo item_info;    
+
+    int32_t           current_offset;          ///< Where we are in current item
+    int32_t           start_of_page_offset;
+    int16_t           page_bottom;
+    bool              show_images;
+    bool              start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
+    
+    bool page_locs_end_page(Page::Format & fmt);
+    bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt);
 
   public:
 
@@ -87,6 +103,21 @@ class PageLocs
 
     void setup();
     
+    /**
+     * @brief Build the pages location vector
+     * 
+     * The vector is used to quicly direct page preparation and display. It is expected to
+     * be called once a book locations refresh is required by the BooksDir class. The information
+     * is put in the ebooks list database and retrieved when the user select a book
+     * to read. The process of building the list is a long process, better be done
+     * only once per book at application load time.
+     * 
+     * ToDo: Make it runs as a thread.
+     * 
+     */
+
+    bool build_page_locs(int16_t itemref_index);
+
     const PageId * get_next_page_id(const PageId & page_id, int16_t count = 1);
     const PageId * get_prev_page_id(const PageId & page_id, int     count = 1);
     const PageId *      get_page_id(const PageId & page_id                   );
@@ -96,7 +127,7 @@ class PageLocs
     void         stop_document();
 
     inline const PageInfo* get_page_info(const PageId & page_id) {
-      std::scoped_lock guard(mutex);
+      std::scoped_lock   guard(mutex);
       PagesMap::iterator it = check_and_find(page_id);
       return it == pages_map.end() ? nullptr : &it->second;
     }

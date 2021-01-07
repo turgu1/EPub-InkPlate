@@ -11,7 +11,10 @@
 #include "global.hpp"
 #include "models/fonts.hpp"
 #include "models/css.hpp"
+#include "models/config.hpp"
 #include "memory_pool.hpp"
+
+#include "pugixml.hpp"
 
 /**
  * @brief Page preparation
@@ -41,8 +44,8 @@ class Page
       int16_t            screen_bottom;      ///< In pixels
       int16_t            width;              ///< In pixels
       int16_t            height;             ///< In pixels
-      bool trim;
-      bool pre;
+      bool               trim;
+      bool               pre;
       Fonts::FaceStyle   font_style;
       CSS::Align         align;
       CSS::TextTransform text_transform;
@@ -309,7 +312,6 @@ class Page
       #endif
     }
 
-
     inline void                 set_compute_mode(ComputeMode mode) { compute_mode = mode; }
 
     inline ComputeMode          get_compute_mode() const { return compute_mode;           }
@@ -320,6 +322,33 @@ class Page
     inline const DisplayList &  get_display_list() const { return display_list;           }
     inline const DisplayList &     get_line_list() const { return line_list;              }
     inline int16_t                     get_pos_y() const { return pos.y;                  }
+
+    int16_t       get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref);
+    int16_t       get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref);
+    float        get_factor_value(const CSS::Value & value, const Format & fmt, float ref);
+    void            adjust_format(pugi::xml_node node, Format & fmt, CSS::Properties * element_properties, CSS * item_css);
+    void adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite);
+    bool get_image(std::string & filename, Image & image);
+
+    inline void reset_font_index(Format & fmt, Fonts::FaceStyle style) {
+      if (style != fmt.font_style) {
+        int16_t idx = -1;
+        if ((idx = fonts.get_index(fonts.get_name(fmt.font_index), style)) == -1) {
+          // LOG_E("Font not found 2: %s %d", fonts.get_name(fmt.font_index), style);
+          idx = fonts.get_index("Default", style);
+        }
+        if (idx == -1) {
+          fmt.font_style = Fonts::FaceStyle::NORMAL;
+          fmt.font_index = 1;
+        }
+        else {
+          fmt.font_style = style;
+          fmt.font_index = idx;
+        }
+      }
+    }
+
+
 };
 
 #if __PAGE__

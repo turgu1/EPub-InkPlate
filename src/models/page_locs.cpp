@@ -1,8 +1,12 @@
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
+#include "models/config.hpp"
 
 #include "viewers/book_viewer.hpp"
+#include "viewers/page.hpp"
 #include "logging.hpp"
+
+#include "stb_image.h"
 
 enum class MgrReq : int8_t { ASAP_READY, STOPPED };
 
@@ -317,9 +321,9 @@ struct RetrieveQueueData {
           else {
             LOG_D("-> %s <-", (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
 
-            LOG_I("Retrieving itemref %d", retrieve_queue_data.itemref_index);
+            LOG_D("Retrieving itemref --> %d <--", retrieve_queue_data.itemref_index);
 
-            if (!book_viewer.build_page_locs(retrieve_queue_data.itemref_index)) {
+            if (!page_locs.build_page_locs(retrieve_queue_data.itemref_index)) {
               // Unable to retrieve pages location for the requested index. Send back
               // a negative value to indicate the issue to the state task
               state_queue_data.itemref_index = -(retrieve_queue_data.itemref_index + 1);
@@ -576,9 +580,9 @@ struct RetrieveQueueData {
       else {
         LOG_D("-> %s <-", (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
 
-        LOG_I("Retrieving itemref %d", retrieve_queue_data.itemref_index);
+        LOG_D("Retrieving itemref --> %d <--", retrieve_queue_data.itemref_index);
 
-        if (!book_viewer.build_page_locs(retrieve_queue_data.itemref_index)) {
+        if (!page_locs.build_page_locs(retrieve_queue_data.itemref_index)) {
           // Unable to retrieve pages location for the requested index. Send back
           // a negative value to indicate the issue to the state task
           state_queue_data.itemref_index = -(retrieve_queue_data.itemref_index + 1);
@@ -633,6 +637,409 @@ PageLocs::setup()
     configASSERT(xHandle);
   #endif
 } 
+
+bool 
+PageLocs::page_locs_end_page(Page::Format & fmt)
+{
+  bool res = true;
+  if (!page.is_empty()) {
+
+    PageLocs::PageId   page_id   = PageLocs::PageId(item_info.itemref_index, start_of_page_offset);
+    PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_of_page_offset, -1);
+    
+    res = page_locs.insert(page_id, page_info);
+
+    book_viewer.get_mutex().unlock();
+    book_viewer.get_mutex().lock();
+
+    // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
+ 
+    SET_PAGE_TO_SHOW(epub.get_page_count()) // Debugging stuff
+  }
+
+  start_of_page_offset = current_offset;
+
+  page.start(fmt);
+
+  return res;
+}
+
+bool
+PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
+{
+  if (node == nullptr) return false;
+  
+  const char * name;
+  const char * str = nullptr;
+  std::string image_filename;
+
+  image_filename.clear();
+
+  Elements::iterator element_it = elements.end();
+  
+  bool named_element = *(name = node.name()) != 0;
+
+  if (named_element) { // A name is attached to the node.
+
+    fmt.display = CSS::Display::INLINE;
+
+    if ((element_it = elements.find(name)) != elements.end()) {
+
+      //LOG_D("==> %10s [%5d] %4d", name, current_offset, page.get_pos_y());
+
+      switch (element_it->second) {
+        case Element::BODY:
+        case Element::SPAN:
+        case Element::A:
+          break;
+      #if NO_IMAGE
+        case IMG:
+        case IMAGE:
+          break;
+      #else
+        case Element::IMG: 
+          if (show_images) {
+            xml_attribute attr = node.attribute("src");
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
+          }
+          else {
+            xml_attribute attr = node.attribute("alt");
+            if (attr != nullptr) str = attr.value();
+            else current_offset++;
+          }
+          break;
+        case Element::IMAGE: 
+          if (show_images) {
+            xml_attribute attr = node.attribute("xlink:href");
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
+          }
+          break;
+      #endif
+        case Element::PRE:
+          fmt.pre     = start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::LI:
+        case Element::DIV:
+        case Element::BLOCKQUOTE:
+        case Element::P:
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::BREAK:
+          SHOW_LOCATION("Page Break");
+          if (!page.line_break(fmt)) {
+            if (!page_locs_end_page(fmt)) return false;
+            SHOW_LOCATION("Page Break");
+            page.line_break(fmt);
+          }
+          current_offset++;
+          break;
+        case Element::B: {
+            Fonts::FaceStyle style = fmt.font_style;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
+            else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
+            page.reset_font_index(fmt, style);
+          }
+          break;
+        case Element::I:
+        case Element::EM: {
+            Fonts::FaceStyle style = fmt.font_style;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
+            else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
+            page.reset_font_index(fmt, style);
+          }
+          break;
+        case Element::H1:
+          fmt.font_size          = 1.25 * fmt.font_size;
+          fmt.line_height_factor = 1.25 * fmt.line_height_factor;
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::H2:
+          fmt.font_size          = 1.1 * fmt.font_size;
+          fmt.line_height_factor = 1.1 * fmt.line_height_factor;
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::H3:
+          fmt.font_size          = 1.05 * fmt.font_size;
+          fmt.line_height_factor = 1.05 * fmt.line_height_factor;
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::H4:
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::H5:
+          fmt.font_size          = 0.8 * fmt.font_size;
+          fmt.line_height_factor = 0.8 * fmt.line_height_factor;
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+        case Element::H6:
+          fmt.font_size          = 0.7 * fmt.font_size;
+          fmt.line_height_factor = 0.7 * fmt.line_height_factor;
+          start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+      }
+    }
+
+    xml_attribute attr = node.attribute("style");
+    CSS::Properties * element_properties = nullptr;
+    if (attr) {
+      const char * buffer = attr.value();
+      const char * end    = buffer + strlen(buffer);
+      element_properties  = CSS::parse_properties(&buffer, end, buffer);
+    }
+
+    page.adjust_format(node, fmt, element_properties, item_info.css); // Adjust format from element attributes
+
+    if (element_properties) {
+      CSS::clear_properties(element_properties);
+      element_properties = nullptr;
+    }
+
+    if (fmt.display == CSS::Display::BLOCK) {
+      if (page.some_data_waiting()) {
+        SHOW_LOCATION("End Paragraph 3");
+        if (!page.end_paragraph(fmt)) {
+          if (!page_locs_end_page(fmt)) return false;
+
+          if (page.some_data_waiting()) {
+            SHOW_LOCATION("End Paragraph 4");
+            page.end_paragraph(fmt);
+          }
+        }
+      }
+      SHOW_LOCATION("New Paragraph 4");
+      if (!page.new_paragraph(fmt)) {
+        if (!page_locs_end_page(fmt)) return false;
+        SHOW_LOCATION("New Paragraph 5");
+        page.new_paragraph(fmt);
+      }
+    } 
+
+    // if ((fmt.display == CSS::Display::BLOCK) && page.some_data_waiting()) {
+    //   SHOW_LOCATION("End Paragraph 1");
+    //   if (!page.end_paragraph(fmt)) {
+    //     page_locs_end_page(fmt);
+    //     SHOW_LOCATION("End Paragraph 2");
+    //     page.end_paragraph(fmt);
+    //   }
+    // }
+    // if ((current_offset == start_of_page_offset) && start_of_paragraph) {
+    //   SHOW_LOCATION("New Paragraph 1");
+    //   if (!page.new_paragraph(fmt)) {
+    //     page_locs_end_page(fmt);
+    //     SHOW_LOCATION("New Paragraph 2");
+    //     page.new_paragraph(fmt);
+    //   }
+    //   start_of_paragraph = false;
+    // }
+  }
+  else {
+    //This is a node inside a named node. It is contaning some text to show.
+    str = fmt.pre ? node.text().get() : node.value();
+  }
+
+  if (show_images && !image_filename.empty()) {
+    Page::Image image;
+    if (page.get_image(image_filename, image)) {
+      if (!page.add_image(image, fmt)) {
+        if (!page_locs_end_page(fmt)) return false;
+        if (start_of_paragraph) {
+          SHOW_LOCATION("New Paragraph 3");
+          page.new_paragraph(fmt);
+          start_of_paragraph = false;
+        }
+        page.add_image(image, fmt);
+      }
+      stbi_image_free((void *) image.bitmap);
+    }
+    current_offset++;
+  }
+
+  if (str) {
+    SHOW_LOCATION("->");
+    while (*str) {
+      if (uint8_t(*str) <= ' ') {
+        if (*str == ' ') {
+          fmt.trim = !fmt.pre;
+          if (!page.add_char(str, fmt)) {
+            if (!page_locs_end_page(fmt)) return false;
+            if (start_of_paragraph) {
+              SHOW_LOCATION("New Paragraph 6");
+              page.new_paragraph(fmt, false);
+            }
+            else {
+              SHOW_LOCATION("New Paragraph 7");
+              page.new_paragraph(fmt, true);
+            }
+          }
+        }
+        else if (fmt.pre && (*str == '\n')) {
+          page.line_break(fmt, 30);
+        }
+        str++;
+        current_offset++; // Not an UTF-8, so it's ok...
+      }
+      else {
+        const char * w = str;
+        int32_t count = 0;
+        while (uint8_t(*str) > ' ') { str++; count++; }
+        std::string word;
+        word.assign(w, count);
+        if (!page.add_word(word.c_str(), fmt)) {
+          if (!page_locs_end_page(fmt)) return false;
+          if (start_of_paragraph) {
+            SHOW_LOCATION("New Paragraph 8");
+            page.new_paragraph(fmt, false);
+          }
+          else {
+            SHOW_LOCATION("New Paragraph 9");
+            page.new_paragraph(fmt, true);
+          }
+          page.add_word(word.c_str(), fmt);
+        }
+        current_offset += count;
+        start_of_paragraph = false;
+      }
+    } 
+  }
+
+  if (named_element) {
+
+    xml_node sub = node.first_child();
+    while (sub) {
+      if (!page_locs_recurse(sub, fmt)) return false;
+      sub = sub.next_sibling();
+    }
+
+    if (fmt.display == CSS::Display::BLOCK) {
+      if ((current_offset != start_of_page_offset) || page.some_data_waiting()) {
+        SHOW_LOCATION("End Paragraph 5");
+        if (!page.end_paragraph(fmt)) {
+          if (!page_locs_end_page(fmt)) return false;
+          if (page.some_data_waiting()) {
+            SHOW_LOCATION("End Paragraph 6");
+            page.end_paragraph(fmt);
+          }
+        }
+      }
+      start_of_paragraph = false;
+    } 
+
+    // In case that we are at the end of an html file and there remains
+    // characters in the page pipeline, we call end_paragraph() to get them out on the page...
+    if ((element_it != elements.end()) && (element_it->second == Element::BODY)) {
+      SHOW_LOCATION("End Paragraph 7");
+      if (!page.end_paragraph(fmt)) {
+        if (!page_locs_end_page(fmt)) return false;
+        if (page.some_data_waiting()) {
+          SHOW_LOCATION("End Paragraph 8");
+          page.end_paragraph(fmt);
+        }
+      }
+    }
+  } 
+  return true;
+}
+
+bool
+PageLocs::build_page_locs(int16_t itemref_index)
+{
+  std::scoped_lock guard(book_viewer.get_mutex());
+
+  TTF * font  = fonts.get(0, 10);
+  page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
+  
+  page.set_compute_mode(Page::ComputeMode::LOCATION);
+
+  int8_t images_are_shown;
+  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
+  show_images = images_are_shown == 1;
+
+  bool done = false;
+
+  if (epub.get_item_at_index(itemref_index, item_info)) {
+
+    int16_t idx;
+
+    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
+      idx = 1;
+    }
+    
+    int8_t font_size;
+    config.get(Config::Ident::FONT_SIZE, &font_size);
+
+    Page::Format fmt = {
+      .line_height_factor = 0.9,
+      .font_index         = idx,
+      .font_size          = font_size,
+      .indent             = 0,
+      .margin_left        = 0,
+      .margin_right       = 0,
+      .margin_top         = 0,
+      .margin_bottom      = 0,
+      .screen_left        = 10,
+      .screen_right       = 10,
+      .screen_top         = 10,
+      .screen_bottom      = page_bottom,
+      .width              = 0,
+      .height             = 0,
+      .trim               = true,
+      .pre                = false,
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::LEFT,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
+    };
+
+    while (!done) {
+
+      current_offset       = 0;
+      start_of_page_offset = 0;
+      xml_node node = item_info.xml_doc.child("html");
+
+      if (node && 
+         (node = node.child("body"))) {
+
+        page.start(fmt);
+
+        if (!page_locs_recurse(node, fmt)) {
+          LOG_D("html parsing issue or aborted by Mgr");
+          break;
+        }
+
+        if (page.some_data_waiting()) page.end_paragraph(fmt);
+      }
+      else {
+        LOG_D("No <body>");
+        break;
+      }
+
+      page_locs_end_page(fmt);
+
+      done = true;
+    }
+  }
+
+  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+
+  // epub.clear_item_data(item_info);
+
+  if (item_info.css != nullptr) {
+    delete item_info.css;
+    item_info.css = nullptr;
+  }
+
+  return done;
+}
 
 volatile bool relax = false;
 
