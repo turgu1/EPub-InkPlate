@@ -1,16 +1,18 @@
-# EPub-InkPlate An EPub Reader for the InkPlate-6 device
+# EPub-InkPlate An EPub Reader for the InkPlate devices
 
 ## Last news
 
-(Updated 2021.01.06)
+(Updated 2021.01.07)
 
-This is in preparation for version 1.1. The main ongoing modifications are
+This is in preparation for version 1.1.0 The main ongoing modifications are:
 
-- [x] Support of the new Inkplate-10 upcoming device
+- [x] Support of the new Inkplate upcoming Inkplate-10 device
 - [x] Just in time calculation of pages locations through multithreading
 - [x] Integration with the ESP-IDF-Inkplate library
+- [ ] Add Parameters for e-book specific geometry adjustments
 - [ ] Adjust config forms to trigger page locations recalculation
-- [ ] Stop light-leep, deep-sleep while page locations is being calculated
+- [x] Stop light-sleep, deep-sleep while page locations is being calculated
+- [ ] Save computed page locations to sdcard for quick ebook load
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
 - [ ] Tests

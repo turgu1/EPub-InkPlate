@@ -1,6 +1,7 @@
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
 #include "models/config.hpp"
+#include "controllers/event_mgr.hpp"
 
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
@@ -649,6 +650,7 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
     
     res = page_locs.insert(page_id, page_info);
 
+    // Gives the chance to book_viewer to show a page if required
     book_viewer.get_mutex().unlock();
     book_viewer.get_mutex().lock();
 
@@ -1089,6 +1091,8 @@ PageLocs::start_new_document(int16_t count, int16_t itemref_index)
   LOG_D("start_new_document: Sending START_DOCUMENT");
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
+  event_mgr.set_stay_on(true);
+
   clear();
 }
 
@@ -1107,6 +1111,7 @@ const PageLocs::PageId *
 PageLocs::get_next_page_id(const PageId & page_id, int16_t count) 
 {
   std::scoped_lock guard(mutex);
+
   PagesMap::iterator it = check_and_find(page_id);
   if (it == pages_map.end()) {
     it = check_and_find(PageId(0,0));
@@ -1163,6 +1168,7 @@ const PageLocs::PageId *
 PageLocs::get_prev_page_id(const PageId & page_id, int count) 
 {
   std::scoped_lock guard(mutex);
+
   PagesMap::iterator it = check_and_find(page_id);
   if (it == pages_map.end()) {
     it = check_and_find(PageId(0,0));
@@ -1192,6 +1198,7 @@ const PageLocs::PageId *
 PageLocs::get_page_id(const PageId & page_id) 
 {
   std::scoped_lock guard(mutex);
+
   PagesMap::iterator it = check_and_find(PageId(page_id.itemref_index, 0));
   PagesMap::iterator res  = pages_map.end();
   while ((it != pages_map.end()) && (it->first.itemref_index == page_id.itemref_index)) {
@@ -1205,12 +1212,14 @@ void
 PageLocs::computation_completed()
 {
   std::scoped_lock guard(mutex);
+
   if (!completed) {
     int16_t page_nbr = 0;
     for (auto& entry : pages_map) {
       entry.second.page_number = page_nbr++;
     }
     completed = true;
+    event_mgr.set_stay_on(false);
   }
 }
 

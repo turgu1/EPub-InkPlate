@@ -23,10 +23,6 @@
   #include "inkplate_platform.hpp"
   #include "viewers/msg_viewer.hpp"
 
-  #define  TOUCHPAD_LEFT_POSITION 1
-  #define TOUCHPAD_RIGHT_POSITION 0
-  #define  TOUCHPAD_DOWN_POSITION 0
-
   uint8_t   NEXT_PAD;
   uint8_t   PREV_PAD;
   uint8_t SELECT_PAD;

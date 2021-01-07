@@ -75,7 +75,10 @@ ParamController::key_event(EventMgr::KeyEvent key)
   }
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
-      msg_viewer.show(MsgViewer::INFO, false, true, "Restarting", "The device is now restarting. Please wait.");
+      msg_viewer.show(MsgViewer::INFO, 
+                      false, true, 
+                      "Restarting", 
+                      "The device is now restarting. Please wait.");
       wait_for_key_after_wifi = false;
       stop_web_server();
       esp_restart();
