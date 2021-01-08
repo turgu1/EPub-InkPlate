@@ -21,7 +21,7 @@
 
 // static int8_t boolean_value;
 
-static Screen::Orientation      orientation;
+static Screen::Orientation    orientation;
 static Screen::PixelResolution resolution;
 static int8_t show_battery;
 static int8_t timeout;
@@ -31,7 +31,7 @@ static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t ok;
 
-static Screen::Orientation      old_orientation;
+static Screen::Orientation    old_orientation;
 static Screen::PixelResolution old_resolution;
 static int8_t old_show_images;
 static int8_t old_font_size;
@@ -40,24 +40,24 @@ static int8_t old_default_font;
 
 static constexpr int8_t MAIN_FORM_SIZE = 6;
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes before sleeping :",   &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",       (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Images in books (*):",   &show_images,            2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Pixel Resolution :",          (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",     &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { nullptr,                       &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Minutes before sleeping :", &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Buttons Position:",         (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in books (*):", &show_images,            2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Pixel Resolution :",        (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Battery Visualisation :",   &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 static constexpr int8_t FONT_FORM_SIZE = 4;
 static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",    &font_size,              4, FormViewer::font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use fonts in books (*):",   &use_fonts_in_books,     2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,           8, FormViewer::font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Default Font Size (*):",  &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in books (*):", &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default font (*):",       &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { nullptr,                   &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 extern bool start_web_server();
-extern bool stop_web_server();
+extern bool  stop_web_server();
 
 static void
 main_parameters()
@@ -76,7 +76,7 @@ main_parameters()
   form_viewer.show(
     main_params_form_entries, 
     MAIN_FORM_SIZE, 
-    "(*) These items may trigger Books Refresh.");
+    "(*) These items used as e-book default values.");
 
   option_controller.set_main_form_is_shown();
 }
@@ -96,7 +96,7 @@ font_parameters()
   form_viewer.show(
     font_params_form_entries, 
     FONT_FORM_SIZE, 
-    "(*) These items may trigger Books Refresh.");
+    "(*) These items used as e-book default values.");
 
   option_controller.set_font_form_is_shown();
 }

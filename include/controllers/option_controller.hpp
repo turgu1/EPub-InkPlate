@@ -33,7 +33,8 @@ class OptionController
     inline void set_wait_for_key_after_wifi() { 
       wait_for_key_after_wifi = true; 
       main_form_is_shown      = false;
-      font_form_is_shown      = false; }
+      font_form_is_shown      = false;
+    }
 };
 
 #if __OPTION_CONTROLLER__

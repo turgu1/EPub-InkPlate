@@ -9,6 +9,8 @@
 
 #include "stb_image.h"
 
+#include <esp_pthread.h>
+
 enum class MgrReq : int8_t { ASAP_READY, STOPPED };
 
 struct MgrQueueData {
@@ -65,7 +67,7 @@ struct RetrieveQueueData {
 // Both Linux and ESP32 algorithm versions must be synchronized by hand. As std::thread is not 
 // close enough to the functionalities offered by FreeRTOS (Stack size control, core
 // selection), no choice to use differents means on both platform.
-#if EPUB_LINUX_BUILD
+#if 1 //EPUB_LINUX_BUILD
   class StateTask
   {
     private:
@@ -604,9 +606,21 @@ struct RetrieveQueueData {
 
 #endif
 
+static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack, int prio)
+{
+    auto cfg = esp_pthread_get_default_config();
+    cfg.thread_name = name;
+    cfg.pin_to_core = core_id;
+    cfg.stack_size = stack;
+    cfg.prio = prio;
+    return cfg;
+}
+
 void
 PageLocs::setup()
 {
+
+
   #if EPUB_LINUX_BUILD
 
     mq_unlink("/mgr");
@@ -629,14 +643,27 @@ PageLocs::setup()
     state_queue    = xQueueCreate(5, sizeof(StateQueueData));
     retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
 
-    TaskHandle_t xHandle = NULL;
+    auto cfg = create_config("retrieverTask", 0, 40 * 1024, 5);
+    cfg.inherit_cfg = true;
+    esp_pthread_set_cfg(&cfg);
+    retriever_thread = std::thread(retriever_task);
+    
+    cfg = create_config("stateTask", 0, 10 * 1024, 5);
+    cfg.inherit_cfg = true;
+    esp_pthread_set_cfg(&cfg);
+    state_thread = std::thread(state_task);
 
-    xTaskCreate(state_task, "stateTask", 10000, (void *) 1, tskIDLE_PRIORITY, &xHandle);
-    configASSERT(xHandle);
+    #if 0
+      TaskHandle_t xHandle = NULL;
 
-    xTaskCreatePinnedToCore(retriever_task, "retrieverTask", 40000, (void *) 1, tskIDLE_PRIORITY, &xHandle, 1);
-    configASSERT(xHandle);
+      xTaskCreate(state_task, "stateTask", 10000, (void *) 1, tskIDLE_PRIORITY, &xHandle);
+      configASSERT(xHandle);
+
+      xTaskCreatePinnedToCore(retriever_task, "retrieverTask", 40000, (void *) 1, tskIDLE_PRIORITY, &xHandle, 1);
+      configASSERT(xHandle);
+    #endif
   #endif
+
 } 
 
 bool 

@@ -30,13 +30,34 @@ static int8_t old_show_images;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 
-static constexpr int8_t FONT_FORM_SIZE = 4;
-static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",    &font_size,              4, FormViewer::font_size_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use fonts in books (*):",   &use_fonts_in_books,     2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,           8, FormViewer::font_choices,        FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
+static FormViewer::FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
+  { "Default Font Size:",    &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in books:",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default font:",         &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in books:", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { nullptr,                 &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
+
+static void
+book_parameters()
+{
+  config.get(Config::Ident::FONT_SIZE,          &font_size         );
+  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
+  config.get(Config::Ident::DEFAULT_FONT,       &default_font      );
+  
+  old_use_fonts_in_books = use_fonts_in_books;
+  old_default_font       = default_font;
+  old_font_size          = font_size;
+  ok                     = 0;
+
+  form_viewer.show(
+    book_params_form_entries, 
+    BOOK_PARAMS_FORM_SIZE, 
+    "(Any item change will trigger book refresh)");
+
+  param_controller.set_book_params_form_is_shown();
+}
 
 static void 
 books_list()
@@ -45,7 +66,7 @@ books_list()
 }
 
 extern bool start_web_server();
-extern bool stop_web_server();
+extern bool  stop_web_server();
 
 static void
 wifi_mode()
@@ -63,13 +84,14 @@ wifi_mode()
   #endif
 }
 
-static MenuViewer::MenuEntry menu[6] = {
-  { MenuViewer::Icon::RETURN,    "Return to the e-books reader",        CommonActions::return_to_last    },
-  { MenuViewer::Icon::BOOK_LIST, "E-Books list",                        books_list                       },
-  { MenuViewer::Icon::WIFI,      "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::Icon::INFO,      "About the EPub-InkPlate application", CommonActions::about             },
-  { MenuViewer::Icon::POWEROFF,  "Power OFF (Deep Sleep)",              CommonActions::power_off         },
-  { MenuViewer::Icon::END_MENU,  nullptr,                               nullptr                          }
+static MenuViewer::MenuEntry menu[7] = {
+  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",        CommonActions::return_to_last    },
+  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                        books_list                       },
+  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",           book_parameters                  },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },
+  { MenuViewer::Icon::END_MENU,    nullptr,                               nullptr                          }
 }; 
 
 void 

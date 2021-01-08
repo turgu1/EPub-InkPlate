@@ -3,14 +3,17 @@
 
 #include "global.hpp"
 
+#include <thread>
+#include <mutex>
+
 #if EPUB_LINUX_BUILD
-  #include <thread>
-  #include <mutex>
+  // #include <thread>
+  // #include <mutex>
   #include <fcntl.h>
   #include <mqueue.h>
   #include <sys/stat.h>
 #else
-  #include <mutex>
+  // #include <mutex>
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
   #include "freertos/semphr.h"
@@ -61,9 +64,12 @@ class PageLocs
     typedef std::set<int16_t> ItemsSet;
 
     std::recursive_timed_mutex  mutex;
+    std::thread state_thread;
+    std::thread retriever_thread;
+
     #if EPUB_LINUX_BUILD
-      std::thread state_thread;
-      std::thread retriever_thread;
+      // std::thread state_thread;
+      // std::thread retriever_thread;
     #else
       //static SemaphoreHandle_t mutex;
       //static StaticSemaphore_t mutex_buffer;

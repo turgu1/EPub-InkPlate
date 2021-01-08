@@ -13,6 +13,7 @@ class ParamController
   private:
     static constexpr char const * TAG = "ParamController";
 
+    bool book_params_form_is_shown;
     bool form_is_shown;
     bool wait_for_key_after_wifi;
 
@@ -22,8 +23,8 @@ class ParamController
     void enter();
     void leave(bool going_to_deep_sleep = false);
 
-    inline void set_form_is_shown() { form_is_shown = true; }
-    inline void set_wait_for_key_after_wifi() { wait_for_key_after_wifi = true; form_is_shown = false; }
+    inline void set_book_params_form_is_shown() { book_params_form_is_shown = true;                      }
+    inline void   set_wait_for_key_after_wifi() { wait_for_key_after_wifi = true; form_is_shown = false; }
 };
 
 #if __PARAM_CONTROLLER__
