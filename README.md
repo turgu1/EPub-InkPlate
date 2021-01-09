@@ -2,16 +2,17 @@
 
 ## Last news
 
-(Updated 2021.01.07)
+(Updated 2021.01.08)
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
 - [x] Support of the new Inkplate upcoming Inkplate-10 device
-- [x] Just in time calculation of pages locations through multithreading
-- [x] Integration with the ESP-IDF-Inkplate library
-- [ ] Add Parameters for e-book specific geometry adjustments
-- [ ] Adjust config forms to trigger page locations recalculation
+- [x] Just in time calculation of pages locations through multithreading (a **BIG** change...)
+- [x] Integration with the new ESP-IDF-Inkplate library
+- [x] Add Parameters for e-book specific font/pictures adjustments
+- [ ] Trigger page locations recalculation when parameters have changed
 - [x] Stop light-sleep, deep-sleep while page locations is being calculated
+- [ ] Adjust web server to only show epub files and remove params file on e-book delete
 - [ ] Save computed page locations to sdcard for quick ebook load
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
@@ -28,7 +29,7 @@ The development is complete. The application is at version 1.0.0. Please look at
 - [x] Options / Parameters menus
 - [x] Error dialogs
 - [x] About box
-- [x] Low-Level InkPlate-6 Drivers refactoring
+- [x] Low-Level InkPlate Drivers refactoring
 - [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
 - [x] Return to current book location between restarts
 - [x] Configuration management (save/load from the SD-Card)
@@ -70,7 +71,7 @@ The first release functionalities:
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
-- InkPlate-6 tactile keys (single and double click to get six buttons)
+- InkPlate tactile keys (single and double click to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
 - Left, center, right, and justify text alignments
 - Indentation
@@ -134,7 +135,7 @@ All source code is located in various folders:
 
 - Source code used by both Linux and InkPlate is located in the `include` and `src` folders
 - Source code in support of Linux only is located in the `lib_linux` folder
-- Source code in support of the InkPlate-6 (ESP32) only are located in the `lib_esp32` folder
+- Source code in support of the InkPlate device (ESP32) only are located in the `lib_esp32` folder
 - The FreeType library for ESP32 is in folder `lib_freetype`
 
 The file `platformio.ini` contains the configuration options required to compile both Linux and InkPlate applications.

@@ -14,17 +14,18 @@ class ParamController
     static constexpr char const * TAG = "ParamController";
 
     bool book_params_form_is_shown;
-    bool form_is_shown;
     bool wait_for_key_after_wifi;
 
   public:
-    ParamController() : form_is_shown(false), wait_for_key_after_wifi(false) { };
+    ParamController() : 
+      book_params_form_is_shown(false), 
+        wait_for_key_after_wifi(false) { };
     void key_event(EventMgr::KeyEvent key);
     void enter();
     void leave(bool going_to_deep_sleep = false);
 
-    inline void set_book_params_form_is_shown() { book_params_form_is_shown = true;                      }
-    inline void   set_wait_for_key_after_wifi() { wait_for_key_after_wifi = true; form_is_shown = false; }
+    inline void set_book_params_form_is_shown() { book_params_form_is_shown = true; }
+    inline void   set_wait_for_key_after_wifi() { wait_for_key_after_wifi = true;   }
 };
 
 #if __PARAM_CONTROLLER__

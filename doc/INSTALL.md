@@ -7,9 +7,9 @@ Here is the installation procedure for the EPub-InkPlate application. This proce
 The installation consists of
 
 - Preparing an SD-Card with the appropriate information.
-- Uploading the application to the InkPlate-6 device.
+- Uploading the application to the InkPlate device.
   
-The last version of the binaries for the Inkplate-6 are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
+The last version of the binaries for the Inkplate are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
 
 (You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
 
@@ -28,7 +28,7 @@ You then must retrieve the release from the Github repository. Look at this loca
 
 The SD-Card must be formatted with a FAT32 (or MS-DOS or VFAT) partition. This is usually the case with brand new cards. The release's `SDCard` folder contains everything required to initialize the card's content. Simply copy the content of the folder (including the sub-folders) to the card as is.
 
-The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`) (as these parameters contain text information or number, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate-6 from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer.
+The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`) (as these parameters contain text information or number, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate device from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer.
 
 Once done, insert the card into the device.
 
@@ -81,6 +81,6 @@ Once the upload is complete, the device will automatically reboot. The first tas
 
 Some options on the esptool command may have to be modified depending on your computer:
 
-- The USB device connected to the InkPlate-6 is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu). If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
+- The USB device connected to the InkPlate is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu). If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
 
 - Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script. The speed (baud rate) is **230400** in the file. You can change it to **115200** baud or lower.

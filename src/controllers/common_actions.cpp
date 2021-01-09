@@ -54,7 +54,7 @@ CommonActions::about()
     false,
     false,
     "About EPub-InkPlate", 
-    "EPub EBook Reader Version %s for the InkPlate-6 e-paper display device. "
+    "EPub EBook Reader Version %s for the InkPlate e-paper display devices. "
     "This application was made by Guy Turcotte, Quebec, QC, Canada, "
     "with great support from e-Radionica.",
     APP_VERSION);

@@ -1,7 +1,7 @@
 # EPub-InkPlate - User's Guide - Version 1.1.0
 **(Draft document)**
 
-The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate-6 ESP32 based device.
+The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices.
 
 For the installation process, please consult the `INSTALL.pdf` document.
 
@@ -12,7 +12,7 @@ Here are the main characteristics of the application:
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
-- InkPlate-6 tactile keys (single and double click to get six buttons)
+- InkPlate tactile keys (single and double click to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
 - Left, center, right, and justify text alignments
 - Indentation
@@ -30,7 +30,7 @@ When the device is turned ON, the application executes the following tasks:
 
 ## 2. Interacting with the application
 
-The InkPlate-6 device possesses three tactical keys that are used to interact with the application. On the device, they are labeled 1, 2, and 3. The application allows for the selection of the screen orientation in the parameters form. Depending on the screen orientation, the function associated with the keys will change as follow:
+The InkPlate device possesses three tactical keys that are used to interact with the application. On the device, they are labeled 1, 2, and 3. The application allows for the selection of the screen orientation in the parameters form. Depending on the screen orientation, the function associated with the keys will change as follow:
 
 - When the keys are on the **Bottom** side of the screen:
 
@@ -159,20 +159,20 @@ One way to circumvent the problems is to use the epub converter provided with th
 
 The convert tool of *Calibre* can also shrink fonts such that they only contain the glyphs required for the book (When the 'Convert books' tool is launched, the option is located in 'Look & feel' > 'Fonts' > 'Subset all embedded fonts'). I've seen some books having four of five fonts requiring 1.5 megabytes each shrunk to around 1 meg for all fonts by the convert tool (around 200 kilobytes per fonts). 
 
-For images, to get them in line with the screen resolution of the InkPlate-6 (that is 600x800), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. Even at this size, a 600x800 image will take close to 500 kilobytes. 
+For images, to get them raisonnably in line with the screen resolution of the InkPlate devices (that is 600x800 for the InkPlate-6), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. For example, even at this size, a 600x800 image will take close to 500 kilobytes. 
 
-It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more memory to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 600x800 pixels. This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
+It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more memory to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 600x800 pixels (if you prefer, you can modify it to use 825x1200 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
 
 ### 3.3 In case of out of memory situation
 
-The memory required to prepare a book to be displayed may become an issue if there is not enough memory available. The InkPlate-6 is limited in memory: around 4.5 megabytes are available. A part of it is dedicated to the screen buffer and the rest of it is mainly used by the application.
+The memory required to prepare a book to be displayed may become an issue if there is not enough memory available. The InkPlate devices are limited in memory: around 4.5 megabytes are available. A part of it is dedicated to the screen buffer and the rest of it is mainly used by the application.
 
 As performance is a key factor, fonts are loaded and kept in memory by the application.  If a book is using too many fonts or fonts that are too big (they may contain more glyphs than necessary for the book), it will not be possible to show the document with the original fonts. Images that are integrated into a book may also be taking a lot of memory. For example, a 1600x1200 image requires close to 2 megabytes of memory.
 
 Here are some steps that can be used to minimize the amount of memory that would be required to present the content of books:
 
 - **Convert the book** - As indicated in the previous section, the *Calibre Convert* tool can be used to minimize both fonts and image size.
-- **Use 1bit pixels** - The frame buffer used to render pages on screen is using a good chunk of memory: 240 kilobytes for 3bits pixels, 60 kilobytes for 1bit pixels. You can select the pixel resolution in the Main Parameters.
+- **Use 1bit pixels** - The frame buffer used to render pages on screen is using a good chunk of memory: 240 kilobytes for 3bits pixels, 60 kilobytes for 1bit pixels (those numbers are for an Inkplate-6 device). You can select the pixel resolution in the Main Parameters.
 - **Desactivate images** - In the Main Parameters, you can request not to show images on the screen.
 - **Desactivate book fonts** - In the Font Parameters, you can request not to use fonts supplied with a book.
 

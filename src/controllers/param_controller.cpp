@@ -8,6 +8,7 @@
 #include "controllers/app_controller.hpp"
 #include "controllers/common_actions.hpp"
 #include "models/books_dir.hpp"
+#include "models/epub.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -21,33 +22,42 @@
 
 static int8_t show_images;
 static int8_t font_size;
-static int8_t use_fonts_in_books;
-static int8_t default_font;
+static int8_t use_fonts_in_book;
+static int8_t font;
 static int8_t ok;
 
 static int8_t old_font_size;
 static int8_t old_show_images;
-static int8_t old_use_fonts_in_books;
-static int8_t old_default_font;
+static int8_t old_use_fonts_in_book;
+static int8_t old_font;
 
 static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
 static FormViewer::FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
-  { "Default Font Size:",    &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use fonts in books:",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default font:",         &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Images in books:", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { nullptr,                 &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Font Size:",           &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use fonts in book:",   &use_fonts_in_book,  2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Font:",                &font,               8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in book:", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { nullptr,                &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 static void
 book_parameters()
 {
-  config.get(Config::Ident::FONT_SIZE,          &font_size         );
-  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
-  config.get(Config::Ident::DEFAULT_FONT,       &default_font      );
+  BookParams * book_params = epub.get_book_params();
+
+  book_params->get(BookParams::Ident::SHOW_IMAGES,        &show_images      );
+  book_params->get(BookParams::Ident::FONT_SIZE,          &font_size        );
+  book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK,  &use_fonts_in_book);
+  book_params->get(BookParams::Ident::FONT,               &font             );
   
-  old_use_fonts_in_books = use_fonts_in_books;
-  old_default_font       = default_font;
+  if (show_images       == -1) config.get(Config::Ident::SHOW_IMAGES,        &show_images      );
+  if (font_size         == -1) config.get(Config::Ident::FONT_SIZE,          &font_size        );
+  if (use_fonts_in_book == -1) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_book);
+  if (font              == -1) config.get(Config::Ident::DEFAULT_FONT,       &font             );
+  
+  old_show_images        = show_images;
+  old_use_fonts_in_book  = use_fonts_in_book;
+  old_font               = font;
   old_font_size          = font_size;
   ok                     = 0;
 
@@ -98,6 +108,7 @@ void
 ParamController::enter()
 {
   menu_viewer.show(menu);
+  book_params_form_is_shown = false;
 }
 
 void 
@@ -109,9 +120,19 @@ ParamController::leave(bool going_to_deep_sleep)
 void 
 ParamController::key_event(EventMgr::KeyEvent key)
 {
-  if (form_is_shown) {
+  if (book_params_form_is_shown) {
     if (form_viewer.event(key)) {
-      form_is_shown = false;
+      book_params_form_is_shown = false;
+      if (ok) {
+        BookParams * book_params = epub.get_book_params();
+
+        if (show_images       !=       old_show_images) book_params->put(BookParams::Ident::SHOW_IMAGES,        show_images      );
+        if (font_size         !=         old_font_size) book_params->put(BookParams::Ident::FONT_SIZE,          font_size        );
+        if (font              !=              old_font) book_params->put(BookParams::Ident::FONT,               font             );
+        if (use_fonts_in_book != old_use_fonts_in_book) book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK,  use_fonts_in_book);
+        
+        book_params->save();
+      }
     }
   }
   #if EPUB_INKPLATE_BUILD

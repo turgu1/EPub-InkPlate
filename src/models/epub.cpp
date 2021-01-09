@@ -450,6 +450,16 @@ EPub::get_item(pugi::xml_node itemref,
   return completed;
 }
 
+void
+EPub::open_params(const std::string & epub_filename)
+{
+  std::string params_filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".pars";
+  book_params = new BookParams(params_filename, false);
+  if (book_params != nullptr) {
+    book_params->read();
+  }
+}
+
 bool 
 EPub::open_file(const std::string & epub_filename)
 {
@@ -479,6 +489,8 @@ EPub::open_file(const std::string & epub_filename)
     unzip.close_zip_file();
     return false;
   }
+
+  open_params(epub_filename);
 
   clear_item_data(current_item_info);
 
@@ -533,6 +545,12 @@ EPub::close_file()
 
   file_is_open = false;
   current_filename.clear();
+
+  if (book_params != nullptr) {
+    book_params->save();
+    delete book_params;
+    book_params = nullptr;
+  }
 
   return true;
 }

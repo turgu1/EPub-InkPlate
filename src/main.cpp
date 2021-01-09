@@ -93,7 +93,7 @@
   
       if (inkplate_err) {
         msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-          "Unable to initialize InkPlate-6 drivers. Entering Deep Sleep. Press a key to restart."
+          "Unable to initialize the InkPlate drivers. Entering Deep Sleep. Press a key to restart."
         );
         ESP::delay(500);
         inkplate_platform.deep_sleep();

@@ -10,6 +10,7 @@
 #include "pugixml.hpp"
 
 #include "models/css.hpp"
+#include "models/book_params.hpp"
 #include "viewers/page.hpp"
 
 #include <string>
@@ -44,6 +45,7 @@ class EPub
     std::string        opf_base_path;
 
     ItemInfo           current_item_info;
+    BookParams       * book_params;
 
     CSSList            css_cache;             ///< All css files in the ebook are maintained here.
   
@@ -61,6 +63,7 @@ class EPub
 
     void      retrieve_css(ItemInfo &           item);
     void   clear_item_data(ItemInfo &           item);
+    void       open_params(const std::string &  epub_filename);
     bool         open_file(const std::string &  epub_filename);
     bool        close_file();
     bool         get_image(std::string &        filename,
@@ -95,6 +98,7 @@ class EPub
     inline const char *                    get_description()       { return get_meta("dc:description");      }
     inline const pugi::xml_document &     get_current_item()       { return current_item_info.xml_doc;       }
     inline const std::string &        get_current_filename()       { return current_filename;                }
+    inline BookParams *                    get_book_params()       { return book_params;                     }
   };
 
 #if __EPUB__

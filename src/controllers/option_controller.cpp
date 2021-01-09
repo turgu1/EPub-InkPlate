@@ -166,12 +166,12 @@ OptionController::key_event(EventMgr::KeyEvent key)
           screen.set_pixel_resolution(resolution);
         }
 
-        if ((old_show_images != show_images) ||
-            ((old_orientation != orientation) &&
-             ((old_orientation == Screen::Orientation::BOTTOM) ||
-              (orientation     == Screen::Orientation::BOTTOM)))) {
-          books_refresh_needed = true;  
-        }
+        // if ((old_show_images != show_images) ||
+        //     ((old_orientation != orientation) &&
+        //      ((old_orientation == Screen::Orientation::BOTTOM) ||
+        //       (orientation     == Screen::Orientation::BOTTOM)))) {
+        //   books_refresh_needed = true;  
+        // }
       }
     }
   }
@@ -184,11 +184,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
         config.put(Config::Ident::USE_FONTS_IN_BOOKS, use_fonts_in_books);
         config.save();
 
-        if ((old_font_size          != font_size   ) ||
-            (old_default_font       != default_font) ||
-            (old_use_fonts_in_books != use_fonts_in_books)) {
-          books_refresh_needed = true;  
-        }
+        // if ((old_font_size          != font_size   ) ||
+        //     (old_default_font       != default_font) ||
+        //     (old_use_fonts_in_books != use_fonts_in_books)) {
+        //   books_refresh_needed = true;  
+        // }
         if (old_default_font != default_font) {
           fonts.setup();
         }

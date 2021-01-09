@@ -14,6 +14,7 @@ SDCard/books/Broken2
 SDCard/books/Done
 SDCard/books/temp
 SDCard/books_dir.db
+SDCard/books/*.pars
 SDCard/last_book.txt
 freetype-2.10.4/objs
 temp

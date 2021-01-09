@@ -55,10 +55,10 @@ static FileServerData * server_data = nullptr;
 static esp_err_t 
 index_html_get_handler(httpd_req_t *req)
 {
-    httpd_resp_set_status(req, "307 Temporary Redirect");
-    httpd_resp_set_hdr(req, "Location", "/");
-    httpd_resp_send(req, NULL, 0);  // Response body can be empty
-    return ESP_OK;
+  httpd_resp_set_status(req, "307 Temporary Redirect");
+  httpd_resp_set_hdr(req, "Location", "/");
+  httpd_resp_send(req, NULL, 0);  // Response body can be empty
+  return ESP_OK;
 }
 
 // Respond with an icon file embedded in flash.
@@ -66,12 +66,12 @@ index_html_get_handler(httpd_req_t *req)
 static esp_err_t 
 favicon_get_handler(httpd_req_t *req)
 {
-    extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
-    extern const unsigned char favicon_ico_end[]   asm("_binary_favicon_ico_end");
-    const size_t favicon_ico_size = (favicon_ico_end - favicon_ico_start);
-    httpd_resp_set_type(req, "image/x-icon");
-    httpd_resp_send(req, (const char *)favicon_ico_start, favicon_ico_size);
-    return ESP_OK;
+  extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
+  extern const unsigned char favicon_ico_end[]   asm("_binary_favicon_ico_end");
+  const size_t favicon_ico_size = (favicon_ico_end - favicon_ico_start);
+  httpd_resp_set_type(req, "image/x-icon");
+  httpd_resp_send(req, (const char *)favicon_ico_start, favicon_ico_size);
+  return ESP_OK;
 }
 
 /* Send HTTP response with a run-time generated html consisting of
@@ -81,126 +81,128 @@ favicon_get_handler(httpd_req_t *req)
 static esp_err_t 
 http_resp_dir_html(httpd_req_t *req, const char * dirpath)
 {
-    char entrypath[FILE_PATH_MAX];
-    char entrysize[16];
-    const char * entrytype;
+  char entrypath[FILE_PATH_MAX];
+  char entrysize[16];
+  const char * entrytype;
 
-    struct dirent * entry;
-    struct stat entry_stat;
+  struct dirent * entry;
+  struct stat entry_stat;
 
-    ESP_LOGD(TAG, "Opening dir: %s.", dirpath);
+  ESP_LOGD(TAG, "Opening dir: %s.", dirpath);
 
-    const size_t dirpath_len = strlen(dirpath);
+  const size_t dirpath_len = strlen(dirpath);
 
-    /* Retrieve the base path of file storage to construct the full path */
-    strlcpy(entrypath, dirpath, sizeof(entrypath));
-    entrypath[strlen(entrypath) - 1] = 0;
-    DIR * dir = opendir(entrypath);
-    entrypath[strlen(entrypath)] = '/';
+  /* Retrieve the base path of file storage to construct the full path */
+  strlcpy(entrypath, dirpath, sizeof(entrypath));
+  entrypath[strlen(entrypath) - 1] = 0;
+  DIR * dir = opendir(entrypath);
+  entrypath[strlen(entrypath)] = '/';
 
-    if (dir == nullptr) {
-        ESP_LOGE(TAG, "Failed to stat dir : %s (%s)", dirpath, strerror(errno));
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Directory does not exist");
-        return ESP_FAIL;
+  if (dir == nullptr) {
+    ESP_LOGE(TAG, "Failed to stat dir : %s (%s)", dirpath, strerror(errno));
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Directory does not exist");
+    return ESP_FAIL;
+  }
+
+  httpd_resp_sendstr_chunk(req, 
+    "<!DOCTYPE html><html>"
+    "<head>"
+    "<meta charset=\"UTF-8\">"
+    "<title>EPub-InkPlate Books Server</title>"
+    "<style>"
+    "table {font-family: Arial, Helvetica, sans-serif;}"
+    "table.list {width: 100%;}"
+    "table.list {border-collapse: collapse;}"
+    "table.list td {border: 1px solid #ddd; padding: 8px;}"
+    "table.list tr:nth-child(even){background-color: #f2f2f2;}"
+    "table.list td:nth-child(1), table.list th:nth-child(1){text-align: left;}"
+    "table.list td:nth-child(2), table.list th:nth-child(2){text-align: center;}"
+    "table.list td:nth-child(3), table.list th:nth-child(3){text-align: right; }"
+    "table.list td:nth-child(4), table.list th:nth-child(4){text-align: center;}"
+    "table.list th {border: 1px solid #077C95; padding: 12px 8px; background-color: #077C95; color: white;}"
+    "table.list tr:hover {background-color: #ddd;}"
+    "</style>"
+    "<script>"
+    "function sortTable(n) {"
+    "var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;"
+    "table = document.getElementById(\"sorted\");"
+    "switching = true; dir = \"asc\";"
+    "while (switching) {"
+    "switching = false; rows = table.rows;"
+    "for (i = 1; i < (rows.length - 1); i++) {"
+    "shouldSwitch = false;"
+    "x = rows[i].getElementsByTagName(\"TD\")[n];"
+    "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
+    "if (dir == \"asc\") {"
+    "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {"
+    "shouldSwitch= true; break;"
+    "}} else if (dir == \"desc\") {"
+    "if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {"
+    "shouldSwitch = true; break;}}}"
+    "if (shouldSwitch) {"
+    "rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);"
+    "switching = true; switchcount ++; } else {"
+    "if (switchcount == 0 && dir == \"asc\") {"
+    "dir = \"desc\"; switching = true;"
+    "}}}}"
+    "</script>"
+    "</head>"
+    "<body>");
+
+  extern const unsigned char upload_script_start[] asm("_binary_upload_script_html_start");
+  extern const unsigned char upload_script_end[]   asm("_binary_upload_script_html_end");
+  const size_t upload_script_size = (upload_script_end - upload_script_start);
+
+  httpd_resp_send_chunk(req, (const char *) upload_script_start, upload_script_size);
+
+  httpd_resp_sendstr_chunk(req,
+    "<table class=\"fixed list\" id=\"sorted\">"
+    "<colgroup><col width=\"70%\"/><col width=\"8%\"/><col width=\"14%\"/><col width=\"8%\"/></colgroup>"
+    "<thead><tr><th onclick=\"sortTable(0)\">Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
+    "<tbody>");
+
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(&entry->d_name[strlen(entry->d_name) - 5], ".epub") != 0) continue;
+    
+    entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
+
+    strlcpy(entrypath + dirpath_len, entry->d_name, sizeof(entrypath) - dirpath_len);
+    if (stat(entrypath, &entry_stat) == -1) {
+      ESP_LOGE(TAG, "Failed to stat %s : %s", entrytype, entry->d_name);
+      continue;
     }
+    sprintf(entrysize, "%ld", entry_stat.st_size);
+    ESP_LOGI(TAG, "Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
-    httpd_resp_sendstr_chunk(req, 
-      "<!DOCTYPE html><html>"
-      "<head>"
-      "<meta charset=\"UTF-8\">"
-      "<title>EPub-InkPlate Books Server</title>"
-      "<style>"
-      "table {font-family: Arial, Helvetica, sans-serif;}"
-      "table.list {width: 100%;}"
-      "table.list {border-collapse: collapse;}"
-      "table.list td {border: 1px solid #ddd; padding: 8px;}"
-      "table.list tr:nth-child(even){background-color: #f2f2f2;}"
-      "table.list td:nth-child(1), table.list th:nth-child(1){text-align: left;}"
-      "table.list td:nth-child(2), table.list th:nth-child(2){text-align: center;}"
-      "table.list td:nth-child(3), table.list th:nth-child(3){text-align: right; }"
-      "table.list td:nth-child(4), table.list th:nth-child(4){text-align: center;}"
-      "table.list th {border: 1px solid #077C95; padding: 12px 8px; background-color: #077C95; color: white;}"
-      "table.list tr:hover {background-color: #ddd;}"
-      "</style>"
-      "<script>"
-      "function sortTable(n) {"
-      "var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;"
-      "table = document.getElementById(\"sorted\");"
-      "switching = true; dir = \"asc\";"
-      "while (switching) {"
-      "switching = false; rows = table.rows;"
-      "for (i = 1; i < (rows.length - 1); i++) {"
-      "shouldSwitch = false;"
-      "x = rows[i].getElementsByTagName(\"TD\")[n];"
-      "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
-      "if (dir == \"asc\") {"
-      "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {"
-      "shouldSwitch= true; break;"
-      "}} else if (dir == \"desc\") {"
-      "if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {"
-      "shouldSwitch = true; break;}}}"
-      "if (shouldSwitch) {"
-      "rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);"
-      "switching = true; switchcount ++; } else {"
-      "if (switchcount == 0 && dir == \"asc\") {"
-      "dir = \"desc\"; switching = true;"
-      "}}}}"
-      "</script>"
-      "</head>"
-      "<body>");
-
-    extern const unsigned char upload_script_start[] asm("_binary_upload_script_html_start");
-    extern const unsigned char upload_script_end[]   asm("_binary_upload_script_html_end");
-    const size_t upload_script_size = (upload_script_end - upload_script_start);
-
-    httpd_resp_send_chunk(req, (const char *) upload_script_start, upload_script_size);
-
-    httpd_resp_sendstr_chunk(req,
-        "<table class=\"fixed list\" id=\"sorted\">"
-        "<colgroup><col width=\"70%\"/><col width=\"8%\"/><col width=\"14%\"/><col width=\"8%\"/></colgroup>"
-        "<thead><tr><th onclick=\"sortTable(0)\">Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
-        "<tbody>");
-
-    while ((entry = readdir(dir)) != NULL) {
-        entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
-
-        strlcpy(entrypath + dirpath_len, entry->d_name, sizeof(entrypath) - dirpath_len);
-        if (stat(entrypath, &entry_stat) == -1) {
-            ESP_LOGE(TAG, "Failed to stat %s : %s", entrytype, entry->d_name);
-            continue;
-        }
-        sprintf(entrysize, "%ld", entry_stat.st_size);
-        ESP_LOGI(TAG, "Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
-
-        httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        if (entry->d_type == DT_DIR) {
-            httpd_resp_sendstr_chunk(req, "/");
-        }
-        httpd_resp_sendstr_chunk(req, "\">");
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "</a></td><td>");
-        httpd_resp_sendstr_chunk(req, entrytype);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, entrysize);
-        httpd_resp_sendstr_chunk(req, "</td><td>");
-        httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
-        httpd_resp_sendstr_chunk(req, req->uri);
-        httpd_resp_sendstr_chunk(req, entry->d_name);
-        httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
-        httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+    httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
+    httpd_resp_sendstr_chunk(req, req->uri);
+    httpd_resp_sendstr_chunk(req, entry->d_name);
+    if (entry->d_type == DT_DIR) {
+      httpd_resp_sendstr_chunk(req, "/");
     }
-    closedir(dir);
+    httpd_resp_sendstr_chunk(req, "\">");
+    httpd_resp_sendstr_chunk(req, entry->d_name);
+    httpd_resp_sendstr_chunk(req, "</a></td><td>");
+    httpd_resp_sendstr_chunk(req, entrytype);
+    httpd_resp_sendstr_chunk(req, "</td><td>");
+    httpd_resp_sendstr_chunk(req, entrysize);
+    httpd_resp_sendstr_chunk(req, "</td><td>");
+    httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
+    httpd_resp_sendstr_chunk(req, req->uri);
+    httpd_resp_sendstr_chunk(req, entry->d_name);
+    httpd_resp_sendstr_chunk(req, "\"><button type=\"submit\">Delete</button></form>");
+    httpd_resp_sendstr_chunk(req, "</td></tr>\n");
+  }
+  closedir(dir);
 
-    httpd_resp_sendstr_chunk(req,"</tbody></table>");
+  httpd_resp_sendstr_chunk(req,"</tbody></table>");
 
-    httpd_resp_sendstr_chunk(req,
-      "<script>window.addEventListener(\"load\", function(){sortTable(0);})</script>" 
-      "</body></html>");
+  httpd_resp_sendstr_chunk(req,
+    "<script>window.addEventListener(\"load\", function(){sortTable(0);})</script>" 
+    "</body></html>");
 
-    httpd_resp_sendstr_chunk(req, NULL);
-    return ESP_OK;
+  httpd_resp_sendstr_chunk(req, NULL);
+  return ESP_OK;
 }
 
 #define IS_FILE_EXT(filename, ext) \
@@ -209,11 +211,11 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
 static esp_err_t 
 set_content_type_from_file(httpd_req_t * req, const char * filename)
 {
-    if (IS_FILE_EXT(filename, ".epub")) {
-        return httpd_resp_set_type(req, "application/epub+zip");
-    } 
+  if (IS_FILE_EXT(filename, ".epub")) {
+    return httpd_resp_set_type(req, "application/epub+zip");
+  } 
 
-    return httpd_resp_set_type(req, "text/plain");
+  return httpd_resp_set_type(req, "text/plain");
 }
 
 extern unsigned char bin(char ch); // 
@@ -221,40 +223,40 @@ extern unsigned char bin(char ch); //
 static const char * 
 get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t destsize)
 {
-    const size_t base_pathlen = strlen(base_path);
-    size_t pathlen = strlen(uri);
+  const size_t base_pathlen = strlen(base_path);
+  size_t pathlen = strlen(uri);
 
-    const char *quest = strchr(uri, '?');
-    if (quest) {
-        pathlen = MIN(pathlen, quest - uri);
+  const char *quest = strchr(uri, '?');
+  if (quest) {
+    pathlen = MIN(pathlen, quest - uri);
+  }
+  const char *hash = strchr(uri, '#');
+  if (hash) {
+    pathlen = MIN(pathlen, hash - uri);
+  }
+
+  if (base_pathlen + pathlen + 1 > destsize) {
+    return NULL;
+  }
+
+  strcpy(dest, base_path);
+  const char * str_in = uri;
+  char *      str_out = dest + base_pathlen;
+  int           count = pathlen + 1;
+
+  while (count > 0) {
+    if (str_in[0] == '%') {
+      *str_out++ = (bin(str_in[1]) << 4) + bin(str_in[2]);
+      count  -= 3;
+      str_in += 3;
     }
-    const char *hash = strchr(uri, '#');
-    if (hash) {
-        pathlen = MIN(pathlen, hash - uri);
+    else {
+      *str_out++ = *str_in++;
+      count--;
     }
+  }
 
-    if (base_pathlen + pathlen + 1 > destsize) {
-        return NULL;
-    }
-
-    strcpy(dest, base_path);
-    const char * str_in = uri;
-    char *      str_out = dest + base_pathlen;
-    int           count = pathlen + 1;
-
-    while (count > 0) {
-      if (str_in[0] == '%') {
-        *str_out++ = (bin(str_in[1]) << 4) + bin(str_in[2]);
-        count  -= 3;
-        str_in += 3;
-      }
-      else {
-        *str_out++ = *str_in++;
-        count--;
-      }
-    }
-
-    return dest + base_pathlen;
+  return dest + base_pathlen;
 }
 
 // ----- download_handler() -----
@@ -262,72 +264,72 @@ get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t 
 static esp_err_t
 download_handler(httpd_req_t * req)
 {
-    char filepath[FILE_PATH_MAX];
-    FILE * fd = NULL;
-    struct stat file_stat;
+  char filepath[FILE_PATH_MAX];
+  FILE * fd = NULL;
+  struct stat file_stat;
 
-    const char * filename = get_path_from_uri(
-      filepath, 
-      ((FileServerData *) req->user_ctx)->base_path,
-      req->uri, 
-      sizeof(filepath));
+  const char * filename = get_path_from_uri(
+    filepath, 
+    ((FileServerData *) req->user_ctx)->base_path,
+    req->uri, 
+    sizeof(filepath));
 
-    if (!filename) {
-        ESP_LOGE(TAG, "Filename is too long");
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+  if (!filename) {
+    ESP_LOGE(TAG, "Filename is too long");
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+    return ESP_FAIL;
+  }
+
+  if (filename[strlen(filename) - 1] == '/') {
+    return http_resp_dir_html(req, filepath);
+  }
+
+  if (stat(filepath, &file_stat) == -1) {
+      /* If file not present check if URL
+        * corresponds to one of the hardcoded paths */
+    if (strcmp(filename, "/index.html") == 0) {
+      return index_html_get_handler(req);
+    } else if (strcmp(filename, "/favicon.ico") == 0) {
+      return favicon_get_handler(req);
+    }
+    ESP_LOGE(TAG, "Failed to stat file : %s", filepath);
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
+    return ESP_FAIL;
+  }
+
+  fd = fopen(filepath, "r");
+  if (!fd) {
+    ESP_LOGE(TAG, "Failed to read existing file : %s", filepath);
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
+    return ESP_FAIL;
+  }
+
+  ESP_LOGI(TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
+  set_content_type_from_file(req, filename);
+
+  // Retrieve the pointer to scratch buffer for temporary storage
+  char *chunk = ((FileServerData *)req->user_ctx)->scratch;
+  size_t chunksize;
+  do {
+    chunksize = fread(chunk, 1, SCRATCH_BUFSIZE, fd);
+
+    if (chunksize > 0) {
+      if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) {
+        fclose(fd);
+        ESP_LOGE(TAG, "File sending failed!");
+        httpd_resp_sendstr_chunk(req, NULL);
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
         return ESP_FAIL;
+      }
     }
+  } while (chunksize != 0);
 
-    if (filename[strlen(filename) - 1] == '/') {
-        return http_resp_dir_html(req, filepath);
-    }
+  fclose(fd);
+  ESP_LOGI(TAG, "File sending complete");
 
-    if (stat(filepath, &file_stat) == -1) {
-        /* If file not present check if URL
-         * corresponds to one of the hardcoded paths */
-        if (strcmp(filename, "/index.html") == 0) {
-            return index_html_get_handler(req);
-        } else if (strcmp(filename, "/favicon.ico") == 0) {
-            return favicon_get_handler(req);
-        }
-        ESP_LOGE(TAG, "Failed to stat file : %s", filepath);
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
-        return ESP_FAIL;
-    }
-
-    fd = fopen(filepath, "r");
-    if (!fd) {
-        ESP_LOGE(TAG, "Failed to read existing file : %s", filepath);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
-    set_content_type_from_file(req, filename);
-
-    // Retrieve the pointer to scratch buffer for temporary storage
-    char *chunk = ((FileServerData *)req->user_ctx)->scratch;
-    size_t chunksize;
-    do {
-        chunksize = fread(chunk, 1, SCRATCH_BUFSIZE, fd);
-
-        if (chunksize > 0) {
-            if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) {
-                fclose(fd);
-                ESP_LOGE(TAG, "File sending failed!");
-                httpd_resp_sendstr_chunk(req, NULL);
-                httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
-               return ESP_FAIL;
-           }
-        }
-    } while (chunksize != 0);
-
-    fclose(fd);
-    ESP_LOGI(TAG, "File sending complete");
-
-    /* Respond with an empty chunk to signal HTTP response completion */
-    httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
+  /* Respond with an empty chunk to signal HTTP response completion */
+  httpd_resp_send_chunk(req, NULL, 0);
+  return ESP_OK;
 }
 
 // ----- upload_handler() -----
@@ -335,94 +337,94 @@ download_handler(httpd_req_t * req)
 static esp_err_t 
 upload_handler(httpd_req_t *req)
 {
-    char filepath[FILE_PATH_MAX];
-    FILE *fd = NULL;
-    struct stat file_stat;
+  char filepath[FILE_PATH_MAX];
+  FILE *fd = NULL;
+  struct stat file_stat;
 
-    /* Skip leading "/upload" from URI to get filename */
-    /* Note sizeof() counts NULL termination hence the -1 */
-    const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                             req->uri + sizeof("/upload") - 1, sizeof(filepath));
-    if (!filename) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
-        return ESP_FAIL;
+  /* Skip leading "/upload" from URI to get filename */
+  /* Note sizeof() counts NULL termination hence the -1 */
+  const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
+                                            req->uri + sizeof("/upload") - 1, sizeof(filepath));
+  if (!filename) {
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+    return ESP_FAIL;
+  }
+
+  if (filename[strlen(filename) - 1] == '/') {
+    ESP_LOGE(TAG, "Invalid filename : %s", filename);
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
+    return ESP_FAIL;
+  }
+
+  if (stat(filepath, &file_stat) == 0) {
+    ESP_LOGE(TAG, "File already exists : %s", filepath);
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
+    return ESP_FAIL;
+  }
+
+  if (req->content_len > MAX_FILE_SIZE) {
+    ESP_LOGE(TAG, "File too large : %d bytes", req->content_len);
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
+                        "File size must be less than "
+                        MAX_FILE_SIZE_STR "!");
+    return ESP_FAIL;
+  }
+
+  fd = fopen(filepath, "w");
+  if (!fd) {
+    ESP_LOGE(TAG, "Failed to create file : %s", filepath);
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
+    return ESP_FAIL;
+  }
+
+  ESP_LOGI(TAG, "Receiving file : %s...", filename);
+
+  /* Retrieve the pointer to scratch buffer for temporary storage */
+  char *buf = ((FileServerData *) req->user_ctx)->scratch;
+  int received;
+
+  /* Content length of the request gives
+    * the size of the file being uploaded */
+  int remaining = req->content_len;
+
+  while (remaining > 0) {
+
+    ESP_LOGI(TAG, "Remaining size : %d", remaining);
+    if ((received = httpd_req_recv(req, buf, MIN(remaining, SCRATCH_BUFSIZE))) <= 0) {
+      if (received == HTTPD_SOCK_ERR_TIMEOUT) {
+        continue;
+      }
+
+      fclose(fd);
+      unlink(filepath);
+
+      ESP_LOGE(TAG, "File reception failed!");
+      httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive file");
+      return ESP_FAIL;
     }
 
-    if (filename[strlen(filename) - 1] == '/') {
-        ESP_LOGE(TAG, "Invalid filename : %s", filename);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
-        return ESP_FAIL;
+    /* Write buffer content to file on storage */
+    if (received && (received != fwrite(buf, 1, received, fd))) {
+      /* Couldn't write everything to file!
+        * Storage may be full? */
+      fclose(fd);
+      unlink(filepath);
+
+      ESP_LOGE(TAG, "File write failed!");
+      httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to write file to storage");
+      return ESP_FAIL;
     }
 
-    if (stat(filepath, &file_stat) == 0) {
-        ESP_LOGE(TAG, "File already exists : %s", filepath);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
-        return ESP_FAIL;
-    }
+    remaining -= received;
+  }
+  fclose(fd);
+  ESP_LOGI(TAG, "File reception complete");
 
-    if (req->content_len > MAX_FILE_SIZE) {
-        ESP_LOGE(TAG, "File too large : %d bytes", req->content_len);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
-                            "File size must be less than "
-                            MAX_FILE_SIZE_STR "!");
-        return ESP_FAIL;
-    }
-
-    fd = fopen(filepath, "w");
-    if (!fd) {
-        ESP_LOGE(TAG, "Failed to create file : %s", filepath);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "Receiving file : %s...", filename);
-
-    /* Retrieve the pointer to scratch buffer for temporary storage */
-    char *buf = ((FileServerData *) req->user_ctx)->scratch;
-    int received;
-
-    /* Content length of the request gives
-     * the size of the file being uploaded */
-    int remaining = req->content_len;
-
-    while (remaining > 0) {
-
-        ESP_LOGI(TAG, "Remaining size : %d", remaining);
-        if ((received = httpd_req_recv(req, buf, MIN(remaining, SCRATCH_BUFSIZE))) <= 0) {
-            if (received == HTTPD_SOCK_ERR_TIMEOUT) {
-                continue;
-            }
-
-            fclose(fd);
-            unlink(filepath);
-
-            ESP_LOGE(TAG, "File reception failed!");
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive file");
-            return ESP_FAIL;
-        }
-
-        /* Write buffer content to file on storage */
-        if (received && (received != fwrite(buf, 1, received, fd))) {
-            /* Couldn't write everything to file!
-             * Storage may be full? */
-            fclose(fd);
-            unlink(filepath);
-
-            ESP_LOGE(TAG, "File write failed!");
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to write file to storage");
-            return ESP_FAIL;
-        }
-
-        remaining -= received;
-    }
-    fclose(fd);
-    ESP_LOGI(TAG, "File reception complete");
-
-    /* Redirect onto root to see the updated file list */
-    httpd_resp_set_status(req, "303 See Other");
-    httpd_resp_set_hdr(req, "Location", "/");
-    httpd_resp_sendstr(req, "File uploaded successfully");
-    return ESP_OK;
+  /* Redirect onto root to see the updated file list */
+  httpd_resp_set_status(req, "303 See Other");
+  httpd_resp_set_hdr(req, "Location", "/");
+  httpd_resp_sendstr(req, "File uploaded successfully");
+  return ESP_OK;
 }
 
 // ----- delete_handler() -----
@@ -430,38 +432,38 @@ upload_handler(httpd_req_t *req)
 static esp_err_t 
 delete_handler(httpd_req_t *req)
 {
-    char filepath[FILE_PATH_MAX];
-    struct stat file_stat;
+  char filepath[FILE_PATH_MAX];
+  struct stat file_stat;
 
-    /* Skip leading "/delete" from URI to get filename */
-    /* Note sizeof() counts NULL termination hence the -1 */
-    const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                             req->uri  + sizeof("/delete") - 1, sizeof(filepath));
-    if (!filename) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
-        return ESP_FAIL;
-    }
+  /* Skip leading "/delete" from URI to get filename */
+  /* Note sizeof() counts NULL termination hence the -1 */
+  const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
+                                            req->uri  + sizeof("/delete") - 1, sizeof(filepath));
+  if (!filename) {
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+    return ESP_FAIL;
+  }
 
-    if (filename[strlen(filename) - 1] == '/') {
-        ESP_LOGE(TAG, "Invalid filename : %s", filename);
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
-        return ESP_FAIL;
-    }
+  if (filename[strlen(filename) - 1] == '/') {
+    ESP_LOGE(TAG, "Invalid filename : %s", filename);
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
+    return ESP_FAIL;
+  }
 
-    if (stat(filepath, &file_stat) == -1) {
-        ESP_LOGE(TAG, "File does not exist : %s", filename);
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
-        return ESP_FAIL;
-    }
+  if (stat(filepath, &file_stat) == -1) {
+    ESP_LOGE(TAG, "File does not exist : %s", filename);
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
+    return ESP_FAIL;
+  }
 
-    ESP_LOGI(TAG, "Deleting file : %s", filename);
-    unlink(filepath);
+  ESP_LOGI(TAG, "Deleting file : %s", filename);
+  unlink(filepath);
 
-    /* Redirect onto root to see the updated file list */
-    httpd_resp_set_status(req, "303 See Other");
-    httpd_resp_set_hdr(req, "Location", "/");
-    httpd_resp_sendstr(req, "File deleted successfully");
-    return ESP_OK;
+  /* Redirect onto root to see the updated file list */
+  httpd_resp_set_status(req, "303 See Other");
+  httpd_resp_set_hdr(req, "Location", "/");
+  httpd_resp_sendstr(req, "File deleted successfully");
+  return ESP_OK;
 }
 
 // ----- http_server_start() -----
@@ -469,57 +471,57 @@ delete_handler(httpd_req_t *req)
 static esp_err_t 
 http_server_start()
 {
-    if (server_data) {
-        ESP_LOGE(TAG, "File server already started");
-        return ESP_ERR_INVALID_STATE;
-    }
+  if (server_data) {
+    ESP_LOGE(TAG, "File server already started");
+    return ESP_ERR_INVALID_STATE;
+  }
 
-    /* Allocate memory for server data */
-    server_data = (FileServerData *) calloc(1, sizeof(FileServerData));
-    if (!server_data) {
-        ESP_LOGE(TAG, "Failed to allocate memory for server data");
-        return ESP_ERR_NO_MEM;
-    }
-    strcpy(server_data->base_path, "/sdcard/books");
+  /* Allocate memory for server data */
+  server_data = (FileServerData *) calloc(1, sizeof(FileServerData));
+  if (!server_data) {
+    ESP_LOGE(TAG, "Failed to allocate memory for server data");
+    return ESP_ERR_NO_MEM;
+  }
+  strcpy(server_data->base_path, "/sdcard/books");
 
-    httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
+  httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
 
-    int32_t port;
-    config.get(Config::Ident::PORT, &port);
-    httpd_config.uri_match_fn = httpd_uri_match_wildcard;
-    httpd_config.server_port = (uint16_t) port;
+  int32_t port;
+  config.get(Config::Ident::PORT, &port);
+  httpd_config.uri_match_fn = httpd_uri_match_wildcard;
+  httpd_config.server_port = (uint16_t) port;
 
-    ESP_LOGI(TAG, "Starting HTTP Server");
-    if (httpd_start(&server, &httpd_config) != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start file server!");
-        return ESP_FAIL;
-    }
+  ESP_LOGI(TAG, "Starting HTTP Server");
+  if (httpd_start(&server, &httpd_config) != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to start file server!");
+    return ESP_FAIL;
+  }
 
-    httpd_uri_t file_download = {
-        .uri       = "/*",  // Match all URIs of type /path/to/file
-        .method    = HTTP_GET,
-        .handler   = download_handler,
-        .user_ctx  = server_data 
-    };
-    httpd_register_uri_handler(server, &file_download);
+  httpd_uri_t file_download = {
+    .uri       = "/*",  // Match all URIs of type /path/to/file
+    .method    = HTTP_GET,
+    .handler   = download_handler,
+    .user_ctx  = server_data 
+  };
+  httpd_register_uri_handler(server, &file_download);
 
-    httpd_uri_t file_upload = {
-        .uri       = "/upload/*",   // Match all URIs of type /upload/path/to/file
-        .method    = HTTP_POST,
-        .handler   = upload_handler,
-        .user_ctx  = server_data 
-    };
-    httpd_register_uri_handler(server, &file_upload);
+  httpd_uri_t file_upload = {
+    .uri       = "/upload/*",   // Match all URIs of type /upload/path/to/file
+    .method    = HTTP_POST,
+    .handler   = upload_handler,
+    .user_ctx  = server_data 
+  };
+  httpd_register_uri_handler(server, &file_upload);
 
-    httpd_uri_t file_delete = {
-        .uri       = "/delete/*",   // Match all URIs of type /delete/path/to/file
-        .method    = HTTP_POST,
-        .handler   = delete_handler,
-        .user_ctx  = server_data
-    };
-    httpd_register_uri_handler(server, &file_delete);
+  httpd_uri_t file_delete = {
+    .uri       = "/delete/*",   // Match all URIs of type /delete/path/to/file
+    .method    = HTTP_POST,
+    .handler   = delete_handler,
+    .user_ctx  = server_data
+  };
+  httpd_register_uri_handler(server, &file_delete);
 
-    return ESP_OK;
+  return ESP_OK;
 }
 
 // ----- http_server_stop() -----

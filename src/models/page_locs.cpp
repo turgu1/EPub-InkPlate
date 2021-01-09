@@ -9,8 +9,6 @@
 
 #include "stb_image.h"
 
-#include <esp_pthread.h>
-
 enum class MgrReq : int8_t { ASAP_READY, STOPPED };
 
 struct MgrQueueData {
@@ -48,6 +46,18 @@ struct RetrieveQueueData {
   #define QUEUE_SEND(q, m, t)        mq_send(q, (const char *) &m, sizeof(m),       1)
   #define QUEUE_RECEIVE(q, m, t)  mq_receive(q,       (char *) &m, sizeof(m), nullptr)
 #else
+  #include <esp_pthread.h>
+
+  static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack, int prio)
+  {
+      auto cfg = esp_pthread_get_default_config();
+      cfg.thread_name = name;
+      cfg.pin_to_core = core_id;
+      cfg.stack_size = stack;
+      cfg.prio = prio;
+      return cfg;
+  }
+
   static xQueueHandle mgr_queue;
   static xQueueHandle state_queue;
   static xQueueHandle retrieve_queue;
@@ -165,10 +175,10 @@ struct RetrieveQueueData {
               itemref_count(     -1),
         waiting_for_itemref(     -1),
         next_itemref_to_get(     -1),
-              asap_itemref(     -1),
-                    bitset(nullptr),
+               asap_itemref(     -1),
+                     bitset(nullptr),
                 bitset_size(      0),
-          forget_retrieval(  false)  { }
+           forget_retrieval(  false)  { }
 
 
       void operator()() {
@@ -606,16 +616,6 @@ struct RetrieveQueueData {
 
 #endif
 
-static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack, int prio)
-{
-    auto cfg = esp_pthread_get_default_config();
-    cfg.thread_name = name;
-    cfg.pin_to_core = core_id;
-    cfg.stack_size = stack;
-    cfg.prio = prio;
-    return cfg;
-}
-
 void
 PageLocs::setup()
 {
@@ -852,24 +852,6 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
         page.new_paragraph(fmt);
       }
     } 
-
-    // if ((fmt.display == CSS::Display::BLOCK) && page.some_data_waiting()) {
-    //   SHOW_LOCATION("End Paragraph 1");
-    //   if (!page.end_paragraph(fmt)) {
-    //     page_locs_end_page(fmt);
-    //     SHOW_LOCATION("End Paragraph 2");
-    //     page.end_paragraph(fmt);
-    //   }
-    // }
-    // if ((current_offset == start_of_page_offset) && start_of_paragraph) {
-    //   SHOW_LOCATION("New Paragraph 1");
-    //   if (!page.new_paragraph(fmt)) {
-    //     page_locs_end_page(fmt);
-    //     SHOW_LOCATION("New Paragraph 2");
-    //     page.new_paragraph(fmt);
-    //   }
-    //   start_of_paragraph = false;
-    // }
   }
   else {
     //This is a node inside a named node. It is contaning some text to show.
