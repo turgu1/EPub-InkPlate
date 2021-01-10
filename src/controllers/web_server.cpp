@@ -437,7 +437,7 @@ delete_handler(httpd_req_t *req)
 
   /* Skip leading "/delete" from URI to get filename */
   /* Note sizeof() counts NULL termination hence the -1 */
-  const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
+  const char * filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
                                             req->uri  + sizeof("/delete") - 1, sizeof(filepath));
   if (!filename) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
@@ -451,13 +451,30 @@ delete_handler(httpd_req_t *req)
   }
 
   if (stat(filepath, &file_stat) == -1) {
-    ESP_LOGE(TAG, "File does not exist : %s", filename);
+    ESP_LOGE(TAG, "File does not exist : %s", filepath);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
     return ESP_FAIL;
   }
 
-  ESP_LOGI(TAG, "Deleting file : %s", filename);
+  ESP_LOGI(TAG, "Deleting file : %s", filepath);
   unlink(filepath);
+
+  int pos = strlen(filepath) - 5;
+  if (strcmp(&filepath[pos], ".epub") == 0) {
+    strcpy(&filepath[pos], ".pars");
+
+    if (stat(filepath, &file_stat) != -1) {
+      ESP_LOGI(TAG, "Deleting file : %s", filepath);
+      unlink(filepath);
+    }
+
+    strcpy(&filepath[pos], ".locs");
+
+    if (stat(filepath, &file_stat) != -1) {
+      ESP_LOGI(TAG, "Deleting file : %s", filepath);
+      unlink(filepath);
+    }
+  }
 
   /* Redirect onto root to see the updated file list */
   httpd_resp_set_status(req, "303 See Other");

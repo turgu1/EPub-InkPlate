@@ -9,6 +9,7 @@
 #include "controllers/common_actions.hpp"
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
+#include "models/config.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -131,6 +132,8 @@ ParamController::key_event(EventMgr::KeyEvent key)
         if (font              !=              old_font) book_params->put(BookParams::Ident::FONT,               font             );
         if (use_fonts_in_book != old_use_fonts_in_book) book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK,  use_fonts_in_book);
         
+        if (book_params->is_modified()) epub.update_book_format_params();
+
         book_params->save();
       }
     }

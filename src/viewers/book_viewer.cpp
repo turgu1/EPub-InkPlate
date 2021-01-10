@@ -6,7 +6,6 @@
 #include "viewers/book_viewer.hpp"
 
 #include "models/ttf2.hpp"
-#include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "image_info.hpp"
 
@@ -70,10 +69,12 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
         case Element::SPAN:
         case Element::A:
           break;
+
       #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
+
       #else
         case Element::IMG:
           if (show_images) {
@@ -90,6 +91,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
+
         case Element::IMAGE: 
           if (show_images) {
             if (started) {
@@ -100,11 +102,13 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
+
       #endif
         case Element::PRE:
           fmt.pre = start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::LI:
         case Element::DIV:
         case Element::BLOCKQUOTE:
@@ -113,6 +117,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           // LOG_D("Para: %d %d", fmt.font_index, fmt.font_size);
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::BREAK:
           if (started) {
             SHOW_LOCATION("Page Break");
@@ -120,6 +125,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           }
           current_offset++;
           break;
+
         case Element::B: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
@@ -127,6 +133,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
             page.reset_font_index(fmt, style);
           }
           break; 
+
         case Element::I:
         case Element::EM: {
             Fonts::FaceStyle style = fmt.font_style;
@@ -135,34 +142,40 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
             page.reset_font_index(fmt, style);
           }
           break;
+
         case Element::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H4:
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+          
         case Element::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
@@ -318,9 +331,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
   page.set_compute_mode(Page::ComputeMode::MOVE);
 
-  int8_t images_are_shown;
-  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
-  show_images = images_are_shown != 0;
+  show_images = epub.get_book_format_params()->show_images != 0;
 
   if (epub.get_item_at_index(page_id.itemref_index)) {
 
@@ -330,8 +341,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       idx = 1;
     }
 
-    int8_t font_size;
-    config.get(Config::Ident::FONT_SIZE, &font_size);
+    int8_t font_size = epub.get_book_format_params()->font_size;
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -356,7 +366,10 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .display            = CSS::Display::INLINE
     };
 
+    mutex.unlock();
     const PageLocs::PageInfo * page_info = page_locs.get_page_info(page_id);
+    mutex.lock();
+    
     if (page_info == nullptr) return;
 
     current_offset       = 0;

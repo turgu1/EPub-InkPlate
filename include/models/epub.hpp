@@ -34,6 +34,19 @@ class EPub
       MediaType          media_type;
     };
 
+    // This struct contains the current parameters that influence
+    // the rendering of e-book pages. Its content is constructed from
+    // both the e-book's specific parameters and default configuration options.
+    #pragma pack(push, 1)
+    struct BookFormatParams {
+      int8_t orientation;  ///< Config option only
+      int8_t show_images;      
+      int8_t font_size;        
+      int8_t use_fonts_in_book;
+      int8_t font;             
+    };
+    #pragma pack(pop)
+    
   private:
    static constexpr char const * TAG = "EPub";
 
@@ -46,6 +59,7 @@ class EPub
 
     ItemInfo           current_item_info;
     BookParams       * book_params;
+    BookFormatParams   book_format_params;
 
     CSSList            css_cache;             ///< All css files in the ebook are maintained here.
   
@@ -61,22 +75,23 @@ class EPub
     EPub();
    ~EPub();
 
-    void      retrieve_css(ItemInfo &           item);
-    void   clear_item_data(ItemInfo &           item);
-    void       open_params(const std::string &  epub_filename);
-    bool         open_file(const std::string &  epub_filename);
-    bool        close_file();
-    bool         get_image(std::string &        filename,
-                           Page::Image &        image,
-                           int16_t &            channel_count);
-    char*    retrieve_file(const char *         fname, 
-                           uint32_t &           size);
-    bool          get_item(pugi::xml_node       itemref, 
-                           ItemInfo &           item);
-    bool get_item_at_index(int16_t              itemref_index);
-    bool get_item_at_index(int16_t              itemref_index,
-                           ItemInfo &           item);
-    int16_t get_item_count();
+    void              retrieve_css(ItemInfo &           item);
+    void           clear_item_data(ItemInfo &           item);
+    void               open_params(const std::string &  epub_filename);
+    bool                 open_file(const std::string &  epub_filename);
+    bool                close_file();
+    bool                 get_image(std::string &        filename,
+                                   Page::Image &        image,
+                                   int16_t &            channel_count);
+    char*            retrieve_file(const char *         fname, 
+                                   uint32_t &           size);
+    bool                  get_item(pugi::xml_node       itemref, 
+                                   ItemInfo &           item);
+    bool         get_item_at_index(int16_t              itemref_index);
+    bool         get_item_at_index(int16_t              itemref_index,
+                                   ItemInfo &           item);
+    int16_t         get_item_count();
+    void update_book_format_params();
 
     /**
      * @brief Retrieve cover's filename
@@ -99,6 +114,7 @@ class EPub
     inline const pugi::xml_document &     get_current_item()       { return current_item_info.xml_doc;       }
     inline const std::string &        get_current_filename()       { return current_filename;                }
     inline BookParams *                    get_book_params()       { return book_params;                     }
+    inline BookFormatParams *       get_book_format_params()       { return &book_format_params;             }
   };
 
 #if __EPUB__

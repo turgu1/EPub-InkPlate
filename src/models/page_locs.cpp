@@ -1,6 +1,5 @@
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
-#include "models/config.hpp"
 #include "controllers/event_mgr.hpp"
 
 #include "viewers/book_viewer.hpp"
@@ -8,6 +7,10 @@
 #include "logging.hpp"
 
 #include "stb_image.h"
+
+#include <iostream>
+#include <fstream>
+#include <ios>
 
 enum class MgrReq : int8_t { ASAP_READY, STOPPED };
 
@@ -183,6 +186,7 @@ struct RetrieveQueueData {
 
       void operator()() {
         for (;;) {
+          LOG_D("==> Waiting for request... <==");
           if (QUEUE_RECEIVE(state_queue, state_queue_data, portMAX_DELAY) == -1) {
             LOG_E("Receive error: %d: %s", errno, strerror(errno));
           }
@@ -325,9 +329,10 @@ struct RetrieveQueueData {
     public:
       void operator ()() const {
         RetrieveQueueData retrieve_queue_data;
-        StateQueueData state_queue_data;
+        StateQueueData    state_queue_data;
 
         for (;;) {
+          LOG_D("==> Waiting for request... <==");
           if (QUEUE_RECEIVE(retrieve_queue, retrieve_queue_data, portMAX_DELAY) == -1) {
             LOG_E("Receive error: %d: %s", errno, strerror(errno));
           }
@@ -345,7 +350,7 @@ struct RetrieveQueueData {
               state_queue_data.itemref_index = retrieve_queue_data.itemref_index;
             }
 
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            //std::this_thread::sleep_for(std::chrono::seconds(5));
             state_queue_data.req = 
               (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? 
                 StateReq::ASAP_READY : StateReq::ITEM_READY;
@@ -670,10 +675,10 @@ bool
 PageLocs::page_locs_end_page(Page::Format & fmt)
 {
   bool res = true;
-  if (!page.is_empty()) {
+  if ((item_info.itemref_index == 0) || !page.is_empty()) {
 
-    PageLocs::PageId   page_id   = PageLocs::PageId(item_info.itemref_index, start_of_page_offset);
-    PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_of_page_offset, -1);
+    PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
+    PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
     
     res = page_locs.insert(page_id, page_info);
 
@@ -721,10 +726,12 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
         case Element::SPAN:
         case Element::A:
           break;
+
       #if NO_IMAGE
         case IMG:
         case IMAGE:
           break;
+
       #else
         case Element::IMG: 
           if (show_images) {
@@ -738,6 +745,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
+
         case Element::IMAGE: 
           if (show_images) {
             xml_attribute attr = node.attribute("xlink:href");
@@ -745,11 +753,13 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
             else current_offset++;
           }
           break;
+
       #endif
         case Element::PRE:
           fmt.pre     = start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::LI:
         case Element::DIV:
         case Element::BLOCKQUOTE:
@@ -757,6 +767,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::BREAK:
           SHOW_LOCATION("Page Break");
           if (!page.line_break(fmt)) {
@@ -766,6 +777,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           }
           current_offset++;
           break;
+
         case Element::B: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
@@ -773,6 +785,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
             page.reset_font_index(fmt, style);
           }
           break;
+
         case Element::I:
         case Element::EM: {
             Fonts::FaceStyle style = fmt.font_style;
@@ -781,34 +794,40 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
             page.reset_font_index(fmt, style);
           }
           break;
+
         case Element::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H4:
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+
         case Element::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
+          
         case Element::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
@@ -971,9 +990,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
   
   page.set_compute_mode(Page::ComputeMode::LOCATION);
 
-  int8_t images_are_shown;
-  config.get(Config::Ident::SHOW_IMAGES, &images_are_shown);
-  show_images = images_are_shown == 1;
+  show_images = current_format_params.show_images == 1;
 
   bool done = false;
 
@@ -985,8 +1002,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
       idx = 1;
     }
     
-    int8_t font_size;
-    config.get(Config::Ident::FONT_SIZE, &font_size);
+    int8_t font_size = current_format_params.font_size;
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -1065,6 +1081,7 @@ PageLocs::retrieve_asap(int16_t itemref_index)
 
   relax = true;
   MgrQueueData mgr_queue_data;
+  LOG_D("==> Waiting for answer... <==");
   QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
   LOG_D("-> %s <-", mgr_queue_data.req == MgrReq::ASAP_READY ? "ASAP_READY" : "ERROR!!!");
   relax = false;
@@ -1082,6 +1099,7 @@ PageLocs::stop_document()
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
   MgrQueueData mgr_queue_data;
+  LOG_D("==> Waiting for STOPPED... <==");
   QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
   LOG_D("-> %s <-", (mgr_queue_data.req == MgrReq::STOPPED) ? "STOPPED" : "ERROR!!!");
 }
@@ -1089,20 +1107,9 @@ PageLocs::stop_document()
 void 
 PageLocs::start_new_document(int16_t count, int16_t itemref_index) 
 { 
-  item_count = count;
-  StateQueueData state_queue_data;
-
   if (!retriever_is_iddle()) stop_document();
 
-  state_queue_data.req           = StateReq::START_DOCUMENT;
-  state_queue_data.itemref_count = item_count;
-  state_queue_data.itemref_index = itemref_index;
-  LOG_D("start_new_document: Sending START_DOCUMENT");
-  QUEUE_SEND(state_queue, state_queue_data, 0);
-
-  event_mgr.set_stay_on(true);
-
-  clear();
+  check_for_format_changes(count, itemref_index, !load(epub.get_current_filename()));
 }
 
 
@@ -1180,10 +1187,10 @@ PageLocs::get_prev_page_id(const PageId & page_id, int count)
 
   PagesMap::iterator it = check_and_find(page_id);
   if (it == pages_map.end()) {
-    it = check_and_find(PageId(0,0));
+    it = check_and_find(PageId(0, 0));
   }
   else {
-    PageId id = page_id;
+    PageId id = it->first;
       
     for (int16_t cptr = count; cptr > 0; cptr--) {
       if (id.offset == 0) {
@@ -1208,8 +1215,8 @@ PageLocs::get_page_id(const PageId & page_id)
 {
   std::scoped_lock guard(mutex);
 
-  PagesMap::iterator it = check_and_find(PageId(page_id.itemref_index, 0));
-  PagesMap::iterator res  = pages_map.end();
+  PagesMap::iterator it  = check_and_find(PageId(page_id.itemref_index, 0));
+  PagesMap::iterator res = pages_map.end();
   while ((it != pages_map.end()) && (it->first.itemref_index == page_id.itemref_index)) {
     if ((it->first.offset <= page_id.offset) && ((it->first.offset + it->second.size) > page_id.offset)) { res = it; break; }
     it++;
@@ -1227,6 +1234,9 @@ PageLocs::computation_completed()
     for (auto& entry : pages_map) {
       entry.second.page_number = page_nbr++;
     }
+
+    save(epub.get_current_filename());
+  
     completed = true;
     event_mgr.set_stay_on(false);
   }
@@ -1243,4 +1253,114 @@ PageLocs::show()
               << " pg: "  << entry.second.page_number << std::endl;
   }
   std::cout << "----- End Page Locations -----" << std::endl;
+}
+
+void
+PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool force)
+{
+  if (force || (memcmp(epub.get_book_format_params(), &current_format_params, sizeof(current_format_params)) != 0)) {
+
+    LOG_D("==> Page locations recalc. <==");
+
+    if (!retriever_is_iddle()) stop_document();
+
+    clear();  
+
+    current_format_params = *epub.get_book_format_params();
+
+    item_count = count;
+    StateQueueData state_queue_data;  
+
+    state_queue_data.req           = StateReq::START_DOCUMENT;
+    state_queue_data.itemref_count = item_count;
+    state_queue_data.itemref_index = itemref_index;
+    LOG_D("start_new_document: Sending START_DOCUMENT");
+    QUEUE_SEND(state_queue, state_queue_data, 0);
+
+    event_mgr.set_stay_on(true);
+  }
+}
+
+bool PageLocs::load(const std::string & epub_filename)
+{
+  std::string   filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".locs";
+  std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+  LOG_D("Loading page locations from file %s.", filename.c_str());
+
+  int8_t  version;
+  int16_t page_count;
+
+  if (!file.is_open()) {
+    LOG_E("Unable to open page locations file.");
+    return false;
+  }
+
+  for (;;) {
+    if (file.read(reinterpret_cast<char *>(&version), 1).fail()) break;
+    if (version != LOCS_FILE_VERSION) break;
+
+    if (file.read(reinterpret_cast<char *>(&current_format_params), sizeof(current_format_params)).fail()) break;
+    if (file.read(reinterpret_cast<char *>(&page_count),           sizeof(page_count)           ).fail()) break;
+
+    pages_map.clear();
+
+    for (int16_t i = 0; i < page_count; i++) {
+      PageId   page_id;
+      PageInfo page_info;
+      
+      if (file.read(reinterpret_cast<char *>(&page_id.itemref_index), sizeof(page_id.itemref_index)).fail()) break;
+      if (file.read(reinterpret_cast<char *>(&page_id.offset),        sizeof(page_id.offset       )).fail()) break;
+      if (file.read(reinterpret_cast<char *>(&page_info.size),        sizeof(page_info.size       )).fail()) break;
+      page_info.page_number = i;
+
+      page_locs.insert(page_id, page_info);
+    }
+
+    break;
+  }
+
+  bool res = !file.fail();
+  file.close();
+
+  LOG_D("Page locations load %s.", res ? "Success" : "Error");
+
+  return res;
+}
+
+bool 
+PageLocs::save(const std::string & epub_filename)
+{
+  std::string   filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".locs";
+  std::ofstream file(filename, std::ios::out | std::ios::binary);
+
+  LOG_D("Saving page locations to file %s", filename.c_str());
+
+  if (!file.is_open()) {
+    LOG_E("Not able to open page locations file.");
+    return false;
+  }
+
+  int16_t page_count = pages_map.size();
+
+  for (;;) {
+    if (file.write(reinterpret_cast<const char *>(&LOCS_FILE_VERSION),     1                            ).fail()) break;
+    if (file.write(reinterpret_cast<const char *>(&current_format_params), sizeof(current_format_params)).fail()) break;
+    if (file.write(reinterpret_cast<const char *>(&page_count),            sizeof(page_count)           ).fail()) break;
+
+    for (auto & page : pages_map) {
+      if (file.write(reinterpret_cast<const char *>(&page.first.itemref_index), sizeof(page.first.itemref_index)).fail()) break;
+      if (file.write(reinterpret_cast<const char *>(&page.first.offset),        sizeof(page.first.offset       )).fail()) break;
+      if (file.write(reinterpret_cast<const char *>(&page.second.size),         sizeof(page.second.size        )).fail()) break;
+    }
+
+    break;
+  }
+
+  bool res = !file.fail();
+  file.close();
+
+  LOG_D("Page locations save %s.", res ? "Success" : "Error");
+
+  return res;
 }

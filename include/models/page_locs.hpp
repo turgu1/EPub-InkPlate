@@ -51,6 +51,7 @@ class PageLocs
 
   private:
     static constexpr const char * TAG = "PageLocs";
+    static constexpr const int8_t LOCS_FILE_VERSION = 1;
 
     bool completed;
     struct PageCompare {
@@ -89,6 +90,7 @@ class PageLocs
     // ----- Page Locations computation -----
     
     EPub::ItemInfo item_info;    
+    EPub::BookFormatParams current_format_params;
 
     int32_t           current_offset;          ///< Where we are in current item
     int32_t           start_of_page_offset;
@@ -98,6 +100,9 @@ class PageLocs
     
     bool page_locs_end_page(Page::Format & fmt);
     bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt);
+
+    bool load(const std::string & epub_filename); ///< load page locations from .locs file
+    bool save(const std::string & epub_filename); ///< save pages locations to .locs file
 
   public:
 
@@ -128,9 +133,10 @@ class PageLocs
     const PageId * get_prev_page_id(const PageId & page_id, int     count = 1);
     const PageId *      get_page_id(const PageId & page_id                   );
 
-    void computation_completed();
-    void    start_new_document(int16_t count, int16_t itemref_index);
-    void         stop_document();
+    void check_for_format_changes(int16_t count, int16_t itemref_index, bool force = false);
+    void    computation_completed();
+    void       start_new_document(int16_t count, int16_t itemref_index);
+    void            stop_document();
 
     inline const PageInfo* get_page_info(const PageId & page_id) {
       std::scoped_lock   guard(mutex);

@@ -15,7 +15,9 @@
 class BookController
 {
   public:
-    BookController() : current_page_id(nullptr) {}
+    BookController() {
+      current_page_id = PageLocs::PageId(0, 0);
+    }
     
     void key_event(EventMgr::KeyEvent key);
     void enter();
@@ -26,7 +28,7 @@ class BookController
   private:
     static constexpr char const * TAG = "BookController";
 
-    const PageLocs::PageId * current_page_id;
+    PageLocs::PageId current_page_id;
 };
 
 #if __BOOK_CONTROLLER__

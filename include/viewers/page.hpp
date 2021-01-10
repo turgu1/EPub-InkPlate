@@ -11,7 +11,6 @@
 #include "global.hpp"
 #include "models/fonts.hpp"
 #include "models/css.hpp"
-#include "models/config.hpp"
 #include "memory_pool.hpp"
 
 #include "pugixml.hpp"

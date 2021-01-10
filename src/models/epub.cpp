@@ -31,8 +31,8 @@ EPub::EPub()
   opf_data               = nullptr;
   current_item_info.data = nullptr;
   file_is_open           = false;
-  opf_base_path.clear();
   current_itemref        = xml_node(NULL);
+  opf_base_path.clear();
   current_filename.clear();
 }
 
@@ -215,10 +215,8 @@ void
 EPub::retrieve_fonts_from_css(CSS & css)
 {
 #if USE_EPUB_FONTS
-  int8_t use_fonts_in_books;
-  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
 
-  if (use_fonts_in_books == 0) return;
+  if (book_format_params.use_fonts_in_book == 0) return;
   
   const CSS::PropertySuite * suite = css.get_property_suite("@font-face");
 
@@ -443,11 +441,34 @@ EPub::get_item(pugi::xml_node itemref,
     LOG_E("EPub get_current_item error: %d", err);
     clear_item_data(item);
   }
-  else {
-    //LOG_D("EPub get_item retrieved item id: %s", id);
-    current_itemref = itemref;
-  }
   return completed;
+}
+
+void 
+EPub::update_book_format_params()
+{
+  if (book_params == nullptr) {
+    book_format_params = {
+      .orientation       =  0,  // Get de compiler happy (no warning). Will be set below...
+      .show_images       = -1,
+      .font_size         = -1,
+      .use_fonts_in_book = -1,
+      .font              = -1
+    };
+  }
+  else {
+    book_params->get(BookParams::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
+    book_params->get(BookParams::Ident::FONT_SIZE,          &book_format_params.font_size        );
+    book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK,  &book_format_params.use_fonts_in_book);
+    book_params->get(BookParams::Ident::FONT,               &book_format_params.font             );
+  }
+
+  config.get(Config::Ident::ORIENTATION, &book_format_params.orientation);
+
+  if (book_format_params.show_images       == -1) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
+  if (book_format_params.font_size         == -1) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
+  if (book_format_params.use_fonts_in_book == -1) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
+  if (book_format_params.font              == -1) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
 }
 
 void
@@ -491,6 +512,7 @@ EPub::open_file(const std::string & epub_filename)
   }
 
   open_params(epub_filename);
+  update_book_format_params();
 
   clear_item_data(current_item_info);
 
@@ -665,7 +687,7 @@ EPub::get_item_at_index(int16_t itemref_index)
   bool res = false;
 
   if ((current_item_info.data == nullptr) || (current_itemref != node)) {
-    res = get_item(node, current_item_info);
+    if ((res = get_item(node, current_item_info))) current_itemref = node;
     current_item_info.itemref_index = itemref_index;
   }
   return res;

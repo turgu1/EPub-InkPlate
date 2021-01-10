@@ -56,6 +56,8 @@ class ConfigBase
     bool read();
     bool save(bool force = false);
 
+    inline bool is_modified() { return modified; }
+    
     #if DEBUGGING
       void show();
     #endif

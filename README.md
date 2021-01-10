@@ -10,13 +10,13 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Just in time calculation of pages locations through multithreading (a **BIG** change...)
 - [x] Integration with the new ESP-IDF-Inkplate library
 - [x] Add Parameters for e-book specific font/pictures adjustments
-- [ ] Trigger page locations recalculation when parameters have changed
+- [x] Trigger page locations recalculation when parameters have changed
 - [x] Stop light-sleep, deep-sleep while page locations is being calculated
-- [ ] Adjust web server to only show epub files and remove params file on e-book delete
-- [ ] Save computed page locations to sdcard for quick ebook load
+- [x] Adjust web server to only show epub files and remove params/locs files on e-book delete
+- [x] Save computed page locations to sdcard for quick ebook load
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
-- [ ] Tests
+- [ ] Tests, tests, tests, ...
 
 -----
 

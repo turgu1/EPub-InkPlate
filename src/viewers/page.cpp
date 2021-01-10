@@ -1196,8 +1196,7 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
 int16_t
 Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
 {
-  int8_t normal_size;
-  config.get(Config::Ident::FONT_SIZE, &normal_size);
+  int8_t normal_size = epub.get_book_format_params()->font_size;
 
   switch (value.value_type) {
     case CSS::ValueType::PX:

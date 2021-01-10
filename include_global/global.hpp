@@ -79,6 +79,8 @@
   #define SHOW_LOCATION(msg)
 #endif
 
+// The following data definitions are here for laziness... 
+// ToDo: Move them to the appropriate location
 
 struct Dim { 
   uint16_t width; 
