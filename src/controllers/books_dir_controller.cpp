@@ -190,6 +190,8 @@ BooksDirController::show_last_book()
 void 
 BooksDirController::enter()
 {
+  books_dir_viewer.setup();
+  
   if (book_was_shown && (book_index != -1)) {
     show_last_book();
   }
@@ -228,14 +230,14 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.show_page(++page_nbr, current_index);
       }
       else {
-        current_index = (books_dir.get_book_count() - 1) % BooksDirViewer::BOOKS_PER_PAGE;
+        current_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
         books_dir_viewer.highlight(current_index);
       }
       break;
     case EventMgr::KeyEvent::PREV:
       if (current_index == 0) {
         if (page_nbr > 0) {
-          current_index = BooksDirViewer::BOOKS_PER_PAGE - 1;
+          current_index = books_dir_viewer.get_books_per_page() - 1;
           books_dir_viewer.show_page(--page_nbr, current_index);
         }
       }
@@ -245,7 +247,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       }
       break;
     case EventMgr::KeyEvent::NEXT:
-      if ((current_index + 1) >= BooksDirViewer::BOOKS_PER_PAGE) {
+      if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
         if ((page_nbr + 1) < books_dir_viewer.page_count()) {
           page_nbr++;
           current_index = 0;
@@ -253,9 +255,9 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.show_page(page_nbr, current_index);
       }
       else {
-        int16_t max_index = BooksDirViewer::BOOKS_PER_PAGE;
+        int16_t max_index = books_dir_viewer.get_books_per_page();
         if ((page_nbr + 1) == books_dir_viewer.page_count()) {
-          max_index = (books_dir.get_book_count() - 1) % BooksDirViewer::BOOKS_PER_PAGE;
+          max_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
         }
         current_index++;
         if (current_index > max_index) current_index = max_index;
@@ -263,7 +265,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       }
       break;
     case EventMgr::KeyEvent::SELECT:
-      book_index = (page_nbr * BooksDirViewer::BOOKS_PER_PAGE) + current_index;
+      book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
       if (book_index < books_dir.get_book_count()) {
         book = books_dir.get_book_data(book_index);
         if (book != nullptr) {

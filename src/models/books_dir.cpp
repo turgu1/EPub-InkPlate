@@ -288,15 +288,15 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             //msg_viewer.show_progress("Computing new books page locations...");
             if (force_init) {
               msg_viewer.show(MsgViewer::INFO, false, true, 
-                "Computing page locations", 
-                "System parameters changed requiring new page geometry. Please wait while we compute pages locations. "
-                "It will take between 1 and 3 minutes for each book.");
+                "E-books metadata retrieval", 
+                "System parameters changed requiring metadata retrieval. "
+                "It will take between 5 and 10 seconds for each book.");
             }
             else {
               msg_viewer.show(MsgViewer::INFO, false, true, 
-                "Computing page locations", 
-                "New books have been found. Please wait while we compute pages locations. "
-                "It will take between 1 and 3 minutes for each book.");
+                "New e-books metadata retrieval", 
+                "New e-books have been found. Please wait while we retrieve some metadata. "
+                "It will take between 5 and 10 seconds for each e-book.");
             }
           }
           some_added_record = true;
@@ -375,6 +375,11 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
                 stbi_image_free((void *) image.bitmap);
               }
+            }
+            else {
+              memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
+              the_book->cover_width  = default_cover_width;
+              the_book->cover_height = default_cover_height;
             }
         
             if (!db.add_record(the_book, sizeof(EBookRecord))) {

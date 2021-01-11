@@ -54,9 +54,11 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   for (int i = 0; i < entry_count - 1; i++) {
 
-    int16_t choices_width = 0, choices_height = 0;
-    int16_t separator   = 0;
-    int16_t last_height = 0;
+    int16_t choices_width  = 0;
+    int16_t choices_height = 0;
+    int16_t separator      = 0;
+    int16_t last_height    = 0;
+
     if (entries[i].entry_type == FormEntryType::HORIZONTAL_CHOICES) {     
       for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
         if (choices_height < choice_loc[k].dim.height) choices_height = choice_loc[k].dim.height;
@@ -121,8 +123,8 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     .margin_bottom      =   0,
     .screen_left        =  20,
     .screen_right       =  20,
-    .screen_top         =  TOP_YPOS,
-    .screen_bottom      =  BOTTOM_YPOS,
+    .screen_top         = TOP_YPOS,
+    .screen_bottom      = BOTTOM_YPOS,
     .width              =   0,
     .height             =   0,
     .trim               = true,
@@ -142,7 +144,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     Pos(20, TOP_YPOS));
 
   page.put_highlight(
-    Dim(Screen::WIDTH - 44, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top + 4),
+    Dim(Screen::WIDTH - 44, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top - 4),
     Pos(22, TOP_YPOS + 2));
 
   // Show all captions (but the last one (OK / CANCEL))

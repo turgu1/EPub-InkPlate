@@ -408,7 +408,10 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         inflateEnd(&zstr);
       #else
         char * compressed_data = (char *) allocate((*fe)->compressed_size + 2);
-        if (compressed_data == nullptr) msg_viewer.out_of_memory("compressed data retrieval from epub");
+        if (compressed_data == nullptr) {
+          // msg_viewer.out_of_memory("compressed data retrieval from epub");
+          return nullptr;
+        }
 
         #if SHOW_TIMING
           a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();

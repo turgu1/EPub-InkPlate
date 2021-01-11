@@ -19,7 +19,7 @@ struct MgrQueueData {
   int16_t itemref_index;
 };
 
-enum class StateReq  : int8_t { STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY };
+enum class StateReq  : int8_t { ABORT, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY };
 
 struct StateQueueData {
   StateReq req;
@@ -27,7 +27,7 @@ struct StateQueueData {
   int16_t itemref_count;
 };
 
-enum class RetrieveReq  : int8_t { RETRIEVE_ITEM, GET_ASAP };
+enum class RetrieveReq  : int8_t { ABORT, RETRIEVE_ITEM, GET_ASAP };
 
 struct RetrieveQueueData {
   RetrieveReq req;
@@ -183,14 +183,16 @@ struct RetrieveQueueData {
                 bitset_size(      0),
            forget_retrieval(  false)  { }
 
-
       void operator()() {
-        for (;;) {
+        for(;;) {
           LOG_D("==> Waiting for request... <==");
           if (QUEUE_RECEIVE(state_queue, state_queue_data, portMAX_DELAY) == -1) {
             LOG_E("Receive error: %d: %s", errno, strerror(errno));
           }
           else switch (state_queue_data.req) {
+            case StateReq::ABORT:
+              return;
+
             case StateReq::STOP:
               LOG_D("-> STOP <-");
               itemref_count    = -1;
@@ -337,6 +339,8 @@ struct RetrieveQueueData {
             LOG_E("Receive error: %d: %s", errno, strerror(errno));
           }
           else {
+            if (retrieve_queue_data.req == RetrieveReq::ABORT) return;
+
             LOG_D("-> %s <-", (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
 
             LOG_D("Retrieving itemref --> %d <--", retrieve_queue_data.itemref_index);
@@ -671,6 +675,24 @@ PageLocs::setup()
 
 } 
 
+void
+PageLocs::abort_threads()
+{
+  RetrieveQueueData retrieve_queue_data;
+  retrieve_queue_data.req = RetrieveReq::ABORT;
+  LOG_D("abort_threads: Sending ABORT to Retriever");
+  QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
+
+  retriever_thread.join();
+
+  StateQueueData state_queue_data;
+  state_queue_data.req = StateReq::ABORT;
+  LOG_D("abort_threads: Sending ABORT to State");
+  QUEUE_SEND(state_queue, state_queue_data, 0);
+
+  state_thread.join();
+}
+
 bool 
 PageLocs::page_locs_end_page(Page::Format & fmt)
 {
@@ -680,7 +702,7 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
     PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
     PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
     
-    res = page_locs.insert(page_id, page_info);
+    if (page_info.size > 0) res = page_locs.insert(page_id, page_info);
 
     // Gives the chance to book_viewer to show a page if required
     book_viewer.get_mutex().unlock();
@@ -778,7 +800,8 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           current_offset++;
           break;
 
-        case Element::B: {
+        case Element::B:
+        case Element::STRONG: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
             else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
@@ -898,9 +921,9 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
     SHOW_LOCATION("->");
     while (*str) {
       if (uint8_t(*str) <= ' ') {
-        if (*str == ' ') {
+        if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
           fmt.trim = !fmt.pre;
-          if (!page.add_char(str, fmt)) {
+          if (!page.add_char(" ", fmt)) {
             if (!page_locs_end_page(fmt)) return false;
             if (start_of_paragraph) {
               SHOW_LOCATION("New Paragraph 6");

@@ -728,7 +728,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
   uint32_t size;
   uint8_t * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
 
-  if (data == NULL) {
+  if (data == nullptr) {
     LOG_E("Unable to retrieve image file: %s", filename.c_str());
   }
   else {

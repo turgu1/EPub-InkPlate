@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.01.08)
+(Updated 2021.01.10)
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
@@ -13,7 +13,11 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Trigger page locations recalculation when parameters have changed
 - [x] Stop light-sleep, deep-sleep while page locations is being calculated
 - [x] Adjust web server to only show epub files and remove params/locs files on e-book delete
+- [x] Adjust Web server to stop page-locs to free memory before launching the server 
 - [x] Save computed page locations to sdcard for quick ebook load
+- [ ] Repair some known bugs
+      - [x] e-books list geometry when screen orientation change
+      - [ ] recovery from too large image memory allocation
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
 - [ ] Tests, tests, tests, ...

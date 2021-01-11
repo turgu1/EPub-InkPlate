@@ -151,12 +151,12 @@ class CSS
       Values     values;
     };
 
-    typedef std::forward_list<Property *> Properties;
+    typedef std::forward_list<Property *>               Properties;
     // typedef std::vector<Properties> PropertySuites;
-    typedef std::list<Properties *> PropertySuite;
-    typedef std::forward_list<Properties *> PropertySuiteList;
+    typedef std::list<Properties *>                     PropertySuite;
+    typedef std::forward_list<Properties *>             PropertySuiteList;
     typedef std::unordered_map<std::string, PropertyId> PropertyMap;
-    typedef std::unordered_map<std::string, int16_t> FontSizeMap;
+    typedef std::unordered_map<std::string, int16_t>    FontSizeMap;
 
     static PropertyMap property_map;
     static FontSizeMap font_size_map;
@@ -166,23 +166,23 @@ class CSS
 
     bool ghost; // Property suites come from other instances. So don't delete them...
     typedef std::unordered_map<Selector, PropertySuite> RulesMap;
-    RulesMap rules_map;
+    RulesMap          rules_map;
     PropertySuiteList suites; // Linear line of suites to be deleted when the instance will be destroyed.
 
-    std::string id;
-    std::string file_folder_path; 
+    std::string  id;
+    std::string  file_folder_path; 
     const char * buffer_start;
 
-    static MemoryPool<Value> value_pool;
-    static MemoryPool<Property> property_pool;
+    static MemoryPool<Value>      value_pool;
+    static MemoryPool<Property>   property_pool;
     static MemoryPool<Properties> properties_pool;
 
-    const char * parse_selector(const char * str, std::string & selector);
+    const char *             parse_selector(const char * str, std::string & selector);
     static const char * parse_property_name(const char * str, std::string & name);
-    static const char * parse_value(const char * str, Value * v, const char * buffer_start);
+    static const char *         parse_value(const char * str, Value * v, const char * buffer_start);
 
   public:
-    const std::string * get_id() const { return &id; };
+    const std::string *          get_id() const { return &id;              }
     const std::string & get_folder_path() const { return file_folder_path; }
 
     void clear();
@@ -198,7 +198,7 @@ class CSS
       }
       //LOG_D("No.");
       return nullptr;
-    };
+    }
 
     static inline void clear_properties(Properties * properties) {
       for (auto * property : * properties) {
@@ -219,7 +219,7 @@ class CSS
         }
       }
       return vals;
-    };
+    }
 
     /**
      * @brief Get the values from a property object
@@ -236,7 +236,7 @@ class CSS
         if (id == prop->id) vals = &prop->values;
       }
       return vals;
-    };
+    }
 
     /**
      * @brief Search selection patterns in rules
@@ -280,7 +280,7 @@ class CSS
      * @param properties 
      */
     void inline add_properties_to_selector(const Selector & sel, 
-                                           Properties * properties) {
+                                           Properties *     properties) {
       rules_map[sel].push_back(properties);
     }
 
@@ -313,8 +313,8 @@ class CSS
      * @return CSS::Properties* 
      */
     static CSS::Properties * parse_properties(const char ** buffer, 
-                                              const char * end, 
-                                              const char * buffer_start);
+                                              const char *  end, 
+                                              const char *  buffer_start);
 };
 
 #endif

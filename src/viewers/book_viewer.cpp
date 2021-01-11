@@ -126,7 +126,8 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
           current_offset++;
           break;
 
-        case Element::B: {
+        case Element::B:
+        case Element::STRONG: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
             else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
@@ -260,9 +261,9 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
         if (uint8_t(*str) <= ' ') {
           if (current_offset >= start_of_page_offset) {
             page.set_compute_mode(Page::ComputeMode::DISPLAY);
-            if (*str == ' ') {
+            if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
               fmt.trim = !fmt.pre; // white spaces will be trimmed at the beginning and the end of a line
-              if (!page.add_char(str, fmt)) break;
+              if (!page.add_char(" ", fmt)) break;
             }
             else if (fmt.pre && (*str == '\n')) {
               page.line_break(fmt, 30);              
@@ -439,7 +440,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
       uint32_t size;
       unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
 
-      if ((data == NULL) || !page.show_cover(data, size)) {
+      if ((data == nullptr) || !page.show_cover(data, size)) {
         LOG_D("Unable to retrieve cover file: %s", filename);
 
         Page::Format fmt = {
@@ -491,6 +492,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
     }
     else {
       LOG_D("There doesn't seems to have any cover.");
+      build_page_at(page_id);
     }
   }
   else {

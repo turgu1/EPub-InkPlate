@@ -113,7 +113,7 @@ class PageLocs
     };
 
     void setup();
-    
+    void abort_threads();
     /**
      * @brief Build the pages location vector
      * 

@@ -16,14 +16,20 @@
 
 #include <iomanip>
 
+void
+BooksDirViewer::setup()
+{
+  books_per_page = (Screen::HEIGHT - FIRST_ENTRY_YPOS - 20 + 6) / (BooksDir::max_cover_height + 6);
+}
+
 void 
 BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 {
   current_page_nbr = page_nbr;
   current_item_idx = hightlight_item_idx;
 
-  int16_t book_idx = page_nbr * BOOKS_PER_PAGE;
-  int16_t last     = book_idx + BOOKS_PER_PAGE;
+  int16_t book_idx = page_nbr * books_per_page;
+  int16_t last     = book_idx + books_per_page;
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
@@ -80,7 +86,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
+    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + 6)),
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -133,7 +139,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     // Clear the highlighting of the current item
 
-    int16_t book_idx = current_page_nbr * BOOKS_PER_PAGE + current_item_idx;
+    int16_t book_idx = current_page_nbr * books_per_page + current_item_idx;
 
     int16_t xpos = 20 + BooksDir::max_cover_width;
     int16_t ypos = FIRST_ENTRY_YPOS + (current_item_idx * (BooksDir::max_cover_height + 6));
@@ -190,7 +196,7 @@ BooksDirViewer::highlight(int16_t item_idx)
 
     current_item_idx = item_idx;
 
-    book_idx = current_page_nbr * BOOKS_PER_PAGE + current_item_idx;
+    book_idx = current_page_nbr * books_per_page + current_item_idx;
     ypos = FIRST_ENTRY_YPOS + (current_item_idx * (BooksDir::max_cover_height + 6));
 
     book = books_dir.get_book_data(book_idx);

@@ -6,6 +6,7 @@
 #include "logging.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/config.hpp"
+#include "models/page_locs.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -509,8 +510,9 @@ http_server_start()
   httpd_config.server_port = (uint16_t) port;
 
   ESP_LOGI(TAG, "Starting HTTP Server");
-  if (httpd_start(&server, &httpd_config) != ESP_OK) {
-    ESP_LOGE(TAG, "Failed to start file server!");
+  esp_err_t res = httpd_start(&server, &httpd_config);
+  if (res != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to start file server (%s)!", esp_err_to_name(res));
     return ESP_FAIL;
   }
 
@@ -716,6 +718,8 @@ wifi_stop()
 bool
 start_web_server()
 {
+  page_locs.abort_threads();
+
   msg_viewer.show(MsgViewer::WIFI, false, true, 
     "Web Server Starting", 
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");

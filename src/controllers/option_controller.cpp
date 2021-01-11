@@ -10,6 +10,7 @@
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
+#include "viewers/books_dir_viewer.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/epub.hpp"
@@ -159,6 +160,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
         if (old_orientation != orientation) {
           screen.set_orientation(orientation);
           event_mgr.set_orientation(orientation);
+          books_dir_viewer.setup();
         }
 
         if (old_resolution != resolution) {
