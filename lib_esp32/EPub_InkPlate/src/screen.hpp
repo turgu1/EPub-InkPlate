@@ -28,8 +28,11 @@ class Screen : NonCopyable
     static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     static constexpr uint8_t  BLACK_COLOR           = 0;
     static constexpr uint8_t  WHITE_COLOR           = 7;
-    static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 6;
-    
+    #if INKPLATE_10
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 100;
+    #else
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 9;
+    #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 

@@ -351,8 +351,9 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
               if (!epub.get_image(fname, image, channel_count)) {
                 LOG_D("Unable to retrieve cover file: %s", filename);
                 memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
-                the_book->cover_width  = default_cover_width;
-                the_book->cover_height = default_cover_height;
+                the_book->cover_width     = default_cover_width;
+                the_book->cover_height    = default_cover_height;
+                the_book->cover_too_large = 1;
               }
               else {
                 LOG_D("Image: width: %d height: %d channel_count: %d", 
@@ -370,16 +371,18 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
                                   (unsigned char *) (the_book->cover_bitmap), w, h, 0,
                                   1);
 
-                the_book->cover_width  = w;
-                the_book->cover_height = h;
+                the_book->cover_width     = w;
+                the_book->cover_height    = h;
+                the_book->cover_too_large = 0;
 
                 stbi_image_free((void *) image.bitmap);
               }
             }
             else {
               memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
-              the_book->cover_width  = default_cover_width;
-              the_book->cover_height = default_cover_height;
+              the_book->cover_width     = default_cover_width;
+              the_book->cover_height    = default_cover_height;
+              the_book->cover_too_large = 1;
             }
         
             if (!db.add_record(the_book, sizeof(EBookRecord))) {
@@ -395,6 +398,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             free(the_book);
 
             the_book = nullptr;
+
+            #if EPUB_INKPLATE_BUILD
+              ESP::show_heaps_info();
+            #endif
           }
         }
       }

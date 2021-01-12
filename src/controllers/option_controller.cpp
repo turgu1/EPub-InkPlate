@@ -172,6 +172,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
             (old_orientation != orientation)) {
           epub.update_book_format_params();
         }
+
+        if ((old_orientation != orientation) || 
+            (old_resolution  != resolution )) {
+          menu_viewer.show(menu, 2, true);
+        }
         // if ((old_show_images != show_images) ||
         //     ((old_orientation != orientation) &&
         //      ((old_orientation == Screen::Orientation::BOTTOM) ||

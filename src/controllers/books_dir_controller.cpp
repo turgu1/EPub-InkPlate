@@ -181,7 +181,7 @@ BooksDirController::show_last_book()
     book_fname  = BOOKS_FOLDER "/";
     book_fname += book->filename;
     book_title  = book->title;
-    if (book_controller.open_book_file(book_title, book_fname, book_index, book_page_id)) {
+    if (book_controller.open_book_file(book_title, book_fname, book_page_id, book->cover_too_large != 0)) {
       app_controller.set_controller(AppController::Ctrl::BOOK);
     }
   }
@@ -276,7 +276,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
           
           PageLocs::PageId page_id = { 0, 0 };
           
-          if (book_controller.open_book_file(book_title, book_fname, book_index, page_id)) {
+          if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
             app_controller.set_controller(AppController::Ctrl::BOOK);
           }
         }

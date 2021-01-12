@@ -14,7 +14,7 @@ class BooksDirViewer
   private:
     static constexpr char const * TAG = "BooksDirView";
 
-    static const int16_t FIRST_ENTRY_YPOS  = 15;
+    static const int16_t FIRST_ENTRY_YPOS  = 10;
     static const int16_t LEFT_POS          = 30;
     static const int16_t TITLE_FONT_SIZE   = 11;
     static const int16_t AUTHOR_FONT_SIZE  =  9;

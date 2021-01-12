@@ -19,7 +19,7 @@ class MenuViewer
       const char * caption;
       void (*func)();
     };
-    void  show(MenuEntry * the_menu);
+    void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
     bool event(EventMgr::KeyEvent key);
     
   private:

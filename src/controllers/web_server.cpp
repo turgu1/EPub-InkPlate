@@ -719,6 +719,7 @@ bool
 start_web_server()
 {
   page_locs.abort_threads();
+  epub.close_file();
 
   msg_viewer.show(MsgViewer::WIFI, false, true, 
     "Web Server Starting", 

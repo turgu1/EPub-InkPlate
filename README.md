@@ -6,7 +6,7 @@
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
-- [x] Support of the new Inkplate upcoming Inkplate-10 device
+- [x] Support of the new upcoming Inkplate-10 device
 - [x] Just in time calculation of pages locations through multithreading (a **BIG** change...)
 - [x] Integration with the new ESP-IDF-Inkplate library
 - [x] Add Parameters for e-book specific font/pictures adjustments
@@ -17,7 +17,9 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Save computed page locations to sdcard for quick ebook load
 - [ ] Repair some known bugs
       - [x] e-books list geometry when screen orientation change
-      - [ ] recovery from too large image memory allocation
+      - [x] recovery from too large image memory allocation
+      - [x] Page refresh on orientation/resolution changes
+      - [ ] PNG image files transparency
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
 - [ ] Tests, tests, tests, ...

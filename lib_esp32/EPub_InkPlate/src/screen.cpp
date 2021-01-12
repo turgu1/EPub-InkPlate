@@ -397,11 +397,11 @@ Screen::set_orientation(Orientation orient)
 {
   orientation = orient;
   if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
-    WIDTH  = 600;
-    HEIGHT = 800;
+    WIDTH  = e_ink.get_height();
+    HEIGHT = e_ink.get_width();
   }
   else {
-    WIDTH  = 800;
-    HEIGHT = 600;
+    WIDTH  = e_ink.get_width();
+    HEIGHT = e_ink.get_height();
   }
 }

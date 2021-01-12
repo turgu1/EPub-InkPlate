@@ -628,8 +628,6 @@ struct RetrieveQueueData {
 void
 PageLocs::setup()
 {
-
-
   #if EPUB_LINUX_BUILD
 
     mq_unlink("/mgr");
@@ -706,6 +704,7 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
 
     // Gives the chance to book_viewer to show a page if required
     book_viewer.get_mutex().unlock();
+    std::this_thread::yield();
     book_viewer.get_mutex().lock();
 
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
@@ -1348,6 +1347,8 @@ bool PageLocs::load(const std::string & epub_filename)
 
   LOG_D("Page locations load %s.", res ? "Success" : "Error");
 
+  completed = res;
+  
   return res;
 }
 

@@ -44,8 +44,8 @@ bool
 BookController::open_book_file(
   std::string & book_title, 
   std::string & book_filename, 
-  int16_t book_idx, 
-  const PageLocs::PageId & page_id)
+  const PageLocs::PageId & page_id,
+  bool cover_too_large)
 {
   // msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
   //   "The book \" %s \" is loading. Please wait.", book_title.c_str());
@@ -53,6 +53,8 @@ BookController::open_book_file(
   bool new_document = book_filename != epub.get_current_filename();
 
   if (new_document) page_locs.stop_document();
+ 
+  cover_is_too_large = cover_too_large;
 
   if (epub.open_file(book_filename)) {
     if (new_document) {

@@ -309,11 +309,11 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     
     const int LOCAL_HEADER_SIZE = 26;
 
-    if (fseek(file, (*fe)->start_pos, SEEK_SET)) ERR(20);
-    if (fread(buffer, 4, 1, file) != 1) ERR(21);
-    if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) ERR(22);
+    if (fseek(file, (*fe)->start_pos, SEEK_SET)) ERR(13);
+    if (fread(buffer, 4, 1, file) != 1) ERR(14);
+    if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) ERR(15);
 
-    if (fread(buffer, LOCAL_HEADER_SIZE, 1, file) != 1) ERR(23);
+    if (fread(buffer, LOCAL_HEADER_SIZE, 1, file) != 1) ERR(16);
 
     uint16_t filename_size = getuint16((const unsigned char *) &buffer[22]);
     uint16_t extra_size    = getuint16((const unsigned char *) &buffer[24]);
@@ -323,12 +323,12 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     //   LOG_D("Unzip: with data descriptor...");
     // }
 
-    if (fseek(file, filename_size + extra_size, SEEK_CUR)) ERR(24);
+    if (fseek(file, filename_size + extra_size, SEEK_CUR)) ERR(17);
     // LOG_D("Unzip Get Method: ", fe->method);
 
     data = (char *) allocate((*fe)->size + 1);
 
-    if (data == nullptr) msg_viewer.out_of_memory("file retrieval from epub");
+    if (data == nullptr) ERR(18);
     data[(*fe)->size] = 0;
 
     #if SHOW_TIMING
@@ -341,7 +341,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
       #endif
 
-      if (fread(data, (*fe)->size, 1, file) != 1) ERR(26);
+      if (fread(data, (*fe)->size, 1, file) != 1) ERR(19);
 
       #if SHOW_TIMING
         b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -352,7 +352,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     else if ((*fe)->method == 8) {
 
       #if ZLIB
-        if (result != fe->size) ERR(29);
+        if (result != fe->size) ERR(20);
 
         uint16_t rep   = fe->compressed_size / BUFFER_SIZE;
         uint16_t rem   = fe->compressed_size % BUFFER_SIZE;
@@ -410,14 +410,14 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         char * compressed_data = (char *) allocate((*fe)->compressed_size + 2);
         if (compressed_data == nullptr) {
           // msg_viewer.out_of_memory("compressed data retrieval from epub");
-          return nullptr;
+          ERR(21);
         }
 
         #if SHOW_TIMING
           a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
         #endif
 
-        if (fread(compressed_data, (*fe)->compressed_size, 1, file) != 1) ERR(28);
+        if (fread(compressed_data, (*fe)->compressed_size, 1, file) != 1) ERR(22);
 
         #if SHOW_TIMING
           b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -433,7 +433,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         #endif
 
         if (result != (*fe)->size) {
-          ERR(29);
+          ERR(23);
         }
         // std::cout << "[FILE CONTENT:]" << std::endl << data << std::endl << "[END]" << std::endl;
 
@@ -453,7 +453,8 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
   }
 // error:
   if (!completed) {
-    free(data);
+    if (data != nullptr) free(data);
+    data = nullptr;
     file_size = 0;
     LOG_E("Unzip get: Error!: %d", err);
   }

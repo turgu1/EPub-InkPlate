@@ -11,7 +11,7 @@
 #include "screen.hpp"
 #include "controllers/app_controller.hpp"
 
-void MenuViewer::show(MenuEntry * the_menu)
+void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {
   TTF * font = fonts.get(1, 12);
 
@@ -78,23 +78,23 @@ void MenuViewer::show(MenuEntry * the_menu)
   }
   
   max_index           = idx - 1;
-  current_entry_index = 0;
+  current_entry_index = entry_index;
 
   page.put_highlight(
-    Dim(entry_locs[0].dim.width  + 8, entry_locs[0].dim.height + 8), 
-    Pos(entry_locs[0].pos.x      - 4, entry_locs[0].pos.y - 4));
+    Dim(entry_locs[entry_index].dim.width  + 8, entry_locs[entry_index].dim.height + 8), 
+    Pos(entry_locs[entry_index].pos.x      - 4, entry_locs[entry_index].pos.y - 4));
 
   fmt.font_index = 1;
   fmt.font_size  = 12;
   
-  std::string txt = menu[0].caption; 
+  std::string txt = menu[entry_index].caption; 
   page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
 
   page.put_highlight(
     Dim(Screen::WIDTH - 20, 3), 
     Pos(10, region_height - 12));
 
-  page.paint(false);
+  page.paint(clear_screen);
 }
 
 bool MenuViewer::event(EventMgr::KeyEvent key)

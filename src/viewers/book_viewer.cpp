@@ -3,6 +3,7 @@
 // MIT License. Look at file licenses.txt for details.
 
 #define __BOOK_VIEWER__ 1
+#include "controllers/book_controller.hpp"
 #include "viewers/book_viewer.hpp"
 
 #include "models/ttf2.hpp"
@@ -368,6 +369,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     };
 
     mutex.unlock();
+    std::this_thread::yield();
     const PageLocs::PageInfo * page_info = page_locs.get_page_info(page_id);
     mutex.lock();
     
@@ -438,7 +440,10 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
     if (filename != nullptr) {
       // LOG_D("Cover filename: %s", filename);
       uint32_t size;
-      unsigned char * data = (unsigned char *) epub.retrieve_file(filename, size);
+      unsigned char * data = nullptr;
+      if (!book_controller.is_cover_too_large()) {
+        data = (unsigned char *) epub.retrieve_file(filename, size);
+      }
 
       if ((data == nullptr) || !page.show_cover(data, size)) {
         LOG_D("Unable to retrieve cover file: %s", filename);

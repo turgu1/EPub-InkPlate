@@ -753,7 +753,10 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
 
     free(data);
 
-    if (image.bitmap != nullptr) return true;
+    if (image.bitmap != nullptr) {
+      LOG_D("Image first pixel: %02x.", image.bitmap[0]);
+      return true;
+    }
   }
 
   return false;
