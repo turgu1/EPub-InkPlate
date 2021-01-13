@@ -46,7 +46,8 @@ Page::Page() :
   clear_line_list();
 }
 
-Page::~Page()
+void 
+Page::clean()
 {
   clear_display_list();
   clear_line_list();

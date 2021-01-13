@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.01.10)
+(Updated 2021.01.12)
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
@@ -16,13 +16,16 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Adjust Web server to stop page-locs to free memory before launching the server 
 - [x] Save computed page locations to sdcard for quick ebook load
 - [ ] Repair some known bugs
-      - [x] e-books list geometry when screen orientation change
-      - [x] recovery from too large image memory allocation
-      - [x] Page refresh on orientation/resolution changes
-      - [ ] PNG image files transparency
 - [ ] Code refactoring and cleanup
 - [ ] Udate documentation
 - [ ] Tests, tests, tests, ...
+
+Known bugs:
+
+- [x] e-books list geometry when screen orientation change
+- [x] recovery from too large image memory allocation
+- [x] Page refresh on orientation/resolution changes
+- [ ] PNG image files transparency
 
 -----
 

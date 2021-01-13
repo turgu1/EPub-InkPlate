@@ -2,11 +2,10 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __SCREEN_HPP__
-#define __SCREEN_HPP__
+#pragma once
 
 #include "global.hpp"
-#include "noncopyable.hpp"
+#include "non_copyable.hpp"
 
 #include <cinttypes>
 
@@ -82,6 +81,4 @@ class Screen : NonCopyable
   Screen & screen = Screen::get_singleton();
 #else
   extern Screen & screen;
-#endif
-
 #endif

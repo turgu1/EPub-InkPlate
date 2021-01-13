@@ -1,5 +1,4 @@
-#ifndef __BOOK_PARAMS_HPP__
-#define __BOOK_PARAMS_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "config_template.hpp"
@@ -28,6 +27,4 @@ typedef ConfigBase<Param, 5> BookParams;
     { Param::USE_FONTS_IN_BOOK, BookParams::EntryType::BYTE, "use_fonts_in_book", &use_fonts_in_book, &default_value, 0 },
     { Param::FONT,              BookParams::EntryType::BYTE, "font",              &font,               &default_value, 0 },
   }};
-#endif
-
 #endif

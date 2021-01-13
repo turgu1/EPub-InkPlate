@@ -4,7 +4,7 @@
 
 #define __MENU_VIEWER__ 1
 #include "viewers/menu_viewer.hpp"
-
+#include "viewers/book_viewer.hpp"
 #include "models/fonts.hpp"
 #include "models/ttf2.hpp"
 #include "viewers/page.hpp"
@@ -99,6 +99,8 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
 bool MenuViewer::event(EventMgr::KeyEvent key)
 {
+  std::scoped_lock guard(book_viewer.get_mutex());
+
   uint8_t old_index = current_entry_index;
 
   Page::Format fmt = {

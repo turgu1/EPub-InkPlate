@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __LOGGING_HPP__
-#define __LOGGING_HPP__
+#pragma once
 
 #include <cstdio>
 
@@ -16,5 +15,3 @@
 #define LOG_I(fmt, ...) { log('I', TAG, fmt, ##__VA_ARGS__); }
 #define LOG_D(fmt, ...) { log('D', TAG, fmt, ##__VA_ARGS__); }
 #define LOG_E(fmt, ...) { log('E', TAG, fmt, ##__VA_ARGS__); }
-
-#endif

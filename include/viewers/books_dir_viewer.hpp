@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __BOOKS_DIR_VIEWER_HPP__
-#define __BOOKS_DIR_VIEWER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "models/books_dir.hpp"
@@ -42,6 +41,4 @@ class BooksDirViewer
   BooksDirViewer books_dir_viewer;
 #else
   extern BooksDirViewer books_dir_viewer;
-#endif
-
 #endif

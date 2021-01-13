@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __PAGE_HPP__
-#define __PAGE_HPP__
+#pragma once
 
 #include <string>
 #include <forward_list>
@@ -129,7 +128,7 @@ class Page
   public:
 
     Page();
-   ~Page();
+    void clean();
 
     /**
      * @brief Start a new page
@@ -346,14 +345,10 @@ class Page
         }
       }
     }
-
-
 };
 
 #if __PAGE__
   Page page;
 #else
   extern Page page;
-#endif
-
 #endif

@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __BOOKS_DIR_HPP__
-#define __BOOKS_DIR_HPP__
+#pragma once
 
 #include "global.hpp"
 
@@ -167,6 +166,4 @@ class BooksDir
   BooksDir books_dir;
 #else
   extern BooksDir books_dir;
-#endif
-
 #endif

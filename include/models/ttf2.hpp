@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __TTF_HPP__
-#define __TTF_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "logging.hpp"
@@ -156,5 +155,3 @@ class TTF
     bool set_font_face_from_memory(unsigned char * buffer, int32_t size);
 
 };
-
-#endif

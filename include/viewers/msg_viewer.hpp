@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __MSG_VIEWER_HPP__
-#define __MSG_VIEWER_HPP__
+#pragma once
 
 #include "screen.hpp"
 
@@ -44,8 +43,8 @@ class MsgViewer {
       const char * title, 
       const char * fmt_str, ...);
     
-    void show_progress(const char * title, ...);
-    void add_dot();
+    //void show_progress(const char * title, ...);
+    //void add_dot();
     void out_of_memory(const char * raison);
 };
 
@@ -53,6 +52,4 @@ class MsgViewer {
   MsgViewer msg_viewer;
 #else
   extern MsgViewer msg_viewer;
-#endif
-
 #endif

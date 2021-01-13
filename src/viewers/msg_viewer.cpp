@@ -4,7 +4,7 @@
 
 #define __MSG_VIEWER__ 1
 #include "viewers/msg_viewer.hpp"
-
+#include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
@@ -124,6 +124,7 @@ void MsgViewer::show(
   page.paint(clear_screen, true, true);
 }
 
+#if 0
 void MsgViewer::show_progress(const char * title, ...)
 {
   width = Screen::WIDTH - 60;
@@ -245,6 +246,7 @@ void MsgViewer::add_dot()
 
   page.paint(false, true, true);
 }
+#endif
 
 void 
 MsgViewer::out_of_memory(const char * raison)

@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __OPTION_CONTROLLER_HPP__
-#define __OPTION_CONTROLLER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
@@ -41,6 +40,4 @@ class OptionController
   OptionController option_controller;
 #else
   extern OptionController option_controller;
-#endif
-
 #endif

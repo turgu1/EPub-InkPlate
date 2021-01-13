@@ -2,11 +2,9 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __EVENT_MGR_HPP__
-#define __EVENT_MGR_HPP__
+#pragma once
 
 #include "global.hpp"
-
 #include "screen.hpp"
 
 class EventMgr
@@ -43,4 +41,3 @@ class EventMgr
   extern EventMgr event_mgr;
 #endif
 
-#endif

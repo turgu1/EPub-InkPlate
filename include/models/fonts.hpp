@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __FONTS_HPP__
-#define __FONTS_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "models/ttf2.hpp"
@@ -88,6 +87,4 @@ class Fonts
   Fonts fonts;
 #else
   extern Fonts fonts;
-#endif
-
 #endif

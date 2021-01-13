@@ -7,6 +7,7 @@
 #include "viewers/book_viewer.hpp"
 
 #include "models/ttf2.hpp"
+#include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "image_info.hpp"
 
@@ -27,7 +28,6 @@
 #include "logging.hpp"
 
 using namespace pugi;
-
 
 bool
 BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
@@ -397,22 +397,30 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
         int16_t page_nbr   = page_locs.page_nbr(page_id);
         int16_t page_count = page_locs.page_count();
 
+        fmt.line_height_factor = 1.0;
+        fmt.font_index         =   1;
+        fmt.font_size          =   9;
+        fmt.font_style         = Fonts::FaceStyle::NORMAL;
+
+        std::ostringstream ostr;
+
         if ((page_nbr != -1) && (page_count != -1)) {
-
-          fmt.line_height_factor = 1.0;
-          fmt.font_index         =   1;
-          fmt.font_size          =   9;
-          fmt.font_style         = Fonts::FaceStyle::NORMAL;
           fmt.align              = CSS::Align::CENTER;
-
-          std::ostringstream ostr;
           ostr << page_nbr + 1 << " / " << page_count;
-          std::string str = ostr.str();
-
-          page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+          page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
         }
 
         #if EPUB_INKPLATE_BUILD
+          int8_t show_heap;
+          config.get(Config::Ident::SHOW_HEAP, &show_heap);
+
+          if (show_heap != 0) {     
+            ostr.str(std::string());
+            ostr << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+            fmt.align = CSS::Align::RIGHT;
+            page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+          }
+
           BatteryViewer::show();
         #endif
 
@@ -428,6 +436,54 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 }
 
 void
+BookViewer::show_fake_cover()
+{
+  Page::Format fmt = {
+    .line_height_factor = 1.0,
+    .font_index         =   3,
+    .font_size          =  14,
+    .indent             =   0,
+    .margin_left        =   0,
+    .margin_right       =   0,
+    .margin_top         =   0,
+    .margin_bottom      =   0,
+    .screen_left        =  10,
+    .screen_right       =  10,
+    .screen_top         = 100,
+    .screen_bottom      =  30,
+    .width              =   0,
+    .height             =   0,
+    .trim               = true,
+    .pre                = false,
+    .font_style         = Fonts::FaceStyle::ITALIC,
+    .align              = CSS::Align::CENTER,
+    .text_transform     = CSS::TextTransform::NONE,
+    .display            = CSS::Display::INLINE
+  };
+
+  std::string title  = epub.get_title();
+  std::string author = epub.get_author();
+
+  page.start(fmt);
+
+  page.new_paragraph(fmt, false);
+  page.add_text(author, fmt);
+  page.end_paragraph(fmt);
+
+  fmt.font_index =   1;
+  fmt.font_size  =  18;
+  fmt.screen_top = 200;
+  fmt.font_style = Fonts::FaceStyle::NORMAL;
+
+  page.set_limits(fmt);
+  page.new_paragraph(fmt, false);
+  page.add_text(title, fmt);
+  page.end_paragraph(fmt);
+
+  page.paint();
+}
+
+void
 BookViewer::show_page(const PageLocs::PageId & page_id)
 {
   std::scoped_lock guard(mutex);
@@ -435,69 +491,33 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
   current_page_id = page_id;
     
 //if (page_locs.page_nbr(page_id) == 0) {
-  if ((page_id.itemref_index == 0) && (page_id.offset == 0)) {
-    const char * filename = epub.get_cover_filename();
-    if (filename != nullptr) {
-      // LOG_D("Cover filename: %s", filename);
-      uint32_t size;
-      unsigned char * data = nullptr;
-      if (!book_controller.is_cover_too_large()) {
-        data = (unsigned char *) epub.retrieve_file(filename, size);
+  if ((page_id.itemref_index == 0) && 
+      (page_id.offset        == 0)) {
+
+    if (epub.get_book_format_params()->show_images != 0) {
+      const char * filename = epub.get_cover_filename();
+      if (filename != nullptr) {
+        // LOG_D("Cover filename: %s", filename);
+        uint32_t size;
+        unsigned char * data = nullptr;
+        if (!book_controller.is_cover_too_large()) {
+          data = (unsigned char *) epub.retrieve_file(filename, size);
+        }
+
+        if ((data == nullptr) || !page.show_cover(data, size)) {
+          LOG_D("Unable to retrieve cover file: %s", filename);
+          show_fake_cover();
+        }
+        
+        if (data) free(data);
       }
-
-      if ((data == nullptr) || !page.show_cover(data, size)) {
-        LOG_D("Unable to retrieve cover file: %s", filename);
-
-        Page::Format fmt = {
-          .line_height_factor = 1.0,
-          .font_index         =   3,
-          .font_size          =  14,
-          .indent             =   0,
-          .margin_left        =   0,
-          .margin_right       =   0,
-          .margin_top         =   0,
-          .margin_bottom      =   0,
-          .screen_left        =  10,
-          .screen_right       =  10,
-          .screen_top         = 100,
-          .screen_bottom      =  30,
-          .width              =   0,
-          .height             =   0,
-          .trim               = true,
-          .pre                = false,
-          .font_style         = Fonts::FaceStyle::ITALIC,
-          .align              = CSS::Align::CENTER,
-          .text_transform     = CSS::TextTransform::NONE,
-          .display            = CSS::Display::INLINE
-        };
-
-        std::string title  = epub.get_title();
-        std::string author = epub.get_author();
-
-        page.start(fmt);
-
-        page.new_paragraph(fmt, false);
-        page.add_text(author, fmt);
-        page.end_paragraph(fmt);
-
-        fmt.font_index =   1;
-        fmt.font_size  =  18;
-        fmt.screen_top = 200;
-        fmt.font_style = Fonts::FaceStyle::NORMAL;
-
-        page.set_limits(fmt);
-        page.new_paragraph(fmt, false);
-        page.add_text(title, fmt);
-        page.end_paragraph(fmt);
-
-        page.paint();
+      else {
+        LOG_D("There doesn't seems to have any cover.");
+        build_page_at(page_id);
       }
-      
-      if (data) free(data);
     }
     else {
-      LOG_D("There doesn't seems to have any cover.");
-      build_page_at(page_id);
+      show_fake_cover();
     }
   }
   else {

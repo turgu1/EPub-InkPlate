@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __CSS_HPP__
-#define __CSS_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "memory_pool.hpp"
@@ -316,5 +315,3 @@ class CSS
                                               const char *  end, 
                                               const char *  buffer_start);
 };
-
-#endif

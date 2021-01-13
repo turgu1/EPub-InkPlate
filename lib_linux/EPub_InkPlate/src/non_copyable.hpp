@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __NON_COPYABLE_HPP__
-#define __NON_COPYABLE_HPP__
+#pragma once
 
 /**
  * @brief Make children classes impossible to be copied.
@@ -23,5 +22,3 @@ class NonCopyable
     constexpr NonCopyable() = default;
     ~NonCopyable() = default;
 };
-
-#endif

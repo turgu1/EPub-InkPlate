@@ -1,5 +1,4 @@
-#ifndef __CONFIG_TEMPLATE_HPP__
-#define __CONFIG_TEMPLATE_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "logging.hpp"
@@ -337,6 +336,4 @@ ConfigBase<IdType, cfg_size>::save(bool force)
     }
     LOG_D("---");
   }
-#endif
-    
 #endif

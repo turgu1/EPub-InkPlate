@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __BOOK_VIEWER_HPP__
-#define __BOOK_VIEWER_HPP__
+#pragma once
 
 #include <mutex>
 
@@ -34,13 +33,6 @@ class BookViewer
     static constexpr char const * TAG = "BookViewer";
 
     std::mutex mutex;
-    #if EPUB_LINUX_BUILD
-    #else
-      //static SemaphoreHandle_t mutex;
-      //static StaticSemaphore_t mutex_buffer;
-      //inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
-      //inline static void leave() { xSemaphoreGive(mutex); }
-    #endif
 
     int32_t           current_offset;          ///< Where we are in current item
     int32_t           start_of_page_offset;
@@ -53,7 +45,6 @@ class BookViewer
     bool indent_paragraph;
 
     bool                get_image(std::string & filename, Page::Image & image);
-
     bool       build_page_recurse(pugi::xml_node node, Page::Format fmt);
     void            build_page_at(const PageLocs::PageId & page_id);
 
@@ -62,7 +53,7 @@ class BookViewer
     BookViewer() { }
    ~BookViewer() { }
 
-    void init() { current_page_id = PageLocs::PageId(-1, -1); }
+    void                     init() { current_page_id = PageLocs::PageId(-1, -1); }
     inline std::mutex & get_mutex() { return mutex; }
 
     /**
@@ -72,15 +63,11 @@ class BookViewer
      */
     void show_page(const PageLocs::PageId & page_id);
 
-    void line_added_at(int16_t ypos) {
-      LOG_D("Line added: %d %d", current_offset, ypos);
-    }
+    void show_fake_cover();
 };
 
 #if __BOOK_VIEWER__
   BookViewer book_viewer;
 #else
   extern BookViewer book_viewer;
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef __COMMON_ACTIONS_HPP__
-#define __COMMON_ACTIONS_HPP__
+#pragma once
 
 #if __COMMON_ACTIONS__
   #define PUBLIC
@@ -16,5 +15,3 @@ class CommonActions
     static void show_last_book();
     static void about();
 };
-
-#endif

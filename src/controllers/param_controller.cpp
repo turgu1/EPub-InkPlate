@@ -70,6 +70,12 @@ book_parameters()
   param_controller.set_book_params_form_is_shown();
 }
 
+static void
+revert_to_defaults()
+{
+  
+}
+
 static void 
 books_list()
 {
@@ -99,6 +105,7 @@ static MenuViewer::MenuEntry menu[7] = {
   { MenuViewer::Icon::RETURN,      "Return to the e-books reader",        CommonActions::return_to_last    },
   { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                        books_list                       },
   { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",           book_parameters                  },
+  { MenuViewer::Icon::REVERT,      "Revert e-book parameters to default", revert_to_defaults               },  
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },

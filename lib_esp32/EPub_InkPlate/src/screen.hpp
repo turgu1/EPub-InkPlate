@@ -2,11 +2,10 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __SCREEN_HPP__
-#define __SCREEN_HPP__
+#pragma once
 
 #include "global.hpp"
-#include "noncopyable.hpp"
+#include "non_copyable.hpp"
 #include "inkplate_platform.hpp"
 
 /**
@@ -25,13 +24,14 @@ class Screen : NonCopyable
   public:
     static uint16_t WIDTH;
     static uint16_t HEIGHT;
-    static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     static constexpr uint8_t  BLACK_COLOR           = 0;
     static constexpr uint8_t  WHITE_COLOR           = 7;
     #if INKPLATE_10
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 100;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  30;
+      static constexpr uint16_t RESOLUTION            = 150;  ///< Pixels per inch
     #else
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 9;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =   9;
+      static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
@@ -149,6 +149,4 @@ class Screen : NonCopyable
   Screen & screen = Screen::get_singleton();
 #else
   extern Screen & screen;
-#endif
-
 #endif

@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __SIMPLE_DB_HPP__
-#define __SIMPLE_DB_HPP__
+#pragma once
 
 #include <cinttypes>
 #include <cstdio>
@@ -151,5 +150,3 @@ class SimpleDB
       return false;
     }
 };
-
-#endif

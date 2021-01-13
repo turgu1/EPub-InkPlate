@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __UNZIP_HPP__
-#define __UNZIP_HPP__
+#pragma once
 
 #include <forward_list>
 
@@ -58,4 +57,3 @@ class Unzip
   extern Unzip unzip;
 #endif
 
-#endif

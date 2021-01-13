@@ -137,7 +137,7 @@
     {
       TaskHandle_t xHandle = NULL;
 
-      xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *) 1, tskIDLE_PRIORITY, &xHandle);
+      xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *) 1, configMAX_PRIORITIES - 1, &xHandle);
       configASSERT(xHandle);
     }
 

@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __FORM_VIEWER_HPP__
-#define __FORM_VIEWER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
@@ -125,6 +124,4 @@ class FormViewer
   FormViewer form_viewer;
 #else
   extern FormViewer form_viewer;
-#endif
-
 #endif

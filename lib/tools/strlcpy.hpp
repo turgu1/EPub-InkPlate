@@ -1,5 +1,4 @@
-#ifndef __STRLCPY_HPP__
-#define __STRLCPY_HPP__
+#pragma once
 
 #include <cstring>
 
@@ -28,7 +27,5 @@
    * @return size_t Length of string
    */
   size_t strlcpy(char * dst, const char *src, size_t size);
-
-#endif
 
 #endif

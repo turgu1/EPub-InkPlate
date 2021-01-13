@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __APP_CONTROLLER_HPP__
-#define __APP_CONTROLLER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
@@ -79,6 +78,4 @@ class AppController
   AppController app_controller;
 #else
   extern AppController app_controller;
-#endif
-
 #endif

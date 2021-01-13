@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cinttypes>
 
 const uint8_t default_cover_width  = 65;

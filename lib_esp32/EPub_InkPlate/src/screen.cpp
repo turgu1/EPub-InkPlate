@@ -53,9 +53,9 @@ Screen::draw_bitmap(
   if (x_max > WIDTH ) x_max = WIDTH;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    static int16_t err[801];
+    static int16_t err[1201]; // This is the maximum width of all Inkplate devices + 1
     int16_t error;
-    memset(err, 0, 801*2);
+    memset(err, 0, 1201*2);
 
     if (orientation == Orientation::LEFT) {
       for (int j = pos.y, q = 0; j < y_max; j++, q++) {

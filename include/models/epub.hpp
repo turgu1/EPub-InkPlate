@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __EPUB_HPP__
-#define __EPUB_HPP__
+#pragma once
 
 #include "global.hpp"
 
@@ -121,6 +120,4 @@ class EPub
   EPub epub;
 #else
   extern EPub epub;
-#endif
-
 #endif

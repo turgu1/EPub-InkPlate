@@ -47,8 +47,8 @@ BookController::open_book_file(
   const PageLocs::PageId & page_id,
   bool cover_too_large)
 {
-  // msg_viewer.show(MsgViewer::BOOK, false, true, "Loading a book",
-  //   "The book \" %s \" is loading. Please wait.", book_title.c_str());
+  msg_viewer.show(MsgViewer::BOOK, false, false, "Loading a book",
+     "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
   bool new_document = book_filename != epub.get_current_filename();
 

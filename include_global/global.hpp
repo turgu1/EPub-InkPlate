@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __GLOBAL_HPP__
-#define __GLOBAL_HPP__
+#pragma once
 
 #include <cstdint>
 #include <iostream>
@@ -118,6 +117,4 @@ typedef std::unordered_map<std::string, Element> Elements;
   ;
 #else
   extern Elements elements;
-#endif
-
 #endif

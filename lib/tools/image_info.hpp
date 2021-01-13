@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __IMAGE_INFO_HPP__
-#define __IMAGE_INFO_HPP__
+#pragma once
 
 #include <cinttypes>
 
@@ -21,6 +20,4 @@ struct ImageInfo {
   ImageInfo * get_image_info(uint8_t * mem_image, uint32_t size);
 #else
   extern ImageInfo * get_image_info(uint8_t * mem_image, uint32_t size);
-#endif
-
 #endif

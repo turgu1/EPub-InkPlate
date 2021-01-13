@@ -20,8 +20,7 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef MEMORY_POOL_HPP
-#define MEMORY_POOL_HPP
+#pragma once
 
 #include <climits>
 #include <cstddef>
@@ -98,4 +97,3 @@ class MemoryPool
 
 #include "memory_pool.tcc"
 
-#endif // MEMORY_POOL_HPP

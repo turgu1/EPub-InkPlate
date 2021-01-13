@@ -2,11 +2,9 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __ALOC_HPP__
-#define __ALLOC_HPP__
+#pragma once
 
 #include <cstddef>
 
 extern void * allocate(size_t size);
 
-#endif

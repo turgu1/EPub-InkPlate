@@ -6,6 +6,7 @@
 #include "viewers/books_dir_viewer.hpp"
 
 #include "models/fonts.hpp"
+#include "models/config.hpp"
 #include "viewers/page.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -104,10 +105,6 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     ypos = top_pos + BooksDir::max_cover_height + 6;
   }
 
-  std::ostringstream ostr;
-  ostr << page_nbr + 1 << " / " << page_count();
-  std::string str = ostr.str();
-
   TTF * font = fonts.get(0, PAGENBR_FONT_SIZE);
 
   fmt.line_height_factor = 1.0;
@@ -121,9 +118,23 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   fmt.screen_bottom      = 10;
 
   page.set_limits(fmt);
-  page.put_str_at(str, Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+
+  std::ostringstream ostr;
+  ostr << page_nbr + 1 << " / " << page_count();
+
+  page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
 
   #if EPUB_INKPLATE_BUILD
+    int8_t show_heap;
+    config.get(Config::Ident::SHOW_HEAP, &show_heap);
+
+    if (show_heap != 0) {
+      ostr.str(std::string());
+      ostr << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+      fmt.align = CSS::Align::RIGHT;
+      page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+    }
+
     BatteryViewer::show();
   #endif
 

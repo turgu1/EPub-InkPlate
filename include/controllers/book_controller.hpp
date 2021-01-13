@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __BOOK_CONTROLLER_HPP__
-#define __BOOK_CONTROLLER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
@@ -41,6 +40,4 @@ class BookController
   BookController book_controller;
 #else
   extern BookController book_controller;
-#endif
-
 #endif

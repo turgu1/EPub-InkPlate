@@ -5,7 +5,7 @@
 #
 # Guy Turcotte, December 2020
 
-USAGE="Usage: $0 big.epub small.epub"
+USAGE="Usage: $0 big-in.epub small-out.epub"
 : ${2:?$USAGE}
 
 unzip -d $1-tmp $1

@@ -1,5 +1,4 @@
-#ifndef __BATTERY_VIEWER_HPP__
-#define __BATTERY_VIEWER_HPP__
+#pragma once
 
 #include "global.hpp"
 
@@ -14,4 +13,4 @@
 
   }
 #endif
-#endif
+

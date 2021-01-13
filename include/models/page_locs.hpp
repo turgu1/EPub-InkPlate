@@ -1,5 +1,4 @@
-#ifndef __PAGE_LOCS_HPP__
-#define __PAGE_LOCS_HPP__
+#pragma once
 
 #include "global.hpp"
 
@@ -7,19 +6,18 @@
 #include <mutex>
 
 #if EPUB_LINUX_BUILD
-  // #include <thread>
-  // #include <mutex>
   #include <fcntl.h>
   #include <mqueue.h>
   #include <sys/stat.h>
 #else
-  // #include <mutex>
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
-  #include "freertos/semphr.h"
+  // #include "freertos/semphr.h"
 #endif
 
 #include "models/epub.hpp"
+#include "viewers/page.hpp"
+
 #include "pugixml.hpp"
 
 #include <map>
@@ -53,6 +51,8 @@ class PageLocs
     static constexpr const char * TAG = "PageLocs";
     static constexpr const int8_t LOCS_FILE_VERSION = 1;
 
+    Page page_out;
+
     bool completed;
     struct PageCompare {
       bool operator() (const PageId & lhs, const PageId & rhs) const { 
@@ -65,19 +65,9 @@ class PageLocs
     typedef std::set<int16_t> ItemsSet;
 
     std::recursive_timed_mutex  mutex;
+
     std::thread state_thread;
     std::thread retriever_thread;
-
-    #if EPUB_LINUX_BUILD
-      // std::thread state_thread;
-      // std::thread retriever_thread;
-    #else
-      //static SemaphoreHandle_t mutex;
-      //static StaticSemaphore_t mutex_buffer;
-
-      //inline static void enter() { xSemaphoreTake(mutex, portMAX_DELAY); }
-      //inline static void leave() { xSemaphoreGive(mutex); }
-    #endif
 
     PagesMap  pages_map;
     ItemsSet  items_set;
@@ -106,27 +96,10 @@ class PageLocs
 
   public:
 
-    PageLocs() : completed(false), item_count(0) { 
-      #if !EPUB_LINUX_BUILD
-        //mutex = xSemaphoreCreateMutexStatic(&mutex_buffer);
-      #endif 
-    };
+    PageLocs() : completed(false), item_count(0) { };
 
     void setup();
     void abort_threads();
-    /**
-     * @brief Build the pages location vector
-     * 
-     * The vector is used to quicly direct page preparation and display. It is expected to
-     * be called once a book locations refresh is required by the BooksDir class. The information
-     * is put in the ebooks list database and retrieved when the user select a book
-     * to read. The process of building the list is a long process, better be done
-     * only once per book at application load time.
-     * 
-     * ToDo: Make it runs as a thread.
-     * 
-     */
-
     bool build_page_locs(int16_t itemref_index);
 
     const PageId * get_next_page_id(const PageId & page_id, int16_t count = 1);
@@ -172,6 +145,4 @@ class PageLocs
   PageLocs page_locs;
 #else
   extern PageLocs page_locs;
-#endif
-
 #endif

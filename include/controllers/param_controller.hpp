@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __PARAM_CONTROLLER_HPP__
-#define __PARAM_CONTROLLER_HPP__
+#pragma once
 
 #include "global.hpp"
 #include "controllers/event_mgr.hpp"
@@ -32,6 +31,4 @@ class ParamController
   ParamController param_controller;
 #else
   extern ParamController param_controller;
-#endif
-
 #endif

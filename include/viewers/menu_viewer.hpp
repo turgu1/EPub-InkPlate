@@ -2,8 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#ifndef __MENU_VIEWER_HPP__
-#define __MENU_VIEWER_HPP__
+#pragma once
 
 #include "controllers/event_mgr.hpp"
 
@@ -12,8 +11,8 @@ class MenuViewer
   public:
     static constexpr uint8_t MAX_MENU_ENTRY = 10;
 
-    enum class Icon { RETURN, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO, END_MENU };
-    char icon_char[9] = { '@', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I' };
+    enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO, END_MENU };
+    char icon_char[10] = { '@', 'Z', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I' };
     struct MenuEntry {
       Icon icon;
       const char * caption;
@@ -45,6 +44,4 @@ class MenuViewer
   MenuViewer menu_viewer;
 #else
   extern MenuViewer menu_viewer;
-#endif
-
 #endif
