@@ -10,6 +10,7 @@
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
 #include "models/config.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -25,20 +26,20 @@ static int8_t show_images;
 static int8_t font_size;
 static int8_t use_fonts_in_book;
 static int8_t font;
-static int8_t ok;
+// static int8_t ok;
 
 static int8_t old_font_size;
 static int8_t old_show_images;
 static int8_t old_use_fonts_in_book;
 static int8_t old_font;
 
-static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
+static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
 static FormViewer::FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
   { "Font Size:",           &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
   { "Use fonts in book:",   &use_fonts_in_book,  2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
   { "Font:",                &font,               8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
   { "Show Images in book:", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { nullptr,                &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+//  { nullptr,                &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 static void
@@ -60,7 +61,7 @@ book_parameters()
   old_use_fonts_in_book  = use_fonts_in_book;
   old_font               = font;
   old_font_size          = font_size;
-  ok                     = 0;
+  // ok                     = 0;
 
   form_viewer.show(
     book_params_form_entries, 
@@ -73,7 +74,25 @@ book_parameters()
 static void
 revert_to_defaults()
 {
+  page_locs.stop_document();
   
+  BookParams * book_params = epub.get_book_params();
+
+  constexpr int8_t def = -1;
+
+  book_params->put(BookParams::Ident::SHOW_IMAGES,       def);
+  book_params->put(BookParams::Ident::FONT_SIZE,         def);
+  book_params->put(BookParams::Ident::FONT,              def);
+  book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK, def);
+  
+  epub.update_book_format_params();
+
+  book_params->save();
+
+  msg_viewer.show(MsgViewer::INFO, 
+                  false, false, 
+                  "E-book parameters reverted", 
+                  "E-book parameters reverted to default values.");
 }
 
 static void 
@@ -101,15 +120,16 @@ wifi_mode()
   #endif
 }
 
-static MenuViewer::MenuEntry menu[7] = {
-  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",        CommonActions::return_to_last    },
-  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                        books_list                       },
-  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",           book_parameters                  },
-  { MenuViewer::Icon::REVERT,      "Revert e-book parameters to default", revert_to_defaults               },  
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },
-  { MenuViewer::Icon::END_MENU,    nullptr,                               nullptr                          }
+static MenuViewer::MenuEntry menu[8] = {
+  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last},
+  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   },
+  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              },
+  { MenuViewer::Icon::REVERT,      "Revert e-book params to "
+                                   "default values",                       revert_to_defaults           },  
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off     },
+  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      }
 }; 
 
 void 
@@ -131,7 +151,7 @@ ParamController::key_event(EventMgr::KeyEvent key)
   if (book_params_form_is_shown) {
     if (form_viewer.event(key)) {
       book_params_form_is_shown = false;
-      if (ok) {
+      // if (ok) {
         BookParams * book_params = epub.get_book_params();
 
         if (show_images       !=       old_show_images) book_params->put(BookParams::Ident::SHOW_IMAGES,        show_images      );
@@ -142,7 +162,7 @@ ParamController::key_event(EventMgr::KeyEvent key)
         if (book_params->is_modified()) epub.update_book_format_params();
 
         book_params->save();
-      }
+      // }
     }
   }
   #if EPUB_INKPLATE_BUILD

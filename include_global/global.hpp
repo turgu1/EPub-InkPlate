@@ -49,7 +49,7 @@
 //
 // To use, set DEBUGGING_AID to 1 and select the page number (0 = first page), 
 // setting the PAGE_TO_SHOW_LOCATION. At
-// page locations refresh time (done by the book_dir class at start time), 
+// pages location refresh time (done by the book_dir class at start time), 
 // a lot of data will be output on the terminal. Then, opening the book,
 // and going to the selected page, some similar information will be sent to 
 // the terminal. You can then compare the results and find the differences.

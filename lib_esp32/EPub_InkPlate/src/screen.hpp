@@ -24,13 +24,19 @@ class Screen : NonCopyable
   public:
     static uint16_t WIDTH;
     static uint16_t HEIGHT;
-    static constexpr uint8_t  BLACK_COLOR           = 0;
-    static constexpr uint8_t  WHITE_COLOR           = 7;
+    static constexpr uint8_t    BLACK_COLOR           =   0;
+    static constexpr uint8_t    WHITE_COLOR           =   7;
     #if INKPLATE_10
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  30;
+      static constexpr int8_t   IDENT                 =   2;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  20;
       static constexpr uint16_t RESOLUTION            = 150;  ///< Pixels per inch
-    #else
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =   9;
+    #elif INKPLATE_6
+      static constexpr int8_t   IDENT                 =   1;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  20;
+      static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
+    #elif INKPLATE_6PLUS
+      static constexpr int8_t   IDENT                 =   3;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 200;
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };

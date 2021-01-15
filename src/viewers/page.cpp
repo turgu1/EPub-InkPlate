@@ -142,13 +142,13 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 {
   TTF::BitmapGlyph * glyph;
   
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   const char * s = str.c_str(); 
   if (fmt.align == CSS::Align::LEFT) {
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
         entry->command = DisplayListCommand::GLYPH;
@@ -178,7 +178,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
     while (*s) {
       bool first = true;
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
         size += glyph->advance;
       }
       first = false;
@@ -206,7 +206,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
     s = str.c_str();
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first)))) {
+      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
         
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
@@ -239,9 +239,9 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
 {
   TTF::BitmapGlyph * glyph;
   
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
-  if ((glyph = font->get_glyph(ch))) {
+  if ((glyph = font->get_glyph(ch, fmt.font_size))) {
     DisplayListEntry * entry = display_list_entry_pool.newElement();
     if (entry == nullptr) no_mem();
     entry->command                = DisplayListCommand::GLYPH;
@@ -366,7 +366,7 @@ Page::set_limits(Format & fmt)
 bool
 Page::line_break(const Format & fmt, int8_t indent_next_line)
 {
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
   
   // LOG_D("line_break font index: %d", fmt.font_index);
 
@@ -374,11 +374,11 @@ Page::line_break(const Format & fmt, int8_t indent_next_line)
     add_line(fmt, false);
   }
   else {
-    pos.y += font->get_line_height() * fmt.line_height_factor;
+    pos.y += font->get_line_height(fmt.font_size) * fmt.line_height_factor;
     pos.x  = min_x + indent_next_line;
   }
 
-  screen_is_full = screen_is_full || ((pos.y - font->get_descender_height()) >= max_y);
+  screen_is_full = screen_is_full || ((pos.y - font->get_descender_height(fmt.font_size)) >= max_y);
   if (screen_is_full) {
     return false;
   }
@@ -388,14 +388,14 @@ Page::line_break(const Format & fmt, int8_t indent_next_line)
 bool 
 Page::new_paragraph(const Format & fmt, bool recover)
 {
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   // Check if there is enough room for the first line of the paragraph.
   if (!recover) {
     screen_is_full = screen_is_full || 
                     ((pos.y + fmt.margin_top + 
-                             (fmt.line_height_factor * font->get_line_height()) - 
-                              font->get_descender_height()) > max_y);
+                             (fmt.line_height_factor * font->get_line_height(fmt.font_size)) - 
+                              font->get_descender_height(fmt.font_size)) > max_y);
     if (screen_is_full) { 
       return false; 
     }
@@ -426,14 +426,14 @@ Page::new_paragraph(const Format & fmt, bool recover)
 bool 
 Page::end_paragraph(const Format & fmt)
 {
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   if (!line_list.empty()) {
     add_line(fmt, false);
 
-    pos.y += fmt.margin_bottom - font->get_descender_height();
+    pos.y += fmt.margin_bottom - font->get_descender_height(fmt.font_size);
 
-    if ((pos.y - font->get_descender_height()) >= max_y) {
+    if ((pos.y - font->get_descender_height(fmt.font_size)) >= max_y) {
       screen_is_full = true;
       return false;
     }
@@ -550,7 +550,7 @@ Page::add_line(const Format & fmt, bool justifyable)
 }
 
 inline void 
-Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space)
+Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font, bool is_space)
 {
   if (is_space && (line_width == 0)) return;
 
@@ -561,7 +561,7 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space)
   entry->kind.glyph_entry.glyph = glyph;
   entry->pos.x = entry->pos.y = is_space ? glyph->advance : 0;
   
-  if (glyphs_height < glyph->root->get_line_height()) glyphs_height = glyph->root->get_line_height();
+  if (glyphs_height < glyph->root->get_line_height(glyph_size)) glyphs_height = glyph->root->get_line_height(glyph_size);
 
   line_width += (glyph->advance);
 
@@ -613,7 +613,7 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy, float line_he
   line_list.push_front(entry);
 }
 
-#define NEXT_LINE_REQUIRED_SPACE (pos.y + (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height())
+#define NEXT_LINE_REQUIRED_SPACE (pos.y + (fmt.line_height_factor * font->get_line_height(fmt.font_size)) - font->get_descender_height(fmt.font_size))
 
 #if 1
 bool
@@ -625,11 +625,11 @@ Page::add_word(const char * word,  const Format & fmt)
   const char * str = word;
   int16_t height;
 
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   if (font == nullptr) return false;
 
-  height = font->get_line_height();
+  height = font->get_line_height(fmt.font_size);
 
   if (line_list.empty()) {
     // We are about to start a new line. Check if it will fit on the page.
@@ -640,8 +640,8 @@ Page::add_word(const char * word,  const Format & fmt)
   bool    first = true;
 
   while (*str) {
-    if ((glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first))) == nullptr) {
-      glyph = font->get_glyph(' ');
+    if ((glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first), fmt.font_size)) == nullptr) {
+      glyph = font->get_glyph(' ', fmt.font_size);
     }
     if (glyph) {
       width += glyph->advance;
@@ -717,7 +717,7 @@ Page::add_word(const char * word,  const Format & fmt)
   int16_t width = 0;
   bool    first = true;
   while (*str) {
-    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first));
+    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first), fmt.font_size);
     if (glyph) width += glyph->advance;
     first = false;
   }
@@ -742,11 +742,11 @@ Page::add_word(const char * word,  const Format & fmt)
   first = true;
   while (*word) {
     if (font) {
-      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first))) == nullptr) {
-        glyph = font->get_glyph(' ');
+      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first), fmt.font_size)) == nullptr) {
+        glyph = font->get_glyph(' ', fmt.font_size);
       }
       if (glyph) {
-        add_glyph_to_line(glyph, *font, false);
+        add_glyph_to_line(glyph, fmt.font_size, *font, false);
         //font->show_glyph(*glyph);
       }
     }
@@ -762,7 +762,7 @@ Page::add_char(const char * ch, const Format & fmt)
 {
   TTF::BitmapGlyph * glyph;
 
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   if (font == nullptr) return false;
 
@@ -772,7 +772,7 @@ Page::add_char(const char * ch, const Format & fmt)
     
     // We are about to start a new line. Check if it will fit on the page.
 
-    screen_is_full = ((pos.y + (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height())) > max_y;
+    screen_is_full = ((pos.y + (fmt.line_height_factor * font->get_line_height(fmt.font_size)) - font->get_descender_height(fmt.font_size))) > max_y;
     if (screen_is_full) {
       return false;
     }
@@ -780,7 +780,7 @@ Page::add_char(const char * ch, const Format & fmt)
 
   int32_t code = to_unicode(&ch, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code);
+  glyph = font->get_glyph(code, fmt.font_size);
 
   if (glyph != nullptr) {
     // Verify that there is enough space for the glyph on the line.
@@ -792,7 +792,7 @@ Page::add_char(const char * ch, const Format & fmt)
       }
     }
 
-    add_glyph_to_line(glyph, *font, (code == 32) || (code == 160));
+    add_glyph_to_line(glyph, fmt.font_size, *font, (code == 32) || (code == 160));
   }
 
   return true;
@@ -809,12 +809,12 @@ Page::add_image(Image & image, const Format & fmt)
 
   // Compute the baseline advance for the bitmap, using info from the current font
   TTF::BitmapGlyph * glyph;
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  TTF * font = fonts.get(fmt.font_index);
 
   const char * str = "m";
   int32_t code = to_unicode(&str, fmt.text_transform, true);
 
-  glyph = font->get_glyph(code);
+  glyph = font->get_glyph(code, fmt.font_size);
 
   // Compute available space to put the image.
 
@@ -1170,8 +1170,8 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       return (value.num * Screen::RESOLUTION) / 72;
     case CSS::ValueType::EM:
       {
-        TTF * f = fonts.get(fmt.font_index, fmt.font_size);
-        return value.num * f->get_em_width();
+        TTF * f = fonts.get(fmt.font_index);
+        return value.num * f->get_em_width(fmt.font_size);
       }
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100;

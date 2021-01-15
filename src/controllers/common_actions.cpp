@@ -3,6 +3,7 @@
 
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
+#include "controllers/book_controller.hpp"
 #include "controllers/event_mgr.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/books_dir.hpp"
@@ -35,6 +36,9 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_off()
 {
+  if (!epub.get_current_filename().empty()) {
+    books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
+  }
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE_BUILD
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",

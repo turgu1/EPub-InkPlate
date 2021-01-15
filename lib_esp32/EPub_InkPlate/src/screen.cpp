@@ -308,7 +308,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
           uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          set_pixel_o_left_1bit(i, j, v ? 1 : 0);
+          // set_pixel_o_left_1bit(i, j, v ? 1 : 0);
+          if (v) set_pixel_o_left_1bit(i, j, 1);
         }
       }
     }
@@ -316,7 +317,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
           uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          set_pixel_o_right_1bit(i, j, v ? 1 : 0);
+          // set_pixel_o_right_1bit(i, j, v ? 1 : 0);
+          if (v) set_pixel_o_right_1bit(i, j, 1);
         }
       }
     }
@@ -324,7 +326,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
           uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          set_pixel_o_bottom_1bit(i, j, v ? 1 : 0);
+          // set_pixel_o_bottom_1bit(i, j, v ? 1 : 0);
+          if (v) set_pixel_o_bottom_1bit(i, j, 1);
         }
       }
     }
@@ -334,7 +337,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
           uint8_t v = 7 - (bitmap_data[p] >> 5);
-          set_pixel_o_left_3bit(i, j, v);
+          // set_pixel_o_left_3bit(i, j, v);
+          if (v != 7) set_pixel_o_left_3bit(i, j, v);
         }
       }
     }
@@ -342,7 +346,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
           uint8_t v = 7 - (bitmap_data[p] >> 5);
-          set_pixel_o_right_3bit(i, j, v);
+          // set_pixel_o_right_3bit(i, j, v);
+          if (v != 7) set_pixel_o_right_3bit(i, j, v);
         }
       }
     }
@@ -350,7 +355,8 @@ Screen::draw_glyph(
       for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
         for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
           uint8_t v = 7 - (bitmap_data[p] >> 5);
-          set_pixel_o_bottom_3bit(i, j, v);
+          // set_pixel_o_bottom_3bit(i, j, v);
+          if (v != 7) set_pixel_o_bottom_3bit(i, j, v);
         }
       }
     }

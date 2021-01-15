@@ -49,7 +49,7 @@ class PageLocs
 
   private:
     static constexpr const char * TAG = "PageLocs";
-    static constexpr const int8_t LOCS_FILE_VERSION = 1;
+    static constexpr const int8_t LOCS_FILE_VERSION = 2;
 
     Page page_out;
 
@@ -91,8 +91,8 @@ class PageLocs
     bool page_locs_end_page(Page::Format & fmt);
     bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt);
 
-    bool load(const std::string & epub_filename); ///< load page locations from .locs file
-    bool save(const std::string & epub_filename); ///< save pages locations to .locs file
+    bool load(const std::string & epub_filename); ///< load pages location from .locs file
+    bool save(const std::string & epub_filename); ///< save pages location to .locs file
 
   public:
 

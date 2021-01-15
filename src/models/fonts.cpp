@@ -72,6 +72,8 @@ Fonts::~Fonts()
 void
 Fonts::clear(bool all)
 {
+  std::scoped_lock guard(mutex);
+  
   // LOG_D("Fonts Clear!");
   // Keep the first 5 fonts as they are reused. Caches will be cleared.
   #if USE_EPUB_FONTS
@@ -93,17 +95,20 @@ Fonts::clear_glyph_caches()
     entry.font->clear_cache();
   }
 }
+
 int16_t
 Fonts::get_index(const std::string & name, FaceStyle style)
 {
   int16_t idx = 0;
 
-  for (auto & entry : font_cache) {
-    if ((entry.name.compare(name) == 0) && 
-        (entry.style == style)) return idx;
-    idx++;
-  }
+  { std::scoped_lock guard(mutex);
 
+    for (auto & entry : font_cache) {
+      if ((entry.name.compare(name) == 0) && 
+          (entry.style == style)) return idx;
+      idx++;
+    }
+  }
   return -1;
 }
 
@@ -112,6 +117,8 @@ Fonts::add(const std::string & name,
            FaceStyle style,
            const std::string & filename)
 {
+  std::scoped_lock guard(mutex);
+  
   // If the font is already loaded, return promptly
   for (auto & font : font_cache) {
     if ((name.compare(font.name) == 0) && 
@@ -138,7 +145,7 @@ Fonts::add(const std::string & name,
   }
   else {
     LOG_E("Unable to allocate memory.");
-    msg_viewer.out_of_memory("font allocation");
+    // msg_viewer.out_of_memory("font allocation");
   }
 
   return false;
@@ -150,6 +157,8 @@ Fonts::add(const std::string & name,
            unsigned char *     buffer,
            int32_t             size)
 {
+  std::scoped_lock guard(mutex);
+  
   // If the font is already loaded, return promptly
   for (auto & font : font_cache) {
     if ((name.compare(font.name) == 0) && 
@@ -177,14 +186,14 @@ Fonts::add(const std::string & name,
   }
   else {
     LOG_E("Unable to allocate memory.");
-    msg_viewer.out_of_memory("font allocation");
+    // msg_viewer.out_of_memory("font allocation");
   }
 
   return false;
 }
 
 Fonts::FaceStyle
-Fonts::adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight)
+Fonts::adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight) const
 {
   if (font_style == FaceStyle::ITALIC) { 
     // NORMAL -> ITALIC

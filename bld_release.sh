@@ -43,6 +43,8 @@ then
   rm -rf "$folder/SDCard/books/temp"
 fi
 
+rm "$folder/SDCard/books/*.locs"
+rm "$folder/SDCard/books/*.pars"
 
 cd doc
 ./gener.sh

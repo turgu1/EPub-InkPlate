@@ -27,7 +27,7 @@ class ConfigBase
     static constexpr char const * TAG         = "Config"; 
 
     // const CfgType     & cfg;
-    static CfgType cfg;
+    static CfgType    cfg;
     const std::string config_filename;
 
     bool modified;

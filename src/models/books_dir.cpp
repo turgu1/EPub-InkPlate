@@ -285,7 +285,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
           if (first) {
             first = false;
-            //msg_viewer.show_progress("Computing new books page locations...");
+            //msg_viewer.show_progress("Computing new books pages location...");
             if (force_init) {
               msg_viewer.show(MsgViewer::INFO, false, true, 
                 "E-books metadata retrieval", 

@@ -41,8 +41,8 @@ class BooksDir
      * 
      * This represents the meta-data contained in the database for each epub book.
      * These are required to present the list of books to the user.
-     * One element is not present in the structure: the list of page locations.
-     * The *get_page_locs()* method is retrieving the page locations when required
+     * One element is not present in the structure: the list of pages location.
+     * The *get_page_locs()* method is retrieving the pages location when required
      * by the epub class.
      */
     #pragma pack(push, 1)

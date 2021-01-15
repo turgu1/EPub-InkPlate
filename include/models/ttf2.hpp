@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <forward_list>
 #include <string>
+#include <mutex>
 
 class TTF
 {
@@ -33,6 +34,7 @@ class TTF
     static constexpr char const * TAG = "TTF";
 
     FT_Face face;
+    std::mutex mutex;
 
   public:
     TTF(const std::string & filename);
@@ -53,20 +55,8 @@ class TTF
      * @param charcode Character code as a unicode number.
      * @return BitmapGlyph The glyph associated to the unicode character.
      */
-    BitmapGlyph * get_glyph(int32_t charcode);
+    BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size);
 
-    /**
-     * @brief Set the font size
-     * 
-     * Set the font size. This will be used to set various general metrics 
-     * required from the font structure. It will also be used to search 
-     * for cached glyphs.
-     * 
-     * @param size The size of the glyphs in points (1/72th of an inch).
-     * @return true The font was resized.
-     * @return false Not able to resize the font.
-     */
-    bool set_font_size(int16_t size);
 
     /**
      * @brief Face normal line height
@@ -74,7 +64,9 @@ class TTF
      * 
      * @return int32_t Normal line height of the face in pixels
      */
-    int32_t get_line_height() { 
+    int32_t get_line_height(int16_t glyph_size)  {
+      std::scoped_lock guard(mutex);
+      if (current_size != glyph_size) set_font_size(glyph_size); 
       return (face == nullptr) ? 0 : (face->size->metrics.height >> 6); 
     }
 
@@ -83,11 +75,15 @@ class TTF
      * 
      * @return int32_t EM width in pixels related to the current font size. 
      */
-    int32_t get_em_width() { 
+    int32_t get_em_width(int16_t glyph_size) {
+      std::scoped_lock guard(mutex);
+      if (current_size != glyph_size) set_font_size(glyph_size); 
       return (face == nullptr) ? 0 : face->size->metrics.x_ppem; 
     }
 
-    int32_t get_em_height() { 
+    int32_t get_em_height(int16_t glyph_size) { 
+      std::scoped_lock guard(mutex);
+      if (current_size != glyph_size) set_font_size(glyph_size);
       return (face == nullptr) ? 0 : face->size->metrics.y_ppem; 
     }
 
@@ -97,16 +93,18 @@ class TTF
      * @return int32_t The face descender height in pixels related to
      *                 the current font size.
      */
-    int32_t get_descender_height() {
+    int32_t get_descender_height(int16_t glyph_size) {
+      std::scoped_lock guard(mutex);
+      if (current_size != glyph_size) set_font_size(glyph_size);
       return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6); 
     }
 
     void clear_cache();
 
-    void get_size(const char * str, Dim * dim);
+    void get_size(const char * str, Dim * dim, int16_t glyph_size);
 
   private:
-    static constexpr uint16_t BYTE_POOL_SIZE = 16384;
+    static constexpr uint16_t BYTE_POOL_SIZE = 16384*2;
 
     typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
     typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
@@ -114,7 +112,6 @@ class TTF
     typedef std::forward_list<BytePool *> BytePools;
     
     GlyphsCache cache;
-    GlyphsCache::iterator cache_it;
 
     MemoryPool<BitmapGlyph> bitmap_glyph_pool;
     
@@ -154,4 +151,17 @@ class TTF
      */
     bool set_font_face_from_memory(unsigned char * buffer, int32_t size);
 
+    /**
+     * @brief Set the font size
+     * 
+     * Set the font size. This will be used to set various general metrics 
+     * required from the font structure. 
+     * 
+     * @param size The size of the glyphs in points (1/72th of an inch).
+     * @return true The font was resized.
+     * @return false Not able to resize the font.
+     */
+    bool set_font_size(int16_t size);
+
+    BitmapGlyph * get_glyph_internal(int32_t charcode, int16_t glyph_size);    
 };

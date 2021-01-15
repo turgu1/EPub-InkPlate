@@ -5,10 +5,10 @@
 
 enum class ConfigIdent { 
   VERSION, SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, 
-  USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP 
+  USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, SHOW_TITLE 
 };
 
-typedef ConfigBase<ConfigIdent, 13> Config;
+typedef ConfigBase<ConfigIdent, 14> Config;
 
 #if __CONFIG__
   #include <string>
@@ -28,6 +28,7 @@ typedef ConfigBase<ConfigIdent, 13> Config;
   static int8_t   show_images;
   static int8_t   resolution;
   static int8_t   show_heap;
+  static int8_t   show_title;
 
   static int32_t  default_port               = 80;
   static int8_t   default_battery            =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
@@ -39,6 +40,7 @@ typedef ConfigBase<ConfigIdent, 13> Config;
   static int8_t   default_default_font       =  1;  // 0 = CALADEA, 1 = CRIMSON, 2 = RED HAT, 3 = ASAP
   static int8_t   default_resolution         =  0;  // 0 = 1bit, 1 = 3bits
   static int8_t   default_show_heap          =  0;  // 0 = NO, 1 = YES
+  static int8_t   default_show_title         =  1;
   static int8_t   the_version                =  1;
 
   // static Config::CfgType conf = {{
@@ -57,7 +59,8 @@ typedef ConfigBase<ConfigIdent, 13> Config;
     { Config::Ident::SHOW_IMAGES,        Config::EntryType::BYTE,   "show_images",        &show_images,        &default_show_images,        0 },
     { Config::Ident::ORIENTATION,        Config::EntryType::BYTE,   "orientation",        &orientation,        &default_orientation,        0 },
     { Config::Ident::PIXEL_RESOLUTION,   Config::EntryType::BYTE,   "resolution",         &resolution,         &default_resolution,         0 },
-    { Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",          &show_heap,          &default_show_heap,          0 }
+    { Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",          &show_heap,          &default_show_heap,          0 },
+    { Config::Ident::SHOW_TITLE,         Config::EntryType::BYTE,   "show_title",         &show_title,         &default_show_title,         0 }
   }};
 
   // Config config(conf, CONFIG_FILE);

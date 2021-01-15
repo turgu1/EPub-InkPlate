@@ -1,5 +1,6 @@
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
+#include "models/config.hpp"
 #include "controllers/event_mgr.hpp"
 
 #include "viewers/book_viewer.hpp"
@@ -81,6 +82,7 @@ class StateTask
     int16_t   asap_itemref;        // Prioritize item to get next
     uint8_t * bitset;              // Set of all items processed so far
     uint8_t   bitset_size;         // bitset byte length
+    bool      stopping;
     bool      forget_retrieval;    // Forget current item begin processed by retrieval task
 
     StateQueueData       state_queue_data;
@@ -91,7 +93,7 @@ class StateTask
      * @brief Request next item to be retrieved
      *
      * This function is called to identify and send the
-     * next request for retrieval of page locations. It also
+     * next request for retrieval of pages location. It also
      * identify when the whole process is completed, as all items from
      * the document have been done. It will then send this information
      * to the appliction through the Mgr queue.
@@ -165,10 +167,11 @@ class StateTask
             itemref_count(     -1),
       waiting_for_itemref(     -1),
       next_itemref_to_get(     -1),
-              asap_itemref(     -1),
-                    bitset(nullptr),
+             asap_itemref(     -1),
+                   bitset(nullptr),
               bitset_size(      0),
-          forget_retrieval(  false)  { }
+                 stopping(  false),
+         forget_retrieval(  false)  { }
 
     void operator()() {
       for(;;) {
@@ -184,13 +187,17 @@ class StateTask
             LOG_D("-> STOP <-");
             itemref_count    = -1;
             forget_retrieval = true;
-            retriever_iddle  = true;
             if (bitset != nullptr) {
               delete [] bitset;
               bitset = nullptr;
             }
-            mgr_queue_data.req = MgrReq::STOPPED;
-            QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
+            if (retriever_iddle) {
+              mgr_queue_data.req = MgrReq::STOPPED;
+              QUEUE_SEND(mgr_queue, mgr_queue_data, 0); 
+            }
+            else {
+              stopping = true;
+            }
             break;
 
           case StateReq::START_DOCUMENT:
@@ -271,11 +278,27 @@ class StateTask
                 itemref = state_queue_data.itemref_index;
                 if (itemref < 0) {
                   itemref = -(itemref + 1);
-                  LOG_E("Unable to retrieve page locations for item %d", itemref);
+                  LOG_E("Unable to retrieve pages location for item %d", itemref);
                 }
                 bitset[itemref >> 3] |= (1 << (itemref & 7));
               }
-              request_next_item(itemref);
+              if (stopping) {
+                stopping = false;
+                retriever_iddle  = true;
+                mgr_queue_data.req = MgrReq::STOPPED;
+                QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
+              }
+              else {
+                request_next_item(itemref);
+              }
+            }
+            else {
+              if (stopping) {
+                stopping = false;
+                retriever_iddle  = true;
+                mgr_queue_data.req = MgrReq::STOPPED;
+                QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
+              }
             }
             break;
 
@@ -292,10 +315,26 @@ class StateTask
               LOG_D("Sent ASAP_READY to Mgr");
               if (itemref < 0) {
                 itemref = -(itemref + 1);
-                LOG_E("Unable to retrieve page locations for item %d", itemref);
+                LOG_E("Unable to retrieve pages location for item %d", itemref);
               }
               bitset[itemref >> 3] |= (1 << (itemref & 7));
-              request_next_item(itemref, true);
+              if (stopping) {
+                stopping = false;
+                retriever_iddle  = true;
+                mgr_queue_data.req = MgrReq::STOPPED;
+                QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
+              }
+              else {
+                request_next_item(itemref, true);
+              }
+            }
+            else {
+              if (stopping) {
+                stopping = false;
+                retriever_iddle  = true;
+                mgr_queue_data.req = MgrReq::STOPPED;
+                QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
+              }
             }
             break;
         }
@@ -720,8 +759,8 @@ PageLocs::build_page_locs(int16_t itemref_index)
 {
   std::scoped_lock guard(book_viewer.get_mutex());
 
-  TTF * font  = fonts.get(0, 10);
-  page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
+  TTF * font  = fonts.get(0);
+  page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
   
   page_out.set_compute_mode(Page::ComputeMode::LOCATION);
 
@@ -739,6 +778,11 @@ PageLocs::build_page_locs(int16_t itemref_index)
     
     int8_t font_size = current_format_params.font_size;
 
+    int8_t show_title;
+    config.get(Config::Ident::SHOW_TITLE, &show_title);
+
+    int16_t top = show_title != 0 ? 30 : 10;
+
     Page::Format fmt = {
       .line_height_factor = 0.9,
       .font_index         = idx,
@@ -750,7 +794,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
       .margin_bottom      = 0,
       .screen_left        = 10,
       .screen_right       = 10,
-      .screen_top         = 10,
+      .screen_top         = top,
       .screen_bottom      = page_bottom,
       .width              = 0,
       .height             = 0,
@@ -1019,13 +1063,13 @@ bool PageLocs::load(const std::string & epub_filename)
   std::string   filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".locs";
   std::ifstream file(filename, std::ios::in | std::ios::binary);
 
-  LOG_D("Loading page locations from file %s.", filename.c_str());
+  LOG_D("Loading pages location from file %s.", filename.c_str());
 
   int8_t  version;
   int16_t page_count;
 
   if (!file.is_open()) {
-    LOG_E("Unable to open page locations file.");
+    LOG_E("Unable to open pages location file.");
     return false;
   }
 
@@ -1069,10 +1113,10 @@ PageLocs::save(const std::string & epub_filename)
   std::string   filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".locs";
   std::ofstream file(filename, std::ios::out | std::ios::binary);
 
-  LOG_D("Saving page locations to file %s", filename.c_str());
+  LOG_D("Saving pages location to file %s", filename.c_str());
 
   if (!file.is_open()) {
-    LOG_E("Not able to open page locations file.");
+    LOG_E("Not able to open pages location file.");
     return false;
   }
 

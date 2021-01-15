@@ -16,6 +16,7 @@
 #include <list>
 #include <forward_list>
 #include <map>
+#include <mutex>
 
 class EPub
 {
@@ -38,7 +39,9 @@ class EPub
     // both the e-book's specific parameters and default configuration options.
     #pragma pack(push, 1)
     struct BookFormatParams {
+      int8_t ident;        ///< Device identity (screen.hpp IDENT constant)
       int8_t orientation;  ///< Config option only
+      int8_t show_title;
       int8_t show_images;      
       int8_t font_size;        
       int8_t use_fonts_in_book;
@@ -48,6 +51,8 @@ class EPub
     
   private:
    static constexpr char const * TAG = "EPub";
+
+    std::recursive_timed_mutex mutex;
 
     pugi::xml_document opf;    ///< The OPF document description.
     pugi::xml_node     current_itemref;

@@ -13,13 +13,13 @@
 
 void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {
-  TTF * font = fonts.get(1, 12);
+  TTF * font = fonts.get(1);
 
-  line_height = font->get_line_height();
-  text_height = line_height - font->get_descender_height(); 
+  line_height = font->get_line_height(12);
+  text_height = line_height - font->get_descender_height(12); 
 
-  font = fonts.get(0, 16);
-  TTF::BitmapGlyph * icon = font->get_glyph('A');
+  font = fonts.get(0);
+  TTF::BitmapGlyph * icon = font->get_glyph('A', 16);
 
   icon_height = icon->dim.height;
 
@@ -65,7 +65,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
     char ch = icon_char[(int)menu[idx].icon];
     TTF::BitmapGlyph * glyph;
-    glyph = font->get_glyph(ch);
+    glyph = font->get_glyph(ch, 16);
 
     entry_locs[idx].pos.x = pos.x;
     entry_locs[idx].pos.y = pos.y + glyph->yoff;
@@ -99,8 +99,6 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
 bool MenuViewer::event(EventMgr::KeyEvent key)
 {
-  std::scoped_lock guard(book_viewer.get_mutex());
-
   uint8_t old_index = current_entry_index;
 
   Page::Format fmt = {
@@ -170,6 +168,7 @@ bool MenuViewer::event(EventMgr::KeyEvent key)
     fmt.font_index = 1;
     fmt.font_size  = 12;
     
+
     page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 
     std::string txt = menu[current_entry_index].caption; 

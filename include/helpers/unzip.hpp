@@ -5,6 +5,7 @@
 #pragma once
 
 #include <forward_list>
+#include <mutex>
 
 #include "global.hpp"
 
@@ -15,6 +16,9 @@ class Unzip
 
     static const int BUFFER_SIZE = 1024;
     char buffer[BUFFER_SIZE];
+
+    std::mutex mutex;
+    
     /**
      * @brief File descriptor inside the zip file
      * 

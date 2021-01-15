@@ -95,7 +95,7 @@ class FormViewer
 
     uint8_t entry_count;
     int16_t all_choices_width;
-    int16_t last_choices_width;
+    // int16_t last_choices_width;
     int8_t  current_entry_idx;
     int8_t  line_height;
     bool    entry_selection;

@@ -49,22 +49,22 @@
 
     // Show battery icon
 
-    TTF * font = fonts.get(0, 9);
+    TTF * font = fonts.get(0);
     float   value = ((voltage - 2.5) * 4.0) / 1.2;
     int16_t icon_index =  value; // max is 3.7
     if (icon_index > 4) icon_index = 4;
 
     static constexpr char icons[5] = { '0', '1', '2', '3', '4' };
 
-    TTF::BitmapGlyph * glyph = font->get_glyph(icons[icon_index]);
+    TTF::BitmapGlyph * glyph = font->get_glyph(icons[icon_index], 9);
 
     Dim dim;
     dim.width  =  100;
-    dim.height = -font->get_descender_height();
+    dim.height = -font->get_descender_height(9);
 
     Pos pos;
     pos.x = 4;
-    pos.y = Screen::HEIGHT + font->get_descender_height() - 2;
+    pos.y = Screen::HEIGHT + font->get_descender_height(9) - 2;
 
     page.clear_region(dim, pos);
 
@@ -88,7 +88,7 @@
         sprintf(str, "%5.2fv", voltage);
       }
 
-      font = fonts.get(1, 9);
+      font = fonts.get(1);
       fmt.font_index = 1;  
       pos.x = 5 + glyph->advance + 5;
       page.put_str_at(str, pos, fmt);

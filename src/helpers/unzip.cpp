@@ -263,6 +263,8 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
 {
   // LOG_D("get_file: %s", filename);
   
+  std::scoped_lock guard(mutex);
+  
   char * data = nullptr;
   int    err  = 0;
   file_size = 0;

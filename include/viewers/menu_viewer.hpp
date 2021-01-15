@@ -12,7 +12,7 @@ class MenuViewer
     static constexpr uint8_t MAX_MENU_ENTRY = 10;
 
     enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO, END_MENU };
-    char icon_char[10] = { '@', 'Z', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I' };
+    char icon_char[10] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I' };
     struct MenuEntry {
       Icon icon;
       const char * caption;

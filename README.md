@@ -9,23 +9,30 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Support of the new upcoming Inkplate-10 device
 - [x] Just in time calculation of pages locations through multithreading (a **BIG** change...)
 - [x] Integration with the new ESP-IDF-Inkplate library
-- [x] Add Parameters for e-book specific font/pictures adjustments
-- [x] Trigger page locations recalculation when parameters have changed
-- [x] Stop light-sleep, deep-sleep while page locations is being calculated
+- [x] Trigger pages location recalculation when parameters have changed
+- [x] Stop light-sleep, deep-sleep while pages location is being calculated
 - [x] Adjust web server to only show epub files and remove params/locs files on e-book delete
 - [x] Adjust Web server to stop page-locs to free memory before launching the server 
-- [x] Save computed page locations to sdcard for quick ebook load
-- [ ] Repair some known bugs
-- [ ] Code refactoring and cleanup
+- [x] Save computed pages location to sdcard for quick ebook load
+- [x] Repair some known bugs (some issues to be addressed later)
+- [ ] Code refactoring and cleanup (tbd v1.2)
 - [ ] Udate documentation
 - [ ] Tests, tests, tests, ...
+
+Added functional features:
+
+- [x] Title showned at top of pages (as an option)
+- [x] Heap Size showned at bottom of pages (as an option)
+- [x] Form entry simplified (OK / Cancel param no longer there)
+- [x] Parameters for each e-book specific font/pictures adjustments
+- [ ] Augmented CSS features (tbd v1.2)
 
 Known bugs:
 
 - [x] e-books list geometry when screen orientation change
 - [x] recovery from too large image memory allocation
 - [x] Page refresh on orientation/resolution changes
-- [ ] PNG image files transparency
+- [ ] PNG image files transparency (tbd v1.2)
 
 -----
 

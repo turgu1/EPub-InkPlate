@@ -30,10 +30,9 @@ TTF::TTF(const std::string & filename)
   set_font_face_from_file(filename);
   memory_font  = nullptr;
   current_size = -1;
-  cache_it     = cache.end();
 }
 
-TTF::TTF(unsigned char * buffer, int32_t size)
+TTF::TTF(unsigned char * buffer, int32_t buffer_size)
 {
   face = nullptr;
   
@@ -44,9 +43,8 @@ TTF::TTF(unsigned char * buffer, int32_t size)
     }
   }
 
-  set_font_face_from_memory(buffer, size);
+  set_font_face_from_memory(buffer, buffer_size);
   current_size = -1;
-  cache_it     = cache.end();
 }
 
 TTF::~TTF()
@@ -94,12 +92,13 @@ TTF::clear_face()
   free(memory_font);
   
   current_size = -1;
-  cache_it     = cache.end();
 }
 
 void
 TTF::clear_cache()
 {
+  std::scoped_lock guard(mutex);
+  
   for (auto const & entry : cache) {
     for (auto const & glyph : entry.second) {
       bitmap_glyph_pool.deleteElement(glyph.second);      
@@ -113,17 +112,26 @@ TTF::clear_cache()
   
   cache.clear();
   cache.reserve(50);
-  cache_it = cache.end();
 }
 
 TTF::BitmapGlyph *
-TTF::get_glyph(int32_t charcode)
+TTF::get_glyph(int32_t charcode, int16_t glyph_size)
+{
+  std::scoped_lock guard(mutex);
+
+  return get_glyph_internal(charcode, glyph_size);
+}
+
+TTF::BitmapGlyph *
+TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
 {
   int error;
 
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
+
+  GlyphsCache::iterator cache_it = cache.find(glyph_size);
 
   bool found = (cache_it != cache.end()) &&
                ((git = cache_it->second.find(charcode)) != cache_it->second.end());
@@ -132,6 +140,8 @@ TTF::get_glyph(int32_t charcode)
     return git->second;
   }
   else {
+    if (current_size != glyph_size) set_font_size(glyph_size);
+
     int glyph_index = FT_Get_Char_Index(face, charcode);
     if (glyph_index == 0) {
       LOG_E("Charcode not found in face: %d, font_index: %d", charcode, fonts_cache_index);
@@ -215,7 +225,6 @@ TTF::get_glyph(int32_t charcode)
     //   " a:"  << glyph->advance << std::endl;
 
     cache[current_size][charcode] = glyph;
-    cache_it = cache.find(current_size);
     return glyph;
   }
 }
@@ -223,9 +232,6 @@ TTF::get_glyph(int32_t charcode)
 bool 
 TTF::set_font_size(int16_t size)
 {
-  if (face == nullptr) return false;
-  if (current_size == size) return true;
-
   int error = FT_Set_Char_Size(
           face,                 // handle to face object
           0,                    // char_width in 1/64th of points
@@ -239,8 +245,6 @@ TTF::set_font_size(int16_t size)
   }
 
   current_size = size;
-  cache_it     = cache.find(current_size);
-   
   return true;
 }
 
@@ -286,11 +290,11 @@ TTF::set_font_face_from_file(const std::string font_filename)
 }
 
 bool 
-TTF::set_font_face_from_memory(unsigned char * buffer, int32_t size)
+TTF::set_font_face_from_memory(unsigned char * buffer, int32_t buffer_size)
 {
   if (face != nullptr) clear_face();
 
-  int error = FT_New_Memory_Face(library, (const FT_Byte *) buffer, size, 0, &face);
+  int error = FT_New_Memory_Face(library, (const FT_Byte *) buffer, buffer_size, 0, &face);
   if (error) {
     LOG_E("The memory font format is unsupported or is broken.");
     return false;
@@ -301,25 +305,28 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t size)
 }
 
 void
-TTF::get_size(const char * str, Dim * dim)
+TTF::get_size(const char * str, Dim * dim, int16_t glyph_size)
 {
   int16_t max_up   = 0;
   int16_t max_down = 0;
 
   dim->width  = 0;
 
-  while (*str) {
-    BitmapGlyph * glyph = get_glyph(*str++);
-    if (glyph) {
-      dim->width += glyph->advance;
+  { std::scoped_lock guard(mutex);
+  
+    while (*str) {
+      BitmapGlyph * glyph = get_glyph_internal(*str++, glyph_size);
+      if (glyph) {
+        dim->width += glyph->advance;
 
-      int16_t up   = -glyph->yoff;
-      int16_t down =  glyph->dim.height + glyph->yoff;
-    
-      if (up   > max_up  ) max_up   = up;
-      if (down > max_down) max_down = down;
+        int16_t up   = -glyph->yoff;
+        int16_t down =  glyph->dim.height + glyph->yoff;
+      
+        if (up   > max_up  ) max_up   = up;
+        if (down > max_down) max_down = down;
+      }
     }
-  }
 
-  dim->height = max_up + max_down;
+    dim->height = max_up + max_down;
+  }
 }

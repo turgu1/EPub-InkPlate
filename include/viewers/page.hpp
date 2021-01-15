@@ -121,7 +121,7 @@ class Page
 
     void clear_display_list();
     void           add_line(const Format & fmt, bool justifyable);
-    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, TTF & font, bool is_space);
+    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font, bool is_space);
     void  add_image_to_line(Image & image, int16_t advance, bool copy, float line_height_factor);
     int32_t      to_unicode(const char **str, CSS::TextTransform transform, bool first) const;
 

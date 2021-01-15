@@ -447,13 +447,17 @@ EPub::get_item(pugi::xml_node itemref,
 void 
 EPub::update_book_format_params()
 {
+  constexpr int8_t def = -1;
+
   if (book_params == nullptr) {
     book_format_params = {
+      .ident             = Screen::IDENT,
       .orientation       =  0,  // Get de compiler happy (no warning). Will be set below...
-      .show_images       = -1,
-      .font_size         = -1,
-      .use_fonts_in_book = -1,
-      .font              = -1
+      .show_title        =  0,  // ... idem ...
+      .show_images       = def,
+      .font_size         = def,
+      .use_fonts_in_book = def,
+      .font              = def
     };
   }
   else {
@@ -464,11 +468,12 @@ EPub::update_book_format_params()
   }
 
   config.get(Config::Ident::ORIENTATION, &book_format_params.orientation);
+  config.get(Config::Ident::SHOW_TITLE,  &book_format_params.show_title );
 
-  if (book_format_params.show_images       == -1) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
-  if (book_format_params.font_size         == -1) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
-  if (book_format_params.use_fonts_in_book == -1) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
-  if (book_format_params.font              == -1) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
+  if (book_format_params.show_images       == def) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
+  if (book_format_params.font_size         == def) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
+  if (book_format_params.use_fonts_in_book == def) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
+  if (book_format_params.font              == def) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
 }
 
 void
@@ -693,13 +698,15 @@ EPub::get_item_at_index(int16_t itemref_index)
   return res;
 }
 
-// This is in support of the page locations retrieval mechanism. The ItemInfo
+// This is in support of the pages location retrieval mechanism. The ItemInfo
 // is being used to retrieve asynchroniously the book page numbers without
 // interfering with the main book viewer thread.
 bool 
 EPub::get_item_at_index(int16_t    itemref_index, 
                         ItemInfo & item)
 {
+  std::scoped_lock guard(mutex);
+  
   if (!file_is_open) return false;
 
   xml_node node;
@@ -725,6 +732,8 @@ EPub::get_item_at_index(int16_t    itemref_index,
 bool
 EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_count)
 {
+  std::scoped_lock guard(mutex);
+
   uint32_t size;
   uint8_t * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
 

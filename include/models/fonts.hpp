@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
 class Fonts
 {
@@ -39,23 +40,21 @@ class Fonts
      */
     void clear(bool all = false);
 
-    TTF * get(int16_t index, int16_t size) {
+    TTF * get(int16_t index) {
       TTF * f; 
       if (index >= font_cache.size()) {
         LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
         f = font_cache.at(0).font;
-        if (f) f->set_font_size(size);
       }
       else {
         f = font_cache.at(index).font;
-        if (f) f->set_font_size(size);
       }
       return f;
     };
 
     int16_t get_index(const std::string & name, FaceStyle style);
 
-    const char * get_name(int16_t index) {
+    const char * get_name(int16_t index) const {
       if (index >= font_cache.size()) {
         LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
         return font_cache[0].name.c_str(); 
@@ -65,12 +64,32 @@ class Fonts
       }
     };
     
+    /**
+     * @brief Add a font from a file.
+     * 
+     * @param name Font name
+     * @param style Font style (bold, italic, normal)
+     * @param filename File name
+     * @return true The font was loaded
+     * @return false Some error (file does not exists, etc.)
+     */
     bool add(const std::string & name, FaceStyle style, const std::string & filename);
+    
+    /**
+     * @brief Add a font from memory buffer
+     * 
+     * @param name Font name
+     * @param style Font style (bold, italic, normal)
+     * @param buffer Memory space where the font is located
+     * @param size Size of buffer
+     * @return true The font was added
+     * @return false Some error occured 
+     */
     bool add(const std::string & name, FaceStyle style, unsigned char * buffer, int32_t size);
 
-    FaceStyle adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight);
+    FaceStyle adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight) const;
 
-    void check(int16_t index, FaceStyle style) {
+    void check(int16_t index, FaceStyle style) const {
       if (font_cache[index].style != style) {
         LOG_E("Hum... font_check failed");
       } 
@@ -81,6 +100,7 @@ class Fonts
   private:
     typedef std::vector<FontEntry> FontCache;
     FontCache font_cache;
+    std::mutex mutex;
 };
 
 #if __FONTS__

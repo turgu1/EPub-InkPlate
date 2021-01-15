@@ -29,7 +29,8 @@ static int8_t font_size;
 static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t show_heap;
-static int8_t ok;
+static int8_t show_title;
+// static int8_t ok;
 
 static Screen::Orientation     old_orientation;
 static Screen::PixelResolution  old_resolution;
@@ -37,24 +38,26 @@ static int8_t old_show_images;
 static int8_t old_font_size;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
+static int8_t old_show_title;
 
 static constexpr int8_t MAIN_FORM_SIZE = 6;
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes before sleeping :", &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",     (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Pixel Resolution :",        (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Battery Visualisation :",   &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Heap Visualisation :",      &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Buttons Position (*):",      (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Show Heap Size :",           &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  // { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
-static constexpr int8_t FONT_FORM_SIZE = 5;
+static constexpr int8_t FONT_FORM_SIZE = 4;
 static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",    &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use fonts in books (*):",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default font (*):",         &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Images in books (*):", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { nullptr,                     &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Default Font Size (*):",      &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  { "Default Font (*):",           &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
+  { "Show Images in E-books (*):", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
+  // { nullptr,                     &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
 };
 
 extern bool start_web_server();
@@ -66,23 +69,25 @@ main_parameters()
   config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution );
   config.get(Config::Ident::BATTERY,          &show_battery          );
+  config.get(Config::Ident::SHOW_TITLE,       &show_title            );
   config.get(Config::Ident::SHOW_HEAP,        &show_heap             );
   config.get(Config::Ident::TIMEOUT,          &timeout               );
 
   old_orientation = orientation;
   old_resolution  = resolution;
-  ok              = 0;
+  old_show_title  = show_title;
+  // ok              = 0;
 
   form_viewer.show(
     main_params_form_entries, 
     MAIN_FORM_SIZE, 
-    "(*) Will trigger e-book page locations recalc.");
+    "(*) Will trigger e-book pages location recalc.");
 
   option_controller.set_main_form_is_shown();
 }
 
 static void
-font_parameters()
+default_parameters()
 {
   config.get(Config::Ident::SHOW_IMAGES,        &show_images       );
   config.get(Config::Ident::FONT_SIZE,          &font_size         );
@@ -93,7 +98,7 @@ font_parameters()
   old_use_fonts_in_books = use_fonts_in_books;
   old_default_font       = default_font;
   old_font_size          = font_size;
-  ok                     = 0;
+  // ok                     = 0;
 
   form_viewer.show(
     font_params_form_entries, 
@@ -120,15 +125,15 @@ wifi_mode()
 }
 
 static MenuViewer::MenuEntry menu[9] = {
-  { MenuViewer::Icon::RETURN,      "Return to the e-books list",          CommonActions::return_to_last    },
-  { MenuViewer::Icon::BOOK,        "Return to the last book being read",  CommonActions::show_last_book    },
-  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                     main_parameters                  },
-  { MenuViewer::Icon::FONT_PARAMS, "Font parameters",                     font_parameters                  },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",   wifi_mode                        },
-  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",            CommonActions::refresh_books_dir },
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application", CommonActions::about             },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",              CommonActions::power_off         },
-  { MenuViewer::Icon::END_MENU,     nullptr,                              nullptr                          }
+  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    },
+  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    },
+  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  },
+  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        },
+  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off         },
+  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          }
 };
 
 void 
@@ -150,10 +155,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
   if (main_form_is_shown) {
     if (form_viewer.event(key)) {
       main_form_is_shown = false;
-      if (ok) {
+      // if (ok) {
         config.put(Config::Ident::ORIENTATION,      (int8_t) orientation);
         config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
         config.put(Config::Ident::BATTERY,          show_battery        );
+        config.put(Config::Ident::SHOW_TITLE,       show_title          );
         config.put(Config::Ident::SHOW_HEAP,        show_heap           );
         config.put(Config::Ident::TIMEOUT,          timeout             );
         config.save();
@@ -169,7 +175,8 @@ OptionController::key_event(EventMgr::KeyEvent key)
           screen.set_pixel_resolution(resolution);
         }
 
-        if ((old_orientation != orientation)) {
+        if ((old_orientation != orientation) ||
+            (old_show_title  != show_title )) {
           epub.update_book_format_params();
         }
 
@@ -177,13 +184,13 @@ OptionController::key_event(EventMgr::KeyEvent key)
             (old_resolution  != resolution )) {
           menu_viewer.show(menu, 2, true);
         }
-      }
+      // }
     }
   }
   else if (font_form_is_shown) {
     if (form_viewer.event(key)) {
       font_form_is_shown = false;
-      if (ok) {
+      // if (ok) {
         config.put(Config::Ident::SHOW_IMAGES,        show_images       );
         config.put(Config::Ident::FONT_SIZE,          font_size         );
         config.put(Config::Ident::DEFAULT_FONT,       default_font      );
@@ -199,7 +206,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
         if (old_default_font != default_font) {
           fonts.setup();
         }
-      }
+      // }
     }
   }
   #if EPUB_INKPLATE_BUILD

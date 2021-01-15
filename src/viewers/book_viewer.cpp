@@ -328,8 +328,8 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt)
 void
 BookViewer::build_page_at(const PageLocs::PageId & page_id)
 {
-  TTF * font  = fonts.get(0, 10);
-  page_bottom = font->get_line_height() + (font->get_line_height() >> 1);
+  TTF * font  = fonts.get(0);
+  page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
 
   page.set_compute_mode(Page::ComputeMode::MOVE);
 
@@ -345,6 +345,11 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
     int8_t font_size = epub.get_book_format_params()->font_size;
 
+    int8_t show_title;
+    config.get(Config::Ident::SHOW_TITLE, &show_title);
+
+    int16_t top = show_title != 0 ? 30 : 10;
+
     Page::Format fmt = {
       .line_height_factor = 0.9,
       .font_index         = idx,
@@ -356,7 +361,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .margin_bottom      = 0,
       .screen_left        = 10,
       .screen_right       = 10,
-      .screen_top         = 10,
+      .screen_top         = top,
       .screen_bottom      = page_bottom,
       .width              = 0,
       .height             = 0,
@@ -404,10 +409,17 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
         std::ostringstream ostr;
 
+        fmt.align              = CSS::Align::CENTER;
+        
+        if (show_title != 0) {
+          ostr << epub.get_title();
+          page.put_str_at(ostr.str(), Pos(-1, 25), fmt);
+        }
+
         if ((page_nbr != -1) && (page_count != -1)) {
-          fmt.align              = CSS::Align::CENTER;
+          ostr.str(std::string());
           ostr << page_nbr + 1 << " / " << page_count;
-          page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+          page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(9) - 2), fmt);
         }
 
         #if EPUB_INKPLATE_BUILD
@@ -416,9 +428,11 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
           if (show_heap != 0) {     
             ostr.str(std::string());
-            ostr << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+            ostr << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
+                 << " / " 
+                 << heap_caps_get_free_size(MALLOC_CAP_8BIT);
             fmt.align = CSS::Align::RIGHT;
-            page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height() - 2), fmt);
+            page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(9) - 2), fmt);
           }
 
           BatteryViewer::show();
