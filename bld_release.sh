@@ -2,7 +2,7 @@
 #
 # This script is used to generate a new release
 #
-# Guy Turcotte, November 2020
+# Guy Turcotte, January 2021
 #
 
 if [ "$1" = "" ]
@@ -43,8 +43,9 @@ then
   rm -rf "$folder/SDCard/books/temp"
 fi
 
-rm "$folder/SDCard/books/*.locs"
-rm "$folder/SDCard/books/*.pars"
+rm $folder/SDCard/books/*.locs
+rm $folder/SDCard/books/*.pars
+rm $folder/SDCard/config.txt
 
 cd doc
 ./gener.sh
