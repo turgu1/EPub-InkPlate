@@ -447,13 +447,17 @@ bool
 PageLocs::page_locs_end_page(Page::Format & fmt)
 {
   bool res = true;
-  if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
+  // if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
 
     PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
     PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
     
-    if (page_info.size > 0) res = page_locs.insert(page_id, page_info);
-
+    if (page_info.size > 0) {
+      if ((item_info.itemref_index > 0) && (page_out.is_empty())) {
+        page_info.size = -page_info.size; // The page will not be counted nor displayed
+      }
+      res = page_locs.insert(page_id, page_info);
+    }
     // Gives the chance to book_viewer to show a page if required
     book_viewer.get_mutex().unlock();
     std::this_thread::yield();
@@ -462,11 +466,11 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
     // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
  
     SET_PAGE_TO_SHOW(epub.get_page_count()) // Debugging stuff
-  }
+  //}
 
   start_of_page_offset = current_offset;
 
-  page_out.start(fmt);
+  page_out.start(fmt); // Start a new page
 
   return res;
 }
@@ -889,46 +893,6 @@ PageLocs::start_new_document(int16_t count, int16_t itemref_index)
   check_for_format_changes(count, itemref_index, !load(epub.get_current_filename()));
 }
 
-
-PageLocs::PagesMap::iterator 
-PageLocs::check_and_find(const PageId & page_id) 
-{
-  PagesMap::iterator it = pages_map.find(page_id);
-  if (!completed && (it == pages_map.end())) {
-    if (retrieve_asap(page_id.itemref_index)) it = pages_map.find(page_id);
-  }
-  return it;
-}
-
-const PageLocs::PageId * 
-PageLocs::get_next_page_id(const PageId & page_id, int16_t count) 
-{
-  std::scoped_lock guard(mutex);
-
-  PagesMap::iterator it = check_and_find(page_id);
-  if (it == pages_map.end()) {
-    it = check_and_find(PageId(0,0));
-  }
-  else {
-    PageId id = page_id;
-
-    for (int16_t cptr = count; cptr > 0; cptr--) {
-      PagesMap::iterator prev = it;
-      id.offset += it->second.size;
-      it = pages_map.find(id);
-      if (it == pages_map.end()) {
-        id.itemref_index += 1; id.offset = 0;
-        it = check_and_find(id);
-        if (it == pages_map.end()) {
-          it = (count > 1) ? prev : check_and_find(PageId(0,0));
-          break;
-        }
-      }
-    }
-  }
-  return (it == pages_map.end()) ? nullptr : &it->first;
-}
-
 bool 
 PageLocs::insert(PageId & id, PageInfo & info) 
 {
@@ -957,6 +921,48 @@ PageLocs::insert(PageId & id, PageInfo & info)
   return false;
 }
 
+PageLocs::PagesMap::iterator 
+PageLocs::check_and_find(const PageId & page_id) 
+{
+  PagesMap::iterator it = pages_map.find(page_id);
+  if (!completed && (it == pages_map.end())) {
+    if (retrieve_asap(page_id.itemref_index)) it = pages_map.find(page_id);
+  }
+  return it;
+}
+
+const PageLocs::PageId * 
+PageLocs::get_next_page_id(const PageId & page_id, int16_t count) 
+{
+  std::scoped_lock guard(mutex);
+
+  PagesMap::iterator it = check_and_find(page_id);
+  if (it == pages_map.end()) {
+    it = check_and_find(PageId(0,0));
+  }
+  else {
+    PageId id = page_id;
+    bool done = false;
+    for (int16_t cptr = count; cptr > 0; cptr--) {
+      PagesMap::iterator prev = it;
+      do {
+        id.offset += abs(it->second.size);
+        it = pages_map.find(id);
+        if (it == pages_map.end()) {
+          id.itemref_index += 1; id.offset = 0;
+          it = check_and_find(id);
+          if (it == pages_map.end()) {
+            it = (count > 1) ? prev : check_and_find(PageId(0,0));
+            done = true;
+          }
+        }
+      } while ((it->second.size < 0) && !done);
+      if (done) break;
+    }
+  }
+  return (it == pages_map.end()) ? nullptr : &it->first;
+}
+
 const PageLocs::PageId * 
 PageLocs::get_prev_page_id(const PageId & page_id, int count) 
 {
@@ -968,20 +974,29 @@ PageLocs::get_prev_page_id(const PageId & page_id, int count)
   }
   else {
     PageId id = it->first;
-      
+    
+    bool done = false;
     for (int16_t cptr = count; cptr > 0; cptr--) {
-      if (id.offset == 0) {
-        if (id.itemref_index == 0) {
-          if (count == 1) id.itemref_index = item_count - 1;
-          else break;
+      do {
+        if (id.offset == 0) {
+          if (id.itemref_index == 0) {
+            if (count == 1) id.itemref_index = item_count - 1;
+            else done = true;
+          }
+          else id.itemref_index--;
+
+          if (items_set.find(id.itemref_index) == items_set.end()) {
+            retrieve_asap(id.itemref_index);
+          }
         }
-        else id.itemref_index--;
-        if (items_set.find(id.itemref_index) == items_set.end()) retrieve_asap(id.itemref_index);
-      }
-      
-      if (it == pages_map.begin()) it = pages_map.end();
-      it--;
-      id = it->first;
+        
+        if (!done) {
+          if (it == pages_map.begin()) it = pages_map.end();
+          it--;
+          id = it->first;
+        }
+      } while ((it->second.size < 0) && !done);
+      if (done) break;
     }
   }
   return (it == pages_map.end()) ? nullptr : &it->first;
@@ -995,7 +1010,7 @@ PageLocs::get_page_id(const PageId & page_id)
   PagesMap::iterator it  = check_and_find(PageId(page_id.itemref_index, 0));
   PagesMap::iterator res = pages_map.end();
   while ((it != pages_map.end()) && (it->first.itemref_index == page_id.itemref_index)) {
-    if ((it->first.offset <= page_id.offset) && ((it->first.offset + it->second.size) > page_id.offset)) { res = it; break; }
+    if ((it->first.offset <= page_id.offset) && ((it->first.offset + abs(it->second.size)) > page_id.offset)) { res = it; break; }
     it++;
   }
   return (res == pages_map.end()) ? nullptr : &res->first ;
@@ -1009,8 +1024,10 @@ PageLocs::computation_completed()
   if (!completed) {
     int16_t page_nbr = 0;
     for (auto& entry : pages_map) {
-      entry.second.page_number = page_nbr++;
+      if (entry.second.size >= 0) entry.second.page_number = page_nbr++;
     }
+
+    page_count = page_nbr;
 
     save(epub.get_current_filename());
   
@@ -1066,7 +1083,7 @@ bool PageLocs::load(const std::string & epub_filename)
   LOG_D("Loading pages location from file %s.", filename.c_str());
 
   int8_t  version;
-  int16_t page_count;
+  int16_t pg_count;
 
   if (!file.is_open()) {
     LOG_E("Unable to open pages location file.");
@@ -1078,21 +1095,25 @@ bool PageLocs::load(const std::string & epub_filename)
     if (version != LOCS_FILE_VERSION) break;
 
     if (file.read(reinterpret_cast<char *>(&current_format_params), sizeof(current_format_params)).fail()) break;
-    if (file.read(reinterpret_cast<char *>(&page_count),           sizeof(page_count)           ).fail()) break;
+    if (file.read(reinterpret_cast<char *>(&pg_count),              sizeof(pg_count)           ).fail()) break;
 
     pages_map.clear();
 
-    for (int16_t i = 0; i < page_count; i++) {
+    int16_t page_nbr = 0;
+
+    for (int16_t i = 0; i < pg_count; i++) {
       PageId   page_id;
       PageInfo page_info;
       
       if (file.read(reinterpret_cast<char *>(&page_id.itemref_index), sizeof(page_id.itemref_index)).fail()) break;
       if (file.read(reinterpret_cast<char *>(&page_id.offset),        sizeof(page_id.offset       )).fail()) break;
       if (file.read(reinterpret_cast<char *>(&page_info.size),        sizeof(page_info.size       )).fail()) break;
-      page_info.page_number = i;
+      page_info.page_number = (page_info.size >= 0) ? page_nbr++ : -1;
 
       page_locs.insert(page_id, page_info);
     }
+
+    page_count = page_nbr;
 
     break;
   }

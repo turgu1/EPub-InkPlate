@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.01.12)
+(Updated 2021.01.15)
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
@@ -16,7 +16,7 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Save computed pages location to sdcard for quick ebook load
 - [x] Repair some known bugs (some issues to be addressed later)
 - [ ] Code refactoring and cleanup (tbd v1.2)
-- [ ] Udate documentation
+- [x] Udate documentation
 - [ ] Tests, tests, tests, ...
 
 Added functional features:
@@ -30,7 +30,7 @@ Added functional features:
 Known bugs:
 
 - [x] e-books list geometry when screen orientation change
-- [x] recovery from too large image memory allocation
+- [x] recovery from too large image (memory allocation)
 - [x] Page refresh on orientation/resolution changes
 - [ ] PNG image files transparency (tbd v1.2)
 
@@ -156,7 +156,7 @@ All source code is located in various folders:
 
 The file `platformio.ini` contains the configuration options required to compile both Linux and InkPlate applications.
 
-Note that source code located in folders `old` and `test` is not used. They will be deleted from the project when the application development will be completed.
+Note that source code located in folders `old` and `test` is not used. It will be deleted from the project when the application development will be completed.
 
 ### Dependencies
 

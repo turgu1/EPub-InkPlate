@@ -53,7 +53,9 @@ class PageLocs
 
     Page page_out;
 
-    bool completed;
+    bool    completed;
+    int16_t page_count;
+    
     struct PageCompare {
       bool operator() (const PageId & lhs, const PageId & rhs) const { 
         if (lhs.itemref_index < rhs.itemref_index) return true;
@@ -71,7 +73,7 @@ class PageLocs
 
     PagesMap  pages_map;
     ItemsSet  items_set;
-    int16_t  item_count;
+    int16_t   item_count;
 
     void show();
     bool retrieve_asap(int16_t itemref_index);
@@ -79,7 +81,7 @@ class PageLocs
 
     // ----- Page Locations computation -----
     
-    EPub::ItemInfo item_info;    
+    EPub::ItemInfo         item_info;    
     EPub::BookFormatParams current_format_params;
 
     int32_t           current_offset;          ///< Where we are in current item
@@ -126,14 +128,9 @@ class PageLocs
       completed = false; 
     }
 
-    inline void  size() {
-      std::scoped_lock guard(mutex);
-      pages_map.size();
-    }
+    inline int16_t get_page_count() { return completed ? page_count : -1; }
 
-    inline int16_t page_count() { return completed ? pages_map.size() : -1; }
-
-    inline int16_t page_nbr(const PageId & id) {
+    inline int16_t get_page_nbr(const PageId & id) {
       std::scoped_lock guard(mutex);
       if (!completed) return -1; 
       const PageInfo * info = get_page_info(id);

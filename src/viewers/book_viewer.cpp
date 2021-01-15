@@ -399,8 +399,8 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
         //TTF * font = fonts.get(0, 7);
 
-        int16_t page_nbr   = page_locs.page_nbr(page_id);
-        int16_t page_count = page_locs.page_count();
+        int16_t page_nbr   = page_locs.get_page_nbr(page_id);
+        int16_t page_count = page_locs.get_page_count();
 
         fmt.line_height_factor = 1.0;
         fmt.font_index         =   1;
@@ -504,7 +504,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
 
   current_page_id = page_id;
     
-//if (page_locs.page_nbr(page_id) == 0) {
+//if (page_locs.get_page_nbr(page_id) == 0) {
   if ((page_id.itemref_index == 0) && 
       (page_id.offset        == 0)) {
 

@@ -13,7 +13,7 @@ class BooksDirViewer
   private:
     static constexpr char const * TAG = "BooksDirView";
 
-    static const int16_t FIRST_ENTRY_YPOS  = 10;
+    static const int16_t FIRST_ENTRY_YPOS  =  5;
     static const int16_t LEFT_POS          = 30;
     static const int16_t TITLE_FONT_SIZE   = 11;
     static const int16_t AUTHOR_FONT_SIZE  =  9;
@@ -28,7 +28,7 @@ class BooksDirViewer
     
     void setup();
     
-    int16_t page_count() {
+    int16_t get_page_count() {
       return (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
     }
     void show_page(int16_t page_nbr, int16_t hightlight_item_idx);

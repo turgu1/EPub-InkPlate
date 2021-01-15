@@ -196,7 +196,7 @@ BooksDirController::enter()
     show_last_book();
   }
   else {
-    if (page_nbr >= books_dir_viewer.page_count()) {
+    if (page_nbr >= books_dir_viewer.get_page_count()) {
       page_nbr      = 0;
       current_index = 0;
     }
@@ -225,7 +225,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       books_dir_viewer.show_page(page_nbr, current_index);   
       break;
     case EventMgr::KeyEvent::DBL_NEXT:
-      if ((page_nbr + 1) < books_dir_viewer.page_count()) {
+      if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
         current_index = 0;
         books_dir_viewer.show_page(++page_nbr, current_index);
       }
@@ -248,7 +248,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       break;
     case EventMgr::KeyEvent::NEXT:
       if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
-        if ((page_nbr + 1) < books_dir_viewer.page_count()) {
+        if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
           page_nbr++;
           current_index = 0;
         }
@@ -256,7 +256,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
       }
       else {
         int16_t max_index = books_dir_viewer.get_books_per_page();
-        if ((page_nbr + 1) == books_dir_viewer.page_count()) {
+        if ((page_nbr + 1) == books_dir_viewer.get_page_count()) {
           max_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
         }
         current_index++;

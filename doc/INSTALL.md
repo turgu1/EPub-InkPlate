@@ -1,6 +1,6 @@
 # EPub-InkPlate - Installation Guide
 
-(This is a draft version. It will be adjusted to add information for installation from an MS Windows platform)
+**Please Note: if you are updating from version 1.0 of the application, one font needs to be updated on the SD-Card: `fonts/drawings.otf`. You must replace it with the same font available in the current releae bundle.**
 
 Here is the installation procedure for the EPub-InkPlate application. This procedure can be adapted depending on your requirements.  
 
@@ -15,10 +15,10 @@ The last version of the binaries for the Inkplate are located in release bundles
 
 ### Prerequesite
 
-The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 2 and 3. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, to install esptool, the following command must be executed (in a shell window):
+The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 2 and 3. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, on Windows, Linux or MacOs, to install esptool, the following command must be executed (in a shell window):
 
 ```sh
-$ pip install esptool
+pip install esptool
 ```
 
 You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release.VX.X.X.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation and user's guide documents in PDF format.

@@ -120,7 +120,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   page.set_limits(fmt);
 
   std::ostringstream ostr;
-  ostr << page_nbr + 1 << " / " << page_count();
+  ostr << page_nbr + 1 << " / " << get_page_count();
 
   page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
 
