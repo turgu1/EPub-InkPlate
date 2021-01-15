@@ -1,6 +1,6 @@
 # EPub-InkPlate - Installation Guide
 
-**Please Note: if you are updating from version 1.0 of the application, one font needs to be updated on the SD-Card: `fonts/drawings.otf`. You must replace it with the same font available in the current releae bundle.**
+**Please Note: if you are updating from version 1.0 of the application, one font needs to be updated on the SD-Card: `fonts/drawings.otf`. You must replace it with the same font available in the current release bundle.**
 
 Here is the installation procedure for the EPub-InkPlate application. This procedure can be adapted depending on your requirements.  
 
@@ -34,10 +34,18 @@ Once done, insert the card into the device.
 
 ### Uploading the application program
 
-The release's `bin` folder contains the application, the bootloader, and the partitions binaries that must be downloaded to the device. To do so connects the device to a USB port, turn it on, change your current directory to that folder, and execute the following command (in a shell window):
+The release's `bin` folder contains the application, the bootloader, and the partitions binaries that must be downloaded to the device. To do so connects the device to a USB port, turn it on, change your current directory to that folder, and execute the following command:
+
+**On Linux or MacOs (in a shell window):**
 
 ```sh
 $ sh upload.sh
+```
+
+**On MS Windows:**
+
+```sh
+.\upload.bat
 ```
 
 Here is an example output of the execution:
@@ -81,6 +89,6 @@ Once the upload is complete, the device will automatically reboot. The first tas
 
 Some options on the esptool command may have to be modified depending on your computer:
 
-- The USB device connected to the InkPlate is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu). If it's not the case, you must find it and modify the `upload.sh` script accordingly. 
+- The USB device connected to the InkPlate is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu) on Linux and MacOs, or `COM3` on MS Windows. If it's not the case, you must find it and modify the `upload.sh` script for Linux and MacOS, or `upload.bat` in MS Windows. 
 
-- Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script. The speed (baud rate) is **230400** in the file. You can change it to **115200** baud or lower.
+- Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script (or `upload.bat`). The speed (baud rate) is **230400** in the file. You can change it to **115200** baud or lower.
