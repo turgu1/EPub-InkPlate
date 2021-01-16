@@ -18,4 +18,5 @@ SDCard/books/*.pars
 SDCard/books/*.locs
 SDCard/last_book.txt
 freetype-2.10.4/objs
+bin/*.bin
 temp

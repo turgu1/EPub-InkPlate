@@ -7,11 +7,12 @@
 
 if [ "$1" = "" ]
 then
-  echo "Usage: $0 version"
+  echo "Usage: $0 version type"
+  echo "type = 6, 10, 6plus"
   return 1
 fi
 
-folder="release-$1"
+folder="release-$1-inkplate_$2"
 
 if [ -f "$folder.zip" ]
 then
@@ -21,9 +22,9 @@ fi
 
 mkdir "$folder"
 
-cp .pio/build/inkplate6/bootloader.bin bin
-cp .pio/build/inkplate6/partitions.bin bin
-cp .pio/build/inkplate6/firmware.bin bin
+cp .pio/build/inkplate_$2_release/bootloader.bin bin
+cp .pio/build/inkplate_$2_release/partitions.bin bin
+cp .pio/build/inkplate_$2_release/firmware.bin bin
 cp -r bin "$folder"
 
 cp -r SDCard "$folder"
