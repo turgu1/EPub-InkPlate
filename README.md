@@ -2,8 +2,12 @@
 
 ## Last news
 
-(Updated 2021.01.15)
+(Updated 2021.01.17)
 
+Update to version 1.1.1
+
+- [x] Recompiled to integrate ESP-IDF-InkPlate library v0.9.2 (A2D attenuation correction)
+  
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
 - [x] Support of the new upcoming Inkplate-10 device
