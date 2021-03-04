@@ -2,7 +2,14 @@
 
 ## Last news
 
-(Updated 2021.01.17)
+(Updated 2021.03.04)
+
+Update to version 1.2
+
+- [x] Recompiled to integrate ESP-IDF-Inkplate library v0.9.4
+- [x] Adjustments for the ESP-IDF v4.2 framework
+- [x] Support for the 6-buttons extended board in new specific releases
+- [x] bld_all.sh script to automatically build all releases zip files
 
 Update to version 1.1.1
 

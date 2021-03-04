@@ -80,7 +80,11 @@ BookController::key_event(EventMgr::KeyEvent key)
 {
   const PageLocs::PageId * page_id;
   switch (key) {
-    case EventMgr::KeyEvent::PREV:
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::DBL_PREV:
+    #else
+      case EventMgr::KeyEvent::PREV:
+    #endif
       page_id = page_locs.get_prev_page_id(current_page_id);
       if (page_id != nullptr) {
         current_page_id.itemref_index = page_id->itemref_index;
@@ -89,7 +93,11 @@ BookController::key_event(EventMgr::KeyEvent key)
       }
       break;
 
-    case EventMgr::KeyEvent::DBL_PREV:
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::PREV:
+    #else
+      case EventMgr::KeyEvent::DBL_PREV:
+    #endif
       page_id = page_locs.get_prev_page_id(current_page_id, 10);
       if (page_id != nullptr) {
         current_page_id.itemref_index = page_id->itemref_index;
@@ -98,7 +106,11 @@ BookController::key_event(EventMgr::KeyEvent key)
       }
       break;
 
-    case EventMgr::KeyEvent::NEXT:
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::DBL_NEXT:
+    #else
+      case EventMgr::KeyEvent::NEXT:
+    #endif
       page_id = page_locs.get_next_page_id(current_page_id);
       if (page_id != nullptr) {
         current_page_id.itemref_index = page_id->itemref_index;
@@ -107,7 +119,11 @@ BookController::key_event(EventMgr::KeyEvent key)
       }
       break;
 
-    case EventMgr::KeyEvent::DBL_NEXT:
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::NEXT:
+    #else
+      case EventMgr::KeyEvent::DBL_NEXT:
+    #endif
       page_id = page_locs.get_next_page_id(current_page_id, 10);
       if (page_id != nullptr) {
         current_page_id.itemref_index = page_id->itemref_index;

@@ -219,12 +219,21 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
   const BooksDir::EBookRecord * book;
 
   switch (key) {
-    case EventMgr::KeyEvent::DBL_PREV:
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::PREV:
+    #else
+      case EventMgr::KeyEvent::DBL_PREV:
+    #endif
       if (page_nbr > 0) --page_nbr;
       current_index = 0;
       books_dir_viewer.show_page(page_nbr, current_index);   
       break;
-    case EventMgr::KeyEvent::DBL_NEXT:
+
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::NEXT:
+    #else
+      case EventMgr::KeyEvent::DBL_NEXT:
+    #endif
       if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
         current_index = 0;
         books_dir_viewer.show_page(++page_nbr, current_index);
@@ -234,7 +243,12 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KeyEvent::PREV:
+
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::DBL_PREV:
+    #else
+      case EventMgr::KeyEvent::PREV:
+    #endif
       if (current_index == 0) {
         if (page_nbr > 0) {
           current_index = books_dir_viewer.get_books_per_page() - 1;
@@ -246,7 +260,12 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
-    case EventMgr::KeyEvent::NEXT:
+
+    #if EXTENDED_CASE
+      case EventMgr::KeyEvent::DBL_NEXT:
+    #else
+      case EventMgr::KeyEvent::NEXT:
+    #endif
       if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
         if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
           page_nbr++;
@@ -264,6 +283,7 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         books_dir_viewer.highlight(current_index);
       }
       break;
+
     case EventMgr::KeyEvent::SELECT:
       book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
       if (book_index < books_dir.get_book_count()) {
@@ -282,9 +302,11 @@ BooksDirController::key_event(EventMgr::KeyEvent key)
         }
       }
       break;
+
     case EventMgr::KeyEvent::DBL_SELECT:
       app_controller.set_controller(AppController::Ctrl::OPTION);
       break;
+      
     case EventMgr::KeyEvent::NONE:
       break;
   }

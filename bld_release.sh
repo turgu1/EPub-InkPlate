@@ -2,17 +2,27 @@
 #
 # This script is used to generate a new release
 #
-# Guy Turcotte, January 2021
+# Guy Turcotte, March 2021
 #
 
-if [ "$1" = "" ]
+if [ "$3" = "" ]
 then
-  echo "Usage: $0 version type"
+  echo "Usage: $0 version type extended_case"
   echo "type = 6, 10, 6plus"
+  echo "extended_case = 0, 1"
   return 1
 fi
 
-folder="release-$1-inkplate_$2"
+if [ "$3" = "0" ]
+then
+  folder="release-$1-inkplate_$2"
+  release_folder="inkplate_$2_release"
+  environment="inkplate_$2_release"
+else
+  folder="release-$1-inkplate_extended_case_$2"
+  release_folder="inkplate_$2_extended_case_release"
+  environment="inkplate_$2_extended_case_release"
+fi
 
 if [ -f "$folder.zip" ]
 then
@@ -20,11 +30,19 @@ then
   return 1
 fi
 
+pio run -e $environment
+
+if [ $? -ne 0 ]
+then
+  echo "pio run error!"
+  return 1
+fi
+
 mkdir "$folder"
 
-cp .pio/build/inkplate_$2_release/bootloader.bin bin
-cp .pio/build/inkplate_$2_release/partitions.bin bin
-cp .pio/build/inkplate_$2_release/firmware.bin bin
+cp .pio/build/$release_folder/bootloader.bin bin
+cp .pio/build/$release_folder/partitions.bin bin
+cp .pio/build/$release_folder/firmware.bin bin
 cp -r bin "$folder"
 
 cp -r SDCard "$folder"
@@ -48,11 +66,12 @@ rm $folder/SDCard/books/*.locs
 rm $folder/SDCard/books/*.pars
 rm $folder/SDCard/config.txt
 
-cd doc
-./gener.sh
-cd ..
-
-cp "doc/USER GUIDE.pdf" "$folder"
+if [ "$3" = "0" ]
+then
+  cp "doc/USER GUIDE.pdf" "$folder"
+else
+  cp "doc/USER GUIDE for Extended Case.pdf" "$folder"
+fi
 cp "doc/INSTALL.pdf" "$folder"
 
 cp adjust_size.sh "$folder"

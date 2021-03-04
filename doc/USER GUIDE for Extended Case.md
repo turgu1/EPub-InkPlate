@@ -1,6 +1,6 @@
 # EPub-InkPlate - User's Guide - Version 1.2.0
 
-The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices.
+The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices for which a Mechanical Buttons Extended Case has been added. The extension can be find here: https://github.com/turgu1/InkPlate-6-Extended-Case.
 
 For the installation process, please consult the `INSTALL.pdf` document.
 
@@ -29,27 +29,31 @@ When the device is turned ON, the application executes the following tasks:
 
 ## 2. Interacting with the application
 
-InkPlate devices possesses three tactical keys that are used to interact with the application. On the device, they are labeled 1, 2, and 3. The application allows for the selection of the screen orientation in the parameters form. Depending on the screen orientation, the function associated with the keys will change as follow:
+Extended InkPlate devices possess six mechanical buttons that are used to interact with the application. The application allows for the selection of the screen orientation in the parameters form. Depending on the screen orientation, the function associated with the keys will change as follow:
 
-- When the keys are on the **Bottom** side of the screen:
+- When the keys are on the **Bottom** side of the screen, from left to right:
 
-  - Key 1 is the **SELECT** function
-  - Key 2 is the **PREVIOUS** function
-  - Key 3 is the **NEXT** function
+  - The **HOME** function
+  - The **LEFT** function
+  - The **UP** and **DOWN** function
+  - The **RIGHT** function
+  - The **SELECT** function
 
-- When the keys are on the **Left** side of the screen:
+- When the keys are on the **Left** side of the screen, from top to bottom:
 
-  - Key 3 is the **SELECT** function
-  - Key 1 is the **PREVIOUS** function
-  - Key 2 is the **NEXT** function
+  - The **SELECT** function
+  - The **UP** function
+  - The **LEFT** and **RIGHT** function
+  - The **DOWN** function
+  - The **HOME** function
 
-- When the keys are on the **Right** side of the screen:
+- When the keys are on the **Right** side of the screen, from top to bottom:
 
-  - Key 1 is the **SELECT** function
-  - Key 3 is the **PREVIOUS** function
-  - Key 2 is the **NEXT** function
-
-All keys are associated with a second function when the user double-click on them. They are **DOUBLE-SELECT**, **DOUBLE-NEXT**, and **DOUBLE-PREVIOUS**.
+  - The **SELECT** function
+  - The **UP** function
+  - The **LEFT** and **RIGHT** function
+  - The **DOWN** function
+  - The **HOME** function
 
 In the following text, the functions are called buttons.
 
@@ -64,11 +68,11 @@ Each of the display modes is also supplying a list of specific functions that ca
 
 The list presents all books available to the user for reading. They are presented in title alphabetical order and may require several pages depending on the number of books present on the SD-Card.
 
-Use the **NEXT** and the **PREVIOUS** buttons to highlight the appropriate book that you want to read, then use the **SELECT** button to have the book loaded, presenting the first page of it.
+Use the **UP** and the **DOWN** buttons to highlight the appropriate book that you want to read, then use the **SELECT** button to have the book loaded, presenting the first page of it.
 
-The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons can be used to move one page at a time in the list.
+The **LEFT** and **RIGHT** buttons can be used to move one page at a time in the list.
 
-The **DOUBLE-SELECT** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
+The **HOME** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
 ![E-Books List options](pictures/ebooks-list-options-menu.png){ width=50% }
 
@@ -81,15 +85,15 @@ The **DOUBLE-SELECT** will open a list of options. These options are presented a
 - **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
 
-The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **DOUBLE-SELECT** button will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
+The **LEFT** and **RIGHT** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **HOME** button will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
 ### 2.2 The E-Book Reader
 
-The reader presents the book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons will go 10 pages at a time.
+The reader presents the book selected by the user one page at a time. Use the **UP** and **DOWN** buttons to go to the next or previous page. The **LEFT** and **RIGHT** buttons will go 10 pages at a time.
 
-If the user presses the **PREVIOUS** button when the first page of a book is presented, the reader will display the last page of the book. If the **NEXT** button is pressed when the last page of a book is presented, the reader will display the first page of the book.
+If the user presses the **UP** button when the first page of a book is presented, the reader will display the last page of the book. If the **DOWN** button is pressed when the last page of a book is presented, the reader will display the first page of the book.
 
-As for the books list, the **DOUBLE-SELECT** button will open a list of options (the **SELECT** button will do the same). These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
+As for the books list, the **HOME** button will open a list of options (the **SELECT** button will do the same). These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
 ![E-Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
 
@@ -101,7 +105,7 @@ As for the books list, the **DOUBLE-SELECT** button will open a list of options 
 - **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button. At start time, if the user was reading a book, it will be presented on screen.
 
-The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. **DOUBLE-SELECT** will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
+The **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. **HOME** will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
 ### 2.3 The Main Parameters Form
 
@@ -122,9 +126,9 @@ When the form is presented on the screen, the currently selected option of each 
 
 ![Buttons Position is selected](pictures/parameters-after-selection.png){ width=50% }
 
-To be able to modify an item, you must first move the selecting box from one item to the other using the **NEXT** and **PREVIOUS** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options (see Figure 4). You can change the current option with the **NEXT** and **PREVIOUS** button. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
+To be able to modify an item, you must first move the selecting box from one item to the other using the **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options (see Figure 4). You can change the current option with the **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
 
-To quit the form, use the **DOUBLE-SELECT** button. The new selected options will then be saved and applied by the application.
+To quit the form, use the **HOME** button. The new selected options will then be saved and applied by the application.
 
 ### 2.4 The Default Parameters Form
 
