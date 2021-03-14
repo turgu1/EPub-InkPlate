@@ -1,7 +1,7 @@
-prefix=/home/turgu1/Dev/EPub-InkPlate/lib_freetype
-exec_prefix=/home/turgu1/Dev/EPub-InkPlate/lib_freetype
-libdir=/home/turgu1/Dev/EPub-InkPlate/lib_freetype/lib
-includedir=/home/turgu1/Dev/EPub-InkPlate/lib_freetype/include
+prefix=$PROJECT_DIR/lib_freetype
+exec_prefix=$PROJECT_DIR/lib_freetype
+libdir=$PROJECT_DIR/lib_freetype/lib
+includedir=$PROJECT_DIR/lib_freetype/include
 
 Name: FreeType 2
 URL: https://freetype.org
