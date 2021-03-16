@@ -452,7 +452,8 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
     PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
     PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
     
-    if (page_info.size > 0) {
+    if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
+      if (page_info.size == 0) page_info.size = 1; // Patch for the case when it's the title page and no image is to be shown
       if ((item_info.itemref_index > 0) && (page_out.is_empty())) {
         page_info.size = -page_info.size; // The page will not be counted nor displayed
       }
@@ -1010,7 +1011,11 @@ PageLocs::get_page_id(const PageId & page_id)
   PagesMap::iterator it  = check_and_find(PageId(page_id.itemref_index, 0));
   PagesMap::iterator res = pages_map.end();
   while ((it != pages_map.end()) && (it->first.itemref_index == page_id.itemref_index)) {
-    if ((it->first.offset <= page_id.offset) && ((it->first.offset + abs(it->second.size)) > page_id.offset)) { res = it; break; }
+    if ((it->first.offset == page_id.offset) ||
+        ((it->first.offset < page_id.offset) && ((it->first.offset + abs(it->second.size)) > page_id.offset))) { 
+      res = it; 
+      break; 
+    }
     it++;
   }
   return (res == pages_map.end()) ? nullptr : &res->first ;
@@ -1031,6 +1036,8 @@ PageLocs::computation_completed()
 
     save(epub.get_current_filename());
   
+    //show();
+
     completed = true;
     event_mgr.set_stay_on(false);
   }
