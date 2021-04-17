@@ -1,4 +1,4 @@
-# EPub-InkPlate - User's Guide - Version 1.2.1
+# EPub-InkPlate - User's Guide - Version 1.2.2
 
 The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices for which a Mechanical Buttons Extended Case has been added. The extension can be find here: https://github.com/turgu1/InkPlate-6-Extended-Case.
 

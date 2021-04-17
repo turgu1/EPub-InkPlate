@@ -934,7 +934,7 @@
 
 	[docs] Update docwriter stylesheet.
 
-	This change is required to support docwriter 1.2.1.
+	This change is required to support docwriter 1.2.2.
 
 	See
 

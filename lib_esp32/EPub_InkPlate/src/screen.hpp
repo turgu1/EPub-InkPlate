@@ -122,17 +122,17 @@ class Screen : NonCopyable
     inline void set_pixel_o_left_3bit(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_data_size() - (frame_buffer_3bit->get_line_size() * (col + 1)) + (row >> 1)];
       if (row & 1)
-        *temp = (*temp & 0x0F) | (color << 4);
-      else
         *temp = (*temp & 0xF0) | color;
+      else
+        *temp = (*temp & 0x0F) | (color << 4);
     }
 
     inline void set_pixel_o_right_3bit(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(frame_buffer_3bit->get_data())[(frame_buffer_3bit->get_line_size() * (col + 1)) - (row >> 1) - 1];
-       if (row & 1)
-        *temp = (*temp & 0xF0) | color;
-      else
+      if (row & 1)
         *temp = (*temp & 0x0F) | (color << 4);
+      else
+        *temp = (*temp & 0xF0) | color;
     }
 
     inline void set_pixel_o_bottom_3bit(uint32_t col, uint32_t row, uint8_t color) {
