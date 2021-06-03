@@ -36,13 +36,14 @@ class Screen : NonCopyable
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
-    void     draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
-    void      draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
-    void  draw_rectangle(Dim dim, Pos pos, uint8_t color);
-    void colorize_region(Dim dim, Pos pos, uint8_t color);
-    void           clear();
-    void          update(bool no_full = false); // Parameter only used by the InlPlate version
-    void            test();
+    void           draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
+    void            draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
+    void        draw_rectangle(Dim dim, Pos pos, uint8_t color);
+    void  draw_round_rectangle(Dim dim, Pos pos, uint8_t color);
+    void       colorize_region(Dim dim, Pos pos, uint8_t color);
+    void                 clear();
+    void                update(bool no_full = false); // Parameter only used by the InlPlate version
+    void                  test();
 
   private:
     static constexpr char const * TAG = "Screen";
@@ -57,9 +58,12 @@ class Screen : NonCopyable
       int rows, cols, stride;
     };
 
-    ImageData       id;
+    ImageData       image_data;
     PixelResolution pixel_resolution;
     Orientation     orientation;
+
+    enum class Corner : uint8_t { TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT };
+    void draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, uint8_t color);
 
   public:
     static Screen &               get_singleton() noexcept { return singleton; }
@@ -68,15 +72,22 @@ class Screen : NonCopyable
     void                   set_pixel_resolution(PixelResolution resolution, bool force = false);
     void                        set_orientation(Orientation orient);
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
+    GtkImage *                        get_image() { return image_data.image; }
     
-    GtkWidget
-      * window, 
-      * left_button,
-      * right_button,
-      * up_button,
-      * down_button,
-      * select_button,
-      * home_button;
+    #if TOUCH_TRIAL
+      GtkWidget
+        * window,
+        * image_box;
+    #else
+      GtkWidget
+        * window, 
+        * left_button,
+        * right_button,
+        * up_button,
+        * down_button,
+        * select_button,
+        * home_button;
+    #endif
 };
 
 #if __SCREEN__

@@ -71,7 +71,7 @@ class Page
   private:
     static constexpr char const * TAG = "Page";
 
-    enum class DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION };
+    enum class DisplayListCommand { GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED };
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
@@ -290,6 +290,8 @@ class Page
     void         put_image(Image & image, Pos pos); 
     void     put_highlight(Dim dim, Pos pos);  
     void   clear_highlight(Dim dim, Pos pos);  
+    void       put_rounded(Dim dim, Pos pos);  
+    void     clear_rounded(Dim dim, Pos pos);  
     void      clear_region(Dim dim, Pos pos);
     void        set_region(Dim dim, Pos pos);
 

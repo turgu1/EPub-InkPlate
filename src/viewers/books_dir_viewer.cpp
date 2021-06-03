@@ -20,7 +20,8 @@
 void
 BooksDirViewer::setup()
 {
-  books_per_page = (Screen::HEIGHT - FIRST_ENTRY_YPOS - 20 + 6) / (BooksDir::max_cover_height + 6);
+  books_per_page = (Screen::HEIGHT - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) / 
+                   (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES);
 }
 
 void 
@@ -78,16 +79,18 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     };
     page.put_image(image, Pos(10, ypos));
 
-    if (item_idx == current_item_idx) {
-      page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height), 
-                         Pos(xpos - 5, ypos));
-    }
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      if (item_idx == current_item_idx) {
+        page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height), 
+                           Pos(xpos - 5, ypos));
+      }
+    #endif
 
     fmt.font_index    = 1;
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + 6)),
+    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES)),
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -102,7 +105,7 @@ BooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
 
-    ypos = top_pos + BooksDir::max_cover_height + 6;
+    ypos = top_pos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES;
   }
 
   TTF * font = fonts.get(0);

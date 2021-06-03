@@ -210,104 +210,162 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 }
 
-void 
-BooksDirController::key_event(EventMgr::KeyEvent key)
-{
-  static std::string book_fname;
-  static std::string book_title;
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+  void 
+  BooksDirController::key_event(EventMgr::KeyEvent key)
+  {
+    static std::string book_fname;
+    static std::string book_title;
+    uint16_t x, y;
 
-  const BooksDir::EBookRecord * book;
+    const BooksDir::EBookRecord * book;
 
-  switch (key) {
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::PREV:
-    #else
-      case EventMgr::KeyEvent::DBL_PREV:
-    #endif
-      if (page_nbr > 0) --page_nbr;
-      current_index = 0;
-      books_dir_viewer.show_page(page_nbr, current_index);   
-      break;
-
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::NEXT:
-    #else
-      case EventMgr::KeyEvent::DBL_NEXT:
-    #endif
-      if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
-        current_index = 0;
-        books_dir_viewer.show_page(++page_nbr, current_index);
-      }
-      else {
-        current_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
-        books_dir_viewer.highlight(current_index);
-      }
-      break;
-
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::DBL_PREV:
-    #else
-      case EventMgr::KeyEvent::PREV:
-    #endif
-      if (current_index == 0) {
-        if (page_nbr > 0) {
-          current_index = books_dir_viewer.get_books_per_page() - 1;
-          books_dir_viewer.show_page(--page_nbr, current_index);
-        }
-      }
-      else {
-        current_index--;
-        books_dir_viewer.highlight(current_index);
-      }
-      break;
-
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::DBL_NEXT:
-    #else
-      case EventMgr::KeyEvent::NEXT:
-    #endif
-      if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
+    switch (key) {
+      case EventMgr::KeyEvent::SWIPE_RIGHT:
+        if (page_nbr > 0) --page_nbr;
+        books_dir_viewer.show_page(page_nbr, current_index);   
+        break;
+      case EventMgr::KeyEvent::SWIPE_LEFT:
         if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
-          page_nbr++;
-          current_index = 0;
+          books_dir_viewer.show_page(++page_nbr, current_index);
         }
-        books_dir_viewer.show_page(page_nbr, current_index);
-      }
-      else {
-        int16_t max_index = books_dir_viewer.get_books_per_page();
-        if ((page_nbr + 1) == books_dir_viewer.get_page_count()) {
-          max_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
-        }
-        current_index++;
-        if (current_index > max_index) current_index = max_index;
-        books_dir_viewer.highlight(current_index);
-      }
-      break;
+        break;
+      case EventMgr::KeyEvent::TAP:
+        event_mgr.get_start_location(x, y);
 
-    case EventMgr::KeyEvent::SELECT:
-      book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
-      if (book_index < books_dir.get_book_count()) {
-        book = books_dir.get_book_data(book_index);
-        if (book != nullptr) {
-          book_fname    = BOOKS_FOLDER "/";
-          book_fname   += book->filename;
-          book_title    = book->title;
-          book_filename = book->filename;
-          
-          PageLocs::PageId page_id = { 0, 0 };
-          
-          if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
-            app_controller.set_controller(AppController::Ctrl::BOOK);
+        if (y < (Screen::HEIGHT - 40)) {
+
+          current_index = (y - BooksDirViewer::FIRST_ENTRY_YPOS) / 
+                          (BooksDir::max_cover_height + BooksDirViewer::SPACE_BETWEEN_ENTRIES);
+
+          if (current_index < books_dir_viewer.get_books_per_page()) {
+            book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
+            if (book_index < books_dir.get_book_count()) {
+              book = books_dir.get_book_data(book_index);
+              if (book != nullptr) {
+                book_fname    = BOOKS_FOLDER "/";
+                book_fname   += book->filename;
+                book_title    = book->title;
+                book_filename = book->filename;
+                
+                PageLocs::PageId page_id = { 0, 0 };
+                
+                if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
+                  app_controller.set_controller(AppController::Ctrl::BOOK);
+                }
+              }
+            }
           }
         }
-      }
-      break;
+        else {
+          app_controller.set_controller(AppController::Ctrl::OPTION);
+        }
+        break;
 
-    case EventMgr::KeyEvent::DBL_SELECT:
-      app_controller.set_controller(AppController::Ctrl::OPTION);
-      break;
-      
-    case EventMgr::KeyEvent::NONE:
-      break;
+      default:
+        break;
+    }
   }
-}
+#else
+  void 
+  BooksDirController::key_event(EventMgr::KeyEvent key)
+  {
+    static std::string book_fname;
+    static std::string book_title;
+
+    const BooksDir::EBookRecord * book;
+
+    switch (key) {
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::PREV:
+      #else
+        case EventMgr::KeyEvent::DBL_PREV:
+      #endif
+        if (page_nbr > 0) --page_nbr;
+        current_index = 0;
+        books_dir_viewer.show_page(page_nbr, current_index);   
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::NEXT:
+      #else
+        case EventMgr::KeyEvent::DBL_NEXT:
+      #endif
+        if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
+          current_index = 0;
+          books_dir_viewer.show_page(++page_nbr, current_index);
+        }
+        else {
+          current_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
+          books_dir_viewer.highlight(current_index);
+        }
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::DBL_PREV:
+      #else
+        case EventMgr::KeyEvent::PREV:
+      #endif
+        if (current_index == 0) {
+          if (page_nbr > 0) {
+            current_index = books_dir_viewer.get_books_per_page() - 1;
+            books_dir_viewer.show_page(--page_nbr, current_index);
+          }
+        }
+        else {
+          current_index--;
+          books_dir_viewer.highlight(current_index);
+        }
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::DBL_NEXT:
+      #else
+        case EventMgr::KeyEvent::NEXT:
+      #endif
+        if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
+          if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
+            page_nbr++;
+            current_index = 0;
+          }
+          books_dir_viewer.show_page(page_nbr, current_index);
+        }
+        else {
+          int16_t max_index = books_dir_viewer.get_books_per_page();
+          if ((page_nbr + 1) == books_dir_viewer.get_page_count()) {
+            max_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
+          }
+          current_index++;
+          if (current_index > max_index) current_index = max_index;
+          books_dir_viewer.highlight(current_index);
+        }
+        break;
+
+      case EventMgr::KeyEvent::SELECT:
+        book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
+        if (book_index < books_dir.get_book_count()) {
+          book = books_dir.get_book_data(book_index);
+          if (book != nullptr) {
+            book_fname    = BOOKS_FOLDER "/";
+            book_fname   += book->filename;
+            book_title    = book->title;
+            book_filename = book->filename;
+            
+            PageLocs::PageId page_id = { 0, 0 };
+            
+            if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
+              app_controller.set_controller(AppController::Ctrl::BOOK);
+            }
+          }
+        }
+        break;
+
+      case EventMgr::KeyEvent::DBL_SELECT:
+        app_controller.set_controller(AppController::Ctrl::OPTION);
+        break;
+        
+      case EventMgr::KeyEvent::NONE:
+        break;
+    }
+  }
+#endif

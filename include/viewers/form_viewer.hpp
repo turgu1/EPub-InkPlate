@@ -18,6 +18,10 @@ class FormViewer
     };
     typedef Choice * Choices;
 
+    static constexpr Choice done_choices[1] = {
+      { "DONE",   1 }
+    };
+
     static constexpr Choice ok_cancel_choices[2] = {
       { "OK",     1 },
       { "CANCEL", 0 }
@@ -53,11 +57,20 @@ class FormViewer
       { "15", 15 }
     };
 
-    static constexpr Choice orientation_choices[3] = {
-      { "LEFT",   0 },
-      { "RIGHT",  1 },
-      { "BOTTOM", 2 }
-    };
+    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+      static constexpr Choice orientation_choices[4] = {
+        { "LEFT",   0 },
+        { "RIGHT",  1 },
+        { "BOTTOM", 2 },
+        { "TOP",    3 }
+      };
+    #else
+      static constexpr Choice orientation_choices[3] = {
+        { "LEFT",   0 },
+        { "RIGHT",  1 },
+        { "BOTTOM", 2 }
+      };
+    #endif
 
     static constexpr Choice font_choices[8] = {
       { "CALADEA S",     0 },
@@ -71,6 +84,8 @@ class FormViewer
     };
 
   private:
+    static constexpr char const * TAG = "FormViewer";
+
     static constexpr uint8_t MAX_FORM_ENTRY   =  10;
     static constexpr uint8_t MAX_CHOICE_ENTRY =  30;
     static constexpr uint8_t FONT_SIZE        =   9;
@@ -101,8 +116,13 @@ class FormViewer
     bool    entry_selection;
     bool    highlight_selection;
 
+    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+      int8_t find_entry_idx(uint16_t x, uint16_t y);
+      int8_t find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y);
+    #endif
+
   public:
-    enum class FormEntryType { HORIZONTAL_CHOICES, VERTICAL_CHOICES };
+    enum class FormEntryType { HORIZONTAL, VERTICAL, DONE };
 
     struct FormEntry {
       const char   * caption;

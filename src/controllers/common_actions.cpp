@@ -6,6 +6,7 @@
 #include "controllers/book_controller.hpp"
 #include "controllers/event_mgr.hpp"
 #include "viewers/msg_viewer.hpp"
+#include "viewers/menu_viewer.hpp"
 #include "models/books_dir.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -53,6 +54,7 @@ CommonActions::power_off()
 void
 CommonActions::about()
 {
+  menu_viewer.clear_highlight();
   msg_viewer.show(
     MsgViewer::BOOK, 
     false,

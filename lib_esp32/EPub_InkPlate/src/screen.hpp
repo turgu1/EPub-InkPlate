@@ -36,16 +36,17 @@ class Screen : NonCopyable
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #elif INKPLATE_6PLUS
       static constexpr int8_t   IDENT                 =   3;
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED = 200;
-      static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
+      static constexpr int16_t  PARTIAL_COUNT_ALLOWED = 999;
+      static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
-    void     draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
-    void      draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
-    void  draw_rectangle(Dim dim, Pos pos, uint8_t color);
-    void colorize_region(Dim dim, Pos pos, uint8_t color);
+    void          draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
+    void           draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
+    void       draw_rectangle(Dim dim, Pos pos, uint8_t color);
+    void draw_round_rectangle(Dim dim, Pos pos, uint8_t color);
+    void      colorize_region(Dim dim, Pos pos, uint8_t color);
 
     inline void clear()  {
       if (pixel_resolution == PixelResolution::ONE_BIT) { 
@@ -89,11 +90,14 @@ class Screen : NonCopyable
                frame_buffer_1bit(nullptr), 
                frame_buffer_3bit(nullptr) { };
 
-    int8_t            partial_count;
+    int16_t           partial_count;
     FrameBuffer1Bit * frame_buffer_1bit;
     FrameBuffer3Bit * frame_buffer_3bit;
     PixelResolution   pixel_resolution;
     Orientation       orientation;
+
+    enum class Corner : uint8_t { TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT };
+    void draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, uint8_t color);
 
     inline void set_pixel_o_left_1bit(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(frame_buffer_1bit->get_data())[frame_buffer_1bit->get_data_size() - (frame_buffer_1bit->get_line_size() * (col + 1)) + (row >> 3)];
@@ -119,6 +123,14 @@ class Screen : NonCopyable
         *temp = (*temp & ~LUT1BIT_INV[col & 7]);
     }
 
+    inline void set_pixel_o_top_1bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(frame_buffer_1bit->get_data())[frame_buffer_1bit->get_data_size() - (frame_buffer_1bit->get_line_size() * row) - (col >> 3)];
+      if (color == 1)
+        *temp = *temp | LUT1BIT[col & 7];
+      else
+        *temp = (*temp & ~LUT1BIT[col & 7]);
+    }
+
     inline void set_pixel_o_left_3bit(uint32_t col, uint32_t row, uint8_t color) {
       uint8_t * temp = &(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_data_size() - (frame_buffer_3bit->get_line_size() * (col + 1)) + (row >> 1)];
       if (row & 1)
@@ -141,6 +153,14 @@ class Screen : NonCopyable
         *temp = (*temp & 0xF0) | color;
       else
         *temp = (*temp & 0x0F) | (color << 4);
+     }
+
+    inline void set_pixel_o_top_3bit(uint32_t col, uint32_t row, uint8_t color) {
+      uint8_t * temp = &(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_data_size() - (frame_buffer_3bit->get_line_size() * row) - (col >> 1)];
+      if (col & 1)
+        *temp = (*temp & 0x0F) | (color << 4);
+      else
+        *temp = (*temp & 0xF0) | color;
      }
 
   public:

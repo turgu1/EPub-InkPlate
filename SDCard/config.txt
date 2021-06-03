@@ -1,16 +1,44 @@
 # EPub-InkPlate Config File
+# -------------------------
+#
+# (This file will be reinitialized automatically)
+#
+# Please respect the content format:
+#
+# - Comments start with # (no comment on parameter lines).
+# - Parameters are of the form 'param_name = value' or 'param_name = "value"'.
+# - Blank lines are allowed.
+# - The following parameters are recognized:
+#
+#      version
+#      wifi_ssid
+#      wifi_pwd
+#      http_port
+#      battery
+#      timeout
+#      font_size
+#      default_font
+#      use_fonts_in_books
+#      show_images
+#      orientation
+#      resolution
+#      show_heap
+#      show_title
+#      front_light
+# ---
 
 version = 1
 wifi_ssid = "WLAN-724300"
 wifi_pwd = "50238634630558382093"
 http_port = 80
-battery = 2
-timeout = 5
+battery = 0
+timeout = 30
 font_size = 10
 default_font = 1
 use_fonts_in_books = 1
 show_images = 1
-orientation = 1
+orientation = 0
 resolution = 1
 show_heap = 1
-show_title = 1
+show_title = 0
+front_light = 15

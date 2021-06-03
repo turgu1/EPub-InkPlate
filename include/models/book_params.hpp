@@ -21,10 +21,10 @@ typedef ConfigBase<Param, 5> BookParams;
 
   template<>
   BookParams::CfgType BookParams::cfg = {{
-    { Param::VERSION,           BookParams::EntryType::BYTE, "version",           &version,            &the_version,   0 },
-    { Param::SHOW_IMAGES,       BookParams::EntryType::BYTE, "show_images",       &show_images,        &default_value, 0 },
-    { Param::FONT_SIZE,         BookParams::EntryType::BYTE, "font_size",         &font_size,          &default_value, 0 },
+    { Param::VERSION,           BookParams::EntryType::BYTE, "version",           &version,           &the_version,   0 },
+    { Param::SHOW_IMAGES,       BookParams::EntryType::BYTE, "show_images",       &show_images,       &default_value, 0 },
+    { Param::FONT_SIZE,         BookParams::EntryType::BYTE, "font_size",         &font_size,         &default_value, 0 },
     { Param::USE_FONTS_IN_BOOK, BookParams::EntryType::BYTE, "use_fonts_in_book", &use_fonts_in_book, &default_value, 0 },
-    { Param::FONT,              BookParams::EntryType::BYTE, "font",              &font,               &default_value, 0 },
+    { Param::FONT,              BookParams::EntryType::BYTE, "font",              &font,              &default_value, 0 },
   }};
 #endif

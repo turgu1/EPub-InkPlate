@@ -56,7 +56,7 @@
       printf("\n"); fflush(stdout);
     #endif
 
-    bool inkplate_err = !inkplate_platform.setup();
+    bool inkplate_err = !inkplate_platform.setup(true);
     if (inkplate_err) LOG_E("InkPlate6Ctrl Error.");
 
     bool config_err = !config.read();

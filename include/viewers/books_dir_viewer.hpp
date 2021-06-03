@@ -13,7 +13,6 @@ class BooksDirViewer
   private:
     static constexpr char const * TAG = "BooksDirView";
 
-    static const int16_t FIRST_ENTRY_YPOS  =  5;
     static const int16_t LEFT_POS          = 30;
     static const int16_t TITLE_FONT_SIZE   = 11;
     static const int16_t AUTHOR_FONT_SIZE  =  9;
@@ -24,6 +23,9 @@ class BooksDirViewer
     int16_t books_per_page;
 
   public:
+    static const int16_t FIRST_ENTRY_YPOS      = 5;
+    static const int16_t SPACE_BETWEEN_ENTRIES = 6;
+
     BooksDirViewer() : current_item_idx(-1), current_page_nbr(-1) {}
     
     void setup();

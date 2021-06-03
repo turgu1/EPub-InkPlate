@@ -30,7 +30,7 @@ static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t show_heap;
 static int8_t show_title;
-// static int8_t ok;
+static int8_t done;
 
 static Screen::Orientation     old_orientation;
 static Screen::PixelResolution  old_resolution;
@@ -40,24 +40,40 @@ static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 static int8_t old_show_title;
 
-static constexpr int8_t MAIN_FORM_SIZE = 6;
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+  static constexpr int8_t MAIN_FORM_SIZE = 7;
+#else
+  static constexpr int8_t MAIN_FORM_SIZE = 6;
+#endif
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Buttons Position (*):",      (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Show Heap Size :",           &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  // { nullptr,                     &ok,                     2, FormViewer::ok_cancel_choices,   FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL },
+  #if INKPLATE_6PLUS || TOUCH_TRIAL
+    { "WakeUp Button Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL   },
+  #else
+    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL   },
+  #endif
+  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL },
+  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL   },
+  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL },
+  { "Show Heap Size :",           &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL },
+  #if INKPLATE_6PLUS || TOUCH_TRIAL
+    { nullptr,                    &done,                   1, FormViewer::done_choices,        FormViewer::FormEntryType::DONE       }
+  #endif
 };
 
-static constexpr int8_t FONT_FORM_SIZE = 4;
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+  static constexpr int8_t FONT_FORM_SIZE = 5;
+#else
+  static constexpr int8_t FONT_FORM_SIZE = 4;
+#endif
 static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",      &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  { "Default Font (*):",           &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL_CHOICES   },
-  { "Show Images in E-books (*):", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL_CHOICES },
-  // { nullptr,                     &ok,                 2, FormViewer::ok_cancel_choices, FormViewer::FormEntryType::HORIZONTAL_CHOICES }
+  { "Default Font Size (*):",      &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL },
+  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL },
+  { "Default Font (*):",           &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL   },
+  { "Show Images in E-books (*):", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL },
+  #if INKPLATE_6PLUS || TOUCH_TRIAL
+    { nullptr,                     &done,               1, FormViewer::done_choices,      FormViewer::FormEntryType::DONE       }
+  #endif
 };
 
 extern bool start_web_server();
@@ -76,7 +92,7 @@ main_parameters()
   old_orientation = orientation;
   old_resolution  = resolution;
   old_show_title  = show_title;
-  // ok              = 0;
+  done            = 1;
 
   form_viewer.show(
     main_params_form_entries, 
@@ -98,7 +114,7 @@ default_parameters()
   old_use_fonts_in_books = use_fonts_in_books;
   old_default_font       = default_font;
   old_font_size          = font_size;
-  // ok                     = 0;
+  done                   = 1;
 
   form_viewer.show(
     font_params_form_entries, 
@@ -184,6 +200,9 @@ OptionController::key_event(EventMgr::KeyEvent key)
             (old_resolution  != resolution )) {
           menu_viewer.show(menu, 2, true);
         }
+        else {
+          menu_viewer.clear_highlight();
+        }
       // }
     }
   }
@@ -207,6 +226,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
           fonts.setup();
         }
       // }
+      menu_viewer.clear_highlight();
     }
   }
   #if EPUB_INKPLATE_BUILD

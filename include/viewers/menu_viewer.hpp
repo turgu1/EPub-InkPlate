@@ -20,6 +20,7 @@ class MenuViewer
     };
     void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
     bool event(EventMgr::KeyEvent key);
+    void clear_highlight();
     
   private:
     static constexpr char const * TAG = "MenuViewer";
@@ -32,6 +33,11 @@ class MenuViewer
              region_height;
     int16_t  icon_ypos,
              text_ypos;
+
+    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+      bool    hint_shown;
+      uint8_t find_index(uint16_t x, uint16_t y);
+    #endif
 
     struct EntryLoc {
       Pos pos;

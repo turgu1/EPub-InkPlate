@@ -302,6 +302,18 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         entry->pos,
         Screen::WHITE_COLOR);
     }
+    else if (entry->command == DisplayListCommand::ROUNDED) {
+      screen.draw_round_rectangle(
+        entry->kind.region_entry.dim, 
+        entry->pos, 
+        Screen::BLACK_COLOR);
+    }
+    else if (entry->command == DisplayListCommand::CLEAR_ROUNDED) {
+      screen.draw_round_rectangle(
+        entry->kind.region_entry.dim, 
+        entry->pos,
+        Screen::WHITE_COLOR);
+    }
     else if (entry->command == DisplayListCommand::CLEAR_REGION) {
       screen.colorize_region(
         entry->kind.region_entry.dim, 
@@ -1009,6 +1021,50 @@ Page::clear_highlight(Dim dim, Pos pos)
 }
 
 void 
+Page::put_rounded(Dim dim, Pos pos)
+{
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
+
+  entry->command               = DisplayListCommand::ROUNDED;
+  entry->kind.region_entry.dim = dim;
+  entry->pos                   = pos;
+
+  #if DEBUGGING
+    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+      LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    }
+    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+      LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
+    }
+  #endif
+
+  display_list.push_front(entry);
+}
+
+void 
+Page::clear_rounded(Dim dim, Pos pos)
+{
+  DisplayListEntry * entry = display_list_entry_pool.newElement();
+  if (entry == nullptr) no_mem();
+
+  entry->command               = DisplayListCommand::CLEAR_ROUNDED;
+  entry->kind.region_entry.dim = dim;
+  entry->pos                   = pos;
+
+  #if DEBUGGING
+    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+      LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    }
+    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+      LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+    }
+  #endif
+
+  display_list.push_front(entry);
+}
+
+void 
 Page::clear_region(Dim dim, Pos pos)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
@@ -1137,6 +1193,20 @@ Page::show_display_list(const DisplayList & list, const char * title) const
       }
       else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
         std::cout << "CLEAR_HIGHLIGHT" <<
+          " x:" << entry->pos.x <<
+          " y:" << entry->pos.y <<
+          " w:" << entry->kind.region_entry.dim.width  <<
+          " h:" << entry->kind.region_entry.dim.height << std::endl;
+      }
+      else if (entry->command == DisplayListCommand::ROUNDED) {
+        std::cout << "ROUNDED" <<
+          " x:" << entry->pos.x <<
+          " y:" << entry->pos.y <<
+          " w:" << entry->kind.region_entry.dim.width  <<
+          " h:" << entry->kind.region_entry.dim.height << std::endl;
+      }
+      else if (entry->command == DisplayListCommand::CLEAR_ROUNDED) {
+        std::cout << "CLEAR_ROUNDED" <<
           " x:" << entry->pos.x <<
           " y:" << entry->pos.y <<
           " w:" << entry->kind.region_entry.dim.width  <<

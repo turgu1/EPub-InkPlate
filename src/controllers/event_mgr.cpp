@@ -2,6 +2,8 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+#if defined(INPLATE_6) || defined(INKPLATE_6_EXTENDED) || defined(INKPLATE_10) || defined(INKPLATE_10_EXTENDED) || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
+
 #include <iostream>
 
 #define __EVENT_MGR__ 1
@@ -268,11 +270,11 @@
     gtk_main(); // never return
   }
 
-void
-EventMgr::set_orientation(Screen::Orientation orient)
-{
-  // Nothing to do...
-}
+  void
+  EventMgr::set_orientation(Screen::Orientation orient)
+  {
+    // Nothing to do...
+  }
 
 #else
   void EventMgr::loop()
@@ -298,7 +300,11 @@ EventMgr::set_orientation(Screen::Orientation orient)
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
 
-          if (inkplate_platform.light_sleep(light_sleep_duration)) {
+          #if EXTENDED_CASE
+            if (inkplate_platform.light_sleep(light_sleep_duration, PressKeys::INTERRUPT_PIN, 1)) {
+          #else
+            if (inkplate_platform.light_sleep(light_sleep_duration, TouchKeys::INTERRUPT_PIN, 1)) {
+          #endif
 
             app_controller.going_to_deep_sleep();
             
@@ -311,7 +317,11 @@ EventMgr::set_orientation(Screen::Orientation orient)
               "entering into Deep Sleep mode. Please press a key to restart.",
               light_sleep_duration);
             ESP::delay(500);
-            inkplate_platform.deep_sleep();
+            #if EXTENDED_CASE
+              if (inkplate_platform.deep_sleep(PressKeys::INTERRUPT_PIN, 1)) {
+            #else
+              if (inkplate_platform.deep_sleep(TouchKeys::INTERRUPT_PIN, 1)) {
+            #endif
           }
         }
       }
@@ -363,3 +373,5 @@ EventMgr::setup()
 
   return true;
 }
+
+#endif

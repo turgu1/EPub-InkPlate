@@ -25,6 +25,17 @@ uint16_t Screen::HEIGHT;
 const uint8_t Screen::LUT1BIT[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 const uint8_t Screen::LUT1BIT_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
+#define SELECT(resolution)                         \
+  if (orientation == Orientation::LEFT) {          \
+    CODE(resolution, left);                        \
+  } else if (orientation == Orientation::RIGHT) {  \
+    CODE(resolution, right);                       \
+  } else if (orientation == Orientation::BOTTOM) { \
+    CODE(resolution, bottom);                      \
+  } else {                                         \
+    CODE(resolution, top);                         \
+  }
+
 void 
 Screen::draw_bitmap(
   const unsigned char * bitmap_data, 
@@ -57,95 +68,42 @@ Screen::draw_bitmap(
     int16_t error;
     memset(err, 0, 1201*2);
 
-    if (orientation == Orientation::LEFT) {
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
-          int32_t v = bitmap_data[p] + err[k + 1];
-          if (v > 128) {
-            error = (v - 255);
-            set_pixel_o_left_1bit(i, j, 0);
-          }
-          else {
-            error = v;
-            set_pixel_o_left_1bit(i, j, 1);
-          }
-          if (k != 0) {
-            err[k - 1] += error / 8;
-          }
-          err[k]     += 3 * error / 8;
-          err[k + 1]  =     error / 8;
-          err[k + 2] += 3 * error / 8;
-        }
+    #define CODE(resolution, orientation)                      \
+      for (int j = pos.y, q = 0; j < y_max; j++, q++) {        \
+        for (int i = pos.x, p = q * dim.width, k = 0;          \
+             i < (x_max - 1);                                  \
+             i++, p++, k++) {                                  \
+          int32_t v = bitmap_data[p] + err[k + 1];             \
+          if (v > 128) {                                       \
+            error = (v - 255);                                 \
+            set_pixel_o_##orientation##_##resolution(i, j, 0); \
+          }                                                    \
+          else {                                               \
+            error = v;                                         \
+            set_pixel_o_##orientation##_##resolution(i, j, 1); \
+          }                                                    \
+          if (k != 0) {                                        \
+            err[k - 1] += error / 8;                           \
+          }                                                    \
+          err[k]     += 3 * error / 8;                         \
+          err[k + 1]  =     error / 8;                         \
+          err[k + 2] += 3 * error / 8;                         \
+        }                                                      \
       }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
-          int32_t v = bitmap_data[p] + err[k + 1];
-          if (v > 128) {
-            error = (v - 255);
-            set_pixel_o_right_1bit(i, j, 0);
-          }
-          else {
-            error = v;
-            set_pixel_o_right_1bit(i, j, 1);
-          }
-          if (k != 0) {
-            err[k - 1] += error / 8;
-          }
-          err[k]     += 3 * error / 8;
-          err[k + 1]  =     error / 8;
-          err[k + 2] += 3 * error / 8;
-        }
-      }
-    }
-    else { // Orientation::BOTTOM
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width, k = 0; i < (x_max - 1); i++, p++, k++) {
-          int32_t v = bitmap_data[p] + err[k + 1];
-          if (v > 128) {
-            error = (v - 255);
-            set_pixel_o_bottom_1bit(i, j, 0);
-          }
-          else {
-            error = v;
-            set_pixel_o_bottom_1bit(i, j, 1);
-          }
-          if (k != 0) {
-            err[k - 1] += error / 8;
-          }
-          err[k]     += 3 * error / 8;
-          err[k + 1]  =     error / 8;
-          err[k + 2] += 3 * error / 8;
-        }
-      }
-    }
+
+    SELECT(1bit);
+    #undef CODE
   }
   else {
-    if (orientation == Orientation::LEFT) {
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
-          int8_t v = bitmap_data[p] >> 5;
-          set_pixel_o_left_3bit(i, j, v);
-        }
+    #define CODE(resolution, orientation)                              \
+      for (int j = pos.y, q = 0; j < y_max; j++, q++) {                \
+        for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {  \
+          int8_t v = bitmap_data[p] >> 5;                              \
+          set_pixel_o_##orientation##_##resolution(i, j, v);           \
+        }                                                              \
       }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
-          int8_t v = bitmap_data[p] >> 5;
-          set_pixel_o_right_3bit(i, j, v);
-        }
-      }
-    }
-    else { // BOTTOM
-      for (int j = pos.y, q = 0; j < y_max; j++, q++) {
-        for (int i = pos.x, p = q * dim.width; i < x_max; i++, p++) {
-          int8_t v = bitmap_data[p] >> 5;
-          set_pixel_o_bottom_3bit(i, j, v);
-        }
-      }
-    }
+    SELECT(3bit);
+    #undef CODE
   }
 }
 
@@ -161,72 +119,99 @@ Screen::draw_rectangle(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
   
+  #define CODE(resolution, orientation)                              \
+    for (int i = pos.x; i < x_max; i++) {                            \
+      set_pixel_o_##orientation##_##resolution(i, pos.y, color);     \
+      set_pixel_o_##orientation##_##resolution(i, y_max - 1, color); \
+    }                                                                \
+    for (int j = pos.y; j < y_max; j++) {                            \
+      set_pixel_o_##orientation##_##resolution(pos.x, j, color);     \
+      set_pixel_o_##orientation##_##resolution(x_max - 1, j, color); \
+    }
+
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    uint8_t col = color == BLACK_COLOR ? 1 : 0;
-  
-    if (orientation == Orientation::LEFT) {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_left_1bit(i, pos.y, col);
-        set_pixel_o_left_1bit(i, y_max - 1, col);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_left_1bit(pos.x, j, col);
-        set_pixel_o_left_1bit(x_max - 1, j, col);
-      }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_right_1bit(i, pos.y, col);
-        set_pixel_o_right_1bit(i, y_max - 1, col);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_right_1bit(pos.x, j, col);
-        set_pixel_o_right_1bit(x_max - 1, j, col);
-      }
-    }
-    else {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_bottom_1bit(i, pos.y, col);
-        set_pixel_o_bottom_1bit(i, y_max - 1, col);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_bottom_1bit(pos.x, j, col);
-        set_pixel_o_bottom_1bit(x_max - 1, j, col);
-      }
-    }
+    color = color == BLACK_COLOR ? 1 : 0;
+    SELECT(1bit);
   }
   else {
-    if (orientation == Orientation::LEFT) {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_left_3bit(i, pos.y, color);
-        set_pixel_o_left_3bit(i, y_max - 1, color);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_left_3bit(pos.x, j, color);
-        set_pixel_o_left_3bit(x_max - 1, j, color);
-      }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_right_3bit(i, pos.y, color);
-        set_pixel_o_right_3bit(i, y_max - 1, color);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_right_3bit(pos.x, j, color);
-        set_pixel_o_right_3bit(x_max - 1, j, color);
-      }
-    }
-    else {
-      for (int i = pos.x; i < x_max; i++) {
-        set_pixel_o_bottom_3bit(i, pos.y, color);
-        set_pixel_o_bottom_3bit(i, y_max - 1, color);
-      }
-      for (int j = pos.y; j < y_max; j++) {
-        set_pixel_o_bottom_3bit(pos.x, j, color);
-        set_pixel_o_bottom_3bit(x_max - 1, j, color);
-      }
-    }
+    SELECT(3bit);
   }
+
+  #undef CODE
+}
+
+void
+Screen::draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, uint8_t color)
+{
+  int16_t f     =  1 - radius;
+  int16_t ddF_x =           1;
+  int16_t ddF_y = -2 * radius;
+  int16_t x     =           0;
+  int16_t y     =      radius;
+
+  #define CODE(resolution, orientation)                                        \
+  while ( x < y ) {                                                            \
+    if (f >= 0) { y--; ddF_y += 2; f += ddF_y; }                               \
+    x++; ddF_x += 2; f += ddF_x;                                               \
+                                                                               \
+    switch (corner) {                                                          \
+      case Corner::TOP_LEFT:                                                   \
+        set_pixel_o_##orientation##_##resolution(x_mid - x, y_mid - y, color); \
+        set_pixel_o_##orientation##_##resolution(x_mid - y, y_mid - x, color); \
+        break;                                                                 \
+                                                                               \
+      case Corner::TOP_RIGHT:                                                  \
+        set_pixel_o_##orientation##_##resolution(x_mid + x, y_mid - y, color); \
+        set_pixel_o_##orientation##_##resolution(x_mid + y, y_mid - x, color); \
+        break;                                                                 \
+                                                                               \
+      case Corner::LOWER_LEFT:                                                 \
+        set_pixel_o_##orientation##_##resolution(x_mid - x, y_mid + y, color); \
+        set_pixel_o_##orientation##_##resolution(x_mid - y, y_mid + x, color); \
+        break;                                                                 \
+                                                                               \
+      case Corner::LOWER_RIGHT:                                                \
+        set_pixel_o_##orientation##_##resolution(x_mid + x, y_mid + y, color); \
+        set_pixel_o_##orientation##_##resolution(x_mid + y, y_mid + x, color); \
+        break;                                                                 \
+    }                                                                          \
+  }
+
+  if (pixel_resolution == PixelResolution::ONE_BIT) { SELECT(1bit); } else { SELECT(3bit) };
+
+  #undef CODE
+}
+
+void 
+Screen::draw_round_rectangle(
+  Dim      dim,
+  Pos      pos,
+  uint8_t  color) //, bool show)
+{
+  int16_t x_max = pos.x + dim.width;
+  int16_t y_max = pos.y + dim.height;
+
+  if (y_max > HEIGHT) y_max = HEIGHT;
+  if (x_max > WIDTH ) x_max = WIDTH;
+
+  #define CODE(resolution, orientation)                            \
+  for (int i = pos.x + 10; i < x_max - 10; i++) {                  \
+    set_pixel_o_##orientation##_##resolution(i, pos.y,     color); \
+    set_pixel_o_##orientation##_##resolution(i, y_max - 1, color); \
+  }                                                                \
+  for (int j = pos.y + 10; j < y_max - 10; j++) {                  \
+    set_pixel_o_##orientation##_##resolution(pos.x,     j, color); \
+    set_pixel_o_##orientation##_##resolution(x_max - 1, j, color); \
+  }
+
+  if (pixel_resolution == PixelResolution::ONE_BIT) { SELECT(1bit); } else { SELECT(3bit); }
+
+  #undef CODE
+
+  draw_arc(pos.x + 10,             pos.y + 10,              10, Corner::TOP_LEFT,    color);
+  draw_arc(pos.x + dim.width - 11, pos.y + 10,              10, Corner::TOP_RIGHT,   color);
+  draw_arc(pos.x + 10,             pos.y + dim.height - 11, 10, Corner::LOWER_LEFT,  color);
+  draw_arc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
 }
 
 void
@@ -241,53 +226,22 @@ Screen::colorize_region(
   if (y_max > HEIGHT) y_max = HEIGHT;
   if (x_max > WIDTH ) x_max = WIDTH;
 
+  #define CODE(resolution, orientation)                        \
+    for (int j = pos.y; j < y_max; j++) {                      \
+      for (int i = pos.x; i < x_max; i++) {                    \
+        set_pixel_o_##orientation##_##resolution(i, j, color); \
+      }                                                        \
+    }
+
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    int8_t col = color == BLACK_COLOR ? 1 : 0;
-    if (orientation == Orientation::LEFT) {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_left_1bit(i, j, color);
-        }
-      }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_right_1bit(i, j, col);
-        }
-      }
-    }
-    else {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_bottom_1bit(i, j, col);
-        }
-      }
-    }
+    color = color == BLACK_COLOR ? 1 : 0;
+    SELECT(1bit);
   }
   else {
-    if (orientation == Orientation::LEFT) {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_left_3bit(i, j, color);
-        }
-      }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_right_3bit(i, j, color);
-        }
-      }
-    }
-    else {
-      for (int j = pos.y; j < y_max; j++) {
-        for (int i = pos.x; i < x_max; i++) {
-          set_pixel_o_bottom_3bit(i, j, color);
-        }
-      }
-    }
+    SELECT(3bit);
   }
+
+  #undef CODE
 }
 
 void 
@@ -304,62 +258,26 @@ Screen::draw_glyph(
   if (x_max > WIDTH ) x_max = WIDTH;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    if (orientation == Orientation::LEFT) {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
-          uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          // set_pixel_o_left_1bit(i, j, v ? 1 : 0);
-          if (v) set_pixel_o_left_1bit(i, j, 1);
-        }
+    #define CODE(resolution, orientation)                                     \
+      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {                  \
+        for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { \
+          uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];                   \
+          if (v) set_pixel_o_##orientation##_##resolution(i, j, 1);           \
+        }                                                                     \
       }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
-          uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          // set_pixel_o_right_1bit(i, j, v ? 1 : 0);
-          if (v) set_pixel_o_right_1bit(i, j, 1);
-        }
-      }
-    }
-    else {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = (q * pitch) << 3; i < x_max; i++, p++) { // column
-          uint8_t v = bitmap_data[p >> 3] & LUT1BIT[p & 7];
-          // set_pixel_o_bottom_1bit(i, j, v ? 1 : 0);
-          if (v) set_pixel_o_bottom_1bit(i, j, 1);
-        }
-      }
-    }
+    SELECT(1bit);
+    #undef CODE
   }
   else {
-    if (orientation == Orientation::LEFT) {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
-          uint8_t v = 7 - (bitmap_data[p] >> 5);
-          // set_pixel_o_left_3bit(i, j, v);
-          if (v != 7) set_pixel_o_left_3bit(i, j, v);
-        }
+    #define CODE(resolution, orientation)                                     \
+      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {                  \
+        for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) {        \
+          uint8_t v = 7 - (bitmap_data[p] >> 5);                              \
+          if (v != 7) set_pixel_o_##orientation##_##resolution(i, j, v);      \
+        }                                                                     \
       }
-    }
-    else if (orientation == Orientation::RIGHT) {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
-          uint8_t v = 7 - (bitmap_data[p] >> 5);
-          // set_pixel_o_right_3bit(i, j, v);
-          if (v != 7) set_pixel_o_right_3bit(i, j, v);
-        }
-      }
-    }
-    else {
-      for (uint32_t j = pos.y, q = 0; j < y_max; j++, q++) {  // row
-        for (uint32_t i = pos.x, p = q * pitch; i < x_max; i++, p++) { // column
-          uint8_t v = 7 - (bitmap_data[p] >> 5);
-          // set_pixel_o_bottom_3bit(i, j, v);
-          if (v != 7) set_pixel_o_bottom_3bit(i, j, v);
-        }
-      }
-    }
+    SELECT(3bit);
+    #undef CODE
   }
 }
 

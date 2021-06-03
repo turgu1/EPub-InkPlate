@@ -75,69 +75,150 @@ BookController::open_book_file(
   return false;
 }
 
-void 
-BookController::key_event(EventMgr::KeyEvent key)
-{
-  const PageLocs::PageId * page_id;
-  switch (key) {
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::DBL_PREV:
-    #else
-      case EventMgr::KeyEvent::PREV:
-    #endif
-      page_id = page_locs.get_prev_page_id(current_page_id);
-      if (page_id != nullptr) {
-        current_page_id.itemref_index = page_id->itemref_index;
-        current_page_id.offset        = page_id->offset;
-        book_viewer.show_page(current_page_id);
-      }
-      break;
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+  void 
+  BookController::key_event(EventMgr::KeyEvent key)
+  {
+    uint16_t x, y;
 
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::PREV:
-    #else
-      case EventMgr::KeyEvent::DBL_PREV:
-    #endif
-      page_id = page_locs.get_prev_page_id(current_page_id, 10);
-      if (page_id != nullptr) {
-        current_page_id.itemref_index = page_id->itemref_index;
-        current_page_id.offset        = page_id->offset;
-        book_viewer.show_page(current_page_id);
-      }
-      break;
+    const PageLocs::PageId * page_id;
+    switch (key) {
+      case EventMgr::KeyEvent::SWIPE_RIGHT:
+        event_mgr.get_start_location(x, y);
+        if (y < (Screen::HEIGHT - 40)) {
+          page_id = page_locs.get_prev_page_id(current_page_id);
+          if (page_id != nullptr) {
+            current_page_id.itemref_index = page_id->itemref_index;
+            current_page_id.offset        = page_id->offset;
+            book_viewer.show_page(current_page_id);
+          }
+        }
+        else {
+          page_id = page_locs.get_prev_page_id(current_page_id, 10);
+          if (page_id != nullptr) {
+            current_page_id.itemref_index = page_id->itemref_index;
+            current_page_id.offset        = page_id->offset;
+            book_viewer.show_page(current_page_id);
+          }
+        }
+        break;
 
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::DBL_NEXT:
-    #else
-      case EventMgr::KeyEvent::NEXT:
-    #endif
-      page_id = page_locs.get_next_page_id(current_page_id);
-      if (page_id != nullptr) {
-        current_page_id.itemref_index = page_id->itemref_index;
-        current_page_id.offset        = page_id->offset;
-        book_viewer.show_page(current_page_id);
-      }
-      break;
-
-    #if EXTENDED_CASE
-      case EventMgr::KeyEvent::NEXT:
-    #else
-      case EventMgr::KeyEvent::DBL_NEXT:
-    #endif
-      page_id = page_locs.get_next_page_id(current_page_id, 10);
-      if (page_id != nullptr) {
-        current_page_id.itemref_index = page_id->itemref_index;
-        current_page_id.offset        = page_id->offset;
-        book_viewer.show_page(current_page_id);
-      }
-      break;
-    
-    case EventMgr::KeyEvent::SELECT:
-    case EventMgr::KeyEvent::DBL_SELECT:
-      app_controller.set_controller(AppController::Ctrl::PARAM);
-      break;
+      case EventMgr::KeyEvent::SWIPE_LEFT:
+        event_mgr.get_start_location(x, y);
+        if (y < (Screen::HEIGHT - 40)) {
+          page_id = page_locs.get_next_page_id(current_page_id);
+          if (page_id != nullptr) {
+            current_page_id.itemref_index = page_id->itemref_index;
+            current_page_id.offset        = page_id->offset;
+            book_viewer.show_page(current_page_id);
+          }
+        }
+        else {
+          page_id = page_locs.get_next_page_id(current_page_id, 10);
+          if (page_id != nullptr) {
+            current_page_id.itemref_index = page_id->itemref_index;
+            current_page_id.offset        = page_id->offset;
+            book_viewer.show_page(current_page_id);
+          }           
+        }
+        break;
       
-    case EventMgr::KeyEvent::NONE:
-      break;
+      case EventMgr::KeyEvent::TAP:
+        event_mgr.get_start_location(x, y);
+
+        if (y < (Screen::HEIGHT - 40)) {
+          if (x < (Screen::WIDTH / 3)) {
+            page_id = page_locs.get_prev_page_id(current_page_id);
+            if (page_id != nullptr) {
+              current_page_id.itemref_index = page_id->itemref_index;
+              current_page_id.offset        = page_id->offset;
+              book_viewer.show_page(current_page_id);
+            }
+          }
+          else if (x > ((Screen::WIDTH / 3) * 2)) {
+            page_id = page_locs.get_next_page_id(current_page_id);
+            if (page_id != nullptr) {
+              current_page_id.itemref_index = page_id->itemref_index;
+              current_page_id.offset        = page_id->offset;
+              book_viewer.show_page(current_page_id);
+            }
+          } else {           
+            app_controller.set_controller(AppController::Ctrl::PARAM);
+          }
+        } else {           
+          app_controller.set_controller(AppController::Ctrl::PARAM);
+        }
+        break;
+        
+      default:
+        break;
+    }
   }
-}
+#else
+  void 
+  BookController::key_event(EventMgr::KeyEvent key)
+  {
+    const PageLocs::PageId * page_id;
+    switch (key) {
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::DBL_PREV:
+      #else
+        case EventMgr::KeyEvent::PREV:
+      #endif
+        page_id = page_locs.get_prev_page_id(current_page_id);
+        if (page_id != nullptr) {
+          current_page_id.itemref_index = page_id->itemref_index;
+          current_page_id.offset        = page_id->offset;
+          book_viewer.show_page(current_page_id);
+        }
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::PREV:
+      #else
+        case EventMgr::KeyEvent::DBL_PREV:
+      #endif
+        page_id = page_locs.get_prev_page_id(current_page_id, 10);
+        if (page_id != nullptr) {
+          current_page_id.itemref_index = page_id->itemref_index;
+          current_page_id.offset        = page_id->offset;
+          book_viewer.show_page(current_page_id);
+        }
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::DBL_NEXT:
+      #else
+        case EventMgr::KeyEvent::NEXT:
+      #endif
+        page_id = page_locs.get_next_page_id(current_page_id);
+        if (page_id != nullptr) {
+          current_page_id.itemref_index = page_id->itemref_index;
+          current_page_id.offset        = page_id->offset;
+          book_viewer.show_page(current_page_id);
+        }
+        break;
+
+      #if EXTENDED_CASE
+        case EventMgr::KeyEvent::NEXT:
+      #else
+        case EventMgr::KeyEvent::DBL_NEXT:
+      #endif
+        page_id = page_locs.get_next_page_id(current_page_id, 10);
+        if (page_id != nullptr) {
+          current_page_id.itemref_index = page_id->itemref_index;
+          current_page_id.offset        = page_id->offset;
+          book_viewer.show_page(current_page_id);
+        }
+        break;
+      
+      case EventMgr::KeyEvent::SELECT:
+      case EventMgr::KeyEvent::DBL_SELECT:
+        app_controller.set_controller(AppController::Ctrl::PARAM);
+        break;
+        
+      case EventMgr::KeyEvent::NONE:
+        break;
+    }
+  }
+#endif
