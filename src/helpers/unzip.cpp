@@ -36,7 +36,7 @@ Unzip::open_zip_file(const char * zip_filename)
   // Open zip file
   if (zip_file_is_open) close_zip_file();
   if ((file = fopen(zip_filename, "r")) == nullptr) {
-    LOG_E("Uzip: Unable to open file: %s", zip_filename);
+    LOG_E("Unable to open file: %s", zip_filename);
     return false;
   }
   zip_file_is_open = true;
@@ -183,11 +183,11 @@ Unzip::open_zip_file(const char * zip_filename)
   }
 
   if (!completed) {
-    LOG_E("Unzip: open_file error: %d", err);
+    LOG_E("open_zip_file error: %d", err);
     close_zip_file();
   }
   else {
-    // LOG_D("Unzip: open_file completed!");
+    // LOG_D("open_zip_file completed!");
   }
 
   file_entries.reverse();
@@ -349,7 +349,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
       #endif
 
-      //LOG_E("Unzip: read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
+      //LOG_E("read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
     }
     else if ((*fe)->method == 8) {
 

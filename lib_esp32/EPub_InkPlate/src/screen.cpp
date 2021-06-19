@@ -329,3 +329,26 @@ Screen::set_orientation(Orientation orient)
     HEIGHT = e_ink.get_height();
   }
 }
+
+void 
+Screen::to_user_coord(uint16_t & x, uint16_t & y)
+{
+  uint16_t temp;
+  if (orientation == Orientation::BOTTOM) {
+    // Nothing to do
+  }
+  else if (orientation == Orientation::TOP) {
+    temp = y;
+    y    = x;
+    x    = WIDTH - 1 - temp;
+  }
+  else if (orientation == Orientation::LEFT) {
+    temp = y;
+    y    = HEIGHT - 1 - x;
+    x    = temp;
+  }
+  else {
+    x = HEIGHT - 1 - x;
+    y = WIDTH  - 1 - y;
+  }
+}

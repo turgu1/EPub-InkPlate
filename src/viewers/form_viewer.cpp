@@ -245,10 +245,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   FormViewer::find_entry_idx(uint16_t x, uint16_t y)
   {
     for (int8_t idx = 0; idx < entry_count; idx++) {
-      if ((x >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.x) &&
-          (x <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.x + all_choices_width)) &&
-          (y >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.y) &&
-          (y <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.y + entries_info[idx].choices_height))) {
+      if ((x >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.x - 5) &&
+          (x <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.x + all_choices_width + 5)) &&
+          (y >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.y - 5) &&
+          (y <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.y + entries_info[idx].choices_height + 5))) {
         LOG_D("Found entry: %d", idx);
         return idx;
       }
@@ -261,10 +261,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   FormViewer::find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y)
   {
     for (int8_t idx = entries_info[entry_idx].first_choice_loc_idx, k = 0; k < entries[entry_idx].choice_count; idx++, k++) {
-      if ((x >=  choice_loc[idx].pos.x) &&
-          (x <= (choice_loc[idx].pos.x + choice_loc[idx].dim.width)) &&
-          (y >=  choice_loc[idx].pos.y) &&
-          (y <= (choice_loc[idx].pos.y + choice_loc[idx].dim.height))) {
+      if ((x >=  choice_loc[idx].pos.x - 10) &&
+          (x <= (choice_loc[idx].pos.x + choice_loc[idx].dim.width + 10)) &&
+          (y >=  choice_loc[idx].pos.y - 10) &&
+          (y <= (choice_loc[idx].pos.y + choice_loc[idx].dim.height + 10))) {
         LOG_D("Found choice loc: %d", idx);
         return idx;
       }
@@ -275,7 +275,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 #endif
 
 bool
-FormViewer::event(EventMgr::KeyEvent key)
+FormViewer::event(EventMgr::Event event)
 {
   int8_t old_entry_idx  = current_entry_idx;
   int8_t old_choice_idx = 0;
@@ -286,8 +286,8 @@ FormViewer::event(EventMgr::KeyEvent key)
   uint16_t x, y;
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-    switch (key) {
-      case EventMgr::KeyEvent::TAP:
+    switch (event) {
+      case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
         current_entry_idx = find_entry_idx(x, y);
 
@@ -306,28 +306,28 @@ FormViewer::event(EventMgr::KeyEvent key)
     }
   #else
     if (entry_selection) {
-      switch (key) {
-        case EventMgr::KeyEvent::DBL_PREV:
-        case EventMgr::KeyEvent::PREV:
+      switch (event) {
+        case EventMgr::Event::DBL_PREV:
+        case EventMgr::Event::PREV:
           current_entry_idx--;
           if (current_entry_idx < 0) {
             current_entry_idx = entry_count - 1;
           }
           break;
-        case EventMgr::KeyEvent::DBL_NEXT:
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::Event::NEXT:
           current_entry_idx++;
           if (current_entry_idx >= entry_count) {
             current_entry_idx = 0;
           }
           break;
-        case EventMgr::KeyEvent::SELECT:
+        case EventMgr::Event::SELECT:
           entry_selection = false;
           highlight_selection = true;
           break;
-        case EventMgr::KeyEvent::NONE:
+        case EventMgr::Event::NONE:
           return false;
-        case EventMgr::KeyEvent::DBL_SELECT:
+        case EventMgr::Event::DBL_SELECT:
           completed = true;
           break;
       }
@@ -335,22 +335,22 @@ FormViewer::event(EventMgr::KeyEvent key)
     else {
       old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
 
-      switch (key) {
-        case EventMgr::KeyEvent::DBL_PREV:
-        case EventMgr::KeyEvent::PREV:
+      switch (event) {
+        case EventMgr::Event::DBL_PREV:
+        case EventMgr::Event::PREV:
           choice_idx--;
           if (choice_idx < entries_info[current_entry_idx].first_choice_loc_idx) {
             choice_idx = entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
           }
           break;
-        case EventMgr::KeyEvent::DBL_NEXT:
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::Event::NEXT:
           choice_idx++;
           if (choice_idx >= entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count) {
             choice_idx = entries_info[current_entry_idx].first_choice_loc_idx;
           }
           break;
-        case EventMgr::KeyEvent::SELECT:
+        case EventMgr::Event::SELECT:
           entry_selection = true;
           old_entry_idx = current_entry_idx;
           current_entry_idx++;
@@ -358,9 +358,9 @@ FormViewer::event(EventMgr::KeyEvent key)
             current_entry_idx = 0;
           }
           break;
-        case EventMgr::KeyEvent::NONE:
+        case EventMgr::Event::NONE:
           return false;
-        case EventMgr::KeyEvent::DBL_SELECT:
+        case EventMgr::Event::DBL_SELECT:
           completed = true;
           break;
       }

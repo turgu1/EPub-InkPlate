@@ -26,17 +26,17 @@ class EventMgr
     static constexpr char const * TAG = "EventMgr";
 
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-      enum class         KeyEvent { NONE, TAP,    HOLD,   SWIPE_LEFT, SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE };
-      enum class       InputEvent { NONE, PRESS1, PRESS2, MOVE,       RELEASE };
+      enum class            Event { NONE, TAP,    HOLD,   SWIPE_LEFT, SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE };
+      enum class    LowInputEvent { NONE, PRESS1, PRESS2, MOVE,       RELEASE };
 
       const char * event_str[8] = { "NONE", "TAP", "HOLD", "SWIPE_LEFT", "SWIPE_RIGHT", "PINCH_ENLARGE", "PINCH_REDUCE", "RELEASE" };
 
       void           get_location(uint16_t & x, uint16_t & y) { x = x_pos;   y = y_pos;   }
       void     get_start_location(uint16_t & x, uint16_t & y) { x = x_start; y = y_start; }
       uint16_t     get_pinch_size();
-      void            input_event(InputEvent event, uint16_t x, uint16_t y, bool hold);
+      void        low_input_event(LowInputEvent event, uint16_t x, uint16_t y, bool hold);
     #else
-      enum class KeyEvent { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+      enum class Event { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
     #endif
 
     EventMgr() : stay_on(false)
@@ -49,11 +49,11 @@ class EventMgr
     
     void loop();
 
-    KeyEvent get_key();
+    Event get_event();
     
     #if EPUB_LINUX_BUILD
       #if TOUCH_TRIAL
-        //void input_event();
+        //void low_input_event();
       #else
         void   left();
         void  right();

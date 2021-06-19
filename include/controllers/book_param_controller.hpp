@@ -19,7 +19,7 @@ class BookParamController
     BookParamController() : 
       book_params_form_is_shown(false), 
         wait_for_key_after_wifi(false) { };
-    void key_event(EventMgr::KeyEvent key);
+    void input_event(EventMgr::Event event);
     void enter();
     void leave(bool going_to_deep_sleep = false);
 

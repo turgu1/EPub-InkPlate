@@ -22,7 +22,7 @@ class OptionController
                          font_form_is_shown(false),
                          books_refresh_needed(false), 
                          wait_for_key_after_wifi(false) { };
-    void key_event(EventMgr::KeyEvent key);
+    void input_event(EventMgr::Event event);
     void enter();
     void leave(bool going_to_deep_sleep = false);
 

@@ -87,15 +87,15 @@ void AppController::launch()
 }
 
 void 
-AppController::key_event(EventMgr::KeyEvent key)
+AppController::input_event(EventMgr::Event event)
 {
   if (next_ctrl != Ctrl::NONE) launch();
 
   switch (current_ctrl) {
-    case Ctrl::DIR:     books_dir_controller.key_event(key); break;
-    case Ctrl::BOOK:         book_controller.key_event(key); break;
-    case Ctrl::PARAM:  book_param_controller.key_event(key); break;
-    case Ctrl::OPTION:     option_controller.key_event(key); break;
+    case Ctrl::DIR:     books_dir_controller.input_event(event); break;
+    case Ctrl::BOOK:         book_controller.input_event(event); break;
+    case Ctrl::PARAM:  book_param_controller.input_event(event); break;
+    case Ctrl::OPTION:     option_controller.input_event(event); break;
     case Ctrl::NONE:
     case Ctrl::LAST:                                         break;
   }

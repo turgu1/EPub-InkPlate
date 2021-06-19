@@ -39,7 +39,7 @@ class Screen : NonCopyable
       static constexpr int16_t  PARTIAL_COUNT_ALLOWED = 999;
       static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
     #endif
-    enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
+    enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM, TOP };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
     void          draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
@@ -169,6 +169,7 @@ class Screen : NonCopyable
     void set_pixel_resolution(PixelResolution resolution, bool force = false);
     void set_orientation(Orientation orient);
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
+    void to_user_coord(uint16_t & x, uint16_t & y);
 };
 
 #if __SCREEN__

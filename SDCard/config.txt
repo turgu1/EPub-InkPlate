@@ -25,6 +25,7 @@
 #      show_heap
 #      show_title
 #      front_light
+#      dir_view
 # ---
 
 version = 1
@@ -40,5 +41,6 @@ show_images = 1
 orientation = 0
 resolution = 1
 show_heap = 1
-show_title = 0
+show_title = 1
 front_light = 15
+dir_view = 1

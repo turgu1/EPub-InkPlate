@@ -6,10 +6,10 @@
 #include "controllers/option_controller.hpp"
 #include "controllers/common_actions.hpp"
 #include "controllers/app_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
-#include "viewers/books_dir_viewer.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/epub.hpp"
@@ -30,6 +30,7 @@ static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t show_heap;
 static int8_t show_title;
+static int8_t dir_view;
 static int8_t done;
 
 static Screen::Orientation     old_orientation;
@@ -39,25 +40,27 @@ static int8_t old_font_size;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 static int8_t old_show_title;
+static int8_t old_dir_view;
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
-  static constexpr int8_t MAIN_FORM_SIZE = 7;
+  static constexpr int8_t MAIN_FORM_SIZE = 8;
 #else
-  static constexpr int8_t MAIN_FORM_SIZE = 6;
+  static constexpr int8_t MAIN_FORM_SIZE = 7;
 #endif
 static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL },
+  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL  },
+  { "Books Directory View :",     &dir_view,               2, FormViewer::dir_view_choices,    FormViewer::FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { "WakeUp Button Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL   },
+    { "WakeUp Button Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL },
   #else
-    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL   },
+    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL    },
   #endif
-  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL },
-  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL   },
-  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL },
-  { "Show Heap Size :",           &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL },
+  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL  },
+  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL    },
+  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL  },
+  { "Show Heap Sizes :",          &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                    &done,                   1, FormViewer::done_choices,        FormViewer::FormEntryType::DONE       }
+    { nullptr,                    &done,                   1, FormViewer::done_choices,        FormViewer::FormEntryType::DONE        }
   #endif
 };
 
@@ -83,6 +86,7 @@ static void
 main_parameters()
 {
   config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
+  config.get(Config::Ident::DIR_VIEW,         &dir_view              );
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution );
   config.get(Config::Ident::BATTERY,          &show_battery          );
   config.get(Config::Ident::SHOW_TITLE,       &show_title            );
@@ -90,6 +94,7 @@ main_parameters()
   config.get(Config::Ident::TIMEOUT,          &timeout               );
 
   old_orientation = orientation;
+  old_dir_view    = dir_view;
   old_resolution  = resolution;
   old_show_title  = show_title;
   done            = 1;
@@ -140,13 +145,21 @@ wifi_mode()
   #endif
 }
 
-static MenuViewer::MenuEntry menu[9] = {
+#if EPUB_LINUX_BUILD && DEBUGGING
+  static MenuViewer::MenuEntry menu[10] = {
+#else
+  static MenuViewer::MenuEntry menu[9] = {
+#endif
+
   { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    },
   { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    },
   { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  },
   { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               },
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        },
   { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir },
+  #if EPUB_LINUX_BUILD && DEBUGGING
+    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         },
+  #endif
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off         },
   { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          }
@@ -166,13 +179,14 @@ OptionController::leave(bool going_to_deep_sleep)
 }
 
 void 
-OptionController::key_event(EventMgr::KeyEvent key)
+OptionController::input_event(EventMgr::Event event)
 {
   if (main_form_is_shown) {
-    if (form_viewer.event(key)) {
+    if (form_viewer.event(event)) {
       main_form_is_shown = false;
       // if (ok) {
         config.put(Config::Ident::ORIENTATION,      (int8_t) orientation);
+        config.put(Config::Ident::DIR_VIEW,         dir_view            );
         config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
         config.put(Config::Ident::BATTERY,          show_battery        );
         config.put(Config::Ident::SHOW_TITLE,       show_title          );
@@ -183,7 +197,11 @@ OptionController::key_event(EventMgr::KeyEvent key)
         if (old_orientation != orientation) {
           screen.set_orientation(orientation);
           event_mgr.set_orientation(orientation);
-          books_dir_viewer.setup();
+          books_dir_controller.new_orientation();
+        }
+
+        if (old_dir_view != dir_view) {
+
         }
 
         if (old_resolution != resolution) {
@@ -207,7 +225,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
     }
   }
   else if (font_form_is_shown) {
-    if (form_viewer.event(key)) {
+    if (form_viewer.event(event)) {
       font_form_is_shown = false;
       // if (ok) {
         config.put(Config::Ident::SHOW_IMAGES,        show_images       );
@@ -246,7 +264,7 @@ OptionController::key_event(EventMgr::KeyEvent key)
     }
   #endif
   else {
-    if (menu_viewer.event(key)) {
+    if (menu_viewer.event(event)) {
       if (books_refresh_needed) {
         books_refresh_needed = false;
         int16_t dummy;

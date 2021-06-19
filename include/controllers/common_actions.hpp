@@ -14,4 +14,7 @@ class CommonActions
     static void power_off();
     static void show_last_book();
     static void about();
+    #if EPUB_LINUX_BUILD && DEBUGGING
+      static void debugging();
+    #endif
 };

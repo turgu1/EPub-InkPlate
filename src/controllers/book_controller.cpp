@@ -77,13 +77,13 @@ BookController::open_book_file(
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   void 
-  BookController::key_event(EventMgr::KeyEvent key)
+  BookController::input_event(EventMgr::Event event)
   {
     uint16_t x, y;
 
     const PageLocs::PageId * page_id;
-    switch (key) {
-      case EventMgr::KeyEvent::SWIPE_RIGHT:
+    switch (event) {
+      case EventMgr::Event::SWIPE_RIGHT:
         event_mgr.get_start_location(x, y);
         if (y < (Screen::HEIGHT - 40)) {
           page_id = page_locs.get_prev_page_id(current_page_id);
@@ -103,7 +103,7 @@ BookController::open_book_file(
         }
         break;
 
-      case EventMgr::KeyEvent::SWIPE_LEFT:
+      case EventMgr::Event::SWIPE_LEFT:
         event_mgr.get_start_location(x, y);
         if (y < (Screen::HEIGHT - 40)) {
           page_id = page_locs.get_next_page_id(current_page_id);
@@ -123,7 +123,7 @@ BookController::open_book_file(
         }
         break;
       
-      case EventMgr::KeyEvent::TAP:
+      case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
 
         if (y < (Screen::HEIGHT - 40)) {
@@ -156,14 +156,14 @@ BookController::open_book_file(
   }
 #else
   void 
-  BookController::key_event(EventMgr::KeyEvent key)
+  BookController::input_event(EventMgr::Event event)
   {
     const PageLocs::PageId * page_id;
-    switch (key) {
+    switch (event) {
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::DBL_PREV:
+        case EventMgr::Event::DBL_PREV:
       #else
-        case EventMgr::KeyEvent::PREV:
+        case EventMgr::Event::PREV:
       #endif
         page_id = page_locs.get_prev_page_id(current_page_id);
         if (page_id != nullptr) {
@@ -174,9 +174,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::PREV:
+        case EventMgr::Event::PREV:
       #else
-        case EventMgr::KeyEvent::DBL_PREV:
+        case EventMgr::Event::DBL_PREV:
       #endif
         page_id = page_locs.get_prev_page_id(current_page_id, 10);
         if (page_id != nullptr) {
@@ -187,9 +187,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::DBL_NEXT:
+        case EventMgr::Event::DBL_NEXT:
       #else
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::NEXT:
       #endif
         page_id = page_locs.get_next_page_id(current_page_id);
         if (page_id != nullptr) {
@@ -200,9 +200,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::NEXT:
       #else
-        case EventMgr::KeyEvent::DBL_NEXT:
+        case EventMgr::Event::DBL_NEXT:
       #endif
         page_id = page_locs.get_next_page_id(current_page_id, 10);
         if (page_id != nullptr) {
@@ -212,12 +212,12 @@ BookController::open_book_file(
         }
         break;
       
-      case EventMgr::KeyEvent::SELECT:
-      case EventMgr::KeyEvent::DBL_SELECT:
+      case EventMgr::Event::SELECT:
+      case EventMgr::Event::DBL_SELECT:
         app_controller.set_controller(AppController::Ctrl::PARAM);
         break;
         
-      case EventMgr::KeyEvent::NONE:
+      case EventMgr::Event::NONE:
         break;
     }
   }

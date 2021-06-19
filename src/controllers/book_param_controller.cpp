@@ -130,7 +130,7 @@ static MenuViewer::MenuEntry menu[8] = {
   { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last},
   { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   },
   { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              },
-  { MenuViewer::Icon::REVERT,      "Revert e-book params to "
+  { MenuViewer::Icon::REVERT,      "Revert e-book parameters to "
                                    "default values",                       revert_to_defaults           },  
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         },
@@ -152,10 +152,10 @@ BookParamController::leave(bool going_to_deep_sleep)
 }
 
 void 
-BookParamController::key_event(EventMgr::KeyEvent key)
+BookParamController::input_event(EventMgr::Event event)
 {
   if (book_params_form_is_shown) {
-    if (form_viewer.event(key)) {
+    if (form_viewer.event(event)) {
       book_params_form_is_shown = false;
       // if (ok) {
         BookParams * book_params = epub.get_book_params();
@@ -184,7 +184,7 @@ BookParamController::key_event(EventMgr::KeyEvent key)
     }
   #endif
   else {
-    if (menu_viewer.event(key)) {
+    if (menu_viewer.event(event)) {
       app_controller.set_controller(AppController::Ctrl::LAST);
     }
   }

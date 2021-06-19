@@ -8,8 +8,11 @@
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
 #include "models/books_dir.hpp"
-#include "viewers/books_dir_viewer.hpp"
+#include "models/config.hpp"
 #include "viewers/book_viewer.hpp"
+#include "viewers/linear_books_dir_viewer.hpp"
+#include "viewers/matrix_books_dir_viewer.hpp"
+
 #include "logging.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -33,13 +36,14 @@ BooksDirController::setup()
 
   char book_fname[256];
   
-  char * filename = nullptr;
-  book_fname[0]   = 0;
-  book_index      = -1;
+  char * filename            = nullptr;
+
+  book_fname[0]              =  0;
+  book_index                 = -1;
+  last_read_book_index       = -1;
   book_page_id.itemref_index = -1;
   book_page_id.offset        = -1;
-
-  book_was_shown  = false;
+  book_was_shown             = false;
 
   #if EPUB_INKPLATE_BUILD
     nvs_handle_t nvs_handle;
@@ -111,15 +115,12 @@ BooksDirController::setup()
   // BookController expect.
 
   if (db_idx != -1) {
-    book_index    = books_dir.get_sorted_idx(db_idx);
-    book_filename = book_fname;
+    last_read_book_index = books_dir.get_sorted_idx(db_idx);
+    book_filename        = book_fname;
   }
- 
-  page_nbr      = 0;
-  current_index = 0;
 
   LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", 
-        book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
+        last_read_book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
 }
 
 void
@@ -168,14 +169,14 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
 void
 BooksDirController::show_last_book()
 {
-  if (book_index == -1) return;
+  if (last_read_book_index == -1) return;
 
   static std::string            book_fname;
   static std::string            book_title;
   const BooksDir::EBookRecord * book;
 
   book_was_shown = false;  
-  book           = books_dir.get_book_data(book_index);
+  book           = books_dir.get_book_data(last_read_book_index);
 
   if (book != nullptr) {
     book_fname  = BOOKS_FOLDER "/";
@@ -190,17 +191,20 @@ BooksDirController::show_last_book()
 void 
 BooksDirController::enter()
 {
-  books_dir_viewer.setup();
+  int8_t viewer;
+
+  config.get(Config::Ident::DIR_VIEW, &viewer);
+  books_dir_viewer = (viewer == 0) ? (BooksDirViewer *) &linear_books_dir_viewer : 
+                                     (BooksDirViewer *) &matrix_books_dir_viewer;
+
+  books_dir_viewer->setup();
   
-  if (book_was_shown && (book_index != -1)) {
+  if (book_was_shown && (last_read_book_index != -1)) {
     show_last_book();
   }
   else {
-    if (page_nbr >= books_dir_viewer.get_page_count()) {
-      page_nbr      = 0;
-      current_index = 0;
-    }
-    books_dir_viewer.show_page(page_nbr, current_index);
+    if (book_index == -1) book_index = 0;
+    book_index = books_dir_viewer->show_page_and_highlight(book_index);
   }
 }
 
@@ -212,7 +216,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   void 
-  BooksDirController::key_event(EventMgr::KeyEvent key)
+  BooksDirController::input_event(EventMgr::Event event)
   {
     static std::string book_fname;
     static std::string book_title;
@@ -220,40 +224,32 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
     const BooksDir::EBookRecord * book;
 
-    switch (key) {
-      case EventMgr::KeyEvent::SWIPE_RIGHT:
-        if (page_nbr > 0) --page_nbr;
-        books_dir_viewer.show_page(page_nbr, current_index);   
+    switch (event) {
+      case EventMgr::Event::SWIPE_RIGHT:
+        book_index = books_dir_viewer->prev_page();   
         break;
-      case EventMgr::KeyEvent::SWIPE_LEFT:
-        if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
-          books_dir_viewer.show_page(++page_nbr, current_index);
-        }
+
+      case EventMgr::Event::SWIPE_LEFT:
+        book_index = books_dir_viewer->next_page();   
         break;
-      case EventMgr::KeyEvent::TAP:
+
+      case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
 
-        if (y < (Screen::HEIGHT - 40)) {
-
-          current_index = (y - BooksDirViewer::FIRST_ENTRY_YPOS) / 
-                          (BooksDir::max_cover_height + BooksDirViewer::SPACE_BETWEEN_ENTRIES);
-
-          if (current_index < books_dir_viewer.get_books_per_page()) {
-            book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
-            if (book_index < books_dir.get_book_count()) {
-              book = books_dir.get_book_data(book_index);
-              if (book != nullptr) {
-                book_fname    = BOOKS_FOLDER "/";
-                book_fname   += book->filename;
-                book_title    = book->title;
-                book_filename = book->filename;
-                
-                PageLocs::PageId page_id = { 0, 0 };
-                
-                if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
-                  app_controller.set_controller(AppController::Ctrl::BOOK);
-                }
-              }
+        book_index = books_dir_viewer->get_index_at(x, y);
+        if ((book_index >= 0) && (book_index < books_dir.get_book_count())) {
+          book = books_dir.get_book_data(book_index);
+          if (book != nullptr) {
+            last_read_book_index = book_index;
+            book_fname    = BOOKS_FOLDER "/";
+            book_fname   += book->filename;
+            book_title    = book->title;
+            book_filename = book->filename;
+            
+            PageLocs::PageId page_id = { 0, 0 };
+            
+            if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
+              app_controller.set_controller(AppController::Ctrl::BOOK);
             }
           }
         }
@@ -262,90 +258,70 @@ BooksDirController::leave(bool going_to_deep_sleep)
         }
         break;
 
+      case EventMgr::Event::HOLD:
+        event_mgr.get_start_location(x, y);
+
+        book_index = books_dir_viewer->get_index_at(x, y);
+        if ((book_index >= 0) && (book_index < books_dir.get_book_count())) {
+          books_dir_viewer->highlight_book(book_index);
+        }
+        break;
+
+      case EventMgr::Event::RELEASE:
+        books_dir_viewer->clear_highlight();
+        break;
+
       default:
         break;
     }
   }
 #else
   void 
-  BooksDirController::key_event(EventMgr::KeyEvent key)
+  BooksDirController::input_event(EventMgr::Event event)
   {
     static std::string book_fname;
     static std::string book_title;
 
     const BooksDir::EBookRecord * book;
 
-    switch (key) {
+    switch (event) {
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::PREV:
+        case EventMgr::Event::PREV:
       #else
-        case EventMgr::KeyEvent::DBL_PREV:
+        case EventMgr::Event::DBL_PREV:
       #endif
-        if (page_nbr > 0) --page_nbr;
-        current_index = 0;
-        books_dir_viewer.show_page(page_nbr, current_index);   
+        book_index = books_dir_viewer->prev_column();   
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::NEXT:
       #else
-        case EventMgr::KeyEvent::DBL_NEXT:
+        case EventMgr::Event::DBL_NEXT:
       #endif
-        if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
-          current_index = 0;
-          books_dir_viewer.show_page(++page_nbr, current_index);
-        }
-        else {
-          current_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
-          books_dir_viewer.highlight(current_index);
-        }
+        book_index = books_dir_viewer->next_column();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::DBL_PREV:
+        case EventMgr::Event::DBL_PREV:
       #else
-        case EventMgr::KeyEvent::PREV:
+        case EventMgr::Event::PREV:
       #endif
-        if (current_index == 0) {
-          if (page_nbr > 0) {
-            current_index = books_dir_viewer.get_books_per_page() - 1;
-            books_dir_viewer.show_page(--page_nbr, current_index);
-          }
-        }
-        else {
-          current_index--;
-          books_dir_viewer.highlight(current_index);
-        }
+        book_index = books_dir_viewer->prev_item();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::KeyEvent::DBL_NEXT:
+        case EventMgr::Event::DBL_NEXT:
       #else
-        case EventMgr::KeyEvent::NEXT:
+        case EventMgr::Event::NEXT:
       #endif
-        if ((current_index + 1) >= books_dir_viewer.get_books_per_page()) {
-          if ((page_nbr + 1) < books_dir_viewer.get_page_count()) {
-            page_nbr++;
-            current_index = 0;
-          }
-          books_dir_viewer.show_page(page_nbr, current_index);
-        }
-        else {
-          int16_t max_index = books_dir_viewer.get_books_per_page();
-          if ((page_nbr + 1) == books_dir_viewer.get_page_count()) {
-            max_index = (books_dir.get_book_count() - 1) % books_dir_viewer.get_books_per_page();
-          }
-          current_index++;
-          if (current_index > max_index) current_index = max_index;
-          books_dir_viewer.highlight(current_index);
-        }
+        book_index = books_dir_viewer->next_item();
         break;
 
-      case EventMgr::KeyEvent::SELECT:
-        book_index = (page_nbr * books_dir_viewer.get_books_per_page()) + current_index;
+      case EventMgr::Event::SELECT:
         if (book_index < books_dir.get_book_count()) {
           book = books_dir.get_book_data(book_index);
           if (book != nullptr) {
+            last_read_book_index = book_index;
             book_fname    = BOOKS_FOLDER "/";
             book_fname   += book->filename;
             book_title    = book->title;
@@ -360,11 +336,11 @@ BooksDirController::leave(bool going_to_deep_sleep)
         }
         break;
 
-      case EventMgr::KeyEvent::DBL_SELECT:
+      case EventMgr::Event::DBL_SELECT:
         app_controller.set_controller(AppController::Ctrl::OPTION);
         break;
         
-      case EventMgr::KeyEvent::NONE:
+      case EventMgr::Event::NONE:
         break;
     }
   }

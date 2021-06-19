@@ -11,19 +11,24 @@ class MenuViewer
   public:
     static constexpr uint8_t MAX_MENU_ENTRY = 10;
 
-    enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO, END_MENU };
-    char icon_char[10] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I' };
+    enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, 
+                      FONT_PARAMS, POWEROFF, WIFI, INFO, DEBUG, END_MENU };
+    char icon_char[11] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I', 'Y' };
     struct MenuEntry {
       Icon icon;
       const char * caption;
       void (*func)();
     };
     void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
-    bool event(EventMgr::KeyEvent key);
+    bool event(EventMgr::Event event);
     void clear_highlight();
     
   private:
     static constexpr char const * TAG = "MenuViewer";
+
+    static const int16_t ICON_SIZE           = 15;
+    static const int16_t CAPTION_SIZE        = 12;
+    static const int16_t SPACE_BETWEEN_ICONS = 50;
 
     uint8_t  current_entry_index;
     uint8_t  max_index;

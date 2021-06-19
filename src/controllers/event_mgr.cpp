@@ -2,7 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#if defined(INPLATE_6) || defined(INKPLATE_6_EXTENDED) || defined(INKPLATE_10) || defined(INKPLATE_10_EXTENDED) || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
+#if defined(INKPLATE_6) || defined(INKPLATE_6_EXTENDED) || defined(INKPLATE_10) || defined(INKPLATE_10_EXTENDED) || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
 
 #include <iostream>
 
@@ -30,14 +30,14 @@
     #include "touch_keys.hpp"
   #endif
 
-  static xQueueHandle touchpad_evt_queue  = NULL;
-  static xQueueHandle touchpad_key_queue  = NULL;
+  static xQueueHandle touchpad_isr_queue   = NULL;
+  static xQueueHandle touchpad_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchpad_isr_handler(void * arg)
   {
     uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(touchpad_evt_queue, &gpio_num, NULL);
+    xQueueSendFromISR(touchpad_isr_queue, &gpio_num, NULL);
   }
 
   #if EXTENDED_CASE
@@ -49,19 +49,19 @@
     uint8_t   HOME_PAD;
 
     void
-    get_key_task(void * param)
+    get_event_task(void * param)
     {
-      EventMgr::KeyEvent key;
+      EventMgr::Event event;
       uint32_t io_num;
       uint8_t  pads;
 
       while (true) {
       
-        key = EventMgr::KeyEvent::NONE;
+        event = EventMgr::Event::NONE;
 
-        xQueueReceive(touchpad_evt_queue, &io_num, portMAX_DELAY);
+        xQueueReceive(touchpad_isr_queue, &io_num, portMAX_DELAY);
 
-        // A key interrupt happened. Retrieve pads information.
+        // An event interrupt happened. Retrieve pads information.
         // t1 = esp_timer_get_time();
         if ((pads = press_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
@@ -78,16 +78,16 @@
           mcp_int.get_int_state();
           Wire::leave();  
 
-          if      (pads & SELECT_PAD) key = EventMgr::KeyEvent::SELECT;
-          else if (pads & NEXT_PAD  ) key = EventMgr::KeyEvent::NEXT;
-          else if (pads & PREV_PAD  ) key = EventMgr::KeyEvent::PREV;
-          else if (pads & HOME_PAD  ) key = EventMgr::KeyEvent::DBL_SELECT;
-          else if (pads & DNEXT_PAD ) key = EventMgr::KeyEvent::DBL_NEXT;
-          else if (pads & DPREV_PAD ) key = EventMgr::KeyEvent::DBL_PREV;
+          if      (pads & SELECT_PAD) event = EventMgr::Event::SELECT;
+          else if (pads & NEXT_PAD  ) event = EventMgr::Event::NEXT;
+          else if (pads & PREV_PAD  ) event = EventMgr::Event::PREV;
+          else if (pads & HOME_PAD  ) event = EventMgr::Event::DBL_SELECT;
+          else if (pads & DNEXT_PAD ) event = EventMgr::Event::DBL_NEXT;
+          else if (pads & DPREV_PAD ) event = EventMgr::Event::DBL_PREV;
         }
 
-        if (key != EventMgr::KeyEvent::NONE) {
-          xQueueSend(touchpad_key_queue, &key, 0);
+        if (event != EventMgr::Event::NONE) {
+          xQueueSend(touchpad_event_queue, &event, 0);
         }  
       }     
     }
@@ -126,19 +126,19 @@
     uint8_t SELECT_PAD;
 
     void
-    get_key_task(void * param)
+    get_event_task(void * param)
     {
-      EventMgr::KeyEvent key;
+      EventMgr::Event event;
       uint32_t io_num;
       uint8_t  pads, pads2;
 
       while (true) {
       
-        key = EventMgr::KeyEvent::NONE;
+        event = EventMgr::Event::NONE;
 
-        xQueueReceive(touchpad_evt_queue, &io_num, portMAX_DELAY);
+        xQueueReceive(touchpad_isr_queue, &io_num, portMAX_DELAY);
 
-        // A key interrupt happened. Retrieve pads information.
+        // An event interrupt happened. Retrieve pads information.
         // t1 = esp_timer_get_time();
         if ((pads = touch_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
@@ -157,7 +157,7 @@
 
           // Wait for potential second key
           bool found = false; 
-          while (xQueueReceive(touchpad_evt_queue, &io_num, pdMS_TO_TICKS(400))) {
+          while (xQueueReceive(touchpad_isr_queue, &io_num, pdMS_TO_TICKS(400))) {
             if ((pads2 = touch_keys.read_all_keys()) != 0) {
               found = true;
               break;
@@ -181,22 +181,22 @@
             mcp_int.get_int_state();
             Wire::leave();  
 
-            if      (pads2 & SELECT_PAD) key = EventMgr::KeyEvent::DBL_SELECT;
-            else if (pads2 & NEXT_PAD  ) key = EventMgr::KeyEvent::DBL_NEXT;
-            else if (pads2 & PREV_PAD  ) key = EventMgr::KeyEvent::DBL_PREV;
+            if      (pads2 & SELECT_PAD) event = EventMgr::Event::DBL_SELECT;
+            else if (pads2 & NEXT_PAD  ) event = EventMgr::Event::DBL_NEXT;
+            else if (pads2 & PREV_PAD  ) event = EventMgr::Event::DBL_PREV;
           }
           else {
 
             // Simple Click on a key
 
-            if      (pads & SELECT_PAD) key = EventMgr::KeyEvent::SELECT;
-            else if (pads & NEXT_PAD  ) key = EventMgr::KeyEvent::NEXT;
-            else if (pads & PREV_PAD  ) key = EventMgr::KeyEvent::PREV;
+            if      (pads & SELECT_PAD) event = EventMgr::Event::SELECT;
+            else if (pads & NEXT_PAD  ) event = EventMgr::Event::NEXT;
+            else if (pads & PREV_PAD  ) event = EventMgr::Event::PREV;
           }
         }
 
-        if (key != EventMgr::KeyEvent::NONE) {
-          xQueueSend(touchpad_key_queue, &key, 0);
+        if (event != EventMgr::Event::NONE) {
+          xQueueSend(touchpad_event_queue, &event, 0);
         }  
       }     
     }
@@ -222,15 +222,15 @@
     }
   #endif
 
-  EventMgr::KeyEvent 
-  EventMgr::get_key() 
+  EventMgr::Event 
+  EventMgr::get_event() 
   {
-    KeyEvent key;
-    if (xQueueReceive(touchpad_key_queue, &key, pdMS_TO_TICKS(15E3))) {
-      return key;
+    Event event;
+    if (xQueueReceive(touchpad_event_queue, &event, pdMS_TO_TICKS(15E3))) {
+      return event;
     }
     else {
-      return KeyEvent::NONE;
+      return Event::NONE;
     }
   }
 
@@ -246,12 +246,12 @@
 
   #include "screen.hpp"
 
-  void EventMgr::left()   { app_controller.key_event(KeyEvent::PREV);       app_controller.launch(); }
-  void EventMgr::right()  { app_controller.key_event(KeyEvent::NEXT);       app_controller.launch(); }
-  void EventMgr::up()     { app_controller.key_event(KeyEvent::DBL_PREV);   app_controller.launch(); }
-  void EventMgr::down()   { app_controller.key_event(KeyEvent::DBL_NEXT);   app_controller.launch(); }
-  void EventMgr::select() { app_controller.key_event(KeyEvent::SELECT);     app_controller.launch(); }
-  void EventMgr::home()   { app_controller.key_event(KeyEvent::DBL_SELECT); app_controller.launch(); }
+  void EventMgr::left()   { app_controller.input_event(Event::PREV);       app_controller.launch(); }
+  void EventMgr::right()  { app_controller.input_event(Event::NEXT);       app_controller.launch(); }
+  void EventMgr::up()     { app_controller.input_event(Event::DBL_PREV);   app_controller.launch(); }
+  void EventMgr::down()   { app_controller.input_event(Event::DBL_NEXT);   app_controller.launch(); }
+  void EventMgr::select() { app_controller.input_event(Event::SELECT);     app_controller.launch(); }
+  void EventMgr::home()   { app_controller.input_event(Event::DBL_SELECT); app_controller.launch(); }
 
   #define BUTTON_EVENT(button, msg) \
     static void button##_clicked(GObject * button, GParamSpec * property, gpointer data) { \
@@ -280,11 +280,11 @@
   void EventMgr::loop()
   {
     while (1) {
-      EventMgr::KeyEvent key;
+      EventMgr::Event event;
 
-      if ((key = get_key()) != KeyEvent::NONE) {
-        LOG_D("Got key %d", (int)key);
-        app_controller.key_event(key);
+      if ((event = get_event()) != Event::NONE) {
+        LOG_D("Got event %d", (int)event);
+        app_controller.input_event(event);
         ESP::show_heaps_info();
         return;
       }
@@ -318,9 +318,9 @@
               light_sleep_duration);
             ESP::delay(500);
             #if EXTENDED_CASE
-              if (inkplate_platform.deep_sleep(PressKeys::INTERRUPT_PIN, 1)) {
+              inkplate_platform.deep_sleep(PressKeys::INTERRUPT_PIN, 1);
             #else
-              if (inkplate_platform.deep_sleep(TouchKeys::INTERRUPT_PIN, 1)) {
+              inkplate_platform.deep_sleep(TouchKeys::INTERRUPT_PIN, 1);
             #endif
           }
         }
@@ -351,13 +351,13 @@ EventMgr::setup()
 
     gpio_config(&io_conf);
     
-    touchpad_evt_queue = xQueueCreate(          //create a queue to handle gpio event from isr
+    touchpad_isr_queue = xQueueCreate(          //create a queue to handle gpio event from isr
       10, sizeof(uint32_t));
-    touchpad_key_queue = xQueueCreate(          //create a queue to handle key event from task
-      10, sizeof(EventMgr::KeyEvent));
+    touchpad_event_queue = xQueueCreate(          //create a queue to handle key event from task
+      10, sizeof(EventMgr::Event));
 
     TaskHandle_t xHandle = NULL;
-    xTaskCreate(get_key_task, "GetKey", 2000, nullptr, 10, &xHandle);
+    xTaskCreate(get_event_task, "GetEvent", 2000, nullptr, 10, &xHandle);
 
     gpio_install_isr_service(0);                //install gpio isr service
     

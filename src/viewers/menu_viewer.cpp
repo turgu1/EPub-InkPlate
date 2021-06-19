@@ -11,17 +11,17 @@
 #include "screen.hpp"
 #include "controllers/app_controller.hpp"
 
-static const std::string PRESS_AND_HOLD_STR = "Press icon and hold for more info. Tap for action.";
+static const std::string TOUCH_AND_HOLD_STR = "Touch icon and hold for more info. Tap for action.";
 
 void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {
   TTF * font = fonts.get(1);
 
-  line_height = font->get_line_height(12);
-  text_height = line_height - font->get_descender_height(12); 
+  line_height = font->get_line_height(CAPTION_SIZE);
+  text_height = line_height - font->get_descender_height(CAPTION_SIZE); 
 
   font = fonts.get(0);
-  TTF::BitmapGlyph * icon = font->get_glyph('A', 16);
+  TTF::BitmapGlyph * icon = font->get_glyph('A', ICON_SIZE);
 
   icon_height = icon->dim.height;
 
@@ -33,7 +33,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   Page::Format fmt = {
     .line_height_factor =   1.0,
     .font_index         =     0,
-    .font_size          =    16,
+    .font_size          = ICON_SIZE,
     .indent             =     0,
     .margin_left        =     0,
     .margin_right       =     0,
@@ -67,14 +67,14 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
     char ch = icon_char[(int)menu[idx].icon];
     TTF::BitmapGlyph * glyph;
-    glyph = font->get_glyph(ch, 16);
+    glyph = font->get_glyph(ch, ICON_SIZE);
 
     entry_locs[idx].pos.x = pos.x;
     entry_locs[idx].pos.y = pos.y + glyph->yoff;
     entry_locs[idx].dim   = glyph->dim;
 
     page.put_char_at(ch, pos, fmt);
-    pos.x += 60; // space between icons
+    pos.x += SPACE_BETWEEN_ICONS;
 
     idx++;
   }
@@ -89,10 +89,10 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   #endif
 
   fmt.font_index = 1;
-  fmt.font_size  = 12;
+  fmt.font_size  = CAPTION_SIZE;
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-    page.put_str_at(PRESS_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
+    page.put_str_at(TOUCH_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
     hint_shown = false;
   #else
     std::string txt = menu[entry_index].caption; 
@@ -130,7 +130,7 @@ MenuViewer::clear_highlight()
     Page::Format fmt = {
       .line_height_factor =   1.0,
       .font_index         =     1,
-      .font_size          =    12,
+      .font_size          = CAPTION_SIZE,
       .indent             =     0,
       .margin_left        =     0,
       .margin_right       =     0,
@@ -160,7 +160,7 @@ MenuViewer::clear_highlight()
         Pos(entry_locs[current_entry_index].pos.x - 4,     entry_locs[current_entry_index].pos.y - 4     ));
 
       page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
-      page.put_str_at(PRESS_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
+      page.put_str_at(TOUCH_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
     }
 
     page.paint(false);
@@ -168,14 +168,14 @@ MenuViewer::clear_highlight()
 }
 
 bool 
-MenuViewer::event(EventMgr::KeyEvent key)
+MenuViewer::event(EventMgr::Event event)
 {
   uint8_t old_index = current_entry_index;
 
   Page::Format fmt = {
     .line_height_factor =   1.0,
     .font_index         =     1,
-    .font_size          =    12,
+    .font_size          = CAPTION_SIZE,
     .indent             =     0,
     .margin_left        =     0,
     .margin_right       =     0,
@@ -199,15 +199,15 @@ MenuViewer::event(EventMgr::KeyEvent key)
 
     uint16_t x, y;
 
-    switch (key) {
-      case EventMgr::KeyEvent::HOLD:
+    switch (event) {
+      case EventMgr::Event::HOLD:
         event_mgr.get_start_location(x, y);
         current_entry_index = find_index(x, y);
         if (current_entry_index <= max_index) {
           page.start(fmt);
 
           fmt.font_index =  1;
-          fmt.font_size  = 12;
+          fmt.font_size  = CAPTION_SIZE;
         
           page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 
@@ -219,19 +219,19 @@ MenuViewer::event(EventMgr::KeyEvent key)
         }
         break;
 
-      case EventMgr::KeyEvent::RELEASE:
+      case EventMgr::Event::RELEASE:
         clear_highlight();
         break;
 
-      case EventMgr::KeyEvent::TAP:
+      case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
         current_entry_index = find_index(x, y);
         if (current_entry_index <= max_index) {
           if (menu[current_entry_index].func != nullptr) {
             page.start(fmt);
 
-            fmt.font_index =  1;
-            fmt.font_size  = 12;
+            fmt.font_index = 1;
+            fmt.font_size  = CAPTION_SIZE;
           
             page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 
@@ -257,8 +257,8 @@ MenuViewer::event(EventMgr::KeyEvent key)
   #else
     page.start(fmt);
 
-    switch (key) {
-      case EventMgr::KeyEvent::PREV:
+    switch (event) {
+      case EventMgr::Event::PREV:
         if (current_entry_index > 0) {
           current_entry_index--;
         }
@@ -266,7 +266,7 @@ MenuViewer::event(EventMgr::KeyEvent key)
           current_entry_index = max_index;
         }
         break;
-      case EventMgr::KeyEvent::NEXT:
+      case EventMgr::Event::NEXT:
         if (current_entry_index < max_index) {
           current_entry_index++;
         }
@@ -274,16 +274,16 @@ MenuViewer::event(EventMgr::KeyEvent key)
           current_entry_index = 0;
         }
         break;
-      case EventMgr::KeyEvent::DBL_PREV:
+      case EventMgr::Event::DBL_PREV:
         return false;
-      case EventMgr::KeyEvent::DBL_NEXT:
+      case EventMgr::Event::DBL_NEXT:
         return false;
-      case EventMgr::KeyEvent::SELECT:
+      case EventMgr::Event::SELECT:
         if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
         return false;
-      case EventMgr::KeyEvent::DBL_SELECT:
+      case EventMgr::Event::DBL_SELECT:
         return true;
-      case EventMgr::KeyEvent::NONE:
+      case EventMgr::Event::NONE:
         return false;
     }
 
@@ -297,7 +297,7 @@ MenuViewer::event(EventMgr::KeyEvent key)
         Pos(entry_locs[current_entry_index].pos.x - 4,      entry_locs[current_entry_index].pos.y - 4     ));
 
       fmt.font_index = 1;
-      fmt.font_size  = 12;
+      fmt.font_size  = CAPTION_SIZE;
     
       page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 

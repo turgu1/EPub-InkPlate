@@ -73,6 +73,7 @@ class Screen : NonCopyable
     void                        set_orientation(Orientation orient);
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     GtkImage *                        get_image() { return image_data.image; }
+    void to_user_coord(uint16_t & x, uint16_t & y) {}
     
     #if TOUCH_TRIAL
       GtkWidget

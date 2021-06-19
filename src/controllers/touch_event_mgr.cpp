@@ -26,63 +26,147 @@
 
   #include "touch_screen.hpp"
 
-  static xQueueHandle touchscreen_evt_queue  = NULL;
-  static xQueueHandle touchscreen_key_queue  = NULL;
+  static xQueueHandle touchscreen_isr_queue   = NULL;
+  static xQueueHandle touchscreen_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchscreen_isr_handler(void * arg)
   {
     uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(touchscreen_evt_queue, &gpio_num, NULL);
+    xQueueSendFromISR(touchscreen_isr_queue, &gpio_num, NULL);
   }
 
   void
-  get_key_task(void * param)
+  get_event_task(void * param)
   {
-    EventMgr::KeyEvent key;
+    EventMgr::LowInputEvent low_event = EventMgr::LowInputEvent::NONE;
+    TouchScreen::TouchPositions x, y;
+    uint32_t io_num;
+    uint8_t  count;
+    bool one_press = false;
+    bool hold      = false;
 
     while (true) {
-    
-      key = EventMgr::KeyEvent::NONE;
-
-      xQueueReceive(touchscreen_evt_queue, &io_num, portMAX_DELAY);
-
-      // A key interrupt happened. Retrieve pads information.
-      // t1 = esp_timer_get_time();
-      if ((pads = touch_keys.read_all_keys()) == 0) {
-        // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
-        Wire::enter();
-        mcp_int.get_int_state();
-        Wire::leave();  
+      xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
+      count = touch_screen.get_positions(x, y);
+      if (count == 0) {
+        low_event = EventMgr::LowInputEvent::RELEASE;
+        one_press = hold = false;
       }
-      else {
-        // Wait until there is no key
-        while (touch_keys.read_all_keys() != 0) taskYIELD(); 
-
-        // Re-activating interrupts.
-        Wire::enter();
-        mcp_int.get_int_state();
-        Wire::leave();  
-
-        // Wait for potential second key
-        bool found = false; 
-        while (xQueueReceive(touchscreen_evt_queue, &io_num, pdMS_TO_TICKS(400))) {
-          if ((pads2 = touch_keys.read_all_keys()) != 0) {
-            found = true;
-            break;
+      else if (count == 1) {
+        screen.to_user_coord(x[0], y[0]);
+        if (one_press) {
+          low_event = EventMgr::LowInputEvent::MOVE;
+        }
+        else {
+          one_press = true;
+          low_event = EventMgr::LowInputEvent::PRESS1;
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, 250E3 / portTICK_PERIOD_MS)) {
+            count = touch_screen.get_positions(x, y);
+            if (count == 0) {
+              one_press = false;
+            }
+            else if (count == 1) {
+              screen.to_user_coord(x[0], y[0]);
+              low_event = EventMgr::LowInputEvent::MOVE;
+            }
+            else {
+              screen.to_user_coord(x[0], y[0]);
+              screen.to_user_coord(x[1], y[1]);
+              one_press = hold = false;
+              low_event = EventMgr::LowInputEvent::PRESS2;
+              x[0] = (x[0] > x[1]) ? x[0] - x[1] : x[1] - x[0];
+              y[0] = (y[0] > y[1]) ? y[0] - y[1] : y[1] - y[0];
+            }
           }
-
-          // There was no key, re-activate interrupts
-          Wire::enter();
-          mcp_int.get_int_state();
-          Wire::leave();  
+          else {
+            // Nothing received. The finger didn't moved and still touching the
+            // surface. It is then considered a hold situation.
+            hold = true;
+          }
         }
       }
+      else if (count == 2) {
+        // When two fingers are detected, the difference of location between the two
+        // fingers is then computed as the application is using two fingers touch for
+        // pinch only
+        screen.to_user_coord(x[0], y[0]);
+        screen.to_user_coord(x[1], y[1]);
+        one_press = hold = false;
+        low_event = EventMgr::LowInputEvent::PRESS2;
+        x[0] = (x[0] > x[1]) ? x[0] - x[1] : x[1] - x[0];
+        y[0] = (y[0] > y[1]) ? y[0] - y[1] : y[1] - y[0];
+      }
+      
+      if (low_event != EventMgr::LowInputEvent::NONE) {
+        event_mgr.low_input_event(low_event, x[0], y[0], hold);
+      }
+    }
+  }
 
-      if (key != EventMgr::KeyEvent::NONE) {
-        xQueueSend(touchscreen_key_queue, &key, 0);
-      }  
-    }     
+  void 
+  EventMgr::low_input_event(EventMgr::LowInputEvent low_event, 
+                            uint16_t x, 
+                            uint16_t y,
+                            bool hold)
+  {
+    Event event = Event::NONE;
+
+    if (low_event == LowInputEvent::PRESS1) {
+      x_pos = x_start = x;
+      y_pos = y_start = y;
+      if (hold) {
+        event = Event::HOLD;
+        state = State::HOLDING;
+        // LOG_D("Holding...");
+      }
+      else {
+        state = State::TAPING;
+        // LOG_D("Taping...");
+      }
+    }
+    else if (low_event == LowInputEvent::PRESS2) {
+      x_pos = x_start = x;
+      y_pos = y_start = y;
+      state = State::PINCHING;
+      // LOG_D("Pinching...")
+    }
+    else if (low_event == LowInputEvent::MOVE) {
+      if (state == State::TAPING) {
+        x_pos = x;
+        y_pos = y;
+        if (abs(((int16_t) x) - ((int16_t) x_start)) > 50) {
+          state = State::SWIPING;
+          // LOG_D("Swiping...");
+        }
+      }
+      else if (state == State::PINCHING) {
+        if (abs(((int16_t) x) - ((int16_t) x_pos)) > 20) {
+          event = (x < x_pos) ? Event::PINCH_REDUCE : Event::PINCH_ENLARGE;
+          x_pos = x;
+          y_pos = y;
+        }
+      }
+    }
+    else if (low_event == LowInputEvent::RELEASE) {
+      x_pos = x;
+      y_pos = y;
+      if (state == State::TAPING) {
+        event = Event::TAP;
+      }
+      else if (state == State::SWIPING) {
+        event = (x < x_start) ? Event::SWIPE_LEFT : Event::SWIPE_RIGHT;
+      }
+      else { // PINCHING or HOLDING
+        event = Event::RELEASE;
+      }
+      state = State::NONE;
+      // LOG_D("None...");
+    }
+    if (event != Event::NONE) {
+      LOG_D("Input Event %s [%d, %d] [%d, %d]...", event_str[int(event)], x_start, y_start, x_pos, y_pos);
+      xQueueSend(touchscreen_event_queue, &event, 0);
+    }
   }
 
   void
@@ -90,15 +174,15 @@
   {
   }
 
-  EventMgr::KeyEvent 
-  EventMgr::get_key() 
+  EventMgr::Event 
+  EventMgr::get_event() 
   {
-    KeyEvent key;
-    if (xQueueReceive(touchscreen_key_queue, &key, pdMS_TO_TICKS(15E3))) {
-      return key;
+    Event event;
+    if (xQueueReceive(touchscreen_event_queue, &event, pdMS_TO_TICKS(15E3))) {
+      return event;
     }
     else {
-      return KeyEvent::NONE;
+      return Event::NONE;
     }
   }
 #endif
@@ -110,15 +194,15 @@
   #include "screen.hpp"
 
   void 
-  EventMgr::input_event(EventMgr::InputEvent event, uint16_t x, uint16_t y, bool hold)
+  EventMgr::low_input_event(EventMgr::LowInputEvent low_event, uint16_t x, uint16_t y, bool hold)
   {
-    KeyEvent ke = KeyEvent::NONE;
+    Event event = Event::NONE;
 
-    if (event == InputEvent::PRESS1) {
+    if (low_event == LowInputEvent::PRESS1) {
       x_pos = x_start = x;
       y_pos = y_start = y;
       if (hold) {
-        ke = KeyEvent::HOLD;
+        event = Event::HOLD;
         state = State::HOLDING;
         // LOG_D("Holding...");
       }
@@ -127,13 +211,13 @@
         // LOG_D("Taping...");
       }
     }
-    else if (event == InputEvent::PRESS2) {
+    else if (low_event == LowInputEvent::PRESS2) {
       x_pos = x_start = x;
       y_pos = y_start = y;
       state = State::PINCHING;
       // LOG_D("Pinching...")
     }
-    else if (event == InputEvent::MOVE) {
+    else if (low_event == LowInputEvent::MOVE) {
       if (state == State::TAPING) {
         x_pos = x;
         y_pos = y;
@@ -144,69 +228,69 @@
       }
       else if (state == State::PINCHING) {
         if (abs(((int16_t) x) - ((int16_t) x_pos)) > 20) {
-          ke = (x < x_pos) ? KeyEvent::PINCH_REDUCE : KeyEvent::PINCH_ENLARGE;
+          event = (x < x_pos) ? Event::PINCH_REDUCE : Event::PINCH_ENLARGE;
           x_pos = x;
           y_pos = y;
         }
       }
     }
-    else if (event == InputEvent::RELEASE) {
+    else if (low_event == LowInputEvent::RELEASE) {
       x_pos = x;
       y_pos = y;
       if (state == State::TAPING) {
-        ke = KeyEvent::TAP;
+        event = Event::TAP;
       }
       else if (state == State::SWIPING) {
-        ke = (x < x_start) ? KeyEvent::SWIPE_LEFT : KeyEvent::SWIPE_RIGHT;
+        event = (x < x_start) ? Event::SWIPE_LEFT : Event::SWIPE_RIGHT;
       }
       else { // PINCHING or HOLDING
-        ke = KeyEvent::RELEASE;
+        event = Event::RELEASE;
       }
       state = State::NONE;
       // LOG_D("None...");
     }
-    if (ke != KeyEvent::NONE) {
-      LOG_D("Input Event %s [%d, %d] [%d, %d]...", event_str[int(ke)], x_start, y_start, x_pos, y_pos);
-      app_controller.key_event(ke);
+    if (event != Event::NONE) {
+      LOG_D("Input Event %s [%d, %d] [%d, %d]...", event_str[int(event)], x_start, y_start, x_pos, y_pos);
+      app_controller.input_event(event);
       app_controller.launch();
     }
   }
 
   static gboolean
   mouse_event_callback(GtkWidget * event_box,
-                       GdkEvent  * event,
+                       GdkEvent  * gdk_event,
                        gpointer    data) 
   {
-    EventMgr::InputEvent ev = EventMgr::InputEvent::NONE;
+    EventMgr::LowInputEvent low_event = EventMgr::LowInputEvent::NONE;
     uint16_t x, y;
 
-    switch (event->type) {
+    switch (gdk_event->type) {
       case GDK_BUTTON_RELEASE:
-        x = ((GdkEventButton *) event)->x;
-        y = ((GdkEventButton *) event)->y;
-        ev = EventMgr::InputEvent::RELEASE;
+        x = ((GdkEventButton *) gdk_event)->x;
+        y = ((GdkEventButton *) gdk_event)->y;
+        low_event = EventMgr::LowInputEvent::RELEASE;
         break;
       case GDK_BUTTON_PRESS:
-        x = ((GdkEventButton *) event)->x;
-        y = ((GdkEventButton *) event)->y;
-        if (((GdkEventButton *) event)->button == 1) {
-          ev = EventMgr::InputEvent::PRESS1;
+        x = ((GdkEventButton *) gdk_event)->x;
+        y = ((GdkEventButton *) gdk_event)->y;
+        if (((GdkEventButton *) gdk_event)->button == 1) {
+          low_event = EventMgr::LowInputEvent::PRESS1;
         }
-        else if (((GdkEventButton *) event)->button == 3) { // simulate pinch
-          ev = EventMgr::InputEvent::PRESS2;
+        else if (((GdkEventButton *) gdk_event)->button == 3) { // simulate pinch
+          low_event = EventMgr::LowInputEvent::PRESS2;
         }
         break;
       case GDK_MOTION_NOTIFY:
-        x = ((GdkEventMotion *) event)->x;
-        y = ((GdkEventMotion *) event)->y;
-        ev = EventMgr::InputEvent::MOVE;
+        x = ((GdkEventMotion *) gdk_event)->x;
+        y = ((GdkEventMotion *) gdk_event)->y;
+        low_event = EventMgr::LowInputEvent::MOVE;
         break;
       default:
         break;
     }
 
-    if (ev != EventMgr::InputEvent::NONE) {
-      event_mgr.input_event(ev, x, y, ((GdkEventButton *) event)->state & GDK_CONTROL_MASK);
+    if (low_event != EventMgr::LowInputEvent::NONE) {
+      event_mgr.low_input_event(low_event, x, y, ((GdkEventButton *) gdk_event)->state & GDK_CONTROL_MASK);
       return true;
     }
     else {
@@ -229,11 +313,11 @@
   void EventMgr::loop()
   {
     while (1) {
-      EventMgr::KeyEvent key;
+      EventMgr::Event event;
 
-      if ((key = get_key()) != KeyEvent::NONE) {
-        LOG_D("Got key %d", (int)key);
-        app_controller.key_event(key);
+      if ((event = get_event()) != Event::NONE) {
+        LOG_D("Got Event %d", (int)event);
+        app_controller.input_event(event);
         ESP::show_heaps_info();
         return;
       }
@@ -283,13 +367,15 @@ EventMgr::setup()
                      screen.get_image());
   #else
     
-    touchscreen_evt_queue = xQueueCreate(          //create a queue to handle gpio event from isr
+    touchscreen_isr_queue = xQueueCreate(          //create a queue to handle gpio event from isr
       10, sizeof(uint32_t));
-    touchscreen_key_queue = xQueueCreate(          //create a queue to handle key event from task
-      10, sizeof(EventMgr::KeyEvent));
+    touchscreen_event_queue = xQueueCreate(          //create a queue to handle event from task
+      10, sizeof(EventMgr::Event));
+
+    touch_screen.set_app_isr_handler(touchscreen_isr_handler);
 
     TaskHandle_t xHandle = NULL;
-    xTaskCreate(get_key_task, "GetKey", 2000, nullptr, 10, &xHandle);
+    xTaskCreate(get_event_task, "GetEvent", 2000, nullptr, 10, &xHandle);
 
   #endif
 

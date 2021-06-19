@@ -84,7 +84,10 @@ BooksDir::read_books_directory(char * book_filename, int16_t & book_index)
     }
   }
 
-  if (!refresh(book_filename, book_index)) return false;
+  if (!refresh(book_filename, book_index)) {
+    LOG_E("Unable to complete DB refresh");
+    return false;
+  }
 
   //show_db();
 
@@ -124,7 +127,10 @@ std::istream & deserialize(std::istream & is, std::vector<POD> & v)
 const BooksDir::EBookRecord * 
 BooksDir::get_book_data(uint16_t idx)
 {
-  if (idx >= sorted_index.size()) return nullptr;
+  if (idx >= sorted_index.size()) {
+    LOG_E("Idx too large: %d", idx);
+    return nullptr;
+  }
 
   int i = 0;
   int16_t index = -1;
@@ -133,11 +139,17 @@ BooksDir::get_book_data(uint16_t idx)
     if (idx == i) { index = entry.second; break; }
     i++;
   }
-  if (index == -1) return nullptr;
+  if (index == -1) {
+    LOG_E("Unable to find idx: %d", idx);
+    return nullptr;
+  }
 
   db.set_current_idx(index);
 
-  if (!db.get_record(&book, sizeof(EBookRecord))) return nullptr;
+  if (!db.get_record(&book, sizeof(EBookRecord))) {
+    LOG_E("Unable to get record at index %d", index);
+    return nullptr;
+  }
 
   current_book_idx = idx;
 
@@ -149,7 +161,10 @@ BooksDir::get_book_data_from_db_index(uint16_t idx)
 {
   db.set_current_idx(idx);
 
-  if (!db.get_record(&book, sizeof(EBookRecord))) return nullptr;
+  if (!db.get_record(&book, sizeof(EBookRecord))) {
+    LOG_E("Unable to get record for db index %d", idx);
+    return nullptr;
+  }
 
   current_book_idx = idx;
 
@@ -231,13 +246,24 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
     sorted_index.clear();
 
     if (new_db->create(NEW_DIR_FILE)) {
-      if (!db.goto_first()) goto error_clear;
+      if (!db.goto_first()) {
+        LOG_E("db.goto_first() failed");
+        goto error_clear;
+      }
       bool first = true;
       do {
         int32_t size = db.get_record_size();
         EBookRecord * data = (EBookRecord *) allocate(size);
-        if (!db.get_record(data, size)) { free(data); goto error_clear; }
-        if (!new_db->add_record(data, size)) { free(data); goto error_clear; }
+        if (!db.get_record(data, size)) { 
+          LOG_E("Unable to get record of size %d from db", size);
+          free(data); 
+          goto error_clear; 
+        }
+        if (!new_db->add_record(data, size)) {
+          LOG_E("Unable to add record to db");
+          free(data); 
+          goto error_clear; 
+        }
         if (!first) {
           sorted_index[data->title] = new_db->get_record_count() - 1;
           if (book_filename) {
@@ -252,9 +278,18 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       new_db->close();
 
       delete new_db;
-      if (remove(BOOKS_DIR_FILE)) goto error_clear;
-      if (rename(NEW_DIR_FILE, BOOKS_DIR_FILE)) goto error_clear;
-      if (!db.open(BOOKS_DIR_FILE)) goto error_clear;
+      if (remove(BOOKS_DIR_FILE)) {
+        LOG_E("Unable to remove directory DB file."); 
+        goto error_clear;
+      }
+      if (rename(NEW_DIR_FILE, BOOKS_DIR_FILE)) {
+        LOG_E("Unable to rename new directory DB file");
+        goto error_clear;
+      }
+      if (!db.open(BOOKS_DIR_FILE)) {
+        LOG_E("Inable to open directory DB File.");
+        goto error_clear;
+      }
     }
   }
 
@@ -386,6 +421,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             }
         
             if (!db.add_record(the_book, sizeof(EBookRecord))) {
+              LOG_E("Unable to add a new record to DB file.");
               goto error_clear;
             }
 
@@ -414,7 +450,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
   index.clear();
   if (some_added_record) {
     db.close(); // To ensure that data is well written on SD Card
-    return db.open(BOOKS_DIR_FILE);
+    if (!db.open(BOOKS_DIR_FILE)) {
+       LOG_E("Unable to open db file");
+       return false;
+    }
   }
 
   return true;

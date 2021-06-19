@@ -6,10 +6,10 @@
 enum class ConfigIdent { 
   VERSION, SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, 
   USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, 
-  SHOW_TITLE, FRONT_LIGHT 
+  SHOW_TITLE, FRONT_LIGHT, DIR_VIEW
 };
 
-typedef ConfigBase<ConfigIdent, 15> Config;
+typedef ConfigBase<ConfigIdent, 16> Config;
 
 #if __CONFIG__
   #include <string>
@@ -31,6 +31,7 @@ typedef ConfigBase<ConfigIdent, 15> Config;
   static int8_t   show_heap;
   static int8_t   show_title;
   static int8_t   front_light;
+  static int8_t   dir_view;
 
   static int32_t  default_port               = 80;
   static int8_t   default_battery            =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
@@ -44,6 +45,7 @@ typedef ConfigBase<ConfigIdent, 15> Config;
   static int8_t   default_show_heap          =  0;  // 0 = NO, 1 = YES
   static int8_t   default_show_title         =  1;
   static int8_t   default_front_light        = 15;  // value between 0 and 63
+  static int8_t   default_dir_view           =  0;  // 0 = linear view, 1 = matrix view
   static int8_t   the_version                =  1;
 
   // static Config::CfgType conf = {{
@@ -64,7 +66,8 @@ typedef ConfigBase<ConfigIdent, 15> Config;
     { Config::Ident::PIXEL_RESOLUTION,   Config::EntryType::BYTE,   "resolution",         &resolution,         &default_resolution,         0 },
     { Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",          &show_heap,          &default_show_heap,          0 },
     { Config::Ident::SHOW_TITLE,         Config::EntryType::BYTE,   "show_title",         &show_title,         &default_show_title,         0 },
-    { Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",        &front_light,        &default_front_light,        0 }
+    { Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",        &front_light,        &default_front_light,        0 },
+    { Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",           &dir_view,           &default_dir_view,           0 }
   }};
 
   // Config config(conf, CONFIG_FILE);

@@ -22,6 +22,11 @@ class FormViewer
       { "DONE",   1 }
     };
 
+    static constexpr Choice dir_view_choices[2] = {
+      { "LINEAR",     0 },
+      { "MATRIX",     1 }
+    };
+
     static constexpr Choice ok_cancel_choices[2] = {
       { "OK",     1 },
       { "CANCEL", 0 }
@@ -137,7 +142,7 @@ class FormViewer
     FormEntries entries;
 
     void show(FormEntries form_entries, int8_t size, const std::string & bottom_msg);
-    bool event(EventMgr::KeyEvent key);
+    bool event(EventMgr::Event event);
 };
 
 #if __FORM_VIEWER__

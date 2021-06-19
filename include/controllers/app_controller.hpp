@@ -53,14 +53,14 @@ class AppController
     void set_controller(Ctrl new_ctrl);
 
     /**
-     * @brief Manage a Key Event
+     * @brief Manage an event
      * 
-     * Called when a key is pressed by the user. The method is transfering
-     * control to the current controller *key_event()* method.
+     * Called when a key or the touch screen is pressed by the user. The method is transfering
+     * control to the current controller *input_event()* method.
      * 
-     * @param key 
+     * @param event 
      */
-    void key_event(EventMgr::KeyEvent key);
+    void input_event(EventMgr::Event event);
 
     void going_to_deep_sleep();
     void launch();
