@@ -113,6 +113,15 @@
     z-index
 #endif
 
+// This is a simple CSS class. It implements a subset of the CSS syntax and behavior.
+//
+// The following sequences of selectors are recognized:
+//
+//  Simple selectors:
+//    tag
+//    .class
+//    #id
+//
 class CSS
 {
   public:
@@ -126,8 +135,12 @@ class CSS
     enum class    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
                                          TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
                                          MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
-                                         WIDTH,      HEIGHT,      DISPLAY
-                                       };
+                                         WIDTH,      HEIGHT,      DISPLAY };
+    enum class           Tag : uint8_t { BODY, P, LI, BREAK, H1, H2, H3, H4, H5, H6, 
+                                         B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
+                                         BLOCKQUOTE, STRONG };
+
+    typedef std::unordered_map<std::string, Tag> Tags;
 
     struct Value {
       float       num;
@@ -159,6 +172,8 @@ class CSS
 
     static PropertyMap property_map;
     static FontSizeMap font_size_map;
+    static Tags        tags;
+
 
   private:
     static constexpr char const * TAG = "CSS";
