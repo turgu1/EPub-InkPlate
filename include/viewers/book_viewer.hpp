@@ -24,6 +24,7 @@
 #include "models/page_locs.hpp"
 #include "models/css.hpp"
 #include "models/fonts.hpp"
+#include "models/dom.hpp"
 
 using namespace pugi;
 
@@ -44,8 +45,10 @@ class BookViewer
     bool start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
     bool indent_paragraph;
 
+    DOM * dom;
+
     bool                get_image(std::string & filename, Page::Image & image);
-    bool       build_page_recurse(pugi::xml_node node, Page::Format fmt);
+    bool       build_page_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
     void            build_page_at(const PageLocs::PageId & page_id);
 
   public:

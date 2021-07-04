@@ -477,32 +477,47 @@ PageLocs::page_locs_end_page(Page::Format & fmt)
 }
 
 bool
-PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
+PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node)
 {
   if (node == nullptr) return false;
   
-  const char * name;
-  const char * str = nullptr;
-  std::string image_filename;
+  const char *  name;
+  const char *  str = nullptr;
+  std::string   image_filename;
+  DOM::Node *   dom_current_node;
 
   image_filename.clear();
 
-  CSS::Tags::iterator tag_it = CSS::tags.end();
+  DOM::Tags::iterator tag_it = DOM::tags.end();
   
   bool named_element = *(name = node.name()) != 0;
+  
+  dom_current_node = dom_node;
 
   if (named_element) { // A name is attached to the node.
 
     fmt.display = CSS::Display::INLINE;
 
-    if ((tag_it = CSS::tags.find(name)) != CSS::tags.end()) {
+    if ((tag_it = DOM::tags.find(name)) != DOM::tags.end()) {
 
       //LOG_D("==> %10s [%5d] %4d", name, current_offset, page_out.get_pos_y());
 
+      if (tag_it->second != DOM::Tag::BODY) {
+        // Add tag to the DOM
+        dom_current_node = dom_node->add_child(tag_it->second);
+      }
+      else {
+        dom_current_node = dom->body;
+      }
+      xml_attribute attr = node.attribute("id");
+      if (attr != nullptr) dom_current_node->add_id(attr.value());
+      attr = node.attribute("class");
+      if (attr != nullptr) dom_current_node->add_classes(attr.value());
+
       switch (tag_it->second) {
-        case CSS::Tag::BODY:
-        case CSS::Tag::SPAN:
-        case CSS::Tag::A:
+        case DOM::Tag::BODY:
+        case DOM::Tag::SPAN:
+        case DOM::Tag::A:
           break;
 
       #if NO_IMAGE
@@ -511,7 +526,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           break;
 
       #else
-        case CSS::Tag::IMG: 
+        case DOM::Tag::IMG: 
           if (show_images) {
             xml_attribute attr = node.attribute("src");
             if (attr != nullptr) image_filename = attr.value();
@@ -524,7 +539,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           }
           break;
 
-        case CSS::Tag::IMAGE: 
+        case DOM::Tag::IMAGE: 
           if (show_images) {
             xml_attribute attr = node.attribute("xlink:href");
             if (attr != nullptr) image_filename = attr.value();
@@ -533,20 +548,20 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           break;
 
       #endif
-        case CSS::Tag::PRE:
+        case DOM::Tag::PRE:
           fmt.pre     = start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::LI:
-        case CSS::Tag::DIV:
-        case CSS::Tag::BLOCKQUOTE:
-        case CSS::Tag::P:
+        case DOM::Tag::LI:
+        case DOM::Tag::DIV:
+        case DOM::Tag::BLOCKQUOTE:
+        case DOM::Tag::P:
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::BREAK:
+        case DOM::Tag::BREAK:
           SHOW_LOCATION("Page Break");
           if (!page_out.line_break(fmt)) {
             if (!page_locs_end_page(fmt)) return false;
@@ -556,8 +571,8 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           current_offset++;
           break;
 
-        case CSS::Tag::B:
-        case CSS::Tag::STRONG: {
+        case DOM::Tag::B:
+        case DOM::Tag::STRONG: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
             else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
@@ -565,8 +580,8 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           }
           break;
 
-        case CSS::Tag::I:
-        case CSS::Tag::EM: {
+        case DOM::Tag::I:
+        case DOM::Tag::EM: {
             Fonts::FaceStyle style = fmt.font_style;
             if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
             else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
@@ -574,61 +589,56 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
           }
           break;
 
-        case CSS::Tag::H1:
+        case DOM::Tag::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::H2:
+        case DOM::Tag::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::H3:
+        case DOM::Tag::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::H4:
+        case DOM::Tag::H4:
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
-        case CSS::Tag::H5:
+        case DOM::Tag::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
           
-        case CSS::Tag::H6:
+        case DOM::Tag::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
           start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
       }
-    }
 
-    xml_attribute attr = node.attribute("style");
-    CSS::Properties * element_properties = nullptr;
-    if (attr) {
-      const char * buffer = attr.value();
-      const char * end    = buffer + strlen(buffer);
-      element_properties  = CSS::parse_properties(&buffer, end, buffer);
-    }
+      attr = node.attribute("style");
+      CSS *  element_css = nullptr;
+      if (attr) {
+        const char * buffer = attr.value();
+        element_css         = new CSS(tag_it->second, buffer, strlen(buffer), 99);
+      }
 
-    page_out.adjust_format(node, fmt, element_properties, item_info.css); // Adjust format from element attributes
-
-    if (element_properties) {
-      CSS::clear_properties(element_properties);
-      element_properties = nullptr;
+      page_out.adjust_format(dom_current_node, fmt, element_css, item_info.css); // Adjust format from element attributes
+      if (element_css != nullptr) delete element_css;
     }
 
     if (fmt.display == CSS::Display::BLOCK) {
@@ -725,7 +735,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
 
     xml_node sub = node.first_child();
     while (sub) {
-      if (!page_locs_recurse(sub, fmt)) return false;
+      if (!page_locs_recurse(sub, fmt, dom_current_node)) return false;
       sub = sub.next_sibling();
     }
 
@@ -745,7 +755,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt)
 
     // In case that we are at the end of an html file and there remains
     // characters in the page pipeline, we call end_paragraph() to get them out on the page_out...
-    if ((tag_it != CSS::tags.end()) && (tag_it->second == CSS::Tag::BODY)) {
+    if ((tag_it != DOM::tags.end()) && (tag_it->second == DOM::Tag::BODY)) {
       SHOW_LOCATION("End Paragraph 7");
       if (!page_out.end_paragraph(fmt)) {
         if (!page_locs_end_page(fmt)) return false;
@@ -811,6 +821,8 @@ PageLocs::build_page_locs(int16_t itemref_index)
       .display            = CSS::Display::INLINE
     };
 
+    dom = new DOM;
+
     while (!done) {
 
       current_offset       = 0;
@@ -822,7 +834,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
         page_out.start(fmt);
 
-        if (!page_locs_recurse(node, fmt)) {
+        if (!page_locs_recurse(node, fmt, dom->body)) {
           LOG_D("html parsing issue or aborted by Mgr");
           break;
         }
@@ -838,6 +850,10 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
       done = true;
     }
+
+    dom->show();
+    delete dom;
+    dom = nullptr;
   }
 
   //page_out.set_compute_mode(Page::ComputeMode::DISPLAY);

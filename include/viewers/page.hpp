@@ -326,8 +326,8 @@ class Page
     int16_t       get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref);
     int16_t       get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref);
     float        get_factor_value(const CSS::Value & value, const Format & fmt, float ref);
-    void            adjust_format(pugi::xml_node node, Format & fmt, CSS::Properties * element_properties, CSS * item_css);
-    void adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite);
+    void            adjust_format(DOM::Node * dom_current_node, Format & fmt, CSS * element_css, CSS * item_css);
+    void adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules);
     bool get_image(std::string & filename, Image & image);
 
     inline void reset_font_index(Format & fmt, Fonts::FaceStyle style) {

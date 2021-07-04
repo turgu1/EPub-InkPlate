@@ -1245,7 +1245,7 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       }
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100;
-    case CSS::ValueType::NOTYPE:
+    case CSS::ValueType::NO_TYPE:
       return ref * value.num;
     case CSS::ValueType::CM:
       return (value.num * Screen::RESOLUTION) / 2.54;
@@ -1289,7 +1289,7 @@ Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       return (value.num * 72) / 2.54;
     case CSS::ValueType::PERCENT:
       return (value.num * normal_size) / 100;
-    case CSS::ValueType::NOTYPE:
+    case CSS::ValueType::NO_TYPE:
       return normal_size * value.num;
     case CSS::ValueType::STR:
       LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
@@ -1299,7 +1299,7 @@ Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
     case CSS::ValueType::VW:
       return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
-     default:
+    default:
       LOG_E("get_point_value(): Wrong data type!");
       return value.num;
   }
@@ -1315,7 +1315,7 @@ Page::get_factor_value(const CSS::Value & value, const Format & fmt, float ref)
     case CSS::ValueType::STR:
       return 1.0;  
     case CSS::ValueType::EM:
-    case CSS::ValueType::NOTYPE:
+    case CSS::ValueType::NO_TYPE:
       return value.num;
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100.0;
@@ -1327,46 +1327,23 @@ Page::get_factor_value(const CSS::Value & value, const Format & fmt, float ref)
 }
 
 void
-Page::adjust_format(pugi::xml_node node, 
-                    Format & fmt,
-                    CSS::Properties * element_properties,
-                    CSS * item_css)
+Page::adjust_format(DOM::Node * dom_current_node, 
+                    Format &    fmt,
+                    CSS *       element_css,
+                    CSS *       item_css)
 {
-  pugi::xml_attribute attr = node.attribute("class");
-
-  const CSS::PropertySuite * suite = nullptr;
-  // const CSS * current_item_css = epub.get_current_item_css();
-
-  std::string element_name = node.name();
-
-  suite = item_css->search(element_name, "");
-  if (suite) adjust_format_from_suite(fmt, *suite);
-
-  if (item_css) {
-    if (attr) {
-      std::stringstream ss(attr.value());
-      std::string       class_name;
-
-      while (std::getline(ss, class_name, ' ')) {
-        suite = item_css->search(element_name, class_name);
-        if (suite) adjust_format_from_suite(fmt, *suite);
-      }
-    }
-    else {
-      if (!suite) suite = item_css->search(element_name, "");
-      if (suite) adjust_format_from_suite(fmt, *suite);
-    }
+  CSS::RulesMap rules;
+  if (item_css != nullptr) {
+    item_css->match(dom_current_node, rules);
+    if (!rules.empty()) adjust_format_from_rules(fmt, rules);
   }
-
-  if (element_properties) {
-    CSS::PropertySuite suite;
-    suite.push_front(element_properties);
-    adjust_format_from_suite(fmt, suite);
+  if (element_css != nullptr){
+    if (!element_css->rules_map.empty()) adjust_format_from_rules(fmt, element_css->rules_map);
   }
 }
 
 void
-Page::adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite)
+Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
 {  
   const CSS::Values * vals;
 
@@ -1381,15 +1358,15 @@ Page::adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite)
                                      Fonts::FaceStyle::ITALIC : 
                                      Fonts::FaceStyle::NORMAL;
   
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_STYLE))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_STYLE))) {
     font_style = (Fonts::FaceStyle) vals->front()->choice.face_style;
   }
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_WEIGHT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_WEIGHT))) {
     font_weight = (Fonts::FaceStyle) vals->front()->choice.face_style;
   }
   Fonts::FaceStyle new_style = fonts.adjust_font_style(fmt.font_style, font_style, font_weight);
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_FAMILY))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
     for (auto & font_name : *vals) {
       if ((idx = fonts.get_index(font_name->str, new_style)) != -1) break;
@@ -1414,26 +1391,26 @@ Page::adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite)
 
   fonts.check(fmt.font_index, fmt.font_style);
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_ALIGN))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_ALIGN))) {
     fmt.align = (CSS::Align) vals->front()->choice.align;
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_INDENT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_INDENT))) {
     fmt.indent = get_pixel_value(*(vals->front()), fmt, paint_width());
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::FONT_SIZE))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_SIZE))) {
     fmt.font_size = get_point_value(*(vals->front()), fmt, fmt.font_size);
     if (fmt.font_size == 0) {
       LOG_E("adjust_format_from_suite: setting fmt.font_size to 0!!!");
     }
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::LINE_HEIGHT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::LINE_HEIGHT))) {
     fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN))) {
     int16_t size = 0;
     for (auto val __attribute__ ((unused)) : *vals) size++;
     CSS::Values::const_iterator it = vals->begin();
@@ -1458,35 +1435,35 @@ Page::adjust_format_from_suite(Format & fmt, const CSS::PropertySuite & suite)
     }
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::DISPLAY))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::DISPLAY))) {
     fmt.display = (CSS::Display) vals->front()->choice.display;
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_LEFT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_LEFT))) {
     fmt.margin_left = get_pixel_value(*(vals->front()), fmt, fmt.margin_left);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_RIGHT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_RIGHT))) {
     fmt.margin_right = get_pixel_value(*(vals->front()), fmt, fmt.margin_right);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_TOP))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_TOP))) {
     fmt.margin_top = get_pixel_value(*(vals->front()), fmt, fmt.margin_top);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::MARGIN_BOTTOM))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
     fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, fmt.margin_bottom);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::WIDTH))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::WIDTH))) {
     fmt.width = get_pixel_value(*(vals->front()), fmt, Screen::WIDTH - fmt.screen_left - fmt.screen_right);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::HEIGHT))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::HEIGHT))) {
     fmt.height = get_pixel_value(*(vals->front()), fmt, Screen::HEIGHT - fmt.screen_top - fmt.screen_bottom);
   }
 
-  if ((vals = CSS::get_values_from_suite(suite, CSS::PropertyId::TEXT_TRANSFORM))) {
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {
     fmt.text_transform = (CSS::TextTransform) vals->front()->choice.text_transform;
   }
 }

@@ -16,12 +16,22 @@
 #endif
 
 #include "models/epub.hpp"
+#include "models/dom.hpp"
 #include "viewers/page.hpp"
 
 #include "pugixml.hpp"
 
 #include <map>
 #include <set>
+
+/**
+ * class PageLocs - Compute pages locations
+ * 
+ * This class is used to compute every page locations for an ebook. This is
+ * required to get fast retrieval of a page when required by the user. Page
+ * locations are saved on disk once computed. Any change of font, font size,
+ * screen orientation (portrait <-> landscape) will trigger a recomputation.
+ */
 
 class PageLocs
 {
@@ -48,13 +58,15 @@ class PageLocs
     typedef std::pair<const PageId, PageInfo> PagePair;
 
   private:
-    static constexpr const char * TAG = "PageLocs";
+    static constexpr const char * TAG               = "PageLocs";
     static constexpr const int8_t LOCS_FILE_VERSION = 2;
 
     Page page_out;
 
     bool    completed;
     int16_t page_count;
+
+    DOM * dom;
     
     struct PageCompare {
       bool operator() (const PageId & lhs, const PageId & rhs) const { 
@@ -91,7 +103,7 @@ class PageLocs
     bool              start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
     
     bool page_locs_end_page(Page::Format & fmt);
-    bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt);
+    bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
 
     bool load(const std::string & epub_filename); ///< load pages location from .locs file
     bool save(const std::string & epub_filename); ///< save pages location to .locs file

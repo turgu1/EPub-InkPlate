@@ -218,32 +218,35 @@ EPub::retrieve_fonts_from_css(CSS & css)
 
   if (book_format_params.use_fonts_in_book == 0) return;
   
-  const CSS::PropertySuite * suite = css.get_property_suite("@font-face");
+  CSS::RulesMap font_rules;
+  DOM dom;
+  DOM::Node * ff = dom.body->add_child(DOM::Tag::FONT_FACE);
+  css.match(ff, font_rules);
 
-  if (suite == nullptr) return;
+  if (font_rules.empty()) return;
 
   bool first = true;
 
-  for (auto & props : *suite) {
+  for (auto & rule : font_rules) {
     const CSS::Values * values;
-    if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_FAMILY))) {
+    if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
       Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
       Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
       Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
       std::string      font_family = values->front()->str;
 
-      if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_STYLE))) {
+      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
         font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
       }
-      if ((values = css.get_values_from_props(*props, CSS::PropertyId::FONT_WEIGHT))) {
+      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
         font_weight = (Fonts::FaceStyle) values->front()->choice.face_style;
       }
       style = fonts.adjust_font_style(style, font_style, font_weight);
       // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
       if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
-        if ((values = css.get_values_from_props(*props, CSS::PropertyId::SRC)) &&
+        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
             (!values->empty()) &&
             (values->front()->value_type == CSS::ValueType::URL)) {
 
@@ -300,7 +303,7 @@ EPub::retrieve_css(ItemInfo & item)
         CSSList::iterator css_cache_it = css_cache.begin();
 
         while (css_cache_it != css_cache.end()) {
-          if ((*css_cache_it)->get_id()->compare(css_id) == 0) break;
+          if ((*css_cache_it)->get_id().compare(css_id) == 0) break;
           css_cache_it++;
           idx++;
         }
@@ -319,7 +322,7 @@ EPub::retrieve_css(ItemInfo & item)
             // LOG_D("CSS Filename: %s", fname.c_str());
             std::string path;
             extract_path(fname.c_str(), path);
-            CSS * css_tmp = new CSS(path, data, size, css_id);
+            CSS * css_tmp = new CSS(css_id, path, data, size, 0);
             if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
             free(data);
 
@@ -342,7 +345,7 @@ EPub::retrieve_css(ItemInfo & item)
 
   if ((node = item.xml_doc.child("html").child("head").child("style"))) {
     do {
-      CSS * css_tmp = new CSS(item.file_path, node.value(), strlen(node.value()) , "current-item");
+      CSS * css_tmp = new CSS("current-item", item.file_path, node.value(), strlen(node.value()), 1);
       if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
       retrieve_fonts_from_css(*css_tmp);
       // css_tmp->show();
@@ -354,7 +357,7 @@ EPub::retrieve_css(ItemInfo & item)
   // the identified css files in the <meta> portion of the html file.
 
   if (item.css != nullptr) delete item.css;
-  if ((item.css = new CSS("", nullptr, 0, "MergedForItem")) == nullptr) {
+  if ((item.css = new CSS("MergedForItem")) == nullptr) {
     msg_viewer.out_of_memory("css allocation");
   }
   for (auto * css : item.css_list ) (item.css)->retrieve_data_from_css(*css);
