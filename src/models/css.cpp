@@ -25,7 +25,8 @@ CSS::PropertyMap CSS::property_map = {
   { "margin-right",   CSS::PropertyId::MARGIN_RIGHT   },
   { "width",          CSS::PropertyId::WIDTH          },
   { "height",         CSS::PropertyId::HEIGHT         },
-  { "display",        CSS::PropertyId::DISPLAY        }
+  { "display",        CSS::PropertyId::DISPLAY        },
+  { "border",         CSS::PropertyId::BORDER         }
 };
 
 CSS::FontSizeMap CSS::font_size_map = {
@@ -57,11 +58,12 @@ CSS::CSS(const std::string & css_id,
   delete parser;
 }
 
-CSS::CSS(DOM::Tag tag,
-    const char *  buffer, 
-    int32_t      size,
-    uint8_t      prio)
-    : id("NONE"), folder_path(nullptr), ghost(false), priority(prio)
+CSS::CSS(const std::string & css_id,
+         DOM::Tag            tag,
+         const char *        buffer, 
+         int32_t             size,
+         uint8_t             prio)
+    : id(css_id), folder_path(""), ghost(false), priority(prio)
 {
   CSSParser * parser = new CSSParser(*this, tag, buffer, size);
   delete parser;

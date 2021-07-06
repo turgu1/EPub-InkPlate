@@ -143,7 +143,8 @@ class CSS
     CSS(const std::string & css_id) 
         : id(css_id), folder_path(""), ghost(true), priority(0) {}
 
-    CSS(DOM::Tag,
+    CSS(const std::string & css_id,
+        DOM::Tag            tag,
         const char *        buffer, 
         int32_t             size,
         uint8_t             prio);
@@ -159,13 +160,13 @@ class CSS
                                          PC,      VH,  VW, REM,     CH,  VMIN, VMAX, DEG, RAD, GRAD, 
                                          MSEC,    SEC, HZ, KHZ,     URL };
 
-    enum class         Align : uint8_t { LEFT, CENTER, RIGHT, JUSTIFY };
-    enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE };
-    enum class       Display : uint8_t { NONE, INLINE, BLOCK, INLINE_BLOCK };
+    enum class         Align : uint8_t { LEFT, CENTER,    RIGHT,     JUSTIFY      };
+    enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE   };
+    enum class       Display : uint8_t { NONE, INLINE,    BLOCK,     INLINE_BLOCK };
     enum class    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
                                          TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
                                          MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
-                                         WIDTH,      HEIGHT,      DISPLAY };
+                                         WIDTH,      HEIGHT,      DISPLAY,        BORDER };
 
     static const char * value_type_str[25];
 
@@ -190,13 +191,14 @@ class CSS
           uint8_t tag_count, class_count, id_count, priority;
         } spec;
         void show() const {
-          std::cout << "[" << +spec.priority    << ","
-                           << +spec.id_count    << ","
-                           << +spec.class_count << ","
-                           << +spec.tag_count
-                           <<"]("
-                           << value << ") ";
-
+          #if DEBUGGING
+            std::cout << "[" << +spec.priority    << ","
+                            << +spec.id_count    << ","
+                            << +spec.class_count << ","
+                            << +spec.tag_count
+                            <<"]("
+                            << value << ") ";
+          #endif
         }
       };
 
@@ -232,20 +234,22 @@ class CSS
           qualifier = q;
         }
         void show() const {
-          if (op == SelOp::CHILD)      std::cout << " > ";
-          if (op == SelOp::ADJACENT)   std::cout << " + ";
-          if (op == SelOp::DESCENDANT) std::cout <<   " ";
-          if (tag != DOM::Tag::NONE) {
-            for (const auto & [key, value] : DOM::tags) {
-              if (value == tag) {
-                std::cout << key;
-                break;
-              }
-            }         
-          }       
-          if (id_count > 0) std::cout << "#" << id;
-          for (auto & cl : class_list) std::cout << "." << cl;
-          if (qualifier == Qualifier::FIRST_CHILD) std::cout << ":first_child";
+          #if DEBUGGING
+            if (op == SelOp::CHILD)      std::cout << " > ";
+            if (op == SelOp::ADJACENT)   std::cout << " + ";
+            if (op == SelOp::DESCENDANT) std::cout <<   " ";
+            if (tag != DOM::Tag::NONE) {
+              for (const auto & [key, value] : DOM::tags) {
+                if (value == tag) {
+                  std::cout << key;
+                  break;
+                }
+              }         
+            }       
+            if (id_count > 0) std::cout << "#" << id;
+            for (auto & cl : class_list) std::cout << "." << cl;
+            if (qualifier == Qualifier::FIRST_CHILD) std::cout << ":first_child";
+          #endif
         }
       };
 
@@ -278,15 +282,19 @@ class CSS
           return selector_node_list.empty();
         }
         void show_selector(SelectorNodeList::const_iterator node_it, int8_t lev) const {
-          if (node_it != selector_node_list.end()) {
-            SelectorNodeList::const_iterator next_node_it = node_it;
-            show_selector(++next_node_it, lev + 1);
-            (*node_it)->show();
-          }
+          #if DEBUGGING
+            if (node_it != selector_node_list.end()) {
+              SelectorNodeList::const_iterator next_node_it = node_it;
+              show_selector(++next_node_it, lev + 1);
+              (*node_it)->show();
+            }
+          #endif
         }
         void show() const {
-          specificity.show();
-          show_selector(selector_node_list.cbegin(), 0); 
+          #if DEBUGGING
+            specificity.show();
+            show_selector(selector_node_list.cbegin(), 0); 
+          #endif
         }
       };
 
@@ -305,15 +313,17 @@ class CSS
           num = 0.0;
         }
         void show() {
-          if (value_type == ValueType::STR) {
-            std::cout << str;
-          }
-          else if (value_type == ValueType::URL) {
-            std::cout << "url(" << str << ')';
-          }
-          else {
-            std::cout << num << value_type_str[(uint8_t)value_type];
-          }         
+          #if DEBUGGING
+            if (value_type == ValueType::STR) {
+              std::cout << str;
+            }
+            else if (value_type == ValueType::URL) {
+              std::cout << "url(" << str << ')';
+            }
+            else {
+              std::cout << num << value_type_str[(uint8_t)value_type];
+            }
+          #endif
         }
       };
 
@@ -335,22 +345,24 @@ class CSS
           values.reverse();
         }
         void show() {
-          std::cout << "  ";
-          for (const auto & [key, value] : property_map) {
-            if (value == id) {
-              std::cout << key;
-              break;
+          #if DEBUGGING
+            std::cout << "  ";
+            for (const auto & [key, value] : property_map) {
+              if (value == id) {
+                std::cout << key;
+                break;
+              }
+            }         
+            std::cout << ": ";
+            bool first = true;
+            for (auto * v : values) {
+              if (!first) std::cout << ", ";
+              v->show();
+              first = false;
             }
-          }         
-          std::cout << ": ";
-          bool first = true;
-          for (auto * v : values) {
-            if (!first) std::cout << ", ";
-            v->show();
-            first = false;
+            std::cout << ';' << std::endl;
           }
-          std::cout << ';' << std::endl;
-        }
+        #endif
       };
     #pragma pack(pop)
 
@@ -379,7 +391,7 @@ class CSS
     static MemoryPool<Selector>     selector_pool;
 
     void match(DOM::Node * node, RulesMap & to_rules);
-    void show(RulesMap & the_rules_map);
+    void  show(RulesMap & the_rules_map);
 
     void add_rule(Selector * sel, Properties * props) { 
       rules_map.insert(std::pair<Selector *, Properties *>(sel, props)); 
@@ -410,9 +422,13 @@ class CSS
       }
     }
 
-    void show() { show(rules_map); }
+    void show() { 
+      #if DEBUGGING
+        show(rules_map); 
+      #endif
+    }
 
   private:
     bool match_simple_selector(DOM::Node & node, SelectorNode & simple_sel);
-    bool match_selector(DOM::Node * node, Selector & sel);
+    bool        match_selector(DOM::Node * node, Selector     & sel       );
 };

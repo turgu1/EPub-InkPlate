@@ -65,11 +65,6 @@ class CSSParser
       "LT",     "GE",         "LE",         "MINUS",    "PLUS",      "DOT",         "STAR",          "SLASH", 
       "EQUAL",  "LBRACK",     "RBRACK",     "LBRACE",   "RBRACE",    "LPARENT",     "RPARENT",       "END_OF_FILE"
     };
-  
-   // enum class LengthType : uint8_t { PX, CM, MM, IN, PT, PC, VH, VW, REM, CH, VMIN, VMAX };
-    // enum class AngleType  : uint8_t { DEG, RAD, GRAD };
-    // enum class TimeType   : uint8_t { MS,  S         };
-    // enum class FreqType   : uint8_t { HZ,  KHZ       };
 
     int32_t      remains; // number of bytes remaining in the css buffer
     const char * str;     // pointer in the css buffer
@@ -84,10 +79,6 @@ class CSSParser
     Token      token;
 
     CSS::ValueType value_type;
-    // LengthType length_type;
-    // AngleType   angle_type;
-    // TimeType     time_type;
-    // FreqType     freq_type;
 
     void next_ch() { 
       if (remains > 0) { 
@@ -504,7 +495,10 @@ class CSSParser
      */
     bool skip_block() {
 
-      while ((token != Token::END_OF_FILE) && (token != Token::SEMICOLON) && (token != Token::LBRACE)) next_token();
+      while ((token != Token::END_OF_FILE) && 
+             (token != Token::SEMICOLON  ) && 
+             (token != Token::LBRACE     ) &&
+             (token != Token::RBRACE     )) next_token();
       if (token == Token::SEMICOLON) {
         skip_blanks();
       }
@@ -526,7 +520,7 @@ class CSSParser
           }
         }
       }
-      else { // end of file
+      else if (token != Token::RBRACE) {
         return false;
       }
 
@@ -698,6 +692,7 @@ class CSSParser
         if (none) break;
         prop.add_value(v);
       }
+      prop.completed();
       return true;
     }
 
@@ -836,6 +831,9 @@ class CSSParser
           next_token();
           if (token == Token::IDENT) {
             node.add_class(std::string(ident));
+            if (strcmp("small-caps", ident) == 0) {
+              LOG_D("Found .titlemark...");
+            }
             next_token();
           }
         }

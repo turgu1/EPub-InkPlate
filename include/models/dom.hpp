@@ -83,25 +83,29 @@ class DOM
       }
 
       void show_children(NodeList::const_iterator node_it, int8_t lev) const {
-        if (node_it != children.end()) {
-          NodeList::const_iterator next_node_it = node_it;
-          show_children(++next_node_it, lev);
-          (*node_it)->show(lev);
-        }
+        #if DEBUGGING
+          if (node_it != children.end()) {
+            NodeList::const_iterator next_node_it = node_it;
+            show_children(++next_node_it, lev);
+            (*node_it)->show(lev);
+          }
+        #endif
       }
 
       void show(uint8_t level) const {
-        std::cout << std::string(level * 2, ' ');
-        for (auto & t : tags) {
-          if (t.second == tag) { std::cout << t.first; break; }
-        }
-        std::cout << " ";
-        if (!id.empty()) std::cout << "#" << id;
-        for (auto & c : class_list) std::cout << '.' << c;
-        if (first_child) std::cout << ":first_child";
-        std::cout << std::endl;
+        #if DEBUGGING
+          std::cout << std::string(level * 2, ' ');
+          for (auto & t : tags) {
+            if (t.second == tag) { std::cout << t.first; break; }
+          }
+          std::cout << " ";
+          if (!id.empty()) std::cout << "#" << id;
+          for (auto & c : class_list) std::cout << '.' << c;
+          if (first_child) std::cout << ":first_child";
+          std::cout << std::endl;
 
-        show_children(children.cbegin(), level + 1); 
+          show_children(children.cbegin(), level + 1); 
+        #endif
       }
     };
 
@@ -116,9 +120,11 @@ class DOM
     }
 
     void show() {
-      std::cout << "DOM:" << std::endl;
-      body->show(1);
-      std::cout << "[END DOM]" << std::endl;
+      #if DEBUGGING
+        std::cout << "DOM:" << std::endl;
+        body->show(1);
+        std::cout << "[END DOM]" << std::endl;
+      #endif
     }
 
   private:

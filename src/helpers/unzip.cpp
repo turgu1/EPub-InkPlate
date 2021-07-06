@@ -281,6 +281,13 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
 
   if (fe == file_entries.end()) {
     LOG_E("Unzip Get: File not found: %s", the_filename);
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto * f : file_entries) {
+        std::cout << "  <" << f->filename << ">" << std::endl;
+      }
+      std::cout << "[End of List]" << std::endl;
+    #endif
     return nullptr;
   }
   // else {
@@ -453,7 +460,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     completed = true;
     break;
   }
-// error:
+
   if (!completed) {
     if (data != nullptr) free(data);
     data = nullptr;

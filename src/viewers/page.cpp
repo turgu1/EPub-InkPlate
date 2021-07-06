@@ -528,7 +528,12 @@ Page::add_line(const Format & fmt, bool justifyable)
       pos.x += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
     }
     else if (entry->command == DisplayListCommand::IMAGE) {
-      entry->pos.x = pos.x;
+      if (fmt.align == CSS::Align::CENTER) {
+        entry->pos.x = para_min_x + ((para_max_x - para_min_x) >> 1) - (line_width >> 1);
+      }
+      else {
+        entry->pos.x = pos.x;
+      }
       entry->pos.y = pos.y - entry->kind.image_entry.image.dim.height;
       pos.x += entry->kind.image_entry.advance;
     }
@@ -1333,6 +1338,13 @@ Page::adjust_format(DOM::Node * dom_current_node,
                     CSS *       item_css)
 {
   CSS::RulesMap rules;
+
+  // item_css->show();
+  // std::cout << "======" << std::endl;
+  // if (element_css != nullptr) element_css->show();
+  // std::cout << "------" << std::endl;
+  // dom_current_node->show(1);
+
   if (item_css != nullptr) {
     item_css->match(dom_current_node, rules);
     if (!rules.empty()) adjust_format_from_rules(fmt, rules);
@@ -1410,28 +1422,33 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
     fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
   }
 
+  int16_t width_ref  = Screen::WIDTH  - fmt.screen_left - fmt.screen_right;
+  int16_t height_ref = Screen::HEIGHT - fmt.screen_top  - fmt.screen_bottom;
+
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN))) {
+
     int16_t size = 0;
     for (auto val __attribute__ ((unused)) : *vals) size++;
     CSS::Values::const_iterator it = vals->begin();
+
     if (size == 1) {
-      fmt.margin_top   = fmt.margin_bottom = 
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(*(vals->front()), fmt, fmt.margin_left  );
+      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref );
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(*(vals->front()), fmt, width_ref  );
     }
     else if (size == 2) {
-      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(**it++, fmt, fmt.margin_top   );
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it,   fmt, fmt.margin_right );
+      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(**it++, fmt, height_ref   );
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it,   fmt, width_ref );
     }
     else if (size == 3) {
-      fmt.margin_top                       = get_pixel_value(**it++, fmt, fmt.margin_top   );
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it++, fmt, fmt.margin_left  );
-      fmt.margin_bottom                    = get_pixel_value(**it,   fmt, fmt.margin_bottom);
+      fmt.margin_top                       = get_pixel_value(**it++, fmt, height_ref   );
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it++, fmt, width_ref  );
+      fmt.margin_bottom                    = get_pixel_value(**it,   fmt, height_ref);
     }
     else if (size == 4) {
-      fmt.margin_top                       = get_pixel_value(**it++, fmt, fmt.margin_top   );
-      fmt.margin_right                     = get_pixel_value(**it++, fmt, fmt.margin_right );
-      fmt.margin_bottom                    = get_pixel_value(**it++, fmt, fmt.margin_bottom);
-      fmt.margin_left                      = get_pixel_value(**it,   fmt, fmt.margin_left  );
+      fmt.margin_top                       = get_pixel_value(**it++, fmt, height_ref   );
+      fmt.margin_right                     = get_pixel_value(**it++, fmt, width_ref );
+      fmt.margin_bottom                    = get_pixel_value(**it++, fmt, height_ref);
+      fmt.margin_left                      = get_pixel_value(**it,   fmt, width_ref  );
     }
   }
 
@@ -1440,23 +1457,23 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_LEFT))) {
-    fmt.margin_left = get_pixel_value(*(vals->front()), fmt, fmt.margin_left);
+    fmt.margin_left = get_pixel_value(*(vals->front()), fmt, width_ref);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_RIGHT))) {
-    fmt.margin_right = get_pixel_value(*(vals->front()), fmt, fmt.margin_right);
+    fmt.margin_right = get_pixel_value(*(vals->front()), fmt, width_ref);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_TOP))) {
-    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, fmt.margin_top);
+    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, height_ref);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
-    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, fmt.margin_bottom);
+    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::WIDTH))) {
-    fmt.width = get_pixel_value(*(vals->front()), fmt, Screen::WIDTH - fmt.screen_left - fmt.screen_right);
+    fmt.width = get_pixel_value(*(vals->front()), fmt, fmt.width /*Screen::WIDTH - fmt.screen_left - fmt.screen_right */);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::HEIGHT))) {
@@ -1469,20 +1486,24 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
 }
 
 bool 
-Page::get_image(std::string & filename, Image & image)
+Page::get_image(const std::string & filename, const std::string current_path, Image & image)
 {
   int16_t channel_count;
-  std::string fname = epub.get_current_item_file_path();
+  std::string fname = current_path;
   fname.append(filename);
+
   if (epub.get_image(fname, image, channel_count)) {
     if (channel_count != 1) {
-      bool all_zero = true;
-      for (int i = 0; i < (image.dim.width * image.dim.height); i++) {
-        if (image.bitmap[i] != 0) { all_zero = false; break; }
-      }
-      if (all_zero) {
-        LOG_E("Bitmap is all zeroes...");
-      }
+
+      #if DEBUGGING
+        bool all_zero = true;
+        for (int i = 0; i < (image.dim.width * image.dim.height); i++) {
+          if (image.bitmap[i] != 0) { all_zero = false; break; }
+        }
+        if (all_zero) {
+          LOG_E("Bitmap is all zeroes...");
+        }
+      #endif
 
       unsigned char * bitmap2 = (unsigned char *) allocate(image.dim.width * image.dim.height);
       if (bitmap2 == nullptr) {

@@ -59,7 +59,7 @@ class PageLocs
 
   private:
     static constexpr const char * TAG               = "PageLocs";
-    static constexpr const int8_t LOCS_FILE_VERSION = 2;
+    static constexpr const int8_t LOCS_FILE_VERSION = 3;
 
     Page page_out;
 

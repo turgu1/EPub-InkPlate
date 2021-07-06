@@ -187,6 +187,8 @@ bin(char ch)
 char *
 EPub::retrieve_file(const char * fname, uint32_t & size)
 {
+  // Cleanup the filename that can contain characters as hexadecimal values
+  // stating with '%' and relative folder change using '../'
   char name[256];
   uint8_t idx = 0;
   const char * s = fname;
@@ -194,6 +196,13 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
     if (*s == '%') {
       name[idx++] = (bin(s[1]) << 4) + bin(s[2]);
       s += 3;
+    }
+    else if ((*s == '/') && (s[1] == '.') && (s[2] == '.') && (s[3] == '/')) {
+      while (idx > 0) {
+        idx -= 1;
+        if (name[idx] == '/') break;
+      }
+      s += idx > 0 ? 3 : 4;
     }
     else {
       name[idx++] = *s++;
@@ -214,69 +223,69 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
 void
 EPub::retrieve_fonts_from_css(CSS & css)
 {
-#if USE_EPUB_FONTS
+  #if USE_EPUB_FONTS
 
-  if (book_format_params.use_fonts_in_book == 0) return;
-  
-  CSS::RulesMap font_rules;
-  DOM dom;
-  DOM::Node * ff = dom.body->add_child(DOM::Tag::FONT_FACE);
-  css.match(ff, font_rules);
+    if (book_format_params.use_fonts_in_book == 0) return;
+    
+    CSS::RulesMap font_rules;
+    DOM dom;
+    DOM::Node * ff = dom.body->add_child(DOM::Tag::FONT_FACE);
+    css.match(ff, font_rules);
 
-  if (font_rules.empty()) return;
+    if (font_rules.empty()) return;
 
-  bool first = true;
+    bool first = true;
 
-  for (auto & rule : font_rules) {
-    const CSS::Values * values;
-    if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
+    for (auto & rule : font_rules) {
+      const CSS::Values * values;
+      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
-      Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
-      Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
-      Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
-      std::string      font_family = values->front()->str;
+        Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
+        Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
+        Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
+        std::string      font_family = values->front()->str;
 
-      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
-        font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
-      }
-      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
-        font_weight = (Fonts::FaceStyle) values->front()->choice.face_style;
-      }
-      style = fonts.adjust_font_style(style, font_style, font_weight);
-      // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
+        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
+          font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
+        }
+        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
+          font_weight = (Fonts::FaceStyle) values->front()->choice.face_style;
+        }
+        style = fonts.adjust_font_style(style, font_style, font_weight);
+        // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
-      if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
-        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
-            (!values->empty()) &&
-            (values->front()->value_type == CSS::ValueType::URL)) {
+        if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
+          if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
+              (!values->empty()) &&
+              (values->front()->value_type == CSS::ValueType::URL)) {
 
-          if (first) {
-            first = false;
-            LOG_D("Displaying font loading msg.");
-            msg_viewer.show(
-              MsgViewer::INFO, 
-              false, false, 
-              "Retrieving Font(s)", 
-              "The application is retrieving font(s) from the EPub file. Please wait."
-            );
-          }
+            if (first) {
+              first = false;
+              LOG_D("Displaying font loading msg.");
+              msg_viewer.show(
+                MsgViewer::INFO, 
+                false, false, 
+                "Retrieving Font(s)", 
+                "The application is retrieving font(s) from the EPub file. Please wait."
+              );
+            }
 
-          std::string filename = css.get_folder_path();
-          filename.append(values->front()->str);
-          uint32_t size;
-          LOG_D("Font file name: %s", filename.c_str());
-          unsigned char * buffer = (unsigned char *) retrieve_file(filename.c_str(), size);
-          if (buffer == nullptr) {
-            LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
-          }
-          else {
-            fonts.add(font_family, style, buffer, size);
+            std::string filename = css.get_folder_path();
+            filename.append(values->front()->str);
+            uint32_t size;
+            LOG_D("Font file name: %s", filename.c_str());
+            unsigned char * buffer = (unsigned char *) retrieve_file(filename.c_str(), size);
+            if (buffer == nullptr) {
+              LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
+            }
+            else {
+              fonts.add(font_family, style, buffer, size);
+            }
           }
         }
       }
     }
-  }
-#endif
+  #endif
 }
 
 void

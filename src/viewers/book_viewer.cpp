@@ -56,7 +56,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_
 
   if (started) page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
-  if (named_element) { 
+  if (named_element) {
 
     // LOG_D("Node name: %s", name);
 
@@ -81,9 +81,11 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_
 
 
       switch (tag_it->second) {
-        case DOM::Tag::BODY:
-        case DOM::Tag::SPAN:
         case DOM::Tag::A:
+        case DOM::Tag::BODY:
+          break;
+
+        case DOM::Tag::SPAN:
           break;
 
       #if NO_IMAGE
@@ -121,7 +123,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_
 
       #endif
         case DOM::Tag::PRE:
-          fmt.pre = start_of_paragraph = true;
+          fmt.pre     = start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
           break;
 
@@ -163,48 +165,49 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_
         case DOM::Tag::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H4:
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
           
         case DOM::Tag::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
       }
+      
       attr = node.attribute("style");
       CSS *  element_css = nullptr;
       if (attr) {
         const char * buffer = attr.value();
-        element_css         = new CSS(tag_it->second, buffer, strlen(buffer), 99);
+        element_css         = new CSS("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
       }
 
       page.adjust_format(dom_current_node, fmt, element_css, epub.get_current_item_css()); // Adjust format from element attributes
@@ -253,7 +256,7 @@ BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_
     }
     else {
       Page::Image image;
-      if (page.get_image(image_filename, image)) {
+      if (page.get_image(image_filename, epub.get_current_item_file_path(), image)) {
         if (started && (current_offset < end_of_page_offset)) {
           if (!page.add_image(image, fmt)) {
             stbi_image_free((void *) image.bitmap);
@@ -378,17 +381,17 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .line_height_factor = 0.9,
       .font_index         = idx,
       .font_size          = font_size,
-      .indent             = 0,
-      .margin_left        = 0,
-      .margin_right       = 0,
-      .margin_top         = 0,
-      .margin_bottom      = 0,
-      .screen_left        = 10,
-      .screen_right       = 10,
+      .indent             =   0,
+      .margin_left        =   0,
+      .margin_right       =   0,
+      .margin_top         =   0,
+      .margin_bottom      =   0,
+      .screen_left        =  10,
+      .screen_right       =  10,
       .screen_top         = top,
       .screen_bottom      = page_bottom,
-      .width              = 0,
-      .height             = 0,
+      .width              =   0,
+      .height             =   0,
       .trim               = true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,

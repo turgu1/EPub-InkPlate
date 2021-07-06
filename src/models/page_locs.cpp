@@ -557,8 +557,8 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * d
         case DOM::Tag::DIV:
         case DOM::Tag::BLOCKQUOTE:
         case DOM::Tag::P:
+          fmt.display        = CSS::Display::BLOCK;
           start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
           break;
 
         case DOM::Tag::BREAK:
@@ -592,41 +592,41 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * d
         case DOM::Tag::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
           fmt.line_height_factor = 1.25 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
           fmt.line_height_factor = 1.1 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
           fmt.line_height_factor = 1.05 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
 
         case DOM::Tag::H4:
-          start_of_paragraph = true;
           fmt.display = CSS::Display::BLOCK;
+          start_of_paragraph = true;
           break;
 
         case DOM::Tag::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
           fmt.line_height_factor = 0.8 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
           
         case DOM::Tag::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
-          start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
           break;
       }
 
@@ -634,7 +634,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * d
       CSS *  element_css = nullptr;
       if (attr) {
         const char * buffer = attr.value();
-        element_css         = new CSS(tag_it->second, buffer, strlen(buffer), 99);
+        element_css         = new CSS("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
       }
 
       page_out.adjust_format(dom_current_node, fmt, element_css, item_info.css); // Adjust format from element attributes
@@ -668,7 +668,7 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * d
 
   if (show_images && !image_filename.empty()) {
     Page::Image image;
-    if (page_out.get_image(image_filename, image)) {
+    if (page_out.get_image(image_filename, item_info.file_path, image)) {
       if (!page_out.add_image(image, fmt)) {
         if (!page_locs_end_page(fmt)) return false;
         if (start_of_paragraph) {
@@ -708,8 +708,8 @@ PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * d
         current_offset++; // Not an UTF-8, so it's ok...
       }
       else {
-        const char * w = str;
-        int32_t count = 0;
+        const char * w     = str;
+        int32_t      count = 0;
         while (uint8_t(*str) > ' ') { str++; count++; }
         std::string word;
         word.assign(w, count);
@@ -851,7 +851,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
       done = true;
     }
 
-    dom->show();
+    //dom->show();
     delete dom;
     dom = nullptr;
   }
@@ -1109,7 +1109,7 @@ bool PageLocs::load(const std::string & epub_filename)
   int16_t pg_count;
 
   if (!file.is_open()) {
-    LOG_E("Unable to open pages location file.");
+    LOG_I("Unable to open pages location file. Calculing locations...");
     return false;
   }
 

@@ -328,7 +328,7 @@ class Page
     float        get_factor_value(const CSS::Value & value, const Format & fmt, float ref);
     void            adjust_format(DOM::Node * dom_current_node, Format & fmt, CSS * element_css, CSS * item_css);
     void adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules);
-    bool get_image(std::string & filename, Image & image);
+    bool get_image(const std::string & filename, const std::string current_path, Image & image);
 
     inline void reset_font_index(Format & fmt, Fonts::FaceStyle style) {
       if (style != fmt.font_style) {
