@@ -49,21 +49,21 @@ class CSSParser
     static const int16_t STRING_SIZE = 128;
 
     enum class Token : uint8_t { 
-      ERROR,  WHITESPACE, CDO,        CDC,      INCLUDES,  DASHMATCH,   STRING,        BAD_STRING, 
-      IDENT,  HASH,       IMPORT_SYM, PAGE_SYM, MEDIA_SYM, CHARSET_SYM, FONT_FACE_SYM, IMPORTANT_SYM, 
-      LENGTH, ANGLE,      TIME,       FREQ,     DIMENSION, PERCENTAGE, 
-      NUMBER, URI,        BAD_URI,    FUNCTION, SEMICOLON, COLON,       COMMA,         GT, 
-      LT,     GE,         LE,         MINUS,    PLUS,      DOT,         STAR,          SLASH, 
-      EQUAL,  LBRACK,     RBRACK,     LBRACE,   RBRACE,    LPARENT,     RPARENT,       END_OF_FILE
+      ERROR,         WHITESPACE, CDO,        CDC,      INCLUDES,  DASHMATCH,   STRING,        BAD_STRING, 
+      IDENT,         HASH,       IMPORT_SYM, PAGE_SYM, MEDIA_SYM, CHARSET_SYM, FONT_FACE_SYM, IMPORTANT_SYM, 
+      NAMESPACE_SYM, LENGTH, ANGLE,      TIME,       FREQ,     DIMENSION, PERCENTAGE, 
+      NUMBER,        URI,        BAD_URI,    FUNCTION, SEMICOLON, COLON,       COMMA,         GT, 
+      LT,            GE,         LE,         MINUS,    PLUS,      DOT,         STAR,          SLASH, 
+      EQUAL,         LBRACK,     RBRACK,     LBRACE,   RBRACE,    LPARENT,     RPARENT,       END_OF_FILE
     };
 
-    const char * token_names[46] = { 
-      "ERROR",  "WHITESPACE", "CDO",        "CDC",      "INCLUDES",  "DASHMATCH",   "STRING",        "BAD_STRING", 
-      "IDENT",  "HASH",       "IMPORT_SYM", "PAGE_SYM", "MEDIA_SYM", "CHARSET_SYM", "FONT_FACE_SYM", "IMPORTANT_SYM", 
-      "LENGTH", "ANGLE",      "TIME",       "FREQ",     "DIMENSION", "PERCENTAGE", 
-      "NUMBER", "URI",        "BAD_URI",    "FUNCTION", "SEMICOLON", "COLON",       "COMMA",         "GT", 
-      "LT",     "GE",         "LE",         "MINUS",    "PLUS",      "DOT",         "STAR",          "SLASH", 
-      "EQUAL",  "LBRACK",     "RBRACK",     "LBRACE",   "RBRACE",    "LPARENT",     "RPARENT",       "END_OF_FILE"
+    const char * token_names[47] = { 
+      "ERROR",         "WHITESPACE", "CDO",        "CDC",      "INCLUDES",  "DASHMATCH",   "STRING",        "BAD_STRING", 
+      "IDENT",         "HASH",       "IMPORT_SYM", "PAGE_SYM", "MEDIA_SYM", "CHARSET_SYM", "FONT_FACE_SYM", "IMPORTANT_SYM", 
+      "NAMESPACE_SYM", "LENGTH", "ANGLE",      "TIME",       "FREQ",     "DIMENSION", "PERCENTAGE", 
+      "NUMBER",        "URI",        "BAD_URI",    "FUNCTION", "SEMICOLON", "COLON",       "COMMA",         "GT", 
+      "LT",            "GE",         "LE",         "MINUS",    "PLUS",      "DOT",         "STAR",          "SLASH", 
+      "EQUAL",         "LBRACK",     "RBRACK",     "LBRACE",   "RBRACE",    "LPARENT",     "RPARENT",       "END_OF_FILE"
     };
 
     int32_t      remains; // number of bytes remaining in the css buffer
@@ -403,9 +403,13 @@ class CSSParser
             token = Token::CHARSET_SYM;
             remains -= 8; str += 8; next_ch();
           }
-          else if (strncmp((char *) str, "font-face ", 9) == 0) {
+          else if (strncmp((char *) str, "font-face ", 10) == 0) {
             token = Token::FONT_FACE_SYM;
-            remains -= 9; str += 9; next_ch();
+            remains -= 10; str += 10; next_ch();
+          }
+          else if (strncmp((char *) str, "namespace ", 10) == 0) {
+            token = Token::NAMESPACE_SYM;
+            remains -= 10; str += 10; next_ch();
           }
           else {
             token = Token::ERROR;
@@ -724,6 +728,11 @@ class CSSParser
       }
     }
 
+    bool namespace_statement() {  // Not implemented yet
+      skip_block();
+      return true;
+    }
+
     bool page_statement() {  // Not implemented yet
       skip_block();
       return true;
@@ -831,9 +840,6 @@ class CSSParser
           next_token();
           if (token == Token::IDENT) {
             node.add_class(std::string(ident));
-            if (strcmp("small-caps", ident) == 0) {
-              LOG_D("Found .titlemark...");
-            }
             next_token();
           }
         }
@@ -1276,6 +1282,13 @@ class CSSParser
         }
         else if (token == Token::FONT_FACE_SYM) {
           if (!font_face_statement()) return false;
+        }
+        else if (token == Token::NAMESPACE_SYM) {
+          if (!namespace_statement()) return false;
+        }
+        else if (token == Token::ERROR) {
+          LOG_E("Token ERROR retrieved!");
+          return false;
         }
         else {
           ruleset();

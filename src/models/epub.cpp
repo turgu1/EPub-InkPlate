@@ -156,7 +156,9 @@ EPub::get_opf(std::string & filename)
           (attr = node.attribute("xmlns")) &&
           (strcmp(attr.value(), "http://www.idpf.org/2007/opf") == 0) &&
           (attr = node.attribute("version")) &&
-          ((strcmp(attr.value(), "2.0") == 0) || (strcmp(attr.value(), "3.0") == 0)))) {
+          ((strcmp(attr.value(), "1.0") == 0) || 
+           (strcmp(attr.value(), "2.0") == 0) || 
+           (strcmp(attr.value(), "3.0") == 0)))) {
       LOG_E("This book is not compatible with this software.");
       break;
     }
@@ -328,7 +330,7 @@ EPub::retrieve_css(ItemInfo & item)
             #if COMPUTE_SIZE
               memory_used += size;
             #endif
-            // LOG_D("CSS Filename: %s", fname.c_str());
+            LOG_D("CSS Filename: %s", fname.c_str());
             std::string path;
             extract_path(fname.c_str(), path);
             CSS * css_tmp = new CSS(css_id, path, data, size, 0);
@@ -354,7 +356,15 @@ EPub::retrieve_css(ItemInfo & item)
 
   if ((node = item.xml_doc.child("html").child("head").child("style"))) {
     do {
-      CSS * css_tmp = new CSS("current-item", item.file_path, node.value(), strlen(node.value()), 1);
+      xml_node sub = node.first_child();
+      const char * buffer;
+      if (sub != nullptr) {
+        buffer = sub.value();
+      }
+      else {
+        buffer = node.child_value();
+      }
+      CSS * css_tmp = new CSS("current-item", item.file_path, buffer, strlen(buffer), 1);
       if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
       retrieve_fonts_from_css(*css_tmp);
       // css_tmp->show();
@@ -362,16 +372,16 @@ EPub::retrieve_css(ItemInfo & item)
     } while ((node = node.next_sibling("style")));
   }
 
-  // Populate the current_item css structure with property suites present in
+  // Populate the current item css structure with property suites present in
   // the identified css files in the <meta> portion of the html file.
 
   if (item.css != nullptr) delete item.css;
   if ((item.css = new CSS("MergedForItem")) == nullptr) {
     msg_viewer.out_of_memory("css allocation");
   }
-  for (auto * css : item.css_list ) (item.css)->retrieve_data_from_css(*css);
-  for (auto * css : item.css_cache) (item.css)->retrieve_data_from_css(*css);
-  // (*item_css)->show();
+  for (auto * css : item.css_list ) item.css->retrieve_data_from_css(*css);
+  for (auto * css : item.css_cache) item.css->retrieve_data_from_css(*css);
+  // item.css->show();
 }
 
 
@@ -426,6 +436,21 @@ EPub::get_item(pugi::xml_node itemref,
 
     if (item.media_type == MediaType::XML) {
 
+      char * str;
+      while ((str = strstr(item.data, "/*<![CDATA[*/")) != nullptr) {
+        *str++ = ' ';
+        *str   = ' ';
+        str   +=  10;
+        *str++ = ' ';
+        *str   = ' ';
+      }
+      while ((str = strstr(item.data, "/*]]>*/")) != nullptr) {
+        *str++ = ' ';
+        *str   = ' ';
+        str   +=   4;
+        *str++ = ' ';
+        *str   = ' ';
+      }
       LOG_D("Reading file %s", attr.value());
 
       xml_parse_result res = item.xml_doc.load_buffer_inplace(item.data, size);
@@ -775,7 +800,7 @@ EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_c
     free(data);
 
     if (image.bitmap != nullptr) {
-      LOG_D("Image first pixel: %02x.", image.bitmap[0]);
+      //LOG_D("Image first pixel: %02x.", image.bitmap[0]);
       return true;
     }
   }

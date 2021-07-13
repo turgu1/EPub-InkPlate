@@ -46,6 +46,9 @@ cp .pio/build/$release_folder/firmware.bin bin
 cp -r bin "$folder"
 
 cp -r SDCard "$folder"
+rm -rf $folder/SDCard/books
+mkdir $folder/SDCard/books
+cp SDCard/books/Austen* $folder/SDCard/books
 
 if [ -f "$folder/SDCard/books_dir.db" ]
 then
@@ -57,13 +60,6 @@ then
   rm "$folder/SDCard/last_book.txt"
 fi
 
-if [ -d "$folder/SDCard/books/temp" ]
-then
-  rm -rf "$folder/SDCard/books/temp"
-fi
-
-rm $folder/SDCard/books/*.locs
-rm $folder/SDCard/books/*.pars
 rm $folder/SDCard/config.txt
 
 if [ "$3" = "0" ]

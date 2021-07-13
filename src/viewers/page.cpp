@@ -435,6 +435,14 @@ Page::new_paragraph(const Format & fmt, bool recover)
   return true;
 }
 
+void
+Page::break_paragraph(const Format & fmt)
+{
+  if (!line_list.empty()) {
+    add_line(fmt, true);
+  }
+}
+
 bool 
 Page::end_paragraph(const Format & fmt)
 {
@@ -465,13 +473,13 @@ Page::add_line(const Format & fmt, bool justifyable)
   int16_t line_height = glyphs_height * fmt.line_height_factor;
   pos.y += top_margin + line_height; // (line_height >> 1) + (glyphs_height >> 1);
 
-  #if DEBUGGING_AID
-    if (show_location) {
-      std::cout << "New Line: ";
-      show_controls(" ");
-      show_fmt(fmt, "   ->  ");  
-    }
-  #endif
+  // #if DEBUGGING_AID
+  //   if (show_location) {
+  //     std::cout << "New Line: ";
+  //     show_controls(" ");
+  //     show_fmt(fmt, "   ->  ");  
+  //   }
+  // #endif
 
   // Get rid of space characters that are at the end of the line.
   // This is mainly required for the JUSTIFY alignment algo.
@@ -1347,7 +1355,16 @@ Page::adjust_format(DOM::Node * dom_current_node,
 
   if (item_css != nullptr) {
     item_css->match(dom_current_node, rules);
-    if (!rules.empty()) adjust_format_from_rules(fmt, rules);
+    if (!rules.empty()) {
+      // item_css->show(rules);
+      adjust_format_from_rules(fmt, rules);
+    }
+    else {
+      #if DEBUGGING1
+        LOG_D("No match");
+        dom_current_node->show(1);
+      #endif
+    }
   }
   if (element_css != nullptr){
     if (!element_css->rules_map.empty()) adjust_format_from_rules(fmt, element_css->rules_map);

@@ -35,21 +35,24 @@ class BookViewer
 
     std::mutex mutex;
 
-    int32_t           current_offset;          ///< Where we are in current item
-    int32_t           start_of_page_offset;
-    int32_t           end_of_page_offset;
+    // int32_t           current_offset;          ///< Where we are in current item
+    // int32_t           start_of_page_offset;
+    // int32_t           end_of_page_offset;
     int16_t           page_bottom;
-    bool              show_images;
+    //bool              show_images;
     PageLocs::PageId  current_page_id;
 
-    bool start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
-    bool indent_paragraph;
+    // bool start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
 
-    DOM * dom;
-
-    bool                get_image(std::string & filename, Page::Image & image);
-    bool       build_page_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
+    //bool                get_image(std::string & filename, Page::Image & image);
+    //bool       build_page_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
     void            build_page_at(const PageLocs::PageId & page_id);
+
+    struct PageEnd {
+      bool operator()(Page::Format & fmt) const {
+        return false;
+      }
+    };
 
   public:
 

@@ -1,0 +1,257 @@
+LOCS:
+
+body Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+h2 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:579 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:8 fntSz:18 fntSt:0 ind:0 lhf:1.2 mb:46 ml:0 mr:0 mt:33 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:579 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:8 fntSz:18 fntSt:0 ind:0 lhf:1.2 mb:46 ml:0 mr:0 mt:33 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+div Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.08 mb:0 ml:11 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.08 mb:0 ml:11 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:25    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:0 fntIdx:2 fntSz:9 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:25    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:0 fntIdx:2 fntSz:9 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:27    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:281
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:31    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:295
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+a Offset:91    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:483
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:91    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:483
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:103    pos.x:487 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:128
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:132    pos.x:487 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:363
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:132    pos.x:487 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:363
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:134    pos.x:487 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:367
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:139    pos.x:487 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:379
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:350    pos.x:573 pos.y:274 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:484
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:509    pos.x:568 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:272
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:509    pos.x:568 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:272
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:511    pos.x:568 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+em Offset:517    pos.x:568 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:294
+       Fmt: align:3 fntIdx:6 fntSz:10 fntSt:2 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:517    pos.x:568 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:294
+       Fmt: align:3 fntIdx:6 fntSz:10 fntSt:2 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+D TTF: Adding new Byte Pool buffer.
+End Paragraph 3 Offset:644    pos.x:521 pos.y:439 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:201
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:658    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:138
+       Fmt: align:0 fntIdx:2 fntSz:7 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:658    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:138
+       Fmt: align:0 fntIdx:2 fntSz:7 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:660    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:142
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:664    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:156
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:738    pos.x:517 pos.y:594 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:95
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+a Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+Line Break Offset:769    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:299
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:805    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:260
+End Paragraph 3 Offset:805    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:260
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:805    pos.x:264 pos.y:699 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:805    pos.x:264 pos.y:699 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+
+BOOK:
+
+body Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+h2 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:579 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:8 fntSz:18 fntSt:0 ind:0 lhf:1.2 mb:46 ml:0 mr:0 mt:33 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:579 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:8 fntSz:18 fntSt:0 ind:0 lhf:1.2 mb:46 ml:0 mr:0 mt:33 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+div Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.08 mb:0 ml:11 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.08 mb:0 ml:11 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:21 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:0    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:25    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:0 fntIdx:2 fntSz:9 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:25    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:0 fntIdx:2 fntSz:9 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:27    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:281
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:31    pos.x:10 pos.y:30 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:295
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.296 mb:14 ml:0 mr:0 mt:50 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:31    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+a Offset:91    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:483
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:91    pos.x:299 pos.y:142 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:483
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:103    pos.x:584 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:128
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:132    pos.x:584 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:363
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:132    pos.x:584 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:363
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:134    pos.x:584 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:367
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:139    pos.x:584 pos.y:175 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:379
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:140    pos.x:383 pos.y:208 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:350    pos.x:584 pos.y:274 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:484
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:351    pos.x:482 pos.y:307 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:509    pos.x:584 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:272
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:509    pos.x:584 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:272
+       Fmt: align:3 fntIdx:5 fntSz:7 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:511    pos.x:584 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:276
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+em Offset:517    pos.x:584 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:294
+       Fmt: align:3 fntIdx:6 fntSz:10 fntSt:2 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:517    pos.x:584 pos.y:373 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:294
+       Fmt: align:3 fntIdx:6 fntSz:10 fntSt:2 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+End Paragraph 3 Offset:644    pos.x:584 pos.y:439 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:201
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:644    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+span Offset:658    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:138
+       Fmt: align:0 fntIdx:2 fntSz:7 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:658    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:138
+       Fmt: align:0 fntIdx:2 fntSz:7 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:660    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:142
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:664    pos.x:205 pos.y:478 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:156
+       Fmt: align:0 fntIdx:2 fntSz:12 fntSt:1 ind:0 lhf:1.2 mb:8 ml:0 mr:0 mt:30 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+p Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:664    pos.x:160 pos.y:561 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+Line Break Offset:738    pos.x:584 pos.y:594 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:95
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+a Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+-> Offset:739    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+Line Break Offset:769    pos.x:99 pos.y:627 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:299
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:1
+br Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+New Paragraph 1 Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+-> Offset:770    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:805    pos.x:309 pos.y:660 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:260
+       Fmt: align:3 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:1.296 mb:0 ml:0 mr:0 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 3 Offset:805    pos.x:264 pos.y:699 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+End Paragraph 4 Offset:805    pos.x:264 pos.y:699 min_x:10 max_x:590 min_y:30 max_y:763 para_min_x:10 para_max_x:590 para_indent:0 line_width:0
+       Fmt: align:0 fntIdx:5 fntSz:10 fntSt:0 ind:0 lhf:0.9 mb:0 ml:11 mr:11 mt:0 sb:37 sl:10 sr:10 st:30 tr:1 pr:0 tr:1 tt:0 di:2
+       

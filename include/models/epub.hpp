@@ -29,7 +29,7 @@ class EPub
       pugi::xml_document xml_doc;
       CSSList            css_cache;   ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
       CSSList            css_list;    ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
-      CSS *              css;         ///< Ghost CSS created through merging css suites from current_item_css_list.
+      CSS *              css;         ///< Ghost CSS created through merging css suites from css_list and css_cache.
       char *             data;
       MediaType          media_type;
     };

@@ -18,6 +18,7 @@
 #include "models/epub.hpp"
 #include "models/dom.hpp"
 #include "viewers/page.hpp"
+#include "viewers/html_interpreter.hpp"
 
 #include "pugixml.hpp"
 
@@ -96,14 +97,14 @@ class PageLocs
     EPub::ItemInfo         item_info;    
     EPub::BookFormatParams current_format_params;
 
-    int32_t           current_offset;          ///< Where we are in current item
-    int32_t           start_of_page_offset;
+    //int32_t           current_offset;          ///< Where we are in current item
+    //int32_t           start_of_page_offset;
     int16_t           page_bottom;
     bool              show_images;
-    bool              start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
+    //bool              start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
     
-    bool page_locs_end_page(Page::Format & fmt);
-    bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
+    //bool           page_end(Page::Format & fmt);
+    //bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
 
     bool load(const std::string & epub_filename); ///< load pages location from .locs file
     bool save(const std::string & epub_filename); ///< save pages location to .locs file
@@ -119,6 +120,9 @@ class PageLocs
     const PageId * get_next_page_id(const PageId & page_id, int16_t count = 1);
     const PageId * get_prev_page_id(const PageId & page_id, int     count = 1);
     const PageId *      get_page_id(const PageId & page_id                   );
+
+    const EPub::ItemInfo & get_item_info() { return item_info; }
+    const PagesMap       & get_pages_map() { return pages_map; }
 
     void check_for_format_changes(int16_t count, int16_t itemref_index, bool force = false);
     void    computation_completed();

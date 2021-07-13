@@ -21,4 +21,6 @@ freetype-2.10.4/objs
 bin/*.bin
 temp
 *.zip
+SDCard/books/**/*
+!SDCard/books/Austen*.epub
 

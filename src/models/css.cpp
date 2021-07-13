@@ -157,12 +157,16 @@ CSS::match(DOM::Node * node, RulesMap & to_rules)
 void
 CSS::show(RulesMap & the_rules_map) 
 {
-  for (auto & rule : the_rules_map) {
-    rule.first->show();
-    std::cout << " {" << std::endl;
-    for (auto * prop : *rule.second) {
-      prop->show();
+  #if DEBUGGING
+    std::cout << "------ Rules Map: -----" << std::endl;
+    for (auto & rule : the_rules_map) {
+      rule.first->show();
+      std::cout << " {" << std::endl;
+      for (auto * prop : *rule.second) {
+        prop->show();
+      }
+      std::cout << "}" << std::endl;
     }
-    std::cout << "}" << std::endl;
-  }
+    std::cout << "[END]" << std::endl;
+  #endif
 }

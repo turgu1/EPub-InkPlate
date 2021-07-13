@@ -162,6 +162,16 @@ class Page
     bool new_paragraph(const Format & fmt, bool recover = false);
 
     /**
+     * @brief Signal a paragraph break
+     * 
+     * Called when a paragraph is known to be split between two pages
+     * and the last line on the page must be justified.
+     *
+     * @param fmt Formatting parameters.
+     */ 
+    void break_paragraph(const Format & fmt);
+
+    /**
      * @brief End the current paragraph
      * 
      * @param fmt Formatting parameters.
@@ -263,22 +273,21 @@ class Page
       #if DEBUGGING
         std::cout       << spaces                  <<
           "Fmt: align:" << (int)fmt.align          << 
-          " fntIdx:"    << fmt.font_index          << 
-          " fntSz:"     << fmt.font_size           << 
-          " fntSt:"     << (int)fmt.font_style     << 
+          " Idx:"       << fmt.font_index          << 
+          " Sz:"        << fmt.font_size           << 
+          " St:"        << (int)fmt.font_style     << 
           " ind:"       << fmt.indent              << 
           " lhf:"       << fmt.line_height_factor  << 
-          " mb:"        << fmt.margin_bottom       << 
-          " ml:"        << fmt.margin_left         << 
-          " mr:"        << fmt.margin_right        << 
-          " mt:"        << fmt.margin_top          << 
-          " sb:"        << fmt.screen_bottom       << 
-          " sl:"        << fmt.screen_left         << 
-          " sr:"        << fmt.screen_right        << 
-          " st:"        << fmt.screen_top          << 
+          " m:"         << fmt.margin_bottom       << 
+          ","           << fmt.margin_left         << 
+          ","           << fmt.margin_right        << 
+          ","           << fmt.margin_top          << 
+          " s:"         << fmt.screen_bottom       << 
+          ","           << fmt.screen_left         << 
+          ","           << fmt.screen_right        << 
+          ","           << fmt.screen_top          << 
           " tr:"        << fmt.trim                << 
           " pr:"        << fmt.pre                 << 
-          " tr:"        << fmt.trim                << 
           " tt:"        << (int)fmt.text_transform <<
           " di:"        << (int)fmt.display        <<
           std::endl;
@@ -306,8 +315,8 @@ class Page
           " max_y:"       << max_y       <<
           " para_min_x:"  << para_min_x  <<
           " para_max_x:"  << para_max_x  <<
-          " para_indent:" << para_indent <<
-          " line_width:"  << line_width  << 
+          " indent:"      << para_indent <<
+          " width:"       << line_width  << 
           std::endl;
       #endif
     }

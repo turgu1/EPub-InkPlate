@@ -443,331 +443,56 @@ PageLocs::abort_threads()
   state_thread.join();
 }
 
-bool 
-PageLocs::page_locs_end_page(Page::Format & fmt)
+class PageLocsInterp : public HTMLInterpreter 
 {
-  bool res = true;
-  // if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
+  public:
+    PageLocsInterp(Page & the_page, DOM & the_dom, Page::ComputeMode comp_mode, CSS * item_css) : 
+      HTMLInterpreter(the_page, the_dom, comp_mode, item_css) {}
 
-    PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
-    PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
+    void doc_end(Page::Format fmt) { page_end(fmt); }
+
+  protected:
+    bool page_end(Page::Format & fmt) {
+
+      // if (page_locs.get_pages_map().size() == 38) {
+      //   LOG_D("PAGE END!!");
+      // }
+      
+      bool res = true;
+      // if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
+
+        PageLocs::PageId   page_id   = PageLocs::PageId(page_locs.get_item_info().itemref_index, start_offset);
+        PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_offset, -1);
+        
+        if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
+          if (page_info.size == 0) page_info.size = 1; // Patch for the case when it's the title page and no image is to be shown
+          if ((page_locs.get_item_info().itemref_index > 0) && (page.is_empty())) {
+            page_info.size = -page_info.size; // The page will not be counted nor displayed
+          }
+          res = page_locs.insert(page_id, page_info);
+          std::cout << page_id.offset << '|' 
+                    << page_id.offset + page_info.size << ", " 
+                    << page_info.page_number << ", " 
+                    << page_info.size << std::endl;
+        }
+        // Gives the chance to book_viewer to show a page if required
+        book_viewer.get_mutex().unlock();
+        std::this_thread::yield();
+        book_viewer.get_mutex().lock();
+
+        // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
     
-    if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
-      if (page_info.size == 0) page_info.size = 1; // Patch for the case when it's the title page and no image is to be shown
-      if ((item_info.itemref_index > 0) && (page_out.is_empty())) {
-        page_info.size = -page_info.size; // The page will not be counted nor displayed
-      }
-      res = page_locs.insert(page_id, page_info);
+        std::cout << page_locs.get_pages_map().size() << std::endl;
+        check_page_to_show(page_locs.get_pages_map().size()); // Debugging stuff
+      //}
+
+      start_offset = current_offset;
+
+      page.start(fmt); // Start a new page
+
+      return res;
     }
-    // Gives the chance to book_viewer to show a page if required
-    book_viewer.get_mutex().unlock();
-    std::this_thread::yield();
-    book_viewer.get_mutex().lock();
-
-    // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
- 
-    SET_PAGE_TO_SHOW(epub.get_page_count()) // Debugging stuff
-  //}
-
-  start_of_page_offset = current_offset;
-
-  page_out.start(fmt); // Start a new page
-
-  return res;
-}
-
-bool
-PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node)
-{
-  if (node == nullptr) return false;
-  
-  const char *  name;
-  const char *  str = nullptr;
-  std::string   image_filename;
-  DOM::Node *   dom_current_node;
-
-  image_filename.clear();
-
-  DOM::Tags::iterator tag_it = DOM::tags.end();
-  
-  bool named_element = *(name = node.name()) != 0;
-  
-  dom_current_node = dom_node;
-
-  if (named_element) { // A name is attached to the node.
-
-    fmt.display = CSS::Display::INLINE;
-
-    if ((tag_it = DOM::tags.find(name)) != DOM::tags.end()) {
-
-      //LOG_D("==> %10s [%5d] %4d", name, current_offset, page_out.get_pos_y());
-
-      if (tag_it->second != DOM::Tag::BODY) {
-        // Add tag to the DOM
-        dom_current_node = dom_node->add_child(tag_it->second);
-      }
-      else {
-        dom_current_node = dom->body;
-      }
-      xml_attribute attr = node.attribute("id");
-      if (attr != nullptr) dom_current_node->add_id(attr.value());
-      attr = node.attribute("class");
-      if (attr != nullptr) dom_current_node->add_classes(attr.value());
-
-      switch (tag_it->second) {
-        case DOM::Tag::BODY:
-        case DOM::Tag::SPAN:
-        case DOM::Tag::A:
-          break;
-
-      #if NO_IMAGE
-        case IMG:
-        case IMAGE:
-          break;
-
-      #else
-        case DOM::Tag::IMG: 
-          if (show_images) {
-            xml_attribute attr = node.attribute("src");
-            if (attr != nullptr) image_filename = attr.value();
-            else current_offset++;
-          }
-          else {
-            xml_attribute attr = node.attribute("alt");
-            if (attr != nullptr) str = attr.value();
-            else current_offset++;
-          }
-          break;
-
-        case DOM::Tag::IMAGE: 
-          if (show_images) {
-            xml_attribute attr = node.attribute("xlink:href");
-            if (attr != nullptr) image_filename = attr.value();
-            else current_offset++;
-          }
-          break;
-
-      #endif
-        case DOM::Tag::PRE:
-          fmt.pre     = start_of_paragraph = true;
-          fmt.display = CSS::Display::BLOCK;
-          break;
-
-        case DOM::Tag::LI:
-        case DOM::Tag::DIV:
-        case DOM::Tag::BLOCKQUOTE:
-        case DOM::Tag::P:
-          fmt.display        = CSS::Display::BLOCK;
-          start_of_paragraph = true;
-          break;
-
-        case DOM::Tag::BREAK:
-          SHOW_LOCATION("Page Break");
-          if (!page_out.line_break(fmt)) {
-            if (!page_locs_end_page(fmt)) return false;
-            SHOW_LOCATION("Page Break");
-            page_out.line_break(fmt);
-          }
-          current_offset++;
-          break;
-
-        case DOM::Tag::B:
-        case DOM::Tag::STRONG: {
-            Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
-            else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
-            page_out.reset_font_index(fmt, style);
-          }
-          break;
-
-        case DOM::Tag::I:
-        case DOM::Tag::EM: {
-            Fonts::FaceStyle style = fmt.font_style;
-            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
-            else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
-            page_out.reset_font_index(fmt, style);
-          }
-          break;
-
-        case DOM::Tag::H1:
-          fmt.font_size          = 1.25 * fmt.font_size;
-          fmt.line_height_factor = 1.25 * fmt.line_height_factor;
-          fmt.display            = CSS::Display::BLOCK;
-          start_of_paragraph     = true;
-          break;
-
-        case DOM::Tag::H2:
-          fmt.font_size          = 1.1 * fmt.font_size;
-          fmt.line_height_factor = 1.1 * fmt.line_height_factor;
-          fmt.display            = CSS::Display::BLOCK;
-          start_of_paragraph     = true;
-          break;
-
-        case DOM::Tag::H3:
-          fmt.font_size          = 1.05 * fmt.font_size;
-          fmt.line_height_factor = 1.05 * fmt.line_height_factor;
-          fmt.display            = CSS::Display::BLOCK;
-          start_of_paragraph     = true;
-          break;
-
-        case DOM::Tag::H4:
-          fmt.display = CSS::Display::BLOCK;
-          start_of_paragraph = true;
-          break;
-
-        case DOM::Tag::H5:
-          fmt.font_size          = 0.8 * fmt.font_size;
-          fmt.line_height_factor = 0.8 * fmt.line_height_factor;
-          fmt.display            = CSS::Display::BLOCK;
-          start_of_paragraph     = true;
-          break;
-          
-        case DOM::Tag::H6:
-          fmt.font_size          = 0.7 * fmt.font_size;
-          fmt.line_height_factor = 0.7 * fmt.line_height_factor;
-          fmt.display            = CSS::Display::BLOCK;
-          start_of_paragraph     = true;
-          break;
-      }
-
-      attr = node.attribute("style");
-      CSS *  element_css = nullptr;
-      if (attr) {
-        const char * buffer = attr.value();
-        element_css         = new CSS("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
-      }
-
-      page_out.adjust_format(dom_current_node, fmt, element_css, item_info.css); // Adjust format from element attributes
-      if (element_css != nullptr) delete element_css;
-    }
-
-    if (fmt.display == CSS::Display::BLOCK) {
-      if (page_out.some_data_waiting()) {
-        SHOW_LOCATION("End Paragraph 3");
-        if (!page_out.end_paragraph(fmt)) {
-          if (!page_locs_end_page(fmt)) return false;
-
-          if (page_out.some_data_waiting()) {
-            SHOW_LOCATION("End Paragraph 4");
-            page_out.end_paragraph(fmt);
-          }
-        }
-      }
-      SHOW_LOCATION("New Paragraph 4");
-      if (!page_out.new_paragraph(fmt)) {
-        if (!page_locs_end_page(fmt)) return false;
-        SHOW_LOCATION("New Paragraph 5");
-        page_out.new_paragraph(fmt);
-      }
-    } 
-  }
-  else {
-    //This is a node inside a named node. It is contaning some text to show.
-    str = fmt.pre ? node.text().get() : node.value();
-  }
-
-  if (show_images && !image_filename.empty()) {
-    Page::Image image;
-    if (page_out.get_image(image_filename, item_info.file_path, image)) {
-      if (!page_out.add_image(image, fmt)) {
-        if (!page_locs_end_page(fmt)) return false;
-        if (start_of_paragraph) {
-          SHOW_LOCATION("New Paragraph 3");
-          page_out.new_paragraph(fmt);
-          start_of_paragraph = false;
-        }
-        page_out.add_image(image, fmt);
-      }
-      stbi_image_free((void *) image.bitmap);
-    }
-    current_offset++;
-  }
-
-  if (str) {
-    SHOW_LOCATION("->");
-    while (*str) {
-      if (uint8_t(*str) <= ' ') {
-        if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
-          fmt.trim = !fmt.pre;
-          if (!page_out.add_char(" ", fmt)) {
-            if (!page_locs_end_page(fmt)) return false;
-            if (start_of_paragraph) {
-              SHOW_LOCATION("New Paragraph 6");
-              page_out.new_paragraph(fmt, false);
-            }
-            else {
-              SHOW_LOCATION("New Paragraph 7");
-              page_out.new_paragraph(fmt, true);
-            }
-          }
-        }
-        else if (fmt.pre && (*str == '\n')) {
-          page_out.line_break(fmt, 30);
-        }
-        str++;
-        current_offset++; // Not an UTF-8, so it's ok...
-      }
-      else {
-        const char * w     = str;
-        int32_t      count = 0;
-        while (uint8_t(*str) > ' ') { str++; count++; }
-        std::string word;
-        word.assign(w, count);
-        if (!page_out.add_word(word.c_str(), fmt)) {
-          if (!page_locs_end_page(fmt)) return false;
-          if (start_of_paragraph) {
-            SHOW_LOCATION("New Paragraph 8");
-            page_out.new_paragraph(fmt, false);
-          }
-          else {
-            SHOW_LOCATION("New Paragraph 9");
-            page_out.new_paragraph(fmt, true);
-          }
-          page_out.add_word(word.c_str(), fmt);
-        }
-        current_offset += count;
-        start_of_paragraph = false;
-      }
-    } 
-  }
-
-  if (named_element) {
-
-    xml_node sub = node.first_child();
-    while (sub) {
-      if (!page_locs_recurse(sub, fmt, dom_current_node)) return false;
-      sub = sub.next_sibling();
-    }
-
-    if (fmt.display == CSS::Display::BLOCK) {
-      if ((current_offset != start_of_page_offset) || page_out.some_data_waiting()) {
-        SHOW_LOCATION("End Paragraph 5");
-        if (!page_out.end_paragraph(fmt)) {
-          if (!page_locs_end_page(fmt)) return false;
-          if (page_out.some_data_waiting()) {
-            SHOW_LOCATION("End Paragraph 6");
-            page_out.end_paragraph(fmt);
-          }
-        }
-      }
-      start_of_paragraph = false;
-    } 
-
-    // In case that we are at the end of an html file and there remains
-    // characters in the page pipeline, we call end_paragraph() to get them out on the page_out...
-    if ((tag_it != DOM::tags.end()) && (tag_it->second == DOM::Tag::BODY)) {
-      SHOW_LOCATION("End Paragraph 7");
-      if (!page_out.end_paragraph(fmt)) {
-        if (!page_locs_end_page(fmt)) return false;
-        if (page_out.some_data_waiting()) {
-          SHOW_LOCATION("End Paragraph 8");
-          page_out.end_paragraph(fmt);
-        }
-      }
-    }
-  } 
-  return true;
-}
+};
 
 bool
 PageLocs::build_page_locs(int16_t itemref_index)
@@ -777,9 +502,9 @@ PageLocs::build_page_locs(int16_t itemref_index)
   TTF * font  = fonts.get(0);
   page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
   
-  page_out.set_compute_mode(Page::ComputeMode::LOCATION);
+  //page_out.set_compute_mode(Page::ComputeMode::LOCATION);
 
-  show_images = current_format_params.show_images == 1;
+  //show_images = current_format_params.show_images == 1;
 
   bool done = false;
 
@@ -821,12 +546,22 @@ PageLocs::build_page_locs(int16_t itemref_index)
       .display            = CSS::Display::INLINE
     };
 
-    dom = new DOM;
+    DOM            * dom    = new DOM;
+    PageLocsInterp * interp = new PageLocsInterp(page_out, *dom, Page::ComputeMode::LOCATION, item_info.css);
+
+    #if DEBUGGING_AID
+      interp->set_pages_to_show_state(PAGE_FROM, PAGE_TO);
+      interp->check_page_to_show(pages_map.size());
+    #endif
+
+    interp->set_limits(0, 
+                       9999999,
+                       current_format_params.show_images == 1);
 
     while (!done) {
 
-      current_offset       = 0;
-      start_of_page_offset = 0;
+      // current_offset       = 0;
+      // start_of_page_offset = 0;
       xml_node node = item_info.xml_doc.child("html");
 
       if (node && 
@@ -834,7 +569,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
         page_out.start(fmt);
 
-        if (!page_locs_recurse(node, fmt, dom->body)) {
+        if (!interp->build_pages_recurse(node, fmt, dom->body)) {
           LOG_D("html parsing issue or aborted by Mgr");
           break;
         }
@@ -846,7 +581,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
         break;
       }
 
-      page_locs_end_page(fmt);
+      interp->doc_end(fmt);
 
       done = true;
     }
@@ -1044,7 +779,7 @@ PageLocs::computation_completed()
 
   if (!completed) {
     int16_t page_nbr = 0;
-    for (auto& entry : pages_map) {
+    for (auto & entry : pages_map) {
       if (entry.second.size >= 0) entry.second.page_number = page_nbr++;
     }
 
@@ -1187,3 +922,328 @@ PageLocs::save(const std::string & epub_filename)
 
   return res;
 }
+
+#if 0
+bool 
+PageLocs::page_end(Page::Format & fmt)
+{
+  bool res = true;
+  // if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
+
+    PageId   page_id   = PageId(item_info.itemref_index, start_of_page_offset);
+    PageInfo page_info = PageInfo(current_offset - start_of_page_offset, -1);
+    
+    if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
+      if (page_info.size == 0) page_info.size = 1; // Patch for the case when it's the title page and no image is to be shown
+      if ((item_info.itemref_index > 0) && (page_out.is_empty())) {
+        page_info.size = -page_info.size; // The page will not be counted nor displayed
+      }
+      res = page_locs.insert(page_id, page_info);
+    }
+    // Gives the chance to book_viewer to show a page if required
+    book_viewer.get_mutex().unlock();
+    std::this_thread::yield();
+    book_viewer.get_mutex().lock();
+
+    // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
+ 
+    std::cout << pages_map.size() << std::endl;
+    LOCS_SET_PAGE_TO_SHOW(pages_map.size()) // Debugging stuff
+  //}
+
+  start_of_page_offset = current_offset;
+
+  page_out.start(fmt); // Start a new page
+
+  return res;
+}
+
+bool
+PageLocs::page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node)
+{
+  if (node == nullptr) return false;
+  
+  const char *  name;
+  const char *  str = nullptr;
+  std::string   image_filename;
+  DOM::Node *   dom_current_node = dom_node;
+
+  DOM::Tags::iterator tag_it = DOM::tags.end();
+  
+  bool named_element = *(name = node.name()) != 0;
+  
+  if (named_element) { // A name is attached to the node.
+
+    fmt.display = CSS::Display::INLINE;
+
+    if ((tag_it = DOM::tags.find(name)) != DOM::tags.end()) {
+
+      //LOG_D("==> %10s [%5d] %4d", name, current_offset, page_out.get_pos_y());
+
+      if (tag_it->second != DOM::Tag::BODY) {
+        // Add tag to the DOM
+        dom_current_node = dom_node->add_child(tag_it->second);
+      }
+      else {
+        dom_current_node = dom->body;
+      }
+      xml_attribute attr = node.attribute("id");
+      if (attr != nullptr) dom_current_node->add_id(attr.value());
+      attr = node.attribute("class");
+      if (attr != nullptr) dom_current_node->add_classes(attr.value());
+
+      switch (tag_it->second) {
+        case DOM::Tag::BODY:
+        case DOM::Tag::SPAN:
+        case DOM::Tag::A:
+          break;
+
+      #if NO_IMAGE
+        case IMG:
+        case IMAGE:
+          break;
+
+      #else
+        case DOM::Tag::IMG: 
+          if (show_images) {
+            xml_attribute attr = node.attribute("src");
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
+          }
+          else {
+            xml_attribute attr = node.attribute("alt");
+            if (attr != nullptr) str = attr.value();
+            else current_offset++;
+          }
+          break;
+
+        case DOM::Tag::IMAGE: 
+          if (show_images) {
+            xml_attribute attr = node.attribute("xlink:href");
+            if (attr != nullptr) image_filename = attr.value();
+            else current_offset++;
+          }
+          break;
+
+      #endif
+        case DOM::Tag::PRE:
+          fmt.pre     = start_of_paragraph = true;
+          fmt.display = CSS::Display::BLOCK;
+          break;
+
+        case DOM::Tag::LI:
+        case DOM::Tag::DIV:
+        case DOM::Tag::BLOCKQUOTE:
+        case DOM::Tag::P:
+          fmt.display        = CSS::Display::BLOCK;
+          start_of_paragraph = true;
+          break;
+
+        case DOM::Tag::BREAK:
+          LOCS_SHOW_LOCATION("Page Break");
+          if (!page_out.line_break(fmt)) {
+            if (!page_end(fmt)) return false;
+            LOCS_SHOW_LOCATION("Page Break");
+            page_out.line_break(fmt);
+          }
+          current_offset++;
+          break;
+
+        case DOM::Tag::B:
+        case DOM::Tag::STRONG: {
+            Fonts::FaceStyle style = fmt.font_style;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::BOLD;
+            else if (style == Fonts::FaceStyle::ITALIC) style = Fonts::FaceStyle::BOLD_ITALIC;
+            page_out.reset_font_index(fmt, style);
+          }
+          break;
+
+        case DOM::Tag::I:
+        case DOM::Tag::EM: {
+            Fonts::FaceStyle style = fmt.font_style;
+            if      (style == Fonts::FaceStyle::NORMAL) style = Fonts::FaceStyle::ITALIC;
+            else if (style == Fonts::FaceStyle::BOLD  ) style = Fonts::FaceStyle::BOLD_ITALIC;
+            page_out.reset_font_index(fmt, style);
+          }
+          break;
+
+        case DOM::Tag::H1:
+          fmt.font_size          = 1.25 * fmt.font_size;
+          fmt.line_height_factor = 1.25 * fmt.line_height_factor;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
+          break;
+
+        case DOM::Tag::H2:
+          fmt.font_size          = 1.1 * fmt.font_size;
+          fmt.line_height_factor = 1.1 * fmt.line_height_factor;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
+          break;
+
+        case DOM::Tag::H3:
+          fmt.font_size          = 1.05 * fmt.font_size;
+          fmt.line_height_factor = 1.05 * fmt.line_height_factor;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
+          break;
+
+        case DOM::Tag::H4:
+          fmt.display = CSS::Display::BLOCK;
+          start_of_paragraph = true;
+          break;
+
+        case DOM::Tag::H5:
+          fmt.font_size          = 0.8 * fmt.font_size;
+          fmt.line_height_factor = 0.8 * fmt.line_height_factor;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
+          break;
+          
+        case DOM::Tag::H6:
+          fmt.font_size          = 0.7 * fmt.font_size;
+          fmt.line_height_factor = 0.7 * fmt.line_height_factor;
+          fmt.display            = CSS::Display::BLOCK;
+          start_of_paragraph     = true;
+          break;
+      }
+
+      attr = node.attribute("style");
+      CSS *  element_css = nullptr;
+      if (attr) {
+        element_css = new CSS("ELEMENT", tag_it->second, attr.value(), strlen(attr.value()), 99);
+      }
+
+      page_out.adjust_format(dom_current_node, fmt, element_css, item_info.css); // Adjust format from element attributes
+      if (element_css != nullptr) delete element_css;
+    }
+
+    if (fmt.display == CSS::Display::BLOCK) {
+      if (page_out.some_data_waiting()) {
+        LOCS_SHOW_LOCATION("End Paragraph 3");
+        if (!page_out.end_paragraph(fmt)) {
+          if (!page_end(fmt)) return false;
+
+          if (page_out.some_data_waiting()) {
+            LOCS_SHOW_LOCATION("End Paragraph 4");
+            page_out.end_paragraph(fmt);
+          }
+        }
+      }
+      LOCS_SHOW_LOCATION("New Paragraph 4");
+      if (!page_out.new_paragraph(fmt)) {
+        if (!page_end(fmt)) return false;
+        LOCS_SHOW_LOCATION("New Paragraph 5");
+        page_out.new_paragraph(fmt);
+      }
+    } 
+  }
+  else {
+    //This is a node inside a named node. It is contaning some text to show.
+    str = fmt.pre ? node.text().get() : node.value();
+  }
+
+  if (show_images && !image_filename.empty()) {
+    Page::Image image;
+    if (page_out.get_image(image_filename, item_info.file_path, image)) {
+      if (!page_out.add_image(image, fmt)) {
+        if (!page_end(fmt)) return false;
+        if (start_of_paragraph) {
+          LOCS_SHOW_LOCATION("New Paragraph 3");
+          page_out.new_paragraph(fmt);
+          start_of_paragraph = false;
+        }
+        page_out.add_image(image, fmt);
+      }
+      stbi_image_free((void *) image.bitmap);
+    }
+    current_offset++;
+  }
+
+  if (str) {
+    LOCS_SHOW_LOCATION("->");
+    while (*str) {
+      if (uint8_t(*str) <= ' ') {
+        if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
+          fmt.trim = !fmt.pre;
+          if (!page_out.add_char(" ", fmt)) {
+            if (!page_end(fmt)) return false;
+            if (start_of_paragraph) {
+              LOCS_SHOW_LOCATION("New Paragraph 6");
+              page_out.new_paragraph(fmt, false);
+            }
+            else {
+              LOCS_SHOW_LOCATION("New Paragraph 7");
+              page_out.new_paragraph(fmt, true);
+            }
+          }
+        }
+        else if (fmt.pre && (*str == '\n')) {
+          page_out.line_break(fmt, 30);
+        }
+        str++;
+        current_offset++; // Not an UTF-8, so it's ok...
+      }
+      else {
+        const char * w     = str;
+        int32_t      count = 0;
+        while (uint8_t(*str) > ' ') { str++; count++; }
+        std::string word;
+        word.assign(w, count);
+        if (!page_out.add_word(word.c_str(), fmt)) {
+          if (!page_end(fmt)) return false;
+          if (start_of_paragraph) {
+            LOCS_SHOW_LOCATION("New Paragraph 8");
+            page_out.new_paragraph(fmt, false);
+          }
+          else {
+            LOCS_SHOW_LOCATION("New Paragraph 9");
+            page_out.new_paragraph(fmt, true);
+          }
+          page_out.add_word(word.c_str(), fmt);
+        }
+        current_offset += count;
+        start_of_paragraph = false;
+      }
+    } 
+  }
+
+  if (named_element) {
+
+    xml_node sub = node.first_child();
+    while (sub) {
+      if (!page_locs_recurse(sub, fmt, dom_current_node)) return false;
+      sub = sub.next_sibling();
+    }
+
+    if (fmt.display == CSS::Display::BLOCK) {
+      if ((current_offset != start_of_page_offset) || page_out.some_data_waiting()) {
+        LOCS_SHOW_LOCATION("End Paragraph 5");
+        if (!page_out.end_paragraph(fmt)) {
+          if (!page_end(fmt)) return false;
+          if (page_out.some_data_waiting()) {
+            LOCS_SHOW_LOCATION("End Paragraph 6");
+            page_out.end_paragraph(fmt);
+          }
+        }
+      }
+      start_of_paragraph = false;
+    } 
+
+    // In case that we are at the end of an html file and there remains
+    // characters in the page pipeline, we call end_paragraph() to get them out on the page_out...
+    if ((tag_it != DOM::tags.end()) && (tag_it->second == DOM::Tag::BODY)) {
+      LOCS_SHOW_LOCATION("End Paragraph 7");
+      if (!page_out.end_paragraph(fmt)) {
+        if (!page_end(fmt)) return false;
+        if (page_out.some_data_waiting()) {
+          LOCS_SHOW_LOCATION("End Paragraph 8");
+          page_out.end_paragraph(fmt);
+        }
+      }
+    }
+  } 
+  return true;
+}
+#endif
+
