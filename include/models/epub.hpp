@@ -110,6 +110,7 @@ class EPub
 
     inline const CSSList &                   get_css_cache() const { return css_cache;                       }
     inline CSS *                      get_current_item_css() const { return current_item_info.css;           }
+    inline const ItemInfo &          get_current_item_info() const { return current_item_info; }
     inline const std::string &  get_current_item_file_path() const { return current_item_info.file_path;     }
     inline int16_t                       get_itemref_index() const { return current_item_info.itemref_index; }
     inline const char *                          get_title()       { return get_meta("dc:title");            }

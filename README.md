@@ -2,50 +2,62 @@
 
 ## Last news
 
-(Updated 2021.03.04)
+(Updated 2021.07.14)
+
+Update to version 1.3
+
+- [x] Complete redesign of the CSS Interpreter.
+- [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
+- [x] New book covers Matrix View.
+- [x] Correction of many small page painting issues.
+- [x] Number of allowed ebooks changes from 100 to 200 maximum.
+- [ ] Testing ongoing with 200 ebooks...
+- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed.
+- [ ] Documentation update.
+- [ ] New version releases packaging 
 
 Update to version 1.2
 
 - [x] Recompiled to integrate ESP-IDF-Inkplate library v0.9.4
-- [x] Adjustments for the ESP-IDF v4.2 framework
-- [x] Support for the 6-buttons extended board in new specific releases
-- [x] bld_all.sh script to automatically build all releases zip files
+- [x] Adjustments for the ESP-IDF v4.2 framework.
+- [x] Support for the 6-buttons extended board in new specific releases.
+- [x] bld_all.sh script to automatically build all releases zip files.
 
 Update to version 1.1.1
 
-- [x] Recompiled to integrate ESP-IDF-InkPlate library v0.9.2 (A2D attenuation correction)
+- [x] Recompiled to integrate ESP-IDF-InkPlate library v0.9.2 (A2D attenuation correction).
 
 v1.1.0 information:
 
 This is in preparation for version 1.1.0 The main ongoing modifications are:
 
-- [x] Support of the new upcoming Inkplate-10 device
-- [x] Just in time calculation of pages locations through multithreading (a **BIG** change...)
-- [x] Integration with the new ESP-IDF-Inkplate library
-- [x] Trigger pages location recalculation when parameters have changed
-- [x] Stop light-sleep, deep-sleep while pages location is being calculated
-- [x] Adjust web server to only show epub files and remove params/locs files on e-book delete
-- [x] Adjust Web server to stop page-locs to free memory before launching the server 
-- [x] Save computed pages location to sdcard for quick ebook load
-- [x] Repair some known bugs (some issues to be addressed later)
-- [ ] Code refactoring and cleanup (tbd v1.2)
-- [x] Udate documentation
+- [x] Support of the new upcoming Inkplate-10 device.
+- [x] Just in time calculation of pages locations through multithreading (a **BIG** change...).
+- [x] Integration with the new ESP-IDF-Inkplate library.
+- [x] Trigger pages location recalculation when parameters have changed.
+- [x] Stop light-sleep, deep-sleep while pages location is being calculated.
+- [x] Adjust web server to only show epub files and remove params/locs files on e-book delete.
+- [x] Adjust Web server to stop page-locs to free memory before launching the server.
+- [x] Save computed pages location to sdcard for quick ebook load.
+- [x] Repair some known bugs (some issues to be addressed later).
+- [ ] Code refactoring and cleanup (tbd v1.2).
+- [x] Udate documentation.
 - [ ] Tests, tests, tests, ...
 
 Added functional features:
 
-- [x] Title showned at top of pages (as an option)
-- [x] Heap Size showned at bottom of pages (as an option)
-- [x] Form entry simplified (OK / Cancel param no longer there)
-- [x] Parameters for each e-book specific font/pictures adjustments
-- [ ] Augmented CSS features (tbd v1.2)
+- [x] Title showned at top of pages (as an option).
+- [x] Heap Size showned at bottom of pages (as an option).
+- [x] Form entry simplified (OK / Cancel param no longer there).
+- [x] Parameters for each e-book specific font/pictures adjustments.
+- [ ] Augmented CSS features (tbd v1.2).
 
 Known bugs:
 
-- [x] e-books list geometry when screen orientation change
-- [x] recovery from too large image (memory allocation)
-- [x] Page refresh on orientation/resolution changes
-- [ ] PNG image files transparency (tbd v1.2)
+- [x] e-books list geometry when screen orientation change.
+- [x] recovery from too large image (memory allocation).
+- [x] Page refresh on orientation/resolution changes.
+- [ ] PNG image files transparency (tbd v1.2).
 
 -----
 
@@ -53,26 +65,26 @@ v1.0 information:
 
 The development is complete. The application is at version 1.0.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
 
-- [x] Integration of touch buttons through interrupts (not perfect. to be revisited)
-- [x] Menu capability
-- [x] Options / Parameters menus
-- [x] Error dialogs
-- [x] About box
-- [x] Low-Level InkPlate Drivers refactoring
-- [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events)
-- [x] Return to current book location between restarts
-- [x] Configuration management (save/load from the SD-Card)
-- [x] Form tool to show / edit options / parameters
-- [x] books directory refresh dialog
-- [!] Over the Air (OTA) updates (No hope... not enough flash space)
-- [x] WiFi access to update ebooks (This item only added 600KB of code!)
-- [x] Performance on new book scans (80% completion to be revisited after first release)
-- [x] Options / Parameters form
-- [x] Battery level display
-- [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes)
-- [x] User's Guide and installation manuals
-- [x] Error dialog use (100% completion)
-- [x] Debugging remaining issues
+- [x] Integration of touch buttons through interrupts (not perfect. to be revisited).
+- [x] Menu capability.
+- [x] Options / Parameters menus.
+- [x] Error dialogs.
+- [x] About box.
+- [x] Low-Level InkPlate Drivers refactoring.
+- [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events).
+- [x] Return to current book location between restarts.
+- [x] Configuration management (save/load from the SD-Card).
+- [x] Form tool to show / edit options / parameters.
+- [x] books directory refresh dialog.
+- [!] Over the Air (OTA) updates (No hope... not enough flash space).
+- [x] WiFi access to update ebooks (This item only added 600KB of code!).
+- [x] Performance on new book scans (80% completion to be revisited after first release).
+- [x] Options / Parameters form.
+- [x] Battery level display.
+- [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes).
+- [x] User's Guide and installation manuals.
+- [x] Error dialog use (100% completion).
+- [x] Debugging remaining issues.
 
 ----
 
@@ -99,7 +111,7 @@ The first release functionalities:
 - Normal, Bold, Italic, Bold+Italic face types
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
-- UTF-8 characters
+- UTF-8 characters (supplied fonts limited to latin1)
 - InkPlate tactile keys (single and double click to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
 - Left, center, right, and justify text alignments

@@ -29,23 +29,29 @@
 class CSSParser
 {
   public:
-    CSSParser(CSS & the_css, const char * buffer, int32_t size) : skip(0), css(the_css), sel_nbr(0) { parse(buffer, size); }
-    CSSParser(CSS & the_css, DOM::Tag tag, const char * buffer, int32_t size) : skip(0), css(the_css), sel_nbr(0) { 
+    CSSParser(CSS & the_css, const char * buffer, int32_t size) 
+        : css(the_css), skip(0), sel_nbr(0) { 
+      parse(buffer, size); 
+    }
+    
+    CSSParser(CSS & the_css, DOM::Tag tag, const char * buffer, int32_t size) 
+        : css(the_css), skip(0), sel_nbr(0) { 
       parse(tag, buffer, size); 
     }
+
    ~CSSParser() { }
 
   private:
     static constexpr char const * TAG = "CSSParser";
     
+    CSS &   css;
     uint8_t skip;
     uint8_t sel_nbr;
-    CSS & css;
 
     // ---- Tokenizer ----
 
-    static const int8_t  IDENT_SIZE  =  32;
-    static const int8_t  NAME_SIZE   =  32;
+    static const int8_t  IDENT_SIZE  =  60;
+    static const int8_t  NAME_SIZE   =  60;
     static const int16_t STRING_SIZE = 128;
 
     enum class Token : uint8_t { 
@@ -370,6 +376,10 @@ class CSSParser
             }
           } 
         }
+        else if ((ch == '<') && (strncmp((char *)str, "!--", 3) == 0)) {
+          token = Token::CDO;
+          remains -= 3; str += 3; next_ch();
+        }
         else if ((ch == '>') && (str[0] == '=')) { next_ch(); next_ch(); token = Token::GE; }
         else if ((ch == '<') && (str[0] == '=')) { next_ch(); next_ch(); token = Token::LE; }
         else if (ch == '+') { next_ch(); token = Token::PLUS;      }
@@ -381,10 +391,6 @@ class CSSParser
           next_ch();
           parse_name();
           token = Token::HASH;
-        }
-        else if ((ch == '<') && (strncmp((char *)str, "!--", 3) == 0)) {
-          token = Token::CDO;
-          remains -= 3; str += 3; next_ch();
         }
         else if (ch == '@') {
           if (strncmp((char *) str, "media", 5) == 0) {
@@ -445,6 +451,7 @@ class CSSParser
         else if (ch == '/') { next_ch(); token = Token::SLASH; }
         else if (ch == '+') { next_ch(); token = Token::PLUS;  }
         else if (ch == '!') {
+          next_ch();
           for (;;) {
             skip_spaces();
             if ((ch == '/') && (str[0] == '*')) {
@@ -579,7 +586,7 @@ class CSSParser
             (token == Token::TIME      ) ||
             (token == Token::FREQ)) {
           v->value_type = value_type;
-          v->num = num;
+          v->num = neg ? -num : num;
           skip_blanks();
         }
         else if (token == Token::STRING) {

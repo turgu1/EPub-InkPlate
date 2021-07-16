@@ -33,8 +33,9 @@ using namespace pugi;
 class BookViewerInterp : public HTMLInterpreter 
 {
   public:
-    BookViewerInterp(Page & the_page, DOM & the_dom, Page::ComputeMode comp_mode, CSS * item_css) : 
-      HTMLInterpreter(the_page, the_dom, comp_mode, item_css) {}
+    BookViewerInterp(Page & the_page, DOM & the_dom, Page::ComputeMode the_comp_mode, const EPub::ItemInfo & the_item) : 
+      HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
+   ~BookViewerInterp() {}
   protected:
     bool page_end(Page::Format & fmt) { 
       std::cout << "---- PAGE END ----" << std::endl;
@@ -104,7 +105,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     DOM              * dom    = new DOM;
     BookViewerInterp * interp = new BookViewerInterp(page, *dom, 
                                                      Page::ComputeMode::DISPLAY, 
-                                                     epub.get_current_item_css());
+                                                     epub.get_current_item_info());
     interp->set_limits(page_id.offset, 
                        page_id.offset + page_info->size,
                        epub.get_book_format_params()->show_images != 0);
@@ -271,6 +272,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
 }
 
 #if 0
+// ToDo: Old code no longer use... to be deleted 
 bool
 BookViewer::build_page_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_node)
 {

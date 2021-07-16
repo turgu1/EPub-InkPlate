@@ -63,7 +63,6 @@ Page::clear_display_list()
       }
     }
     display_list_entry_pool.deleteElement(entry);
-    //entry = nullptr;
   }
   display_list.clear();
 }
@@ -85,12 +84,15 @@ Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) con
     uint8_t len = 0;
     while ((len < 6) && (*s != 0) && (*s != ';')) { s++; len++; }
     if (*s == ';') {
-      if      (strncmp("nbsp;", (const char *) c, 5) == 0) u = 160;
-      else if (strncmp("lt;",   (const char *) c, 3) == 0) u =  60;
-      else if (strncmp("gt;",   (const char *) c, 3) == 0) u =  62;
-      else if (strncmp("amp;",  (const char *) c, 4) == 0) u =  38;
-      else if (strncmp("quot;", (const char *) c, 5) == 0) u =  34;
-      else if (strncmp("apos;", (const char *) c, 5) == 0) u =  39;
+      if      (strncmp("nbsp;",  (const char *) c, 5) == 0) u =    160;
+      else if (strncmp("lt;",    (const char *) c, 3) == 0) u =     60;
+      else if (strncmp("gt;",    (const char *) c, 3) == 0) u =     62;
+      else if (strncmp("amp;",   (const char *) c, 4) == 0) u =     38;
+      else if (strncmp("quot;",  (const char *) c, 5) == 0) u =     34;
+      else if (strncmp("apos;",  (const char *) c, 5) == 0) u =     39;
+      else if (strncmp("mdash;", (const char *) c, 6) == 0) u = 0x2014;
+      else if (strncmp("ndash;", (const char *) c, 6) == 0) u = 0x2013;
+      else if (strncmp("rsquo;", (const char *) c, 6) == 0) u = 0x2019;
       if (u == 0) {
         u = '&';
       }
@@ -485,10 +487,12 @@ Page::add_line(const Format & fmt, bool justifyable)
   // This is mainly required for the JUSTIFY alignment algo.
 
   while (!line_list.empty()) {
-    if ((*(line_list.begin()))->pos.y > 0) {
-      DisplayListEntry * entry = *(line_list.begin());
+    DisplayListEntry * entry = *(line_list.begin());
+    if (entry->pos.y > 0) {
       if (entry->command == DisplayListCommand::IMAGE) {
-        if (entry->kind.image_entry.image.bitmap) delete [] entry->kind.image_entry.image.bitmap;
+        if (entry->kind.image_entry.image.bitmap != nullptr) {
+          delete [] entry->kind.image_entry.image.bitmap;
+        }
       }
       display_list_entry_pool.deleteElement(entry);
       line_list.pop_front(); 
@@ -506,7 +510,7 @@ Page::add_line(const Format & fmt, bool justifyable)
       while ((line_width < target_width) && (++loop_count < 50)) {
         bool at_least_once = false;
         for (auto * entry : line_list) {
-          if (entry->pos.x > 0) {
+          if (entry->pos.x > 0) {  // This means it's a white space
             at_least_once = true;
             entry->pos.x++;
             if (++line_width >= target_width) break;

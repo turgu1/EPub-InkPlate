@@ -47,6 +47,8 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
   if (named_element) {
 
+    if (node.attribute("hidden")) return true;
+
     // LOG_D("Node name: %s", name);
 
     // Do it only if we are now in the current page content
@@ -182,6 +184,12 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
           fmt.line_height_factor = 0.7 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
           break;
+
+        case DOM::Tag::NONE:
+        case DOM::Tag::ANY:
+        case DOM::Tag::FONT_FACE:
+        case DOM::Tag::PAGE:
+          return true;
       }
       
       // if a 'style' attribute is present, parse it's content as it will be used
@@ -195,7 +203,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
       // Adjust the tag's format styling (the fmt struct) using both the current
       // DOM, the overall item css, and the element css data.
-      page.adjust_format(dom_current_node, fmt, element_css, item_css); // Adjust format from element attributes
+      page.adjust_format(dom_current_node, fmt, element_css, item_info.css); // Adjust format from element attributes
       
       if (started) show_state(name, fmt, dom_current_node, element_css); // For debugging
       if (element_css != nullptr) delete element_css;  // Free the tag's specific css data
@@ -236,14 +244,19 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     }
     else {
       Page::Image image;
-      if (page.get_image(image_filename, epub.get_current_item_file_path(), image)) {
+      if (page.get_image(image_filename, item_info.file_path, image)) {
         if (started && (current_offset < end_offset)) {
           if (!page.add_image(image, fmt)) {
+            if (page.is_full() && !page_end(fmt)) return false;
+            if (at_end()) return true;
+            page.add_image(image, fmt);
             stbi_image_free((void *) image.bitmap);
-            return true;
+            image.bitmap = nullptr;
+            if (page.is_full() && !page_end(fmt)) return false;
+            if (at_end()) return true;
           }
         }
-        stbi_image_free((void *) image.bitmap);
+        if (image.bitmap != nullptr) stbi_image_free((void *) image.bitmap);
       }
       current_offset++;
     }
@@ -254,10 +267,10 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     xml_node sub = node.first_child();
     while (sub != nullptr) {
       if (page.is_full() && !page_end(fmt)) return false;
-      if (at_end()) return true;
+      if (at_end()) break;
       if (!build_pages_recurse(sub, fmt, dom_current_node)) {
         if (page.is_full() && !page_end(fmt)) return false;
-        if (at_end()) return true;
+        if (at_end()) break;
         return false;
       }
       sub = sub.next_sibling();
@@ -302,23 +315,39 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     else {
       show_state("==> STR <==", fmt);
 
+      bool to_be_started = !is_started();
+
       while (*str) {
 
         if (uint8_t(*str) <= ' ') {
-          if (is_started()) {            
+          if (is_started()) {
+            if (to_be_started) {
+              to_be_started = false;
+              page.new_paragraph(fmt, true);
+            }       
             if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
-              fmt.trim = !fmt.pre; // white spaces will be trimmed at the beginning and the end of a line
+              if ((fmt.trim = !fmt.pre)) { // white spaces will be trimmed at the beginning and the end of a line
+                // get rid of multiple spaces in a row (if not pre)
+                do str++; while ((*str == ' ') || (*str == '\n'));
+                str--;
+              }
               if (!page.add_char(" ", fmt)) {
                 // Unable to add the character... the page must be full
                 if (!page_end(fmt)) return false;
-                if (at_end()) return true;
+                if (at_end()) {
+                  page.break_paragraph(fmt);
+                  return true;
+                }
                 // We are at the beginning of a new page. We skip white spaces
                 show_state("==> New Paragraph 2 <==", fmt);
                 page.new_paragraph(fmt, true);
               }
             }
             else if (fmt.pre && (*str == '\n')) {
-              page.line_break(fmt, 30);              
+              if (!page.line_break(fmt, 30)) {
+                if (!page_end(fmt)) return false;
+                if (at_end()) return true;
+              }              
             }
           }
           str++;
@@ -329,11 +358,18 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
           int16_t count = 0;
           while (uint8_t(*str) > ' ') { str++; count++; }
           if (is_started()) {
+            if (to_be_started) {
+              to_be_started = false;
+              page.new_paragraph(fmt, true);
+            }       
             std::string word;
             word.assign(w, count);
             if (!page.add_word(word.c_str(), fmt)) {
               if (!page_end(fmt)) return false;
-              if (at_end()) return true;
+              if (at_end()) {
+                page.break_paragraph(fmt);
+                return true;
+              }
               show_state("==> New Paragraph 3 <==", fmt);
               page.new_paragraph(fmt, true);
               show_state("==> After New Paragraph 3 <==", fmt);
@@ -342,13 +378,17 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
           }
           current_offset += count;
         }
-        if (page.is_full()) {
-          if (!page_end(fmt)) return false;
-        }
+        // ToDo: Not sure the following test is required...
+        // if (page.is_full()) {
+        //   if (!page_end(fmt)) return false;
+        // }
+        // ToDo: This may have to be moved down after the while loop..
         if (at_end()) {
-          show_state("==> Before Break Paragraph 1 <==", fmt);
-          if (*str) page.break_paragraph(fmt);
-          show_state("==> After Break Paragraph 1 <==", fmt);
+          if (*str) {
+            show_state("==> Before Break Paragraph 1 <==", fmt);
+            page.break_paragraph(fmt);
+            show_state("==> After Break Paragraph 1 <==", fmt);
+          }
           break;
         }
       }

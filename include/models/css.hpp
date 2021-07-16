@@ -361,8 +361,8 @@ class CSS
               first = false;
             }
             std::cout << ';' << std::endl;
-          }
-        #endif
+          #endif
+        }
       };
     #pragma pack(pop)
 

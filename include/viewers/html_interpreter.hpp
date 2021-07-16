@@ -1,6 +1,7 @@
 #pragma once
 
 #include "models/dom.hpp"
+#include "models/epub.hpp"
 #include "viewers/page.hpp"
 #include "pugixml.hpp"
 
@@ -18,14 +19,14 @@ class HTMLInterpreter
   protected:
     static constexpr char const * TAG = "HTMLInterpreter";
 
-    Page &  page;
-    DOM  &  dom;
-    CSS  *  item_css;
+    Page &                 page;
+    DOM  &                 dom;
+    Page::ComputeMode      compute_mode;
+    const EPub::ItemInfo & item_info;
 
     int32_t current_offset;   ///< Where we are in current item
     int32_t start_offset;
     int32_t end_offset;
-    Page::ComputeMode compute_mode;
 
     bool show_images;
     bool started;
@@ -40,14 +41,16 @@ class HTMLInterpreter
     virtual bool page_end(Page::Format & fmt) = 0;
 
   public:
-    HTMLInterpreter(Page & the_page, DOM & the_dom, Page::ComputeMode comp_mode, CSS * css) 
+    HTMLInterpreter(Page & the_page, DOM & the_dom, Page::ComputeMode the_comp_mode, const EPub::ItemInfo & the_item) 
       :           page(the_page), 
                    dom(the_dom),
-          compute_mode(comp_mode), 
-              item_css(css),
+          compute_mode(the_comp_mode), 
+             item_info(the_item),
         show_the_state(false), 
              from_page(-1), 
                to_page(-1) {}
+
+    virtual ~HTMLInterpreter() {}
 
     void set_limits(int32_t start, int32_t end, bool show_imgs) {
       started            = false;
@@ -62,7 +65,7 @@ class HTMLInterpreter
 
     void check_for_completion() {
       if (current_offset != end_offset) {
-        LOG_E("Current page offset and end of page offset differ: %d vd %d", 
+        LOG_E("Current page offset and end of page offset differ: %d vs %d", 
               current_offset, end_offset);
       }
     }
@@ -76,23 +79,23 @@ class HTMLInterpreter
         page.show_controls("  ");
         std::cout << "     ";
         page.show_fmt(fmt, "  ");
-        // if (item_css != nullptr) item_css->show();
+        // if (item_info.css != nullptr) item_info.css->show();
         // std::cout << "--> Element CSS:" << std::endl;
         // if (element_css != nullptr) element_css->show();
         // std::cout << "[end show]" << std::endl;
         CSS::RulesMap rules;
 
-        // item_css->show();
+        // item_info.css->show();
         // std::cout << "======" << std::endl;
         // if (element_css != nullptr) element_css->show();
         // std::cout << "------" << std::endl;
         // dom_current_node->show(1);
 
-        if ((dom_current_node != nullptr) && (item_css != nullptr)) {
-          item_css->match(dom_current_node, rules);
+        if ((dom_current_node != nullptr) && (item_info.css != nullptr)) {
+          item_info.css->match(dom_current_node, rules);
           if (!rules.empty()) {
             std::cout << "--> Item CSS match:" << std::endl;
-            item_css->show(rules);
+            item_info.css->show(rules);
           }
           else {
             //std::cout << "--> NO Item CSS match..." << std::endl;

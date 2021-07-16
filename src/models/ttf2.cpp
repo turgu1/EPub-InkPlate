@@ -296,7 +296,7 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t buffer_size)
 
   int error = FT_New_Memory_Face(library, (const FT_Byte *) buffer, buffer_size, 0, &face);
   if (error) {
-    LOG_E("The memory font format is unsupported or is broken.");
+    LOG_E("The memory font format is unsupported or is broken (%d).", error);
     return false;
   }
 

@@ -446,9 +446,10 @@ PageLocs::abort_threads()
 class PageLocsInterp : public HTMLInterpreter 
 {
   public:
-    PageLocsInterp(Page & the_page, DOM & the_dom, Page::ComputeMode comp_mode, CSS * item_css) : 
-      HTMLInterpreter(the_page, the_dom, comp_mode, item_css) {}
-
+    PageLocsInterp(Page & the_page, DOM & the_dom, Page::ComputeMode the_comp_mode, const EPub::ItemInfo & the_item) : 
+      HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
+    ~PageLocsInterp() {}
+    
     void doc_end(Page::Format fmt) { page_end(fmt); }
 
   protected:
@@ -547,7 +548,10 @@ PageLocs::build_page_locs(int16_t itemref_index)
     };
 
     DOM            * dom    = new DOM;
-    PageLocsInterp * interp = new PageLocsInterp(page_out, *dom, Page::ComputeMode::LOCATION, item_info.css);
+    PageLocsInterp * interp = new PageLocsInterp(page_out, 
+                                                 *dom, 
+                                                 Page::ComputeMode::LOCATION, 
+                                                 item_info);
 
     #if DEBUGGING_AID
       interp->set_pages_to_show_state(PAGE_FROM, PAGE_TO);
@@ -924,6 +928,7 @@ PageLocs::save(const std::string & epub_filename)
 }
 
 #if 0
+// ToDo: Old code no longer use... to be deleted 
 bool 
 PageLocs::page_end(Page::Format & fmt)
 {

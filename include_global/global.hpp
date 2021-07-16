@@ -11,7 +11,7 @@
 
 #include "strlcpy.hpp"
 
-#define APP_VERSION "1.2.2"
+#define APP_VERSION "1.3"
 
 #if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE_BUILD)) 
   #error "BUILD_TYPE Not Set."
@@ -57,11 +57,11 @@
 // To be used, only one book must be in the books folder and the books_dir.db 
 // file must be deleted before any trial.
 
-#define DEBUGGING_AID  1   ///< 1: Allow for specific page debugging output
+#define DEBUGGING_AID 0  ///< 1: Allow for specific page debugging output
 
 #if DEBUGGING_AID
-  #define PAGE_FROM  5
-  #define PAGE_TO    6 //PAGE_FROM
+  #define PAGE_FROM  3
+  #define PAGE_TO    PAGE_FROM
 #endif
 
 // The following data definitions are here for laziness... 

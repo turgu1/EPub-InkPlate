@@ -117,6 +117,8 @@ class Page
     int16_t line_width,  glyphs_height;
     int16_t para_indent, top_margin;
 
+    // Entries of a line list are eventually migrated to the display_list. 
+    // So the don't need to be erased.  
     inline void clear_line_list() { line_list.clear(); }
 
     void clear_display_list();

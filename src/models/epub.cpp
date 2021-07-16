@@ -191,6 +191,9 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
 {
   // Cleanup the filename that can contain characters as hexadecimal values
   // stating with '%' and relative folder change using '../'
+
+  LOG_D("Retrieving file %s", fname);
+  
   char name[256];
   uint8_t idx = 0;
   const char * s = fname;
@@ -337,7 +340,7 @@ EPub::retrieve_css(ItemInfo & item)
             if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
             free(data);
 
-            // css_tmp->show();
+            //css_tmp->show();
             
             retrieve_fonts_from_css(*css_tmp);
                 css_cache.push_back(css_tmp);
@@ -484,17 +487,17 @@ EPub::get_item(pugi::xml_node itemref,
 void 
 EPub::update_book_format_params()
 {
-  constexpr int8_t def = -1;
+  constexpr int8_t default_value = -1;
 
   if (book_params == nullptr) {
     book_format_params = {
       .ident             = Screen::IDENT,
       .orientation       =  0,  // Get de compiler happy (no warning). Will be set below...
       .show_title        =  0,  // ... idem ...
-      .show_images       = def,
-      .font_size         = def,
-      .use_fonts_in_book = def,
-      .font              = def
+      .show_images       = default_value,
+      .font_size         = default_value,
+      .use_fonts_in_book = default_value,
+      .font              = default_value
     };
   }
   else {
@@ -507,10 +510,12 @@ EPub::update_book_format_params()
   config.get(Config::Ident::ORIENTATION, &book_format_params.orientation);
   config.get(Config::Ident::SHOW_TITLE,  &book_format_params.show_title );
 
-  if (book_format_params.show_images       == def) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
-  if (book_format_params.font_size         == def) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
-  if (book_format_params.use_fonts_in_book == def) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
-  if (book_format_params.font              == def) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
+  if (book_format_params.show_images       == default_value) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
+  if (book_format_params.font_size         == default_value) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
+  if (book_format_params.use_fonts_in_book == default_value) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
+  if (book_format_params.font              == default_value) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
+
+  //if (!book_format_params.use_fonts_in_book) fonts.clear();
 }
 
 void

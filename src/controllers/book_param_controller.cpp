@@ -84,12 +84,12 @@ revert_to_defaults()
   
   BookParams * book_params = epub.get_book_params();
 
-  constexpr int8_t def = -1;
+  constexpr int8_t default_value = -1;
 
-  book_params->put(BookParams::Ident::SHOW_IMAGES,       def);
-  book_params->put(BookParams::Ident::FONT_SIZE,         def);
-  book_params->put(BookParams::Ident::FONT,              def);
-  book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK, def);
+  book_params->put(BookParams::Ident::SHOW_IMAGES,       default_value);
+  book_params->put(BookParams::Ident::FONT_SIZE,         default_value);
+  book_params->put(BookParams::Ident::FONT,              default_value);
+  book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK, default_value);
   
   epub.update_book_format_params();
 
