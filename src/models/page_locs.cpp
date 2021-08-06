@@ -490,6 +490,7 @@ class PageLocsInterp : public HTMLInterpreter
       start_offset = current_offset;
 
       page.start(fmt); // Start a new page
+      // beginning_of_page = true;
 
       return res;
     }
@@ -522,7 +523,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
     int8_t show_title;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
-    int16_t top = show_title != 0 ? 30 : 10;
+    int16_t page_top = show_title != 0 ? 40 : 10;
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -535,7 +536,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
       .margin_bottom      = 0,
       .screen_left        = 10,
       .screen_right       = 10,
-      .screen_top         = top,
+      .screen_top         = page_top,
       .screen_bottom      = page_bottom,
       .width              = 0,
       .height             = 0,

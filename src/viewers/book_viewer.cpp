@@ -66,7 +66,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     int8_t show_title;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
-    int16_t top = show_title != 0 ? 30 : 10;
+    int16_t page_top = show_title != 0 ? 40 : 10;
 
     Page::Format fmt = {
       .line_height_factor = 0.9,
@@ -79,7 +79,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .margin_bottom      =   0,
       .screen_left        =  10,
       .screen_right       =  10,
-      .screen_top         = top,
+      .screen_top         = page_top,
       .screen_bottom      = page_bottom,
       .width              =   0,
       .height             =   0,
@@ -132,15 +132,26 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
         int16_t page_count = page_locs.get_page_count();
 
         fmt.line_height_factor = 1.0;
-        fmt.font_index         =   1;
+        fmt.font_index         =   2;
         fmt.font_size          =   9;
-        fmt.font_style         = Fonts::FaceStyle::NORMAL;
+        fmt.font_style         = Fonts::FaceStyle::BOLD;
         fmt.align              = CSS::Align::CENTER;
         
         std::ostringstream ostr;
 
         if (show_title != 0) {
-          ostr << epub.get_title();
+          const char * t = epub.get_title();
+          if (strlen(t) > 50) {
+            // Only the first 50 characters of the title will be shown
+            char str[55];
+            strncpy(str, t, 50);
+            str[50] = 0;
+            strcat(str, "...");
+            ostr << str;
+          }
+          else {
+            ostr << t;
+          } 
           page.put_str_at(ostr.str(), Pos(-1, 25), fmt);
         }
 

@@ -103,6 +103,8 @@ class SimpleDB
 
     bool get_partial_record(void * record, int32_t size, int32_t offset);
 
+    void show();
+    
     /**
      * @brief Get size of the current record.
      * 

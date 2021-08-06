@@ -220,10 +220,11 @@ class Page
      * 
      * @param image Image data. Each pixel is a grayscaled byte.
      * @param fmt Formatting parameters.
+     * @param at_start_of_page True if it's the first item in a page
      * @return true The image has been added to the paragraph
      * @return false There is not enough room to add the image.
      */
-    bool add_image(Image & image, const Format & fmt);
+    bool add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/);
 
     /**
      * @brief Add text on page

@@ -33,7 +33,15 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
   if (node == nullptr) return false;
   if (at_end()) return true;
 
-  is_started();
+  // if (!beginning_of_page) {
+  //   if (!started) {
+  //     beginning_of_page = is_started();
+  //   }
+  // }
+  // else {
+  //   beginning_of_page = false;
+    is_started();
+  // }
 
   const char * name;
   const char * str = nullptr;
@@ -128,6 +136,8 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
             if (!page.line_break(fmt)) {
               //At the end of the page
               if (!page_end(fmt)) return false;
+              if (at_end()) return true;
+              page.line_break(fmt);
             }
           }
           current_offset++;
@@ -244,18 +254,22 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     }
     else {
       Page::Image image;
+      if (current_offset == 19992) {
+        LOG_D("Found it");
+      }
       if (page.get_image(image_filename, item_info.file_path, image)) {
         if (started && (current_offset < end_offset)) {
-          if (!page.add_image(image, fmt)) {
+          if (!page.add_image(image, fmt /*, beginning_of_page */)) {
             if (page.is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
-            page.add_image(image, fmt);
+            page.add_image(image, fmt /*, beginning_of_page */);
             stbi_image_free((void *) image.bitmap);
             image.bitmap = nullptr;
             if (page.is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
           }
-        }
+          show_state("After IMG", fmt);
+         }
         if (image.bitmap != nullptr) stbi_image_free((void *) image.bitmap);
       }
       current_offset++;
@@ -264,6 +278,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
   if (named_element) { // The element possesses a tag
     // Here we recurse on each child of the currernt tag.
+    current_offset++;
     xml_node sub = node.first_child();
     while (sub != nullptr) {
       if (page.is_full() && !page_end(fmt)) return false;
@@ -306,6 +321,10 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
   }
   else if (str) {
     int16_t size;
+
+    // if (current_offset == 591) {
+    //   LOG_D("Found it...");
+    // }
     
     if (current_offset + (size = strlen(str)) <= start_offset) {
       // As we move from the beginning of a file, we bypass everything that is there before
@@ -328,8 +347,12 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
             if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
               if ((fmt.trim = !fmt.pre)) { // white spaces will be trimmed at the beginning and the end of a line
                 // get rid of multiple spaces in a row (if not pre)
-                do str++; while ((*str == ' ') || (*str == '\n'));
+                do { 
+                  str++; 
+                  current_offset++; 
+                } while ((*str == ' ') || (*str == '\n'));
                 str--;
+                current_offset--;
               }
               if (!page.add_char(" ", fmt)) {
                 // Unable to add the character... the page must be full

@@ -30,6 +30,7 @@ class HTMLInterpreter
 
     bool show_images;
     bool started;
+    //bool beginning_of_page;
 
     bool show_the_state;
     int16_t from_page, to_page;
@@ -54,6 +55,7 @@ class HTMLInterpreter
 
     void set_limits(int32_t start, int32_t end, bool show_imgs) {
       started            = false;
+      //beginning_of_page  = false;
       current_offset     = 0;
       start_offset       = start;
       end_offset         = end;
@@ -91,27 +93,27 @@ class HTMLInterpreter
         // std::cout << "------" << std::endl;
         // dom_current_node->show(1);
 
-        if ((dom_current_node != nullptr) && (item_info.css != nullptr)) {
-          item_info.css->match(dom_current_node, rules);
-          if (!rules.empty()) {
-            std::cout << "--> Item CSS match:" << std::endl;
-            item_info.css->show(rules);
-          }
-          else {
+        // if ((dom_current_node != nullptr) && (item_info.css != nullptr)) {
+        //   item_info.css->match(dom_current_node, rules);
+        //   if (!rules.empty()) {
+            // std::cout << "--> Item CSS match:" << std::endl;
+            // item_info.css->show(rules);
+          // }
+          // else {
             //std::cout << "--> NO Item CSS match..." << std::endl;
-          }
-        }
-        else {
+        //   }
+        // }
+        // else {
           //std::cout << "--> No Item CSS..." << std::endl;
-        }
+        // }
 
-        if (element_css != nullptr) {
-          std::cout << "--> Element style:" << std::endl;
-          element_css->show();
-        }
-        else {
+        // if (element_css != nullptr) {
+          // std::cout << "--> Element style:" << std::endl;
+          // element_css->show();
+        // }
+        // else {
           //std::cout << "--> NO Element Style..." << std::endl;
-        }
+        // }
         //std::cout << "[end show]" << std::endl;
       }
     }
@@ -129,6 +131,7 @@ class HTMLInterpreter
       if (!started) {
         if ((started = current_offset >= start_offset)) {
           page.set_compute_mode(compute_mode);
+          page.clean();
           std::cout << "---- PAGE START ----" << std::endl;
         }
       }

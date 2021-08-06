@@ -8,6 +8,7 @@
 #include "logging.hpp"
 
 #include <sys/stat.h>
+#include <iostream>
 
 bool 
 SimpleDB::open(std::string filename) 
@@ -25,7 +26,7 @@ SimpleDB::open(std::string filename)
 
   struct stat stat_buf;
   fstat(fileno(db_file), &stat_buf);
-  uint32_t file_size = stat_buf.st_size;
+  file_size = stat_buf.st_size;
 
   uint16_t idx    = 0;
   int32_t  offset = 0;
@@ -122,4 +123,24 @@ SimpleDB::get_partial_record(void * record, int32_t size, int32_t offset)
   if (fseek(db_file, record_offset[current_record_idx] + sizeof(int32_t) + offset, SEEK_SET)) return false;
   if (fread(record, size, 1, db_file) != 1) return false;
   return true;
+}
+
+void
+SimpleDB::show()
+{
+  if (db_is_open) {
+    std::cout << "===== Database content: ====" << std::endl;
+    std::cout << "Record count: " << record_count << std::endl;
+
+    for (int16_t idx = 0; idx < record_count; idx++) {
+      std::cout 
+        << idx << ":"
+        << " offset: " << record_offset[idx]
+        << " size: "   << record_offset[idx + 1] - record_offset[idx] - sizeof(int32_t)
+        << (is_deleted[idx] ? " DELETED" : "")
+        << std::endl;
+    }
+    
+    std::cout << "===== End of database =====" << std::endl;
+  }
 }

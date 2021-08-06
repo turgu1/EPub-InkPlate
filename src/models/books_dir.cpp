@@ -253,7 +253,15 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       bool first = true;
       do {
         int32_t size = db.get_record_size();
+        if (size <= 0) {
+          LOG_E("Unable to get proper record size: %d from db", size);
+          goto error_clear;
+        }
         EBookRecord * data = (EBookRecord *) allocate(size);
+        if (data == nullptr) {
+          LOG_E("Unable to allocate %d bytes for ebook record", size);
+          goto error_clear;
+        }
         if (!db.get_record(data, size)) { 
           LOG_E("Unable to get record of size %d from db", size);
           free(data); 

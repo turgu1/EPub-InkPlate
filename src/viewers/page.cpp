@@ -51,6 +51,8 @@ Page::clean()
 {
   clear_display_list();
   clear_line_list();
+  para_indent = 0;
+  top_margin  = 0;
 }
 
 void
@@ -534,7 +536,7 @@ Page::add_line(const Format & fmt, bool justifyable)
   
   for (auto * entry : line_list) {
     if (entry->command == DisplayListCommand::GLYPH) {
-      int16_t x = entry->pos.x; // x may contains the calculated gap between words
+      int16_t x    = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x = pos.x + entry->kind.glyph_entry.glyph->xoff;
       entry->pos.y = pos.y + entry->kind.glyph_entry.glyph->yoff;
       pos.x += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
@@ -586,9 +588,9 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command = DisplayListCommand::GLYPH;
+  entry->command                = DisplayListCommand::GLYPH;
   entry->kind.glyph_entry.glyph = glyph;
-  entry->pos.x = entry->pos.y = is_space ? glyph->advance : 0;
+  entry->pos.x = entry->pos.y   = is_space ? glyph->advance : 0;
   
   if (glyphs_height < glyph->root->get_line_height(glyph_size)) glyphs_height = glyph->root->get_line_height(glyph_size);
 
@@ -603,7 +605,7 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy, float line_he
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command = DisplayListCommand::IMAGE;
+  entry->command                  = DisplayListCommand::IMAGE;
   entry->kind.image_entry.image   = image;
   entry->kind.image_entry.advance = advance;
   
@@ -828,7 +830,7 @@ Page::add_char(const char * ch, const Format & fmt)
 }
 
 bool 
-Page::add_image(Image & image, const Format & fmt)
+Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
 {
   Image resized_image;
 
@@ -891,7 +893,13 @@ Page::add_image(Image & image, const Format & fmt)
   // Verify that there is enough room for the bitmap on the line
 
   if ((line_width + advance) >= (para_max_x - para_min_x - para_indent)) {
-    add_line(fmt, true); 
+//    if (!(line_list.empty() && at_start_of_page)) {
+      add_line(fmt, true);
+    // }
+    // else {
+    //   para_indent = 0;
+    //   top_margin = 0;
+    // }
 
     // int16_t the_height = (fmt.line_height_factor * font->get_line_height()) - font->get_descender_height();
     // if (the_height < h) the_height = h;

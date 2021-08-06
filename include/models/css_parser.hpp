@@ -55,21 +55,21 @@ class CSSParser
     static const int16_t STRING_SIZE = 128;
 
     enum class Token : uint8_t { 
-      ERROR,         WHITESPACE, CDO,        CDC,      INCLUDES,  DASHMATCH,   STRING,        BAD_STRING, 
-      IDENT,         HASH,       IMPORT_SYM, PAGE_SYM, MEDIA_SYM, CHARSET_SYM, FONT_FACE_SYM, IMPORTANT_SYM, 
-      NAMESPACE_SYM, LENGTH, ANGLE,      TIME,       FREQ,     DIMENSION, PERCENTAGE, 
-      NUMBER,        URI,        BAD_URI,    FUNCTION, SEMICOLON, COLON,       COMMA,         GT, 
-      LT,            GE,         LE,         MINUS,    PLUS,      DOT,         STAR,          SLASH, 
-      EQUAL,         LBRACK,     RBRACK,     LBRACE,   RBRACE,    LPARENT,     RPARENT,       END_OF_FILE
+      ERROR,         WHITESPACE, CDO,        CDC,       INCLUDES,  DASHMATCH,   STRING,        BAD_STRING, 
+      IDENT,         HASH,       IMPORT_SYM, PAGE_SYM,  MEDIA_SYM, CHARSET_SYM, FONT_FACE_SYM, IMPORTANT_SYM, 
+      NAMESPACE_SYM, LENGTH,     ANGLE,      TIME,      FREQ,      DIMENSION,   PERCENTAGE,    NUMBER,
+      URI,           BAD_URI,    FUNCTION,   SEMICOLON, COLON,     COMMA,       GT,            LT,
+      GE,            LE,         MINUS,      PLUS,      DOT,       STAR,        SLASH,         EQUAL,
+      LBRACK,        RBRACK,     LBRACE,     RBRACE,    LPARENT,   RPARENT,     TILDE,         END_OF_FILE
     };
 
-    const char * token_names[47] = { 
-      "ERROR",         "WHITESPACE", "CDO",        "CDC",      "INCLUDES",  "DASHMATCH",   "STRING",        "BAD_STRING", 
-      "IDENT",         "HASH",       "IMPORT_SYM", "PAGE_SYM", "MEDIA_SYM", "CHARSET_SYM", "FONT_FACE_SYM", "IMPORTANT_SYM", 
-      "NAMESPACE_SYM", "LENGTH", "ANGLE",      "TIME",       "FREQ",     "DIMENSION", "PERCENTAGE", 
-      "NUMBER",        "URI",        "BAD_URI",    "FUNCTION", "SEMICOLON", "COLON",       "COMMA",         "GT", 
-      "LT",            "GE",         "LE",         "MINUS",    "PLUS",      "DOT",         "STAR",          "SLASH", 
-      "EQUAL",         "LBRACK",     "RBRACK",     "LBRACE",   "RBRACE",    "LPARENT",     "RPARENT",       "END_OF_FILE"
+    const char * token_names[48] = { 
+      "ERROR",         "WHITESPACE", "CDO",        "CDC",       "INCLUDES",  "DASHMATCH",   "STRING",        "BAD_STRING", 
+      "IDENT",         "HASH",       "IMPORT_SYM", "PAGE_SYM",  "MEDIA_SYM", "CHARSET_SYM", "FONT_FACE_SYM", "IMPORTANT_SYM", 
+      "NAMESPACE_SYM", "LENGTH",     "ANGLE",      "TIME",      "FREQ",      "DIMENSION",   "PERCENTAGE",    "NUMBER",        
+      "URI",           "BAD_URI",    "FUNCTION",   "SEMICOLON", "COLON",     "COMMA",       "GT",            "LT",
+      "GE",            "LE",         "MINUS",      "PLUS",      "DOT",       "STAR",        "SLASH",         "EQUAL",
+      "LBRACK",        "RBRACK",     "LBRACE",     "RBRACE",    "LPARENT",    "RPARENT",    "TILDE",         "END_OF_FILE"
     };
 
     int32_t      remains; // number of bytes remaining in the css buffer
@@ -418,6 +418,7 @@ class CSSParser
             remains -= 10; str += 10; next_ch();
           }
           else {
+            LOG_E("Sym Token Unknown: @%s", str);
             token = Token::ERROR;
           }
         }  
@@ -428,7 +429,7 @@ class CSSParser
             token = Token::INCLUDES;
           }
           else {
-            token = Token::ERROR;
+            token = Token::TILDE;
           }
         }     
         else if (ch == '|') {
@@ -438,12 +439,14 @@ class CSSParser
             token = Token::DASHMATCH;
           }
           else {
+            LOG_E("Unknown usage: %c", ch);
             token = Token::ERROR;
           }
         }
         else if ((ch == '/') && (str[0] == '*')) {
           next_ch(); next_ch();
           if (!skip_comment()) {
+            LOG_E("Non terminated comment.");
             token = Token::ERROR;
           }
           else continue;
@@ -457,6 +460,7 @@ class CSSParser
             if ((ch == '/') && (str[0] == '*')) {
               next_ch(); next_ch();
               if (!skip_comment()) {
+                LOG_E("Non terminated comment.");
                 token = Token::ERROR;
                 done = true;
                 break;
@@ -471,6 +475,7 @@ class CSSParser
           }
         }
         else {
+          LOG_E("Unknown usage: %c", ch);
           token = Token::ERROR;
         }
 
@@ -819,7 +824,7 @@ class CSSParser
 
     bool pseudo(CSS::SelectorNode & node) {
       if (token == Token::IDENT) {
-        if (strcmp(ident, "first_child")) {
+        if (strcmp(ident, "first_child") == 0) {
           node.qualifier = CSS::Qualifier::FIRST_CHILD;
         }
         else return false;  // other ident not supported
@@ -908,11 +913,11 @@ class CSSParser
         bool done2 = false;
         while (true) {
           if (token == Token::WHITESPACE) skip_blanks();
-          if ((token == Token::PLUS) || (token == Token::GT)) {
+          if ((token == Token::PLUS) || (token == Token::GT) || (token == Token::TILDE)) {
             Token t = token;
             skip_blanks();
             if (((node = selector_node())) == nullptr) break;
-            node->op = (t == Token::PLUS) ? CSS::SelOp::ADJACENT : CSS::SelOp::CHILD;
+            node->op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
             sel->add_selector_node(node);
           }
           else if ((token == Token::IDENT ) ||
