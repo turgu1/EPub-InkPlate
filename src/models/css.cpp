@@ -26,7 +26,8 @@ CSS::PropertyMap CSS::property_map = {
   { "width",          CSS::PropertyId::WIDTH          },
   { "height",         CSS::PropertyId::HEIGHT         },
   { "display",        CSS::PropertyId::DISPLAY        },
-  { "border",         CSS::PropertyId::BORDER         }
+  { "border",         CSS::PropertyId::BORDER         },
+  { "vertical-align", CSS::PropertyId::VERTICAL_ALIGN }
 };
 
 CSS::FontSizeMap CSS::font_size_map = {

@@ -17,7 +17,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   entries = form_entries;
 
-  TTF *              font                      =  fonts.get(1);
+  TTF *              font                      =  fonts.get(5);
   TTF::BitmapGlyph * glyph                     =  font->get_glyph('M', FONT_SIZE);
   uint8_t            base_line_offset          = -glyph->yoff;
   uint8_t            next_available_choice_loc =  0;
@@ -132,7 +132,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   Page::Format fmt = {
     .line_height_factor =   1.0,
-    .font_index         =     1,
+    .font_index         =     5,
     .font_size          = FONT_SIZE,
     .indent             =     0,
     .margin_left        =     5,
@@ -145,6 +145,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     .screen_bottom      = BOTTOM_YPOS,
     .width              =     0,
     .height             =     0,
+    .vertical_align     =     0,
     .trim               =  true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -369,7 +370,7 @@ FormViewer::event(EventMgr::Event event)
   
   Page::Format fmt = {
     .line_height_factor = 1.0,
-    .font_index         =   1,
+    .font_index         =   5,
     .font_size          = FONT_SIZE,
     .indent             =   0,
     .margin_left        =   0,
@@ -382,6 +383,7 @@ FormViewer::event(EventMgr::Event event)
     .screen_bottom      =  BOTTOM_YPOS,
     .width              =   0,
     .height             =   0,
+    .vertical_align     =   0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,

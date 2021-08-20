@@ -82,6 +82,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
       .screen_bottom      =   100,
       .width              =     0,
       .height             =     0,
+      .vertical_align     =     0,
       .trim               =  true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
@@ -115,9 +116,16 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
         fmt.font_size     = TITLE_FONT_SIZE;
         fmt.font_style    = Fonts::FaceStyle::NORMAL;
 
+        char title[MAX_TITLE_SIZE];
+        title[MAX_TITLE_SIZE - 1] = 0;
+        strncpy(title, book->title, MAX_TITLE_SIZE - 1);
+        if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
+          strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
+        }
+
         page.set_limits(fmt);
         page.new_paragraph(fmt);
-        page.add_text(book->title, fmt);
+        page.add_text(title, fmt);
         page.end_paragraph(fmt);
 
         fmt.font_index = AUTHOR_FONT;
@@ -214,6 +222,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
     .screen_bottom      = 100,
     .width              = 0,
     .height             = 0,
+    .vertical_align     = 0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -242,7 +251,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
 
     if (book == nullptr) return;
 
-    // TTF * font = fonts.get(1, 9);
+    // TTF * font = fonts.get(5, 9);
 
     page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
                          Pos(xpos - 2, ypos - 2));
@@ -282,9 +291,16 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   fmt.font_size     = TITLE_FONT_SIZE;
   fmt.font_style    = Fonts::FaceStyle::NORMAL;
 
+  char title[MAX_TITLE_SIZE];
+  title[MAX_TITLE_SIZE - 1] = 0;
+  strncpy(title, book->title, MAX_TITLE_SIZE - 1);
+  if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
+    strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
+  }
+
   page.set_limits(fmt);
   page.new_paragraph(fmt);
-  page.add_text(book->title, fmt);
+  page.add_text(title, fmt);
   page.end_paragraph(fmt);
 
   fmt.font_index = AUTHOR_FONT;
@@ -323,7 +339,7 @@ MatrixBooksDirViewer::clear_highlight()
 
   if (book == nullptr) return;
 
-  // TTF * font = fonts.get(1, 9);
+  // TTF * font = fonts.get(5, 9);
 
   Page::Format fmt = {
     .line_height_factor = 0.8,
@@ -340,6 +356,7 @@ MatrixBooksDirViewer::clear_highlight()
     .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
     .width              = 0,
     .height             = 0,
+    .vertical_align     = 0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,

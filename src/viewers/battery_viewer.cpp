@@ -26,7 +26,7 @@
 
     Page::Format fmt = {
       .line_height_factor = 1.0,
-      .font_index         = 1,
+      .font_index         = 5,
       .font_size          = 9,
       .indent             = 0,
       .margin_left        = 0,
@@ -43,6 +43,7 @@
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
       .align              = CSS::Align::LEFT,
+      .vertical_align     = 0,
       .text_transform     = CSS::TextTransform::NONE,
       .display            = CSS::Display::INLINE
     };
@@ -88,8 +89,8 @@
         sprintf(str, "%5.2fv", voltage);
       }
 
-      font = fonts.get(1);
-      fmt.font_index = 1;  
+      font = fonts.get(5);
+      fmt.font_index = 5;  
       pos.x = 5 + glyph->advance + 5;
       page.put_str_at(str, pos, fmt);
     }

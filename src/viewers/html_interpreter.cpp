@@ -5,6 +5,7 @@
 #include "stb_image.h"
 #include "stb_image_resize.h"
 #include "logging.hpp"
+#include "models/config.hpp"
 
 // This method process a single xml node and recurse for the associated children.
 // The method calls the page_end() method when it reachs the end of the page as 
@@ -43,12 +44,11 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     is_started();
   // }
 
-  const char * name;
-  const char * str = nullptr;
   std::string  image_filename;
-  DOM::Node *  dom_current_node = dom_node;
-
-  DOM::Tags::iterator tag_it = DOM::tags.end();
+  const char * name;
+  const char * str              = nullptr;
+  DOM::Node  * dom_current_node = dom_node;
+  DOM::Tags::iterator tag_it    = DOM::tags.end();
 
   // xml bode without a tag name are internal data to be processed as string of chars
   bool named_element = *(name = node.name()) != 0;
@@ -58,10 +58,13 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     if (node.attribute("hidden")) return true;
 
     // LOG_D("Node name: %s", name);
-
     // Do it only if we are now in the current page content
     
-    fmt.display = CSS::Display::INLINE;
+    fmt.display       = CSS::Display::INLINE;
+    fmt.margin_bottom = 0;
+    fmt.margin_left   = 0;
+    fmt.margin_right  = 0;
+    fmt.margin_top    = 0;
 
     if ((tag_it = DOM::tags.find(name)) != DOM::tags.end()) {
 
@@ -123,9 +126,12 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
           fmt.display = CSS::Display::BLOCK;
           break;
 
+        case DOM::Tag::BLOCKQUOTE:
+          fmt.display = CSS::Display::BLOCK;
+          break;
+
         case DOM::Tag::LI:
         case DOM::Tag::DIV:
-        case DOM::Tag::BLOCKQUOTE:
         case DOM::Tag::P:
           fmt.display = CSS::Display::BLOCK;
           break;
@@ -163,19 +169,19 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
         case DOM::Tag::H1:
           fmt.font_size          = 1.25 * fmt.font_size;
-          fmt.line_height_factor = 1.25 * fmt.line_height_factor;
+          //fmt.line_height_factor = 1.25 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
           break;
 
         case DOM::Tag::H2:
           fmt.font_size          = 1.1 * fmt.font_size;
-          fmt.line_height_factor = 1.1 * fmt.line_height_factor;
+          //fmt.line_height_factor = 1.1 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
           break;
 
         case DOM::Tag::H3:
           fmt.font_size          = 1.05 * fmt.font_size;
-          fmt.line_height_factor = 1.05 * fmt.line_height_factor;
+          //fmt.line_height_factor = 1.05 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
           break;
 
@@ -185,14 +191,24 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
         case DOM::Tag::H5:
           fmt.font_size          = 0.8 * fmt.font_size;
-          fmt.line_height_factor = 0.8 * fmt.line_height_factor;
+          //fmt.line_height_factor = 0.8 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
           break;
           
         case DOM::Tag::H6:
           fmt.font_size          = 0.7 * fmt.font_size;
-          fmt.line_height_factor = 0.7 * fmt.line_height_factor;
+          //fmt.line_height_factor = 0.7 * fmt.line_height_factor;
           fmt.display            = CSS::Display::BLOCK;
+          break;
+
+        case DOM::Tag::SUB:
+          fmt.font_size          = 0.75 * fmt.font_size;
+          fmt.vertical_align     = 5;
+          break;
+
+        case DOM::Tag::SUP:
+          fmt.font_size          = 0.75 * fmt.font_size;
+          fmt.vertical_align     = -5;
           break;
 
         case DOM::Tag::NONE:
@@ -200,6 +216,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
         case DOM::Tag::FONT_FACE:
         case DOM::Tag::PAGE:
           return true;
+
       }
       
       // if a 'style' attribute is present, parse it's content as it will be used
@@ -219,6 +236,14 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
       if (element_css != nullptr) delete element_css;  // Free the tag's specific css data
     }
 
+    if (fmt.display == CSS::Display::NONE) return true;
+    if (tag_it->second == DOM::Tag::BODY) {
+      if (epub.get_book_format_params()->use_fonts_in_book == 0) {
+        fmt.font_size = epub.get_book_format_params()->font_size;
+        //fmt.font_index = ;
+      }
+    }
+    
     if (started && (fmt.display == CSS::Display::BLOCK)) {
 
       int8_t iter = 5; // Allow for a paragraph taking at most 5 pages
@@ -254,9 +279,6 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     }
     else {
       Page::Image image;
-      if (current_offset == 19992) {
-        LOG_D("Found it");
-      }
       if (page.get_image(image_filename, item_info.file_path, image)) {
         if (started && (current_offset < end_offset)) {
           if (!page.add_image(image, fmt /*, beginning_of_page */)) {
@@ -387,6 +409,9 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
             }       
             std::string word;
             word.assign(w, count);
+            // if (word.compare("Vidal") == 0) {
+            //   LOG_D("Found Vidal...");
+            // }
             if (!page.add_word(word.c_str(), fmt)) {
               if (!page_end(fmt)) return false;
               if (at_end()) {

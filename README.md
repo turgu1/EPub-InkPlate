@@ -2,19 +2,24 @@
 
 ## Last news
 
-(Updated 2021.07.14)
+(Updated 2021.08.20)
 
-Update to version 1.3
+Update for upcoming version 1.3
 
 - [x] Complete redesign of the CSS Interpreter.
 - [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
 - [x] New book covers Matrix View.
 - [x] Correction of many small page painting issues.
-- [x] Number of allowed ebooks changes from 100 to 200 maximum.
-- [ ] Testing ongoing with 200 ebooks...
-- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed.
+- [x] Subscript/Superscript support.
+- [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
+- [x] Number of allowed ebooks changed from 100 to 200 maximum.
+- [x] Testing ongoing with 200 ebooks under Linux (page formatting and general functionalities) ...
+- [ ] Trials with other streaming image tools (png and jpeg)
+- [ ] Testing ebooks on InkPlate-6/InkPlate-10
 - [ ] Documentation update.
-- [ ] New version releases packaging 
+- [ ] New version releases packaging.
+
+- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (may happen for a future release).
 
 Update to version 1.2
 

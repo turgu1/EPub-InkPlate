@@ -42,6 +42,7 @@ class Page
       int16_t            screen_bottom;      ///< In pixels
       int16_t            width;              ///< In pixels
       int16_t            height;             ///< In pixels
+      int16_t            vertical_align;     ///< In pixels
       bool               trim;
       bool               pre;
       Fonts::FaceStyle   font_style;
@@ -76,6 +77,7 @@ class Page
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
           TTF::BitmapGlyph * glyph;    ///< Glyph
+          bool is_space;
         } glyph_entry;
         struct ImageEntry {            ///< Used for IMAGE
           Image image;       
@@ -115,6 +117,7 @@ class Page
     int16_t para_max_x, para_min_x;
 
     int16_t line_width,  glyphs_height;
+    float   line_height_factor;
     int16_t para_indent, top_margin;
 
     // Entries of a line list are eventually migrated to the display_list. 
@@ -123,8 +126,8 @@ class Page
 
     void clear_display_list();
     void           add_line(const Format & fmt, bool justifyable);
-    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font, bool is_space);
-    void  add_image_to_line(Image & image, int16_t advance, bool copy, float line_height_factor);
+    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font, bool is_space);
+    void  add_image_to_line(Image & image, int16_t advance, bool copy, const Format & fmt);
     int32_t      to_unicode(const char **str, CSS::TextTransform transform, bool first) const;
 
   public:
@@ -275,7 +278,8 @@ class Page
     void show_fmt(const Format & fmt, const char * spaces) const {
       #if DEBUGGING
         std::cout       << spaces                  <<
-          "Fmt: align:" << (int)fmt.align          << 
+          "Fmt: align:" << (int)fmt.align          <<
+          " valign:"    << (int)fmt.vertical_align << 
           " Idx:"       << fmt.font_index          << 
           " Sz:"        << fmt.font_size           << 
           " St:"        << (int)fmt.font_style     << 
@@ -335,7 +339,7 @@ class Page
     inline const DisplayList &     get_line_list() const { return line_list;              }
     inline int16_t                     get_pos_y() const { return pos.y;                  }
 
-    int16_t       get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref);
+    int16_t       get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref, bool vertical = false);
     int16_t       get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref);
     float        get_factor_value(const CSS::Value & value, const Format & fmt, float ref);
     void            adjust_format(DOM::Node * dom_current_node, Format & fmt, CSS * element_css, CSS * item_css);

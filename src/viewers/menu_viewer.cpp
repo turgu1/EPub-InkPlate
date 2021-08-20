@@ -15,7 +15,7 @@ static const std::string TOUCH_AND_HOLD_STR = "Touch icon and hold for more info
 
 void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {
-  TTF * font = fonts.get(1);
+  TTF * font = fonts.get(5);
 
   line_height = font->get_line_height(CAPTION_SIZE);
   text_height = line_height - font->get_descender_height(CAPTION_SIZE); 
@@ -45,6 +45,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
     .screen_bottom      =   100,
     .width              =     0,
     .height             =     0,
+    .vertical_align     =     0,
     .trim               =  true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -88,7 +89,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
       Pos(entry_locs[entry_index].pos.x      - 4, entry_locs[entry_index].pos.y - 4));
   #endif
 
-  fmt.font_index = 1;
+  fmt.font_index = 5;
   fmt.font_size  = CAPTION_SIZE;
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
@@ -129,7 +130,7 @@ MenuViewer::clear_highlight()
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
     Page::Format fmt = {
       .line_height_factor =   1.0,
-      .font_index         =     1,
+      .font_index         =     5,
       .font_size          = CAPTION_SIZE,
       .indent             =     0,
       .margin_left        =     0,
@@ -146,6 +147,7 @@ MenuViewer::clear_highlight()
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
       .align              = CSS::Align::LEFT,
+      .vertical_align     = 0,
       .text_transform     = CSS::TextTransform::NONE,
       .display            = CSS::Display::INLINE
     };
@@ -174,7 +176,7 @@ MenuViewer::event(EventMgr::Event event)
 
   Page::Format fmt = {
     .line_height_factor =   1.0,
-    .font_index         =     1,
+    .font_index         =     5,
     .font_size          = CAPTION_SIZE,
     .indent             =     0,
     .margin_left        =     0,
@@ -187,6 +189,7 @@ MenuViewer::event(EventMgr::Event event)
     .screen_bottom      =     0,
     .width              =     0,
     .height             =     0,
+    .vertical_align     =     0,
     .trim               =  true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -206,7 +209,7 @@ MenuViewer::event(EventMgr::Event event)
         if (current_entry_index <= max_index) {
           page.start(fmt);
 
-          fmt.font_index =  1;
+          fmt.font_index =  5;
           fmt.font_size  = CAPTION_SIZE;
         
           page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
@@ -230,7 +233,7 @@ MenuViewer::event(EventMgr::Event event)
           if (menu[current_entry_index].func != nullptr) {
             page.start(fmt);
 
-            fmt.font_index = 1;
+            fmt.font_index = 5;
             fmt.font_size  = CAPTION_SIZE;
           
             page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
@@ -296,7 +299,7 @@ MenuViewer::event(EventMgr::Event event)
         Dim(entry_locs[current_entry_index].dim.width  + 8, entry_locs[current_entry_index].dim.height + 8),
         Pos(entry_locs[current_entry_index].pos.x - 4,      entry_locs[current_entry_index].pos.y - 4     ));
 
-      fmt.font_index = 1;
+      fmt.font_index = 5;
       fmt.font_size  = CAPTION_SIZE;
     
       page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));

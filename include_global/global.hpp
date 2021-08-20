@@ -60,8 +60,8 @@
 #define DEBUGGING_AID 0  ///< 1: Allow for specific page debugging output
 
 #if DEBUGGING_AID
-  #define PAGE_FROM  49
-  #define PAGE_TO    50 //PAGE_FROM
+  #define PAGE_FROM  6
+  #define PAGE_TO    6 //PAGE_FROM
 #endif
 
 // The following data definitions are here for laziness... 

@@ -340,7 +340,7 @@ EPub::retrieve_css(ItemInfo & item)
             if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
             free(data);
 
-            //css_tmp->show();
+            css_tmp->show();
             
             retrieve_fonts_from_css(*css_tmp);
                 css_cache.push_back(css_tmp);
@@ -459,6 +459,13 @@ EPub::get_item(pugi::xml_node itemref,
       xml_parse_result res = item.xml_doc.load_buffer_inplace(item.data, size);
       if (res.status != status_ok) {
         LOG_E("item_doc xml load error: %d", res.status);
+        // msg_viewer.show(
+        //   MsgViewer::ALERT, 
+        //   true, false, 
+        //   "XML Error in eBook.", 
+        //   "File %s contains XHTML errors and cannot be loaded.",
+        //   attr.value()
+        // );
         item.xml_doc.reset();
         if (item.data != nullptr) {
           free(item.data);
@@ -629,7 +636,11 @@ EPub::get_meta(const std::string & name)
 {
   if (!file_is_open) return nullptr;
 
-  return opf.child("package").child("metadata").child_value(name.c_str());
+  xml_node node = opf.child("package").child("metadata");
+  if (node == nullptr) {
+    node = opf.child("package").child("opf:metadata");
+  }
+  return node == nullptr ? nullptr : node.child_value(name.c_str());
 }
 
 const char *

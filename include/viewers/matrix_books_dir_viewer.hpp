@@ -14,15 +14,16 @@ class MatrixBooksDirViewer : public BooksDirViewer
   private:
     static constexpr char const * TAG = "MatrixBooksDirView";
 
-    static const int16_t TITLE_FONT                =  1;
-    static const int16_t AUTHOR_FONT               =  3;
-    static const int16_t PAGENBR_FONT              =  1;
+    static const int16_t TITLE_FONT                =  5;
+    static const int16_t AUTHOR_FONT               =  6;
+    static const int16_t PAGENBR_FONT              =  5;
     static const int16_t TITLE_FONT_SIZE           = 11;
     static const int16_t AUTHOR_FONT_SIZE          =  9;
     static const int16_t PAGENBR_FONT_SIZE         =  9;
     static const int16_t MIN_SPACE_BETWEEN_ENTRIES =  6;
     static const int16_t SPACE_BELOW_INFO          = 10;
     static const int16_t SPACE_ABOVE_PAGENBR       =  5;
+    static const int16_t MAX_TITLE_SIZE            = 90;
 
     int16_t  current_item_idx; // Relative to the beginning of the page
     int16_t  current_book_idx; // Relative to the beginning of the complete boolk list

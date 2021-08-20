@@ -155,10 +155,11 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
       if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
-        entry->command = DisplayListCommand::GLYPH;
-        entry->kind.glyph_entry.glyph = glyph;
-        entry->pos.x = pos.x + glyph->xoff;
-        entry->pos.y = pos.y + glyph->yoff;
+        entry->command                   = DisplayListCommand::GLYPH;
+        entry->kind.glyph_entry.glyph    = glyph;
+        entry->pos.x                     = pos.x + glyph->xoff;
+        entry->pos.y                     = pos.y + glyph->yoff;
+        entry->kind.glyph_entry.is_space = false; // for completeness but not supposed to be used...
 
         #if DEBUGGING
           if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -215,10 +216,11 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
 
-        entry->command                = DisplayListCommand::GLYPH;
-        entry->kind.glyph_entry.glyph = glyph;
-        entry->pos.x                  = x + glyph->xoff;
-        entry->pos.y                  = pos.y + glyph->yoff;
+        entry->command                   = DisplayListCommand::GLYPH;
+        entry->kind.glyph_entry.glyph    = glyph;
+        entry->pos.x                     = x + glyph->xoff;
+        entry->pos.y                     = pos.y + glyph->yoff;
+        entry->kind.glyph_entry.is_space = false;
 
         #if DEBUGGING
           if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -248,10 +250,11 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
   if ((glyph = font->get_glyph(ch, fmt.font_size))) {
     DisplayListEntry * entry = display_list_entry_pool.newElement();
     if (entry == nullptr) no_mem();
-    entry->command                = DisplayListCommand::GLYPH;
-    entry->kind.glyph_entry.glyph = glyph;
-    entry->pos.x                  = pos.x + glyph->xoff;
-    entry->pos.y                  = pos.y + glyph->yoff;
+    entry->command                   = DisplayListCommand::GLYPH;
+    entry->kind.glyph_entry.glyph    = glyph;
+    entry->pos.x                     = pos.x + glyph->xoff;
+    entry->pos.y                     = pos.y + glyph->yoff;
+    entry->kind.glyph_entry.is_space = false;
 
     #if DEBUGGING
       if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -331,6 +334,21 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         Screen::BLACK_COLOR);
     }
   };
+
+  #if 0 && DEBUGGING
+    Dim dim;
+    Pos pos;
+
+    pos.x = 0;
+    pos.y = 0;
+    dim.width  = 50;
+    dim.height = 0;
+
+    for (int i = 0; i < Screen::HEIGHT; i += 50) {
+      pos.y += 50;
+      screen.draw_rectangle(dim, pos, Screen::BLACK_COLOR);
+    }
+  #endif
 
   screen.update(no_full);
 }
@@ -455,9 +473,11 @@ Page::end_paragraph(const Format & fmt)
   if (!line_list.empty()) {
     add_line(fmt, false);
 
-    pos.y += fmt.margin_bottom - font->get_descender_height(fmt.font_size);
+    int32_t descender = font->get_descender_height(fmt.font_size);
 
-    if ((pos.y - font->get_descender_height(fmt.font_size)) >= max_y) {
+    pos.y += fmt.margin_bottom;// - descender;
+
+    if ((pos.y - descender) >= max_y) {
       screen_is_full = true;
       return false;
     }
@@ -474,7 +494,7 @@ Page::add_line(const Format & fmt, bool justifyable)
   //show_display_list(line_list, "LINE");
   pos.x = para_min_x + para_indent;
   if (pos.x < min_x) pos.x = min_x;
-  int16_t line_height = glyphs_height * fmt.line_height_factor;
+  int16_t line_height = glyphs_height * line_height_factor;
   pos.y += top_margin + line_height; // (line_height >> 1) + (glyphs_height >> 1);
 
   // #if DEBUGGING_AID
@@ -490,16 +510,19 @@ Page::add_line(const Format & fmt, bool justifyable)
 
   while (!line_list.empty()) {
     DisplayListEntry * entry = *(line_list.begin());
-    if (entry->pos.y > 0) {
-      if (entry->command == DisplayListCommand::IMAGE) {
-        if (entry->kind.image_entry.image.bitmap != nullptr) {
-          delete [] entry->kind.image_entry.image.bitmap;
-        }
-      }
+    if ((entry->command == DisplayListCommand::GLYPH) && (entry->kind.glyph_entry.is_space)) {
       display_list_entry_pool.deleteElement(entry);
       line_list.pop_front(); 
     }
     else break;
+    // if (entry->pos.y > 0) {
+    //   if (entry->command == DisplayListCommand::IMAGE) {
+    //     if (entry->kind.image_entry.image.bitmap != nullptr) {
+    //       delete [] entry->kind.image_entry.image.bitmap;
+    //     }
+    //   }
+    // }
+    // else break;
   }
 
   line_list.reverse();
@@ -536,9 +559,9 @@ Page::add_line(const Format & fmt, bool justifyable)
   
   for (auto * entry : line_list) {
     if (entry->command == DisplayListCommand::GLYPH) {
-      int16_t x    = entry->pos.x; // x may contains the calculated gap between words
-      entry->pos.x = pos.x + entry->kind.glyph_entry.glyph->xoff;
-      entry->pos.y = pos.y + entry->kind.glyph_entry.glyph->yoff;
+      int16_t x     = entry->pos.x; // x may contains the calculated gap between words
+      entry->pos.x  = pos.x + entry->kind.glyph_entry.glyph->xoff;
+      entry->pos.y += pos.y + entry->kind.glyph_entry.glyph->yoff;
       pos.x += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
     }
     else if (entry->command == DisplayListCommand::IMAGE) {
@@ -572,6 +595,7 @@ Page::add_line(const Format & fmt, bool justifyable)
   };
   
   line_width = line_height = glyphs_height = 0;
+  line_height_factor = 0.0;
   clear_line_list();
 
   para_indent = 0;
@@ -581,18 +605,21 @@ Page::add_line(const Format & fmt, bool justifyable)
 }
 
 inline void 
-Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font, bool is_space)
+Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font, bool is_space)
 {
   if (is_space && (line_width == 0)) return;
 
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
-  entry->command                = DisplayListCommand::GLYPH;
-  entry->kind.glyph_entry.glyph = glyph;
-  entry->pos.x = entry->pos.y   = is_space ? glyph->advance : 0;
+  entry->command                   = DisplayListCommand::GLYPH;
+  entry->kind.glyph_entry.glyph    = glyph;
+  entry->pos.x                     = is_space ? glyph->advance : 0;
+  entry->pos.y                     = 0;
+  entry->kind.glyph_entry.is_space = is_space;
   
-  if (glyphs_height < glyph->root->get_line_height(glyph_size)) glyphs_height = glyph->root->get_line_height(glyph_size);
+  if (glyphs_height < glyph->root->get_line_height(fmt.font_size)) glyphs_height = glyph->root->get_line_height(fmt.font_size);
+  if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
 
   line_width += (glyph->advance);
 
@@ -600,7 +627,7 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, int16_t glyph_size, TTF & font
 }
 
 void 
-Page::add_image_to_line(Image & image, int16_t advance, bool copy, float line_height_factor)
+Page::add_image_to_line(Image & image, int16_t advance, bool copy, const Format & fmt)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
@@ -631,6 +658,7 @@ Page::add_image_to_line(Image & image, int16_t advance, bool copy, float line_he
   }
   entry->pos.x = entry->pos.y = 0;
   
+  if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
   if (glyphs_height < image.dim.height) glyphs_height = image.dim.height / line_height_factor;
 
   line_width += advance;
@@ -681,9 +709,11 @@ Page::add_word(const char * word,  const Format & fmt)
       DisplayListEntry * entry = display_list_entry_pool.newElement();
       if (entry == nullptr) no_mem();
 
-      entry->command                = DisplayListCommand::GLYPH;
-      entry->kind.glyph_entry.glyph = glyph;
-      entry->pos.x = entry->pos.y   = 0;
+      entry->command                   = DisplayListCommand::GLYPH;
+      entry->kind.glyph_entry.glyph    = glyph;
+      entry->pos.x                     = 0;
+      entry->kind.glyph_entry.is_space = false;
+      entry->pos.y = fmt.vertical_align;
 
       the_list.push_front(entry);
     }
@@ -719,6 +749,7 @@ Page::add_word(const char * word,  const Format & fmt)
   line_list.splice_after(line_list.before_begin(), the_list);
 
   if (glyphs_height < height) glyphs_height = height;
+  if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
   line_width += width;
   the_list.clear();
 
@@ -823,7 +854,7 @@ Page::add_char(const char * ch, const Format & fmt)
       }
     }
 
-    add_glyph_to_line(glyph, fmt.font_size, *font, (code == 32) || (code == 160));
+    add_glyph_to_line(glyph, fmt, *font, (code == 32) || (code == 160));
   }
 
   return true;
@@ -931,10 +962,10 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
     resized_image.bitmap = resized_bitmap;
     resized_image.dim    = Dim(w, h);
 
-    add_image_to_line(resized_image, advance, false, fmt.line_height_factor);
+    add_image_to_line(resized_image, advance, false, fmt);
   }
   else {
-    add_image_to_line(image, advance, true, fmt.line_height_factor);
+    add_image_to_line(image, advance, true, fmt);
   }
 
   return true;
@@ -1256,7 +1287,7 @@ Page::show_display_list(const DisplayList & list, const char * title) const
 }
 
 int16_t
-Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
+Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref, bool vertical)
 {
   switch (value.value_type) {
     case CSS::ValueType::PX:
@@ -1264,9 +1295,13 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
     case CSS::ValueType::PT:
       return (value.num * Screen::RESOLUTION) / 72;
     case CSS::ValueType::EM:
+    case CSS::ValueType::REM:
       {
-        TTF * f = fonts.get(fmt.font_index);
-        return value.num * f->get_em_width(fmt.font_size);
+        // TTF * f = fonts.get(fmt.font_index);
+        return value.num * 
+               ((fmt.font_size * Screen::RESOLUTION) / 72);
+              //  (vertical ? f->get_em_height(fmt.font_size) : 
+              //              f->get_em_width(fmt.font_size));
       }
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100;
@@ -1281,7 +1316,6 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref)
     case CSS::ValueType::STR:
       // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
       return 0;
-      break;
     default:
       // LOG_D("get_pixel_value: Wrong data type!: %d", value.value_type);
       return value.num;
@@ -1301,7 +1335,8 @@ Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       return (value.num * 72) / Screen::RESOLUTION; // convert pixels in points
     case CSS::ValueType::PT:
       return value.num;  // Already in points
-    case CSS::ValueType::EM: {
+    case CSS::ValueType::EM:
+    case CSS::ValueType::REM: {
           // TTF * font = fonts.get(1, normal_size);
           // if (font != nullptr) {
           //   return (value.num * font->get_em_height()) * 72 / Screen::RESOLUTION;
@@ -1324,6 +1359,8 @@ Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
       return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
     case CSS::ValueType::VW:
       return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
+    case CSS::ValueType::INHERIT:
+      return ref;
     default:
       LOG_E("get_point_value(): Wrong data type!");
       return value.num;
@@ -1340,10 +1377,14 @@ Page::get_factor_value(const CSS::Value & value, const Format & fmt, float ref)
     case CSS::ValueType::STR:
       return 1.0;  
     case CSS::ValueType::EM:
+    case CSS::ValueType::REM:
     case CSS::ValueType::NO_TYPE:
+    case CSS::ValueType::DIMENSION:
       return value.num;
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100.0;
+    case CSS::ValueType::INHERIT:
+      return ref;
     default:
       // LOG_E("get_factor_value: Wrong data type!");
       return 1.0;
@@ -1378,7 +1419,7 @@ Page::adjust_format(DOM::Node * dom_current_node,
       #endif
     }
   }
-  if (element_css != nullptr){
+  if (element_css != nullptr) {
     if (!element_css->rules_map.empty()) adjust_format_from_rules(fmt, element_css->rules_map);
   }
 }
@@ -1461,28 +1502,28 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
     CSS::Values::const_iterator it = vals->begin();
 
     if (size == 1) {
-      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref );
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(*(vals->front()), fmt, width_ref  );
+      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref, true);
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(*(vals->front()), fmt, width_ref       );
     }
     else if (size == 2) {
-      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(**it++, fmt, height_ref   );
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it,   fmt, width_ref );
+      fmt.margin_top   = fmt.margin_bottom = get_pixel_value(**it++,           fmt, height_ref, true);
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it,             fmt, width_ref       );
     }
     else if (size == 3) {
-      fmt.margin_top                       = get_pixel_value(**it++, fmt, height_ref   );
-      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it++, fmt, width_ref  );
-      fmt.margin_bottom                    = get_pixel_value(**it,   fmt, height_ref);
+      fmt.margin_top                       = get_pixel_value(**it++,           fmt, height_ref, true);
+      fmt.margin_right = fmt.margin_left   = get_pixel_value(**it++,           fmt, width_ref       );
+      fmt.margin_bottom                    = get_pixel_value(**it,             fmt, height_ref, true);
     }
     else if (size == 4) {
-      fmt.margin_top                       = get_pixel_value(**it++, fmt, height_ref   );
-      fmt.margin_right                     = get_pixel_value(**it++, fmt, width_ref );
-      fmt.margin_bottom                    = get_pixel_value(**it++, fmt, height_ref);
-      fmt.margin_left                      = get_pixel_value(**it,   fmt, width_ref  );
+      fmt.margin_top                       = get_pixel_value(**it++,           fmt, height_ref, true);
+      fmt.margin_right                     = get_pixel_value(**it++,           fmt, width_ref       );
+      fmt.margin_bottom                    = get_pixel_value(**it++,           fmt, height_ref, true);
+      fmt.margin_left                      = get_pixel_value(**it,             fmt, width_ref       );
     }
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::DISPLAY))) {
-    fmt.display = (CSS::Display) vals->front()->choice.display;
+    fmt.display = vals->front()->choice.display;
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_LEFT))) {
@@ -1494,11 +1535,11 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_TOP))) {
-    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, height_ref);
+    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, height_ref, true);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
-    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref);
+    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref, true);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::WIDTH))) {
@@ -1510,7 +1551,24 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {
-    fmt.text_transform = (CSS::TextTransform) vals->front()->choice.text_transform;
+    fmt.text_transform = vals->front()->choice.text_transform;
+  }
+
+  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::VERTICAL_ALIGN))) {
+    if (vals->front()->choice.vertical_align == CSS::VerticalAlign::NORMAL) {
+      fmt.vertical_align = 0;
+    }
+    else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::SUB) {
+      fmt.vertical_align = 5;
+    }
+    else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::SUPER) {
+      fmt.vertical_align = -5;
+    }
+    else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::VALUE) {
+      TTF * font = fonts.get(fmt.font_index);
+
+      fmt.vertical_align = - get_pixel_value(*(vals->front()), fmt, font->get_line_height(fmt.font_size));
+    }
   }
 }
 

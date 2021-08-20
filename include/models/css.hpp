@@ -117,7 +117,7 @@
  *   *  text-indent          yes           (0)
  *   *  text-transform       yes           (none)
  *      top
- *      vertical-align
+ *   *  vertical-align
  *      visibility
  *      white-space
  *   *  width                not inherited (auto)
@@ -156,17 +156,18 @@ class CSS
     uint8_t                get_priority() const { return priority;    }
 
 
-    enum class     ValueType : uint8_t { NO_TYPE, EM,  EX, PERCENT, STR, PX,   CM,   MM,  IN,  PT, 
-                                         PC,      VH,  VW, REM,     CH,  VMIN, VMAX, DEG, RAD, GRAD, 
-                                         MSEC,    SEC, HZ, KHZ,     URL };
+    enum class     ValueType : uint8_t { NO_TYPE, EM,  EX, PERCENT, STR, PX,      CM,   MM,  IN,  PT, 
+                                         PC,      VH,  VW, REM,     CH,  VMIN,    VMAX, DEG, RAD, GRAD, 
+                                         MSEC,    SEC, HZ, KHZ,     URL, INHERIT, DIMENSION };
 
-    enum class         Align : uint8_t { LEFT, CENTER,    RIGHT,     JUSTIFY      };
-    enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE   };
-    enum class       Display : uint8_t { NONE, INLINE,    BLOCK,     INLINE_BLOCK };
+    enum class         Align : uint8_t { LEFT,   CENTER,    RIGHT,     JUSTIFY      };
+    enum class VerticalAlign : uint8_t { NORMAL, SUB,       SUPER,     VALUE        };
+    enum class TextTransform : uint8_t { NONE,   UPPERCASE, LOWERCASE, CAPITALIZE   };
+    enum class       Display : uint8_t { NONE,   INLINE,    BLOCK,     INLINE_BLOCK };
     enum class    PropertyId : uint8_t { NOT_USED,   FONT_FAMILY, FONT_SIZE,      FONT_STYLE,  FONT_WEIGHT,
                                          TEXT_ALIGN, TEXT_INDENT, TEXT_TRANSFORM, LINE_HEIGHT, SRC,
                                          MARGIN,     MARGIN_LEFT, MARGIN_RIGHT,   MARGIN_TOP,  MARGIN_BOTTOM,
-                                         WIDTH,      HEIGHT,      DISPLAY,        BORDER };
+                                         WIDTH,      HEIGHT,      DISPLAY,        BORDER,      VERTICAL_ALIGN };
 
     static const char * value_type_str[25];
 
@@ -307,6 +308,7 @@ class CSS
           Align            align;
           TextTransform    text_transform;
           Fonts::FaceStyle face_style;
+          VerticalAlign    vertical_align;
         } choice;
         Value() {
           value_type = ValueType::NO_TYPE;

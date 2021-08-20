@@ -344,6 +344,7 @@ class CSSParser
           else if (is_nmstart(ch)) {
             parse_ident();
             token = Token::DIMENSION;
+            value_type= CSS::ValueType::DIMENSION;
           }
         }
         else if ((ch == '-') && (str[0] == '-') && (str[1] == '>')) {
@@ -409,9 +410,9 @@ class CSSParser
             token = Token::CHARSET_SYM;
             remains -= 8; str += 8; next_ch();
           }
-          else if (strncmp((char *) str, "font-face ", 10) == 0) {
+          else if (strncmp((char *) str, "font-face", 9) == 0) {
             token = Token::FONT_FACE_SYM;
-            remains -= 10; str += 10; next_ch();
+            remains -= 9; str += 9; next_ch();
           }
           else if (strncmp((char *) str, "namespace ", 10) == 0) {
             token = Token::NAMESPACE_SYM;
@@ -589,9 +590,11 @@ class CSSParser
             (token == Token::LENGTH    ) ||
             (token == Token::ANGLE     ) ||
             (token == Token::TIME      ) ||
+            (token == Token::DIMENSION ) ||
             (token == Token::FREQ)) {
           v->value_type = value_type;
           v->num = neg ? -num : num;
+          if (id == CSS::PropertyId::VERTICAL_ALIGN) v->choice.vertical_align = CSS::VerticalAlign::VALUE;
           skip_blanks();
         }
         else if (token == Token::STRING) {
@@ -620,6 +623,15 @@ class CSSParser
             else {
               //LOG_E("text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str - buffer_start));
               break;
+            }
+          }
+          else if (id == CSS::PropertyId::VERTICAL_ALIGN) {
+            if      (v->str.compare("sub"      ) == 0) v->choice.vertical_align = CSS::VerticalAlign::SUB;
+            else if (v->str.compare("super"    ) == 0) v->choice.vertical_align = CSS::VerticalAlign::SUPER;
+            else if (v->str.compare("top"      ) == 0) v->choice.vertical_align = CSS::VerticalAlign::SUPER;
+            else if (v->str.compare("text-top" ) == 0) v->choice.vertical_align = CSS::VerticalAlign::SUPER;
+            else {
+              v->choice.vertical_align = CSS::VerticalAlign::NORMAL;
             }
           }
           else if (id == CSS::PropertyId::FONT_WEIGHT) {
@@ -660,6 +672,9 @@ class CSSParser
               // v->num = font_size;
               v->num = 12;
             }
+          }
+          else if (v->str.compare("inherit") == 0) {
+            v->value_type = CSS::ValueType::INHERIT;
           } 
           skip_blanks();
         }
@@ -721,10 +736,10 @@ class CSSParser
         if (it != css.property_map.end()) prop->id = it->second; else break;
         skip_blanks();
 
-        if (token == Token::COLON) skip_blanks(); else break;
+        if (token == Token::COLON        ) skip_blanks(); else break;
         if (!expression(*prop)) break;
         if (token == Token::IMPORTANT_SYM) skip_blanks();
-        if (token == Token::SEMICOLON) skip_blanks(); // may not be optional
+        if (token == Token::SEMICOLON    ) skip_blanks(); // may not be optional
         done = true;
         break;
       }
@@ -771,8 +786,8 @@ class CSSParser
     }
 
     bool font_face_statement() {
-      CSS::Selectors sels;
-      CSS::Selector * sel = css.selector_pool.newElement();
+      CSS::Selectors      sels;
+      CSS::Selector     * sel = css.selector_pool.newElement();
       CSS::SelectorNode * node = css.selector_node_pool.newElement();
       node->tag = DOM::Tag::FONT_FACE;
       sel->add_selector_node(node);
@@ -891,6 +906,7 @@ class CSSParser
             (token == Token::COLON )) {
           if (!sub_selector_node(*node)) break;
         }
+
         done = true;
         break;
       }
@@ -956,7 +972,7 @@ class CSSParser
 
     CSS::Properties * properties() {
       CSS::Properties * props = css.properties_pool.newElement();
-      CSS::Property * property;
+      CSS::Property   * property;
       while (token == Token::IDENT) {
         if (((property = declaration())) != nullptr) props->push_front(property);
       }
@@ -979,14 +995,25 @@ class CSSParser
     }
     
     bool ruleset() {
-      CSS::Selectors selectors; // multiple selectors can be associated to a property list 
+      CSS::Selectors  selectors; // multiple selectors can be associated to a property list 
       CSS::Selector * sel;
+      // skip everything until we get th beginning of a ruleset
+      // while ((token != Token::END_OF_FILE) && 
+      //        (token != Token::IDENT      ) &&
+      //        (token != Token::HASH       ) &&
+      //        (token != Token::DOT        ) &&
+      //        (token != Token::LBRACK     ) &&
+      //        (token != Token::COLON      )) next_token();
       if (((sel = selector())) != nullptr) selectors.push_back(sel);
-      else while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE)) next_token();
+      else while ((token != Token::END_OF_FILE) && 
+                  (token != Token::COMMA      ) && 
+                  (token != Token::LBRACE     )) next_token();
       while (token == Token::COMMA) {
         skip_blanks();
         if (((sel = selector())) != nullptr) selectors.push_back(sel);
-        else while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE)) next_token();
+        else while ((token != Token::END_OF_FILE) && 
+                    (token != Token::COMMA      ) && 
+                    (token != Token::LBRACE     )) next_token();
       }
       if (selectors.empty()) { 
         skip_block();

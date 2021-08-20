@@ -706,9 +706,13 @@ PageLocs::get_next_page_id(const PageId & page_id, int16_t count)
         id.offset += abs(it->second.size);
         it = pages_map.find(id);
         if (it == pages_map.end()) {
+          // We have reached the end of the current item. Move to the next
+          // item and try again
           id.itemref_index += 1; id.offset = 0;
           it = check_and_find(id);
           if (it == pages_map.end()) {
+            // We have reached the end of the list. If stepping one page at a time, go
+            // to the first page
             it = (count > 1) ? prev : check_and_find(PageId(0,0));
             done = true;
           }

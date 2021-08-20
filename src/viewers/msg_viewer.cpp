@@ -50,6 +50,7 @@ void MsgViewer::show(
     .screen_bottom      =   0,
     .width              =   0,
     .height             =   0,
+    .vertical_align     =   0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -83,7 +84,7 @@ void MsgViewer::show(
     Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
     fmt);
 
-  fmt.font_index =  1;
+  fmt.font_index =  5;
   fmt.font_size  = 10;
 
   // Title
@@ -131,7 +132,7 @@ void MsgViewer::show_progress(const char * title, ...)
 
   Page::Format fmt = {
     .line_height_factor = 1.0,
-    .font_index         =   1,
+    .font_index         =   5,
     .font_size          =  10,
     .indent             =   0,
     .margin_left        =  10,
@@ -148,6 +149,7 @@ void MsgViewer::show_progress(const char * title, ...)
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
     .align              = CSS::Align::CENTER,
+    .vertical_align     = 0,
     .text_transform     = CSS::TextTransform::NONE,
     .display            = CSS::Display::INLINE
   };
@@ -221,6 +223,7 @@ void MsgViewer::add_dot()
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
     .align              = CSS::Align::CENTER,
+    .vertical_align     = 0,
     .text_transform     = CSS::TextTransform::NONE,
     .display            = CSS::Display::INLINE
   };

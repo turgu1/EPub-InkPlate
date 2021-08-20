@@ -132,7 +132,7 @@ class HTMLInterpreter
         if ((started = current_offset >= start_offset)) {
           page.set_compute_mode(compute_mode);
           page.clean();
-          std::cout << "---- PAGE START ----" << std::endl;
+          LOG_D("---- PAGE START ----");
         }
       }
       return started;

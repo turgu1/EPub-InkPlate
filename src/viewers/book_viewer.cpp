@@ -38,7 +38,7 @@ class BookViewerInterp : public HTMLInterpreter
    ~BookViewerInterp() {}
   protected:
     bool page_end(Page::Format & fmt) { 
-      std::cout << "---- PAGE END ----" << std::endl;
+      LOG_D("---- PAGE END ----");
       return true; 
     }
 };
@@ -83,6 +83,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       .screen_bottom      = page_bottom,
       .width              =   0,
       .height             =   0,
+      .vertical_align     =   0,
       .trim               = true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
@@ -132,9 +133,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
         int16_t page_count = page_locs.get_page_count();
 
         fmt.line_height_factor = 1.0;
-        fmt.font_index         =   2;
-        fmt.font_size          =   9;
-        fmt.font_style         = Fonts::FaceStyle::BOLD;
+        fmt.font_index         =   6;
+        fmt.font_size          =   8;
+        fmt.font_style         = Fonts::FaceStyle::ITALIC;
         fmt.align              = CSS::Align::CENTER;
         
         std::ostringstream ostr;
@@ -197,7 +198,7 @@ BookViewer::show_fake_cover()
 {
   Page::Format fmt = {
     .line_height_factor = 1.0,
-    .font_index         =   3,
+    .font_index         =   6,
     .font_size          =  14,
     .indent             =   0,
     .margin_left        =   0,
@@ -210,6 +211,7 @@ BookViewer::show_fake_cover()
     .screen_bottom      =  30,
     .width              =   0,
     .height             =   0,
+    .vertical_align     =   0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::ITALIC,
@@ -227,7 +229,7 @@ BookViewer::show_fake_cover()
   page.add_text(author, fmt);
   page.end_paragraph(fmt);
 
-  fmt.font_index =   1;
+  fmt.font_index =   5;
   fmt.font_size  =  18;
   fmt.screen_top = 200;
   fmt.font_style = Fonts::FaceStyle::NORMAL;

@@ -44,6 +44,7 @@ bool Fonts::setup()
 
   std::string def         = "Default";
   std::string draw        = "Drawings";
+  std::string system      = "System";
 
   std::string drawings    = FONTS_FOLDER "/drawings.otf";
   
@@ -58,6 +59,12 @@ bool Fonts::setup()
   if (!add(def,  FaceStyle::ITALIC,      italic     )) return false;
   if (!add(def,  FaceStyle::BOLD_ITALIC, bold_italic)) return false;   
 
+  normal = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Regular.otf"   );
+  italic = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Italic.otf"    );
+
+  if (!add(system, FaceStyle::NORMAL, normal)) return false;
+  if (!add(system, FaceStyle::ITALIC, italic)) return false;
+  
   return true;
 }
 
@@ -79,11 +86,11 @@ Fonts::clear(bool all)
   #if USE_EPUB_FONTS
     int i = 0;
     for (auto & entry : font_cache) {
-      if (all || (i >= 5)) delete entry.font;
+      if (all || (i >= 7)) delete entry.font;
       else entry.font->clear_cache();
       i++;
     }
-    font_cache.resize(all ? 0 : 5);
+    font_cache.resize(all ? 0 : 7);
     font_cache.reserve(20);
   #endif
 }

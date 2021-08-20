@@ -62,6 +62,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
       .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
       .width              =     0,
       .height             =     0,
+      .vertical_align     =     0,
       .trim               =  true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
@@ -172,7 +173,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
 
     if (book == nullptr) return;
 
-    // TTF * font = fonts.get(1, 9);
+    // TTF * font = fonts.get(5, 9);
 
     Page::Format fmt = {
       .line_height_factor = 0.8,
@@ -189,6 +190,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
       .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
       .width              = 0,
       .height             = 0,
+      .vertical_align     = 0,
       .trim               = true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
