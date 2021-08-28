@@ -8,8 +8,6 @@
 #include "logging.hpp"
 #include "alloc.hpp"
 
-#include "stb_image.h"
-
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -18,12 +16,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
-
-#define ZLIB 0
-
-#if ZLIB
-  #include "zlib.h" // ToDo: Migrate to stb
-#endif
 
 Unzip::Unzip()
 {
@@ -258,28 +250,25 @@ clean_fname(const char * filename)
   return str;
 }
 
-char * 
-Unzip::get_file(const char * filename, uint32_t & file_size)
+bool
+Unzip::open_file(const char * filename)
 {
-  // LOG_D("get_file: %s", filename);
+  LOG_D("Mutex lock...");
+  mutex.lock();
   
-  std::scoped_lock guard(mutex);
-  
-  char * data = nullptr;
-  int    err  = 0;
-  file_size = 0;
-  
-  if (!zip_file_is_open) return nullptr;
+  int err = 0;
+
+  if (!zip_file_is_open) return false;
 
   char * the_filename = clean_fname(filename);
-  FileEntries::iterator fe = file_entries.begin();
+  current_fe = file_entries.begin();
 
-  while (fe != file_entries.end()) {
-    if (strcmp((*fe)->filename, the_filename) == 0) break;
-    fe++;
+  while (current_fe != file_entries.end()) {
+    if (strcmp((*current_fe)->filename, the_filename) == 0) break;
+    current_fe++;
   }
 
-  if (fe == file_entries.end()) {
+  if (current_fe == file_entries.end()) {
     LOG_E("Unzip Get: File not found: %s", the_filename);
     #if DEBUGGING
       std::cout << "---- Files available: ----" << std::endl;
@@ -288,7 +277,8 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
       }
       std::cout << "[End of List]" << std::endl;
     #endif
-    return nullptr;
+    mutex.unlock();
+    return false;
   }
   // else {
   //   LOG_D("File: %s at pos: %d", (*fe)->filename, (*fe)->start_pos);
@@ -318,7 +308,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     
     const int LOCAL_HEADER_SIZE = 26;
 
-    if (fseek(file, (*fe)->start_pos, SEEK_SET)) ERR(13);
+    if (fseek(file, (*current_fe)->start_pos, SEEK_SET)) ERR(13);
     if (fread(buffer, 4, 1, file) != 1) ERR(14);
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) ERR(15);
 
@@ -333,40 +323,111 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     // }
 
     if (fseek(file, filename_size + extra_size, SEEK_CUR)) ERR(17);
-    // LOG_D("Unzip Get Method: ", fe->method);
+    // LOG_D("Unzip Get Method: ", (*current_fe)->method);
+    
+    completed = true;
+    break;
+  }
 
-    data = (char *) allocate((*fe)->size + 1);
+  if (completed) {
+    (*current_fe)->current_pos = 0;
+    return true;
+  }
+  else {
+    LOG_E("Unzip open_file: Error!: %d", err);
+    mutex.unlock();
+    return false;
+  }
+}
+
+void
+Unzip::close_file()
+{
+  LOG_D("Mutex unlock...");
+  mutex.unlock();
+}
+
+#if 0
+char * 
+Unzip::get_file(const char * filename, uint32_t & file_size)
+{
+  // LOG_D("get_file: %s", filename);
+  
+  if (!open_file(filename)) return nullptr;
+
+  char * data = nullptr;
+  int    err  = 0;
+  file_size   = 0;
+  
+  bool completed = false;
+  while (true) {
+    data = (char *) allocate((*current_fe)->size + 1);
 
     if (data == nullptr) ERR(18);
-    data[(*fe)->size] = 0;
+    data[(*current_fe)->size] = 0;
 
-    #if SHOW_TIMING
-      uint64_t a = 0, b = 0, c = 0;
-    #endif
-
-    if ((*fe)->method == 0) {
-
-      #if SHOW_TIMING
-        a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-      #endif
-
-      if (fread(data, (*fe)->size, 1, file) != 1) ERR(19);
-
-      #if SHOW_TIMING
-        b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-      #endif
-
-      //LOG_E("read %d bytes at pos %d", fe->size, (fe->start_pos + 4 + LOCAL_HEADER_SIZE + filename_size + extra_size));
+    if ((*current_fe)->method == 0) {
+      if (fread(data, (*current_fe)->size, 1, file) != 1) ERR(19);
     }
-    else if ((*fe)->method == 8) {
+    else if ((*current_fe)->method == 8) {
+
+      #if MINIZ
+        repeat  = (*current_fe)->compressed_size / BUFFER_SIZE;
+        remains = (*current_fe)->compressed_size % BUFFER_SIZE;
+        current = 0;
+
+        zstr.zalloc    = nullptr;
+        zstr.zfree     = nullptr;
+        zstr.opaque    = nullptr;
+        zstr.next_in   = nullptr;
+        zstr.avail_in  = 0;
+        zstr.avail_out = (*current_fe)->size;
+        zstr.next_out  = (unsigned char *) data;
+
+        int zret;
+
+        // Use inflateInit2 with negative windowBits to get raw decompression
+        if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
+          ERR(23);
+        }
+
+        // int szDecomp;
+
+        // Decompress until deflate stream ends or end of file
+        do {
+          uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+          if (fread(buffer, size, 1, file) != 1) {
+            mz_inflateEnd(&zstr);
+            err = 24;
+            goto error;
+          }
+
+          current++;
+
+          zstr.avail_in = size;
+          zstr.next_in  = (unsigned char *) buffer;
+
+          zret = mz_inflate(&zstr, MZ_NO_FLUSH);
+
+          switch (zret) {
+            case MZ_NEED_DICT:
+            case MZ_DATA_ERROR:
+            case MZ_MEM_ERROR:
+              mz_inflateEnd(&zstr);
+              err = 25;
+              goto error;
+            default:
+              ;
+          }
+        } while (current <= repeat);
+
+        mz_inflateEnd(&zstr);
+      #endif
 
       #if ZLIB
-        if (result != fe->size) ERR(20);
-
-        uint16_t rep   = fe->compressed_size / BUFFER_SIZE;
-        uint16_t rem   = fe->compressed_size % BUFFER_SIZE;
-        uint16_t cur   = 0;
-        uint32_t total = 0;
+        repeat  = ((*current_fe)->compressed_size + 2) / BUFFER_SIZE;
+        remains = ((*current_fe)->compressed_size + 2) % BUFFER_SIZE;
+        current = 0;
 
         /* Allocate inflate state */
         z_stream zstr;
@@ -376,30 +437,37 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         zstr.opaque    = nullptr;
         zstr.next_in   = nullptr;
         zstr.avail_in  = 0;
-        zstr.avail_out = fe->size;
+        zstr.avail_out = (*current_fe)->size;
         zstr.next_out  = (Bytef *) data;
 
         int zret;
 
         // Use inflateInit2 with negative windowBits to get raw decompression
-        if ((zret = inflateInit2_(&zstr, -MAX_WBITS, ZLIB_VERSION, sizeof(z_stream))) != Z_OK) goto error;
+        if ((zret = inflateInit2(&zstr, -MAX_WBITS)) != Z_OK) { 
+          err = 23; 
+          goto error; 
+        }
 
         // int szDecomp;
 
         // Decompress until deflate stream ends or end of file
-        do
-        {
-          uint16_t size = cur < rep ? BUFFER_SIZE : rem;
+        do {
+          uint16_t size = current < repeat ? BUFFER_SIZE : remains;
           if (fread(buffer, size, 1, file) != 1) {
             inflateEnd(&zstr);
+            err = 24;
             goto error;
           }
 
-          cur++;
-          total += size;
+          // if (size <= (BUFFER_SIZE - 2)) {
+          //   buffer[size    ] = 0;
+          //   buffer[size + 1] = 0;
+          // }
+
+          current++;
 
           zstr.avail_in = size;
-          zstr.next_in = (Bytef *) buffer;
+          zstr.next_in  = (Bytef *) buffer;
 
           zret = inflate(&zstr, Z_NO_FLUSH);
 
@@ -408,58 +476,51 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
             case Z_DATA_ERROR:
             case Z_MEM_ERROR:
               inflateEnd(&zstr);
+              err = 25;
               goto error;
             default:
               ;
           }
-        } while (zret != Z_STREAM_END);
+        } while (current <= repeat);
 
         inflateEnd(&zstr);
-      #else
-        char * compressed_data = (char *) allocate((*fe)->compressed_size + 2);
+      #endif
+      #if STB
+        char * compressed_data = (char *) allocate((*current_fe)->compressed_size + 2);
         if (compressed_data == nullptr) {
           // msg_viewer.out_of_memory("compressed data retrieval from epub");
           ERR(21);
         }
 
-        #if SHOW_TIMING
-          a = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-        #endif
+        if (fread(compressed_data, (*current_fe)->compressed_size, 1, file) != 1) {
+          free(compressed_data);
+          ERR(22);
+        }
 
-        if (fread(compressed_data, (*fe)->compressed_size, 1, file) != 1) ERR(22);
+        compressed_data[(*current_fe)->compressed_size]     = 0;
+        compressed_data[(*current_fe)->compressed_size + 1] = 0;
 
-        #if SHOW_TIMING
-          b = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-        #endif
+        int32_t result = stbi_zlib_decode_noheader_buffer(data, 
+                                                          (*current_fe)->size, 
+                                                          compressed_data, 
+                                                          (*current_fe)->compressed_size + 2);
 
-        compressed_data[(*fe)->compressed_size]     = 0;
-        compressed_data[(*fe)->compressed_size + 1] = 0;
-
-        int32_t result = stbi_zlib_decode_noheader_buffer(data, (*fe)->size, compressed_data, (*fe)->compressed_size + 2);
-
-        #if SHOW_TIMING
-          c = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-        #endif
-
-        if (result != (*fe)->size) {
+        if (result != (*current_fe)->size) {
+          free(compressed_data);
           ERR(23);
         }
-        // std::cout << "[FILE CONTENT:]" << std::endl << data << std::endl << "[END]" << std::endl;
 
         free(compressed_data);
       #endif
     }
     else break;
 
-    #if SHOW_TIMING
-      std::cout << "unzip.get_file timings: get file: " << b - a;
-      if (c != 0) std::cout << " unzip: " << c - b;
-      std::cout << std::endl;
-    #endif
-
     completed = true;
     break;
   }
+
+error:
+  close_file();
 
   if (!completed) {
     if (data != nullptr) free(data);
@@ -468,7 +529,245 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     LOG_E("Unzip get: Error!: %d", err);
   }
   else {
-    file_size = (*fe)->size;
+    file_size = (*current_fe)->size;
   }
+
   return data;
 }
+#endif
+
+#if !STB
+
+bool
+Unzip::open_stream_file(const char * filename, uint32_t & file_size)
+{
+  if (!open_file(filename)) return false;
+
+  repeat  = ((*current_fe)->compressed_size) / BUFFER_SIZE;
+  remains = ((*current_fe)->compressed_size) % BUFFER_SIZE;
+  current = 0;
+  aborted = false;
+
+  zstr.zalloc    = nullptr;
+  zstr.zfree     = nullptr;
+  zstr.opaque    = nullptr;
+  zstr.next_in   = nullptr;
+  zstr.next_out  = nullptr;
+  zstr.avail_in  = 0;
+  zstr.avail_out = 0;
+
+  int zret;
+
+  #if ZLIB
+    if ((zret = inflateInit2(&zstr, -MAX_WBITS)) != Z_OK) {
+      aborted = true;
+      close_stream_file();
+      return false;
+    }
+  #else // MINIZ
+    if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
+      aborted = true;
+      close_stream_file();
+      return false;
+    }
+  #endif
+
+  file_size = (*current_fe)->size;
+
+  uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+  if (fread(buffer, size, 1, file) != 1) {
+    LOG_E("Error reading zip content.");
+    close_stream_file();
+    aborted = true;
+    return false;
+  }
+
+  current++;
+
+  zstr.avail_in = size;
+  zstr.next_in  = (unsigned char *) buffer;
+
+  return true;
+}
+
+void
+Unzip::close_stream_file() 
+{
+  if (aborted) return;
+
+  #if ZLIB
+    inflateEnd(&zstr);
+  #else // MINIZ
+    mz_inflateEnd(&zstr);
+  #endif
+
+  close_file();
+}
+
+bool
+Unzip::stream_skip(uint32_t byte_count)
+{
+  char * tmp = (char *) allocate(byte_count);
+  uint32_t size = byte_count;
+
+  do {
+    uint32_t s = size;
+    if (!get_stream_data(tmp, s)) {
+      free(tmp);
+      return false;
+    }
+    size -= s;
+  } while (size > 0);
+  free(tmp);
+  return true;
+}
+
+bool 
+Unzip::get_stream_data(char * data, uint32_t & data_size)
+{
+  zstr.next_out  = (unsigned char *) data;
+  zstr.avail_out = data_size;
+  
+  if ((*current_fe)->method == 0) {
+    while (!aborted && (zstr.avail_out > 0)) {
+      uint16_t copy_size = zstr.avail_in <= zstr.avail_out ? zstr.avail_in : zstr.avail_out;
+      memcpy(zstr.next_out, zstr.next_in, copy_size);
+
+      zstr.next_out  += copy_size;
+      zstr.next_in   += copy_size;
+      zstr.avail_out -= copy_size;
+      zstr.avail_in  -= copy_size;
+
+      if (zstr.avail_in == 0) {
+        if (current > repeat) break; // We are at the end
+        uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+        if (fread(buffer, size, 1, file) != 1) {
+          LOG_E("Error reading zip content.");
+          close_stream_file();
+          aborted = true;
+          break;
+        }
+
+        current++;
+
+        zstr.avail_in = size;
+        zstr.next_in  = (unsigned char *) buffer;
+      }
+
+    }
+  }
+  else if ((*current_fe)->method == 8) {
+
+    while (!aborted && (zstr.avail_out == data_size)) {
+
+      #if ZLIB
+        int zret = inflate(&zstr, Z_NO_FLUSH);
+
+        switch (zret) {
+          case Z_NEED_DICT:
+          case Z_DATA_ERROR:
+          case Z_MEM_ERROR:
+            LOG_E("Error inflating data: %d", zret);
+            close_stream_file();
+            aborted = true;
+          default:
+            ;   
+        }
+      #else // MINIZ
+        int zret = mz_inflate(&zstr, MZ_NO_FLUSH);
+
+        switch (zret) {
+          case MZ_NEED_DICT:
+          case MZ_DATA_ERROR:
+          case MZ_MEM_ERROR:
+            LOG_E("Error inflating data: %d", zret);
+            close_stream_file();
+            aborted = true;
+          default:
+            ;   
+        }
+      #endif
+
+      if (!aborted && (zstr.avail_out != 0)) {
+        if ((zstr.avail_in == 0) && (current <= repeat)) {
+          uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+          if (fread(buffer, size, 1, file) != 1) {
+            LOG_E("Error reading zip content.");
+            close_stream_file();
+            aborted = true;
+          }
+          else {
+            current++;
+
+            zstr.avail_in = size;
+            zstr.next_in  = (unsigned char *) buffer;
+          }
+        }
+      }
+    }
+  }
+
+  data_size = data_size - zstr.avail_out;
+  return !aborted;
+}
+
+// Test version of get_file using stream methods
+char * 
+Unzip::get_file(const char * filename, uint32_t & file_size)
+{
+  // LOG_D("get_file: %s", filename);
+  
+  char * data   = nullptr;
+  char * window = nullptr;
+  int    total  = 0;
+  int    err    = 0;
+  
+  bool completed = false;
+  while (true) {
+    if (!open_stream_file(filename, file_size)) ERR(18);
+
+    if ((data = (char *) allocate(file_size + 1)) == nullptr) ERR(19);
+    data[file_size] = 0;
+
+    char   * data_ptr = data;
+    uint32_t size     = file_size;
+
+    while (get_stream_data(data_ptr, size) && ((total + size) <= file_size)) {
+      if (size > 0) {
+        data_ptr += size;
+        total    += size;
+
+        LOG_D("Got %d bytes...", size);
+      }
+      else {
+        LOG_E("Got 0 bytes!!");
+      }
+
+      if (total == file_size) break;
+
+      size = file_size - total;
+    }
+
+    LOG_D("File size: %d, received: %d", file_size, total);
+    free(window);
+    completed = true;
+    break;
+  }
+
+  close_stream_file();
+
+  if (!completed) {
+    if (data   != nullptr) free(data);
+    if (window != nullptr) free(window);
+    data = nullptr;
+    file_size = 0;
+    LOG_E("Unzip get (stream version): Error!: %d", err);
+  }
+  else {
+    file_size = total;
+  }
+
+  return data;
+}
+
+#endif

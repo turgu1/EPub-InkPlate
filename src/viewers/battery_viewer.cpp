@@ -39,11 +39,11 @@
       .screen_bottom      = 10,
       .width              = 0,
       .height             = 0,
+      .vertical_align     = 0,
       .trim               = true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
       .align              = CSS::Align::LEFT,
-      .vertical_align     = 0,
       .text_transform     = CSS::TextTransform::NONE,
       .display            = CSS::Display::INLINE
     };

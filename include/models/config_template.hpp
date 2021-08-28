@@ -2,6 +2,7 @@
 
 #include "global.hpp"
 #include "logging.hpp"
+#include "strlcpy.hpp"
 
 #include <string>
 #include <array>

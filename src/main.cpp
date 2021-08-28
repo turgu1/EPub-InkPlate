@@ -135,6 +135,26 @@
     void 
     app_main(void)
     {
+      printf("EPub InkPlate Reader Startup\n");
+
+      /* Print chip information */
+      esp_chip_info_t chip_info;
+      esp_chip_info(&chip_info);
+      printf("This is %s chip with %d CPU core(s), WiFi%s%s, ",
+              CONFIG_IDF_TARGET,
+              chip_info.cores,
+              (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
+              (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+
+      printf("silicon revision %d, ", chip_info.revision);
+
+      printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+              (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+
+      printf("Minimum free heap size: %d bytes\n", esp_get_minimum_free_heap_size());
+
+      heap_caps_print_heap_info(MALLOC_CAP_32BIT|MALLOC_CAP_8BIT|MALLOC_CAP_SPIRAM|MALLOC_CAP_INTERNAL);
+
       TaskHandle_t xHandle = NULL;
 
       xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *) 1, configMAX_PRIORITIES - 1, &xHandle);

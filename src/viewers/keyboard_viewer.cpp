@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Guy Turcotte
 //
 // MIT License. Look at file licenses.txt for details.
+#if 0
 
 #define __KEYBOARD_VIEWER__ 1
 #include "viewers/keyboard_viewer.hpp"
@@ -33,6 +34,7 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     .screen_bottom      =   0,
     .width              =   0,
     .height             =   0,
+    .vertical_align     =   0,
     .trim               = true,
     .pre                = false,
     .font_style         = Fonts::FaceStyle::NORMAL,
@@ -158,3 +160,5 @@ KeyboardViewer::show_char(char ch, uint16_t & x, uint16_t y)
 {
 
 }
+
+#endif

@@ -40,7 +40,7 @@ class Screen : NonCopyable
       static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM, TOP };
-    enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+    enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS, BOTH };
 
     void          draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
     void           draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);

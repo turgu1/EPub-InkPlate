@@ -9,13 +9,11 @@
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/page_locs.hpp"
+#include "models/image_factory.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/book_viewer.hpp"
 #include "helpers/unzip.hpp"
 #include "logging.hpp"
-
-#include "stb_image.h"
-#include "image_info.hpp"
 
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
@@ -186,14 +184,9 @@ bin(char ch)
   return 0;
 }
 
-char *
-EPub::retrieve_file(const char * fname, uint32_t & size)
+std::string 
+EPub::filename_locate(const char * fname)
 {
-  // Cleanup the filename that can contain characters as hexadecimal values
-  // stating with '%' and relative folder change using '../'
-
-  LOG_D("Retrieving file %s", fname);
-  
   char name[256];
   uint8_t idx = 0;
   const char * s = fname;
@@ -217,6 +210,19 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
 
   std::string filename = opf_base_path;
   filename.append(name);
+
+  return filename;
+}
+
+char *
+EPub::retrieve_file(const char * fname, uint32_t & size)
+{
+  // Cleanup the filename that can contain characters as hexadecimal values
+  // stating with '%' and relative folder change using '../'
+
+  LOG_D("Retrieving file %s", fname);
+  
+  std::string filename = filename_locate(fname);
 
   // LOG_D("Retrieving file %s", filename.c_str());
 
@@ -340,8 +346,10 @@ EPub::retrieve_css(ItemInfo & item)
             if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
             free(data);
 
-            css_tmp->show();
-            
+            // #if DEBUGGING
+            //   css_tmp->show();
+            // #endif
+
             retrieve_fonts_from_css(*css_tmp);
                 css_cache.push_back(css_tmp);
             item.css_list.push_back(css_tmp);
@@ -411,9 +419,10 @@ EPub::get_item(pugi::xml_node itemref,
 
   while (!completed) {
     if (!(node = opf.child("package").child("manifest").child("item"))) ERR(1);
-    for (; node; node = node.next_sibling("item")) {
+    do {
       if ((attr = node.attribute("id")) && (strcmp(attr.value(), id) == 0)) break;
-    }
+      node = node.next_sibling("item");
+    } while (node != nullptr);
     if (!node) ERR(2);
 
     if (!(attr = node.attribute("media-type"))) ERR(3);
@@ -658,7 +667,7 @@ EPub::get_cover_filename()
 
   if ((node = opf.child("package").child("metadata").child("meta"))) {
 
-    for (; node; node = node.next_sibling("meta")) {
+    do {
       if ((attr = node.attribute("name")) && 
           (strcmp(attr.value(), "cover") == 0) && 
           (attr = node.attribute("content")) &&
@@ -669,18 +678,22 @@ EPub::get_cover_filename()
 
         if ((n = opf.child("package").child("manifest").child("item"))) {
 
-          for (; n != nullptr; n = n.next_sibling("item")) {
-            if ((a = n.attribute("id")) && 
-                (strcmp(a.value(), itemref) == 0) &&
+          do {
+            if ((((a = n.attribute("id"        )) && (strcmp(a.value(), itemref) == 0)) ||
+                 ((a = n.attribute("properties")) && (strcmp(a.value(), itemref) == 0))) &&
                 (a = n.attribute("href"))) {
               filename = a.value();
+              break;
             }
-          }
+            n = n.next_sibling("item");
+          } while (n != nullptr);
         }
 
         break;
       }
-    }
+
+      node = node.next_sibling("meta");
+    } while (node != nullptr);
   }
 
   if (filename == nullptr) {
@@ -688,18 +701,20 @@ EPub::get_cover_filename()
 
     if ((node = opf.child("package").child("manifest").child("item"))) {
 
-      for (; node != nullptr; node = node.next_sibling("item")) {
+      do {
         if ((attr = node.attribute("id")) && 
-            (strcmp(attr.value(), "cover-image") == 0) && 
+            ((strcmp(attr.value(), "cover-image") == 0) || 
+             (strcmp(attr.value(), "cover"      ) == 0)) && 
             (attr = node.attribute("href"))) {
-
           filename = attr.value();
+          break;
         }
-      }
+        node = node.next_sibling("item");
+      } while (node != nullptr);
     }
   }
 
-  return filename;
+  return filename == nullptr ? "" : filename;
 }
 
 int16_t 
@@ -758,68 +773,53 @@ bool
 EPub::get_item_at_index(int16_t    itemref_index, 
                         ItemInfo & item)
 {
-  std::scoped_lock guard(mutex);
-  
   if (!file_is_open) return false;
 
-  xml_node node;
+  LOG_D("Mutex lock...");
+  
+  { std::scoped_lock guard(mutex);
+    
+    bool res = false;
+    while (true) {
+      xml_node node;
 
-  if (!((node = opf.child("package").child("spine").child("itemref"))))
-    return false;
+      if (!((node = opf.child("package").child("spine").child("itemref")))) break;
 
-  int16_t index = 0;
+      int16_t index = 0;
 
-  while (node && (index < itemref_index)) {
-    node = node.next_sibling("itemref");
-    index++;
+      while (node && (index < itemref_index)) {
+        node = node.next_sibling("itemref");
+        index++;
+      }
+
+      if (node == nullptr) break;
+
+      res = get_item(node, item);
+      item.itemref_index = itemref_index;
+
+      break;
+    }
+    LOG_D("Mutex unlocked...");
+    return res;
   }
-
-  if (node == nullptr) return false;
-
-  bool res = get_item(node, item);
-  item.itemref_index = itemref_index;
-
-  return res;
 }
 
-bool
-EPub::get_image(std::string & filename, Page::Image & image, int16_t & channel_count)
+Image *
+EPub::get_image(std::string & fname)
 {
-  std::scoped_lock guard(mutex);
+  LOG_D("Mutex lock...");
 
-  uint32_t size;
-  uint8_t * data = (unsigned char *) epub.retrieve_file(filename.c_str(), size);
+  { std::scoped_lock guard(mutex);
 
-  if (data == nullptr) {
-    LOG_E("Unable to retrieve image file: %s", filename.c_str());
-  }
-  else {
-    ImageInfo * info = get_image_info(data, size);
-    #if EPUB_INKPLATE_BUILD
-      uint32_t max_size = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT) - 100e3;
-    #else
-      uint32_t max_size = 25e5;
-    #endif
+    std::string filename = filename_locate(fname.c_str());
+    Image * img = ImageFactory::create(filename, Dim(Screen::WIDTH, Screen::HEIGHT));
 
-    if ((info == nullptr) || (info->size > max_size)) {
-      free(data);
-      LOG_E("Image is not valid or too large to load. Space available: %d", max_size);
-      return false; // image format not supported or not valid
+    if ((img == nullptr) || (img->get_bitmap() == nullptr)) {
+      if (img != nullptr) delete img;
+      img = nullptr;
     }
 
-    int w, h, c;
-    image.bitmap = stbi_load_from_memory(data, size, &w, &h, &c, 1);
- 
-    image.dim = Dim(w, h);
-    channel_count = c;
-
-    free(data);
-
-    if (image.bitmap != nullptr) {
-      //LOG_D("Image first pixel: %02x.", image.bitmap[0]);
-      return true;
-    }
+    LOG_D("Mutex unlocked...");
+    return img;
   }
-
-  return false;
 }

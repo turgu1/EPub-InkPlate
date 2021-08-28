@@ -11,6 +11,7 @@
 #include "models/css.hpp"
 #include "models/book_params.hpp"
 #include "viewers/page.hpp"
+#include "models/image.hpp"
 
 #include <string>
 #include <list>
@@ -84,9 +85,7 @@ class EPub
     void               open_params(const std::string &  epub_filename);
     bool                 open_file(const std::string &  epub_filename);
     bool                close_file();
-    bool                 get_image(std::string &        filename,
-                                   Page::Image &        image,
-                                   int16_t &            channel_count);
+    Image *              get_image(std::string &        fname);
     char*            retrieve_file(const char *         fname, 
                                    uint32_t &           size);
     bool                  get_item(pugi::xml_node       itemref, 
@@ -94,6 +93,7 @@ class EPub
     bool         get_item_at_index(int16_t              itemref_index);
     bool         get_item_at_index(int16_t              itemref_index,
                                    ItemInfo &           item);
+    std::string    filename_locate(const char *         fname);
     int16_t         get_item_count();
     void update_book_format_params();
 

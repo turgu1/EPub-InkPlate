@@ -44,7 +44,7 @@ class BookViewer
 
     // bool start_of_paragraph;  ///< Required to manage paragraph indentation at beginning of new page.
 
-    //bool                get_image(std::string & filename, Page::Image & image);
+    //bool                get_image(std::string & filename, Image::ImageData Bitmap & image);
     //bool       build_page_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
     void            build_page_at(const PageLocs::PageId & page_id);
 

@@ -2,8 +2,6 @@
 
 #include "models/epub.hpp"
 
-#include "stb_image.h"
-#include "stb_image_resize.h"
 #include "logging.hpp"
 #include "models/config.hpp"
 
@@ -278,23 +276,46 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
       current_offset++;
     }
     else {
-      Page::Image image;
-      if (page.get_image(image_filename, item_info.file_path, image)) {
-        if (started && (current_offset < end_offset)) {
-          if (!page.add_image(image, fmt /*, beginning_of_page */)) {
-            if (page.is_full() && !page_end(fmt)) return false;
-            if (at_end()) return true;
-            page.add_image(image, fmt /*, beginning_of_page */);
-            stbi_image_free((void *) image.bitmap);
-            image.bitmap = nullptr;
-            if (page.is_full() && !page_end(fmt)) return false;
-            if (at_end()) return true;
+      std::string fname = item_info.file_path;
+      fname.append(image_filename);
+
+      if (started && (current_offset < end_offset)) {
+
+        Image * img = epub.get_image(fname);
+        if (img != nullptr) {
+          if (!page.add_image(*img, fmt /*, beginning_of_page */)) {
+            if (page.is_full() && !page_end(fmt)) { delete img; return false; };
+            if (at_end()) { delete img; return true; };
+            page.add_image(*img, fmt /*, beginning_of_page */);
+            if (page.is_full() && !page_end(fmt)) { delete img; return false; };
+            if (at_end()) { delete img; return true; };
           }
           show_state("After IMG", fmt);
-         }
-        if (image.bitmap != nullptr) stbi_image_free((void *) image.bitmap);
+          delete img;
+        }
+        else {
+          str = "[An image is not compatible or not found]";
+        }
       }
       current_offset++;
+
+      // Image::ImageData  image;
+      // if (page.get_image(image_filename, item_info.file_path, image)) {
+      //   if (started && (current_offset < end_offset)) {
+      //     if (!page.add_image(image, fmt /*, beginning_of_page */)) {
+      //       if (page.is_full() && !page_end(fmt)) return false;
+      //       if (at_end()) return true;
+      //       page.add_image(image, fmt /*, beginning_of_page */);
+      //       stbi_image_free((void *) image.bitmap);
+      //       image.bitmap = nullptr;
+      //       if (page.is_full() && !page_end(fmt)) return false;
+      //       if (at_end()) return true;
+      //     }
+      //     show_state("After IMG", fmt);
+      //    }
+      //   if (image.bitmap != nullptr) stbi_image_free((void *) image.bitmap);
+      // }
+      // current_offset++;
     }
   }
 
@@ -341,13 +362,10 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
       }
     }
   }
-  else if (str) {
+
+  if (str != nullptr) {
     int16_t size;
 
-    // if (current_offset == 591) {
-    //   LOG_D("Found it...");
-    // }
-    
     if (current_offset + (size = strlen(str)) <= start_offset) {
       // As we move from the beginning of a file, we bypass everything that is there before
       // the start of the page offset
@@ -409,9 +427,6 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
             }       
             std::string word;
             word.assign(w, count);
-            // if (word.compare("Vidal") == 0) {
-            //   LOG_D("Found Vidal...");
-            // }
             if (!page.add_word(word.c_str(), fmt)) {
               if (!page_end(fmt)) return false;
               if (at_end()) {

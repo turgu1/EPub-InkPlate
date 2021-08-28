@@ -182,7 +182,7 @@ BooksDirController::show_last_book()
     book_fname  = BOOKS_FOLDER "/";
     book_fname += book->filename;
     book_title  = book->title;
-    if (book_controller.open_book_file(book_title, book_fname, book_page_id, book->cover_too_large != 0)) {
+    if (book_controller.open_book_file(book_title, book_fname, book_page_id)) {
       app_controller.set_controller(AppController::Ctrl::BOOK);
     }
   }
@@ -248,12 +248,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
             
             PageLocs::PageId page_id = { 0, 0 };
             
-            if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
+            if (book_controller.open_book_file(book_title, book_fname, page_id)) {
               app_controller.set_controller(AppController::Ctrl::BOOK);
             }
           }
         }
-        else {
+        else {open_book_file
           app_controller.set_controller(AppController::Ctrl::OPTION);
         }
         break;
@@ -329,7 +329,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
             
             PageLocs::PageId page_id = { 0, 0 };
             
-            if (book_controller.open_book_file(book_title, book_fname, page_id, book->cover_too_large != 0)) {
+            if (book_controller.open_book_file(book_title, book_fname, page_id)) {
               app_controller.set_controller(AppController::Ctrl::BOOK);
             }
           }

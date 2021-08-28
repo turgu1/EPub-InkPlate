@@ -26,7 +26,7 @@
 class BooksDir
 {
   public:
-    static const uint16_t BOOKS_DIR_DB_VERSION =   4;
+    static const uint16_t BOOKS_DIR_DB_VERSION =   5;
 
     static const uint8_t  FILENAME_SIZE        = 128;
     static const uint8_t  TITLE_SIZE           = 128;
@@ -56,7 +56,6 @@ class BooksDir
       uint8_t  cover_bitmap[MAX_COVER_WIDTH][MAX_COVER_HEIGHT];  ///< Cover bitmap shrinked for books list presentation
       uint8_t  cover_width;                   ///< Width of the cover bitmap
       uint8_t  cover_height;                  ///< Height of the cover bitmap
-      uint8_t  cover_too_large;               ///< Cover that is part of the e-book is too large to be loaded
     };
 
     struct VersionRecord {

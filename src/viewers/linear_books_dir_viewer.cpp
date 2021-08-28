@@ -81,10 +81,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     if (book == nullptr) break;
     
-    Page::Image image = (Page::Image) {
-      .bitmap = (uint8_t *) book->cover_bitmap,
-      .dim    = Dim(book->cover_width, book->cover_height)
-    };
+    Image::ImageData image(Dim(book->cover_width, book->cover_height), (uint8_t *) book->cover_bitmap);
     page.put_image(image, Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
 
     #if !(INKPLATE_6PLUS || TOUCH_TRIAL)

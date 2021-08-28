@@ -13,22 +13,6 @@
 #include <string>
 #include <sstream>
 
-//--- Image load to bitmap tool ---
-//
-// Keep only PNG, JPEG
-// No load from a file (will come from the epub file as a char array)
-
-#define STBI_ONLY_JPEG
-#define STBI_SUPPORT_ZLIB
-#define STBI_ONLY_PNG
-
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR_SATURATE_INT
-
-#include "stb_image.h"
-#include "stb_image_resize.h"
-
 #include <string>
 #include <algorithm>
 
@@ -84,7 +68,7 @@ Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) con
   if (*c == '&') {
     const uint8_t * s = ++c;
     uint8_t len = 0;
-    while ((len < 6) && (*s != 0) && (*s != ';')) { s++; len++; }
+    while ((len < 7) && (*s != 0) && (*s != ';')) { s++; len++; }
     if (*s == ';') {
       if      (strncmp("nbsp;",  (const char *) c, 5) == 0) u =    160;
       else if (strncmp("lt;",    (const char *) c, 3) == 0) u =     60;
@@ -94,7 +78,14 @@ Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) con
       else if (strncmp("apos;",  (const char *) c, 5) == 0) u =     39;
       else if (strncmp("mdash;", (const char *) c, 6) == 0) u = 0x2014;
       else if (strncmp("ndash;", (const char *) c, 6) == 0) u = 0x2013;
+      else if (strncmp("lsquo;", (const char *) c, 6) == 0) u = 0x2018;
       else if (strncmp("rsquo;", (const char *) c, 6) == 0) u = 0x2019;
+      else if (strncmp("ldquo;", (const char *) c, 6) == 0) u = 0x201C;
+      else if (strncmp("rdquo;", (const char *) c, 6) == 0) u = 0x201D;
+      else if (strncmp("euro;",  (const char *) c, 5) == 0) u = 0x20AC;
+      else if (strncmp("dagger;",(const char *) c, 7) == 0) u = 0x2020;
+      else if (strncmp("Dagger;",(const char *) c, 7) == 0) u = 0x2021;
+      else if (strncmp("copy;",  (const char *) c, 5) == 0) u =   0xa9;
       if (u == 0) {
         u = '&';
       }
@@ -627,39 +618,42 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font
 }
 
 void 
-Page::add_image_to_line(Image & image, int16_t advance, bool copy, const Format & fmt)
+Page::add_image_to_line(Image & image, int16_t advance, const Format & fmt)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
 
   entry->command                  = DisplayListCommand::IMAGE;
-  entry->kind.image_entry.image   = image;
   entry->kind.image_entry.advance = advance;
+
+  image.retrieve_image_data(entry->kind.image_entry.image);
   
-  if (compute_mode == ComputeMode::DISPLAY) {
-    if (copy) {
-      int32_t size = image.dim.width * image.dim.height;
-      if (image.bitmap != nullptr) {
-        if ((entry->kind.image_entry.image.bitmap = new unsigned char[size]) == nullptr) {
-          msg_viewer.out_of_memory("image bitmap allocation");
-        }
-        memcpy((void *) entry->kind.image_entry.image.bitmap, image.bitmap, size);
-      }
-      else {
-        entry->kind.image_entry.image.bitmap = nullptr;
-      }
-    }
-    else {
-      entry->kind.image_entry.image.bitmap = image.bitmap;
-    }
-  }
-  else {
-    entry->kind.image_entry.image.bitmap = nullptr;
-  }
+  // if (compute_mode == ComputeMode::DISPLAY) {
+  //   if (copy) {
+  //     int32_t size = image.dim.width * image.dim.height;
+  //     if (image.bitmap != nullptr) {
+  //       if ((entry->kind.image_entry.image.bitmap = new unsigned char[size]) == nullptr) {
+  //         msg_viewer.out_of_memory("image bitmap allocation");
+  //       }
+  //       memcpy((void *) entry->kind.image_entry.image.bitmap, image.bitmap, size);
+  //     }
+  //     else {
+  //       entry->kind.image_entry.image.bitmap = nullptr;
+  //     }
+  //   }
+  //   else {
+  //     entry->kind.image_entry.image.bitmap = image.bitmap;
+  //   }
+  // }
+  // else {
+  //   entry->kind.image_entry.image.bitmap = nullptr;
+  // }
   entry->pos.x = entry->pos.y = 0;
   
+  Dim dim = entry->kind.image_entry.image.dim;
+
   if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
-  if (glyphs_height < image.dim.height) glyphs_height = image.dim.height / line_height_factor;
+  if (glyphs_height < dim.height) glyphs_height = dim.height / line_height_factor;
 
   line_width += advance;
 
@@ -863,8 +857,6 @@ Page::add_char(const char * ch, const Format & fmt)
 bool 
 Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
 {
-  Image resized_image;
-
   if (screen_is_full) {
     return false;
   }
@@ -899,23 +891,23 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
     if (fmt.height && (fmt.height < target_height)) target_height = fmt.height;
 
     w = target_width;
-    h = image.dim.height * w / image.dim.width;
+    h = image.get_dim().height * w / image.get_dim().width;
     if (h > target_height) {
       h = target_height;
-      w = image.dim.width * h / image.dim.height;
+      w = image.get_dim().width * h / image.get_dim().height;
     }
   }
   else {
-    if ((image.dim.width < target_width) && (image.dim.height < target_height)) {
-      w = image.dim.width;
-      h = image.dim.height;
+    if ((image.get_dim().width < target_width) && (image.get_dim().height < target_height)) {
+      w = image.get_dim().width;
+      h = image.get_dim().height;
     } 
     else {
       w = target_width;
-      h = image.dim.height * w / image.dim.width;
+      h = image.get_dim().height * w / image.get_dim().width;
       if (h > target_height) {
         h = target_height;
-        w = image.dim.width * h / image.dim.height;
+        w = image.get_dim().width * h / image.get_dim().height;
       }
     }
   }
@@ -938,34 +930,23 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
   
   if ((screen_is_full = ((pos.y + h) > max_y))) return false;
 
-  if ((w != image.dim.width) || (h != image.dim.height)) {
+  if ((w != image.get_dim().width) || (h != image.get_dim().height)) {
 
     unsigned char * resized_bitmap = nullptr;
 
     if (compute_mode == ComputeMode::DISPLAY) {
-      if ((image.dim.width > 2) || (image.dim.height > 2)) {
+      if ((image.get_dim().width > 2) || (image.get_dim().height > 2)) {
 
-        int32_t size = w * h;
+        if ((w == 0) || (h == 0)) return false;
 
-        if (size == 0) return false;
-
-        if ((resized_bitmap = new unsigned char[w * h]) == nullptr) {
-          msg_viewer.out_of_memory("resized image allocation");
-        }
-
-        stbir_resize_uint8(image.bitmap,   image.dim.width, image.dim.height, 0,
-                           resized_bitmap, w,               h,                0,
-                           1);
+        image.resize(Dim(w, h));
       }
     }
 
-    resized_image.bitmap = resized_bitmap;
-    resized_image.dim    = Dim(w, h);
-
-    add_image_to_line(resized_image, advance, false, fmt);
+    add_image_to_line(image, advance, fmt);
   }
   else {
-    add_image_to_line(image, advance, true, fmt);
+    add_image_to_line(image, advance, fmt);
   }
 
   return true;
@@ -999,8 +980,8 @@ Page::add_text(std::string str, const Format & fmt)
 }
 
 void 
-Page::put_image(Image & image, 
-                Pos     pos)
+Page::put_image(Image::ImageData & image, 
+                Pos                  pos)
 {
   DisplayListEntry * entry = display_list_entry_pool.newElement();
   if (entry == nullptr) no_mem();
@@ -1166,14 +1147,13 @@ Page::set_region(Dim dim, Pos pos)
 }
 
 bool
-Page::show_cover(unsigned char * data, int32_t size)
+Page::show_cover(Image & img)
 {
   if (compute_mode == ComputeMode::DISPLAY) {
-    int32_t image_width, image_height, channel_count;
+    int32_t image_width  = img.get_dim().width;
+    int32_t image_height = img.get_dim().height;
 
-    unsigned char * bitmap_data = stbi_load_from_memory(data, size, &image_width, &image_height, &channel_count, 1);
-
-    if (bitmap_data != nullptr) { 
+    if (img.get_bitmap() != nullptr) { 
       // LOG_D("Image: width: %d height: %d channel_count: %d", image_width, image_height, channel_count);
 
       Dim dim;
@@ -1190,30 +1170,17 @@ Page::show_cover(unsigned char * data, int32_t size)
       pos.x = (Screen::WIDTH  - dim.width ) >> 1;
       pos.y = (Screen::HEIGHT - dim.height) >> 1;
 
-      // LOG_D("Image Parameters: %d %d %d %d", dim.width, dim.height, pos.x, pos.y);
+      img.resize(dim);
 
-      unsigned char * resized_bitmap = new unsigned char[dim.width * dim.height];
-      if (resized_bitmap == nullptr) {
-        stbi_image_free(bitmap_data);
-        LOG_D("Unable to load cover file");
-        return false;
-      }
-
-      stbir_resize_uint8(bitmap_data,   image_width, image_height, 0,
-                        resized_bitmap, dim.width,   dim.height,   0,
-                        1);
       screen.clear();
-      screen.draw_bitmap(resized_bitmap, dim, pos);
+      screen.draw_bitmap(img.get_bitmap(), img.get_dim(), pos);
       screen.update();
-
-      delete [] resized_bitmap;
     }
     else {
       LOG_D("Unable to load cover file");
       return false;
     }
 
-    stbi_image_free(bitmap_data);
     return true;
   }
 
@@ -1570,42 +1537,4 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
       fmt.vertical_align = - get_pixel_value(*(vals->front()), fmt, font->get_line_height(fmt.font_size));
     }
   }
-}
-
-bool 
-Page::get_image(const std::string & filename, const std::string current_path, Image & image)
-{
-  int16_t channel_count;
-  std::string fname = current_path;
-  fname.append(filename);
-
-  if (epub.get_image(fname, image, channel_count)) {
-    if (channel_count != 1) {
-
-      #if DEBUGGING
-        bool all_zero = true;
-        for (int i = 0; i < (image.dim.width * image.dim.height); i++) {
-          if (image.bitmap[i] != 0) { all_zero = false; break; }
-        }
-        if (all_zero) {
-          LOG_E("Bitmap is all zeroes...");
-        }
-      #endif
-
-      unsigned char * bitmap2 = (unsigned char *) allocate(image.dim.width * image.dim.height);
-      if (bitmap2 == nullptr) {
-        stbi_image_free((void *) image.bitmap);
-        return false;
-      }
-      stbir_resize_uint8(image.bitmap, image.dim.width, image.dim.height, 0, 
-                         bitmap2,      image.dim.width, image.dim.height, 0,
-                         1);
-
-      stbi_image_free((void *) image.bitmap);
-      image.bitmap = bitmap2; 
-    }
-    return true;
-  }
-
-  return false;
 }

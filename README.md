@@ -2,10 +2,11 @@
 
 ## Last news
 
-(Updated 2021.08.20)
+(Updated 2021.08.28)
 
-Update for upcoming version 1.3
+Update for upcoming version 1.3 - Not ready yet
 
+- [x] Now using ESP-IDF version 4.3.0 through PlatformIO.
 - [x] Complete redesign of the CSS Interpreter.
 - [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
 - [x] New book covers Matrix View.
@@ -13,13 +14,19 @@ Update for upcoming version 1.3
 - [x] Subscript/Superscript support.
 - [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
 - [x] Number of allowed ebooks changed from 100 to 200 maximum.
-- [x] Testing ongoing with 200 ebooks under Linux (page formatting and general functionalities) ...
-- [ ] Trials with other streaming image tools (png and jpeg)
-- [ ] Testing ebooks on InkPlate-6/InkPlate-10
+- [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
+- [x] Changes related to the new PlatformIO way of managing sdkconfig.
+- [x] Integration and Trials with new image streaming classes (png and jpeg).
+- [ ] Testing ebooks on InkPlate-6/InkPlate-10.
+- [ ] Valgrind tests.
 - [ ] Documentation update.
 - [ ] New version releases packaging.
 
 - [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (may happen for a future release).
+
+Matrix View:
+
+<img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
 
 Update to version 1.2
 
@@ -202,14 +209,17 @@ The following are imported C header and source files, that implement some algori
 
 - [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.10.4/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
 - [PubiXML](https://pugixml.org/) (For XML parsing)
-- [STB](https://github.com/nothings/stb) (For image loading and resizing, and zip deflating, etc.) :
+- [STB](https://github.com/nothings/stb) (For image resizing) :
 
-  - `stb_image.h` image loading/decoding from file/memory: JPG, PNG, BMP, GIF; deflating (unzip)
   - `stb_image_resize.h` resize images larger/smaller 
+
+- [PNGLE](https://github.com/kikuchan/pngle) (For PNG Images)
+- [MINIZ](https://github.com/kikuchan/pngle) (For Zip files and epub files decompress)
+- [TJPGD](http://elm-chan.org/fsw/tjpgd/00index.html) (For JPeg Images)
 
 The following libraries were used at first but replaced with counterparts:
 
-- [ZLib](https://zlib.net/) deflating (unzip). A file deflation function is already supplied with `stb_image.h`.
+- [ZLib](https://zlib.net/) deflating (unzip). A file deflation function is already supplied with `PNGLE`.
 - [RapidXML](http://rapidxml.sourceforge.net/index.htm) (For XML parsing) Too much stack space required. Replaced with PubiXML.
 - [SQLite3](https://www.sqlite.org/index.html) (The amalgamation version. For books simple database) Too many issues to get it runs on an ESP32. I built my own simple DB tool (look at `src/simple_db.cpp` and `include/simble_db.hpp`)
 
@@ -247,14 +257,10 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 The EPub-InkPlate application requires some functionalities to be properly set up within the ESP-IDF. To do so, some parameters located in the `sdkconfig` file must be set accordingly. This must be done using the menuconfig application that is part of the ESP-IDF. 
 
-The ESP-IDF SDK must be installed in the main user folder. Usually, it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment).
+The following is not required to be done as the file `sdkconfig.defaults` contains the changes that will trigger the generation of the suitable `sdkconfig.<project_name>` file related to the project being compiled.
 
-The following command will launch the application (the current folder must be the main folder of EPub-InkPlate):
+The current release of PlatformIO allow for editing the `sdkconfig` through the PlatformIO's `Run Menuconfig` command located in the Project Tasks. 
 
-  ```
-  $ idf.py menuconfig
-  ```
-  
 The application will show a list of configuration aspects. 
 
 The following elements have been done (No need to do it again):

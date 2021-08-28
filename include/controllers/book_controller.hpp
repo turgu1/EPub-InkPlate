@@ -23,18 +23,15 @@ class BookController
     void leave(bool going_to_deep_sleep = false);
     bool open_book_file(std::string & book_title, 
                         std::string & book_filename, 
-                        const PageLocs::PageId & page_id,
-                        bool cover_too_large);
+                        const PageLocs::PageId & page_id);
     void put_str(const char * str, int xpos, int ypos);
 
-    inline bool is_cover_too_large() { return cover_is_too_large; }
     inline const PageLocs::PageId & get_current_page_id() { return current_page_id; }
 
   private:
     static constexpr char const * TAG = "BookController";
 
     PageLocs::PageId current_page_id;
-    bool cover_is_too_large;
 };
 
 #if __BOOK_CONTROLLER__

@@ -13,6 +13,8 @@ Here are the main characteristics of the application:
 - UTF-8 characters
 - InkPlate tactile keys (single and double click to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
+- Linear and Matrix view of eBooks directory
+- Up to 200 eBooks is allowed in the directory
 - Left, center, right, and justify text alignments
 - Indentation
 - Some basic parameters and options
@@ -112,9 +114,10 @@ As indicated in section 2.1, the Main Parameters form allows for the modificatio
 The following items are displayed:
 
 - **Minutes Before Sleeping** - Options: 5, 15 or 30 minutes. This is the timeout period for which the application will wait before entering a Deep Sleep state. Deep Sleep is a means by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of a key.
+- **Books Directory View** - Options: Linear or Matrix. This will select how the list of eBooks will be presented to the user. The Linear view will show eBooks as a vertical list, showing the cover page on the left and the title/author on the right. The Matrix view will show covers arranged in a matrix with the title/author of the currently selected eBook at the top of the screen.
 - **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This item selects the orientation of the device, such that the keys will be located on the left, the right, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
 - **Pixel Resolution** - Select how many bits are used for each pixel on the screen. 3 bits per pixel allow for the use of antialiasing for fonts but will require a complete screen update on every page change. 1 bit per pixel allows for the use of partial screen update, much faster refresh, but no antialiasing possible: the glyphs are displayed with irregularities.
-- **Battery Visualisation** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the books list and the book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
+- **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the books list and the book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
 - **Show Title** - When selected, display the e-book title at the top portion of pages.
 - **Show Heap Size** - When selected, the current heap size will be displayed at the bottom of pages. Two numbers are showed: the size of the largest memory chunk available and the total size of the available memory for the heap. This is mainly used to debug potential issues with memory allocation.
    
@@ -186,13 +189,13 @@ The convert tool of *Calibre* can also shrink fonts such that they only contain 
 
 For images, to get them raisonnably in line with the screen resolution of the InkPlate devices (that is 600x800 for the InkPlate-6), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. For example, even at this size, a 600x800 image will take close to 500 kilobytes. 
 
-It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more memory to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 800x600 pixels (if you prefer, you can modify it to use 1200x825 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
+It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more time to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 800x600 pixels (if you prefer, you can modify it to use 1200x825 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
 
 ### 3.4 In case of out of memory situation
 
 The memory required to prepare a book to be displayed may become an issue if there is not enough memory available. The InkPlate devices are limited in memory: around 4.5 megabytes are available. A part of it is dedicated to the screen buffer and the rest of it is mainly used by the application.
 
-As performance is a key factor, fonts are loaded and kept in memory by the application.  If a book is using too many fonts or fonts that are too big (they may contain more glyphs than necessary for the book), it will not be possible to show the document with the original fonts. Images that are integrated into a book may also be taking a lot of memory. For example, a 1600x1200 image requires close to 2 megabytes of memory.
+As performance is a key factor, fonts are loaded and kept in memory by the application.  If a book is using too many fonts or fonts that are too big (they may contain more glyphs than necessary for the book), it will not be possible to show the document with the original fonts. 
 
 Here are some steps that can be used to minimize the amount of memory that would be required to present the content of books:
 
@@ -202,3 +205,9 @@ Here are some steps that can be used to minimize the amount of memory that would
 - **Desactivate book fonts** - In the Font Parameters, you can request not to use fonts supplied with a book.
 
 If an internal problem related to memory allocation is found by the application, a message will appear on the screen and the device will be put in a Deep Sleep state. The message will indicate the reason why the allocation was not successful. This can be used as a hint to use one or more steps indicated above.
+
+### 3.5 - Images rendering
+
+Starting with version 1.3.0, the application is using a new *stream based* approach to render images that are part of an eBook. This approach optimize the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
+
+JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some eBooks, the rendering of images may not be possible. 

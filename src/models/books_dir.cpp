@@ -16,9 +16,6 @@
   #include "esp.hpp"
 #endif
 
-#include "stb_image.h"
-#include "stb_image_resize.h"
-
 #include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -381,51 +378,42 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             if ((str =      epub.get_author())) strlcpy(the_book->author,      str, AUTHOR_SIZE     );
             if ((str = epub.get_description())) strlcpy(the_book->description, str, DESCRIPTION_SIZE);
 
-            const char * filename = epub.get_cover_filename();
+            std::string filename = epub.get_cover_filename();
 
-            if (filename != nullptr) {
+            if (!filename.empty()) {
 
               // LOG_D("Cover filename: %s", filename);
-
-              int16_t channel_count;
-              Page::Image image;
-
-              std::string fname = filename;
-              if (!epub.get_image(fname, image, channel_count)) {
-                LOG_D("Unable to retrieve cover file: %s", filename);
+              Image * img = epub.get_image(filename);
+              if (img == nullptr) {
+                LOG_D("Unable to retrieve cover file: %s", filename.c_str());
                 memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
                 the_book->cover_width     = default_cover_width;
                 the_book->cover_height    = default_cover_height;
-                the_book->cover_too_large = 1;
               }
               else {
-                LOG_D("Image: width: %d height: %d channel_count: %d", 
-                  image.dim.width, image.dim.height, channel_count);
+                LOG_D("Image: width: %d height: %d", img->get_dim().width, img->get_dim().height);
 
                 int32_t w = max_cover_width;
-                int32_t h = image.dim.height * max_cover_width / image.dim.width;
+                int32_t h = img->get_dim().height * max_cover_width / img->get_dim().width;
 
                 if (h > max_cover_height) {
                   h = max_cover_height;
-                  w = image.dim.width * max_cover_height / image.dim.height;
+                  w = img->get_dim().width * max_cover_height / img->get_dim().height;
                 }
 
-                stbir_resize_uint8(image.bitmap, image.dim.width, image.dim.height, 0,
-                                  (unsigned char *) (the_book->cover_bitmap), w, h, 0,
-                                  1);
+                img->resize(Dim(w, h));
+                memcpy(the_book->cover_bitmap, img->get_bitmap(), w * h);
 
                 the_book->cover_width     = w;
                 the_book->cover_height    = h;
-                the_book->cover_too_large = 0;
 
-                stbi_image_free((void *) image.bitmap);
+                delete img;
               }
             }
             else {
               memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);
               the_book->cover_width     = default_cover_width;
               the_book->cover_height    = default_cover_height;
-              the_book->cover_too_large = 1;
             }
         
             if (!db.add_record(the_book, sizeof(EBookRecord))) {
@@ -496,7 +484,8 @@ BooksDir::show_db()
         << "  title: "       << book.title           << std::endl
         << "  author: "      << book.author          << std::endl
         << "  description: " << book.description     << std::endl
-        << "  bitmap size: " << +book.cover_width << " " << +book.cover_height << std::endl;
+        << "  bitmap size: " << +book.cover_width 
+        << " "               << +book.cover_height   << std::endl;
     }
   #endif
 }

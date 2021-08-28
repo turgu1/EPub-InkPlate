@@ -8,6 +8,7 @@
 #include <forward_list>
 
 #include "global.hpp"
+#include "models/image.hpp"
 #include "models/fonts.hpp"
 #include "models/css.hpp"
 #include "memory_pool.hpp"
@@ -51,11 +52,6 @@ class Page
       CSS::Display       display;
     };
 
-    struct Image {
-      const uint8_t * bitmap;
-      Dim             dim;
-    };
-
     /**
      * @brief Compute mode
      * 
@@ -80,7 +76,7 @@ class Page
           bool is_space;
         } glyph_entry;
         struct ImageEntry {            ///< Used for IMAGE
-          Image image;       
+          Image::ImageData image;       
           int16_t advance;             ///< Horizontal advance on the baseline
         } image_entry;
         struct RegionEntry {           ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CLEAR_REGION
@@ -127,7 +123,7 @@ class Page
     void clear_display_list();
     void           add_line(const Format & fmt, bool justifyable);
     void  add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font, bool is_space);
-    void  add_image_to_line(Image & image, int16_t advance, bool copy, const Format & fmt);
+    void  add_image_to_line(Image & image, int16_t advance, const Format & fmt);
     int32_t      to_unicode(const char **str, CSS::TextTransform transform, bool first) const;
 
   public:
@@ -302,8 +298,8 @@ class Page
     }
 
     void show_display_list(const DisplayList & list, const char * title) const;
-    bool        show_cover(unsigned char * data, int32_t size);
-    void         put_image(Image & image, Pos pos); 
+    bool        show_cover(Image & img);
+    void         put_image(Image::ImageData & image, Pos pos); 
     void     put_highlight(Dim dim, Pos pos);  
     void   clear_highlight(Dim dim, Pos pos);  
     void       put_rounded(Dim dim, Pos pos);  
@@ -344,7 +340,6 @@ class Page
     float        get_factor_value(const CSS::Value & value, const Format & fmt, float ref);
     void            adjust_format(DOM::Node * dom_current_node, Format & fmt, CSS * element_css, CSS * item_css);
     void adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules);
-    bool get_image(const std::string & filename, const std::string current_path, Image & image);
 
     inline void reset_font_index(Format & fmt, Fonts::FaceStyle style) {
       if (style != fmt.font_style) {
