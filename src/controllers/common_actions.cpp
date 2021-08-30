@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __COMMON_ACTIONS__ 1
 #include "controllers/common_actions.hpp"
 

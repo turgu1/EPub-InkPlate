@@ -240,8 +240,16 @@ OptionController::input_event(EventMgr::Event event)
             (old_use_fonts_in_books != use_fonts_in_books)) {
           epub.update_book_format_params();  
         }
+
         if (old_default_font != default_font) {
-          fonts.setup();
+          fonts.adjust_default_font(default_font);
+        }
+
+        if (old_use_fonts_in_books != use_fonts_in_books) {
+          if (use_fonts_in_books == 0) {
+            fonts.clear();
+            fonts.clear_glyph_caches();
+          }
         }
       // }
       menu_viewer.clear_highlight();

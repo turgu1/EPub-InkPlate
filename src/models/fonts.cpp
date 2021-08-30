@@ -42,7 +42,6 @@ bool Fonts::setup()
   config.get(Config::Ident::DEFAULT_FONT, &font_index);
   if ((font_index < 0) || (font_index > 7)) font_index = 0;
 
-  std::string def         = "Default";
   std::string draw        = "Drawings";
   std::string system      = "System";
 
@@ -53,11 +52,11 @@ bool Fonts::setup()
   std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
   std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
 
-  if (!add(draw, FaceStyle::NORMAL,      drawings   )) return false;
-  if (!add(def,  FaceStyle::NORMAL,      normal     )) return false;
-  if (!add(def,  FaceStyle::BOLD,        bold       )) return false;
-  if (!add(def,  FaceStyle::ITALIC,      italic     )) return false;
-  if (!add(def,  FaceStyle::BOLD_ITALIC, bold_italic)) return false;   
+  if (!add(draw,                   FaceStyle::NORMAL,      drawings   )) return false;
+  if (!add(font_names[font_index], FaceStyle::NORMAL,      normal     )) return false;
+  if (!add(font_names[font_index], FaceStyle::BOLD,        bold       )) return false;
+  if (!add(font_names[font_index], FaceStyle::ITALIC,      italic     )) return false;
+  if (!add(font_names[font_index], FaceStyle::BOLD_ITALIC, bold_italic)) return false;   
 
   normal = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Regular.otf"   );
   italic = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Italic.otf"    );
@@ -96,6 +95,22 @@ Fonts::clear(bool all)
 }
 
 void
+Fonts::adjust_default_font(uint8_t font_index)
+{
+  if (font_cache.at(1).name.compare(font_names[font_index]) != 0) {
+    std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.otf"   );
+    std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.otf"      );
+    std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
+    std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
+
+    if (!replace(1, font_names[font_index], FaceStyle::NORMAL,      normal     )) return;
+    if (!replace(2, font_names[font_index], FaceStyle::BOLD,        bold       )) return;
+    if (!replace(3, font_names[font_index], FaceStyle::ITALIC,      italic     )) return;
+    if (!replace(4, font_names[font_index], FaceStyle::BOLD_ITALIC, bold_italic)) return;
+  }
+}
+
+void
 Fonts::clear_glyph_caches()
 {
   for (auto & entry : font_cache) {
@@ -120,8 +135,43 @@ Fonts::get_index(const std::string & name, FaceStyle style)
 }
 
 bool 
+Fonts::replace(int16_t             index,
+               const std::string & name, 
+               FaceStyle           style,
+               const std::string & filename)
+{
+  std::scoped_lock guard(mutex);
+  
+  FontEntry f;
+  if ((f.font = new TTF(filename))) {
+    if (f.font->ready()) {
+      f.name                    = name;
+      f.font->fonts_cache_index = index;
+      f.style                   = style;
+      delete font_cache.at(index).font;
+      font_cache.at(index) = f;
+
+      LOG_D("Font %s replacement at index %d and style %d.",
+        f.name.c_str(), 
+        f.font->fonts_cache_index,
+        (int)f.style);
+      return true;
+    }
+    else {
+      delete f.font;
+    }
+  }
+  else {
+    LOG_E("Unable to allocate memory.");
+    // msg_viewer.out_of_memory("font allocation");
+  }
+
+  return false;
+}
+
+bool 
 Fonts::add(const std::string & name, 
-           FaceStyle style,
+           FaceStyle           style,
            const std::string & filename)
 {
   std::scoped_lock guard(mutex);

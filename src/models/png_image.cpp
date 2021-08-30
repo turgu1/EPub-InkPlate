@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #include "models/png_image.hpp"
 #include "helpers/unzip.hpp"
 #include "alloc.hpp"

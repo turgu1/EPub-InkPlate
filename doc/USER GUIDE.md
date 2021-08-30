@@ -137,10 +137,10 @@ As indicated in section 2.1, the Default Parameters form allows for the modifica
 
 The following items are displayed:
 
-- **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). 
+- **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable eBooks.
 - **Use Fonts in E-books** - If an e-book contains embeded fonts, this item permits to indicate if those fonts are to be used to present the pages.
 - **Default Font** - Height fonts are supllied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
-- **Show Images in E-books** - This item allow for the display or not of images present in books. This can be used to diminish the amount of memory required. 
+- **Show Images in E-books** - This item allow for the display or not of images present in books. This can be used to diminish the amount of memory required and the speed of rendition. 
 
 These are default values. They will be used for parameters that have not be modified for an e-book.
 
@@ -152,10 +152,10 @@ As indicated in section 2.2, the current e-book parameters form allows for the s
 
 The following items are displayed:
 
-- **Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). 
+- **Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable eBooks. 
 - **Use Fonts in E-books** - If an e-book contains embeded fonts, this item permits to indicate if those fonts are to be used to present the pages.
 - **Font** - Height fonts are supllied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
-- **Show Images in E-books** - This item allow for the display or not of images present in books. This can be used to diminish the amount of memory required. 
+- **Show Images in E-books** - This item allow for the display or not of images present in books. This can be used to diminish the amount of memory required and the speed of rendition. 
 
 When displayed, the form show the current values being used to present the pages of the e-book. 
 

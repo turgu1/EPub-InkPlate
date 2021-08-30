@@ -232,6 +232,14 @@ EPub::retrieve_file(const char * fname, uint32_t & size)
 }
 
 void
+EPub::load_fonts()
+{
+  for (auto * css: css_cache) {
+    retrieve_fonts_from_css(*css);
+  }
+}
+
+void
 EPub::retrieve_fonts_from_css(CSS & css)
 {
   #if USE_EPUB_FONTS
@@ -576,6 +584,8 @@ EPub::open_file(const std::string & epub_filename)
 
   open_params(epub_filename);
   update_book_format_params();
+
+  fonts.adjust_default_font(book_format_params.font);
 
   clear_item_data(current_item_info);
 

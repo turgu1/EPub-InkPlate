@@ -82,7 +82,12 @@ revert_to_defaults()
 {
   page_locs.stop_document();
   
+  EPub::BookFormatParams * book_format_params = epub.get_book_format_params();
+
   BookParams * book_params = epub.get_book_params();
+
+  old_use_fonts_in_book = book_format_params->use_fonts_in_book;
+  old_font              = book_format_params->font;
 
   constexpr int8_t default_value = -1;
 
@@ -99,6 +104,20 @@ revert_to_defaults()
                   false, false, 
                   "E-book parameters reverted", 
                   "E-book parameters reverted to default values.");
+
+  if (old_use_fonts_in_book != book_format_params->use_fonts_in_book) {
+    if (book_format_params->use_fonts_in_book) {
+      epub.load_fonts();
+    }
+    else {
+      fonts.clear();
+      fonts.clear_glyph_caches();
+    }
+  }
+
+  if (old_font != book_format_params->font) {
+    fonts.adjust_default_font(book_format_params->font);
+  }
 }
 
 static void 
@@ -168,7 +187,21 @@ BookParamController::input_event(EventMgr::Event event)
         if (book_params->is_modified()) epub.update_book_format_params();
 
         book_params->save();
-      // }
+
+        if (old_use_fonts_in_book != use_fonts_in_book) {
+          if (use_fonts_in_book) {
+            epub.load_fonts();
+          }
+          else {
+            fonts.clear();
+            fonts.clear_glyph_caches();
+          }
+        }
+ 
+        if (old_font != font) {
+          fonts.adjust_default_font(font);
+        }
+     // }
       menu_viewer.clear_highlight();
     }
   }

@@ -40,11 +40,18 @@ class Fonts
      */
     void clear(bool all = false);
 
+    /**
+     * @brief Get font at index
+     * 
+     * @param index THe font index number
+     * @return Pointer to the font at index. If there is no font at index,
+     *         it returns the pointer to the first font in the list.
+     */
     TTF * get(int16_t index) {
       TTF * f; 
       if (index >= font_cache.size()) {
         LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
-        f = font_cache.at(0).font;
+        f = font_cache.at(1).font;
       }
       else {
         f = font_cache.at(index).font;
@@ -52,12 +59,28 @@ class Fonts
       return f;
     };
 
+    /**
+     * @brief Get index of a font
+     * 
+     * @param name Font name
+     * @param style Font style (bold, italic, normal)
+     * @return Index number related to a font name and a face style.
+     *         If not found, returns -1.
+     */
     int16_t get_index(const std::string & name, FaceStyle style);
 
+    /**
+     * @brief Get Font name
+     * 
+     * @param name Font name
+     * @param style Font style (bold, italic, normal)
+     * @return Pointer to the name of the font at index. If there is no font
+     *         at index, returns the name of the first in the list.
+     */
     const char * get_name(int16_t index) const {
       if (index >= font_cache.size()) {
         LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
-        return font_cache[0].name.c_str(); 
+        return font_cache[1].name.c_str(); 
       }
       else {
         return font_cache[index].name.c_str(); 
@@ -97,6 +120,12 @@ class Fonts
 
     void clear_glyph_caches();
 
+    void adjust_default_font(uint8_t font_index);
+
+    bool replace(int16_t             index,
+                 const std::string & name, 
+                 FaceStyle           style,
+                 const std::string & filename);
   private:
     typedef std::vector<FontEntry> FontCache;
     FontCache font_cache;

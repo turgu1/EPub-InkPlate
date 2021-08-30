@@ -78,8 +78,8 @@ class FormViewer
     #endif
 
     static constexpr Choice font_choices[8] = {
-      { "CALADEA S",     0 },
-      { "CRIMSON S",     1 },
+      { "CALADEA S",     1 },
+      { "CRIMSON S",     0 },
       { "ASAP",          2 },
       { "ASAP COND",     3 },
       { "DEJAVU S",      4 },

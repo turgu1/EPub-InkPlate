@@ -81,6 +81,7 @@ class EPub
    ~EPub();
 
     void              retrieve_css(ItemInfo &           item);
+    void                load_fonts();
     void           clear_item_data(ItemInfo &           item);
     void               open_params(const std::string &  epub_filename);
     bool                 open_file(const std::string &  epub_filename);

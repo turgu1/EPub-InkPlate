@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
 #include "models/config.hpp"
