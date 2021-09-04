@@ -11,6 +11,7 @@
 #include "models/epub.hpp"
 #include "models/config.hpp"
 #include "models/page_locs.hpp"
+#include "models/toc.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -126,6 +127,12 @@ books_list()
   app_controller.set_controller(AppController::Ctrl::DIR);
 }
 
+static void 
+toc_ctrl()
+{
+  app_controller.set_controller(AppController::Ctrl::TOC);
+}
+
 extern bool start_web_server();
 extern bool  stop_web_server();
 
@@ -145,21 +152,26 @@ wifi_mode()
   #endif
 }
 
-static MenuViewer::MenuEntry menu[8] = {
-  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last},
-  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   },
-  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              },
+// IMPORTANT!!
+// The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
+
+static MenuViewer::MenuEntry menu[9] = {
+  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last, true  },
+  { MenuViewer::Icon::TOC,         "Table of Content",                     toc_ctrl                     , false },
+  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   , true  },
+  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              , true  },
   { MenuViewer::Icon::REVERT,      "Revert e-book parameters to "
-                                   "default values",                       revert_to_defaults           },  
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    },
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off     },
-  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      }
+                                   "default values",                       revert_to_defaults           , true  },  
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true  },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true  },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off     , true  },
+  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      , false }
 }; 
 
 void 
 BookParamController::enter()
 {
+  menu[1].visible = toc.is_ready();
   menu_viewer.show(menu);
   book_params_form_is_shown = false;
 }

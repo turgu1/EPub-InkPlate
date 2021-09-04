@@ -12,12 +12,13 @@ class MenuViewer
     static constexpr uint8_t MAX_MENU_ENTRY = 10;
 
     enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, 
-                      FONT_PARAMS, POWEROFF, WIFI, INFO, DEBUG, END_MENU };
-    char icon_char[11] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I', 'Y' };
+                      FONT_PARAMS, POWEROFF, WIFI, INFO, TOC, DEBUG, END_MENU };
+    char icon_char[12] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I', 'L', 'Y' };
     struct MenuEntry {
       Icon icon;
       const char * caption;
       void (*func)();
+      bool visible;
     };
     void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
     bool event(EventMgr::Event event);

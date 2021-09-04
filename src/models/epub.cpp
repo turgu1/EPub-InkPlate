@@ -318,7 +318,10 @@ EPub::retrieve_css(ItemInfo & item)
   xml_node      node;
   xml_attribute attr;
   
-  if ((node = item.xml_doc.child("html").child("head").child("link"))) {
+  if ((node = item.xml_doc) &&
+      (node = node.child("html")) &&
+      (node = node.child("head")) &&
+      (node = node.child("link"))) {
     do {
       if ((attr = node.attribute("type")) &&
           (strcmp(attr.value(), "text/css") == 0) &&
@@ -373,7 +376,9 @@ EPub::retrieve_css(ItemInfo & item)
   // Now look at <style> tags presents in the <html><head>, creating a temporary
   // css object for each of them.
 
-  if ((node = item.xml_doc.child("html").child("head").child("style"))) {
+  if ((node = item.xml_doc.child("html")) &&
+      (node = node.child("head" )) &&
+      (node = node.child("style"))) {
     do {
       xml_node sub = node.first_child();
       const char * buffer;
@@ -426,7 +431,9 @@ EPub::get_item(pugi::xml_node itemref,
   bool completed = false;
 
   while (!completed) {
-    if (!(node = opf.child("package").child("manifest").child("item"))) ERR(1);
+    if (!((node =  opf.child("package" )) &&
+          (node = node.child("manifest")) &&
+          (node = node.child("item"    )))) ERR(1);
     do {
       if ((attr = node.attribute("id")) && (strcmp(attr.value(), id) == 0)) break;
       node = node.next_sibling("item");
@@ -655,9 +662,11 @@ EPub::get_meta(const std::string & name)
 {
   if (!file_is_open) return nullptr;
 
-  xml_node node = opf.child("package").child("metadata");
-  if (node == nullptr) {
-    node = opf.child("package").child("opf:metadata");
+  xml_node node;
+  
+  if (!((node =  opf.child("package" )) &&
+        (node = node.child("metadata")))) {
+    if (node = opf.child("package")) node = node.child("opf:metadata");
   }
   return node == nullptr ? nullptr : node.child_value(name.c_str());
 }
@@ -675,7 +684,9 @@ EPub::get_cover_filename()
 
   // First, try to find it from metadata
 
-  if ((node = opf.child("package").child("metadata").child("meta"))) {
+  if ((node =  opf.child("package" )) &&
+      (node = node.child("metadata")) &&
+      (node = node.child("meta"    ))) {
 
     do {
       if ((attr = node.attribute("name")) && 
@@ -686,7 +697,9 @@ EPub::get_cover_filename()
         xml_node      n;
         xml_attribute a;
 
-        if ((n = opf.child("package").child("manifest").child("item"))) {
+        if ((n = opf.child("package" )) &&
+            (n =   n.child("manifest")) &&
+            (n =   n.child("item"    ))) {
 
           do {
             if ((((a = n.attribute("id"        )) && (strcmp(a.value(), itemref) == 0)) ||
@@ -709,7 +722,9 @@ EPub::get_cover_filename()
   if (filename == nullptr) {
     // Look inside manifest
 
-    if ((node = opf.child("package").child("manifest").child("item"))) {
+    if ((node =  opf.child("package" )) &&
+        (node = node.child("manifest")) &&
+        (node = node.child("item"    ))) {
 
       do {
         if ((attr = node.attribute("id")) && 
@@ -734,7 +749,9 @@ EPub::get_item_count()
 
   xml_node node;
 
-  if (!((node = opf.child("package").child("spine").child("itemref")))) 
+  if (!((node =  opf.child("package")) &&
+        (node = node.child("spine"  )) &&
+        (node = node.child("itemref")))) 
     return 0;
   
   int16_t count = 0;
@@ -755,7 +772,9 @@ EPub::get_item_at_index(int16_t itemref_index)
   
   xml_node node;
 
-  if (!((node = opf.child("package").child("spine").child("itemref")))) 
+  if (!((node =  opf.child("package")) &&
+        (node = node.child("spine"  )) &&
+        (node = node.child("itemref")))) 
     return false;
 
   int16_t index = 0;
@@ -793,7 +812,9 @@ EPub::get_item_at_index(int16_t    itemref_index,
     while (true) {
       xml_node node;
 
-      if (!((node = opf.child("package").child("spine").child("itemref")))) break;
+      if (!((node =  opf.child("package")) &&
+            (node = node.child("spine"  )) &&
+            (node = node.child("itemref")))) break;
 
       int16_t index = 0;
 

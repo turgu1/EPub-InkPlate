@@ -125,8 +125,9 @@ class PageLocs
     const PageId * get_prev_page_id(const PageId & page_id, int     count = 1);
     const PageId *      get_page_id(const PageId & page_id                   );
 
-    const EPub::ItemInfo & get_item_info() { return item_info; }
-    const PagesMap       & get_pages_map() { return pages_map; }
+    uint16_t   get_current_itemref_index() { return item_info.itemref_index; }
+    const EPub::ItemInfo & get_item_info() { return item_info;               }
+    const PagesMap       & get_pages_map() { return pages_map;               }
 
     void check_for_format_changes(int16_t count, int16_t itemref_index, bool force = false);
     void    computation_completed();

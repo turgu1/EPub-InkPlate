@@ -4,6 +4,7 @@
 
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
+#include "models/toc.hpp"
 #include "models/config.hpp"
 #include "controllers/event_mgr.hpp"
 
@@ -802,6 +803,7 @@ PageLocs::computation_completed()
     //show();
 
     completed = true;
+    toc.save();
     event_mgr.set_stay_on(false);
   }
 }
@@ -822,7 +824,9 @@ PageLocs::show()
 void
 PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool force)
 {
-  if (force || (memcmp(epub.get_book_format_params(), &current_format_params, sizeof(current_format_params)) != 0)) {
+  if (force || 
+      (memcmp(epub.get_book_format_params(), &current_format_params, sizeof(current_format_params)) != 0) ||
+      !toc.load()) {
 
     LOG_D("==> Page locations recalc. <==");
 
@@ -831,6 +835,10 @@ PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool fo
     clear();  
 
     current_format_params = *epub.get_book_format_params();
+
+    if (toc.load_from_epub() && !toc.there_is_some_ids()) {
+      toc.save();
+    }
 
     item_count = count;
     StateQueueData state_queue_data;  
@@ -860,12 +868,13 @@ bool PageLocs::load(const std::string & epub_filename)
     return false;
   }
 
-  for (;;) {
+  bool ok = false;
+  while (true) {
     if (file.read(reinterpret_cast<char *>(&version), 1).fail()) break;
     if (version != LOCS_FILE_VERSION) break;
 
     if (file.read(reinterpret_cast<char *>(&current_format_params), sizeof(current_format_params)).fail()) break;
-    if (file.read(reinterpret_cast<char *>(&pg_count),              sizeof(pg_count)           ).fail()) break;
+    if (file.read(reinterpret_cast<char *>(&pg_count),              sizeof(pg_count)             ).fail()) break;
 
     pages_map.clear();
 
@@ -884,18 +893,17 @@ bool PageLocs::load(const std::string & epub_filename)
     }
 
     page_count = page_nbr;
-
+    ok = !file.fail();
     break;
   }
 
-  bool res = !file.fail();
   file.close();
 
-  LOG_D("Page locations load %s.", res ? "Success" : "Error");
+  LOG_D("Page locations load %s.", ok ? "Success" : "Error");
 
-  completed = res;
+  completed = ok;
   
-  return res;
+  return ok;
 }
 
 bool 
@@ -913,7 +921,7 @@ PageLocs::save(const std::string & epub_filename)
 
   int16_t page_count = pages_map.size();
 
-  for (;;) {
+  while (true) {
     if (file.write(reinterpret_cast<const char *>(&LOCS_FILE_VERSION),     1                            ).fail()) break;
     if (file.write(reinterpret_cast<const char *>(&current_format_params), sizeof(current_format_params)).fail()) break;
     if (file.write(reinterpret_cast<const char *>(&page_count),            sizeof(page_count)           ).fail()) break;

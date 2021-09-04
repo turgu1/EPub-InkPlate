@@ -121,6 +121,8 @@ class EPub
     inline const std::string &        get_current_filename()       { return current_filename;                }
     inline BookParams *                    get_book_params()       { return book_params;                     }
     inline BookFormatParams *       get_book_format_params()       { return &book_format_params;             }
+    inline const std::string &           get_opf_base_path()       { return opf_base_path;                   }
+    inline const pugi::xml_document &              get_opf()       { return opf;                             }
   };
 
 #if __EPUB__

@@ -145,24 +145,27 @@ wifi_mode()
   #endif
 }
 
+// IMPORTANT!!!
+// The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
+
 #if EPUB_LINUX_BUILD && DEBUGGING
   static MenuViewer::MenuEntry menu[10] = {
 #else
   static MenuViewer::MenuEntry menu[9] = {
 #endif
 
-  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    },
-  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    },
-  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  },
-  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        },
-  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir },
+  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true  },
+  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    , true  },
+  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  , true  },
+  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               , true  },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true  },
+  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true  },
   #if EPUB_LINUX_BUILD && DEBUGGING
-    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         },
+    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true  },
   #endif
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off         },
-  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          }
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true  },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off         , true  },
+  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false }
 };
 
 void 

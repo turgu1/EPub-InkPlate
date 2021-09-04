@@ -2,21 +2,27 @@
 
 ## Last news
 
-(Updated 2021.08.28)
+(Updated 2021.09.4)
 
 Update for upcoming version 1.3 - Not ready yet
+
+New User functionalities:
+
+- [x] New book covers Matrix View.
+- [x] Number of allowed ebooks changed from 100 to 200 maximum.
+- [x] Integration with new image streaming classes (png and jpeg).
+- [x] Table of Content to select location to read inside a book.
+- [x] Subscript/Superscript support.
+
+Internal changes:
 
 - [x] Now using ESP-IDF version 4.3.0 through PlatformIO.
 - [x] Complete redesign of the CSS Interpreter.
 - [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
-- [x] New book covers Matrix View.
 - [x] Correction of many small page painting issues.
-- [x] Subscript/Superscript support.
 - [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
-- [x] Number of allowed ebooks changed from 100 to 200 maximum.
 - [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
-- [x] Integration and Trials with new image streaming classes (png and jpeg).
 - [ ] Testing ebooks on InkPlate-6/InkPlate-10.
 - [ ] Valgrind tests.
 - [ ] Documentation update.

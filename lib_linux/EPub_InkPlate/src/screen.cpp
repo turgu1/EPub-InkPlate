@@ -397,20 +397,6 @@ Screen::set_pixel_resolution(PixelResolution resolution, bool force)
 {
   if (force || (pixel_resolution != resolution)) {
     pixel_resolution = resolution;
-    // if (pixel_resolution == ONE_BIT) {
-    //   if (frame_buffer_3bit != nullptr) {
-    //     free(frame_buffer_3bit);
-    //     frame_buffer_3bit = nullptr;
-    //   }
-    //   frame_buffer_1bit = (EInk::Bitmap1Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap1Bit));
-    // }
-    // else {
-    //   if (frame_buffer_1bit != nullptr) {
-    //     free(frame_buffer_1bit);
-    //     frame_buffer_1bit = nullptr;
-    //   }
-    //   frame_buffer_3bit = (EInk::Bitmap3Bit *) ESP::ps_malloc(sizeof(EInk::Bitmap3Bit));
-    // }
   }
 }
 

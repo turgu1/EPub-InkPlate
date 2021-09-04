@@ -39,7 +39,7 @@ BooksDirController::setup()
   char * filename            = nullptr;
 
   book_fname[0]              =  0;
-  book_index                 = -1;
+  current_book_index         = -1;
   last_read_book_index       = -1;
   book_page_id.itemref_index = -1;
   book_page_id.offset        = -1;
@@ -203,8 +203,8 @@ BooksDirController::enter()
     show_last_book();
   }
   else {
-    if (book_index == -1) book_index = 0;
-    book_index = books_dir_viewer->show_page_and_highlight(book_index);
+    if (current_book_index == -1) current_book_index = 0;
+    current_book_index = books_dir_viewer->show_page_and_highlight(current_book_index);
   }
 }
 
@@ -226,21 +226,21 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
     switch (event) {
       case EventMgr::Event::SWIPE_RIGHT:
-        book_index = books_dir_viewer->prev_page();   
+        current_book_index = books_dir_viewer->prev_page();   
         break;
 
       case EventMgr::Event::SWIPE_LEFT:
-        book_index = books_dir_viewer->next_page();   
+        current_book_index = books_dir_viewer->next_page();   
         break;
 
       case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
 
-        book_index = books_dir_viewer->get_index_at(x, y);
-        if ((book_index >= 0) && (book_index < books_dir.get_book_count())) {
-          book = books_dir.get_book_data(book_index);
+        current_book_index = books_dir_viewer->get_index_at(x, y);
+        if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+          book = books_dir.get_book_data(current_book_index);
           if (book != nullptr) {
-            last_read_book_index = book_index;
+            last_read_book_index = current_book_index;
             book_fname    = BOOKS_FOLDER "/";
             book_fname   += book->filename;
             book_title    = book->title;
@@ -261,9 +261,9 @@ BooksDirController::leave(bool going_to_deep_sleep)
       case EventMgr::Event::HOLD:
         event_mgr.get_start_location(x, y);
 
-        book_index = books_dir_viewer->get_index_at(x, y);
-        if ((book_index >= 0) && (book_index < books_dir.get_book_count())) {
-          books_dir_viewer->highlight_book(book_index);
+        current_book_index = books_dir_viewer->get_index_at(x, y);
+        if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+          books_dir_viewer->highlight_book(current_book_index);
         }
         break;
 
@@ -290,7 +290,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
       #else
         case EventMgr::Event::DBL_PREV:
       #endif
-        book_index = books_dir_viewer->prev_column();   
+        current_book_index = books_dir_viewer->prev_column();   
         break;
 
       #if EXTENDED_CASE
@@ -298,7 +298,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
       #else
         case EventMgr::Event::DBL_NEXT:
       #endif
-        book_index = books_dir_viewer->next_column();
+        current_book_index = books_dir_viewer->next_column();
         break;
 
       #if EXTENDED_CASE
@@ -306,7 +306,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
       #else
         case EventMgr::Event::PREV:
       #endif
-        book_index = books_dir_viewer->prev_item();
+        current_book_index = books_dir_viewer->prev_item();
         break;
 
       #if EXTENDED_CASE
@@ -314,14 +314,14 @@ BooksDirController::leave(bool going_to_deep_sleep)
       #else
         case EventMgr::Event::NEXT:
       #endif
-        book_index = books_dir_viewer->next_item();
+        current_book_index = books_dir_viewer->next_item();
         break;
 
       case EventMgr::Event::SELECT:
-        if (book_index < books_dir.get_book_count()) {
-          book = books_dir.get_book_data(book_index);
+        if (current_book_index < books_dir.get_book_count()) {
+          book = books_dir.get_book_data(current_book_index);
           if (book != nullptr) {
-            last_read_book_index = book_index;
+            last_read_book_index = current_book_index;
             book_fname    = BOOKS_FOLDER "/";
             book_fname   += book->filename;
             book_title    = book->title;

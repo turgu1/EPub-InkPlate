@@ -66,21 +66,30 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   
   while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != Icon::END_MENU)) {
 
-    char ch = icon_char[(int)menu[idx].icon];
-    TTF::BitmapGlyph * glyph;
-    glyph = font->get_glyph(ch, ICON_SIZE);
+    if (menu[idx].visible) {
+      char ch = icon_char[(int)menu[idx].icon];
+      TTF::BitmapGlyph * glyph;
+      glyph = font->get_glyph(ch, ICON_SIZE);
 
-    entry_locs[idx].pos.x = pos.x;
-    entry_locs[idx].pos.y = pos.y + glyph->yoff;
-    entry_locs[idx].dim   = glyph->dim;
+      entry_locs[idx].pos.x = pos.x;
+      entry_locs[idx].pos.y = pos.y + glyph->yoff;
+      entry_locs[idx].dim   = glyph->dim;
 
-    page.put_char_at(ch, pos, fmt);
-    pos.x += SPACE_BETWEEN_ICONS;
+      page.put_char_at(ch, pos, fmt);
+      pos.x += SPACE_BETWEEN_ICONS;
+    }
+    else {
+      entry_locs[idx].pos.x = -1;
+      entry_locs[idx].pos.y = -1;
+    }
 
     idx++;
   }
   
   max_index           = idx - 1;
+  // It is expected that the last entry in the menu will be always visible
+  // If not, shit happen...
+  while (!menu[entry_index].visible) entry_index++;
   current_entry_index = entry_index;
 
   #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
@@ -264,6 +273,8 @@ MenuViewer::event(EventMgr::Event event)
       case EventMgr::Event::PREV:
         if (current_entry_index > 0) {
           current_entry_index--;
+          // It is expected that the first entry in the menu will always be visible
+          while (!menu[current_entry_index].visible) current_entry_index--;
         }
         else {
           current_entry_index = max_index;
@@ -272,6 +283,8 @@ MenuViewer::event(EventMgr::Event event)
       case EventMgr::Event::NEXT:
         if (current_entry_index < max_index) {
           current_entry_index++;
+          // It is expected that the last entry in the menu will always be visible
+          while (!menu[current_entry_index].visible) current_entry_index++;
         }
         else {
           current_entry_index = 0;

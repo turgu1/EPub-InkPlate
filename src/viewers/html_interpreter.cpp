@@ -8,6 +8,7 @@
 
 #include "logging.hpp"
 #include "models/config.hpp"
+#include "models/toc.hpp"
 
 // This method process a single xml node and recurse for the associated children.
 // The method calls the page_end() method when it reachs the end of the page as 
@@ -57,6 +58,13 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
   if (named_element) {
 
+    xml_attribute attr;
+    if ((page.get_compute_mode() == Page::ComputeMode::LOCATION) &&
+        toc.there_is_some_ids() &&
+        (attr = node.attribute("id"))) {
+      std::string id = attr.value();
+      toc.set(id, current_offset);
+    }
     if (node.attribute("hidden")) return true;
 
     // LOG_D("Node name: %s", name);
@@ -78,7 +86,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
       else {
         dom_current_node = dom.body;
       }
-      xml_attribute attr = node.attribute("id");
+      attr = node.attribute("id");
       if (attr != nullptr) dom_current_node->add_id(attr.value());
       attr = node.attribute("class");
       if (attr != nullptr) dom_current_node->add_classes(attr.value());

@@ -15,11 +15,11 @@ class BooksDirController
   private:
     static constexpr char const * TAG = "BooksDirController";
 
-    int32_t book_offset;
-    int16_t book_index;
-    int16_t last_read_book_index;
+    int32_t     book_offset;
+    int16_t     current_book_index;
+    int16_t     last_read_book_index;
     std::string book_filename;
-    bool    book_was_shown;
+    bool        book_was_shown;
 
     PageLocs::PageId book_page_id;
     BooksDirViewer * books_dir_viewer;
@@ -33,6 +33,8 @@ class BooksDirController
     void save_last_book(const PageLocs::PageId & page_id, bool going_to_deep_sleep);
     void show_last_book();
     void new_orientation() { if (books_dir_viewer != nullptr) books_dir_viewer->setup(); }
+
+    inline int16_t get_current_book_index() { return current_book_index; }
 };
 
 #if __BOOKS_DIR_CONTROLLER__
