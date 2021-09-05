@@ -3,11 +3,11 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
 #include <string>
 #include <forward_list>
 
-#include "global.hpp"
 #include "models/image.hpp"
 #include "models/fonts.hpp"
 #include "models/css.hpp"

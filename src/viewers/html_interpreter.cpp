@@ -5,8 +5,6 @@
 #include "viewers/html_interpreter.hpp"
 
 #include "models/epub.hpp"
-
-#include "logging.hpp"
 #include "models/config.hpp"
 #include "models/toc.hpp"
 

@@ -5,8 +5,6 @@
 #define __SIMPLE_DB__ 1
 #include "helpers/simple_db.hpp"
 
-#include "logging.hpp"
-
 #include <sys/stat.h>
 #include <iostream>
 

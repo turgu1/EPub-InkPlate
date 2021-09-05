@@ -7,20 +7,17 @@
 
 #if EPUB_INKPLATE_BUILD
 
-#include "logging.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/config.hpp"
 #include "models/page_locs.hpp"
 
 #include <stdio.h>
-#include <string.h>
 #include <sys/param.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
 
 #include "esp_err.h"
-#include "esp_log.h"
 
 #include "esp_vfs.h"
 #include "esp_http_server.h"
@@ -93,7 +90,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   struct dirent * entry;
   struct stat entry_stat;
 
-  ESP_LOGD(TAG, "Opening dir: %s.", dirpath);
+  LOG_D("Opening dir: %s.", dirpath);
 
   const size_t dirpath_len = strlen(dirpath);
 
@@ -104,7 +101,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   entrypath[strlen(entrypath)] = '/';
 
   if (dir == nullptr) {
-    ESP_LOGE(TAG, "Failed to stat dir : %s (%s)", dirpath, strerror(errno));
+    LOG_E("Failed to stat dir : %s (%s)", dirpath, strerror(errno));
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Directory does not exist");
     return ESP_FAIL;
   }
@@ -173,11 +170,11 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
 
     strlcpy(entrypath + dirpath_len, entry->d_name, sizeof(entrypath) - dirpath_len);
     if (stat(entrypath, &entry_stat) == -1) {
-      ESP_LOGE(TAG, "Failed to stat %s : %s", entrytype, entry->d_name);
+      LOG_E("Failed to stat %s : %s", entrytype, entry->d_name);
       continue;
     }
     sprintf(entrysize, "%ld", entry_stat.st_size);
-    ESP_LOGI(TAG, "Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
+    LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
     httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
     httpd_resp_sendstr_chunk(req, req->uri);
@@ -280,7 +277,7 @@ download_handler(httpd_req_t * req)
     sizeof(filepath));
 
   if (!filename) {
-    ESP_LOGE(TAG, "Filename is too long");
+    LOG_E("Filename is too long");
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
     return ESP_FAIL;
   }
@@ -297,19 +294,19 @@ download_handler(httpd_req_t * req)
     } else if (strcmp(filename, "/favicon.ico") == 0) {
       return favicon_get_handler(req);
     }
-    ESP_LOGE(TAG, "Failed to stat file : %s", filepath);
+    LOG_E("Failed to stat file : %s", filepath);
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
     return ESP_FAIL;
   }
 
   fd = fopen(filepath, "r");
   if (!fd) {
-    ESP_LOGE(TAG, "Failed to read existing file : %s", filepath);
+    LOG_E("Failed to read existing file : %s", filepath);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
     return ESP_FAIL;
   }
 
-  ESP_LOGI(TAG, "Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
+  LOG_I("Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
   set_content_type_from_file(req, filename);
 
   // Retrieve the pointer to scratch buffer for temporary storage
@@ -321,7 +318,7 @@ download_handler(httpd_req_t * req)
     if (chunksize > 0) {
       if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) {
         fclose(fd);
-        ESP_LOGE(TAG, "File sending failed!");
+        LOG_E("File sending failed!");
         httpd_resp_sendstr_chunk(req, NULL);
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
         return ESP_FAIL;
@@ -330,7 +327,7 @@ download_handler(httpd_req_t * req)
   } while (chunksize != 0);
 
   fclose(fd);
-  ESP_LOGI(TAG, "File sending complete");
+  LOG_I("File sending complete");
 
   /* Respond with an empty chunk to signal HTTP response completion */
   httpd_resp_send_chunk(req, NULL, 0);
@@ -356,19 +353,19 @@ upload_handler(httpd_req_t *req)
   }
 
   if (filename[strlen(filename) - 1] == '/') {
-    ESP_LOGE(TAG, "Invalid filename : %s", filename);
+    LOG_E("Invalid filename : %s", filename);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
   if (stat(filepath, &file_stat) == 0) {
-    ESP_LOGE(TAG, "File already exists : %s", filepath);
+    LOG_E("File already exists : %s", filepath);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
     return ESP_FAIL;
   }
 
   if (req->content_len > MAX_FILE_SIZE) {
-    ESP_LOGE(TAG, "File too large : %d bytes", req->content_len);
+    LOG_E("File too large : %d bytes", req->content_len);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
                         "File size must be less than "
                         MAX_FILE_SIZE_STR "!");
@@ -377,12 +374,12 @@ upload_handler(httpd_req_t *req)
 
   fd = fopen(filepath, "w");
   if (!fd) {
-    ESP_LOGE(TAG, "Failed to create file : %s", filepath);
+    LOG_E("Failed to create file : %s", filepath);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
     return ESP_FAIL;
   }
 
-  ESP_LOGI(TAG, "Receiving file : %s...", filename);
+  LOG_I("Receiving file : %s...", filename);
 
   /* Retrieve the pointer to scratch buffer for temporary storage */
   char *buf = ((FileServerData *) req->user_ctx)->scratch;
@@ -394,7 +391,7 @@ upload_handler(httpd_req_t *req)
 
   while (remaining > 0) {
 
-    ESP_LOGI(TAG, "Remaining size : %d", remaining);
+    LOG_I("Remaining size : %d", remaining);
     if ((received = httpd_req_recv(req, buf, MIN(remaining, SCRATCH_BUFSIZE))) <= 0) {
       if (received == HTTPD_SOCK_ERR_TIMEOUT) {
         continue;
@@ -403,7 +400,7 @@ upload_handler(httpd_req_t *req)
       fclose(fd);
       unlink(filepath);
 
-      ESP_LOGE(TAG, "File reception failed!");
+      LOG_E("File reception failed!");
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive file");
       return ESP_FAIL;
     }
@@ -415,7 +412,7 @@ upload_handler(httpd_req_t *req)
       fclose(fd);
       unlink(filepath);
 
-      ESP_LOGE(TAG, "File write failed!");
+      LOG_E("File write failed!");
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to write file to storage");
       return ESP_FAIL;
     }
@@ -423,7 +420,7 @@ upload_handler(httpd_req_t *req)
     remaining -= received;
   }
   fclose(fd);
-  ESP_LOGI(TAG, "File reception complete");
+  LOG_I("File reception complete");
 
   /* Redirect onto root to see the updated file list */
   httpd_resp_set_status(req, "303 See Other");
@@ -450,18 +447,18 @@ delete_handler(httpd_req_t *req)
   }
 
   if (filename[strlen(filename) - 1] == '/') {
-    ESP_LOGE(TAG, "Invalid filename : %s", filename);
+    LOG_E("Invalid filename : %s", filename);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
   if (stat(filepath, &file_stat) == -1) {
-    ESP_LOGE(TAG, "File does not exist : %s", filepath);
+    LOG_E("File does not exist : %s", filepath);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
     return ESP_FAIL;
   }
 
-  ESP_LOGI(TAG, "Deleting file : %s", filepath);
+  LOG_I("Deleting file : %s", filepath);
   unlink(filepath);
 
   int pos = strlen(filepath) - 5;
@@ -469,14 +466,14 @@ delete_handler(httpd_req_t *req)
     strcpy(&filepath[pos], ".pars");
 
     if (stat(filepath, &file_stat) != -1) {
-      ESP_LOGI(TAG, "Deleting file : %s", filepath);
+      LOG_I("Deleting file : %s", filepath);
       unlink(filepath);
     }
 
     strcpy(&filepath[pos], ".locs");
 
     if (stat(filepath, &file_stat) != -1) {
-      ESP_LOGI(TAG, "Deleting file : %s", filepath);
+      LOG_I("Deleting file : %s", filepath);
       unlink(filepath);
     }
   }
@@ -494,14 +491,14 @@ static esp_err_t
 http_server_start()
 {
   if (server_data) {
-    ESP_LOGE(TAG, "File server already started");
+    LOG_E("File server already started");
     return ESP_ERR_INVALID_STATE;
   }
 
   /* Allocate memory for server data */
   server_data = (FileServerData *) calloc(1, sizeof(FileServerData));
   if (!server_data) {
-    ESP_LOGE(TAG, "Failed to allocate memory for server data");
+    LOG_E("Failed to allocate memory for server data");
     return ESP_ERR_NO_MEM;
   }
   strcpy(server_data->base_path, "/sdcard/books");
@@ -513,10 +510,10 @@ http_server_start()
   httpd_config.uri_match_fn = httpd_uri_match_wildcard;
   httpd_config.server_port = (uint16_t) port;
 
-  ESP_LOGI(TAG, "Starting HTTP Server");
+  LOG_I("Starting HTTP Server");
   esp_err_t res = httpd_start(&server, &httpd_config);
   if (res != ESP_OK) {
-    ESP_LOGE(TAG, "Failed to start file server (%s)!", esp_err_to_name(res));
+    LOG_E("Failed to start file server (%s)!", esp_err_to_name(res));
     return ESP_FAIL;
   }
 
@@ -582,7 +579,7 @@ static void sta_event_handler(void            * arg,
                               int32_t           event_id, 
                               void            * event_data)
 {
-  ESP_LOGI(TAG, "STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
+  LOG_I("STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
 
   if (event_base == WIFI_EVENT) {
     if (event_id == WIFI_EVENT_STA_START) {
@@ -592,19 +589,19 @@ static void sta_event_handler(void            * arg,
       if (wifi_first_start) {
         if (s_retry_num < ESP_MAXIMUM_RETRY) {
           vTaskDelay(pdMS_TO_TICKS(10E3));
-          ESP_LOGI(TAG, "retry to connect to the AP");
+          LOG_I("retry to connect to the AP");
           esp_wifi_connect();
           s_retry_num++;
         } 
         else {
           xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
-          ESP_LOGI(TAG,"connect to the AP fail");
+          LOG_I("connect to the AP fail");
         }
       }
       else {
-        ESP_LOGI(TAG, "Wifi Disconnected.");
+        LOG_I("Wifi Disconnected.");
         vTaskDelay(pdMS_TO_TICKS(10E3));
-        ESP_LOGI(TAG, "retry to connect to the AP");
+        LOG_I("retry to connect to the AP");
         esp_wifi_connect();
       }
     } 
@@ -612,7 +609,7 @@ static void sta_event_handler(void            * arg,
   else if (event_base == IP_EVENT) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
       ip_event_got_ip_t * event = (ip_event_got_ip_t*) event_data;
-      ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+      LOG_I("got ip:" IPSTR, IP2STR(&event->ip_info.ip));
       ip_address = event->ip_info.ip;
       s_retry_num = 0;
       xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
@@ -672,7 +669,7 @@ wifi_start(void)
   ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  ESP_LOGI(TAG, "wifi_init_sta finished.");
+  LOG_I("wifi_init_sta finished.");
 
   // Waiting until either the connection is established (WIFI_CONNECTED_BIT) 
   // or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT). 
@@ -685,16 +682,16 @@ wifi_start(void)
     portMAX_DELAY);
 
   if (bits & WIFI_CONNECTED_BIT) {
-    ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
+    LOG_I("connected to ap SSID:%s password:%s",
              wifi_ssid.c_str(), wifi_pwd.c_str());
     connected = true;
   } 
   else if (bits & WIFI_FAIL_BIT) {
-    ESP_LOGE(TAG, "Failed to connect to SSID:%s, password:%s",
+    LOG_E("Failed to connect to SSID:%s, password:%s",
              wifi_ssid.c_str(), wifi_pwd.c_str());
   }
   else {
-    ESP_LOGE(TAG, "UNEXPECTED EVENT");
+    LOG_E("UNEXPECTED EVENT");
   }
 
   if (!connected) {

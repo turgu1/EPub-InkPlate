@@ -3,9 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #include "models/jpeg_image.hpp"
+
 #include "helpers/unzip.hpp"
 #include "alloc.hpp"
-#include "logging.hpp"
 
 #include "tjpgdec.h"
 

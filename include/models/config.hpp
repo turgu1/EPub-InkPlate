@@ -3,8 +3,8 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
+
 #include "config_template.hpp"
 
 enum class ConfigIdent { 

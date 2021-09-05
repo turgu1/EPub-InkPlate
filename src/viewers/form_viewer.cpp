@@ -278,15 +278,14 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 bool
 FormViewer::event(EventMgr::Event event)
 {
-  int8_t old_entry_idx  = current_entry_idx;
   int8_t old_choice_idx = 0;
   int8_t choice_idx     = 0;
 
   bool completed = false;
 
-  uint16_t x, y;
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+    uint16_t x, y;
     switch (event) {
       case EventMgr::Event::TAP:
         event_mgr.get_start_location(x, y);
@@ -306,6 +305,7 @@ FormViewer::event(EventMgr::Event event)
         break;
     }
   #else
+    int8_t old_entry_idx  = current_entry_idx;
     if (entry_selection) {
       switch (event) {
         case EventMgr::Event::DBL_PREV:

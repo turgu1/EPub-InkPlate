@@ -4,13 +4,13 @@
 
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
+
 #include "models/toc.hpp"
 #include "models/config.hpp"
 #include "controllers/event_mgr.hpp"
 
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
-#include "logging.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -474,10 +474,12 @@ class PageLocsInterp : public HTMLInterpreter
             page_info.size = -page_info.size; // The page will not be counted nor displayed
           }
           res = page_locs.insert(page_id, page_info);
-          std::cout << page_id.offset << '|' 
-                    << page_id.offset + page_info.size << ", " 
-                    << page_info.page_number << ", " 
-                    << page_info.size << std::endl;
+          #if DEBUGGING
+            std::cout << page_id.offset << '|' 
+                      << page_id.offset + page_info.size << ", " 
+                      << page_info.page_number << ", " 
+                      << page_info.size << std::endl;
+          #endif
         }
         // Gives the chance to book_viewer to show a page if required
         book_viewer.get_mutex().unlock();
@@ -486,7 +488,9 @@ class PageLocsInterp : public HTMLInterpreter
 
         // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
     
-        std::cout << page_locs.get_pages_map().size() << std::endl;
+        #if DEBUGGING
+          std::cout << page_locs.get_pages_map().size() << std::endl;
+        #endif
         check_page_to_show(page_locs.get_pages_map().size()); // Debugging stuff
       //}
 
@@ -808,18 +812,20 @@ PageLocs::computation_completed()
   }
 }
 
-void
-PageLocs::show()
-{
-  std::cout << "----- Page Locations -----" << std::endl;
-  for (auto& entry : pages_map) {
-    std::cout << " idx: " << entry.first.itemref_index
-              << " off: " << entry.first.offset 
-              << " siz: " << entry.second.size
-              << " pg: "  << entry.second.page_number << std::endl;
+#if DEBUGGING
+  void
+  PageLocs::show()
+  {
+    std::cout << "----- Page Locations -----" << std::endl;
+    for (auto& entry : pages_map) {
+      std::cout << " idx: " << entry.first.itemref_index
+                << " off: " << entry.first.offset 
+                << " siz: " << entry.second.size
+                << " pg: "  << entry.second.page_number << std::endl;
+    }
+    std::cout << "----- End Page Locations -----" << std::endl;
   }
-  std::cout << "----- End Page Locations -----" << std::endl;
-}
+#endif
 
 void
 PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool force)

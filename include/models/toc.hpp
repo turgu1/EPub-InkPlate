@@ -12,7 +12,8 @@
 #include "helpers/simple_db.hpp"
 
 #include <forward_list>
-#include <unordered_map>
+#include <map>
+#include <utility>
 
 class TOC
 {
@@ -20,9 +21,9 @@ class TOC
     TOC() : 
              char_pool(nullptr), 
            char_buffer(nullptr), 
+      char_buffer_size(0),
                ncx_opf(nullptr),
               ncx_data(nullptr),
-      char_buffer_size(0),
                  ready(false),
              compacted(false),
                  saved(false),
@@ -39,19 +40,13 @@ class TOC
       uint8_t            level;
     };
 
-    struct Info {
-      char      * filename;       // maybe not usefull
-      uint16_t    item_index;     // item index in the spine
-      uint16_t    entries_index;  // Entries index
-    };
-
     struct VersionRecord {
       uint16_t version;
       char     app_name[32];
     };
     #pragma pack(pop)
 
-    typedef std::unordered_map<std::string, Info> Infos;
+    typedef std::map<std::pair<int16_t, std::string>, uint16_t> Infos;
     typedef std::vector<EntryRecord> Entries;
 
     const Entries &    get_entries()            { return entries;        }
@@ -124,23 +119,24 @@ class TOC
     Entries    entries;
     Infos      infos;
 
-    SimpleDB   db;                       ///< The SimpleDB database
+    SimpleDB   db;                       ///< The SimpleDB table
 
     CharPool * char_pool;
     char     * char_buffer;
     uint16_t   char_buffer_size;
+
+    pugi::xml_document * ncx_opf;
+    char               * ncx_data;
+
+    const pugi::xml_document * opf;
 
     volatile bool ready; // true if the table of content has been populated
     bool compacted;
     bool saved;
     bool some_ids;
 
-    char               * ncx_data;
-    pugi::xml_document * ncx_opf;
-
-    const pugi::xml_document * opf;
-
     void        clean();
+    void        clean_filename(char * fname);
     std::string build_filename();
     bool        do_nav_points(pugi::xml_node & node, uint8_t level);
 

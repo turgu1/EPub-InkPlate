@@ -3,8 +3,10 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
 #include <mutex>
+#include <unordered_map>
 
 #if EPUB_LINUX_BUILD
 #else
@@ -13,11 +15,6 @@
   #include "freertos/semphr.h"
 #endif
 
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include "global.hpp"
 #include "pugixml.hpp"
 #include "viewers/page.hpp"
 #include "models/epub.hpp"

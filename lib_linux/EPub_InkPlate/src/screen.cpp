@@ -11,7 +11,6 @@
 #include "screen.hpp"
 
 #include <iomanip>
-#include <cstring>
 
 #define BYTES_PER_PIXEL 3
 

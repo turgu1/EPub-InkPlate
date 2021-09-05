@@ -3,12 +3,10 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
-#include "models/ttf2.hpp"
-#include "logging.hpp"
 
-#include <string>
+#include "models/ttf2.hpp"
+
 #include <vector>
 #include <mutex>
 

@@ -4,6 +4,7 @@
 
 #define __FONTS__ 1
 #include "models/fonts.hpp"
+
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "alloc.hpp"

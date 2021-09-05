@@ -3,11 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
-#include "non_copyable.hpp"
 
-#include <cinttypes>
+#include "non_copyable.hpp"
 
 #include <gtk/gtk.h>
 

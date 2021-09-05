@@ -4,16 +4,15 @@
 
 #define __PAGE__ 1
 #include "models/epub.hpp"
+
 #include "viewers/page.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "screen.hpp"
 #include "alloc.hpp"
 
 #include <iostream>
-#include <string>
 #include <sstream>
 
-#include <string>
 #include <algorithm>
 
 static void
@@ -932,7 +931,7 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
 
   if ((w != image.get_dim().width) || (h != image.get_dim().height)) {
 
-    unsigned char * resized_bitmap = nullptr;
+    // unsigned char * resized_bitmap = nullptr;
 
     if (compute_mode == ComputeMode::DISPLAY) {
       if ((image.get_dim().width > 2) || (image.get_dim().height > 2)) {

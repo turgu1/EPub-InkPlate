@@ -3,8 +3,8 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
+
 #include "models/books_dir.hpp"
 #include "viewers/page.hpp"
 #include "viewers/books_dir_viewer.hpp"

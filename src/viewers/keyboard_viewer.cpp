@@ -4,6 +4,8 @@
 
 #if 0
 
+// Not ready yet
+
 #define __KEYBOARD_VIEWER__ 1
 #include "viewers/keyboard_viewer.hpp"
 

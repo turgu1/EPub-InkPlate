@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <cstdio>
-
 #if __LOGGING__
   void log(const char level, const char * tag, const char * fmt, ...);
 #else

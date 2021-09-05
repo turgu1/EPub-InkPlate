@@ -4,14 +4,13 @@
 
 #if defined(INKPLATE_6) || defined(INKPLATE_6_EXTENDED) || defined(INKPLATE_10) || defined(INKPLATE_10_EXTENDED) || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
 
-#include <iostream>
-
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"
 
 #include "controllers/app_controller.hpp"
 #include "models/config.hpp"
-#include "logging.hpp"
+
+#include <iostream>
 
 #if EPUB_INKPLATE_BUILD
 

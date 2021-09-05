@@ -18,10 +18,11 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#include <cinttypes>
+#pragma once
+#include "global.hpp"
+
 #include <cstring>
 #include <cmath>
-#include <string>
 
 #if CSS_PARSER_TEST
   #include <iostream>

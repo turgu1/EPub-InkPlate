@@ -3,6 +3,7 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
 /**
  * @brief Make children classes impossible to be copied.

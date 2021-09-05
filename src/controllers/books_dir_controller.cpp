@@ -13,13 +13,9 @@
 #include "viewers/linear_books_dir_viewer.hpp"
 #include "viewers/matrix_books_dir_viewer.hpp"
 
-#include "logging.hpp"
-
 #if EPUB_INKPLATE_BUILD
   #include "nvs.h"
 #endif
-
-#include <string>
 
 BooksDirController::BooksDirController()
 {
@@ -253,7 +249,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
             }
           }
         }
-        else {open_book_file
+        else {
           app_controller.set_controller(AppController::Ctrl::OPTION);
         }
         break;

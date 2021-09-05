@@ -12,8 +12,6 @@
 #include "models/config.hpp"
 #include "models/toc.hpp"
 
-#include "logging.hpp"
-
 #if EPUB_INKPLATE_BUILD
   #include "nvs.h"
 #endif
@@ -38,11 +36,7 @@ TocController::enter()
   void 
   TocController::input_event(EventMgr::Event event)
   {
-    static std::string book_fname;
-    static std::string book_title;
     uint16_t x, y;
-
-    const BooksDir::EBookRecord * book;
 
     switch (event) {
       case EventMgr::Event::SWIPE_RIGHT:
@@ -58,8 +52,10 @@ TocController::enter()
 
         current_entry_index = toc_viewer.get_index_at(x, y);
         if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
-          book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-          app_controller.set_controller(AppController::Ctrl::BOOK);
+          if(toc.get_entry(current_entry_index).page_id.offset >= 0) {
+            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
+            app_controller.set_controller(AppController::Ctrl::BOOK);
+          }
         }
         else {
           app_controller.set_controller(AppController::Ctrl::BOOK);
@@ -115,9 +111,11 @@ TocController::enter()
         break;
 
       case EventMgr::Event::SELECT:
-        if (current_entry_index < toc.get_entry_count()) {
-          book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-          app_controller.set_controller(AppController::Ctrl::BOOK);
+        if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
+          if (toc.get_entry(current_entry_index).page_id.offset >= 0) {
+            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
+            app_controller.set_controller(AppController::Ctrl::BOOK);
+          }
         }
         break;
 

@@ -4,6 +4,7 @@
 
 #define __MSG_VIEWER__ 1
 #include "viewers/msg_viewer.hpp"
+
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
 #include "screen.hpp"

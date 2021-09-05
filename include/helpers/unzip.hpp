@@ -3,11 +3,10 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
 #include <forward_list>
 #include <mutex>
-
-#include "global.hpp"
 
 #define MINIZ 1
 #define ZLIB  0

@@ -13,10 +13,8 @@
  */
 
 #pragma once
+#include "global.hpp"
 
-#include <cinttypes>
-
-#include <string>
 #include <map>
 #include <list>
 #include <forward_list>

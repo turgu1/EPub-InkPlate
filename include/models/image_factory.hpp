@@ -3,8 +3,8 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
+
 #include "models/image.hpp"
 #include "models/png_image.hpp"
 #include "models/jpeg_image.hpp"

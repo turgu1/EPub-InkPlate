@@ -3,11 +3,12 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
 
 #include <thread>
 #include <mutex>
+#include <map>
+#include <set>
 
 #if EPUB_LINUX_BUILD
   #include <fcntl.h>
@@ -25,9 +26,6 @@
 #include "viewers/html_interpreter.hpp"
 
 #include "pugixml.hpp"
-
-#include <map>
-#include <set>
 
 /**
  * class PageLocs - Compute pages locations

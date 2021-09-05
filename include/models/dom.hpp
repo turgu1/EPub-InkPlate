@@ -3,12 +3,12 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <forward_list>
 #include <map>
-#include <string>
 #include <sstream>
 #include <iterator>
 

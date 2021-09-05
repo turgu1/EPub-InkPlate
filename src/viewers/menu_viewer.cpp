@@ -4,6 +4,7 @@
 
 #define __MENU_VIEWER__ 1
 #include "viewers/menu_viewer.hpp"
+
 #include "viewers/book_viewer.hpp"
 #include "models/fonts.hpp"
 #include "models/ttf2.hpp"
@@ -152,11 +153,11 @@ MenuViewer::clear_highlight()
       .screen_bottom      =     0,
       .width              =     0,
       .height             =     0,
+      .vertical_align     =     0,
       .trim               =  true,
       .pre                = false,
       .font_style         = Fonts::FaceStyle::NORMAL,
       .align              = CSS::Align::LEFT,
-      .vertical_align     = 0,
       .text_transform     = CSS::TextTransform::NONE,
       .display            = CSS::Display::INLINE
     };
@@ -181,8 +182,6 @@ MenuViewer::clear_highlight()
 bool 
 MenuViewer::event(EventMgr::Event event)
 {
-  uint8_t old_index = current_entry_index;
-
   Page::Format fmt = {
     .line_height_factor =   1.0,
     .font_index         =     5,
@@ -267,6 +266,8 @@ MenuViewer::event(EventMgr::Event event)
         break;
     }
   #else
+    uint8_t old_index = current_entry_index;
+
     page.start(fmt);
 
     switch (event) {

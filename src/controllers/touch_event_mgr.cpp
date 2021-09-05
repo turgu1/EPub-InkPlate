@@ -4,14 +4,13 @@
 
 #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
 
-#include <iostream>
-
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"
 
+#include <iostream>
+
 #include "controllers/app_controller.hpp"
 #include "models/config.hpp"
-#include "logging.hpp"
 
 #if EPUB_INKPLATE_BUILD
 

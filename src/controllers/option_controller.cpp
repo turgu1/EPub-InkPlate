@@ -4,6 +4,7 @@
 
 #define __OPTION_CONTROLLER__ 1
 #include "controllers/option_controller.hpp"
+
 #include "controllers/common_actions.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"

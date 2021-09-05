@@ -10,10 +10,10 @@
 
 #define __SCREEN__ 1
 #include "screen.hpp"
+
 #include "esp.hpp"
 
 #include <iomanip>
-#include <cstring>
 
 #define BYTES_PER_PIXEL 3
 

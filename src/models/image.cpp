@@ -3,7 +3,6 @@
 // MIT License. Look at file licenses.txt for details.
 
 #include "models/image.hpp"
-#include "logging.hpp"
 
 #include "alloc.hpp"
 

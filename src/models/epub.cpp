@@ -13,14 +13,10 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/book_viewer.hpp"
 #include "helpers/unzip.hpp"
-#include "logging.hpp"
 
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
 #endif
-
-#include <cstring>
-#include <string>
 
 using namespace pugi;
 
@@ -666,7 +662,7 @@ EPub::get_meta(const std::string & name)
   
   if (!((node =  opf.child("package" )) &&
         (node = node.child("metadata")))) {
-    if (node = opf.child("package")) node = node.child("opf:metadata");
+    if ((node = opf.child("package"))) node = node.child("opf:metadata");
   }
   return node == nullptr ? nullptr : node.child_value(name.c_str());
 }

@@ -11,7 +11,6 @@
   
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
-  #include "logging.hpp"
 
   #include "controllers/books_dir_controller.hpp"
   #include "controllers/app_controller.hpp"
@@ -198,7 +197,7 @@
       screen.setup(resolution, orientation);
 
       event_mgr.setup();
-      books_dir_controller.setup();
+      books_dir_controller.setup(); 
 
       if (config_err) {
         msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",

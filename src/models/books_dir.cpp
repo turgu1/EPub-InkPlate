@@ -9,7 +9,6 @@
 #include "models/default_cover.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
-#include "logging.hpp"
 #include "alloc.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -17,7 +16,6 @@
 #endif
 
 #include <dirent.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <sstream>

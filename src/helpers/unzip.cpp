@@ -4,15 +4,14 @@
 
 #define __UNZIP__ 1
 #include "helpers/unzip.hpp"
+
 #include "viewers/msg_viewer.hpp"
-#include "logging.hpp"
 #include "alloc.hpp"
 
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <cstring>
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>

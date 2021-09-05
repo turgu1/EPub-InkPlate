@@ -220,7 +220,7 @@ The following are imported C header and source files, that implement some algori
   - `stb_image_resize.h` resize images larger/smaller 
 
 - [PNGLE](https://github.com/kikuchan/pngle) (For PNG Images)
-- [MINIZ](https://github.com/kikuchan/pngle) (For Zip files and epub files decompress)
+- [MINIZ](https://github.com/kikuchan/pngle) (For Zip/PNG files and epub files decompress)
 - [TJPGD](http://elm-chan.org/fsw/tjpgd/00index.html) (For JPeg Images)
 
 The following libraries were used at first but replaced with counterparts:
@@ -228,6 +228,9 @@ The following libraries were used at first but replaced with counterparts:
 - [ZLib](https://zlib.net/) deflating (unzip). A file deflation function is already supplied with `PNGLE`.
 - [RapidXML](http://rapidxml.sourceforge.net/index.htm) (For XML parsing) Too much stack space required. Replaced with PubiXML.
 - [SQLite3](https://www.sqlite.org/index.html) (The amalgamation version. For books simple database) Too many issues to get it runs on an ESP32. I built my own simple DB tool (look at `src/simple_db.cpp` and `include/simble_db.hpp`)
+- [STB](https://github.com/nothings/stb) (For image extraction and unzip) Requires a lot of memory space depending on the ePub stored image resolution. Changed to use PNGLE and TJPGD combined with my own image classes to stream the image to the appropriate size without requiring to much memory space:
+
+  - `stb_image.h` PNG and JPeg images extraction 
 
 ### FreeType library compilation for ESP32
 

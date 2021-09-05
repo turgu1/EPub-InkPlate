@@ -3,9 +3,8 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
-#include "logging.hpp"
+
 #include "memory_pool.hpp"
 
 #include <ft2build.h>
@@ -15,7 +14,6 @@
 
 #include <unordered_map>
 #include <forward_list>
-#include <string>
 #include <mutex>
 
 class TTF

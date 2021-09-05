@@ -16,8 +16,6 @@
   #include "nvs.h"
 #endif
 
-#include <string>
-
 void 
 BookController::enter()
 { 

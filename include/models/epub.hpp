@@ -3,7 +3,6 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
 
 #include "pugixml.hpp"
@@ -13,7 +12,6 @@
 #include "viewers/page.hpp"
 #include "models/image.hpp"
 
-#include <string>
 #include <list>
 #include <forward_list>
 #include <map>

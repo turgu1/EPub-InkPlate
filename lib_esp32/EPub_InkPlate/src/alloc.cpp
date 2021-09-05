@@ -2,7 +2,8 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#include <cinttypes>
+#include "alloc.hpp"
+
 #include "esp.hpp"
 
 void * allocate(size_t size) 

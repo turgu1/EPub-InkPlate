@@ -5,9 +5,11 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 #include <iostream>
 #include <unordered_map>
 #include <string>
+#include <cstring>
 
 #include "strlcpy.hpp"
 
@@ -25,8 +27,11 @@
 
 #if EPUB_LINUX_BUILD
   #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
-#else
+#endif
+
+#if EPUB_INKPLATE_BUILD
   #define MAIN_FOLDER "/sdcard"
+  #define LOG_LOCAL_LEVEL EPUB_LOG_LEVEL
 #endif
 
 #define FONTS_FOLDER MAIN_FOLDER "/fonts"
@@ -35,6 +40,8 @@
 #ifndef DEBUGGING
   #define DEBUGGING 0
 #endif
+
+#include "logging.hpp"
 
 // Debugging aid
 //

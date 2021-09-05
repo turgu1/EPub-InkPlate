@@ -3,10 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+#include "global.hpp"
 
-#include <cinttypes>
 #include <cstdio>
-#include <string>
 
 /**
  * @brief Very simple database tool

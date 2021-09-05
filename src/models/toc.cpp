@@ -1,6 +1,8 @@
 #define __TOC__ 1
 #include "models/toc.hpp"
+
 #include "models/epub.hpp"
+
 
 std::string 
 TOC::build_filename()
@@ -53,18 +55,29 @@ TOC::load()
       char_buffer = (char *) allocate(char_buffer_size);
       if (db.get_record(char_buffer, char_buffer_size)) {
         uint16_t count = db.get_record_count() - 2;
-        entries.resize(count);
-        uint16_t idx = 0;
-        while ((idx < count) && db.goto_next()) {
-          if (!db.get_record(&entries[idx], sizeof(EntryRecord))) break;
-          entries[idx].label = char_buffer + (size_t)entries[idx].label;
-          idx++;
-        }
-        if (idx != count) {
-          LOG_E("The toc has been partially read: %d records.", idx);
+        if (count > 0) {
+          entries.resize(count);
+          uint16_t idx = 0;
+          while ((idx < count) && db.goto_next()) {
+            if (db.get_record_size() == sizeof(EntryRecord)) {
+              if (!db.get_record(&entries[idx], sizeof(EntryRecord))) break;
+              entries[idx].label = char_buffer + (size_t)entries[idx].label;
+              idx++;
+            }
+            else {
+              LOG_E("DB corrupted.");
+              break;
+            }
+          }
+          if (idx != count) {
+            LOG_E("The toc has been partially read: %d records.", idx);
+          }
+          else {
+            ready = compacted = saved = true;
+          }
         }
         else {
-          ready = compacted = saved = true;
+          LOG_E("DB empty.");
         }
       }
       else {
@@ -136,13 +149,33 @@ TOC::save()
   return saved;
 }
 
+unsigned char bin(char ch);
+
+void
+TOC::clean_filename(char * fname)
+{
+  char * s = fname;
+  char * d = fname;
+
+  while (*s) {
+    if (*s == '%') {
+      *d++ = (bin(s[1]) << 4) + bin(s[2]);
+      s += 3;
+    }
+    else {
+      *d++ = *s++;
+    }
+  }
+
+  *d = 0;
+}
+
 bool
 TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
 {
   xml_attribute attr;
 
   do {
-    const char *    id = nullptr;
     const char * label = nullptr;
     const char * fname = nullptr;
 
@@ -158,8 +191,8 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
     }
 
     EntryRecord  entry;
-    Info         info;
     std::string  the_id;
+    char       * filename_to_find;
 
     entry.label = char_pool->allocate(strlen(label) + 1);
     strcpy(entry.label, label);
@@ -168,14 +201,17 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
 
     const char * hash_pos = strchr(fname, '#');
     if (hash_pos != nullptr) {
-      info.filename = char_pool->allocate(hash_pos - fname + 1);
-      strlcpy(info.filename, fname, hash_pos - fname + 1);
       the_id.assign(hash_pos + 1);
-      fname = info.filename;
+      filename_to_find = char_pool->allocate(hash_pos - fname + 1);
+      strlcpy(filename_to_find, fname, hash_pos - fname + 1);
     }
     else {
       the_id.clear();
+      filename_to_find = char_pool->allocate(sizeof(fname) + 1);
+      strcpy(filename_to_find, fname);
     }
+
+    clean_filename(filename_to_find);
 
     if ((n = opf->child("package")) &&
         (n =    n.child("manifest")) &&
@@ -183,7 +219,7 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
       // Search in the manifest to find the entry associated with the filename
       do {
         if ((attr = n.attribute("href")) &&
-            (strcmp(attr.value(), fname) == 0)) {
+            (strcmp(attr.value(), filename_to_find) == 0)) {
           break;
         }
         n = n.next_sibling();
@@ -196,7 +232,7 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
         if ((n = opf->child("package")) &&
             (n =    n.child("spine"  )) &&
             (n =    n.child("itemref"))) {
-          uint16_t index = 0;
+          int16_t index = 0;
           while (n && 
                   ((attr = n.attribute("idref"))) &&
                   (strcmp(attr.value(), idref) != 0)) {
@@ -206,10 +242,11 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
           if (n) {
             entry.page_id.itemref_index = index;
             if (!the_id.empty()) {
-              info.item_index    = entry.page_id.itemref_index = index;
-              info.entries_index = entries.size();
-              infos[the_id]      = info;
-              some_ids           = true;
+              infos.insert(std::make_pair(
+                std::make_pair(index, the_id),
+                (int16_t)entries.size()
+              ));
+              some_ids = true;
             }
             else {
               entry.page_id.offset = 0;
@@ -282,7 +319,7 @@ TOC::load_from_epub()
   uint32_t  ncx_size;
   bool      result = false;
 
-  if (ncx_data = epub.retrieve_file(filename, ncx_size)) {
+  if ((ncx_data = epub.retrieve_file(filename, ncx_size))) {
     ncx_opf = new pugi::xml_document();
     if (ncx_opf == nullptr) {
       free(ncx_data);
@@ -395,11 +432,11 @@ TOC::clean()
 void 
 TOC::set(std::string & id, int32_t current_offset)
 {
-  Infos::iterator info_it = infos.find(id);
+  int16_t itemref_index = page_locs.get_current_itemref_index();
+  Infos::iterator infos_it = infos.find(std::make_pair(itemref_index, id));
 
-  if (info_it != infos.end()) {
-    Info & info = info_it->second;
-    entries[info.entries_index].page_id = PageLocs::PageId(page_locs.get_current_itemref_index(), current_offset);
+  if (infos_it != infos.end()) {
+    entries[infos_it->second].page_id.offset = current_offset;
   }
 }
 
@@ -442,10 +479,9 @@ TOC::show_info()
   std::cout << "----- TOC Infos -----" << std::endl;
 
   for (auto & e : infos) {
-    std::cout << e.first << " ("
-              << e.second.filename << "): " 
-              << e.second.entries_index << ", "
-              << e.second.item_index << std::endl;
+    std::cout << "Id: " << e.first.second << ", " 
+              << "Item index: " << e.first.first << ", "
+              << "TOC Entry index: " << e.second << std::endl;
   }
 
   std::cout << "----- End TOC Infos -----" << std::endl;

@@ -3,8 +3,7 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
-#include <cinttypes>
+#include "global.hpp"
 
 const uint8_t default_cover_width  = 65;
 const uint8_t default_cover_height = 90;

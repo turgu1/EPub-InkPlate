@@ -3,12 +3,8 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-
 #include "global.hpp"
-#include "logging.hpp"
-#include "strlcpy.hpp"
 
-#include <string>
 #include <array>
 #include <fstream>
 
