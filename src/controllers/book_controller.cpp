@@ -19,6 +19,8 @@
 void 
 BookController::enter()
 { 
+  LOG_D("===> Enter()...");
+
   page_locs.check_for_format_changes(epub.get_item_count(), current_page_id.itemref_index);
   const PageLocs::PageId * id = page_locs.get_page_id(current_page_id);
   if (id != nullptr) {
@@ -35,6 +37,8 @@ BookController::enter()
 void 
 BookController::leave(bool going_to_deep_sleep)
 {
+  LOG_D("===> leave()...");
+  
   books_dir_controller.save_last_book(current_page_id, going_to_deep_sleep);
 }
 
@@ -44,6 +48,8 @@ BookController::open_book_file(
   std::string & book_filename, 
   const PageLocs::PageId & page_id)
 {
+  LOG_D("===> open_book_file()...");
+
   msg_viewer.show(MsgViewer::BOOK, false, false, "Loading a book",
      "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
@@ -63,7 +69,7 @@ BookController::open_book_file(
     if (id != nullptr) {
       current_page_id.itemref_index = id->itemref_index;
       current_page_id.offset        = id->offset;
-      //book_viewer.show_page(current_page_id);
+      // book_viewer.show_page(current_page_id);
       return true;
     }
   }

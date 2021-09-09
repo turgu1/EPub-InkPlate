@@ -1,4 +1,4 @@
-# EPub-InkPlate - User's Guide - Version 1.2.2
+# EPub-InkPlate - User's Guide - Version 1.3.0
 
 The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices.
 
@@ -167,13 +167,13 @@ Parameters for which no specific value have been choosen by the user will displa
 
 The application maintains a small database that contains minimal meta-data about the books (Title, author, description, small cover picture). This list is computed initially when the application sees for the first time the presence of an e-book on the SD-Card. This small database is used to present the list of e-books present on the SD-Card. 
 
-The only limit in terms of the number of e-books managed by the application is the SD-Card capacity. You can have as many e-book as possible to put on the SD-Card. Too many e-book would become difficult for the user to browse in the e-books list. A few dozen e-books is manageable. A few hundred e-books would become difficult to overlook. 
+The only limit in terms of the number of e-books managed by the application is the SD-Card capacity. You can have as many e-books as possible to put on the SD-Card. Too many e-books would become difficult for the user to browse in the e-books list. A few dozen e-books are manageable. A few hundred e-books would become difficult to overlook. 
 
 ### 3.2 The Pages location computation
 
 A book is presented one page at a time on the screen. The quantity of characters displayed on a page depends on the screen orientation (portrait or landscape), the fonts used, and the characters' size. Parameters in forms described in section 2, selectable by the user, have an impact on the number of pages and their localization in the EPub file. 
 
-When an e-book is selected for display, the program verifies if it's required to compute the pages location. This is transparent to the user. If required, a background task is then started to recompute locations and is minimally interfere with the user reading and moving from one page to the other. The page number that is normally shown at the bottom of the screen will only become available at the end of the pages location computation process. The locations are saved in a file such that the next time the e-book will be open, the locations will not be required to be computed again if the formatting parameters have not been changed.
+When an e-book is selected for display, the program verifies if it's required to compute the pages' location. This is transparent to the user. If required, a background task is then started to recompute locations and is minimally interfere with the user reading and moving from one page to the other. The page number that is normally shown at the bottom of the screen will only become available at the end of the pages' location computation process. The locations are saved in a file such that the next time the e-book will be open, the locations will not be required to be computed again if the formatting parameters have not been changed.
 
 There is a big difference in the duration of the location computation between using slow SD-Cards and fast SD-Cards. The author made some tests with cards in hands. With SanDisk Ultra SD-Cards (both 16GB and 32GB), the scan duration with the two supplied books is ~3 minutes each. With a slow SD-Card (very old Sandisk 4GB), it took 8 minutes and 20 seconds.
 
@@ -208,6 +208,30 @@ If an internal problem related to memory allocation is found by the application,
 
 ### 3.5 - Images rendering
 
-Starting with version 1.3.0, the application is using a new *stream based* approach to render images that are part of an eBook. This approach optimize the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
+Starting with version 1.3.0, the application is using a new *stream-based* approach to render images that are part of an eBook. This approach optimizes the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
 
-JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some eBooks, the rendering of images may not be possible. 
+JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some eBooks, the rendering of images may not be possible. A script named `adjust_size.sh` and supplied with the application can be used to transform the resolution of the embedded images. It also may transform the images to a format that will be compatible with the application's capabilities. Look in section 3.3 for further details on how to use the script on your computer. 
+
+### 3.6 - Moving the SDCard from an Inkplate model to another
+
+Inkplate models are using different eInk screens that are using different pixel resolutions. If you ever want to transfer an SDCard from a model to another, it could be beneficial to erase some files in the SDCard's `books` folder.
+
+All files with the extension `.locs` are tailored to the screen resolution. Some files with the extension `.toc` may also be tailored. These files are automatically generated when they are not present in the folder at the time the user opens a book to read it.
+
+The best way to do it is to plug the SDCard in your computer or laptop, and delete all those `.locs` and `.toc` files.
+
+Another file extension is generated and used by the application: extension `.pars` files contain the ebooks' display parameters. If deleted, they will be automatically generated with default values, as defined in the main options menus of the application.
+
+### 3.7 - In case of a problem
+
+It is possible that the application behaves in a way that you don't understand. That may happen for a variety of reasons beyond the testing effort made by the author to ensure that the application is working properly.
+
+The first thing to do is to verify if your device is using the last version of the application. This can be done through the **About the EPub-InkPlate application** menu entry. The message will show which version you are using. Time to time, new versions are developped and made available (here)[https://github.com/turgu1/EPub-InkPlate/releases]. Consult the Install Manual on how to update your Inkplate device.
+
+If your Inkplate is already using the last available release, one way to try to find what is going wrong is to use a serial port terminal emulator on your computer after the Inkplate device has been connected using a USB cable. When EPub-InkPlate is running, messages are sent to the USB port related to the running firmware. When the application detects something wrong, there is a good chance that a message would be transmitted to the USB serial port indicating what the problem is. 
+
+On both Linux and Mac computers, the author is using **minicom** to access the USB port. The device name is usually `/dev/ttyUSB0` and the baud rate to use is 115200 bps with 8N1 bits/parity.
+
+On a Windows computer, there is a variety of terminal emulators available to select from. The device name is usually `COM3:` and the other parameters must be the same as for Linux.
+
+If you can't resolve the problem by yourself, it is always possible to raise an issue (here)[https://github.com/turgu1/EPub-InkPlate/issues]. You have to explain the bad behaviour of the application and attach any information that can help the author to find what the problem is.

@@ -10,7 +10,7 @@
 class JPegImage : public Image
 {
   public:
-    JPegImage(std::string filename, Dim max);
+    JPegImage(std::string filename, Dim max, bool load_bitmap);
 
   private:
     static constexpr char const * TAG = "JPegImage";

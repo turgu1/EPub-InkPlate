@@ -10,7 +10,7 @@
 class PngImage : public Image
 {
   public:
-    PngImage(std::string filename, Dim max);
+    PngImage(std::string filename, Dim max, bool load_bitmap);
 
     inline float get_scale_factor() { return scale; }
   private:

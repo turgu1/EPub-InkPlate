@@ -302,9 +302,12 @@ Screen::update(bool no_full)
   gtk_image_set_from_pixbuf(GTK_IMAGE(image_data.image), gtk_image_get_pixbuf(image_data.image));
 }
 
+extern void exit_app();
+
 static void 
 destroy_app( GtkWidget *widget, gpointer   data )
 {
+  exit_app();
   gtk_main_quit();
 }
 

@@ -17,7 +17,9 @@ FT_Library TTF::library{ nullptr };
 
 TTF::TTF(const std::string & filename)
 {
-  face = nullptr;
+  face         = nullptr;
+  memory_font  = nullptr;
+  current_size = -1;
 
   if (library == nullptr) {
     int error = FT_Init_FreeType(& library);
@@ -28,13 +30,13 @@ TTF::TTF(const std::string & filename)
   }
 
   set_font_face_from_file(filename);
-  memory_font  = nullptr;
-  current_size = -1;
 }
 
 TTF::TTF(unsigned char * buffer, int32_t buffer_size)
 {
-  face = nullptr;
+  face         = nullptr;
+  memory_font  = nullptr;
+  current_size = -1;
   
   if (library == nullptr) {
     int error = FT_Init_FreeType(& library);
@@ -44,7 +46,6 @@ TTF::TTF(unsigned char * buffer, int32_t buffer_size)
   }
 
   set_font_face_from_memory(buffer, buffer_size);
-  current_size = -1;
 }
 
 TTF::~TTF()
@@ -87,9 +88,14 @@ void
 TTF::clear_face()
 {
   clear_cache();
-  if (face != nullptr) FT_Done_Face(face);
-  face = nullptr;
-  free(memory_font);
+  if (face != nullptr) {
+    FT_Done_Face(face);
+    face = nullptr;
+  }
+  if (memory_font != nullptr) {
+    free(memory_font);
+    memory_font = nullptr;
+  }
   
   current_size = -1;
 }
@@ -99,6 +105,7 @@ TTF::clear_cache()
 {
   std::scoped_lock guard(mutex);
   
+  LOG_D("Clear cache...");
   for (auto const & entry : cache) {
     for (auto const & glyph : entry.second) {
       bitmap_glyph_pool.deleteElement(glyph.second);      
@@ -144,7 +151,7 @@ TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
 
     int glyph_index = FT_Get_Char_Index(face, charcode);
     if (glyph_index == 0) {
-      LOG_E("Charcode not found in face: %d, font_index: %d", charcode, fonts_cache_index);
+      LOG_D("Charcode not found in face: %d, font_index: %d", charcode, fonts_cache_index);
       return nullptr;
     }
     else {
@@ -297,6 +304,7 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t buffer_size)
   int error = FT_New_Memory_Face(library, (const FT_Byte *) buffer, buffer_size, 0, &face);
   if (error) {
     LOG_E("The memory font format is unsupported or is broken (%d).", error);
+    if (buffer != nullptr) free(buffer);
     return false;
   }
 

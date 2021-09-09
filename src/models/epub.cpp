@@ -18,6 +18,9 @@
   #include "esp_heap_caps.h"
 #endif
 
+#include <iostream>
+#include <iomanip>
+
 using namespace pugi;
 
 EPub::EPub()
@@ -243,10 +246,14 @@ EPub::retrieve_fonts_from_css(CSS & css)
     if (book_format_params.use_fonts_in_book == 0) return;
     
     CSS::RulesMap font_rules;
-    DOM dom;
-    DOM::Node * ff = dom.body->add_child(DOM::Tag::FONT_FACE);
+    DOM * dom = new DOM;
+    DOM::Node * ff = dom->body->add_child(DOM::Tag::FONT_FACE);
+
     css.match(ff, font_rules);
 
+    delete dom;
+    dom = nullptr;
+    
     if (font_rules.empty()) return;
 
     bool first = true;
@@ -832,20 +839,32 @@ EPub::get_item_at_index(int16_t    itemref_index,
 }
 
 Image *
-EPub::get_image(std::string & fname)
+EPub::get_image(std::string & fname, bool load)
 {
   LOG_D("Mutex lock...");
 
   { std::scoped_lock guard(mutex);
 
     std::string filename = filename_locate(fname.c_str());
-    Image * img = ImageFactory::create(filename, Dim(Screen::WIDTH, Screen::HEIGHT));
+    Image * img = ImageFactory::create(filename, 
+                                       Dim(Screen::WIDTH, Screen::HEIGHT), 
+                                       load);
 
-    if ((img == nullptr) || (img->get_bitmap() == nullptr)) {
+    if ((img == nullptr) || 
+        (load && (img->get_bitmap() == nullptr)) ||
+        (img->get_dim().height == 0) ||
+        (img->get_dim().width  == 0)) {
       if (img != nullptr) delete img;
       img = nullptr;
     }
 
+    // if (img->get_bitmap() != nullptr) {
+    //   std::cout << "----- Image content -----" << std::endl;
+    //   for (int i = 0; i < 200; i++) {
+    //     std::cout << std::hex << std::setw(2) << +img->get_bitmap()[i];
+    //   }
+    //   std::cout << std::endl << "-----" << std::endl;
+    // }
     LOG_D("Mutex unlocked...");
     return img;
   }

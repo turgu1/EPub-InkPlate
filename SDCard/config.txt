@@ -29,8 +29,8 @@
 # ---
 
 version = 1
-wifi_ssid = "WLAN-724300"
-wifi_pwd = "50238634630558382093"
+wifi_ssid = ""
+wifi_pwd = ""
 http_port = 80
 battery = 0
 timeout = 30

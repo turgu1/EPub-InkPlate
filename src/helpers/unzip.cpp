@@ -15,6 +15,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
+#include <cerrno>
+#include <iomanip>
 
 Unzip::Unzip()
 {
@@ -63,7 +65,11 @@ Unzip::open_zip_file(const char * zip_filename)
 
     buffer[FILE_CENTRAL_SIZE] = 0;
 
-    if (fseek(file, 0, SEEK_END)) ERR(0);
+    if (fseek(file, 0, SEEK_END)) {
+      LOG_E("Unable to seek to end of file. errno: %s", std::strerror(errno));
+      err = 0;
+      break;
+    }
     off_t length = ftell(file);
     if (length < FILE_CENTRAL_SIZE) ERR(1); 
     off_t offset = length - FILE_CENTRAL_SIZE;
@@ -72,20 +78,22 @@ Unzip::open_zip_file(const char * zip_filename)
     if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(3);
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 5) && (buffer[3] == 6))) {
       // There must be a comment in the last entry. Search for the beginning of the entry
+      off_t size_to_read = 2 * FILE_CENTRAL_SIZE;
       offset -= FILE_CENTRAL_SIZE;
       bool found = false;
-      while (!found && (offset > 0)) {
+      while (!found && (size_to_read < 1024)) {
         if (fseek(file, offset, SEEK_SET)) ERR(4);
-        if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(5);
+        if (fread(buffer, size_to_read, 1, file) != 1) ERR(5);
         char * p;
-        if ((p = strstr(buffer, "PK\5\6")) != nullptr) {
+        if ((p = (char *)memmem(buffer, size_to_read, "PK\5\6", 4)) != nullptr) {
           offset += (p - buffer);
           if (fseek(file, offset, SEEK_SET)) ERR(6);
           if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(7);
           found = true;
           break;
         }
-        offset -= FILE_CENTRAL_SIZE;
+        offset       -= FILE_CENTRAL_SIZE;
+        size_to_read += FILE_CENTRAL_SIZE;
       }
       if (!found) offset = 0;
     }
@@ -151,7 +159,7 @@ Unzip::open_zip_file(const char * zip_filename)
         char * fname = new char[filename_size + 1];
         if (fread(fname, filename_size, 1, file) != 1) {
           delete [] fname;
-          break;
+          ERR(12);
         }
         fname[filename_size] = 0;
 
@@ -167,8 +175,12 @@ Unzip::open_zip_file(const char * zip_filename)
         file_entries.push_front(fe);
 
         offset += FILE_ENTRY_SIZE + 4 + filename_size + extra_size + comment_size;
-        if (fseek(file, extra_size + comment_size, SEEK_CUR)) ERR(12);
+        if (fseek(file, extra_size + comment_size, SEEK_CUR)) ERR(13);
       }
+    }
+    else {
+      LOG_E("Unable to read central directory.");
+      ERR(14);
     }
     break;
   }
@@ -178,20 +190,22 @@ Unzip::open_zip_file(const char * zip_filename)
     close_zip_file();
   }
   else {
-    // LOG_D("open_zip_file completed!");
+    LOG_D("open_zip_file completed!");
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto * f : file_entries) {
+        std::cout << 
+          "pos: "        << std::setw(7) << f->start_pos <<
+          " zip size: "  << std::setw(7) << f->compressed_size <<
+          " out size: "  << std::setw(7) << f->size <<
+          " method: "    << std::setw(1) << f->method <<
+          " name: "      << f->filename <<  std::endl;
+      }
+     std::cout << "[End of List]" << std::endl;
+    #endif
   }
 
   file_entries.reverse();
-
-  // for (auto * f : file_entries) {
-  //   std::cout << 
-  //     "filename: " << f->filename <<
-  //     " start pos: " << f->start_pos <<
-  //     " compressed size: " << f->compressed_size <<
-  //     " size: " << f->size <<
-  //     " method: " << f->method << std::endl;
-  // }
-
   return completed;
 }
 

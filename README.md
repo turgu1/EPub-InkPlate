@@ -2,9 +2,9 @@
 
 ## Last news
 
-(Updated 2021.09.4)
+(Updated 2021.09.09)
 
-Update for upcoming version 1.3 - Not ready yet
+Update for upcoming version 1.3.0 - Not ready yet
 
 New User functionalities:
 
@@ -25,8 +25,10 @@ Internal changes:
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
 - [ ] Testing ebooks on InkPlate-6/InkPlate-10.
 - [ ] Valgrind tests.
-- [ ] Documentation update.
+- [x] Documentation update.
 - [ ] New version releases packaging.
+
+---
 
 - [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (may happen for a future release).
 

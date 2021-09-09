@@ -165,8 +165,10 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
 void
 BooksDirController::show_last_book()
 {
+
   if (last_read_book_index == -1) return;
 
+  LOG_D("===> show_last_book()...");
   static std::string            book_fname;
   static std::string            book_title;
   const BooksDir::EBookRecord * book;
@@ -189,6 +191,7 @@ BooksDirController::enter()
 {
   int8_t viewer;
 
+  LOG_D("===> enter()...");
   config.get(Config::Ident::DIR_VIEW, &viewer);
   books_dir_viewer = (viewer == 0) ? (BooksDirViewer *) &linear_books_dir_viewer : 
                                      (BooksDirViewer *) &matrix_books_dir_viewer;

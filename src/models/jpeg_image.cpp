@@ -7,7 +7,12 @@
 #include "helpers/unzip.hpp"
 #include "alloc.hpp"
 
-#include "tjpgdec.h"
+#include "tjpgdec.hpp"
+
+#include <iostream>
+#include <iomanip>
+
+// static bool first = false;
 
 static size_t in_func (     /* Returns number of bytes read (zero on error) */
     JDEC    * jd,    /* Decompression object */
@@ -17,7 +22,17 @@ static size_t in_func (     /* Returns number of bytes read (zero on error) */
 {
   if (buff) { /* Read data from imput stream */
     uint32_t size = nbyte;
-    return unzip.get_stream_data((char *) buff, size) ? size : 0;
+    size_t res = unzip.get_stream_data((char *) buff, size) ? size : 0;
+    // if (first) {
+    //   first = false;
+    //   std::cout << "----- Unzip content -----" << std::endl;
+    //   std::cout << "Size read: " << size << std::endl;
+    //   for (int i = 0; i < 200; i++) {
+    //     std::cout << std::hex << std::setw(2) << +buff[i];
+    //   }
+    //   std::cout << std::endl << "-----" << std::endl;    
+    // }
+    return res;
   } else {    /* Remove data from input stream */
     return unzip.stream_skip(nbyte) ? nbyte : 0;
   }
@@ -37,14 +52,13 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
   
   Image::ImageData * image_data = (Image::ImageData *) jd->device;
   uint8_t * src, * dst;
-  uint16_t y, bws;
-  unsigned int bwd;
+  uint16_t y, bws, bwd;
 
   if ((rect->right >= image_data->dim.width) || (rect->bottom >= image_data->dim.height)) {
     LOG_E("Rect outside of image dimensions!");
     return 0;
   }
-  /* Copy the output image rectanglar to the frame buffer (assuming RGB888 output) */
+  /* Copy the output image rectangle to the frame buffer (assuming BW output) */
   src = (uint8_t *) bitmap;
   if (src == nullptr) return 0;
 
@@ -59,7 +73,7 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
   return 1;    /* Continue to decompress */
 }
 
-JPegImage::JPegImage(std::string filename, Dim max) : Image(filename)
+JPegImage::JPegImage(std::string filename, Dim max, bool load_bitmap) : Image(filename)
 {
   LOG_D("Loading image file %s", filename.c_str());
 
@@ -71,7 +85,7 @@ JPegImage::JPegImage(std::string filename, Dim max) : Image(filename)
 
     /* Prepare to decompress */
     work = (uint8_t *) allocate(sz_work);
-    res  = jd_prepare(&jdec, in_func, work, sz_work, &image_data);
+    res  = jdec_prepare(&jdec, in_func, work, sz_work, &image_data);
     if (res == JDR_OK) {
       uint8_t scale = 0;
       uint16_t width = jdec.width;
@@ -90,9 +104,15 @@ JPegImage::JPegImage(std::string filename, Dim max) : Image(filename)
 
       LOG_D("Image size: [%d, %d] %d bytes.", width, height, width * height);
       
-      if ((image_data.bitmap = (uint8_t *) allocate(width * height)) != nullptr) {
-        image_data.dim    = Dim(width, height);
-        res = jd_decomp(&jdec, out_func, scale);
+      if (load_bitmap) {
+        if ((image_data.bitmap = (uint8_t *) allocate(width * height)) != nullptr) {
+          image_data.dim    = Dim(width, height);
+          // first = true;
+          res = jdec_decomp(&jdec, out_func, scale);
+        }
+      }
+      else {
+        image_data.dim = Dim(width, height);
       }
     }
     else {

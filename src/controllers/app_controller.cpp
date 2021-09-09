@@ -32,7 +32,7 @@ AppController::start()
     event_mgr.loop(); // Will start gtk. Will not return.
   #else
     while (true) {
-      if (next_ctrl != Ctrl::NONE) launch();
+      while (next_ctrl != Ctrl::NONE) launch();
       event_mgr.loop();
     }
   #endif
@@ -41,6 +41,8 @@ AppController::start()
 void 
 AppController::set_controller(Ctrl new_ctrl) 
 {
+  LOG_D("===> set_controller()...");
+  
   next_ctrl = new_ctrl;
 }
 

@@ -381,7 +381,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             if (!filename.empty()) {
 
               // LOG_D("Cover filename: %s", filename);
-              Image * img = epub.get_image(filename);
+              Image * img = epub.get_image(filename, true);
               if (img == nullptr) {
                 LOG_D("Unable to retrieve cover file: %s", filename.c_str());
                 memcpy(the_book->cover_bitmap, default_cover, default_cover_width * default_cover_height);

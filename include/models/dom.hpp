@@ -62,12 +62,12 @@ class DOM
       };
 
       ~Node() {
-        for (auto * node : children) node_pool.deleteElement(node);
+        for (auto * node : children) node_pool->deleteElement(node);
         children.clear();
       }
 
       Node * add_child(Tag the_tag) {
-        return node_pool.newElement(this, the_tag);
+        return node_pool->newElement(this, the_tag);
       }
 
       Node * add_class(std::string the_class) {
@@ -119,11 +119,12 @@ class DOM
     Node * body;
 
     DOM() {
-      body = node_pool.newElement(nullptr, Tag::BODY);
+      if (node_pool == nullptr) node_pool = new MemoryPool<Node>;
+      body = node_pool->newElement(nullptr, Tag::BODY);
     }
 
     ~DOM() {
-      node_pool.deleteElement(body);
+      node_pool->deleteElement(body);
     }
 
     void show() {
@@ -134,6 +135,11 @@ class DOM
       #endif
     }
 
+    static void delete_pool() {
+      delete node_pool;
+      node_pool = nullptr;
+    }
+
   private:
-    static MemoryPool<Node> node_pool;
+    static MemoryPool<Node> * node_pool;
 };

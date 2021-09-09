@@ -113,16 +113,20 @@ class StateTask
         if (itemref == asap_itemref) {
           asap_itemref = -1;
           if (!already_sent_to_mgr) {
-            mgr_queue_data.itemref_index = itemref;
-            mgr_queue_data.req           = MgrReq::ASAP_READY;
+            mgr_queue_data = {
+              .req = MgrReq::ASAP_READY,
+              .itemref_index = itemref
+            };
             QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
             LOG_D("Sent ASAP_READY to Mgr");
           }
         } else {
-          waiting_for_itemref               = asap_itemref;
-          asap_itemref                      = -1;
-          retrieve_queue_data.req           = RetrieveReq::GET_ASAP;
-          retrieve_queue_data.itemref_index = waiting_for_itemref;
+          waiting_for_itemref = asap_itemref;
+          asap_itemref        = -1;
+          retrieve_queue_data = {
+            .req = RetrieveReq::GET_ASAP,
+            .itemref_index = waiting_for_itemref
+          };
           QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
           retriever_iddle                   = false;
           LOG_D("Sent GET_ASAP to Retriever");
@@ -130,10 +134,12 @@ class StateTask
         }
       }
       if (next_itemref_to_get != -1) {
-        waiting_for_itemref               = next_itemref_to_get;
-        next_itemref_to_get               = -1;
-        retrieve_queue_data.req           = RetrieveReq::RETRIEVE_ITEM;
-        retrieve_queue_data.itemref_index = waiting_for_itemref;
+        waiting_for_itemref = next_itemref_to_get;
+        next_itemref_to_get = -1;
+        retrieve_queue_data = {
+          .req = RetrieveReq::RETRIEVE_ITEM,
+          .itemref_index = waiting_for_itemref
+        };
         QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
         retriever_iddle                   = false;
         LOG_D("Sent RETRIEVE_ITEM to Retriever");
@@ -151,9 +157,11 @@ class StateTask
             break;
         }
         if (newref != itemref) {
-          waiting_for_itemref               = newref;
-          retrieve_queue_data.req           = RetrieveReq::RETRIEVE_ITEM;
-          retrieve_queue_data.itemref_index = waiting_for_itemref;
+          waiting_for_itemref = newref;
+          retrieve_queue_data = {
+            .req = RetrieveReq::RETRIEVE_ITEM,
+            .itemref_index = waiting_for_itemref
+          };
           QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
           retriever_iddle                   = false;
           LOG_D("Sent RETRIEVE_ITEM to Retriever");
@@ -195,7 +203,10 @@ class StateTask
               bitset = nullptr;
             }
             if (retriever_iddle) {
-              mgr_queue_data.req = MgrReq::STOPPED;
+              mgr_queue_data = {
+                .req = MgrReq::STOPPED,
+                .itemref_index = 0
+              };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0); 
             }
             else {
@@ -239,16 +250,20 @@ class StateTask
             // If already done, let it know it a.s.a.p. If currently being processed,
             // keep a mark when it will be back. If not, queue the request.
             if (itemref_count == -1) {
-              mgr_queue_data.req           = MgrReq::ASAP_READY;
-              mgr_queue_data.itemref_index = -(state_queue_data.itemref_index + 1);
+              mgr_queue_data = {
+                .req = MgrReq::ASAP_READY,
+                .itemref_index = (int16_t) -(state_queue_data.itemref_index + 1)
+              };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               LOG_D("Sent ASAP_READY to Mgr");
             }
             else {
               int16_t itemref = state_queue_data.itemref_index;
               if ((bitset[itemref >> 3] & ( 1 << (itemref & 7))) != 0) {
-                mgr_queue_data.req           = MgrReq::ASAP_READY;
-                mgr_queue_data.itemref_index = itemref;
+                mgr_queue_data = {
+                  .req = MgrReq::ASAP_READY,
+                  .itemref_index = itemref
+                };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
                 LOG_D("Sent ASAP_READY to Mgr");
               }
@@ -258,9 +273,11 @@ class StateTask
               else {
                 asap_itemref                      = -1;
                 waiting_for_itemref               = itemref;
-                retrieve_queue_data.req           = RetrieveReq::GET_ASAP;
-                retrieve_queue_data.itemref_index = itemref;
                 retriever_iddle                   = false;
+                retrieve_queue_data = {
+                  .req = RetrieveReq::GET_ASAP,
+                  .itemref_index = itemref
+                };
                 QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);       
                 LOG_D("Sent GET_ASAP to Retriever"); 
               }
@@ -288,7 +305,10 @@ class StateTask
               if (stopping) {
                 stopping = false;
                 retriever_iddle  = true;
-                mgr_queue_data.req = MgrReq::STOPPED;
+                mgr_queue_data = {
+                  .req = MgrReq::STOPPED,
+                  .itemref_index = 0
+                };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               }
               else {
@@ -299,7 +319,10 @@ class StateTask
               if (stopping) {
                 stopping = false;
                 retriever_iddle  = true;
-                mgr_queue_data.req = MgrReq::STOPPED;
+                mgr_queue_data = {
+                  .req = MgrReq::STOPPED,
+                  .itemref_index = 0
+                };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               }
             }
@@ -312,8 +335,10 @@ class StateTask
             waiting_for_itemref = -1;
             if (itemref_count != -1) {
               int16_t itemref              = state_queue_data.itemref_index;
-              mgr_queue_data.itemref_index = itemref;
-              mgr_queue_data.req           = MgrReq::ASAP_READY;
+              mgr_queue_data = {
+                .req = MgrReq::ASAP_READY,
+                .itemref_index = itemref
+              };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               LOG_D("Sent ASAP_READY to Mgr");
               if (itemref < 0) {
@@ -324,7 +349,10 @@ class StateTask
               if (stopping) {
                 stopping = false;
                 retriever_iddle  = true;
-                mgr_queue_data.req = MgrReq::STOPPED;
+                mgr_queue_data = {
+                  .req = MgrReq::STOPPED,
+                  .itemref_index = 0
+                };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               }
               else {
@@ -335,7 +363,10 @@ class StateTask
               if (stopping) {
                 stopping = false;
                 retriever_iddle  = true;
-                mgr_queue_data.req = MgrReq::STOPPED;
+                mgr_queue_data = {
+                  .req = MgrReq::STOPPED,
+                  .itemref_index = 0
+                };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               }
             }
@@ -370,20 +401,24 @@ class RetrieverTask
           LOG_D("-> %s <-", (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
 
           LOG_D("Retrieving itemref --> %d <--", retrieve_queue_data.itemref_index);
-
+          
+          int16_t itemref_index;
           if (!page_locs.build_page_locs(retrieve_queue_data.itemref_index)) {
             // Unable to retrieve pages location for the requested index. Send back
             // a negative value to indicate the issue to the state task
-            state_queue_data.itemref_index = -(retrieve_queue_data.itemref_index + 1);
+            itemref_index = -(retrieve_queue_data.itemref_index + 1);
           }
           else {
-            state_queue_data.itemref_index = retrieve_queue_data.itemref_index;
+            itemref_index = retrieve_queue_data.itemref_index;
           }
 
           //std::this_thread::sleep_for(std::chrono::seconds(5));
-          state_queue_data.req = 
-            (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? 
-              StateReq::ASAP_READY : StateReq::ITEM_READY;
+          state_queue_data = {
+            .req = (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? 
+                     StateReq::ASAP_READY : StateReq::ITEM_READY,
+            .itemref_index = itemref_index,
+            .itemref_count = 0
+          };
 
           QUEUE_SEND(state_queue, state_queue_data, 0);
           LOG_D("Sent %s to State", (state_queue_data.req == StateReq::ASAP_READY) ? "ASAP_READY" : "ITEM_READY");
@@ -432,14 +467,21 @@ void
 PageLocs::abort_threads()
 {
   RetrieveQueueData retrieve_queue_data;
-  retrieve_queue_data.req = RetrieveReq::ABORT;
+  retrieve_queue_data = {
+    .req = RetrieveReq::ABORT,
+    .itemref_index = 0
+  };
   LOG_D("abort_threads: Sending ABORT to Retriever");
   QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
 
   retriever_thread.join();
 
   StateQueueData state_queue_data;
-  state_queue_data.req = StateReq::ABORT;
+  state_queue_data = {
+    .req = StateReq::ABORT,
+    .itemref_index = 0,
+    .itemref_count = 0
+  };
   LOG_D("abort_threads: Sending ABORT to State");
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
@@ -620,8 +662,11 @@ bool
 PageLocs::retrieve_asap(int16_t itemref_index) 
 {
   StateQueueData state_queue_data;
-  state_queue_data.req = StateReq::GET_ASAP;
-  state_queue_data.itemref_index = itemref_index;
+  state_queue_data = {
+    .req = StateReq::GET_ASAP,
+    .itemref_index = itemref_index,
+    .itemref_count = 0
+  };
   LOG_D("retrieve_asap: Sending GET_ASAP");
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
@@ -641,7 +686,11 @@ PageLocs::stop_document()
   StateQueueData state_queue_data;
 
   LOG_D("start_new_document: Sending STOP");
-  state_queue_data.req = StateReq::STOP;
+  state_queue_data = {
+    .req = StateReq::STOP,
+    .itemref_index = 0,
+    .itemref_count = 0
+  };
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
   MgrQueueData mgr_queue_data;
@@ -776,17 +825,17 @@ PageLocs::get_page_id(const PageId & page_id)
 {
   std::scoped_lock guard(mutex);
 
-  PagesMap::iterator it  = check_and_find(PageId(page_id.itemref_index, 0));
-  PagesMap::iterator res = pages_map.end();
+  PagesMap::iterator it     = check_and_find(PageId(page_id.itemref_index, 0));
+  PagesMap::iterator result = pages_map.end();
   while ((it != pages_map.end()) && (it->first.itemref_index == page_id.itemref_index)) {
     if ((it->first.offset == page_id.offset) ||
         ((it->first.offset < page_id.offset) && ((it->first.offset + abs(it->second.size)) > page_id.offset))) { 
-      res = it; 
+      result = it; 
       break; 
     }
     it++;
   }
-  return (res == pages_map.end()) ? nullptr : &res->first ;
+  return (result == pages_map.end()) ? nullptr : &result->first ;
 }
 
 void
@@ -843,15 +892,21 @@ PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool fo
     current_format_params = *epub.get_book_format_params();
 
     if (toc.load_from_epub() && !toc.there_is_some_ids()) {
+      // The table of content doesn't need to be synch with the
+      // page location computation. I.e. there is no relation with HTML Ids
+      // that would require information from the page location computation
+      // to find where the table of content pages are located.
       toc.save();
     }
 
     item_count = count;
     StateQueueData state_queue_data;  
 
-    state_queue_data.req           = StateReq::START_DOCUMENT;
-    state_queue_data.itemref_count = item_count;
-    state_queue_data.itemref_index = itemref_index;
+    state_queue_data = {
+      .req = StateReq::START_DOCUMENT,
+      .itemref_index = itemref_index,
+      .itemref_count = item_count
+    };
     LOG_D("start_new_document: Sending START_DOCUMENT");
     QUEUE_SEND(state_queue, state_queue_data, 0);
 

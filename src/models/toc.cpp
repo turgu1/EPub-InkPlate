@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
 #define __TOC__ 1
 #include "models/toc.hpp"
 
@@ -105,9 +109,9 @@ TOC::load()
 bool
 TOC::save()
 {
-  std::string filename = build_filename();
   if (saved) return true;
 
+  std::string filename = build_filename();
   if (!compact()) return false;
 
   if (db.create(filename)) {
@@ -319,9 +323,8 @@ TOC::load_from_epub()
   uint32_t  ncx_size;
   bool      result = false;
 
-  if ((ncx_data = epub.retrieve_file(filename, ncx_size))) {
-    ncx_opf = new pugi::xml_document();
-    if (ncx_opf == nullptr) {
+  if ((ncx_data = epub.retrieve_file(filename, ncx_size)) != nullptr) {
+    if ((ncx_opf = new pugi::xml_document()) == nullptr) {
       free(ncx_data);
       return false;
     }
@@ -333,6 +336,7 @@ TOC::load_from_epub()
   xml_parse_result res = ncx_opf->load_buffer_inplace(ncx_data, ncx_size);
   if (res.status != status_ok) {
     LOG_E("xml load error: %d", res.status);
+    goto error;
   }
   else {
     if ((node = ncx_opf->child("ncx"     )) &&
@@ -346,7 +350,7 @@ TOC::load_from_epub()
 
       if (!do_nav_points(node, 0)) goto error;
 
-      result = !infos.empty();
+      result = !entries.empty();
     }
   }
 
@@ -404,7 +408,7 @@ void
 TOC::clean()
 {
   if (char_pool   != nullptr) delete char_pool;
-  if (char_buffer != nullptr) delete char_buffer;
+  if (char_buffer != nullptr) free(char_buffer);
 
   if (ncx_opf != nullptr) {
     ncx_opf->reset();

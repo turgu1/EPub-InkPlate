@@ -278,6 +278,7 @@
 #else
   void EventMgr::loop()
   {
+    LOG_D("===> Loop...");
     while (1) {
       EventMgr::Event event;
 
@@ -300,10 +301,12 @@
           ESP::delay(500);
 
           #if EXTENDED_CASE
-            if (inkplate_platform.light_sleep(light_sleep_duration, PressKeys::INTERRUPT_PIN, 1)) {
+            #define INT_PIN PressKeys::INTERRUPT_PIN
           #else
-            if (inkplate_platform.light_sleep(light_sleep_duration, TouchKeys::INTERRUPT_PIN, 1)) {
+            #define INT_PIN TouchKeys::INTERRUPT_PIN
           #endif
+          
+          if (inkplate_platform.light_sleep(light_sleep_duration, INT_PIN, 1)) {
 
             app_controller.going_to_deep_sleep();
             
@@ -316,11 +319,7 @@
               "entering into Deep Sleep mode. Please press a key to restart.",
               light_sleep_duration);
             ESP::delay(500);
-            #if EXTENDED_CASE
-              inkplate_platform.deep_sleep(PressKeys::INTERRUPT_PIN, 1);
-            #else
-              inkplate_platform.deep_sleep(TouchKeys::INTERRUPT_PIN, 1);
-            #endif
+            inkplate_platform.deep_sleep(INT_PIN, 1);
           }
         }
       }

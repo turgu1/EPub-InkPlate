@@ -29,7 +29,7 @@
 #include <math.h>
 
 #include "miniz.h"
-#include "pngle.h"
+#include "mypngle.h"
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -151,7 +151,7 @@ static inline uint32_t U32_CLAMP_ADD(uint32_t a, uint32_t b, uint32_t top)
 }
 
 
-void pngle_reset(pngle_t *pngle)
+void mypngle_reset(pngle_t *pngle)
 {
 	if (!pngle) return ;
 
@@ -183,43 +183,43 @@ void pngle_reset(pngle_t *pngle)
 	tinfl_init(&pngle->inflator);
 }
 
-pngle_t *pngle_new()
+pngle_t *mypngle_new()
 {
 	pngle_t *pngle = (pngle_t *)PNGLE_CALLOC(1, sizeof(pngle_t), "pngle_t");
 	if (!pngle) return NULL;
 
-	pngle_reset(pngle);
+	mypngle_reset(pngle);
 
 	return pngle;
 }
 
-void pngle_destroy(pngle_t *pngle)
+void mypngle_destroy(pngle_t *pngle)
 {
 	if (pngle) {
-		pngle_reset(pngle);
+		mypngle_reset(pngle);
 		free(pngle);
 	}
 }
 
-const char *pngle_error(pngle_t *pngle)
+const char * mypngle_error(pngle_t *pngle)
 {
 	if (!pngle) return "Uninitialized";
 	return pngle->error;
 }
 
-uint32_t pngle_get_width(pngle_t *pngle)
+uint32_t mypngle_get_width(pngle_t *pngle)
 {
 	if (!pngle) return 0;
 	return pngle->hdr.width;
 }
 
-uint32_t pngle_get_height(pngle_t *pngle)
+uint32_t mypngle_get_height(pngle_t *pngle)
 {
 	if (!pngle) return 0;
 	return pngle->hdr.height;
 }
 
-pngle_ihdr_t *pngle_get_ihdr(pngle_t *pngle)
+pngle_ihdr_t *mypngle_get_ihdr(pngle_t *pngle)
 {
 	if (!pngle) return NULL;
 	if (pngle->channels == 0) return NULL;
@@ -813,7 +813,7 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 	return PNGLE_ERROR("Invalid state");
 }
 
-int pngle_feed(pngle_t *pngle, const void *buf, size_t len)
+int mypngle_feed(pngle_t *pngle, const void *buf, size_t len)
 {
 	size_t pos = 0;
 	pngle_state_t last_state = pngle->state;
@@ -831,7 +831,7 @@ int pngle_feed(pngle_t *pngle, const void *buf, size_t len)
 	return pos;
 }
 
-void pngle_set_display_gamma(pngle_t *pngle, double display_gamma)
+void mypngle_set_display_gamma(pngle_t *pngle, double display_gamma)
 {
 	if (!pngle) return ;
 #ifndef PNGLE_NO_GAMMA_CORRECTION
@@ -841,31 +841,31 @@ void pngle_set_display_gamma(pngle_t *pngle, double display_gamma)
 #endif
 }
 
-void pngle_set_init_callback(pngle_t *pngle, pngle_init_callback_t callback)
+void mypngle_set_init_callback(pngle_t *pngle, pngle_init_callback_t callback)
 {
 	if (!pngle) return ;
 	pngle->init_callback = callback;
 }
 
-void pngle_set_draw_callback(pngle_t *pngle, pngle_draw_callback_t callback)
+void mypngle_set_draw_callback(pngle_t *pngle, pngle_draw_callback_t callback)
 {
 	if (!pngle) return ;
 	pngle->draw_callback = callback;
 }
 
-void pngle_set_done_callback(pngle_t *pngle, pngle_done_callback_t callback)
+void mypngle_set_done_callback(pngle_t *pngle, pngle_done_callback_t callback)
 {
 	if (!pngle) return ;
 	pngle->done_callback = callback;
 }
 
-void pngle_set_user_data(pngle_t *pngle, void *user_data)
+void mypngle_set_user_data(pngle_t *pngle, void *user_data)
 {
 	if (!pngle) return ;
 	pngle->user_data = user_data;
 }
 
-void *pngle_get_user_data(pngle_t *pngle)
+void *mypngle_get_user_data(pngle_t *pngle)
 {
 	if (!pngle) return NULL;
 	return pngle->user_data;

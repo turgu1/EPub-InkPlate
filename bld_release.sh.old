@@ -46,6 +46,7 @@ fi
 
 rm $folder/SDCard/books/*.locs
 rm $folder/SDCard/books/*.pars
+rm $folder/SDCard/books/*.toc
 rm $folder/SDCard/config.txt
 
 cd doc

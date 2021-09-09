@@ -4,7 +4,7 @@
 
 #include "models/dom.hpp"
 
-MemoryPool<DOM::Node> DOM::node_pool;
+MemoryPool<DOM::Node> * DOM::node_pool = nullptr;
 
 DOM::Tags DOM::tags
   = {{"p",           Tag::P}, {"div",               Tag::DIV}, {"span", Tag::SPAN}, {"br",   Tag::BREAK}, {"h1",                 Tag::H1},  

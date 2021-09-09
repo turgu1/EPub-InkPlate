@@ -84,7 +84,8 @@ class EPub
     void               open_params(const std::string &  epub_filename);
     bool                 open_file(const std::string &  epub_filename);
     bool                close_file();
-    Image *              get_image(std::string &        fname);
+    Image *              get_image(std::string &        fname,
+                                   bool                 load);
     char*            retrieve_file(const char *         fname, 
                                    uint32_t &           size);
     bool                  get_item(pugi::xml_node       itemref, 

@@ -176,6 +176,14 @@
 
   static const char * TAG = "Main";
 
+  void exit_app()
+  {
+    fonts.clear_glyph_caches();
+    fonts.clear(true);
+    epub.close_file();
+    DOM::delete_pool();
+  }
+
   int 
   main(int argc, char **argv) 
   {

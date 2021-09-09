@@ -187,7 +187,10 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     interp->check_for_completion();
 
     delete dom;
+    dom = nullptr;
+
     delete interp;
+    interp = nullptr;
   }
 }
 
@@ -255,7 +258,7 @@ BookViewer::show_page(const PageLocs::PageId & page_id)
       std::string fname = epub.get_cover_filename();
       if (!fname.empty()) {
         // LOG_D("Cover filename: %s", fname);
-        Image * img = epub.get_image(fname);
+        Image * img = epub.get_image(fname, true);
 
         if (img != nullptr) {
           page.show_cover(*img);

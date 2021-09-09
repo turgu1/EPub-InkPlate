@@ -16,6 +16,7 @@ SDCard/books/temp
 SDCard/*.db
 SDCard/books/*.pars
 SDCard/books/*.locs
+SDCard/books/*.toc
 SDCard/last_book.txt
 freetype-2.10.4/objs
 bin/*.bin
@@ -23,4 +24,4 @@ temp
 *.zip
 SDCard/books/**/*
 !SDCard/books/Austen*.epub
-
+valgrind.log

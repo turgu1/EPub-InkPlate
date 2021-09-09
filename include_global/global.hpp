@@ -13,7 +13,7 @@
 
 #include "strlcpy.hpp"
 
-#define APP_VERSION "1.3"
+#define APP_VERSION "1.3.0"
 
 #if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE_BUILD)) 
   #error "BUILD_TYPE Not Set."

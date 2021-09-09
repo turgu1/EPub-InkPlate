@@ -291,7 +291,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
 
       if (started && (current_offset < end_offset)) {
 
-        Image * img = epub.get_image(fname);
+        Image * img = epub.get_image(fname, page.get_compute_mode() == Page::ComputeMode::DISPLAY);
         if (img != nullptr) {
           if (!page.add_image(*img, fmt /*, beginning_of_page */)) {
             if (page.is_full() && !page_end(fmt)) { delete img; return false; };

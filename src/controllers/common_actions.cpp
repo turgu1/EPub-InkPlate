@@ -51,6 +51,8 @@ CommonActions::power_off()
     ESP::delay(500);
     inkplate_platform.deep_sleep();
   #else
+    extern void exit_app();
+    exit_app();
     exit(0);
   #endif
 }

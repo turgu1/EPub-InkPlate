@@ -476,6 +476,13 @@ delete_handler(httpd_req_t *req)
       LOG_I("Deleting file : %s", filepath);
       unlink(filepath);
     }
+
+    strcpy(&filepath[pos], ".toc");
+
+    if (stat(filepath, &file_stat) != -1) {
+      LOG_I("Deleting file : %s", filepath);
+      unlink(filepath);
+    }
   }
 
   /* Redirect onto root to see the updated file list */
