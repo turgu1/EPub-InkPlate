@@ -41,7 +41,7 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_off()
 {
-  if (!epub.get_current_filename().empty()) {
+  if (!epub.filename_is_empty()) {
     books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
   }
   app_controller.going_to_deep_sleep();

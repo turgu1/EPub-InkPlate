@@ -22,14 +22,14 @@
  * SOFTWARE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstdint>
+#include <cmath>
 
 #include "miniz.h"
-#include "mypngle.h"
+#include "mypngle.hpp"
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -42,7 +42,7 @@
 #endif
 
 #define PNGLE_ERROR(s) (pngle->error = (s), pngle->state = PNGLE_STATE_ERROR, -1)
-#define PNGLE_CALLOC(a, b, name) (debug_printf("[pngle] Allocating %zu bytes for %s\n", (size_t)(a) * (size_t)(b), (name)), calloc((size_t)(a), (size_t)(b)))
+#define PNGLE_CALLOC(a, b, name) (debug_printf("[pngle] Allocating %zu bytes for %s\n", (size_t)(a) * (size_t)(b), (char *)(name)), calloc((size_t)(a), (size_t)(b)))
 
 #define PNGLE_UNUSED(x) (void)(x)
 
@@ -250,7 +250,7 @@ static inline uint16_t get_value(pngle_t *pngle, size_t *ridx, int *bitcount, in
 	switch (depth) {
 	case 1:
 	case 2:
-	case 4:
+	case 4: {
 		if (*bitcount >= 8) {
 			*bitcount = 0;
 			*ridx = (*ridx + 1) % pngle->scanline_ringbuf_size;
@@ -259,7 +259,7 @@ static inline uint16_t get_value(pngle_t *pngle, size_t *ridx, int *bitcount, in
 		uint8_t mask = ((1UL << depth) - 1);
 		uint8_t shift = (8 - *bitcount);
 		return (pngle->scanline_ringbuf[*ridx] >> shift) & mask;
-
+	}
 	case 8:
 		v = pngle->scanline_ringbuf[*ridx];
 		*ridx = (*ridx + 1) % pngle->scanline_ringbuf_size;
@@ -269,7 +269,7 @@ static inline uint16_t get_value(pngle_t *pngle, size_t *ridx, int *bitcount, in
 		v = pngle->scanline_ringbuf[*ridx];
 		*ridx = (*ridx + 1) % pngle->scanline_ringbuf_size;
 
-		v = v * 0x100 + pngle->scanline_ringbuf[*ridx];
+		v = (v << 8) + pngle->scanline_ringbuf[*ridx];
 		*ridx = (*ridx + 1) % pngle->scanline_ringbuf_size;
 		return v;
 	}
@@ -279,14 +279,23 @@ static inline uint16_t get_value(pngle_t *pngle, size_t *ridx, int *bitcount, in
 
 static int pngle_draw_pixels(pngle_t *pngle, size_t scanline_ringbuf_xidx)
 {
+	if (pngle->draw_callback == nullptr) return 0;
+
 	uint16_t v[4]; // MAX_CHANNELS
 	int bitcount = 0;
 	uint8_t pixel_depth = (pngle->hdr.color_type & 1) ? 8 : pngle->hdr.depth;
 	uint16_t maxval = (1UL << pixel_depth) - 1;
 
-	int n_pixels = pngle->hdr.depth == 16 ? 1 : (8 / pngle->hdr.depth);
+	#ifdef PNGLE_GRAYSCALE_OUTPUT
+	  uint16_t pix16;
+	#endif
 
-	for (; n_pixels-- > 0 && pngle->drawing_x < pngle->hdr.width; pngle->drawing_x = U32_CLAMP_ADD(pngle->drawing_x, interlace_div_x[pngle->interlace_pass], pngle->hdr.width)) {
+	uint8_t n_pixels = pngle->hdr.depth == 16 ? 1 : (8 / pngle->hdr.depth);
+
+	for (; 
+	     n_pixels-- > 0 && pngle->drawing_x < pngle->hdr.width; 
+		 pngle->drawing_x = U32_CLAMP_ADD(pngle->drawing_x, interlace_div_x[pngle->interlace_pass], pngle->hdr.width)) {
+
 		for (uint_fast8_t c = 0; c < pngle->channels; c++) {
 			v[c] = get_value(pngle, &scanline_ringbuf_xidx, &bitcount, pngle->hdr.depth);
 		}
@@ -315,36 +324,61 @@ static int pngle_draw_pixels(pngle_t *pngle, size_t scanline_ringbuf_xidx)
 				// true color: 2, and 6
 				v[3] = (pngle->hdr.color_type & 4) ? v[3] : is_trans_color(pngle, v, 3) ? 0 : maxval;
 			}
+			#ifdef PNGLE_GRAYSCALE_OUTPUT
+			  pix16 = (v[0] + v[1] + v[2]) / 3;
+			#endif
 		} else {
 			// alpha, tRNS, or opaque
 			v[3] = (pngle->hdr.color_type & 4) ? v[1] : is_trans_color(pngle, v, 1) ? 0 : maxval;
 
 			// monochrome
-			v[1] = v[2] = v[0];
+			#ifdef PNGLE_GRAYSCALE_OUTPUT
+			  pix16 = v[0];
+			#else
+			  v[1] = v[2] = v[0];
+			#endif
 		}
 
-		if (pngle->draw_callback) {
+		#ifdef PNGLE_GRAYSCALE_OUTPUT
+			uint16_t alpha;
+
+			if (pixel_depth != 8) {
+				
+				alpha = (v[3] * 255 + maxval / 2) / maxval;
+
+				// Inkplates are going to use only the 3 bits MSB, so the following
+				// is the most efficient even if its an approximation
+
+				if (pixel_depth == 16) { pix16 >>= 8; }
+				else { pix16 <<= (8 - pixel_depth); }
+			}
+			else {
+				alpha = v[3];
+			}
+
+			pngle->draw_callback(pngle, pngle->drawing_x, pngle->drawing_y, (uint8_t)pix16, alpha);
+		#else
 			uint8_t rgba[4] = {
-				(v[0] * 255 + maxval / 2) / maxval,
-				(v[1] * 255 + maxval / 2) / maxval,
-				(v[2] * 255 + maxval / 2) / maxval,
-				(v[3] * 255 + maxval / 2) / maxval
+				(uint8_t)((255 * v[0] + maxval / 2) / maxval),
+				(uint8_t)((255 * v[1] + maxval / 2) / maxval),
+				(uint8_t)((255 * v[2] + maxval / 2) / maxval),
+				(uint8_t)((255 * v[3] + maxval / 2) / maxval)
 			};
 
-#ifndef PNGLE_NO_GAMMA_CORRECTION
-			if (pngle->gamma_table) {
-				for (int i = 0; i < 3; i++) {
-					rgba[i] = pngle->gamma_table[v[i]];
+			#ifndef PNGLE_NO_GAMMA_CORRECTION
+				if (pngle->gamma_table) {
+					for (int i = 0; i < 3; i++) {
+						rgba[i] = pngle->gamma_table[v[i]];
+					}
 				}
-			}
-#endif
+			#endif
 
 			pngle->draw_callback(pngle, pngle->drawing_x, pngle->drawing_y
-				, MIN(interlace_div_x[pngle->interlace_pass] - interlace_off_x[pngle->interlace_pass], pngle->hdr.width  - pngle->drawing_x)
+				, MIN(interlace_div_x[pngle->interlace_pass] - interlace_off_x[pngle->interlace_pass], pngle->hdr.width  - pngle->drawing_x) 
 				, MIN(interlace_div_y[pngle->interlace_pass] - interlace_off_y[pngle->interlace_pass], pngle->hdr.height - pngle->drawing_y)
 				, rgba
 			);
-		}
+		#endif
 	}
 
 	return 0;
@@ -373,7 +407,7 @@ static int set_interlace_pass(pngle_t *pngle, uint_fast8_t pass)
 	pngle->scanline_ringbuf_size = scanline_stride + bytes_per_pixel * 2; // 2 rooms for c/x and a
 
 	if (pngle->scanline_ringbuf) free(pngle->scanline_ringbuf);
-	if ((pngle->scanline_ringbuf = PNGLE_CALLOC(pngle->scanline_ringbuf_size, 1, "scanline ringbuf")) == NULL) return PNGLE_ERROR("Insufficient memory");
+	if ((pngle->scanline_ringbuf = (uint8_t *)PNGLE_CALLOC(pngle->scanline_ringbuf_size, 1, "scanline ringbuf")) == NULL) return PNGLE_ERROR("Insufficient memory");
 
 	pngle->drawing_x = interlace_off_x[pngle->interlace_pass];
 	pngle->drawing_y = interlace_off_y[pngle->interlace_pass];
@@ -396,7 +430,7 @@ static int setup_gamma_table(pngle_t *pngle, uint32_t png_gamma)
 	uint8_t pixel_depth = (pngle->hdr.color_type & 1) ? 8 : pngle->hdr.depth;
 	uint16_t maxval = (1UL << pixel_depth) - 1;
 
-	pngle->gamma_table = PNGLE_CALLOC(1, maxval + 1, "gamma table");
+	pngle->gamma_table = (uint8_t *)PNGLE_CALLOC(1, maxval + 1, "gamma table");
 	if (!pngle->gamma_table) return PNGLE_ERROR("Insufficient memory");
 
 	for (int i = 0; i < maxval + 1; i++) {
@@ -491,7 +525,7 @@ static int pngle_handle_chunk(pngle_t *pngle, const uint8_t *buf, size_t len)
 {
 	size_t consume = 0;
 
-	switch (pngle->chunk_type) {
+	switch ((pngle_chunk_t)pngle->chunk_type) {
 	case PNGLE_CHUNK_IHDR:
 		// parse IHDR
 		consume = 13;
@@ -559,7 +593,7 @@ static int pngle_handle_chunk(pngle_t *pngle, const uint8_t *buf, size_t len)
 
 		break;
 
-	case PNGLE_CHUNK_IDAT:
+	case PNGLE_CHUNK_IDAT: {
 		// parse & decode IDAT chunk
 		if (len < 1) return 0;
 
@@ -603,7 +637,7 @@ static int pngle_handle_chunk(pngle_t *pngle, const uint8_t *buf, size_t len)
 
 		consume = in_bytes;
 		break;
-
+	}
 	case PNGLE_CHUNK_PLTE:
 		consume = 3;
 		if (len < consume) return 0;
@@ -731,7 +765,7 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 
 			if (pngle->chunk_remain % 3) return PNGLE_ERROR("Invalid PLTE chunk size");
 			if (pngle->chunk_remain / 3 > MIN(256, (1UL << pngle->hdr.depth))) return PNGLE_ERROR("Too many palettes in PLTE");
-			if ((pngle->palette = PNGLE_CALLOC(pngle->chunk_remain / 3, 3, "palette")) == NULL) return PNGLE_ERROR("Insufficient memory");
+			if ((pngle->palette = (uint8_t *)PNGLE_CALLOC(pngle->chunk_remain / 3, 3, "palette")) == NULL) return PNGLE_ERROR("Insufficient memory");
 			pngle->n_palettes = 0;
 			break;
 
@@ -759,7 +793,7 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 			default:
 				return PNGLE_ERROR("tRNS chunk is prohibited on the color type");
 			}
-			if ((pngle->trans_palette = PNGLE_CALLOC(pngle->chunk_remain, 1, "trans palette")) == NULL) return PNGLE_ERROR("Insufficient memory");
+			if ((pngle->trans_palette = (uint8_t *)PNGLE_CALLOC(pngle->chunk_remain, 1, "trans palette")) == NULL) return PNGLE_ERROR("Insufficient memory");
 			pngle->n_trans_palettes = 0;
 			break;
 
@@ -769,7 +803,7 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 
 		return 8;
 
-	case PNGLE_STATE_HANDLE_CHUNK:
+	case PNGLE_STATE_HANDLE_CHUNK: {
 		len = MIN(len, pngle->chunk_remain);
 
 		int consumed = pngle_handle_chunk(pngle, buf, len);
@@ -783,8 +817,8 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 		if (pngle->chunk_remain <= 0) pngle->state = PNGLE_STATE_CRC;
 
 		return consumed;
-
-	case PNGLE_STATE_CRC:
+	}
+	case PNGLE_STATE_CRC: {
 		if (len < 4) return 0;
 
 		uint32_t crc32 = read_uint32(buf);
@@ -805,7 +839,7 @@ static int pngle_feed_internal(pngle_t *pngle, const uint8_t *buf, size_t len)
 		}
 
 		return 4;
-
+	}
 	default:
 		break;
 	}

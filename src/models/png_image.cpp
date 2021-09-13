@@ -5,10 +5,9 @@
 #include "models/png_image.hpp"
 #include "helpers/unzip.hpp"
 #include "alloc.hpp"
+#include "mypngle.hpp"
 
-#include "mypngle.h"
-
-#include <math.h>
+#include <cmath>
 
 static int32_t 
 get_int_big_endian(uint8_t * a) {
@@ -20,20 +19,17 @@ get_int_big_endian(uint8_t * a) {
 }
 
 static void 
-on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t rgba[4])
+on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
 {
-  static constexpr char const * TAG = "JPegImageOnDraw";
+  static constexpr char const * TAG = "PngImageOnDraw";
   
   const Image::ImageData * data = ((PngImage *) mypngle_get_user_data(pngle))->get_image_data();
-  float scale = ((PngImage *) mypngle_get_user_data(pngle))->get_scale_factor();
-  float r = 0.30 * rgba[0];
-  float g = 0.59 * rgba[1];
-  float b = 0.11 * rgba[2];
-  float a = ((float) rgba[3]) / 255.0; // 0: fully transparent, 255: fully opaque
+  int8_t   scale = ((PngImage *) mypngle_get_user_data(pngle))->get_scale_factor();
+  uint16_t trans = alpha; // 0: fully transparent, 255: fully opaque
 
-  if (scale != 1.0) {
-    x = floor(scale * x);
-    y = floor(scale * y);
+  if (scale) {
+    x >>= scale;
+    y >>= scale;
   }
 
   if ((x >= data->dim.width) || (y >= data->dim.height)) {
@@ -41,7 +37,7 @@ on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t 
     return;
   }
   else {
-    data->bitmap[(y * data->dim.width) + x] = ((r + b + g) * a) + ((1 - a) * 255);
+    data->bitmap[(y * data->dim.width) + x] = (trans * pix / 255) + (255 - trans);
   }
 }
 
@@ -75,18 +71,33 @@ PngImage::PngImage(std::string filename, Dim max, bool load_bitmap) : Image(file
         uint32_t height = get_int_big_endian(&work[20]);
 
         uint32_t h = height;
-        uint32_t w = width;
-        scale      = 1.0;
+        uint32_t w;
+        
+        scale      = 0;
+        float s    = 1.0;
 
         if (width > max.width) {
-          scale  = (float) max.width / width;
-          w      = floor(scale * width ) + 1;
-          h      = floor(scale * height) + 1;
+          s = ((float) max.width) / width;
+          h = floor(s * height) + 1;
         }
         if (h > max.height) {
-          scale = (float) max.height / height;
-          w      = floor(scale * width ) + 1;
-          h      = floor(scale * height) + 1;
+          s = ((float) max.height) / height;
+        }
+
+        if (s < 1.0) {
+          // if (s <= 0.125) scale = 3;
+          // else if (s <=  0.25) scale = 2;
+          // else if (s <=   0.5) scale = 1;
+          if      (s < 0.25) scale = 3;
+          else if (s <  0.5) scale = 2;
+          else scale = 1;
+        
+          h = height >> scale;
+          w = width  >> scale;
+        }
+        else {
+          h = height;
+          w = width;
         }
 
         LOG_D("Image size: [%d, %d] %d bytes.", w, h, w * h);

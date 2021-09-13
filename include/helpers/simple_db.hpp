@@ -36,7 +36,7 @@ class SimpleDB
   private:
     static constexpr char const * TAG = "SimpleDB";
 
-    static const uint16_t MAX_RECORD_COUNT = 400;
+    static const uint16_t MAX_RECORD_COUNT = 1000;
 
     FILE * db_file;
 

@@ -12,9 +12,9 @@ class PngImage : public Image
   public:
     PngImage(std::string filename, Dim max, bool load_bitmap);
 
-    inline float get_scale_factor() { return scale; }
+    inline int8_t get_scale_factor() { return scale; }
   private:
     static constexpr char const * TAG = "PngImage";
     const uint16_t WORK_SIZE = 10 * 1024;
-    float scale;
+    int8_t scale;
 };

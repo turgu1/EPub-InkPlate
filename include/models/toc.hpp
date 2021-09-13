@@ -42,11 +42,19 @@ class TOC
       char             * label;
       PageLocs::PageId   page_id;
       uint8_t            level;
+      EntryRecord() {
+        label = nullptr;
+        level = 0;
+      }
     };
 
     struct VersionRecord {
       uint16_t version;
       char     app_name[32];
+      VersionRecord() {
+        version = 0;
+        memset(app_name, 0, 32);
+      }
     };
     #pragma pack(pop)
 

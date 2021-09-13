@@ -46,7 +46,10 @@ class PageLocs
         itemref_index = idx;
         offset = off;
       }
-      PageId() {}
+      PageId() {
+        itemref_index = 0;
+        offset = 0;
+      }
     };
 
     struct PageInfo {

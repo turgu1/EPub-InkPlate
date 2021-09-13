@@ -22,21 +22,20 @@
  * SOFTWARE.
  */
 
-#ifndef __PNGLE_H__
-#define __PNGLE_H__
+#pragma once
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdint>
 
 // Main Pngle object
 typedef struct _pngle_t pngle_t;
 
 // Callback signatures
 typedef void (*pngle_init_callback_t)(pngle_t *pngle, uint32_t w, uint32_t h);
-typedef void (*pngle_draw_callback_t)(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t rgba[4]);
+#ifdef PNGLE_GRAYSCALE_OUTPUT
+  typedef void (*pngle_draw_callback_t)(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t a);
+#else
+  typedef void (*pngle_draw_callback_t)(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t rgba[4]);
+#endif
 typedef void (*pngle_done_callback_t)(pngle_t *pngle);
 
 // ----------------
@@ -78,9 +77,3 @@ typedef struct _pngle_ihdr_t {
 // Get IHDR information
 pngle_ihdr_t *mypngle_get_ihdr(pngle_t *pngle);
 
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __PNGLE_H__ */

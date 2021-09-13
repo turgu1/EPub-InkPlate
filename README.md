@@ -221,7 +221,7 @@ The following are imported C header and source files, that implement some algori
 
   - `stb_image_resize.h` resize images larger/smaller 
 
-- [PNGLE](https://github.com/kikuchan/pngle) (For PNG Images)
+- [PNGLE](https://github.com/kikuchan/pngle) (For PNG Images) The EPub-Inkplate uses a modified version that is optimized for grayscale output instead of RGBA.
 - [MINIZ](https://github.com/kikuchan/pngle) (For Zip/PNG files and epub files decompress)
 - [TJPGD](http://elm-chan.org/fsw/tjpgd/00index.html) (For JPeg Images)
 

@@ -28,11 +28,11 @@ class Screen : NonCopyable
     static constexpr uint8_t    WHITE_COLOR           =   7;
     #if INKPLATE_10
       static constexpr int8_t   IDENT                 =   2;
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  20;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  15;
       static constexpr uint16_t RESOLUTION            = 150;  ///< Pixels per inch
     #elif INKPLATE_6
       static constexpr int8_t   IDENT                 =   1;
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  20;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  15;
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #elif INKPLATE_6PLUS
       static constexpr int8_t   IDENT                 =   3;

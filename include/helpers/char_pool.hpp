@@ -7,6 +7,7 @@
 class CharPool
 {
   private:
+    static constexpr char const * TAG = "CharPool";
     static const uint16_t POOL_SIZE = 4096;
     typedef char Pool[POOL_SIZE];
 
@@ -27,7 +28,8 @@ class CharPool
     uint32_t get_total_allocated() { return total_allocated; }
     char * allocate(uint16_t size) {
       if ((current == nullptr) || ((current_idx + size) >= POOL_SIZE)) {
-        if ((current = (Pool *) malloc(POOL_SIZE)) != nullptr) {
+        LOG_D("New pool allocation.");
+        if ((current = (Pool *) malloc(sizeof(Pool))) != nullptr) {
           pool_list.push_front(current);
           current_idx = 0;
         }

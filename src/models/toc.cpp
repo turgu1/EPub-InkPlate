@@ -11,11 +11,8 @@
 std::string 
 TOC::build_filename()
 {
-  std::string filename;
-  const std::string & epub_fname = epub.get_current_filename();
-  filename = epub_fname.substr(0, epub_fname.find_last_of('.')) + ".toc";
-
-  return filename;
+  std::string epub_fname = epub.get_current_filename();
+  return epub_fname.substr(0, epub_fname.find_last_of('.')) + ".toc";
 }
 
 bool
@@ -211,7 +208,7 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
     }
     else {
       the_id.clear();
-      filename_to_find = char_pool->allocate(sizeof(fname) + 1);
+      filename_to_find = char_pool->allocate(strlen(fname) + 1);
       strcpy(filename_to_find, fname);
     }
 

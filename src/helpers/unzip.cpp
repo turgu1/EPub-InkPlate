@@ -78,22 +78,22 @@ Unzip::open_zip_file(const char * zip_filename)
     if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(3);
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 5) && (buffer[3] == 6))) {
       // There must be a comment in the last entry. Search for the beginning of the entry
-      off_t size_to_read = 2 * FILE_CENTRAL_SIZE;
+      off_t end_offset = offset - 65536;
+      if (end_offset < 0) end_offset = 0;
       offset -= FILE_CENTRAL_SIZE;
       bool found = false;
-      while (!found && (size_to_read < 1024)) {
+      while (!found && (offset > end_offset)) {
         if (fseek(file, offset, SEEK_SET)) ERR(4);
-        if (fread(buffer, size_to_read, 1, file) != 1) ERR(5);
+        if (fread(buffer, FILE_CENTRAL_SIZE + 5, 1, file) != 1) ERR(5);
         char * p;
-        if ((p = (char *)memmem(buffer, size_to_read, "PK\5\6", 4)) != nullptr) {
+        if ((p = (char *)memmem(buffer, FILE_CENTRAL_SIZE + 5, "PK\5\6", 4)) != nullptr) {
           offset += (p - buffer);
           if (fseek(file, offset, SEEK_SET)) ERR(6);
           if (fread(buffer, FILE_CENTRAL_SIZE, 1, file) != 1) ERR(7);
           found = true;
           break;
         }
-        offset       -= FILE_CENTRAL_SIZE;
-        size_to_read += FILE_CENTRAL_SIZE;
+        offset -= FILE_CENTRAL_SIZE;
       }
       if (!found) offset = 0;
     }
