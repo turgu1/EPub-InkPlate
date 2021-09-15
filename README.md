@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.09.09)
+(Updated 2021.09.14)
 
 Update for upcoming version 1.3.0 - Not ready yet
 
