@@ -32,8 +32,8 @@ class MsgViewer {
   public:
     MsgViewer() {};
 
-    enum Severity       { INFO, ALERT, BUG, BOOK, WIFI };
-    static char icon_char[5];
+    enum Severity       { INFO, ALERT, BUG, BOOK, WIFI, CONFIRM };
+    static char icon_char[6];
 
     void show(
       Severity severity, 

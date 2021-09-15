@@ -75,9 +75,10 @@ class Unzip
     bool open_zip_file(const char * zip_filename);
     void close_zip_file();
     
-    char * get_file(const char * filename, uint32_t & file_size);
-    bool   open_file(const char * filename);
-    void   close_file();
+    int32_t get_file_size(const char * filename);
+    char  * get_file(const char * filename, uint32_t & file_size);
+    bool    open_file(const char * filename);
+    void    close_file();
 
     #if !STB
       bool   open_stream_file(const char * filename, uint32_t & file_size);

@@ -16,7 +16,7 @@
   #include "inkplate_platform.hpp"
 #endif
 
-char MsgViewer::icon_char[5] = { 'I',  '!', 'H', 'E', 'S' };
+char MsgViewer::icon_char[6] = { 'I',  '!', 'H', 'E', 'S', '!' };
 
 void MsgViewer::show(
   Severity severity, 
@@ -111,14 +111,14 @@ void MsgViewer::show(
   // Press a Key option
 
   if (press_a_key) {
-    fmt.align = CSS::Align::CENTER;
-    fmt.font_size   =   9;
-    fmt.margin_left =  10;
-    fmt.margin_top  = 200;
+    fmt.align       = CSS::Align::CENTER;
+    fmt.font_size   =                  9;
+    fmt.margin_left =                 10;
+    fmt.margin_top  =                200;
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
-    buffer = "[Press a key]";
+    buffer = severity == Severity::CONFIRM ? "[Press SELECT to Confirm]" : "[Press a key]";
     page.add_text(buffer, fmt);
     page.end_paragraph(fmt);
   }

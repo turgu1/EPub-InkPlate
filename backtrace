@@ -25,11 +25,11 @@ else
 fi
 
 # Parse exception info and command backtrace
-rePC='PC\s*:? (0x40[0-2][0-9a-f]*)'
-reEA='EXCVADDR\s*: (0x40[0-2][0-9a-f]*)'
-reBT='Backtrace: (.*)'
-reIN='^[0-9a-f:x ]+$'
-reOT='[^0-9a-zA-Z](0x40[0-2][0-9a-f]{5})[^0-9a-zA-Z]'
+rePC='PC\s*:? (0x40[0-2][0-9A-Fa-f]*)'
+reEA='EXCVADDR\s*: (0x40[0-2][0-9A-Fa-f]*)'
+reBT='Backtrace:\s?(.*)'
+reIN='^[0-9A-Fa-f:x ]+$'
+reOT='[^0-9a-zA-Z](0x40[0-2][0-9A-Fa-f]{5})[^0-9a-zA-Z]'
 inBT=0
 declare -a REGS
 BT=
@@ -43,12 +43,14 @@ while read p; do
     elif [[ "$p" =~ $reBT ]]; then
         # Backtrace: 0x400d38fe:0x3ffb1c50 0x400d35a3:0x3ffb1c90 0x400e40bf:0x3ffb1fb0
         BT="${BASH_REMATCH[1]}"
+        # echo $BT
         inBT=1
     elif [[ $inBT ]]; then
         if [[ "$p" =~ $reIN ]]; then
             # backtrace continuation lines cut by terminal emulator
             # 0x400d38fe:0x3ffb1c50 0x400d35a3:0x3ffb1c90
             BT="$BT${BASH_REMATCH[0]}"
+            # echo $BT
         else
             inBT=0
         fi
@@ -67,9 +69,11 @@ done <$bt
 n=0
 for stk in $BT; do
     # ex: 0x400d38fe:0x3ffb1c50
-    if [[ $stk =~ (0x40[0-2][0-9a-f]+): ]]; then
+    # echo $stk ...
+    if [[ $stk =~ (0x40[0-2][0-9A-Fa-f]+): ]]; then
         addr=${BASH_REMATCH[1]}
         REGS+=("BT-${n}:${addr}")
+        # echo addr: $addr
     fi
     let "n=$n + 1"
     #[[ $n -gt 10 ]] && break
@@ -79,7 +83,7 @@ done
 for reg in "${REGS[@]}"; do
     name=${reg%:*}
     addr=${reg#*:}
-    #echo "Checking $name: $addr"
+    # echo "Checking $name: $addr"
     info=$($XTENSA_GDB --batch $elf -ex "set listsize 1" -ex "l *$addr" -ex q 2>&1 |\
         sed -e 's;/[^ ]*/ESP32/;;' |\
         egrep -v "(No such file or directory)|(^$)") || true

@@ -12,6 +12,7 @@ New User functionalities:
 - [x] Number of allowed ebooks changed from 100 to 200 maximum.
 - [x] Integration with new image streaming classes (png and jpeg).
 - [x] Table of Content to select location to read inside a book.
+- [x] Delete an e-book from the device.
 - [x] Subscript/Superscript support.
 
 Internal changes:
@@ -23,8 +24,11 @@ Internal changes:
 - [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
 - [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
+
+Remaining steps to release:
+
 - [ ] Testing ebooks on InkPlate-6/InkPlate-10.
-- [ ] Valgrind tests.
+- [x] Valgrind tests.
 - [x] Documentation update.
 - [ ] New version releases packaging.
 

@@ -127,7 +127,7 @@
     #endif
   }
 
-  #define STACK_SIZE 40000
+  #define STACK_SIZE 50000
 
   extern "C" {
 

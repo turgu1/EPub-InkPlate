@@ -18,6 +18,7 @@ TOC::build_filename()
 bool
 TOC::load()
 {
+  LOG_D("load()");
   std::string filename = build_filename();
   clean();
 
@@ -86,11 +87,13 @@ TOC::load()
       }
     }
     else {
-      LOG_E("Toc db seems to be empty.");
+      LOG_D("Toc db seems to be empty.");
+      ready = compacted = saved = true;
     }
   }
   else {
-    LOG_E("Toc db is empty.");
+    LOG_D("Toc db is empty.");
+    ready = compacted = saved = true;
   }
 
   db.close();
@@ -106,6 +109,7 @@ TOC::load()
 bool
 TOC::save()
 {
+  LOG_D("save()");
   if (saved) return true;
 
   std::string filename = build_filename();
@@ -155,6 +159,8 @@ unsigned char bin(char ch);
 void
 TOC::clean_filename(char * fname)
 {
+  LOG_D("clean_filename()");
+
   char * s = fname;
   char * d = fname;
 
@@ -174,6 +180,8 @@ TOC::clean_filename(char * fname)
 bool
 TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
 {
+  LOG_D("do_nav_points()");
+
   xml_attribute attr;
 
   do {
@@ -287,7 +295,8 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
 bool
 TOC::load_from_epub()
 {
-  
+  LOG_D("load_from_epub()");
+
   xml_node                   node;
   xml_attribute              attr;
   const char *               filename = nullptr;
@@ -313,7 +322,11 @@ TOC::load_from_epub()
     } while (node);
   }
   else return false;
-  if (filename == nullptr) return false;
+
+  // If filename was not found, returns gracefully. This is usually related
+  // to a version 3 epub format that doesn't supply a V2 table of content.
+
+  if (filename == nullptr) return true;
 
   // retrieve the ncx file data
 
@@ -372,23 +385,27 @@ ok:
 bool
 TOC::compact()
 {
+  LOG_D("compact()");
+
   if (compacted) return true;
   
   if (char_buffer != nullptr) free(char_buffer);
   char_buffer_size = 0;
 
-  for (auto & e : entries) {
-    char_buffer_size += strlen(e.label) + 1;
-  }
+  if (!entries.empty()) {
+    for (auto & e : entries) {
+      char_buffer_size += strlen(e.label) + 1;
+    }
 
-  char_buffer = (char *) allocate(char_buffer_size);
-  if (char_buffer == nullptr) return false;
+    char_buffer = (char *) allocate(char_buffer_size);
+    if (char_buffer == nullptr) return false;
 
-  char * buff = char_buffer;
-  for (auto & e : entries) {
-    strcpy(buff, e.label);
-    e.label = buff;
-    buff += strlen(buff) + 1;
+    char * buff = char_buffer;
+    for (auto & e : entries) {
+      strcpy(buff, e.label);
+      e.label = buff;
+      buff += strlen(buff) + 1;
+    }
   }
 
   if (char_pool != nullptr) {
@@ -404,6 +421,8 @@ TOC::compact()
 void
 TOC::clean()
 {
+  LOG_D("clean()");
+  
   if (char_pool   != nullptr) delete char_pool;
   if (char_buffer != nullptr) free(char_buffer);
 

@@ -263,6 +263,40 @@ clean_fname(const char * filename)
   return str;
 }
 
+int32_t
+Unzip::get_file_size(const char * filename)
+{
+  LOG_D("Mutex lock...");
+  mutex.lock();
+  
+  if (!zip_file_is_open) return 0;
+
+  char * the_filename = clean_fname(filename);
+  current_fe = file_entries.begin();
+
+  while (current_fe != file_entries.end()) {
+    if (strcmp((*current_fe)->filename, the_filename) == 0) break;
+    current_fe++;
+  }
+
+  if (current_fe == file_entries.end()) {
+    LOG_E("Unzip get_file_size: File not found: %s", the_filename);
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto * f : file_entries) {
+        std::cout << "  <" << f->filename << ">" << std::endl;
+      }
+      std::cout << "[End of List]" << std::endl;
+    #endif    
+    mutex.unlock();
+    return 0;
+  }
+  else {
+    mutex.unlock();
+    return (*current_fe)->size;
+  }
+}
+
 bool
 Unzip::open_file(const char * filename)
 {
@@ -348,6 +382,7 @@ Unzip::open_file(const char * filename)
   }
   else {
     LOG_E("Unzip open_file: Error!: %d", err);
+    LOG_D("Mutex unlock...");
     mutex.unlock();
     return false;
   }

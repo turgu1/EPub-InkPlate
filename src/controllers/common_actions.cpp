@@ -36,6 +36,7 @@ CommonActions::refresh_books_dir()
   int16_t temp;
 
   books_dir.refresh(nullptr, temp, true);
+  app_controller.set_controller(AppController::Ctrl::DIR);
 }
 
 void

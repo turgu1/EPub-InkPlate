@@ -32,6 +32,8 @@
 bool
 HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_node)
 {
+  //vTaskDelay(10);
+
   if (node == nullptr) return false;
   if (at_end()) return true;
 

@@ -624,6 +624,10 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
         page_out.start(fmt);
 
+        #if EPUB_INKPLATE_BUILD
+          esp_task_wdt_reset();
+        #endif
+        
         if (!interp->build_pages_recurse(node, fmt, dom->body)) {
           LOG_D("html parsing issue or aborted by Mgr");
           break;

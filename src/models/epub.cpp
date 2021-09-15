@@ -28,6 +28,8 @@ EPub::EPub()
   opf_data               = nullptr;
   current_item_info.data = nullptr;
   file_is_open           = false;
+  fonts_size_too_large   = false;
+  fonts_size             = 0;
   current_itemref        = xml_node(NULL);
   opf_base_path.clear();
   current_filename.clear();
@@ -243,7 +245,8 @@ EPub::retrieve_fonts_from_css(CSS & css)
 {
   #if USE_EPUB_FONTS
 
-    if (book_format_params.use_fonts_in_book == 0) return;
+    if ((book_format_params.use_fonts_in_book == 0) ||
+        (fonts_size_too_large)) return;
     
     CSS::RulesMap font_rules;
     DOM * dom = new DOM;
@@ -292,16 +295,27 @@ EPub::retrieve_fonts_from_css(CSS & css)
               );
             }
 
-            std::string filename = css.get_folder_path();
+            std::string filename = opf_base_path;
+            filename.append(css.get_folder_path());
             filename.append(values->front()->str);
             uint32_t size;
             LOG_D("Font file name: %s", filename.c_str());
-            unsigned char * buffer = (unsigned char *) retrieve_file(filename.c_str(), size);
-            if (buffer == nullptr) {
-              LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
-            }
-            else {
-              fonts.add(font_family, style, buffer, size);
+            if ((size = unzip.get_file_size(filename.c_str())) > 0) {
+              if ((fonts_size + size) > 800000) {
+                fonts_size_too_large = true;
+                LOG_E("Fonts are using too much space. Kept the first fonts read.");
+                break;
+              }
+              else {
+                fonts_size += size;
+                unsigned char * buffer = (unsigned char *) retrieve_file(filename.c_str(), size);
+                if (buffer == nullptr) {
+                  LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
+                }
+                else {
+                  fonts.add(font_family, style, buffer, size);
+                }
+              }
             }
           }
         }
@@ -599,8 +613,10 @@ EPub::open_file(const std::string & epub_filename)
 
   clear_item_data(current_item_info);
 
-  current_filename                = epub_filename;
-  file_is_open                    = true;
+  current_filename     = epub_filename;
+  file_is_open         = true;
+  fonts_size_too_large = false;
+  fonts_size           = 0;
 
   LOG_D("EPub file is now open.");
 

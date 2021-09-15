@@ -95,7 +95,7 @@ SimpleDB::add_record(void * record, int32_t size)
   record_offset[record_count] = ftell(db_file);
   is_deleted[record_count++] = false;
   if (fwrite(&size, sizeof(int32_t), 1, db_file) != 1) return false;
-  if (fwrite(record, size, 1, db_file) != 1) return false;
+  if ((size != 0) && (fwrite(record, size, 1, db_file) != 1)) return false;
   fflush(db_file);
   file_size += sizeof(int32_t) + size;
   return true;

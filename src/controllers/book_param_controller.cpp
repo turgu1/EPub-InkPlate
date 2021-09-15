@@ -23,6 +23,8 @@
   #include "soc/rtc.h"
 #endif
 
+#include <sys/stat.h>
+
 static int8_t show_images;
 static int8_t font_size;
 static int8_t use_fonts_in_book;
@@ -127,6 +129,16 @@ books_list()
   app_controller.set_controller(AppController::Ctrl::DIR);
 }
 
+static void
+delete_book()
+{
+  msg_viewer.show(MsgViewer::Severity::CONFIRM, true, false,
+                  "Delete e-book", 
+                  "The e-book \"%s\" will be deleted. Are you sure?", 
+                  epub.get_title());
+  book_param_controller.set_delete_current_book();
+}
+
 static void 
 toc_ctrl()
 {
@@ -155,13 +167,14 @@ wifi_mode()
 // IMPORTANT!!
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
-static MenuViewer::MenuEntry menu[9] = {
+static MenuViewer::MenuEntry menu[10] = {
   { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last, true  },
   { MenuViewer::Icon::TOC,         "Table of Content",                     toc_ctrl                     , false },
   { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   , true  },
   { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              , true  },
   { MenuViewer::Icon::REVERT,      "Revert e-book parameters to "
                                    "default values",                       revert_to_defaults           , true  },  
+  { MenuViewer::Icon::DELETE,      "Delete the current e-book",            delete_book                  , true  },
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true  },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true  },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off     , true  },
@@ -171,7 +184,7 @@ static MenuViewer::MenuEntry menu[9] = {
 void 
 BookParamController::enter()
 {
-  menu[1].visible = toc.is_ready();
+  menu[1].visible = toc.is_ready() && !toc.is_empty();
   menu_viewer.show(menu);
   book_params_form_is_shown = false;
 }
@@ -216,6 +229,52 @@ BookParamController::input_event(EventMgr::Event event)
      // }
       menu_viewer.clear_highlight();
     }
+  }
+  else if (delete_current_book) {
+    if (event == EventMgr::Event::SELECT) {
+      std::string filepath = epub.get_current_filename();
+      struct stat file_stat;
+
+      if (stat(filepath.c_str(), &file_stat) != -1) {
+        LOG_I("Deleting %s...", filepath.c_str());
+
+        epub.close_file();
+        unlink(filepath.c_str());
+
+        int16_t pos = filepath.find_last_of('.');
+
+        filepath.replace(pos, 5, ".pars");
+
+        if (stat(filepath.c_str(), &file_stat) != -1) {
+          LOG_I("Deleting file : %s", filepath.c_str());
+          unlink(filepath.c_str());
+        }
+
+        filepath.replace(pos, 5, ".locs");
+
+        if (stat(filepath.c_str(), &file_stat) != -1) {
+          LOG_I("Deleting file : %s", filepath.c_str());
+          unlink(filepath.c_str());
+        }
+
+        filepath.replace(pos, 5, ".toc");
+
+        if (stat(filepath.c_str(), &file_stat) != -1) {
+          LOG_I("Deleting file : %s", filepath.c_str());
+          unlink(filepath.c_str());
+        }
+
+        int16_t dummy;
+        books_dir.refresh(nullptr, dummy, false);
+
+        app_controller.set_controller(AppController::Ctrl::DIR);
+      }
+    }
+    else {
+      msg_viewer.show(MsgViewer::Severity::INFO, false, false, 
+                      "Canceled", "The e-book was not deleted.");
+    }
+    delete_current_book = false;
   }
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {

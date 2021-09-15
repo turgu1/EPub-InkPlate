@@ -61,11 +61,12 @@ class TOC
     typedef std::map<std::pair<int16_t, std::string>, uint16_t> Infos;
     typedef std::vector<EntryRecord> Entries;
 
-    const Entries &    get_entries()            { return entries;        }
-    inline bool           is_ready()            { return ready;          }
-    inline bool  there_is_some_ids()            { return some_ids;       }
-    inline int16_t get_entry_count()            { return entries.size(); }
-    inline EntryRecord & get_entry(int16_t idx) { return entries[idx];   }
+    const Entries &    get_entries()            { return entries;         }
+    inline bool           is_ready()            { return ready;           }
+    inline bool           is_empty()            { return entries.empty(); }
+    inline bool  there_is_some_ids()            { return some_ids;        }
+    inline int16_t get_entry_count()            { return entries.size();  }
+    inline EntryRecord & get_entry(int16_t idx) { return entries[idx];    }
     
     /**
      * @brief Load table of content from a file.

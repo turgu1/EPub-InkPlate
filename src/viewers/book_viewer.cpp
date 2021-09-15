@@ -121,6 +121,10 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
       page.start(fmt);
 
+      #if EPUB_INKPLATE_BUILD
+        esp_task_wdt_reset();
+      #endif
+      
       if (interp->build_pages_recurse(node, fmt, dom->body)) {
 
         if (page.some_data_waiting()) page.end_paragraph(fmt);

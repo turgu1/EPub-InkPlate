@@ -96,9 +96,11 @@ As for the books list, the **DOUBLE-SELECT** button will open a list of options 
 ![E-Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
 
 - **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed book.
+- **Table of Content** - This, if present, will show the e-book's table of content. The user can move the cursor on one of the entries and press the **SELECT** button. The application will then move in the e-book to the selected table of content's entry. This option is available only if a table of content structure is available in the EPub file. 
 - **E-Books List** - This will get you out of the e-book reader, returning to the e-books list.
 - **Current e-book parameters** - This will present a parameters form, allowing the user to select specific values related to fonts and pictures usage for the currently displayed e-book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the e-books list and is described below.
-- **Revert e-book parameters to default values** - This will reset the editable e-book parameters to default values. 
+- **Revert e-book parameters to default values** - This will reset the editable e-book formatting parameters to default values. 
+- **Delete the current e-book** - This will remove the current e-book from the device. All related files will also be removed. A dialog will be shown asking the user to confirm the deletion of the e-book. Confirmation must be done using the **SELECT** button. Using another button will cancel the deletion. Once confirmed, the e-book will be removed and the list of e-books will then be shown to the user for further selection.
 - **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled). 
 - **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
 - **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button. At start time, if the user was reading a book, it will be presented on screen.
@@ -214,19 +216,23 @@ JPeg and PNG image types are supported. Only basic formats of both types are rec
 
 ### 3.6 - Moving the SDCard from an Inkplate model to another
 
+For each e-book, the application may generate three additional files in the `books/` folder of the SDCard:
+
+- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution and formatting parameters.
+- Table of Content (files with extension `.toc`). They may also be tailored to the screen resolution and formatting parameters.
+- The e-book's formatting parameters (files with extension `.pars`).
+
+These files are automatically generated when they are not present (or when a formatting parameter will impact the page rendering) in the folder at the time the user opens a book to be read.
+
 Inkplate models are using different eInk screens that are using different pixel resolutions. If you ever want to transfer an SDCard from a model to another, it could be beneficial to erase some files in the SDCard's `books` folder.
 
-All files with the extension `.locs` are tailored to the screen resolution. Some files with the extension `.toc` may also be tailored. These files are automatically generated when they are not present in the folder at the time the user opens a book to read it.
-
-The best way to do it is to plug the SDCard in your computer or laptop, and delete all those `.locs` and `.toc` files.
-
-Another file extension is generated and used by the application: extension `.pars` files contain the ebooks' display parameters. If deleted, they will be automatically generated with default values, as defined in the main options menus of the application.
+The best way to do it is to plug the SDCard into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
 
 ### 3.7 - In case of a problem
 
 It is possible that the application behaves in a way that you don't understand. That may happen for a variety of reasons beyond the testing effort made by the author to ensure that the application is working properly.
 
-The first thing to do is to verify if your device is using the last version of the application. This can be done through the **About the EPub-InkPlate application** menu entry. The message will show which version you are using. Time to time, new versions are developped and made available (here)[https://github.com/turgu1/EPub-InkPlate/releases]. Consult the Install Manual on how to update your Inkplate device.
+The first thing to do is to verify if your device is using the last version of the application. This can be done through the **About the EPub-InkPlate application** menu entry. The message will show which version you are using. Time to time, new versions are developped and made available here: https://github.com/turgu1/EPub-InkPlate/releases. Please consult the Install Manual on how to update your Inkplate device.
 
 If your Inkplate is already using the last available release, one way to try to find what is going wrong is to use a serial port terminal emulator on your computer after the Inkplate device has been connected using a USB cable. When EPub-InkPlate is running, messages are sent to the USB port related to the running firmware. When the application detects something wrong, there is a good chance that a message would be transmitted to the USB serial port indicating what the problem is. 
 
@@ -234,4 +240,4 @@ On both Linux and Mac computers, the author is using **minicom** to access the U
 
 On a Windows computer, there is a variety of terminal emulators available to select from. The device name is usually `COM3:` and the other parameters must be the same as for Linux.
 
-If you can't resolve the problem by yourself, it is always possible to raise an issue (here)[https://github.com/turgu1/EPub-InkPlate/issues]. You have to explain the bad behaviour of the application and attach any information that can help the author to find what the problem is.
+If you can't resolve the problem by yourself, it is always possible to raise an issue here: https://github.com/turgu1/EPub-InkPlate/issues. You have to explain the bad behaviour of the application and attach any information that can help the author to find what the problem is.

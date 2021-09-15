@@ -67,6 +67,8 @@ class EPub
     CSSList            css_cache;             ///< All css files in the ebook are maintained here.
   
     bool               file_is_open;
+    bool               fonts_size_too_large;
+    int32_t            fonts_size;
 
     const char *        get_meta(const std::string & name    );
     bool                 get_opf(std::string &       filename);
