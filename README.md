@@ -8,7 +8,7 @@ Update for upcoming version 1.3.0 - Not ready yet
 
 New User functionalities:
 
-- [x] New book covers Matrix View.
+- [x] New book list Covers Matrix View.
 - [x] Number of allowed ebooks changed from 100 to 200 maximum.
 - [x] Integration with new image streaming classes (png and jpeg).
 - [x] Table of Content to select location to read inside a book.
@@ -24,6 +24,7 @@ Internal changes:
 - [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
 - [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
+- [x] PNG image files transparency.
 
 Remaining steps to release:
 
@@ -129,39 +130,40 @@ A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube t
 
 ## Characteristics
 
-The first release functionalities:
+The current release functionalities:
 
-- TTF, and OTF embedded fonts support
-- Normal, Bold, Italic, Bold+Italic face types
-- Bitmap images dithering display (JPEG, PNG)
-- EPub (V2, V3) book format subset
-- UTF-8 characters (supplied fonts limited to latin1)
-- InkPlate tactile keys (single and double click to get six buttons)
-- Screen orientation (buttons located to the left, right, down positions from the screen)
-- Left, center, right, and justify text alignments
-- Indentation
-- Some basic parameters and options
-- Limited CSS formatting
-- WiFi-based documents download
-- Battery state and power management (light, deep sleep, battery level display)
+- TTF, and OTF embedded fonts support.
+- Normal, Bold, Italic, Bold+Italic face types.
+- Bitmap images dithering display (JPEG, PNG).
+- EPub (V2, V3) book format subset.
+- UTF-8 characters (supplied fonts limited to latin1).
+- InkPlate tactile keys (single and double click to get six buttons).
+- Screen orientation (buttons located to the left, right, down positions from the screen).
+- Left, center, right, and justify text alignments.
+- Indentation.
+- Some basic parameters and options.
+- Limited CSS formatting.
+- WiFi-based documents download.
+- Battery state and power management (light, deep sleep, battery level display).
+- Table of content.
+- Multiple fonts choices selectable by the user.
+- Linear and matrix view of book list.
 
 Some elements to consider in the future (no specific order of priority):
 
-- External keypad integration (through i2c)
-- Various views for the E-Books list
-- Table of content
-- Hyperlinks (inside an e-book)
-- Others document download method (Dropbox, Calibre, others)
-- Multiple fonts choices selectable by the user
-- More CSS formatting
-- Footnote management
-- Kerning
-- TXT, MOBI book formats
-- `<table>` formatting
-- Page progression direction: Right then left
-- Notes
-- Bookmarks
-- Other elements proposed by users
+- External keypad integration (through i2c).
+- Various views for the E-Books list.
+- Hyperlinks (inside an e-book).
+- Others document download method (Dropbox, Calibre, others).
+- More CSS formatting.
+- Footnote management.
+- Kerning.
+- TXT, MOBI book formats.
+- `<table>` formatting.
+- Page progression direction: Right then left.
+- Notes.
+- Bookmarks.
+- Other elements proposed by users.
 
 And potentially many more...
 
