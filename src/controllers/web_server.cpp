@@ -177,6 +177,16 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     itoa(entry_stat.st_size, entrysize, 10);
     LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
+    std::string the_size;
+    uint8_t     length       = strlen(entrysize);
+    uint8_t     comma_offset = length % 3;
+
+    for (uint8_t i = 0; i < length; i++) {
+      if (((i % 3) == comma_offset) && (i != 0)) {
+          the_size += ',';
+      }
+      the_size += entrysize[i];
+    }
 
     httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
     httpd_resp_sendstr_chunk(req, req->uri);
@@ -189,7 +199,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     httpd_resp_sendstr_chunk(req, "</a></td><td>");
     httpd_resp_sendstr_chunk(req, entrytype);
     httpd_resp_sendstr_chunk(req, "</td><td>");
-    httpd_resp_sendstr_chunk(req, entrysize);
+    httpd_resp_sendstr_chunk(req, the_size.c_str());
     httpd_resp_sendstr_chunk(req, "</td><td>");
     httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
     httpd_resp_sendstr_chunk(req, req->uri);

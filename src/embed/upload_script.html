@@ -9,7 +9,7 @@
           <label for="newfile">Upload a file</label>
         </td>
         <td colspan="2">
-          <input id="newfile" type="file" onchange="setpath()" style="width:100%;">
+          <input id="newfile" type="file" accept=".epub" onchange="setpath()" style="width:100%;">
         </td>
       </tr>
       <tr>
@@ -42,6 +42,8 @@ function upload() {
     alert("File path on server is not set!");
   } else if (filePath[filePath.length-1] == '/') {
     alert("File name not specified after path!");
+  } else if (filePath.substring(filePath.length-5, filePath.length) != ".epub") {
+    alert("File must have extension .epub!");
   } else if (fileInput[0].size > 25*1024*1024) {
     alert("File size must be less than 25MB!");
   } else {
