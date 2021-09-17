@@ -2,17 +2,17 @@
 
 ## Last news
 
-(Updated 2021.09.14)
+(Updated 2021.09.16)
 
 Update for upcoming version 1.3.0 - Not ready yet
 
 New User functionalities:
 
-- [x] New book list Covers Matrix View.
+- [x] New ebook list Covers Matrix View.
 - [x] Number of allowed ebooks changed from 100 to 200 maximum.
 - [x] Integration with new image streaming classes (png and jpeg).
-- [x] Table of Content to select location to read inside a book.
-- [x] Delete an e-book from the device.
+- [x] Table of Content to select location to read inside an ebook.
+- [x] Delete an ebook from the device.
 - [x] Subscript/Superscript support.
 
 Internal changes:
@@ -21,14 +21,17 @@ Internal changes:
 - [x] Complete redesign of the CSS Interpreter.
 - [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
 - [x] Correction of many small page painting issues.
-- [x] Corrected an issue with the books folder scanning process (simple db mgr bug).
+- [x] Corrected an issue with the ebooks folder scanning process (simple db mgr bug).
 - [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
 - [x] PNG image files transparency.
+- [x] Stack usage optimization.
+- [x] Web Server Enhancements (comma separated file size, .epub file extension check).
 
 Remaining steps to release:
 
-- [ ] Testing ebooks on InkPlate-6/InkPlate-10.
+- [x] Testing ebooks on InkPlate-6.
+- [ ] Testing ebooks on InkPlate-10.
 - [x] Valgrind tests.
 - [x] Documentation update.
 - [ ] New version releases packaging.
@@ -61,7 +64,7 @@ This is in preparation for version 1.1.0 The main ongoing modifications are:
 - [x] Integration with the new ESP-IDF-Inkplate library.
 - [x] Trigger pages location recalculation when parameters have changed.
 - [x] Stop light-sleep, deep-sleep while pages location is being calculated.
-- [x] Adjust web server to only show epub files and remove params/locs files on e-book delete.
+- [x] Adjust web server to only show epub files and remove params/locs files on ebook delete.
 - [x] Adjust Web server to stop page-locs to free memory before launching the server.
 - [x] Save computed pages location to sdcard for quick ebook load.
 - [x] Repair some known bugs (some issues to be addressed later).
@@ -74,12 +77,12 @@ Added functional features:
 - [x] Title showned at top of pages (as an option).
 - [x] Heap Size showned at bottom of pages (as an option).
 - [x] Form entry simplified (OK / Cancel param no longer there).
-- [x] Parameters for each e-book specific font/pictures adjustments.
+- [x] Parameters for each ebook specific font/pictures adjustments.
 - [ ] Augmented CSS features (tbd v1.2).
 
 Known bugs:
 
-- [x] e-books list geometry when screen orientation change.
+- [x] ebooks list geometry when screen orientation change.
 - [x] recovery from too large image (memory allocation).
 - [x] Page refresh on orientation/resolution changes.
 - [ ] PNG image files transparency (tbd v1.2).
@@ -152,8 +155,8 @@ The current release functionalities:
 Some elements to consider in the future (no specific order of priority):
 
 - External keypad integration (through i2c).
-- Various views for the E-Books list.
-- Hyperlinks (inside an e-book).
+- Various views for the ebooks list.
+- Hyperlinks (inside an ebook).
 - Others document download method (Dropbox, Calibre, others).
 - More CSS formatting.
 - Footnote management.
@@ -175,7 +178,7 @@ Height font types are supplied with the application. For each type, there are fo
 
 Another font is mandatory. It can be found in `SDCard/fonts/drawings.otf` and must also be located in the micro-SD Card `fonts` folder. It contains the icons presented in parameters/options menus.
 
-The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available e-books on the card and is automatically maintained by the application. It is refreshed at boot time and when the user requires it to do so through the parameters menu. The refresh process takes some time (between 5 and 10 seconds per e-book) but is required to get fast e-book directory list on screen.
+The `SDCard` folder under GitHub reflects what the micro-SD Card should look like. One file is missing there is the `books_dir.db` that is managed by the application. It contains the meta-data required to display the list of available ebooks on the card and is automatically maintained by the application. It is refreshed at boot time and when the user requires it to do so through the parameters menu. The refresh process takes some time (between 5 and 10 seconds per ebook) but is required to get fast ebook directory list on screen.
 
 ### Fonts cleanup
 
