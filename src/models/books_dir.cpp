@@ -198,7 +198,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       char    filename[FILENAME_SIZE];
       int32_t file_size;
       char    title[TITLE_SIZE];
-    } * partial_record = (PartialRecord *) malloc(sizeof(PartialRecord));
+    } * partial_record = (PartialRecord *) allocate(sizeof(PartialRecord));
 
     if (partial_record == nullptr) msg_viewer.out_of_memory("partial record allocation");
     

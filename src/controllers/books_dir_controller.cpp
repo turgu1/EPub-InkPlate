@@ -30,8 +30,7 @@ BooksDirController::setup()
   // If the user was reading a book at the last entry to deep sleep, it will be
   // shown on screen instead of the books directory list.
 
-  char book_fname[256];
-  
+  char * book_fname          = new char[256];
   char * filename            = nullptr;
 
   book_fname[0]              =  0;
@@ -117,6 +116,8 @@ BooksDirController::setup()
 
   LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", 
         last_read_book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
+
+  delete [] book_fname;
 }
 
 void

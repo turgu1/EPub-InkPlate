@@ -344,7 +344,7 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
 }
 
 void
-Page::start(Format & fmt)
+Page::start(const Format & fmt)
 {
   pos.x = fmt.screen_left;
   pos.y = fmt.screen_top;
@@ -369,7 +369,7 @@ Page::start(Format & fmt)
 }
 
 void
-Page::set_limits(Format & fmt)
+Page::set_limits(const Format & fmt)
 {
   pos.x = pos.y = 0;
 
@@ -647,6 +647,7 @@ Page::add_image_to_line(Image & image, int16_t advance, const Format & fmt)
   // else {
   //   entry->kind.image_entry.image.bitmap = nullptr;
   // }
+  
   entry->pos.x = entry->pos.y = 0;
   
   Dim dim = entry->kind.image_entry.image.dim;

@@ -8,6 +8,8 @@
 #include "models/config.hpp"
 #include "models/toc.hpp"
 
+MemoryPool<Page::Format> HTMLInterpreter::fmt_pool;
+
 // This method process a single xml node and recurse for the associated children.
 // The method calls the page_end() method when it reachs the end of the page as 
 // defined by the end_offset variable, or when the page class indicated that the page
@@ -30,22 +32,15 @@
 // block to be displayed (paragraphs, headers, etc.)
 
 bool
-HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_node)
+HTMLInterpreter::build_pages_recurse(xml_node       node, 
+                                     Page::Format & fmt, 
+                                     DOM::Node    * dom_node)
 {
-  //vTaskDelay(10);
 
   if (node == nullptr) return false;
   if (at_end()) return true;
-
-  // if (!beginning_of_page) {
-  //   if (!started) {
-  //     beginning_of_page = is_started();
-  //   }
-  // }
-  // else {
-  //   beginning_of_page = false;
-    is_started();
-  // }
+    
+  check_if_started();
 
   std::string  image_filename;
   const char * name;
@@ -338,17 +333,20 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     while (sub != nullptr) {
       if (page.is_full() && !page_end(fmt)) return false;
       if (at_end()) break;
-      if (!build_pages_recurse(sub, fmt, dom_current_node)) {
+      Page::Format * new_fmt = duplicate_fmt(fmt);
+      if (!build_pages_recurse(sub, *new_fmt, dom_current_node)) {
+        release_fmt(new_fmt);
         if (page.is_full() && !page_end(fmt)) return false;
         if (at_end()) break;
         return false;
       }
+      release_fmt(new_fmt);
       sub = sub.next_sibling();
     }
 
     // The sub-nodes have been processed. Complete the block if not Inline and check
     // for remaining data if it's the head of the hierarchy ('body' tag)
-    if (is_started()) {
+    if (check_if_started()) {
       if (fmt.display == CSS::Display::BLOCK) {
         if ((current_offset != start_offset) || page.some_data_waiting()) {
           show_state("==> End Paragraph 2 <==", fmt);
@@ -386,12 +384,12 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
     else {
       show_state("==> STR <==", fmt);
 
-      bool to_be_started = !is_started();
+      bool to_be_started = !check_if_started();
 
       while (*str) {
 
         if (uint8_t(*str) <= ' ') {
-          if (is_started()) {
+          if (check_if_started()) {
             if (to_be_started) {
               to_be_started = false;
               page.new_paragraph(fmt, true);
@@ -432,7 +430,7 @@ HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node 
           const char * w = str;
           int16_t count = 0;
           while (uint8_t(*str) > ' ') { str++; count++; }
-          if (is_started()) {
+          if (check_if_started()) {
             if (to_be_started) {
               to_be_started = false;
               page.new_paragraph(fmt, true);

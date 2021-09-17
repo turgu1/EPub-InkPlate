@@ -35,7 +35,7 @@ class BookViewerInterp : public HTMLInterpreter
       HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
    ~BookViewerInterp() {}
   protected:
-    bool page_end(Page::Format & fmt) { 
+    bool page_end(const Page::Format & fmt) { 
       LOG_D("---- PAGE END ----");
       return true; 
     }
@@ -102,7 +102,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     // end_of_page_offset   = page_id.offset + page_info->size;
 
     DOM              * dom    = new DOM;
-    BookViewerInterp * interp = new BookViewerInterp(page, *dom, 
+    BookViewerInterp * interp = new BookViewerInterp(page, * dom, 
                                                      Page::ComputeMode::DISPLAY, 
                                                      epub.get_current_item_info());
     interp->set_limits(page_id.offset, 
@@ -125,7 +125,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
         esp_task_wdt_reset();
       #endif
       
-      if (interp->build_pages_recurse(node, fmt, dom->body)) {
+      Page::Format * new_fmt = interp->duplicate_fmt(fmt);
+
+      if (interp->build_pages_recurse(node, *new_fmt, dom->body)) {
 
         if (page.some_data_waiting()) page.end_paragraph(fmt);
 
@@ -186,6 +188,8 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
         page.paint();
       }
+
+      interp->release_fmt(new_fmt);
     }
 
     interp->check_for_completion();

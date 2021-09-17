@@ -40,11 +40,13 @@ class HTMLInterpreter
     bool show_the_state;
     int16_t from_page, to_page;
 
+    static MemoryPool<Page::Format> fmt_pool;
+
     // The page_end method is responsible of doing post-processing once
     // the end of a page has been detected (the page.is_full() method returns true or
     // the process reached the page_end offset). This is specific for each of the book_viewer
     // and the page location computation processes.
-    virtual bool page_end(Page::Format & fmt) = 0;
+    virtual bool page_end(const Page::Format & fmt) = 0;
 
   public:
     HTMLInterpreter(Page & the_page, DOM & the_dom, Page::ComputeMode the_comp_mode, const EPub::ItemInfo & the_item) 
@@ -68,7 +70,7 @@ class HTMLInterpreter
       page.set_compute_mode(Page::ComputeMode::MOVE);
     }
 
-    bool build_pages_recurse(xml_node node, Page::Format fmt, DOM::Node * dom_node);
+    bool build_pages_recurse(xml_node node, Page::Format & fmt, DOM::Node * dom_node);
 
     void check_for_completion() {
       if (current_offset != end_offset) {
@@ -77,10 +79,10 @@ class HTMLInterpreter
       }
     }
 
-    void show_state(const char * caption, 
-                    Page::Format fmt, 
-                    DOM::Node  * dom_current_node = nullptr, 
-                    CSS        * element_css      = nullptr) {
+    void show_state(const char         * caption, 
+                    const Page::Format & fmt, 
+                    DOM::Node          * dom_current_node = nullptr, 
+                    CSS                * element_css      = nullptr) {
       if (show_the_state) {
         std::cout << caption << " Offset:" << current_offset << " ";
         page.show_controls("  ");
@@ -132,7 +134,7 @@ class HTMLInterpreter
       show_the_state = (from_page <= page) && ( page <= to_page);
     }
 
-    inline bool is_started() {
+    inline bool check_if_started() {
       if (!started) {
         if ((started = current_offset >= start_offset)) {
           page.set_compute_mode(compute_mode);
@@ -144,4 +146,12 @@ class HTMLInterpreter
     }
 
     inline bool at_end() { return current_offset >= end_offset; }
+
+    inline Page::Format * duplicate_fmt(const Page::Format & fmt) {
+      Page::Format * new_fmt = fmt_pool.allocate();
+      *new_fmt = fmt;
+      return new_fmt;
+    }
+
+    inline void release_fmt(Page::Format * fmt) { fmt_pool.deallocate(fmt); }
 };

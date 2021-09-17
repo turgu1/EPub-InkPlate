@@ -140,7 +140,7 @@ class Page
      * 
      * @param fmt Formatting parameters.
      */
-    void start(Format & fmt);
+    void start(const Format & fmt);
 
     /**
      * @brief Set the writing limits on a page without erasing
@@ -150,7 +150,7 @@ class Page
      * 
      * @param fmt Formatting parameters.
      */
-    void set_limits(Format & fmt);
+    void set_limits(const Format & fmt);
 
     /**
      * @brief Start a new paragraph.

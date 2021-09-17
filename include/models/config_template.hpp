@@ -69,7 +69,7 @@ template <class IdType, int cfg_size>
 bool 
 ConfigBase<IdType, cfg_size>::get(IdType id, int32_t * val) 
 {
-  for (auto entry : cfg) {
+  for (auto & entry : cfg) {
     if((entry.ident == id) && (entry.type == EntryType::INT)) {
       *val = * ((int32_t *) entry.value);
       return true;
@@ -84,7 +84,7 @@ template <class IdType, int cfg_size>
 bool 
 ConfigBase<IdType, cfg_size>::get(IdType id, int8_t * val) 
 {
-  for (auto entry : cfg) {
+  for (auto & entry : cfg) {
     if((entry.ident == id) && (entry.type == EntryType::BYTE)) {
       *val = * ((int8_t *) entry.value);
       return true;
@@ -99,7 +99,7 @@ template <class IdType, int cfg_size>
 bool 
 ConfigBase<IdType, cfg_size>::get(IdType id, std::string & val) 
 {
-  for (auto entry : cfg) {
+  for (auto & entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       val.assign(((char *) entry.value));
       return true;
@@ -129,7 +129,7 @@ template <class IdType, int cfg_size>
 void 
 ConfigBase<IdType, cfg_size>::put(IdType id, int8_t val) 
 {
-  for (auto entry : cfg) {
+  for (auto & entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::BYTE)) {
       *((int8_t *) entry.value) = val;
       modified = true;
@@ -219,7 +219,7 @@ bool
 ConfigBase<IdType, cfg_size>::read() 
 {
   // First, initialize all configs to default values
-  for (auto entry : cfg) {
+  for (auto & entry : cfg) {
     if (entry.type == EntryType::STRING) {
       strlcpy((char *) entry.value, (char *) entry.default_value, entry.max_size);
     }
@@ -231,19 +231,22 @@ ConfigBase<IdType, cfg_size>::read()
     }
   }
 
-  std::ifstream file(config_filename);
+  std::ifstream * file = new std::ifstream(config_filename);
 
-  if (!file.is_open()) return save(true);
+  if (!file->is_open()) {
+    delete file;
+    return save(true);
+  }
 
-  char buff[128];
+  char * buff = new char[128];
   char * caption;
   char * value;
 
-  while (!file.eof()) {
-    file.getline(buff, 128);
+  while (!file->eof()) {
+    file->getline(buff, 128);
     if (parse_line(buff, &caption, &value)) {
       LOG_D("Caption: %s, value: %s", caption, value);
-      for (auto entry : cfg) {
+      for (auto & entry : cfg) {
         if (strcmp(caption, entry.caption) == 0) {
           if (entry.type == EntryType::STRING) {
             strlcpy((char *) entry.value, value, entry.max_size);
@@ -260,7 +263,10 @@ ConfigBase<IdType, cfg_size>::read()
     }
   }
 
-  file.close();
+  file->close();
+
+  delete    file;
+  delete [] buff;
 
   return true;
 }
@@ -272,11 +278,11 @@ bool
 ConfigBase<IdType, cfg_size>::save(bool force) 
 {
   if (force || modified) {
-    std::ofstream file(config_filename);
-    if (!file.is_open()) return false;
+    std::ofstream * file = new std::ofstream(config_filename);
+    if (!file->is_open()) return false;
 
     if (comment) {
-      file <<
+      *file <<
         "# EPub-InkPlate Config File\n"
         "# -------------------------\n"
         "#\n"
@@ -290,25 +296,26 @@ ConfigBase<IdType, cfg_size>::save(bool force)
         "# - The following parameters are recognized:\n"
         "#\n";
 
-      for (auto entry : cfg) {
-        file << "#      " << entry.caption << std::endl;
+      for (auto & entry : cfg) {
+        *file << "#      " << entry.caption << std::endl;
       }
       
-      file << "# ---\n\n";
+      *file << "# ---\n\n";
     }
 
-    for (auto entry : cfg) {
+    for (auto & entry : cfg) {
       if (entry.type == EntryType::STRING) {
-        file << entry.caption << " = \"" << (char *) entry.value << '"' << std::endl;
+        *file << entry.caption << " = \"" << (char *) entry.value << '"' << std::endl;
       }
       else if (entry.type == EntryType::INT) {
-        file << entry.caption << " = " << *(int32_t *) entry.value << std::endl;
+        *file << entry.caption << " = " << *(int32_t *) entry.value << std::endl;
       }
       else {
-        file << entry.caption << " = " << +*(int8_t *) entry.value << std::endl;
+        *file << entry.caption << " = " << +*(int8_t *) entry.value << std::endl;
       }
     }
-    file.close();
+    file->close();
+    delete file;
     modified = false;
   }
   return true;

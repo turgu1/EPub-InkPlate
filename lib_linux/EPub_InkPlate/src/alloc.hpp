@@ -5,7 +5,4 @@
 #pragma once
 #include "global.hpp"
 
-inline void * allocate(size_t size) 
-{
-  return malloc(size);  
-}
+inline void * allocate(size_t size) { return malloc(size); }

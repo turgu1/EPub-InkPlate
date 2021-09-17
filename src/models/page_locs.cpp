@@ -495,10 +495,10 @@ class PageLocsInterp : public HTMLInterpreter
       HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
     ~PageLocsInterp() {}
     
-    void doc_end(Page::Format fmt) { page_end(fmt); }
+    void doc_end(const Page::Format & fmt) { page_end(fmt); }
 
   protected:
-    bool page_end(Page::Format & fmt) {
+    bool page_end(const Page::Format & fmt) {
 
       // if (page_locs.get_pages_map().size() == 38) {
       //   LOG_D("PAGE END!!");
@@ -628,10 +628,13 @@ PageLocs::build_page_locs(int16_t itemref_index)
           esp_task_wdt_reset();
         #endif
         
-        if (!interp->build_pages_recurse(node, fmt, dom->body)) {
+        Page::Format * new_fmt = interp->duplicate_fmt(fmt);
+        if (!interp->build_pages_recurse(node, *new_fmt, dom->body)) {
+          interp->release_fmt(new_fmt);
           LOG_D("html parsing issue or aborted by Mgr");
           break;
         }
+        interp->release_fmt(new_fmt);
 
         if (page_out.some_data_waiting()) page_out.end_paragraph(fmt);
       }

@@ -354,7 +354,7 @@ EventMgr::setup()
     touchpad_event_queue = xQueueCreate(          //create a queue to handle key event from task
       10, sizeof(EventMgr::Event));
 
-    TaskHandle_t xHandle = NULL;
+    TaskHandle_t xHandle = nullptr;
     xTaskCreate(get_event_task, "GetEvent", 2000, nullptr, 10, &xHandle);
 
     gpio_install_isr_service(0);                //install gpio isr service

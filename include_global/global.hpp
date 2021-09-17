@@ -13,6 +13,8 @@
 
 #include "strlcpy.hpp"
 
+// #pragma GCC diagnostic error "-Wframe-larger-than=32"
+
 #define APP_VERSION "1.3.0"
 
 #if !(defined(EPUB_LINUX_BUILD) || defined(EPUB_INKPLATE_BUILD)) 

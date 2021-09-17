@@ -280,7 +280,7 @@ The current release of PlatformIO allow for editing the `sdkconfig` through the 
 
 The application will show a list of configuration aspects. 
 
-The following elements have been done (No need to do it again):
+The following elements have been done (No need to do it again as they are defined in file `sdkconfig.defaults`):
   
 - **PSRAM memory management**: The PSRAM is an extension to the ESP32 memory that offers 4MB+4MB of additional RAM. The first 4MB is readily available to integrate into the dynamic memory allocation of the ESP-IDF SDK. To configure PSRAM:
 
@@ -312,6 +312,9 @@ The following elements have been done (No need to do it again):
 - **HTTP Server**: The application is supplying a Web server (through the use of HTTP) to the user to modify the list of books present on the SDCard. The following parameters must be adjusted:
   - Select `Component config` > `HTTP Server` > `Max HTTP Request Header Length` > 1024
   - Select `Component config` > `HTTP Server` > `Max HTTP URI Length` > 1024
+
+- **WiFi memory buffers in PSRAM**: The WiFi implementation use a large portion of memory. There is not enough main memory available for the buffer required, so it must be allocated from the PSRAM:
+  - Select `Component config` > `ESP32-specific` > `Support for externa,, SPI-connected RAM` > `SPI RAM config` > `Try to allocate memories of WiFi and LWIP in SPIRAM firstly.`
 
 The following is not configured through *menuconfig:*
 

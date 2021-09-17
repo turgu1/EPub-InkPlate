@@ -83,7 +83,6 @@ favicon_get_handler(httpd_req_t *req)
 static esp_err_t 
 http_resp_dir_html(httpd_req_t *req, const char * dirpath)
 {
-  char entrypath[FILE_PATH_MAX];
   char entrysize[16];
   const char * entrytype;
 
@@ -95,10 +94,10 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   const size_t dirpath_len = strlen(dirpath);
 
   /* Retrieve the base path of file storage to construct the full path */
-  strlcpy(entrypath, dirpath, sizeof(entrypath));
-  entrypath[strlen(entrypath) - 1] = 0;
-  DIR * dir = opendir(entrypath);
-  entrypath[strlen(entrypath)] = '/';
+  std::string entrypath = dirpath;
+  entrypath.resize(entrypath.size() - 1);
+  DIR * dir = opendir(entrypath.c_str());
+  entrypath.append("/");
 
   if (dir == nullptr) {
     LOG_E("Failed to stat dir : %s (%s)", dirpath, strerror(errno));
@@ -168,13 +167,16 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     
     entrytype = (entry->d_type == DT_DIR ? "directory" : "file");
 
-    strlcpy(entrypath + dirpath_len, entry->d_name, sizeof(entrypath) - dirpath_len);
-    if (stat(entrypath, &entry_stat) == -1) {
+    entrypath.resize(dirpath_len);
+    entrypath.append(entry->d_name);
+
+    if (stat(entrypath.c_str(), &entry_stat) == -1) {
       LOG_E("Failed to stat %s : %s", entrytype, entry->d_name);
       continue;
     }
-    sprintf(entrysize, "%ld", entry_stat.st_size);
+    itoa(entry_stat.st_size, entrysize, 10);
     LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
+
 
     httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
     httpd_resp_sendstr_chunk(req, req->uri);
@@ -207,23 +209,23 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   return ESP_OK;
 }
 
-#define IS_FILE_EXT(filename, ext) \
-    (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
+inline bool is_file_ext(const std::string & filename, const char * ext) {
+    return (filename.substr(filename.size() - sizeof(ext), sizeof(ext)).compare(ext) == 0); }
 
 static esp_err_t 
-set_content_type_from_file(httpd_req_t * req, const char * filename)
+set_content_type_from_file(httpd_req_t * req, const std::string & filename)
 {
-  if (IS_FILE_EXT(filename, ".epub")) {
+  if (is_file_ext(filename, ".epub")) {
     return httpd_resp_set_type(req, "application/epub+zip");
   } 
 
   return httpd_resp_set_type(req, "text/plain");
 }
 
-extern unsigned char bin(char ch); // 
+extern unsigned char bin(char ch); 
 
-static const char * 
-get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t destsize)
+static std::string 
+get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
 {
   const size_t base_pathlen = strlen(base_path);
   size_t pathlen = strlen(uri);
@@ -237,28 +239,23 @@ get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t 
     pathlen = MIN(pathlen, hash - uri);
   }
 
-  if (base_pathlen + pathlen + 1 > destsize) {
-    return NULL;
-  }
-
-  strcpy(dest, base_path);
+  dest = base_path;
   const char * str_in = uri;
-  char *      str_out = dest + base_pathlen;
-  int           count = pathlen + 1;
+  int           count = pathlen;
 
   while (count > 0) {
     if (str_in[0] == '%') {
-      *str_out++ = (bin(str_in[1]) << 4) + bin(str_in[2]);
+      dest.push_back((char)((bin(str_in[1]) << 4) + bin(str_in[2])));
       count  -= 3;
       str_in += 3;
     }
     else {
-      *str_out++ = *str_in++;
+      dest.push_back(*str_in++);
       count--;
     }
   }
 
-  return dest + base_pathlen;
+  return dest.substr(base_pathlen);
 }
 
 // ----- download_handler() -----
@@ -266,47 +263,42 @@ get_path_from_uri(char * dest, const char * base_path, const char * uri, size_t 
 static esp_err_t
 download_handler(httpd_req_t * req)
 {
-  char filepath[FILE_PATH_MAX];
+  LOG_D("download_handler(%s)", req->uri);
+
   FILE * fd = NULL;
   struct stat file_stat;
 
-  const char * filename = get_path_from_uri(
-    filepath, 
-    ((FileServerData *) req->user_ctx)->base_path,
-    req->uri, 
-    sizeof(filepath));
+  std::string filepath;
+  std::string filename = get_path_from_uri(filepath, 
+                                           ((FileServerData *) req->user_ctx)->base_path,
+                                           req->uri);
 
-  if (!filename) {
-    LOG_E("Filename is too long");
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
-    return ESP_FAIL;
+  if (filename.back() == '/') {
+    return http_resp_dir_html(req, filepath.c_str());
   }
 
-  if (filename[strlen(filename) - 1] == '/') {
-    return http_resp_dir_html(req, filepath);
-  }
-
-  if (stat(filepath, &file_stat) == -1) {
+  if (stat(filepath.c_str(), &file_stat) == -1) {
+    LOG_D("Filename: %s", filename.c_str());
       /* If file not present check if URL
         * corresponds to one of the hardcoded paths */
-    if (strcmp(filename, "/index.html") == 0) {
+    if (filename.compare("/index.html") == 0) {
       return index_html_get_handler(req);
-    } else if (strcmp(filename, "/favicon.ico") == 0) {
+    } else if (filename.compare("/favicon.ico") == 0) {
       return favicon_get_handler(req);
     }
-    LOG_E("Failed to stat file : %s", filepath);
+    LOG_E("Failed to stat file : %s", filepath.c_str());
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
     return ESP_FAIL;
   }
 
-  fd = fopen(filepath, "r");
+  fd = fopen(filepath.c_str(), "r");
   if (!fd) {
-    LOG_E("Failed to read existing file : %s", filepath);
+    LOG_E("Failed to read existing file : %s", filepath.c_str());
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
     return ESP_FAIL;
   }
 
-  LOG_I("Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
+  LOG_I("Sending file : %s (%ld bytes)...", filename.c_str(), file_stat.st_size);
   set_content_type_from_file(req, filename);
 
   // Retrieve the pointer to scratch buffer for temporary storage
@@ -337,29 +329,27 @@ download_handler(httpd_req_t * req)
 // ----- upload_handler() -----
 
 static esp_err_t 
-upload_handler(httpd_req_t *req)
+upload_handler(httpd_req_t * req)
 {
-  char filepath[FILE_PATH_MAX];
+  LOG_D("upload_handler(%s)", req->uri);
+
   FILE *fd = NULL;
   struct stat file_stat;
 
+  std::string filepath;
   /* Skip leading "/upload" from URI to get filename */
   /* Note sizeof() counts NULL termination hence the -1 */
-  const char *filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                            req->uri + sizeof("/upload") - 1, sizeof(filepath));
-  if (!filename) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
-    return ESP_FAIL;
-  }
-
-  if (filename[strlen(filename) - 1] == '/') {
-    LOG_E("Invalid filename : %s", filename);
+  std::string filename = get_path_from_uri(filepath, 
+                                           ((FileServerData *)req->user_ctx)->base_path,
+                                           req->uri + sizeof("/upload") - 1);
+  if (filename[filename.size() - 1] == '/') {
+    LOG_E("Invalid filename : %s", filename.c_str());
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
-  if (stat(filepath, &file_stat) == 0) {
-    LOG_E("File already exists : %s", filepath);
+  if (stat(filepath.c_str(), &file_stat) == 0) {
+    LOG_E("File already exists : %s", filepath.c_str());
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
     return ESP_FAIL;
   }
@@ -372,14 +362,14 @@ upload_handler(httpd_req_t *req)
     return ESP_FAIL;
   }
 
-  fd = fopen(filepath, "w");
+  fd = fopen(filepath.c_str(), "w");
   if (!fd) {
-    LOG_E("Failed to create file : %s", filepath);
+    LOG_E("Failed to create file : %s", filepath.c_str());
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
     return ESP_FAIL;
   }
 
-  LOG_I("Receiving file : %s...", filename);
+  LOG_I("Receiving file : %s...", filename.c_str());
 
   /* Retrieve the pointer to scratch buffer for temporary storage */
   char *buf = ((FileServerData *) req->user_ctx)->scratch;
@@ -398,7 +388,7 @@ upload_handler(httpd_req_t *req)
       }
 
       fclose(fd);
-      unlink(filepath);
+      unlink(filepath.c_str());
 
       LOG_E("File reception failed!");
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive file");
@@ -410,7 +400,7 @@ upload_handler(httpd_req_t *req)
       /* Couldn't write everything to file!
         * Storage may be full? */
       fclose(fd);
-      unlink(filepath);
+      unlink(filepath.c_str());
 
       LOG_E("File write failed!");
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to write file to storage");
@@ -432,56 +422,54 @@ upload_handler(httpd_req_t *req)
 // ----- delete_handler() -----
 
 static esp_err_t 
-delete_handler(httpd_req_t *req)
+delete_handler(httpd_req_t * req)
 {
-  char filepath[FILE_PATH_MAX];
+  LOG_D("delete_handler(%s)", req->uri);
+
   struct stat file_stat;
 
+  std::string filepath;
   /* Skip leading "/delete" from URI to get filename */
   /* Note sizeof() counts NULL termination hence the -1 */
-  const char * filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                            req->uri  + sizeof("/delete") - 1, sizeof(filepath));
-  if (!filename) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
-    return ESP_FAIL;
-  }
-
-  if (filename[strlen(filename) - 1] == '/') {
-    LOG_E("Invalid filename : %s", filename);
+  std::string filename = get_path_from_uri(filepath, 
+                                           ((FileServerData *)req->user_ctx)->base_path,
+                                           req->uri  + sizeof("/delete") - 1);
+  if (filename[filename.size() - 1] == '/') {
+    LOG_E("Invalid filename : %s", filename.c_str());
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
-  if (stat(filepath, &file_stat) == -1) {
-    LOG_E("File does not exist : %s", filepath);
+  if (stat(filepath.c_str(), &file_stat) == -1) {
+    LOG_E("File does not exist : %s", filepath.c_str());
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
     return ESP_FAIL;
   }
 
-  LOG_I("Deleting file : %s", filepath);
-  unlink(filepath);
+  LOG_I("Deleting file : %s", filepath.c_str());
+  unlink(filepath.c_str());
 
-  int pos = strlen(filepath) - 5;
-  if (strcmp(&filepath[pos], ".epub") == 0) {
-    strcpy(&filepath[pos], ".pars");
+  int pos = filepath.size() - 5;
+  if (filepath.substr(pos).compare(".epub") == 0) {
+    filepath.replace(pos, 5, ".pars");
 
-    if (stat(filepath, &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath);
-      unlink(filepath);
+    if (stat(filepath.c_str(), &file_stat) != -1) {
+      LOG_I("Deleting file : %s", filepath.c_str());
+      unlink(filepath.c_str());
     }
 
-    strcpy(&filepath[pos], ".locs");
+    filepath.replace(pos, 5, ".locs");
 
-    if (stat(filepath, &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath);
-      unlink(filepath);
+    if (stat(filepath.c_str(), &file_stat) != -1) {
+      LOG_I("Deleting file : %s", filepath.c_str());
+      unlink(filepath.c_str());
     }
 
-    strcpy(&filepath[pos], ".toc");
+    filepath.replace(pos, 5, ".toc");
 
-    if (stat(filepath, &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath);
-      unlink(filepath);
+    if (stat(filepath.c_str(), &file_stat) != -1) {
+      LOG_I("Deleting file : %s", filepath.c_str());
+      unlink(filepath.c_str());
     }
   }
 
