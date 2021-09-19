@@ -13,7 +13,7 @@
 
 #include "strlcpy.hpp"
 
-//#pragma GCC diagnostic error "-Wframe-larger-than=100"
+//#pragma GCC diagnostic error "-Wframe-larger-than=10"
 
 #define APP_VERSION "1.3.0"
 

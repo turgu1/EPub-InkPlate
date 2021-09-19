@@ -31,7 +31,7 @@ struct StateQueueData {
   int16_t itemref_count;
 };
 
-enum class RetrieveReq  : int8_t { ABORT, RETRIEVE_ITEM, GET_ASAP };
+enum class RetrieveReq  : int8_t { ABORT, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP };
 
 struct RetrieveQueueData {
   RetrieveReq req;
@@ -397,6 +397,12 @@ class RetrieverTask
         }
         else {
           if (retrieve_queue_data.req == RetrieveReq::ABORT) return;
+          if (retrieve_queue_data.req == RetrieveReq::SHOW_HEAP) {
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+              ESP::show_heaps_info();
+            #endif
+            continue;
+          }
 
           LOG_D("-> %s <-", (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
 
@@ -617,10 +623,9 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
       // current_offset       = 0;
       // start_of_page_offset = 0;
-      xml_node node = item_info.xml_doc.child("html");
+      xml_node node;
 
-      if (node && 
-         (node = node.child("body"))) {
+      if ((node = item_info.xml_doc.child("html").child("body"))) {
 
         page_out.start(fmt);
 
@@ -629,7 +634,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
         #endif
         
         Page::Format * new_fmt = interp->duplicate_fmt(fmt);
-        if (!interp->build_pages_recurse(node, *new_fmt, dom->body)) {
+        if (!interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
           interp->release_fmt(new_fmt);
           LOG_D("html parsing issue or aborted by Mgr");
           break;
@@ -865,6 +870,15 @@ PageLocs::computation_completed()
     completed = true;
     toc.save();
     event_mgr.set_stay_on(false);
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      ESP::show_heaps_info();
+      RetrieveQueueData retrieve_queue_data = {
+        .req = RetrieveReq::SHOW_HEAP,
+        .itemref_index = 0
+      };
+      LOG_D("Sending SHOW_HEAP to Retriever");
+      QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
+    #endif
   }
 }
 

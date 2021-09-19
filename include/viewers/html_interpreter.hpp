@@ -39,6 +39,7 @@ class HTMLInterpreter
 
     bool show_the_state;
     int16_t from_page, to_page;
+    int16_t max_level;
 
     static MemoryPool<Page::Format> fmt_pool;
 
@@ -56,7 +57,8 @@ class HTMLInterpreter
              item_info(the_item),
         show_the_state(false), 
              from_page(-1), 
-               to_page(-1) {}
+               to_page(-1),
+            max_level(0) {}
 
     virtual ~HTMLInterpreter() {}
 
@@ -70,7 +72,7 @@ class HTMLInterpreter
       page.set_compute_mode(Page::ComputeMode::MOVE);
     }
 
-    bool build_pages_recurse(xml_node node, Page::Format & fmt, DOM::Node * dom_node);
+    bool build_pages_recurse(xml_node node, Page::Format & fmt, DOM::Node * dom_node, int16_t level);
 
     void check_for_completion() {
       if (current_offset != end_offset) {
@@ -154,4 +156,6 @@ class HTMLInterpreter
     }
 
     inline void release_fmt(Page::Format * fmt) { fmt_pool.deallocate(fmt); }
+
+    inline void show_stat() { LOG_D("Max Level: %d", max_level); }
 };

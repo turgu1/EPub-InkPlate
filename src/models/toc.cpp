@@ -103,6 +103,9 @@ TOC::load()
   #endif
 
   if (ready) LOG_I("Reading toc completed. Entry count: %d.", entries.size());
+  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    ESP::show_heaps_info();
+  #endif
   return ready;
 }
 
@@ -185,19 +188,10 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
   xml_attribute attr;
 
   do {
-    const char * label = nullptr;
-    const char * fname = nullptr;
+    const char * label = node.child("navLabel").child("text").text().as_string();
+    const char * fname = node.child("content").attribute("src").value();
 
     xml_node n;
-
-    if ((n = node.child("navLabel")) &&
-        (n =    n.child("text"))) {      
-      label = n.text().as_string();            
-    }
-    if ((n = node.child("content")) &&
-        (attr = n.attribute("src"))) {
-      fname = attr.value();
-    }
 
     EntryRecord  entry;
     std::string  the_id;
@@ -222,33 +216,26 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
 
     clean_filename(filename_to_find);
 
-    if ((n = opf->child("package")) &&
-        (n =    n.child("manifest")) &&
-        (n =    n.child("item"))) {
-      // Search in the manifest to find the entry associated with the filename
-      do {
-        if ((attr = n.attribute("href")) &&
-            (strcmp(attr.value(), filename_to_find) == 0)) {
-          break;
-        }
-        n = n.next_sibling();
-      } while (n);
+    if ((n = opf->child("package")
+                 .child("manifest")
+                 .find_child_by_attribute("item", "href", filename_to_find))) {
       // Is the node with the same filename is found, we then search the
       // itemref in the spine with the same id associated with the item.
-      if (n && (attr = n.attribute("id"))) {
+      if ((attr = n.attribute("id"))) {
         const char * idref = attr.value();
 
-        if ((n = opf->child("package")) &&
-            (n =    n.child("spine"  )) &&
-            (n =    n.child("itemref"))) {
+        if ((n = opf->child("package")
+                     .child("spine"))) {
+
           int16_t index = 0;
-          while (n && 
-                  ((attr = n.attribute("idref"))) &&
-                  (strcmp(attr.value(), idref) != 0)) {
-            n = n.next_sibling();
+          bool    found = false;
+
+          for (auto nn: n.children("itemref")) {
+            if (strcmp(nn.attribute("idref").value(), idref) == 0) { found = true; break; }
             index++;
           }
-          if (n) {
+
+          if (found) {
             entry.page_id.itemref_index = index;
             if (!the_id.empty()) {
               infos.insert(std::make_pair(
@@ -297,31 +284,28 @@ TOC::load_from_epub()
 {
   LOG_D("load_from_epub()");
 
-  xml_node                   node;
-  xml_attribute              attr;
-  const char *               filename = nullptr;
+  xml_node      node;
+  xml_attribute attr;
+  const char *  filename = nullptr;
 
   opf = &epub.get_opf();
 
   clean();
 
   // Retrieve the ncx filename
+  // Sometimes, the id is "ncx", sometimes "toc"
 
-  if ((node =  opf->child("package" )) &&
-      (node = node.child("manifest")) &&
-      (node = node.child("item"    ))) {
-    do {
-      if ((attr = node.attribute("id")) &&
-          (strcmp(attr.value(), "ncx") == 0)) {
-        if ((attr = node.attribute("href"))) {
-          filename = attr.value();
-        }
-        break;
-      }
-      node = node.next_sibling();
-    } while (node);
+  if (!(node = opf->child("package" )
+                   .child("manifest")
+                   .find_child_by_attribute("item", "id", "ncx"))) {
+    node = opf->child("package" )
+               .child("manifest")
+               .find_child_by_attribute("item", "id", "toc");
   }
-  else return false;
+               
+  if (node && (strcmp(node.attribute("media-type").value(), "application/x-dtbncx+xml") == 0)) {
+    filename = node.attribute("href").value();
+  }
 
   // If filename was not found, returns gracefully. This is usually related
   // to a version 3 epub format that doesn't supply a V2 table of content.
@@ -349,9 +333,9 @@ TOC::load_from_epub()
     goto error;
   }
   else {
-    if ((node = ncx_opf->child("ncx"     )) &&
-        (node =     node.child("navMap"  )) &&
-        (node =     node.child("navPoint"))) {
+    if ((node = ncx_opf->child("ncx"     )
+                        .child("navMap"  )
+                        .child("navPoint"))) {
 
       if (char_pool == nullptr) {
         char_pool = new CharPool;
@@ -452,8 +436,8 @@ TOC::clean()
 void 
 TOC::set(std::string & id, int32_t current_offset)
 {
-  int16_t itemref_index = page_locs.get_current_itemref_index();
-  Infos::iterator infos_it = infos.find(std::make_pair(itemref_index, id));
+  int16_t         itemref_index = page_locs.get_current_itemref_index();
+  Infos::iterator infos_it      = infos.find(std::make_pair(itemref_index, id));
 
   if (infos_it != infos.end()) {
     entries[infos_it->second].page_id.offset = current_offset;
@@ -485,9 +469,9 @@ TOC::show()
   std::cout << "----- Table of Content: -----" << std::endl;
 
   for (auto & e : entries) {
-    std::cout << e.label << " : [" 
+    std::cout << e.label                 << " : [" 
               << e.page_id.itemref_index << ", " 
-              << e.page_id.offset << "]" << std::endl;
+              << e.page_id.offset        << "]"     << std::endl;
   }
 
   std::cout << "----- End TOC -----" << std::endl;
@@ -499,8 +483,8 @@ TOC::show_info()
   std::cout << "----- TOC Infos -----" << std::endl;
 
   for (auto & e : infos) {
-    std::cout << "Id: " << e.first.second << ", " 
-              << "Item index: " << e.first.first << ", "
+    std::cout << "Id: "              << e.first.second << ", " 
+              << "Item index: "      << e.first.first << ", "
               << "TOC Entry index: " << e.second << std::endl;
   }
 

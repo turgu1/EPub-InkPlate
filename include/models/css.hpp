@@ -130,26 +130,30 @@
 class CSS
 {
   private:
-    const   std::string id;           // Unique identifier (filename) for this CSS instance
-    const   std::string folder_path;  // Path used for all other files access (relative)
-    bool    ghost;                    // True if this instance rules content came from other instances
-    uint8_t priority;
+    std::string id;           // Unique identifier (filename) for this CSS instance
+    std::string folder_path;  // Path used for all other files access (relative)
+    bool        ghost;        // True if this instance rules content came from other instances
+    uint8_t     priority;
 
   public:
-    CSS(const std::string & css_id, 
-        const std::string & file_folder_path, 
-        const char *        buffer, 
-        int32_t             size,
-        uint8_t             prio);
+    CSS(const char * css_id, 
+        const char * file_folder_path, 
+        const char * buffer, 
+        int32_t      size,
+        uint8_t      prio);
 
-    CSS(const std::string & css_id) 
-        : id(css_id), folder_path(""), ghost(true), priority(0) {}
+    CSS(const char * css_id) { 
+        id          = css_id;
+        folder_path = "";
+        ghost       = true;
+        priority    = 0;
+    }
 
-    CSS(const std::string & css_id,
-        DOM::Tag            tag,
-        const char *        buffer, 
-        int32_t             size,
-        uint8_t             prio);
+    CSS(const char * css_id,
+        DOM::Tag     tag,
+        const char * buffer, 
+        int32_t      size,
+        uint8_t      prio);
 
    ~CSS();
 

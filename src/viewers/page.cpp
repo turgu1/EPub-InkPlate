@@ -142,7 +142,9 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
   if (fmt.align == CSS::Align::LEFT) {
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
+      
+      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      if (glyph != nullptr) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
         entry->command                   = DisplayListCommand::GLYPH;
@@ -173,9 +175,8 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
     while (*s) {
       bool first = true;
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
-        size += glyph->advance;
-      }
+      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      if (glyph != nullptr) size += glyph->advance;
       first = false;
     }
 
@@ -201,7 +202,8 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
     s = str.c_str();
     bool first = true;
     while (*s) {
-      if ((glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size))) {
+      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      if (glyph != nullptr) {
         
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
@@ -237,7 +239,8 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
   
   TTF * font = fonts.get(fmt.font_index);
 
-  if ((glyph = font->get_glyph(ch, fmt.font_size))) {
+  glyph = font->get_glyph(ch, fmt.font_size);
+  if (glyph != nullptr) {
     DisplayListEntry * entry = display_list_entry_pool.newElement();
     if (entry == nullptr) no_mem();
     entry->command                   = DisplayListCommand::GLYPH;
@@ -670,32 +673,34 @@ Page::add_image_to_line(Image & image, int16_t advance, const Format & fmt)
 
 #if 1
 bool
-Page::add_word(const char * word,  const Format & fmt)
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  Page::add_word(const char * word,  const Format & fmt, bool debugging)
+#else
+  Page::add_word(const char * word,  const Format & fmt)
+#endif
 {
-  DisplayList the_list;
-
-  TTF::BitmapGlyph * glyph;
-  const char * str = word;
-  int16_t height;
-
   TTF * font = fonts.get(fmt.font_index);
-
   if (font == nullptr) return false;
-
-  height = font->get_line_height(fmt.font_size);
 
   if (line_list.empty()) {
     // We are about to start a new line. Check if it will fit on the page.
     if ((screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y)) return false;
   }
 
-  int16_t width = 0;
-  bool    first = true;
+  TTF::BitmapGlyph * glyph;
 
+  DisplayList      * the_list = new DisplayList;
+  const char       * str      = word;
+  int16_t            height   = font->get_line_height(fmt.font_size);
+  int16_t            width    = 0;
+  bool               first    = true;
+ 
   while (*str) {
-    if ((glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first), fmt.font_size)) == nullptr) {
+    glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first), fmt.font_size);
+    if (glyph == nullptr) {
       glyph = font->get_glyph(' ', fmt.font_size);
     }
+
     if (glyph) {
       width += glyph->advance;
       first  = false;
@@ -707,9 +712,9 @@ Page::add_word(const char * word,  const Format & fmt)
       entry->kind.glyph_entry.glyph    = glyph;
       entry->pos.x                     = 0;
       entry->kind.glyph_entry.is_space = false;
-      entry->pos.y = fmt.vertical_align;
+      entry->pos.y                     = fmt.vertical_align;
 
-      the_list.push_front(entry);
+      the_list->push_front(entry);
     }
   }
 
@@ -717,10 +722,11 @@ Page::add_word(const char * word,  const Format & fmt)
 
   if (width >= avail_width) {
     if (strncasecmp(word, "http", 4) == 0) {
-      for (auto * entry : the_list) {
+      for (auto * entry : *the_list) {
         display_list_entry_pool.deleteElement(entry);
       }
-      the_list.clear();
+      the_list->clear();
+      delete the_list;
       return add_word("[URL removed]", fmt);
     }
     else {
@@ -728,24 +734,31 @@ Page::add_word(const char * word,  const Format & fmt)
     }
   }
 
+  
   if ((line_width + width) >= avail_width) {
     add_line(fmt, true);
     screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
     if (screen_is_full) {
-      for (auto * entry : the_list) {
+      for (auto * entry : *the_list) {
         display_list_entry_pool.deleteElement(entry);
       }
-      the_list.clear();
+      the_list->clear();
+      delete the_list;
       return false;
     }
   }
 
-  line_list.splice_after(line_list.before_begin(), the_list);
+  line_list.splice_after(line_list.before_begin(), *the_list);
 
   if (glyphs_height < height) glyphs_height = height;
   if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
   line_width += width;
-  the_list.clear();
+
+  for (auto * entry : *the_list) {
+    display_list_entry_pool.deleteElement(entry);
+  }
+  the_list->clear();
+  delete the_list;
 
   return true;
 }
@@ -774,7 +787,7 @@ Page::add_word(const char * word,  const Format & fmt)
   bool    first = true;
   while (*str) {
     glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first), fmt.font_size);
-    if (glyph) width += glyph->advance;
+    if (glyph != nullptr) width += glyph->advance;
     first = false;
   }
 
@@ -798,10 +811,11 @@ Page::add_word(const char * word,  const Format & fmt)
   first = true;
   while (*word) {
     if (font) {
-      if ((glyph = font->get_glyph(code = to_unicode(&word, fmt.text_transform, first), fmt.font_size)) == nullptr) {
+      glyph = font->get_glyph(to_unicode(&word, fmt.text_transform, first), fmt.font_size);
+      if (glyph == nullptr) {
         glyph = font->get_glyph(' ', fmt.font_size);
       }
-      if (glyph) {
+      if (glyph != nullptr) {
         add_glyph_to_line(glyph, fmt.font_size, *font, false);
         //font->show_glyph(*glyph);
       }

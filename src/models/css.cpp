@@ -52,24 +52,32 @@ const char * CSS::value_type_str[25] = {
   "msec", "sec", "hz", "khz", "url"
 };
 
-CSS::CSS(const std::string & css_id,
-         const std::string & file_folder_path, 
-         const char *        buffer, 
-         int32_t             size,
-         uint8_t             prio)  
-  : id(css_id), folder_path(file_folder_path), ghost(false), priority(prio)
+CSS::CSS(const char * css_id,
+         const char * file_folder_path, 
+         const char * buffer, 
+         int32_t      size,
+         uint8_t      prio)  
 {
+  id          = css_id;
+  folder_path = file_folder_path;
+  ghost       = false;
+  priority    = prio;
+
   CSSParser * parser = new CSSParser(*this, buffer, size);
   delete parser;
 }
 
-CSS::CSS(const std::string & css_id,
-         DOM::Tag            tag,
-         const char *        buffer, 
-         int32_t             size,
-         uint8_t             prio)
-    : id(css_id), folder_path(""), ghost(false), priority(prio)
+CSS::CSS(const char * css_id,
+         DOM::Tag     tag,
+         const char * buffer, 
+         int32_t      size,
+         uint8_t      prio)
 {
+  id          = css_id;
+  folder_path = "";
+  ghost       = false;
+  priority    = prio;
+
   CSSParser * parser = new CSSParser(*this, tag, buffer, size);
   delete parser;
 }

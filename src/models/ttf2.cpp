@@ -122,18 +122,30 @@ TTF::clear_cache()
 }
 
 TTF::BitmapGlyph *
-TTF::get_glyph(int32_t charcode, int16_t glyph_size)
-{
-  std::scoped_lock guard(mutex);
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  TTF::get_glyph(int32_t charcode, int16_t glyph_size, bool debugging)
+  {
+    std::scoped_lock guard(mutex);
 
-  return get_glyph_internal(charcode, glyph_size);
-}
+    return get_glyph_internal(charcode, glyph_size, debugging);
+  }
+#else
+  TTF::get_glyph(int32_t charcode, int16_t glyph_size)
+  {
+    std::scoped_lock guard(mutex);
+
+    return get_glyph_internal(charcode, glyph_size);
+  }
+#endif
 
 TTF::BitmapGlyph *
-TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging)
+#else
+  TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
+#endif
 {
   int error;
-
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
@@ -147,6 +159,14 @@ TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
     return git->second;
   }
   else {
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      static bool first_debug = true;
+      if (debugging && first_debug) {
+        LOG_D("get_glyph_internal()");
+        ESP::show_heaps_info();
+      }
+    #endif
+
     if (current_size != glyph_size) set_font_size(glyph_size);
 
     int glyph_index = FT_Get_Char_Index(face, charcode);
@@ -178,6 +198,12 @@ TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
     glyph->dim.width  = slot->metrics.width  >> 6;
     glyph->dim.height = slot->metrics.height >> 6;
 
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      if (debugging && first_debug) {
+        LOG_D("before FT_Render_Glyph()");
+        ESP::show_heaps_info();
+      }
+    #endif
 
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
       if (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) {
@@ -188,6 +214,14 @@ TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
         error = FT_Render_Glyph(face->glyph,            // glyph slot
                                 FT_RENDER_MODE_NORMAL); // render mode
       }
+
+      #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+        if (debugging && first_debug) {
+          LOG_D("after FT_Render_Glyph()");
+          ESP::show_heaps_info();
+        }
+      #endif
+      
       if (error) {
         LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
         return nullptr;
@@ -232,6 +266,15 @@ TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
     //   " a:"  << glyph->advance << std::endl;
 
     cache[current_size][charcode] = glyph;
+
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      if (debugging && first_debug) {
+        LOG_D("end of get_glyph_internal()");
+        ESP::show_heaps_info();
+        first_debug = false;
+      }
+    #endif
+
     return glyph;
   }
 }

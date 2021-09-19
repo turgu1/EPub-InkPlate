@@ -276,7 +276,12 @@ MsgViewer::out_of_memory(const char * raison)
   );
 
   #if EPUB_INKPLATE_BUILD
-    inkplate_platform.deep_sleep(); // Never return
+    #if EXTENDED_CASE
+      #define INT_PIN PressKeys::INTERRUPT_PIN
+    #else
+      #define INT_PIN TouchKeys::INTERRUPT_PIN
+    #endif
+    inkplate_platform.deep_sleep(INT_PIN, 1); // Never return
   #else
     exit(0);
   #endif

@@ -32,10 +32,10 @@ class Image
     uint32_t    file_size;
 
   public:
-    Image(std::string & filename) : 
-             size_retrieved(false), 
-                   orig_dim(Dim(0, 0)), 
-                 image_data(Dim(0 ,0), nullptr) {}
+    Image(std::string & filename) {
+      size_retrieved = false;
+      orig_dim = Dim(0, 0);
+    } 
     ~Image() { free_bitmap(); }
 
     inline void free_bitmap() { 

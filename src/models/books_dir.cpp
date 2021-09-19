@@ -300,7 +300,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
   LOG_D("Looking at book files in folder %s", BOOKS_FOLDER);
  
-  #if EPUB_INKPLATE_BUILD
+  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
   
@@ -429,7 +429,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
             the_book = nullptr;
 
-            #if EPUB_INKPLATE_BUILD
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               ESP::show_heaps_info();
             #endif
           }

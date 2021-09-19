@@ -202,7 +202,11 @@ class Page
      * @return true The word has been added to the paragraph.
      * @return false There is not enough space to add the word on page.
      */
-    bool add_word(const char * word, const Format & fmt);
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      bool add_word(const char * word, const Format & fmt, bool debugging = false);
+    #else
+      bool add_word(const char * word, const Format & fmt);
+    #endif
 
     /**
      * @brief Add a UTF-8 character to the paragraph.

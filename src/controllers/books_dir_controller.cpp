@@ -111,6 +111,7 @@ BooksDirController::setup()
 
   if (db_idx != -1) {
     last_read_book_index = books_dir.get_sorted_idx(db_idx);
+    current_book_index   = last_read_book_index;
     book_filename        = book_fname;
   }
 

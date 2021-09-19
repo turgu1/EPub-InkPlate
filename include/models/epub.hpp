@@ -52,6 +52,7 @@ class EPub
     static constexpr char const * TAG = "EPub";
 
     std::recursive_timed_mutex mutex;
+    uint8_t sha1_identifier[20];
 
     pugi::xml_document opf;    ///< The OPF document description.
     pugi::xml_node     current_itemref;
@@ -70,11 +71,12 @@ class EPub
     bool               fonts_size_too_large;
     int32_t            fonts_size;
 
-    const char *        get_meta(const std::string & name    );
-    bool                 get_opf(std::string &       filename);
-    bool          check_mimetype();
-    bool        get_opf_filename(std::string &       filename);
-    void retrieve_fonts_from_css(CSS &               css     );
+    const char *             get_meta(const std::string & name    );
+    bool                      get_opf(std::string &       filename);
+    bool               check_mimetype();
+    std::string get_unique_identifier();
+    bool             get_opf_filename(std::string &       filename);
+    void      retrieve_fonts_from_css(CSS &               css     );
 
   public:
     EPub();

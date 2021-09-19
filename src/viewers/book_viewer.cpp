@@ -44,6 +44,11 @@ class BookViewerInterp : public HTMLInterpreter
 void
 BookViewer::build_page_at(const PageLocs::PageId & page_id)
 {
+  LOG_D("build_page_at()");
+  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    ESP::show_heaps_info();
+  #endif
+
   TTF * font  = fonts.get(0);
   page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
 
@@ -114,10 +119,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       interp->check_page_to_show(page_locs.get_page_nbr(page_id));
     #endif
 
-    xml_node node = epub.get_current_item().child("html");
+    xml_node node;
 
-    if ((node != nullptr) && 
-       ((node = node.child("body")) != nullptr)) {
+    if ((node = epub.get_current_item().child("html").child("body"))) {
 
       page.start(fmt);
 
@@ -127,7 +131,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       
       Page::Format * new_fmt = interp->duplicate_fmt(fmt);
 
-      if (interp->build_pages_recurse(node, *new_fmt, dom->body)) {
+      if (interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
 
         if (page.some_data_waiting()) page.end_paragraph(fmt);
 
@@ -188,7 +192,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
         page.paint();
       }
-
+      interp->show_stat();
       interp->release_fmt(new_fmt);
     }
 
@@ -200,6 +204,10 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     delete interp;
     interp = nullptr;
   }
+  LOG_D("end of build_page_at()");
+  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    ESP::show_heaps_info();
+  #endif
 }
 
 void

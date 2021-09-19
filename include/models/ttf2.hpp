@@ -53,8 +53,11 @@ class TTF
      * @param charcode Character code as a unicode number.
      * @return BitmapGlyph The glyph associated to the unicode character.
      */
-    BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size);
-
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
+    #else
+      BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size);
+    #endif
 
     /**
      * @brief Face normal line height
@@ -161,5 +164,9 @@ class TTF
      */
     bool set_font_size(int16_t size);
 
-    BitmapGlyph * get_glyph_internal(int32_t charcode, int16_t glyph_size);    
+    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      BitmapGlyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false);
+    #else
+      BitmapGlyph *      get_glyph_internal(int32_t charcode, int16_t glyph_size);
+    #endif
 };

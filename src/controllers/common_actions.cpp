@@ -42,6 +42,12 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_off()
 {
+  #if EXTENDED_CASE
+    #define INT_PIN PressKeys::INTERRUPT_PIN
+  #else
+    #define INT_PIN TouchKeys::INTERRUPT_PIN
+  #endif
+
   if (!epub.filename_is_empty()) {
     books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
   }
@@ -50,7 +56,7 @@ CommonActions::power_off()
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. Please press a key to restart the device.");
     ESP::delay(500);
-    inkplate_platform.deep_sleep();
+    inkplate_platform.deep_sleep(INT_PIN, 1);
   #else
     extern void exit_app();
     exit_app();

@@ -34,8 +34,10 @@ MemoryPool<Page::Format> HTMLInterpreter::fmt_pool;
 bool
 HTMLInterpreter::build_pages_recurse(xml_node       node, 
                                      Page::Format & fmt, 
-                                     DOM::Node    * dom_node)
+                                     DOM::Node    * dom_node,
+                                     int16_t        level)
 {
+  if (level > max_level) max_level = level;
 
   if (node == nullptr) return false;
   if (at_end()) return true;
@@ -54,6 +56,7 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
   if (named_element) {
 
     xml_attribute attr;
+
     if ((page.get_compute_mode() == Page::ComputeMode::LOCATION) &&
         toc.there_is_some_ids() &&
         (attr = node.attribute("id"))) {
@@ -81,10 +84,8 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
       else {
         dom_current_node = dom.body;
       }
-      attr = node.attribute("id");
-      if (attr != nullptr) dom_current_node->add_id(attr.value());
-      attr = node.attribute("class");
-      if (attr != nullptr) dom_current_node->add_classes(attr.value());
+      if ((attr = node.attribute("id"   ))) dom_current_node->add_id(attr.value());
+      if ((attr = node.attribute("class"))) dom_current_node->add_classes(attr.value());
 
       switch (tag_it->second) {
         case DOM::Tag::A:
@@ -101,15 +102,13 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
         case DOM::Tag::IMG:
           if (show_images) {
             if (started) { 
-              xml_attribute attr = node.attribute("src");
-              if (attr != nullptr) image_filename = attr.value();
+              if ((attr = node.attribute("src"))) image_filename = attr.value();
               else current_offset++;
             }
             else current_offset++;
           }
           else {
-            xml_attribute attr = node.attribute("alt");
-            if (attr != nullptr) str = attr.value();
+            if ((attr = node.attribute("alt"))) str = attr.value();
             else current_offset++;
           }
           break;
@@ -117,8 +116,7 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
         case DOM::Tag::IMAGE: 
           if (show_images) {
             if (started) {
-              xml_attribute attr = node.attribute("xlink:href");
-              if (attr != nullptr) image_filename = attr.value();
+              if ((attr = node.attribute("xlink:href"))) image_filename = attr.value();
               else current_offset++;
             }
             else current_offset++;
@@ -226,9 +224,9 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
       
       // if a 'style' attribute is present, parse it's content as it will be used
       // in the processing of the tag's format styling
-      attr = node.attribute("style");
+
       CSS *  element_css = nullptr;
-      if (attr) {
+      if ((attr = node.attribute("style"))) {
         const char * buffer = attr.value();
         element_css         = new CSS("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
       }
@@ -305,24 +303,6 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
         }
       }
       current_offset++;
-
-      // Image::ImageData  image;
-      // if (page.get_image(image_filename, item_info.file_path, image)) {
-      //   if (started && (current_offset < end_offset)) {
-      //     if (!page.add_image(image, fmt /*, beginning_of_page */)) {
-      //       if (page.is_full() && !page_end(fmt)) return false;
-      //       if (at_end()) return true;
-      //       page.add_image(image, fmt /*, beginning_of_page */);
-      //       stbi_image_free((void *) image.bitmap);
-      //       image.bitmap = nullptr;
-      //       if (page.is_full() && !page_end(fmt)) return false;
-      //       if (at_end()) return true;
-      //     }
-      //     show_state("After IMG", fmt);
-      //    }
-      //   if (image.bitmap != nullptr) stbi_image_free((void *) image.bitmap);
-      // }
-      // current_offset++;
     }
   }
 
@@ -334,7 +314,7 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
       if (page.is_full() && !page_end(fmt)) return false;
       if (at_end()) break;
       Page::Format * new_fmt = duplicate_fmt(fmt);
-      if (!build_pages_recurse(sub, *new_fmt, dom_current_node)) {
+      if (!build_pages_recurse(sub, *new_fmt, dom_current_node, level + 1)) {
         release_fmt(new_fmt);
         if (page.is_full() && !page_end(fmt)) return false;
         if (at_end()) break;
@@ -437,7 +417,25 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
             }       
             std::string word;
             word.assign(w, count);
-            if (!page.add_word(word.c_str(), fmt)) {
+
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+              static bool first = true;
+              if (first) {
+                LOG_D("before page.add_word()");
+                ESP::show_heaps_info();
+              }
+            #endif
+
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+              if (!page.add_word(word.c_str(), fmt, true)) {
+                if (first) {
+                  LOG_D("after page.add_word()");
+                  ESP::show_heaps_info();
+                  first = false;
+                }
+            #else
+              if (!page.add_word(word.c_str(), fmt)) {
+            #endif
               if (!page_end(fmt)) return false;
               if (at_end()) {
                 page.break_paragraph(fmt);
@@ -447,6 +445,15 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
               page.new_paragraph(fmt, true);
               show_state("==> After New Paragraph 3 <==", fmt);
               page.add_word(word.c_str(), fmt);
+            }
+            else {
+              #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+                if (first) {
+                  LOG_D("after page.add_word()");
+                  ESP::show_heaps_info();
+                  first = false;
+                }
+              #endif
             }
           }
           current_offset += count;

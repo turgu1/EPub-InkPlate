@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.09.16)
+(Updated 2021.09.18)
 
 Update for upcoming version 1.3.0 - Not ready yet
 
@@ -22,6 +22,7 @@ Internal changes:
 - [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
 - [x] Correction of many small page painting issues.
 - [x] Corrected an issue with the ebooks folder scanning process (simple db mgr bug).
+- [x] Corrected an issue with the PowerOff menu entry.
 - [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
 - [x] PNG image files transparency.

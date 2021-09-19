@@ -69,6 +69,12 @@
 
     page_locs.setup();
 
+    #if EXTENDED_CASE
+      #define INT_PIN PressKeys::INTERRUPT_PIN
+    #else
+      #define INT_PIN TouchKeys::INTERRUPT_PIN
+    #endif
+
     if (fonts.setup()) {
       
       Screen::Orientation    orientation;
@@ -87,7 +93,7 @@
         );
 
         ESP::delay(500);
-        inkplate_platform.deep_sleep();
+        inkplate_platform.deep_sleep(INT_PIN, 1);
       }
   
       if (inkplate_err) {
@@ -95,7 +101,7 @@
           "Unable to initialize the InkPlate drivers. Entering Deep Sleep. Press a key to restart."
         );
         ESP::delay(500);
-        inkplate_platform.deep_sleep();
+        inkplate_platform.deep_sleep(INT_PIN, 1);
       }
 
       if (config_err) {
@@ -103,8 +109,10 @@
           "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
         );
         ESP::delay(500);
-        inkplate_platform.deep_sleep();
+        inkplate_platform.deep_sleep(INT_PIN, 1);
       }
+
+      msg_viewer.show(MsgViewer::INFO, false, true, "Starting", "One moment please...");
 
       books_dir_controller.setup();
       LOG_D("Initialization completed");
@@ -116,7 +124,7 @@
         "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
       );
       ESP::delay(500);
-      inkplate_platform.deep_sleep();
+      inkplate_platform.deep_sleep(INT_PIN, 1);
     }
 
     #if DEBUGGING
@@ -127,7 +135,7 @@
     #endif
   }
 
-  #define STACK_SIZE 50000
+  #define STACK_SIZE 60000
 
   extern "C" {
 
