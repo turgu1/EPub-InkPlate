@@ -1,4 +1,4 @@
-# EPub-InkPlate An EPub Reader for the InkPlate devices
+# EPub-InkPlate An EPub Reader for InkPlate devices
 
 ## Last news
 
