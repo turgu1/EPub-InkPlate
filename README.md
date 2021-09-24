@@ -2,7 +2,18 @@
 
 ## Last news
 
-(Updated 2021.09.23)
+(Updated 2021.09.24)
+
+Update to version 1.3.1 (Not ready yet)
+
+- [ ] Last books read to be put on top of the Book list
+- [ ] Greather optimisation of images rendering
+
+- [ ] Internal testing framework
+- [ ] Tests Inkplate-6 / Inkplate-10
+- [ ] Valgrind
+- [ ] Documentation
+- [ ] New version release packaging
 
 Update to version 1.3.0
 
