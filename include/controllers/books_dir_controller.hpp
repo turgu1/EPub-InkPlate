@@ -25,7 +25,7 @@ class BooksDirController
     BooksDirViewer * books_dir_viewer;
 
   public:
-    BooksDirController();
+    BooksDirController() {};
     void setup();
     void input_event(EventMgr::Event event);
     void enter();

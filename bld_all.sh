@@ -11,9 +11,9 @@ then
   return 1
 fi
 
-cd doc
-./gener.sh
-cd ..
+# cd doc
+# ./gener.sh
+# cd ..
 
 ./bld_release.sh $1 6 0
 ./bld_release.sh $1 6 1

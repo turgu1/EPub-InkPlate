@@ -78,6 +78,7 @@ class CSSParser
 
     int32_t      remains; // number of bytes remaining in the css buffer
     const char * str;     // pointer in the css buffer
+    int16_t      line_nbr;
     uint8_t      ch;      // next character to be processed
 
     char  ident[ IDENT_SIZE];
@@ -94,6 +95,7 @@ class CSSParser
       if (remains > 0) { 
         remains--; 
         ch = *str++; 
+        if (ch == '\n') line_nbr++;
       } 
       else ch = '\0'; 
     }
@@ -423,7 +425,7 @@ class CSSParser
             remains -= 10; str += 10; next_ch();
           }
           else {
-            LOG_E("Sym Token Unknown: @%s", str);
+            LOG_E("%s[%d]: Sym Token Unknown: @%s", css.get_id().c_str(), line_nbr, str);
             token = Token::ERROR;
           }
         }  
@@ -444,14 +446,14 @@ class CSSParser
             token = Token::DASHMATCH;
           }
           else {
-            LOG_E("Unknown usage: %c", ch);
+            LOG_E("%s[%d]: Unknown usage: %c", css.get_id().c_str(), line_nbr, ch);
             token = Token::ERROR;
           }
         }
         else if ((ch == '/') && (str[0] == '*')) {
           next_ch(); next_ch();
           if (!skip_comment()) {
-            LOG_E("Non terminated comment.");
+            LOG_E("%s[%d]: Non terminated comment.", css.get_id().c_str(), line_nbr);
             token = Token::ERROR;
           }
           else continue;
@@ -465,7 +467,7 @@ class CSSParser
             if ((ch == '/') && (str[0] == '*')) {
               next_ch(); next_ch();
               if (!skip_comment()) {
-                LOG_E("Non terminated comment.");
+                LOG_E("%s[%d]: Non terminated comment.", css.get_id().c_str(), line_nbr);
                 token = Token::ERROR;
                 done = true;
                 break;
@@ -480,7 +482,7 @@ class CSSParser
           }
         }
         else {
-          LOG_E("Unknown usage: %c", ch);
+          LOG_E("%s[%d]: Unknown usage: %c", css.get_id().c_str(), line_nbr, ch);
           token = Token::ERROR;
         }
 
@@ -1279,9 +1281,10 @@ class CSSParser
   public:
     bool parse(const char * buffer, int32_t size) {
 
-      str     = buffer;
-      remains = size;
-      skip    = 0;
+      str      = buffer;
+      remains  = size;
+      skip     = 0;
+      line_nbr = 1;
 
       next_ch();
       next_token();
@@ -1330,7 +1333,7 @@ class CSSParser
           if (!namespace_statement()) return false;
         }
         else if (token == Token::ERROR) {
-          LOG_E("Token ERROR retrieved!");
+          LOG_E("%s[%d]: Token ERROR retrieved!", css.get_id().c_str(), line_nbr);
           return false;
         }
         else {
@@ -1349,9 +1352,10 @@ class CSSParser
 
     bool parse(DOM::Tag tag, const char * buffer, int32_t size) {
 
-      str     = buffer;
-      remains = size;
-      skip    = 0;
+      str      = buffer;
+      remains  = size;
+      skip     = 0;
+      line_nbr = 1;
 
       next_ch();
       next_token();

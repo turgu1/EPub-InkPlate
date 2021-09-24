@@ -77,6 +77,7 @@ class Unzip
     
     int32_t get_file_size(const char * filename);
     char  * get_file(const char * filename, uint32_t & file_size);
+    bool    file_exists(const char * filename);
     bool    open_file(const char * filename);
     void    close_file();
 

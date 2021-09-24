@@ -61,18 +61,19 @@ class TOC
     typedef std::map<std::pair<int16_t, std::string>, uint16_t> Infos;
     typedef std::vector<EntryRecord> Entries;
 
-    const Entries &    get_entries()            { return entries;         }
-    inline bool           is_ready()            { return ready;           }
-    inline bool           is_empty()            { return entries.empty(); }
-    inline bool  there_is_some_ids()            { return some_ids;        }
-    inline int16_t get_entry_count()            { return entries.size();  }
-    inline EntryRecord & get_entry(int16_t idx) { return entries[idx];    }
+    const Entries &          get_entries()            { return entries;         }
+    inline bool                 is_ready()            { return ready;           }
+    inline bool                 is_empty()            { return entries.empty(); }
+    inline bool        there_is_some_ids()            { return some_ids;        }
+    inline int16_t       get_entry_count()            { return entries.size();  }
+    inline const EntryRecord & get_entry(int16_t idx) { return entries[idx];    }
     
     /**
      * @brief Load table of content from a file.
      * 
      * This is used to load the table of content related to the current
-     * ePub book. The file is a complete table with labels and page_ids.
+     * ePub book. The file is a complete table with labels and page_ids. The filename is
+     * the same as for the e-book, with extension .toc
      * 
      * @return True if loading the file was successfull
      */
@@ -82,7 +83,8 @@ class TOC
      * @brief Save constructed table of content to a file.
      * 
      * This method will save the table of content once it has been
-     * constructed by the PageLocs class.
+     * constructed by the PageLocs class. The filename is
+     * the same as for the e-book, with extension .toc
      * 
      * @return True if saving was successfull.
      */
@@ -105,7 +107,7 @@ class TOC
      * @brief Compact the char strings to a single buffer.
      * 
      * This is used to retrieve all char strings in a single buffer
-     * in preparation to be savec to a file.
+     * in preparation to be saved to a file.
      * 
      * @return True if the compaction was successfull.
      */
@@ -118,8 +120,8 @@ class TOC
      * of content, its location will be set with the
      * page_id received.
      * 
-     * @param id HTML id that is par of an item.
-     * @param page_id The location of the id in the item
+     * @param id HTML id attribute that is part of an item.
+     * @param current_offset The location offset of the id in the item
      */
     void set(std::string & id, int32_t current_offset);
     void set(int32_t current_offset);

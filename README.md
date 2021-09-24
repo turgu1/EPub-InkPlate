@@ -2,18 +2,19 @@
 
 ## Last news
 
-(Updated 2021.09.18)
+(Updated 2021.09.23)
 
-Update for upcoming version 1.3.0 - Not ready yet
+Update for upcoming version 1.3.0
 
 New User functionalities:
 
-- [x] New ebook list Covers Matrix View.
-- [x] Number of allowed ebooks changed from 100 to 200 maximum.
+- [x] New ebook list Covers Matrix View (see pictures below).
 - [x] Integration with new image streaming classes (png and jpeg).
 - [x] Table of Content to select location to read inside an ebook.
-- [x] Delete an ebook from the device.
+- [x] Ebook deletion from the device.
 - [x] Subscript/Superscript support.
+- [x] Tracking of the current page location of the last 10 books read by the user.
+- [x] Number of allowed ebooks changed from 100 to 200 maximum.
 
 Internal changes:
 
@@ -27,15 +28,17 @@ Internal changes:
 - [x] Changes related to the new PlatformIO way of managing sdkconfig.
 - [x] PNG image files transparency.
 - [x] Stack usage optimization.
-- [x] Web Server Enhancements (comma separated file size, .epub file extension check).
+- [x] Web Server Enhancements (comma separated file size thousands, .epub file extension check).
+- [x] Font obfuscation support (both Adobe and IDPF methods).
+- [x] Non-volatile memory class to manage last books read tracking.
+- [x] Testing ebooks on InkPlate-6.
+- [x] Valgrind tests.
+- [x] Documentation update.
 
 Remaining steps to release:
 
-- [x] Testing ebooks on InkPlate-6.
-- [ ] Testing ebooks on InkPlate-10.
-- [x] Valgrind tests.
-- [x] Documentation update.
-- [ ] New version releases packaging.
+- [x] Testing ebooks on InkPlate-10.
+- [x] New version releases packaging.
 
 ---
 

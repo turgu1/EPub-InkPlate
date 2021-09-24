@@ -178,7 +178,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
           if (show_heap != 0) {     
             ostr.str(std::string());
-            ostr << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
+            ostr << uxTaskGetStackHighWaterMark(nullptr)
+                 << " / "
+                 << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
                  << " / " 
                  << heap_caps_get_free_size(MALLOC_CAP_8BIT);
             fmt.align = CSS::Align::RIGHT;

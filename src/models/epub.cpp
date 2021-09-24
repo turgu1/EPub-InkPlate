@@ -21,12 +21,15 @@
 #include <iostream>
 #include <iomanip>
 #include <iterator>
+#include <algorithm>
+#include <cctype>
 
 using namespace pugi;
 
 EPub::EPub()
 {
   opf_data               = nullptr;
+  encryption_data        = nullptr;
   current_item_info.data = nullptr;
   file_is_open           = false;
   fonts_size_too_large   = false;
@@ -72,6 +75,76 @@ EPub::check_mimetype()
 }
 
 #define ERR(e) { err = e; break; }
+
+EPub::ObfuscationType
+EPub::get_file_obfuscation(const char * filename)
+{
+  ObfuscationType obf_type = ObfuscationType::NONE;
+
+  if (encryption_is_present()) {
+    for (auto & n : encryption.child("encryption").children("enc:EncryptedData")) {
+      if (strcmp(n.child("enc:CipherData")
+                  .child("enc:CipherReference")
+                  .attribute("URI")
+                  .value(), filename) == 0) {
+        xml_attribute attr = n.child("enc:EncryptionMethod").attribute("Algorithm");
+        if (strcmp(attr.value(), "http://ns.adobe.com/pdf/enc#RC") == 0) {
+          obf_type = ObfuscationType::ADOBE;
+        } 
+        else if (strcmp(attr.value(), "http://www.idpf.org/2008/embedding") == 0) {
+          obf_type = ObfuscationType::IDPF;
+        } 
+        else obf_type = ObfuscationType::UNKNOWN;
+        break;
+      }
+    }
+  }
+  
+  return obf_type;
+}
+
+bool
+EPub::get_encryption_xml()
+{
+  static constexpr const char * fname = "META-INF/encryption.xml";
+
+  uint32_t size;
+
+  encryption_present = false;
+
+  if ((unzip.file_exists(fname) && 
+      (encryption_data = unzip.get_file(fname, size)) != nullptr)) {
+    xml_parse_result res = encryption.load_buffer_inplace(encryption_data, size);
+    if (res.status != status_ok) {
+      LOG_E("encryption.xml load error: %d", res.status);
+      free(encryption_data);
+      encryption_data = nullptr;
+      return false;
+    }
+
+    if ((strcmp(encryption.child("encryption")
+                          .attribute("xmlns")
+                          .value(), 
+                "urn:oasis:names:tc:opendocument:xmlns:container") != 0) ||
+        (strcmp(encryption.child("encryption")
+                          .attribute("xmlns:enc")
+                          .value(), 
+                "http://www.w3.org/2001/04/xmlenc#") != 0)) {
+
+      LOG_E("encryption.xml file format not supported.");
+
+      encryption.reset();
+      free(encryption_data);
+      encryption_data    = nullptr;
+
+      return false;
+    }
+    get_keys();
+    encryption_present = true;
+  }
+
+  return true;
+}
 
 bool
 EPub::get_opf_filename(std::string & filename)
@@ -126,10 +199,93 @@ EPub::get_unique_identifier()
 
   if ((node = opf.child("package")) &&
       (id   = node.attribute("unique-identifier").value()) &&
-      (node = node.child("metadata").find_child_by_attribute("dc:identifier", "id", id))) {
-    return node.value();
+      (node = node.child("metadata")
+                  .find_child_by_attribute("dc:identifier", "id", id))) {
+    return node.text().get();
   }
   return "";
+}
+
+uint8_t 
+hex_to_bin(char ch)
+{
+  if ((ch >= '0') && (ch <= '9')) return ch - '0';
+  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
+  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
+  return 0;
+}
+
+inline bool 
+valid_hex(char ch) 
+{
+  return (((ch >= '0') && (ch <= '9')) ||
+          ((ch >= 'A') && (ch <= 'F')) ||
+          ((ch >= 'a') && (ch <= 'f')));
+}
+
+inline bool
+to_bin(const char * from, uint8_t * to) 
+{
+  if (valid_hex(from[0]) && valid_hex(from[1])) {
+    *to = (hex_to_bin(from[0]) << 4) + hex_to_bin(from[1]);
+    return true;
+  }
+  else return false;
+}
+
+#if EPUB_INKPLATE_BUILD
+  #include "mbedtls/md.h"
+
+  void
+  EPub::sha1(const std::string & data) 
+  {
+    mbedtls_md_context_t ctx;
+    mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
+  
+    mbedtls_md_init  (&ctx);
+    mbedtls_md_setup (&ctx, mbedtls_md_info_from_type(md_type), 0);
+    mbedtls_md_starts(&ctx);
+    mbedtls_md_update(&ctx, (unsigned char *)data.c_str(), data.length());
+    mbedtls_md_finish(&ctx, (unsigned char *)&sha_uuid);
+    mbedtls_md_free  (&ctx);
+  }
+#else
+  #include <openssl/sha.h>
+
+  void
+  EPub::sha1(const std::string & data)
+  {
+    SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&sha_uuid);
+  }
+#endif
+
+bool
+EPub::get_keys()
+{
+  std::string  unique_id = get_unique_identifier();
+  const char * str       = unique_id.c_str();
+
+  if (unique_id.empty()) return false;
+  uint8_t pos = (unique_id.substr(0, 9) == "urn:uuid:") ? 9 : 0;
+
+  // Basic validity checks
+  if ((unique_id.length() == (pos + 36)) &&
+      (str[pos +  8] == '-') &&
+      (str[pos + 13] == '-') &&
+      (str[pos + 18] == '-') &&
+      (str[pos + 23] == '-')) {
+
+    // Convert it to binary big-endien version
+    static const uint8_t idxs[16] = { 0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34 };
+    for (uint8_t idx = 0; idx < 16; idx++) {
+      if (!to_bin(&str[pos + idxs[idx]], &bin_uuid[idx])) return false;
+    }
+  }
+
+  unique_id.erase(std::remove_if(unique_id.begin(), unique_id.end(), ::isspace), unique_id.end()); 
+  sha1(unique_id);
+
+  return true;
 }
 
 bool 
@@ -183,15 +339,6 @@ EPub::get_opf(std::string & filename)
   return completed;
 }
 
-unsigned char 
-bin(char ch)
-{
-  if ((ch >= '0') && (ch <= '9')) return ch - '0';
-  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
-  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
-  return 0;
-}
-
 std::string 
 EPub::filename_locate(const char * fname)
 {
@@ -200,7 +347,7 @@ EPub::filename_locate(const char * fname)
   const char * s = fname;
   while ((idx < 255) && (*s != 0)) {
     if (*s == '%') {
-      name[idx++] = (bin(s[1]) << 4) + bin(s[2]);
+      name[idx++] = (hex_to_bin(s[1]) << 4) + hex_to_bin(s[2]);
       s += 3;
     }
     else if ((*s == '/') && (s[1] == '.') && (s[2] == '.') && (s[3] == '/')) {
@@ -245,6 +392,87 @@ EPub::load_fonts()
   for (auto * css: css_cache) {
     retrieve_fonts_from_css(*css);
   }
+}
+
+void
+EPub::decrypt(void * buffer, const uint32_t size, ObfuscationType obf_type)
+{
+  uint16_t decrypt_length;
+  uint8_t * key;
+  uint8_t   key_size;
+
+  if (obf_type == ObfuscationType::ADOBE) {
+    decrypt_length = 1024;
+    key_size       = 16;
+    key            = (uint8_t *) &bin_uuid;
+  }
+  else if (obf_type == ObfuscationType::IDPF) {
+    decrypt_length = 1040;
+    key_size       = 20;
+    key            = (uint8_t *) &sha_uuid;
+  }
+  else return;
+
+  uint16_t  length = (size > decrypt_length) ? decrypt_length : size;
+  uint8_t  key_idx = 0;
+  uint8_t    * str = (uint8_t *) buffer;
+
+  while (length--) {
+    *str++ ^= key[key_idx++];
+    if (key_idx >= key_size) key_idx = 0;
+  }
+}
+
+bool
+EPub::load_font(const std::string      filename, 
+                const std::string      font_family, 
+                const Fonts::FaceStyle style)
+{
+  uint32_t size;
+  LOG_D("Font file name: %s", filename.c_str());
+  if ((size = unzip.get_file_size(filename.c_str())) > 0) {
+    if ((fonts_size + size) > 800000) {
+      fonts_size_too_large = true;
+      LOG_E("Fonts are using too much space (max 800K). Kept the first fonts read.");
+    }
+    else {
+      unsigned char * buffer;
+      ObfuscationType obf_type = get_file_obfuscation(filename.c_str());
+      if (obf_type != ObfuscationType::NONE) {
+        if (obf_type != ObfuscationType::UNKNOWN) {
+          buffer = (unsigned char *) unzip.get_file(filename.c_str(), size);
+          if (buffer == nullptr) {
+            LOG_E("Unable to retrieve font file: %s", filename.c_str());
+          }
+          else {
+            decrypt(buffer, size, obf_type);
+
+            if (fonts.add(font_family, style, buffer, size)) {
+              fonts_size += size;
+              return true;
+            }
+          }   
+        }
+        else {
+          LOG_E("Font %s obfuscated with an unknown algorithm.", filename.c_str());
+        }
+      }
+      else {
+        buffer = (unsigned char *) unzip.get_file(filename.c_str(), size);
+        if (buffer == nullptr) {
+          LOG_E("Unable to retrieve font file: %s", filename.c_str());
+        }
+        else {
+          if (fonts.add(font_family, style, buffer, size)) {
+            fonts_size += size;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 void
@@ -308,25 +536,9 @@ EPub::retrieve_fonts_from_css(CSS & css)
 
             std::string filename = css.get_folder_path() + values->front()->str;
             filename = filename_locate(filename.c_str());
-            uint32_t size;
-            LOG_D("Font file name: %s", filename.c_str());
-            if ((size = unzip.get_file_size(filename.c_str())) > 0) {
-              if ((fonts_size + size) > 800000) {
-                fonts_size_too_large = true;
-                LOG_E("Fonts are using too much space. Kept the first fonts read.");
-                break;
-              }
-              else {
-                fonts_size += size;
-                unsigned char * buffer = (unsigned char *) unzip.get_file(filename.c_str(), size);
-                if (buffer == nullptr) {
-                  LOG_E("Unable to retrieve font file: %s", values->front()->str.c_str());
-                }
-                else {
-                  fonts.add(font_family, style, buffer, size);
-                }
-              }
-            }
+
+            load_font(filename, font_family, style);
+            if (fonts_size_too_large) break;
           }
         }
       }
@@ -620,6 +832,8 @@ EPub::open_file(const std::string & epub_filename)
     return false;
   }
 
+  get_encryption_xml();
+
   open_params(epub_filename);
   update_book_format_params();
 
@@ -671,6 +885,13 @@ EPub::close_file()
   }
 
   opf_base_path.clear();
+
+  if (encryption_data) {
+    encryption.reset();
+    free(encryption_data);
+    encryption_data = nullptr;
+  }
+
   unzip.close_zip_file();
 
   for (auto * css : css_cache) delete css;
@@ -679,6 +900,7 @@ EPub::close_file()
   fonts.clear();
 
   file_is_open = false;
+  encryption_present = false;
   current_filename.clear();
 
   if (book_params != nullptr) {

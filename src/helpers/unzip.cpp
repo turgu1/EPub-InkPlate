@@ -6,6 +6,7 @@
 #include "helpers/unzip.hpp"
 
 #include "viewers/msg_viewer.hpp"
+#include "models/epub.hpp"
 #include "alloc.hpp"
 
 #include <fcntl.h>
@@ -295,6 +296,25 @@ Unzip::get_file_size(const char * filename)
     mutex.unlock();
     return (*current_fe)->size;
   }
+}
+
+bool
+Unzip::file_exists(const char * filename)
+{
+  if (!zip_file_is_open) return false;
+
+  char * the_filename = clean_fname(filename);
+
+  Unzip::FileEntries::iterator fe = file_entries.begin();
+
+  while (fe != file_entries.end()) {
+    if (strcmp((*fe)->filename, the_filename) == 0) break;
+    fe++;
+  }
+
+  delete [] the_filename;
+
+  return fe != file_entries.end();
 }
 
 bool
@@ -765,14 +785,18 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
 {
   // LOG_D("get_file: %s", filename);
   
-  char * data   = nullptr;
-  char * window = nullptr;
-  int    total  = 0;
-  int    err    = 0;
+  char * data        = nullptr;
+  char * window      = nullptr;
+  int    total       = 0;
+  int    err         = 0;
   
-  bool completed = false;
+  bool completed     = false;
+  bool stream_opened = false;
+
   while (true) {
     if (!open_stream_file(filename, file_size)) ERR(18);
+
+    stream_opened = true;
 
     if ((data = (char *) allocate(file_size + 1)) == nullptr) ERR(19);
     data[file_size] = 0;
@@ -802,7 +826,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
     break;
   }
 
-  close_stream_file();
+  if (stream_opened) close_stream_file();
 
   if (!completed) {
     if (data   != nullptr) free(data);

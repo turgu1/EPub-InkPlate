@@ -20,7 +20,8 @@
 class EPub
 {
   public:
-    enum class MediaType { XML, JPEG, PNG, GIF, BMP };
+    enum class       MediaType : uint8_t { XML, JPEG, PNG, GIF, BMP };
+    enum class ObfuscationType : uint8_t { NONE, ADOBE, IDPF, UNKNOWN };
     typedef std::list<CSS *> CSSList;
     struct ItemInfo {
       std::string        file_path;
@@ -47,17 +48,24 @@ class EPub
       int8_t font;             
     };
     #pragma pack(pop)
+
+    typedef uint8_t BinUUID[16];
+    typedef uint8_t ShaUUID[20];
     
   private:
     static constexpr char const * TAG = "EPub";
 
     std::recursive_timed_mutex mutex;
-    uint8_t sha1_identifier[20];
 
     pugi::xml_document opf;    ///< The OPF document description.
+    pugi::xml_document encryption;
     pugi::xml_node     current_itemref;
 
+    BinUUID            bin_uuid;
+    ShaUUID            sha_uuid;
+
     char *             opf_data;
+    char *             encryption_data;
     std::string        current_filename;
     std::string        opf_base_path;
 
@@ -68,39 +76,49 @@ class EPub
     CSSList            css_cache;             ///< All css files in the ebook are maintained here.
   
     bool               file_is_open;
+    bool               encryption_present;
     bool               fonts_size_too_large;
     int32_t            fonts_size;
 
-    const char *             get_meta(const std::string & name    );
-    bool                      get_opf(std::string &       filename);
+    const char *             get_meta(const std::string    & name         );
+    bool                      get_opf(std::string          & filename     );
     bool               check_mimetype();
-    std::string get_unique_identifier();
-    bool             get_opf_filename(std::string &       filename);
-    void      retrieve_fonts_from_css(CSS &               css     );
+    bool             get_opf_filename(std::string          & filename     );
+    void      retrieve_fonts_from_css(CSS                  & css          );
+    bool           get_encryption_xml();
+    void                         sha1(const std::string    & data         );
 
   public:
     EPub();
    ~EPub();
 
-    void              retrieve_css(ItemInfo &           item);
-    void                load_fonts();
-    void           clear_item_data(ItemInfo &           item);
-    void               open_params(const std::string &  epub_filename);
-    bool                 open_file(const std::string &  epub_filename);
-    bool                close_file();
-    Image *              get_image(std::string &        fname,
-                                   bool                 load);
-    char*            retrieve_file(const char *         fname, 
-                                   uint32_t &           size);
-    bool                  get_item(pugi::xml_node       itemref, 
-                                   ItemInfo &           item);
-    bool         get_item_at_index(int16_t              itemref_index);
-    bool         get_item_at_index(int16_t              itemref_index,
-                                   ItemInfo &           item);
-    std::string    filename_locate(const char *         fname);
-    int16_t         get_item_count();
-    void update_book_format_params();
-
+    void                 retrieve_css(ItemInfo             & item         );
+    void                   load_fonts();
+    void              clear_item_data(ItemInfo             & item         );
+    void                  open_params(const std::string    & epub_filename);
+    bool                    open_file(const std::string    & epub_filename);
+    bool                   close_file();
+    Image *                 get_image(std::string          & fname,
+                                      bool                   load         );
+    char*               retrieve_file(const char           * fname, 
+                                      uint32_t             & size         );
+    bool                     get_item(pugi::xml_node         itemref, 
+                                      ItemInfo             & item         );
+    bool            get_item_at_index(int16_t                itemref_index);
+    bool            get_item_at_index(int16_t                itemref_index,
+                                      ItemInfo             & item         );
+    std::string get_unique_identifier();
+    bool                     get_keys();
+    std::string       filename_locate(const char           * fname        );
+    int16_t            get_item_count();
+    void    update_book_format_params();
+    ObfuscationType get_file_obfuscation(const char        * filename     );
+    void                      decrypt(void                 * buffer, 
+                                      const uint32_t         size,
+                                      ObfuscationType        obf_type     );
+    bool                    load_font(const std::string      filename, 
+                                      const std::string      font_family, 
+                                      const Fonts::FaceStyle style        );
     /**
      * @brief Retrieve cover's filename
      *
@@ -120,13 +138,15 @@ class EPub
     inline const char *                          get_title()       { return get_meta("dc:title");            }
     inline const char *                         get_author()       { return get_meta("dc:creator");          }
     inline const char *                    get_description()       { return get_meta("dc:description");      }
-    inline const pugi::xml_document &     get_current_item()       { return current_item_info.xml_doc;       }
+    inline const pugi::xml_document &     get_current_item() const { return current_item_info.xml_doc;       }
     inline std::string                get_current_filename()       { return current_filename;                }
     inline bool                          filename_is_empty()       { return current_filename.empty();        }
     inline BookParams *                    get_book_params()       { return book_params;                     }
     inline BookFormatParams *       get_book_format_params()       { return &book_format_params;             }
-    inline const std::string &           get_opf_base_path()       { return opf_base_path;                   }
+    inline const std::string &           get_opf_base_path() const { return opf_base_path;                   }
     inline const pugi::xml_document &              get_opf()       { return opf;                             }
+    inline bool                      encryption_is_present() const { return encryption_present;              }
+    inline const BinUUID &                    get_bin_uuid() const { return bin_uuid;                        }
   };
 
 #if __EPUB__

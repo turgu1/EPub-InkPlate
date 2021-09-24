@@ -11,6 +11,7 @@
 
 #if EPUB_INKPLATE_BUILD
   #include "viewers/battery_viewer.hpp"
+  #include "models/nvs_mgr.hpp"
 #endif
 
 #include "screen.hpp"
@@ -94,11 +95,12 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     fmt.font_index    = TITLE_FONT;
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
-    fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES)),
+    fmt.screen_top    = ypos;
+    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
+    if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
     page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 
@@ -138,9 +140,11 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     if (show_heap != 0) {
       ostr.str(std::string());
-      ostr << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
-            << " / " 
-            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+      ostr << uxTaskGetStackHighWaterMark(nullptr)
+           << " / "
+           << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
+           << " / " 
+           << heap_caps_get_free_size(MALLOC_CAP_8BIT);
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
     }
@@ -204,6 +208,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
+    if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
     page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 
@@ -231,14 +236,15 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
       Pos(xpos - 5, ypos));
 
 
-    fmt.font_index    = TITLE_FONT,
-    fmt.font_size     = TITLE_FONT_SIZE,
-    fmt.font_style    = Fonts::FaceStyle::NORMAL,
-    fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
+    fmt.font_index    = TITLE_FONT;
+    fmt.font_size     = TITLE_FONT_SIZE;
+    fmt.font_style    = Fonts::FaceStyle::NORMAL;
+    fmt.screen_top    = ypos;
+    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
+    if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
     page.add_text(book->title, fmt);
     page.end_paragraph(fmt);
 

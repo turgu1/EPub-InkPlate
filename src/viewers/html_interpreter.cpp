@@ -39,6 +39,11 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
 {
   if (level > max_level) max_level = level;
 
+  if (level > 50) {
+    LOG_E("Too many nested tag levels (max: 50).");
+    return true;
+  }
+
   if (node == nullptr) return false;
   if (at_end()) return true;
     

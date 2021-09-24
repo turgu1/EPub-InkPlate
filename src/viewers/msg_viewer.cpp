@@ -123,7 +123,7 @@ void MsgViewer::show(
     page.end_paragraph(fmt);
   }
 
-  page.paint(clear_screen, true, true);
+  page.paint(clear_screen, !clear_screen, true);
 }
 
 #if 0
@@ -267,6 +267,8 @@ MsgViewer::out_of_memory(const char * raison)
     }
   #endif
 
+  screen.force_full_update();
+  
   show(ALERT, true, true, "OUT OF MEMORY!!",
     "It's a bit sad that the device is now out of "
     "memory to continue. The reason: %s. "

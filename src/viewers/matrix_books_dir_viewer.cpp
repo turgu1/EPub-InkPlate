@@ -11,6 +11,7 @@
 
 #if EPUB_INKPLATE_BUILD
   #include "viewers/battery_viewer.hpp"
+  #include "models/nvs_mgr.hpp"
 #endif
 
 #include "screen.hpp"
@@ -122,6 +123,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
         page.set_limits(fmt);
         page.new_paragraph(fmt);
+        if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
         page.add_text(title, fmt);
         page.end_paragraph(fmt);
 
@@ -182,9 +184,11 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     if (show_heap != 0) {
       ostr.str(std::string());
-      ostr << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
-            << " / " 
-            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+      ostr << uxTaskGetStackHighWaterMark(nullptr)
+           << " / "
+           << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
+           << " / " 
+           << heap_caps_get_free_size(MALLOC_CAP_8BIT);
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
     }
@@ -297,6 +301,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
+  if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
   page.add_text(title, fmt);
   page.end_paragraph(fmt);
 

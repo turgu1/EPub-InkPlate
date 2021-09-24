@@ -23,7 +23,7 @@ class MatrixBooksDirViewer : public BooksDirViewer
     static const int16_t MIN_SPACE_BETWEEN_ENTRIES =  6;
     static const int16_t SPACE_BELOW_INFO          = 10;
     static const int16_t SPACE_ABOVE_PAGENBR       =  5;
-    static const int16_t MAX_TITLE_SIZE            = 90;
+    static const int16_t MAX_TITLE_SIZE            = 85;
 
     int16_t  current_item_idx; // Relative to the beginning of the page
     int16_t  current_book_idx; // Relative to the beginning of the complete boolk list

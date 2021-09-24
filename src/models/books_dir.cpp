@@ -20,6 +20,88 @@
 #include <stdlib.h>
 #include <sstream>
 
+#if 0
+  const uint32_t CRC32_INITIAL    = 0xFFFFFFFFUL;
+  const uint32_t CRC32_POLYNOMIAL = 0x1EDC6F41UL;
+
+  static uint32_t 
+  generate_id(const uint8_t * buffer, uint32_t bufferLength)
+  {
+    uint32_t i;
+    int8_t   j;
+    uint32_t mask;
+    uint32_t crc = CRC32_INITIAL;
+
+    for (i = 0; i < bufferLength; i++) {
+      crc ^= ((uint8_t *)buffer)[i];
+      for (j = 7; j >= 0; j--) {
+        mask = -(crc & 1);
+        crc = (crc >> 1) ^ (CRC32_POLYNOMIAL & mask);
+      }
+    }
+
+    return crc;
+  }
+#else
+
+  // Jenkins96 algorithm. See: http://burtleburtle.net/bob/hash/evahash.html
+
+  #define mix(a, b, c) \
+  { \
+    a = a - b;  a = a - c;  a = a ^ (c >> 13); \
+    b = b - c;  b = b - a;  b = b ^ (a <<  8); \
+    c = c - a;  c = c - b;  c = c ^ (b >> 13); \
+    a = a - b;  a = a - c;  a = a ^ (c >> 12); \
+    b = b - c;  b = b - a;  b = b ^ (a << 16); \
+    c = c - a;  c = c - b;  c = c ^ (b >>  5); \
+    a = a - b;  a = a - c;  a = a ^ (c >>  3); \
+    b = b - c;  b = b - a;  b = b ^ (a << 10); \
+    c = c - a;  c = c - b;  c = c ^ (b >> 15); \
+  }
+
+  uint32_t generate_id(const uint8_t * k, uint32_t bufferLength)
+  {
+    uint32_t a, b, c;
+    uint32_t len;
+
+    len = bufferLength;
+    a = b = 0x9e3779b9;
+    c = 0;
+
+    // handle most of the key 
+    while (len >= 12)
+    {
+        a = a + *((uint32_t *) &k[0]); //(k[0] + ((uint32_t)k[1] << 8) + ((uint32_t)k[ 2] << 16) + ((uint32_t)k[ 3] << 24));
+        b = b + *((uint32_t *) &k[4]); //(k[4] + ((uint32_t)k[5] << 8) + ((uint32_t)k[ 6] << 16) + ((uint32_t)k[ 7] << 24));
+        c = c + *((uint32_t *) &k[8]); //(k[8] + ((uint32_t)k[9] << 8) + ((uint32_t)k[10] << 16) + ((uint32_t)k[11] << 24));
+        mix(a, b, c);
+        k = k + 12; len -= 12;
+    }
+
+    /*------------------------------------- handle the last 11 bytes */
+    c = c + bufferLength;
+    switch (len) {
+      case 11: c = c + ((uint32_t)k[10] << 24); [[fallthrough]];
+      case 10: c = c + ((uint32_t)k[ 9] << 16); [[fallthrough]];
+      case 9 : c = c + ((uint32_t)k[ 8] <<  8); [[fallthrough]];
+          /* the first byte of c is reserved for the length */
+      case 8 : b = b + ((uint32_t)k[ 7] << 24); [[fallthrough]];
+      case 7 : b = b + ((uint32_t)k[ 6] << 16); [[fallthrough]];
+      case 6 : b = b + ((uint32_t)k[ 5] <<  8); [[fallthrough]];
+      case 5 : b = b + k[4];                    [[fallthrough]];
+      case 4 : a = a + ((uint32_t)k[ 3] << 24); [[fallthrough]];
+      case 3 : a = a + ((uint32_t)k[ 2] << 16); [[fallthrough]];
+      case 2 : a = a + ((uint32_t)k[ 1] <<  8); [[fallthrough]];
+      case 1 : a = a + k[0];                    [[fallthrough]];
+      /* case 0: nothing left to add */
+    }
+    mix(a, b, c);
+
+    return c;
+  }
+
+#endif
+
 bool 
 BooksDir::read_books_directory(char * book_filename, int16_t & book_index)
 {
@@ -30,7 +112,9 @@ BooksDir::read_books_directory(char * book_filename, int16_t & book_index)
     return false;
   }
 
-  // show_db();
+  // #if DEBUGGING
+  //   show_db();
+  // #endif
 
   // We first verify if the database content is of the current version
 
@@ -131,7 +215,7 @@ BooksDir::get_book_data(uint16_t idx)
   int16_t index = -1;
 
   for (auto & entry : sorted_index) {
-    if (idx == i) { index = entry.second; break; }
+    if (idx == i) { index = entry.second.db_index; break; }
     i++;
   }
   if (index == -1) {
@@ -149,6 +233,26 @@ BooksDir::get_book_data(uint16_t idx)
   current_book_idx = idx;
 
   return &book;
+}
+ 
+bool
+BooksDir::get_book_id(uint16_t idx, uint32_t & id)
+{
+  if (idx >= sorted_index.size()) {
+    LOG_E("Idx too large: %d", idx);
+    return false;
+  }
+
+  int i = 0;
+  bool found = false;
+
+  for (auto & entry : sorted_index) {
+    if (idx == i) { id = entry.second.id; found = true; break; }
+    i++;
+  }
+  if (!found) LOG_E("Unable to find idx: %d", idx);
+
+  return found;
 }
 
 const BooksDir::EBookRecord * 
@@ -180,7 +284,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
   DIR           * dp       = nullptr;
   bool            first    = true;
 
-  SortedIndex     index;
+  SortedIndex     temp_index;
 
   bool some_added_record = false;
 
@@ -195,9 +299,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
   }
   else {
     struct PartialRecord {
-      char    filename[FILENAME_SIZE];
-      int32_t file_size;
-      char    title[TITLE_SIZE];
+      char     filename[FILENAME_SIZE];
+      int32_t  file_size;
+      uint32_t id;
+      char     title[TITLE_SIZE];
     } * partial_record = (PartialRecord *) allocate(sizeof(PartialRecord));
 
     if (partial_record == nullptr) msg_viewer.out_of_memory("partial record allocation");
@@ -221,8 +326,12 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       }
       else {
         LOG_D("Title: %s", partial_record->title);
-        index[partial_record->filename] = 0;
-        sorted_index[partial_record->title] = db.get_current_idx();
+        temp_index[partial_record->filename] = IndexInfo { 
+          .id = 0, 
+          .db_index = 0 }; 
+        sorted_index[partial_record->title] = IndexInfo {
+          .id      = partial_record->id,
+          .db_index = db.get_current_idx() };
         if (book_filename) {
           if (strcmp(book_filename, partial_record->filename) == 0) book_index = db.get_current_idx();
         }
@@ -268,7 +377,10 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
           goto error_clear; 
         }
         if (!first) {
-          sorted_index[data->title] = new_db->get_record_count() - 1;
+          uint16_t idx = new_db->get_record_count() - 1;
+          sorted_index[data->title] = IndexInfo {
+            .id       = data->id,
+            .db_index = idx };
           if (book_filename) {
             if (strcmp(book_filename, data->filename) == 0) book_index = new_db->get_record_count() - 1;
           }
@@ -317,7 +429,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
 
         // check if ebook file named fname is in the database
 
-        if (index.find(fname) == index.end()) {
+        if (temp_index.find(fname) == temp_index.end()) {
 
           // The book is not in the database, we add it now
 
@@ -371,6 +483,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             LOG_D("Retrieving metadata and cover");
             strlcpy(the_book->filename, de->d_name, FILENAME_SIZE);
             the_book->file_size = file_size;
+            the_book->id        = generate_id((uint8_t *)the_book->filename, strlen(the_book->filename));
 
             if ((str =       epub.get_title())) strlcpy(the_book->title,       str, TITLE_SIZE      );
             if ((str =      epub.get_author())) strlcpy(the_book->author,      str, AUTHOR_SIZE     );
@@ -419,7 +532,11 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
               goto error_clear;
             }
 
-            sorted_index[the_book->title] = db.get_record_count() - 1;
+            uint16_t idx = db.get_record_count() - 1;
+            sorted_index[the_book->title] = {
+              .id       = the_book->id,
+              .db_index = idx };
+
             if (book_filename) {
               if (strcmp(book_filename, the_book->filename) == 0) book_index = db.get_record_count() - 1;
             }
@@ -441,7 +558,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
     closedir(dp);
   }
 
-  index.clear();
+  temp_index.clear();
   if (some_added_record) {
     db.close(); // To ensure that data is well written on SD Card
     if (!db.open(BOOKS_DIR_FILE)) {
@@ -453,7 +570,7 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
   return true;
 
 error_clear:
-  index.clear();
+  temp_index.clear();
   if (dp) closedir(dp);
   if (the_book) free(the_book);
   return false;
@@ -479,6 +596,7 @@ BooksDir::show_db()
       if (!db.get_record(&book, sizeof(EBookRecord))) return;
       std::cout 
         << "Book: "          << book.filename        << std::endl
+        << "  id: "          << book.id              << std::endl
         << "  title: "       << book.title           << std::endl
         << "  author: "      << book.author          << std::endl
         << "  description: " << book.description     << std::endl

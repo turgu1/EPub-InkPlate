@@ -28,11 +28,11 @@ class Screen : NonCopyable
     static constexpr uint8_t    WHITE_COLOR           =   7;
     #if INKPLATE_10
       static constexpr int8_t   IDENT                 =   2;
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  15;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  10;
       static constexpr uint16_t RESOLUTION            = 150;  ///< Pixels per inch
     #elif INKPLATE_6
       static constexpr int8_t   IDENT                 =   1;
-      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  15;
+      static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  10;
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #elif INKPLATE_6PLUS
       static constexpr int8_t   IDENT                 =   3;
@@ -170,6 +170,7 @@ class Screen : NonCopyable
     void set_orientation(Orientation orient);
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     void to_user_coord(uint16_t & x, uint16_t & y);
+    inline void force_full_update() { partial_count = 0; }
 };
 
 #if __SCREEN__

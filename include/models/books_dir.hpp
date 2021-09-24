@@ -25,7 +25,7 @@
 class BooksDir
 {
   public:
-    static const uint16_t BOOKS_DIR_DB_VERSION =   5;
+    static const uint16_t BOOKS_DIR_DB_VERSION =   6;
 
     static const uint8_t  FILENAME_SIZE        = 128;
     static const uint8_t  TITLE_SIZE           = 128;
@@ -49,6 +49,7 @@ class BooksDir
       char     filename[FILENAME_SIZE];       ///< Ebook filename, no folder
                                               ///  MUST STAY AS FIRST ITEM IN EBookRecord
       int32_t  file_size;                     ///< File size in bytes
+      uint32_t id;                            ///< (Almost) Unique id computed from the filename
       char     title[TITLE_SIZE];             ///< Title from epub meta-data
       char     author[AUTHOR_SIZE];           ///< Author from epub meta-data
       char     description[DESCRIPTION_SIZE]; ///< Description from epub meta-data
@@ -71,7 +72,12 @@ class BooksDir
 
     SimpleDB db;                       ///< The SimpleDB database
 
-    typedef std::map<std::string, int16_t> SortedIndex;  ///< Sorted map of book names and indexes.
+    struct IndexInfo {
+      uint32_t id;
+      uint16_t db_index;
+    };
+
+    typedef std::map<std::string, IndexInfo> SortedIndex;  ///< Sorted map of book names and indexes.
     SortedIndex sorted_index;          ///< Books index pointing at the db index of each book
     EBookRecord book;                  ///< Book Record structure prepared to return to the caller
     int16_t current_book_idx;          ///< Current book index present in the book structure
@@ -84,28 +90,40 @@ class BooksDir
     }
 
     /**
-     * @brief Get the number of books present in the book database
+     * @brief Get the number of books present in the ebooks database
      * 
-     * @return int16_t The number of books present in the database
+     * @return int16_t The number of ebooks present in the database
      */
     inline int16_t get_book_count() const { return sorted_index.size(); }
 
     /**
-     * @brief Get a book meta-data
+     * @brief Get an ebook meta-data
      * 
-     * This method retrieve the meta-data related to a book index. 
+     * This method retrieve the meta-data related to an ebook index. 
      * 
-     * @param idx The index is a sequential number in the sorted list of books, ranging 0 .. get_book_count()-1.
+     * @param idx The index is a sequential number in the sorted list of ebooks, ranging 0 .. get_book_count()-1.
      * 
      * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve the data.
      */
     const EBookRecord * get_book_data(uint16_t idx);
     const EBookRecord * get_book_data_from_db_index(uint16_t idx);
+    bool                get_book_id(uint16_t idx, uint32_t & id);
 
-    int16_t get_sorted_idx(int16_t db_idx) {
+    int16_t get_sorted_idx(uint16_t db_idx) {
       int i = 0;
       for (auto entry : sorted_index) {
-        if (entry.second == db_idx) {
+        if (entry.second.db_index == db_idx) {
+          return i;
+        }
+        i++;
+      }
+      return -1;
+    }
+
+    int16_t get_sorted_idx_from_id(uint32_t id) {
+      int i = 0;
+      for (auto entry : sorted_index) {
+        if (entry.second.id == id) {
           return i;
         }
         i++;
@@ -117,7 +135,7 @@ class BooksDir
     static const int16_t max_cover_height = MAX_COVER_HEIGHT; ///< Bitmap height in pixels
 
     /**
-     * @brief Read and refresh the books list database
+     * @brief Read and refresh the ebooks list database
      * 
      * This method is called once at application startup to refresh and load the primary index of all
      * books present in the database. If the database does not exists, it will be created. The refresh

@@ -157,7 +157,7 @@ TOC::save()
   return saved;
 }
 
-unsigned char bin(char ch);
+unsigned char hex_to_bin(char ch);
 
 void
 TOC::clean_filename(char * fname)
@@ -169,7 +169,7 @@ TOC::clean_filename(char * fname)
 
   while (*s) {
     if (*s == '%') {
-      *d++ = (bin(s[1]) << 4) + bin(s[2]);
+      *d++ = (hex_to_bin(s[1]) << 4) + hex_to_bin(s[2]);
       s += 3;
     }
     else {

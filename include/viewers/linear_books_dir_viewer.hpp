@@ -22,7 +22,7 @@ class LinearBooksDirViewer : public BooksDirViewer
     static const int16_t PAGENBR_FONT_SIZE     =  9;
     static const int16_t FIRST_ENTRY_YPOS      =  5;
     static const int16_t SPACE_BETWEEN_ENTRIES =  6;
-    static const int16_t MAX_TITLE_SIZE        = 90;
+    static const int16_t MAX_TITLE_SIZE        = 85;
 
     int16_t current_item_idx;
     int16_t current_book_idx;

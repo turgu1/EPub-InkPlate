@@ -232,7 +232,7 @@ set_content_type_from_file(httpd_req_t * req, const std::string & filename)
   return httpd_resp_set_type(req, "text/plain");
 }
 
-extern unsigned char bin(char ch); 
+extern unsigned char hex_to_bin(char ch); 
 
 static std::string 
 get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
@@ -255,7 +255,7 @@ get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
 
   while (count > 0) {
     if (str_in[0] == '%') {
-      dest.push_back((char)((bin(str_in[1]) << 4) + bin(str_in[2])));
+      dest.push_back((char)((hex_to_bin(str_in[1]) << 4) + hex_to_bin(str_in[2])));
       count  -= 3;
       str_in += 3;
     }

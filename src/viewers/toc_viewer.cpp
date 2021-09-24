@@ -133,9 +133,11 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
 
     if (show_heap != 0) {
       ostr.str(std::string());
-      ostr << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
-            << " / " 
-            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
+      ostr << uxTaskGetStackHighWaterMark(nullptr)
+           << " / "
+           << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
+           << " / " 
+           << heap_caps_get_free_size(MALLOC_CAP_8BIT);
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(), Pos(-1, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
     }

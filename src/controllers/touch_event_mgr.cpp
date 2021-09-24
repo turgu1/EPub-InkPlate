@@ -338,6 +338,8 @@
             app_controller.going_to_deep_sleep();
             
             LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
+            
+            screen.force_full_update();
             msg_viewer.show(
               MsgViewer::INFO, 
               false, true, 
@@ -345,7 +347,7 @@
               "Timeout period exceeded (%d minutes). The device is now "
               "entering into Deep Sleep mode. Please press the WakeUp Button to restart.",
               light_sleep_duration);
-            ESP::delay(500);
+            ESP::delay(1000);
 
             inkplate_platform.deep_sleep(TouchScreen::INTERRUPT_PIN, 1);
           }

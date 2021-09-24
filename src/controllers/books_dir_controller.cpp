@@ -14,13 +14,8 @@
 #include "viewers/matrix_books_dir_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include "nvs.h"
+  #include "models/nvs_mgr.hpp"
 #endif
-
-BooksDirController::BooksDirController()
-{
-
-}
 
 void
 BooksDirController::setup()
@@ -30,46 +25,72 @@ BooksDirController::setup()
   // If the user was reading a book at the last entry to deep sleep, it will be
   // shown on screen instead of the books directory list.
 
-  char * book_fname          = new char[256];
-  char * filename            = nullptr;
-
-  book_fname[0]              =  0;
   current_book_index         = -1;
   last_read_book_index       = -1;
   book_page_id.itemref_index = -1;
   book_page_id.offset        = -1;
   book_was_shown             = false;
 
-  #if EPUB_INKPLATE_BUILD
-    nvs_handle_t nvs_handle;
-    esp_err_t    err;
   
-    if ((err = nvs_open("EPUB-InkPlate", NVS_READONLY, &nvs_handle)) == ESP_OK) {
-      size_t size = 256;
-      if ((err = nvs_get_str(nvs_handle, "LAST_BOOK", book_fname, &size)) == ESP_OK) {
-        filename = book_fname;
-        int8_t was_shown;
-        if (((err = nvs_get_i16(nvs_handle, "REF_IDX",   &book_page_id.itemref_index) != ESP_OK)) ||
-            ((err = nvs_get_i32(nvs_handle, "OFFSET",    &book_page_id.offset       ) != ESP_OK)) ||
-            ((err =  nvs_get_i8(nvs_handle, "WAS_SHOWN", &was_shown                 ) != ESP_OK))) {
-          filename = nullptr;
-          was_shown = 0;
-        }
-        else {
-          book_was_shown = (bool) was_shown;
+  #if EPUB_INKPLATE_BUILD
+
+    int16_t dummy;
+    if (!books_dir.read_books_directory(nullptr, dummy)) {
+      LOG_E("There was issues reading books directory.");
+    }
+    else {
+
+      NVSMgr::NVSData nvs_data;
+      uint32_t        id;
+
+      if (nvs_mgr.get_last(id, nvs_data)) {
+        book_page_id.itemref_index = nvs_data.itemref_index;
+        book_page_id.offset        = nvs_data.offset;
+        book_was_shown             = nvs_data.was_shown;
+
+        int16_t idx;
+        if ((idx = books_dir.get_sorted_idx_from_id(id)) != -1) {
+
+          last_read_book_index = current_book_index = idx;
+          
+          //LOG_D("Last book filename: %s",  book_fname);
+          LOG_D("Last book ref index: %d", book_page_id.itemref_index);
+          LOG_D("Last book offset: %d",    book_page_id.offset);
+          LOG_D("Show it now: %s",         book_was_shown ? "yes" : "no");
         }
       }
-      nvs_close(nvs_handle);
-    }
-    if (err != ESP_OK) {
-      LOG_E("Unable to process NVS readout: %s", esp_err_to_name(err));
     }
 
-    LOG_D("Last book filename: %s",  book_fname);
-    LOG_D("Last book ref index: %d", book_page_id.itemref_index);
-    LOG_D("Last book offset: %d",    book_page_id.offset);
-    LOG_D("Show it now: %s",         book_was_shown ? "yes" : "no");
+    // nvs_handle_t nvs_handle;
+    // esp_err_t    err;
+  
+    // if ((err = nvs_open("EPUB-InkPlate", NVS_READONLY, &nvs_handle)) == ESP_OK) {
+    //   size_t size = 256;
+    //   if ((err = nvs_get_str(nvs_handle, "LAST_BOOK", book_fname, &size)) == ESP_OK) {
+    //     filename = book_fname;
+    //     int8_t was_shown;
+    //     if (((err = nvs_get_i16(nvs_handle, "REF_IDX",   &book_page_id.itemref_index) != ESP_OK)) ||
+    //         ((err = nvs_get_i32(nvs_handle, "OFFSET",    &book_page_id.offset       ) != ESP_OK)) ||
+    //         ((err =  nvs_get_i8(nvs_handle, "WAS_SHOWN", &was_shown                 ) != ESP_OK))) {
+    //       filename = nullptr;
+    //       was_shown = 0;
+    //     }
+    //     else {
+    //       book_was_shown = (bool) was_shown;
+    //     }
+    //   }
+    //   nvs_close(nvs_handle);
+    // }
+    // if (err != ESP_OK) {
+    //   LOG_E("Unable to process NVS readout: %s", esp_err_to_name(err));
+    // }
+
   #else
+    char * book_fname          = new char[256];
+    char * filename            = nullptr;
+
+    book_fname[0]              =  0;
+
     FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "r");
     filename = nullptr;
     if (f != nullptr) {
@@ -96,29 +117,29 @@ BooksDirController::setup()
 
       fclose(f);
     } 
+
+    int16_t db_idx = -1;
+    // Read the directory, returning the book index (db_idx).
+    if (!books_dir.read_books_directory(filename, db_idx)) {
+      LOG_E("There was issues reading books directory.");
+    }
+    
+    // The retrieved db_idx is the index in the database of the last book
+    // read by the user. We need the
+    // index in the sorted list of books as this is what the 
+    // BookController expect.
+
+    if (db_idx != -1) {
+      last_read_book_index = books_dir.get_sorted_idx(db_idx);
+      current_book_index   = last_read_book_index;
+      book_filename        = book_fname;
+    }
+
+    LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", 
+          last_read_book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
+
+    delete [] book_fname;
   #endif
-
-  int16_t db_idx = -1;
-  // Read the directory, returning the book index (db_idx).
-  if (!books_dir.read_books_directory(filename, db_idx)) {
-    LOG_E("There was issues reading books directory.");
-  }
-  
-  // The retrieved db_idx is the index in the database of the last book
-  // read by the user. We need the
-  // index in the sorted list of books as this is what the 
-  // BookController expect.
-
-  if (db_idx != -1) {
-    last_read_book_index = books_dir.get_sorted_idx(db_idx);
-    current_book_index   = last_read_book_index;
-    book_filename        = book_fname;
-  }
-
-  LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", 
-        last_read_book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
-
-  delete [] book_fname;
 }
 
 void
@@ -132,24 +153,41 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
   book_page_id = page_id;
 
   #if EPUB_INKPLATE_BUILD
-    nvs_handle_t nvs_handle;
-    esp_err_t err;
-  
-    if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) == ESP_OK) {
 
-      nvs_set_str(nvs_handle, "LAST_BOOK",  book_filename.c_str());
-      nvs_set_i16(nvs_handle, "REF_IDX",    page_id.itemref_index);
-      nvs_set_i32(nvs_handle, "OFFSET",     page_id.offset);
-       nvs_set_i8(nvs_handle, "WAS_SHOWN",  going_to_deep_sleep ? 1 : 0);
+    uint32_t id;
 
-      if ((err = nvs_commit(nvs_handle)) != ESP_OK) {
-        LOG_E("NVS Commit error: %s", esp_err_to_name(err));
+    if ((current_book_index != -1) && books_dir.get_book_id(current_book_index, id)) {
+
+      NVSMgr::NVSData nvs_data = {
+        .offset        = page_id.offset,
+        .itemref_index = page_id.itemref_index,
+        .was_shown     = (uint8_t) (going_to_deep_sleep ? 1 : 0),
+        .filler1       = 0
+      };
+
+      if (!nvs_mgr.save_location(id, nvs_data)) {
+        LOG_E("Unable to save current ebook location");
       }
-      nvs_close(nvs_handle);
     }
-    else {
-      LOG_E("Unable to open NVS: %s", esp_err_to_name(err));
-    }
+
+    // nvs_handle_t nvs_handle;
+    // esp_err_t err;
+  
+    // if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) == ESP_OK) {
+
+    //   nvs_set_str(nvs_handle, "LAST_BOOK",  book_filename.c_str());
+    //   nvs_set_i16(nvs_handle, "REF_IDX",    page_id.itemref_index);
+    //   nvs_set_i32(nvs_handle, "OFFSET",     page_id.offset);
+    //    nvs_set_i8(nvs_handle, "WAS_SHOWN",  going_to_deep_sleep ? 1 : 0);
+
+    //   if ((err = nvs_commit(nvs_handle)) != ESP_OK) {
+    //     LOG_E("NVS Commit error: %s", esp_err_to_name(err));
+    //   }
+    //   nvs_close(nvs_handle);
+    // }
+    // else {
+    //   LOG_E("Unable to open NVS: %s", esp_err_to_name(err));
+    // }
   #else
     FILE * f = fopen(MAIN_FOLDER "/last_book.txt", "w");
     if (f != nullptr) {
@@ -199,6 +237,7 @@ BooksDirController::enter()
                                      (BooksDirViewer *) &matrix_books_dir_viewer;
 
   books_dir_viewer->setup();
+  screen.force_full_update();
   
   if (book_was_shown && (last_read_book_index != -1)) {
     show_last_book();
@@ -329,6 +368,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
             book_filename = book->filename;
             
             PageLocs::PageId page_id = { 0, 0 };
+
+            NVSMgr::NVSData nvs_data;
+            if (nvs_mgr.get_location(book->id, nvs_data)) {
+              page_id.itemref_index = nvs_data.itemref_index;
+              page_id.offset        = nvs_data.offset;
+            }
             
             if (book_controller.open_book_file(book_title, book_fname, page_id)) {
               app_controller.set_controller(AppController::Ctrl::BOOK);
