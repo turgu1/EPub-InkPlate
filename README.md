@@ -4,7 +4,7 @@
 
 (Updated 2021.09.23)
 
-Update for upcoming version 1.3.0
+Update to version 1.3.0
 
 New User functionalities:
 
@@ -42,7 +42,7 @@ Remaining steps to release:
 
 ---
 
-- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (may happen for a future release).
+- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (will happen for a future release).
 
 Linear vs Matrix View:
 
