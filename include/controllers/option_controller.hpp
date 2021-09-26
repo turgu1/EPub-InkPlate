@@ -22,10 +22,12 @@ class OptionController
                          font_form_is_shown(false),
                          books_refresh_needed(false), 
                          wait_for_key_after_wifi(false) { };
-    void input_event(EventMgr::Event event);
-    void enter();
-    void leave(bool going_to_deep_sleep = false);
-
+                         
+    void    input_event(EventMgr::Event event);
+    void          enter();
+    void          leave(bool going_to_deep_sleep = false);
+    void set_font_count(uint8_t count);
+     
     inline void set_main_form_is_shown() { main_form_is_shown = true; }
     inline void set_font_form_is_shown() { font_form_is_shown = true; }
 

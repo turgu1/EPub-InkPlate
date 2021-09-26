@@ -7,6 +7,8 @@
 
 #include "controllers/app_controller.hpp"
 #include "controllers/common_actions.hpp"
+#include "controllers/books_dir_controller.hpp"
+#include "controllers/book_controller.hpp"
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
 #include "models/config.hpp"
@@ -71,8 +73,6 @@ book_parameters()
   old_font               = font;
   old_font_size          = font_size;
   done                   = 1;
-
-  book_params_form_entries[2].choice_count = form_viewer.get_font_choices_count();
 
   form_viewer.show(
     book_params_form_entries, 
@@ -166,6 +166,14 @@ wifi_mode()
   #endif
 }
 
+static void
+power_off()
+{
+  books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
+  
+  CommonActions::power_it_off();
+}
+
 // IMPORTANT!!
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
@@ -179,9 +187,15 @@ static MenuViewer::MenuEntry menu[10] = {
   { MenuViewer::Icon::DELETE,      "Delete the current e-book",            delete_book                  , true  },
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true  },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true  },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off     , true  },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               power_off                    , true  },
   { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      , false }
 }; 
+
+void
+BookParamController::set_font_count(uint8_t count)
+{
+  book_params_form_entries[2].choice_count = count;
+}
 
 void 
 BookParamController::enter()

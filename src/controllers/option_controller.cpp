@@ -122,8 +122,6 @@ default_parameters()
   old_font_size          = font_size;
   done                   = 1;
 
-  font_params_form_entries[2].choice_count = form_viewer.get_font_choices_count();
-  
   form_viewer.show(
     font_params_form_entries, 
     FONT_FORM_SIZE, 
@@ -167,9 +165,15 @@ wifi_mode()
     { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true  },
   #endif
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true  },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_off         , true  },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true  },
   { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false }
 };
+
+void
+OptionController::set_font_count(uint8_t count)
+{
+  font_params_form_entries[2].choice_count = count;
+}
 
 void 
 OptionController::enter()

@@ -48,7 +48,7 @@ cp -r bin "$folder"
 cp -r SDCard "$folder"
 rm -rf $folder/SDCard/books
 mkdir $folder/SDCard/books
-cp SDCard/books/Austen* $folder/SDCard/books
+cp SDCard/books/Austen*.epub $folder/SDCard/books
 
 if [ -f "$folder/SDCard/books_dir.db" ]
 then
@@ -58,6 +58,11 @@ fi
 if [ -f "$folder/SDCard/last_book.txt" ]
 then
   rm "$folder/SDCard/last_book.txt"
+fi
+
+if [ -f "$folder/SDCard/fonts_list.xml" ]
+then
+  rm "$folder/SDCard/fonts_list.xml"
 fi
 
 rm $folder/SDCard/config.txt

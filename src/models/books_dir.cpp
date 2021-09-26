@@ -274,7 +274,12 @@ BooksDir::get_book_index(uint32_t id, uint16_t & idx)
 void
 BooksDir::set_track_order(uint32_t id, int8_t pos)
 {
+  static bool no_recurse = false;
+  if (no_recurse) return;
+
   LOG_D("-------------------------> set_track_order(%u, %d)", id, pos);
+  bool found = false;
+
   for (auto & entry : sorted_index) {
     if (entry.second.id == id) {
       char ch = (pos >= 0) ? 'a' + pos : 'z';
@@ -285,9 +290,18 @@ BooksDir::set_track_order(uint32_t id, int8_t pos)
         LOG_D("New key: %s", e.key().c_str());
         sorted_index.insert(std::move(e));
       }
+      found = true;
       break;
     }
   }
+
+  #if EPUB_INKPLATE_BUILD
+    if (!found) {
+      no_recurse = true;
+      nvs_mgr.erase(id);
+      no_recurse = false;
+    }
+  #endif
 }
 
 const BooksDir::EBookRecord * 
@@ -304,7 +318,6 @@ BooksDir::get_book_data_from_db_index(uint16_t idx)
 
   return &book;
 }
-
 
 bool
 BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)

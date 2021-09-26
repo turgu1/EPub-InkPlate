@@ -29,6 +29,7 @@ class NVSMgr
     bool  get_location(uint32_t   id,       NVSData & nvs_data);
     bool     id_exists(uint32_t   id                          );
     int8_t     get_pos(uint32_t   id                          );
+    bool         erase(uint32_t   id                          );
 
   private:
     static constexpr char const * TAG            = "NVSMgr";

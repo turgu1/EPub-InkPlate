@@ -40,7 +40,7 @@ CommonActions::refresh_books_dir()
 }
 
 void
-CommonActions::power_off()
+CommonActions::power_it_off()
 {
   #if EXTENDED_CASE
     #define INT_PIN PressKeys::INTERRUPT_PIN
@@ -48,9 +48,6 @@ CommonActions::power_off()
     #define INT_PIN TouchKeys::INTERRUPT_PIN
   #endif
 
-  if (!epub.filename_is_empty()) {
-    books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
-  }
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE_BUILD
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",

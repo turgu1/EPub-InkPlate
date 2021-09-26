@@ -6,13 +6,15 @@
 
 Update to version 1.3.1 (Not ready yet)
 
-- [x] Last books read to be put on top of the Book list
-- [x] Modifiable fonts list in font_list.xml file
+- [x] Corrected an issue with books being read cleanup
+- [x] Books being read are put on top of the Books list
+- [x] Modifiable fonts list in the `font_list.xml` file
+- [x] Wordsmithing of the user's guide (long overdue...)
 
-- [ ] Tests Inkplate-6 / Inkplate-10
-- [ ] Valgrind
-- [ ] Documentation
-- [ ] New version release packaging
+- [x] Tests Inkplate-6 / Inkplate-10
+- [x] Valgrind
+- [x] Documentation
+- [x] New version release packaging
 
 ---
 

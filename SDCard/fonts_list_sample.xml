@@ -24,11 +24,11 @@
     <italic      filename="CrimsonPro-Italic.otf"/>
     <bold-italic filename="CrimsonPro-BoldItalic.otf"/>
   </font>
-  <font name="REDHAT">
-    <regular     filename="RedHatDisplay-Regular.otf"/>
-    <bold        filename="RedHatDisplay-Bold.otf"/>
-    <italic      filename="RedHatDisplay-Italic.otf"/>
-    <bold-italic filename="RedHatDisplay-BoldItalic.otf"/>
+  <font name="CALADEA S">
+    <regular     filename="Caladea-Regular.otf"/>
+    <bold        filename="Caladea-Bold.otf"/>
+    <italic      filename="Caladea-Italic.otf"/>
+    <bold-italic filename="Caladea-BoldItalic.otf"/>
   </font>
   <font name="ASAP">
     <regular     filename="Asap-Regular.otf"/>
@@ -54,7 +54,7 @@
     <italic      filename="DejaVuSerifCondensed-Italic.otf"/>
     <bold-italic filename="DejaVuSerifCondensed-BoldItalic.otf"/>
   </font>
-  <!-- <font name="DEJAVU">
+  <font name="DEJAVU">
     <regular     filename="DejaVuSans-Regular.otf"/>
     <bold        filename="DejaVuSans-Bold.otf"/>
     <italic      filename="DejaVuSans-Italic.otf"/>
@@ -65,5 +65,5 @@
     <bold        filename="DejaVuSansCondensed-Bold.otf"/>
     <italic      filename="DejaVuSansCondensed-Italic.otf"/>
     <bold-italic filename="DejaVuSansCondensed-BoldItalic.otf"/>
-  </font> -->
+  </font>
 </fonts>

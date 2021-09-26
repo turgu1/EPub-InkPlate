@@ -8,6 +8,8 @@
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
+#include "controllers/book_param_controller.hpp"
+#include "controllers/option_controller.hpp"
 #include "helpers/unzip.hpp"
 #include "alloc.hpp"
 #include "pugixml.hpp"
@@ -66,12 +68,35 @@ Fonts::get_file(const char * filename, uint32_t size)
   return buff;
 }
 
+static uint32_t font_size;
 inline bool check_res(xml_parse_result res) { return res.status == status_ok; }
-inline bool check_str(const char * str) {
+
+inline bool check_str(const char * str) 
+{
+  return (str != nullptr) && (str[0] != 0);
+}
+
+static bool check_file(const char * filename) 
+{
+  constexpr const char * TAG = "Check File";
   struct stat file_stat;
-  return (str != nullptr) && 
-         (str[0] != 0) &&
-         (stat(std::string(MAIN_FOLDER).append("/").append(str).c_str(), &file_stat) != -1); 
+  std::string full_name = std::string(FONTS_FOLDER "/").append(filename); 
+  if (check_str(filename)) {
+    if (stat(full_name.c_str(), &file_stat) != -1) {
+      font_size += file_stat.st_size;
+      if (font_size > (1024 * 200)) {
+        LOG_E("Font size to big for %s", filename);
+      }
+      else return true;
+    }
+    else {
+      LOG_E("Font file can't be found: %s", full_name.c_str());
+    }
+  }
+  else {
+    LOG_E("Null string...");
+  }
+  return false;
 }
 
 bool Fonts::setup()
@@ -99,21 +124,25 @@ bool Fonts::setup()
       ((fd_data = get_file(xml_fonts_descr, file_stat.st_size)) != nullptr) &&
       (check_res(fd.load_buffer_inplace(fd_data, file_stat.st_size)))) {
 
+    LOG_I("Reading fonts definition from fonts_list.xml...");
     font_count = 0;
     for (auto fnt : fd.child("fonts").children("font")) {
       if (font_count >= 8) break;
       xml_attribute attr;
       const char * str = fnt.attribute("name").value();
+      font_size = 0;
       if (check_str(str)) {
+        LOG_I("%s...", str);
         font_names[font_count] = char_pool.set(std::string(str));
-        if (check_str(str = fnt.child("regular").attribute("filename").value())) {
+        if (check_file(str = fnt.child("regular").attribute("filename").value())) {
           regular_fname[font_count] = char_pool.set(std::string(str));
-          if (check_str(str = fnt.child("bold").attribute("filename").value())) {
+          if (check_file(str = fnt.child("bold").attribute("filename").value())) {
             bold_fname[font_count] = char_pool.set(std::string(str));
-            if (check_str(str = fnt.child("italic").attribute("filename").value())) {
+            if (check_file(str = fnt.child("italic").attribute("filename").value())) {
               italic_fname[font_count] = char_pool.set(std::string(str));
-              if (check_str(str = fnt.child("bold-italic").attribute("filename").value())) {
+              if (check_file(str = fnt.child("bold-italic").attribute("filename").value())) {
                 bold_italic_fname[font_count] = char_pool.set(std::string(str));
+                LOG_I("Font %s OK", font_names[font_count]);
                 font_count++;
               }
             }
@@ -141,7 +170,15 @@ bool Fonts::setup()
     font_count = 8;
   }
 
+  if (font_count == 0) {
+    LOG_E("No font detected!");
+    return false;
+  }
+
   form_viewer.adjust_font_choices(font_names, font_count);
+
+  book_param_controller.set_font_count(font_count);
+      option_controller.set_font_count(font_count);
 
   int8_t font_index;
   config.get(Config::Ident::DEFAULT_FONT, &font_index);

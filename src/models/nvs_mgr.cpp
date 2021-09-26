@@ -157,6 +157,27 @@ NVSMgr::get_location(uint32_t id, NVSData & nvs_data)
 }
 
 bool
+NVSMgr::erase(uint32_t id ) 
+{
+  if (!initialized) return false;
+
+  esp_err_t err;
+  uint32_t index;
+
+  if ((err = nvs_open(NAMESPACE, NVS_READONLY, &nvs_handle)) == ESP_OK) {
+    if (find_id(id, index)) {
+      remove(index);
+      return true;
+    }
+    nvs_close(nvs_handle);
+  }
+  else {
+    LOG_E("Unable to open NVS: %s", esp_err_to_name(err));
+  }
+  return false;
+}
+
+bool
 NVSMgr::id_exists(uint32_t id)
 {
   for (auto & e : track_list) {
