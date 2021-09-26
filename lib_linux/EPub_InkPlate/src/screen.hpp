@@ -40,7 +40,7 @@ class Screen : NonCopyable
     void  draw_round_rectangle(Dim dim, Pos pos, uint8_t color);
     void       colorize_region(Dim dim, Pos pos, uint8_t color);
     void                 clear();
-    void                update(bool no_full = false); // Parameter only used by the InlPlate version
+    void                update(bool no_full = false); // Parameter only used by the InkPlate version
     void                  test();
 
   private:

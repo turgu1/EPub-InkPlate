@@ -12,7 +12,7 @@
  * @brief Low level logical Screen display
  * 
  * This class implements the low level methods required to paint
- * on the display. Under the InlPlate6, it is using the EInk display driver. 
+ * on the display. Under the InkPlate6, it is using the EInk display driver. 
  * 
  * This is a singleton. It cannot be instanciated elsewhere. It is not 
  * instanciated in the heap. This is reinforced by the C++ construction

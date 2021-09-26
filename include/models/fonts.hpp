@@ -6,6 +6,7 @@
 #include "global.hpp"
 
 #include "models/ttf2.hpp"
+#include "helpers/char_pool.hpp"
 
 #include <vector>
 #include <mutex>
@@ -128,6 +129,17 @@ class Fonts
     typedef std::vector<FontEntry> FontCache;
     FontCache font_cache;
     std::mutex mutex;
+
+    uint8_t       font_count;
+    char *        font_names[8];
+    char *     regular_fname[8];
+    char *        bold_fname[8];
+    char *      italic_fname[8];
+    char * bold_italic_fname[8];
+
+    CharPool char_pool;
+
+    char * get_file(const char * filename, uint32_t size);
 };
 
 #if __FONTS__

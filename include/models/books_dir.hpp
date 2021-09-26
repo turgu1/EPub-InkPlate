@@ -105,9 +105,11 @@ class BooksDir
      * 
      * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve the data.
      */
-    const EBookRecord * get_book_data(uint16_t idx);
+    const EBookRecord *               get_book_data(uint16_t idx);
     const EBookRecord * get_book_data_from_db_index(uint16_t idx);
-    bool                get_book_id(uint16_t idx, uint32_t & id);
+    bool                                get_book_id(uint16_t idx, uint32_t & id);
+    bool                             get_book_index(uint32_t id,  uint16_t & idx);
+    void                            set_track_order(uint32_t id,  int8_t     pos);
 
     int16_t get_sorted_idx(uint16_t db_idx) {
       int i = 0;

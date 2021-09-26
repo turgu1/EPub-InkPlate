@@ -2,18 +2,19 @@
 
 ## Last news
 
-(Updated 2021.09.24)
+(Updated 2021.09.26)
 
 Update to version 1.3.1 (Not ready yet)
 
-- [ ] Last books read to be put on top of the Book list
-- [ ] Greather optimisation of images rendering
+- [x] Last books read to be put on top of the Book list
+- [x] Modifiable fonts list in font_list.xml file
 
-- [ ] Internal testing framework
 - [ ] Tests Inkplate-6 / Inkplate-10
 - [ ] Valgrind
 - [ ] Documentation
 - [ ] New version release packaging
+
+---
 
 Update to version 1.3.0
 
@@ -59,12 +60,16 @@ Linear vs Matrix View:
 
 <img src="doc/pictures/linear_view.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
 
+---
+
 Update to version 1.2
 
 - [x] Recompiled to integrate ESP-IDF-Inkplate library v0.9.4
 - [x] Adjustments for the ESP-IDF v4.2 framework.
 - [x] Support for the 6-buttons extended board in new specific releases.
 - [x] bld_all.sh script to automatically build all releases zip files.
+
+---
 
 Update to version 1.1.1
 
@@ -129,7 +134,8 @@ The development is complete. The application is at version 1.0.0. Please look at
 - [x] Error dialog use (100% completion).
 - [x] Debugging remaining issues.
 
-----
+---
+---
 
 Some pictures from the InkPlate-6 version:
 

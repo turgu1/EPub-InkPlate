@@ -45,4 +45,10 @@ class CharPool
 
       return tmp;
     }
+
+    char * set(std::string str) {
+      char * p = this->allocate(str.length() + 1);
+      memcpy(p, str.c_str(), str.length() + 1);
+      return p;
+    }
 };

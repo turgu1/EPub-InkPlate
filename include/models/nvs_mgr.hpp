@@ -1,8 +1,12 @@
 #pragma once
 
+#if EPUB_INKPLATE_BUILD
+
 #include "global.hpp"
 
 #include "nvs_flash.h"
+
+#include <map>
 
 class NVSMgr
 {
@@ -24,6 +28,7 @@ class NVSMgr
     bool      get_last(uint32_t & id,       NVSData & nvs_data);
     bool  get_location(uint32_t   id,       NVSData & nvs_data);
     bool     id_exists(uint32_t   id                          );
+    int8_t     get_pos(uint32_t   id                          );
 
   private:
     static constexpr char const * TAG            = "NVSMgr";
@@ -31,31 +36,25 @@ class NVSMgr
     static constexpr char const * PARTITION_NAME = "nvs";
     const uint8_t MAX_ENTRIES = 10;
 
-    #pragma pack(push, 1)
-    struct NVSControl {
-      uint32_t first_idx;
-      uint32_t next_idx;
-    };
+    typedef std::map <uint32_t, uint32_t> TrackList;
 
+    uint8_t   track_count;
+    TrackList track_list;
+    uint32_t  next_idx;
+
+    #pragma pack(push, 1)
     union SavedData {
       NVSData  nvs_data;
       uint64_t data;
-    };
-
-    union SavedControl {
-      NVSControl nvs_control;
-      uint64_t   data;
     };
     #pragma pack(pop)
 
     nvs_handle_t nvs_handle;
     bool         initialized;
-    SavedControl saved_control;
 
-    bool retrieve(uint32_t index, uint32_t & id,       NVSData & nvs_data);
     bool retrieve(uint32_t index,                      NVSData & nvs_data);
-    bool     save(uint32_t index, uint32_t   id, const NVSData & nvs_data);
-    bool   update(uint32_t index,                const NVSData & nvs_data);
+    bool     save(                uint32_t   id, const NVSData & nvs_data);
+    bool   update(uint32_t index, uint32_t   id, const NVSData & nvs_data);
     void   remove(uint32_t index);
     bool  find_id(uint32_t id, uint32_t & index);
     void     show();
@@ -66,13 +65,12 @@ class NVSMgr
     }
 
     inline bool exists(uint32_t index) {
-      std::string key = bld_key("ID_", index);
-      uint32_t id;
-      return nvs_get_u32(nvs_handle, key.c_str(), &id) == ESP_OK;
+      TrackList::iterator it = track_list.find(index);
+      return it != track_list.end();
     }
 
     inline uint32_t size() { 
-      return saved_control.nvs_control.next_idx - saved_control.nvs_control.first_idx;
+      return track_count;
     }
 };
 
@@ -80,4 +78,6 @@ class NVSMgr
   NVSMgr nvs_mgr;
 #else
   extern NVSMgr nvs_mgr;
+#endif
+
 #endif

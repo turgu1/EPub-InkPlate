@@ -72,6 +72,8 @@ book_parameters()
   old_font_size          = font_size;
   done                   = 1;
 
+  book_params_form_entries[2].choice_count = form_viewer.get_font_choices_count();
+
   form_viewer.show(
     book_params_form_entries, 
     BOOK_PARAMS_FORM_SIZE, 

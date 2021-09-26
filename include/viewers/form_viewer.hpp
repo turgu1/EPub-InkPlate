@@ -11,8 +11,8 @@ class FormViewer
 {
   public:
     struct Choice {
-      const char * caption;
-      int8_t       value;
+      const char   * caption;
+      int8_t         value;
     };
     typedef Choice * Choices;
 
@@ -75,16 +75,12 @@ class FormViewer
       };
     #endif
 
-    static constexpr Choice font_choices[8] = {
-      { "CALADEA S",     1 },
-      { "CRIMSON S",     0 },
-      { "ASAP",          2 },
-      { "ASAP COND",     3 },
-      { "DEJAVU S",      4 },
-      { "DEJAVU COND S", 5 },
-      { "DEJAVU",        6 },
-      { "DEJAVU COND",   7 }
-    };
+    static Choice font_choices[8];
+    uint8_t font_choices_count;
+
+    void adjust_font_choices(char ** font_names, uint8_t size);
+
+    inline uint8_t get_font_choices_count() { return font_choices_count; }
 
   private:
     static constexpr char const * TAG = "FormViewer";

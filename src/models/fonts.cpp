@@ -7,11 +7,17 @@
 
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
+#include "viewers/form_viewer.hpp"
+#include "helpers/unzip.hpp"
 #include "alloc.hpp"
+#include "pugixml.hpp"
 
 #include <algorithm>
+#include <sys/stat.h>
 
-static const char * font_names[8] = {
+using namespace pugi;
+
+static const char * font_fnames[8] = {
   "CrimsonPro",
   "Caladea",
   "Asap",
@@ -20,6 +26,17 @@ static const char * font_names[8] = {
   "DejaVuSerifCondensed",
   "DejaVuSans",
   "DejaVuSansCondensed"
+};
+
+static const char * font_labels[8] = {
+  "CRIMSON S",
+  "CALADEA S",
+  "ASAP",
+  "ASAP COND",
+  "DEJAVUE S",
+  "DEJAVUE COND S",
+  "DEJAVU",
+  "DEJAVU COND"
 };
 
 Fonts::Fonts()
@@ -31,36 +48,117 @@ Fonts::Fonts()
   #endif
 }
 
+char *
+Fonts::get_file(const char * filename, uint32_t size)
+{
+  FILE * f = fopen(filename, "r");
+  char * buff = nullptr;
+
+  if (f) {
+    buff = (char *) allocate(size);
+    if (buff && (fread(buff, size, 1, f) != 1)) {
+      free(buff);
+      buff = nullptr;
+    } 
+    fclose(f);
+  }
+
+  return buff;
+}
+
+inline bool check_res(xml_parse_result res) { return res.status == status_ok; }
+inline bool check_str(const char * str) {
+  struct stat file_stat;
+  return (str != nullptr) && 
+         (str[0] != 0) &&
+         (stat(std::string(MAIN_FOLDER).append("/").append(str).c_str(), &file_stat) != -1); 
+}
+
 bool Fonts::setup()
 {
-  FontEntry font_entry;
+  FontEntry   font_entry;
+  struct stat file_stat;
 
   LOG_D("Fonts initialization");
 
   clear(true);
 
+  std::string draw              = "Drawings";
+  std::string system            = "System";
+  std::string drawings_filename = FONTS_FOLDER "/drawings.otf";
+  
+  if (!add(draw, FaceStyle::NORMAL, drawings_filename)) return false;
+
+  constexpr static const char * xml_fonts_descr = MAIN_FOLDER "/fonts_list.xml";
+
+  xml_document     fd;
+  char *           fd_data = nullptr;
+  xml_parse_result res;
+
+  if ((stat(xml_fonts_descr, &file_stat) != -1) &&
+      ((fd_data = get_file(xml_fonts_descr, file_stat.st_size)) != nullptr) &&
+      (check_res(fd.load_buffer_inplace(fd_data, file_stat.st_size)))) {
+
+    font_count = 0;
+    for (auto fnt : fd.child("fonts").children("font")) {
+      if (font_count >= 8) break;
+      xml_attribute attr;
+      const char * str = fnt.attribute("name").value();
+      if (check_str(str)) {
+        font_names[font_count] = char_pool.set(std::string(str));
+        if (check_str(str = fnt.child("regular").attribute("filename").value())) {
+          regular_fname[font_count] = char_pool.set(std::string(str));
+          if (check_str(str = fnt.child("bold").attribute("filename").value())) {
+            bold_fname[font_count] = char_pool.set(std::string(str));
+            if (check_str(str = fnt.child("italic").attribute("filename").value())) {
+              italic_fname[font_count] = char_pool.set(std::string(str));
+              if (check_str(str = fnt.child("bold-italic").attribute("filename").value())) {
+                bold_italic_fname[font_count] = char_pool.set(std::string(str));
+                font_count++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    LOG_D("Got %d fonts from xml file.", font_count);
+    fd.reset();
+    free(fd_data);
+  }
+  else {
+    if (fd_data) {
+      fd.reset();
+      free(fd_data);
+    }
+    for (int i = 0; i < 8; i++) {
+             font_names[i] = char_pool.set(std::string(font_labels[i]));
+          regular_fname[i] = char_pool.set(std::string(font_fnames[i]).append("-Regular.otf"   ));
+             bold_fname[i] = char_pool.set(std::string(font_fnames[i]).append("-Bold.otf"      ));
+           italic_fname[i] = char_pool.set(std::string(font_fnames[i]).append("-Italic.otf"    ));
+      bold_italic_fname[i] = char_pool.set(std::string(font_fnames[i]).append("-BoldItalic.otf"));
+    }
+    font_count = 8;
+  }
+
+  form_viewer.adjust_font_choices(font_names, font_count);
+
   int8_t font_index;
   config.get(Config::Ident::DEFAULT_FONT, &font_index);
-  if ((font_index < 0) || (font_index > 7)) font_index = 0;
+  if ((font_index < 0) || (font_index >= font_count)) font_index = 0;
 
-  std::string draw        = "Drawings";
-  std::string system      = "System";
+  std::string normal      = std::string(FONTS_FOLDER "/").append(    regular_fname[font_index]);
+  std::string bold        = std::string(FONTS_FOLDER "/").append(       bold_fname[font_index]);
+  std::string italic      = std::string(FONTS_FOLDER "/").append(     italic_fname[font_index]);
+  std::string bold_italic = std::string(FONTS_FOLDER "/").append(bold_italic_fname[font_index]);
 
-  std::string drawings    = FONTS_FOLDER "/drawings.otf";
-  
-  std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.otf"   );
-  std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.otf"      );
-  std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
-  std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
-
-  if (!add(draw,                   FaceStyle::NORMAL,      drawings   )) return false;
   if (!add(font_names[font_index], FaceStyle::NORMAL,      normal     )) return false;
   if (!add(font_names[font_index], FaceStyle::BOLD,        bold       )) return false;
   if (!add(font_names[font_index], FaceStyle::ITALIC,      italic     )) return false;
   if (!add(font_names[font_index], FaceStyle::BOLD_ITALIC, bold_italic)) return false;   
-
-  normal = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Regular.otf"   );
-  italic = std::string(FONTS_FOLDER "/").append(font_names[0]).append("-Italic.otf"    );
+  
+  normal = std::string(FONTS_FOLDER "/CrimsonPro-Regular.otf");
+  italic = std::string(FONTS_FOLDER "/CrimsonPro-Italic.otf" );
 
   if (!add(system, FaceStyle::NORMAL, normal)) return false;
   if (!add(system, FaceStyle::ITALIC, italic)) return false;
@@ -99,15 +197,17 @@ void
 Fonts::adjust_default_font(uint8_t font_index)
 {
   if (font_cache.at(1).name.compare(font_names[font_index]) != 0) {
-    std::string normal      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Regular.otf"   );
-    std::string bold        = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Bold.otf"      );
-    std::string italic      = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-Italic.otf"    );
-    std::string bold_italic = std::string(FONTS_FOLDER "/").append(font_names[font_index]).append("-BoldItalic.otf");
+    std::string normal      = std::string(FONTS_FOLDER "/").append(    regular_fname[font_index]);
+    std::string bold        = std::string(FONTS_FOLDER "/").append(       bold_fname[font_index]);
+    std::string italic      = std::string(FONTS_FOLDER "/").append(     italic_fname[font_index]);
+    std::string bold_italic = std::string(FONTS_FOLDER "/").append(bold_italic_fname[font_index]);
 
     if (!replace(1, font_names[font_index], FaceStyle::NORMAL,      normal     )) return;
     if (!replace(2, font_names[font_index], FaceStyle::BOLD,        bold       )) return;
     if (!replace(3, font_names[font_index], FaceStyle::ITALIC,      italic     )) return;
     if (!replace(4, font_names[font_index], FaceStyle::BOLD_ITALIC, bold_italic)) return;
+
+    LOG_D("Default font is now %s", font_names[font_index]);
   }
 }
 
@@ -152,8 +252,9 @@ Fonts::replace(int16_t             index,
       delete font_cache.at(index).font;
       font_cache.at(index) = f;
 
-      LOG_D("Font %s replacement at index %d and style %d.",
+      LOG_D("Font %s (%s) replacement at index %d and style %d.",
         f.name.c_str(), 
+        filename.c_str(),
         f.font->fonts_cache_index,
         (int)f.style);
       return true;

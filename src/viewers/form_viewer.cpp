@@ -10,6 +10,24 @@
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
+FormViewer::Choice FormViewer::font_choices[8] = {
+  { nullptr, 0 },
+  { nullptr, 1 },
+  { nullptr, 2 },
+  { nullptr, 3 },
+  { nullptr, 4 },
+  { nullptr, 5 },
+  { nullptr, 6 },
+  { nullptr, 7 }
+};
+
+void
+FormViewer::adjust_font_choices(char ** font_names, uint8_t size)
+{
+  for (uint8_t i = 0; i < size; i++) font_choices[i].caption = font_names[i];
+  font_choices_count = size; 
+}
+
 void
 FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::string & bottom_msg)
 {

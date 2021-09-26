@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  This file, if present in the main SDCard folder, is loaded at boot time
+  or after deep sleep to initialize the fonts structure. Only the first
+  8 fonts will be read. Each font must define regular, bold, italic and
+  bold-italic filenames. Too large font files may cause bad application behavior.
+  The files must reside in the "fonts" folder on the SDCard. 
+
+  The drawings and all CrimsomPro fonts must remain available in the font folder.
+-->
+<fonts>
+  <font name="CRIMSON S">
+    <regular     filename="CrimsonPro-Regular.otf"/>
+    <bold        filename="CrimsonPro-Bold.otf"/>
+    <italic      filename="CrimsonPro-Italic.otf"/>
+    <bold-italic filename="CrimsonPro-BoldItalic.otf"/>
+  </font>
+  <font name="CALADEA S">
+    <regular     filename="Caladea-Regular.otf"/>
+    <bold        filename="Caladea-Bold.otf"/>
+    <italic      filename="Caladea-Italic.otf"/>
+    <bold-italic filename="Caladea-BoldItalic.otf"/>
+  </font>
+  <font name="ASAP">
+    <regular     filename="Asap-Regular.otf"/>
+    <bold        filename="Asap-Bold.otf"/>
+    <italic      filename="Asap-Italic.otf"/>
+    <bold-italic filename="Asap-BoldItalic.otf"/>
+  </font>
+  <font name="ASAP COND">
+    <regular     filename="AsapCondensed-Regular.otf"/>
+    <bold        filename="AsapCondensed-Bold.otf"/>
+    <italic      filename="AsapCondensed-Italic.otf"/>
+    <bold-italic filename="AsapCondensed-BoldItalic.otf"/>
+  </font>
+  <font name="DEJAVU S">
+    <regular     filename="DejaVuSerif-Regular.otf"/>
+    <bold        filename="DejaVuSerif-Bold.otf"/>
+    <italic      filename="DejaVuSerif-Italic.otf"/>
+    <bold-italic filename="DejaVuSerif-BoldItalic.otf"/>
+  </font>
+  <font name="DEJAVU COND S">
+    <regular     filename="DejaVuSerifCondensed-Regular.otf"/>
+    <bold        filename="DejaVuSerifCondensed-Bold.otf"/>
+    <italic      filename="DejaVuSerifCondensed-Italic.otf"/>
+    <bold-italic filename="DejaVuSerifCondensed-BoldItalic.otf"/>
+  </font>
+  <font name="DEJAVU">
+    <regular     filename="DejaVuSans-Regular.otf"/>
+    <bold        filename="DejaVuSans-Bold.otf"/>
+    <italic      filename="DejaVuSans-Italic.otf"/>
+    <bold-italic filename="DejaVuSans-BoldItalic.otf"/>
+  </font>
+  <font name="DEJAVU COND">
+    <regular     filename="DejaVuSansCondensed-Regular.otf"/>
+    <bold        filename="DejaVuSansCondensed-Bold.otf"/>
+    <italic      filename="DejaVuSansCondensed-Italic.otf"/>
+    <bold-italic filename="DejaVuSansCondensed-BoldItalic.otf"/>
+  </font>
+</fonts>

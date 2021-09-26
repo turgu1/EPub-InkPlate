@@ -12,6 +12,7 @@
 #include "alloc.hpp"
 
 #if EPUB_INKPLATE_BUILD
+  #include "models/nvs_mgr.hpp"
   #include "esp.hpp"
 #endif
 
@@ -92,7 +93,7 @@
       case 4 : a = a + ((uint32_t)k[ 3] << 24); [[fallthrough]];
       case 3 : a = a + ((uint32_t)k[ 2] << 16); [[fallthrough]];
       case 2 : a = a + ((uint32_t)k[ 1] <<  8); [[fallthrough]];
-      case 1 : a = a + k[0];                    [[fallthrough]];
+      case 1 : a = a + k[0];
       /* case 0: nothing left to add */
     }
     mix(a, b, c);
@@ -255,6 +256,40 @@ BooksDir::get_book_id(uint16_t idx, uint32_t & id)
   return found;
 }
 
+bool
+BooksDir::get_book_index(uint32_t id, uint16_t & idx)
+{
+  int  i     = 0;
+  bool found = false;
+
+  for (auto & entry : sorted_index) {
+    if (entry.second.id == id) { idx = i; found = true; break; }
+    i++;
+  }
+  if (!found) LOG_E("Unable to find id: 0x%08x", id);
+
+  return found;
+}
+
+void
+BooksDir::set_track_order(uint32_t id, int8_t pos)
+{
+  LOG_D("-------------------------> set_track_order(%u, %d)", id, pos);
+  for (auto & entry : sorted_index) {
+    if (entry.second.id == id) {
+      char ch = (pos >= 0) ? 'a' + pos : 'z';
+      LOG_D("Old key: %s", entry.first.c_str());
+      if (entry.first.front() != ch) {
+        auto e = sorted_index.extract(entry.first);
+        e.key().front() = ch;
+        LOG_D("New key: %s", e.key().c_str());
+        sorted_index.insert(std::move(e));
+      }
+      break;
+    }
+  }
+}
+
 const BooksDir::EBookRecord * 
 BooksDir::get_book_data_from_db_index(uint16_t idx)
 {
@@ -329,7 +364,18 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
         temp_index[partial_record->filename] = IndexInfo { 
           .id = 0, 
           .db_index = 0 }; 
-        sorted_index[partial_record->title] = IndexInfo {
+
+        #if EPUB_INKPLATE_BUILD
+          int8_t pos = nvs_mgr.get_pos(partial_record->id);
+          std::string title = " ";
+          title += partial_record->title;
+          title.front() = (pos >= 0) ? 'a' + pos : 'z';
+        #else
+          std::string title = "z";
+          title += partial_record->title;
+        #endif
+
+        sorted_index[title] = IndexInfo {
           .id      = partial_record->id,
           .db_index = db.get_current_idx() };
         if (book_filename) {
@@ -378,7 +424,16 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
         }
         if (!first) {
           uint16_t idx = new_db->get_record_count() - 1;
-          sorted_index[data->title] = IndexInfo {
+          #if EPUB_INKPLATE_BUILD
+            int8_t pos = nvs_mgr.get_pos(data->id);
+            std::string title = " ";
+            title += data->title;
+            title.front() = (pos >= 0) ? 'a' + pos : 'z';
+          #else
+            std::string title = "z";
+            title += data->title;
+          #endif
+          sorted_index[title] = IndexInfo {
             .id       = data->id,
             .db_index = idx };
           if (book_filename) {
@@ -533,7 +588,16 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             }
 
             uint16_t idx = db.get_record_count() - 1;
-            sorted_index[the_book->title] = {
+            #if EPUB_INKPLATE_BUILD
+              int8_t pos = nvs_mgr.get_pos(the_book->id);
+              std::string title = " ";
+              title += the_book->title;
+              title.front() = (pos >= 0) ? 'a' + pos : 'z';
+            #else
+              std::string title = "z";
+              title += the_book->title;
+            #endif
+            sorted_index[title] = {
               .id       = the_book->id,
               .db_index = idx };
 

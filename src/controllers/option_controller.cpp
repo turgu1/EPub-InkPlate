@@ -122,6 +122,8 @@ default_parameters()
   old_font_size          = font_size;
   done                   = 1;
 
+  font_params_form_entries[2].choice_count = form_viewer.get_font_choices_count();
+  
   form_viewer.show(
     font_params_form_entries, 
     FONT_FORM_SIZE, 
