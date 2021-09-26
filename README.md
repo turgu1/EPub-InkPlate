@@ -4,7 +4,7 @@
 
 (Updated 2021.09.26)
 
-Update to version 1.3.1 (Not ready yet)
+Update to version 1.3.1
 
 - [x] Corrected an issue with books being read cleanup
 - [x] Books being read are put on top of the Books list
