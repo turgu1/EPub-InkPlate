@@ -19,7 +19,7 @@
 
 using namespace pugi;
 
-static const char * font_fnames[8] = {
+static constexpr const char * font_fnames[8] = {
   "CrimsonPro",
   "Caladea",
   "Asap",
@@ -30,7 +30,7 @@ static const char * font_fnames[8] = {
   "DejaVuSansCondensed"
 };
 
-static const char * font_labels[8] = {
+static constexpr const char * font_labels[8] = {
   "CRIMSON S",
   "CALADEA S",
   "ASAP",
@@ -128,7 +128,6 @@ bool Fonts::setup()
     font_count = 0;
     for (auto fnt : fd.child("fonts").children("font")) {
       if (font_count >= 8) break;
-      xml_attribute attr;
       const char * str = fnt.attribute("name").value();
       font_size = 0;
       if (check_str(str)) {

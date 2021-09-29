@@ -8,7 +8,7 @@ Update to version 1.3.1
 
 - [x] Corrected an issue with books being read cleanup
 - [x] Books being read are put on top of the Books list
-- [x] Modifiable fonts list in the `font_list.xml` file
+- [x] Modifiable fonts list in the `fonts_list.xml` file
 - [x] Wordsmithing of the user's guide (long overdue...)
 
 - [x] Tests Inkplate-6 / Inkplate-10
