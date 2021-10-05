@@ -7,6 +7,7 @@
 
 #include "models/toc.hpp"
 #include "models/config.hpp"
+#include "models/fonts.hpp"
 #include "controllers/event_mgr.hpp"
 
 #include "viewers/book_viewer.hpp"
@@ -556,7 +557,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
 {
   std::scoped_lock guard(book_viewer.get_mutex());
 
-  TTF * font  = fonts.get(0);
+  Font * font = fonts.get(0);
   page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
   
   //page_out.set_compute_mode(Page::ComputeMode::LOCATION);

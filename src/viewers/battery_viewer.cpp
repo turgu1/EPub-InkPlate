@@ -61,7 +61,7 @@
 
     static constexpr char icons[5] = { '0', '1', '2', '3', '4' };
 
-    TTF::BitmapGlyph * glyph = font->get_glyph(icons[icon_index], 9);
+    Font::Glyph * glyph = font->get_glyph(icons[icon_index], 9);
 
     Dim dim;
     dim.width  =  100;

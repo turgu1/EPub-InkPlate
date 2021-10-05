@@ -6,9 +6,10 @@
 
 Update to version 1.3.2 - Not ready yet
 
-TrueType fonts don't look that nice on the low resolution eInk screens. This is my attempt to resolve this issue using METAFONT generated fonts that will be merged in a specific file format to simplify their management by the EPub-Inkplate application.
+TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that will be merged in a specific file format to simplify their management by the EPub-Inkplate application.
 
-- [ ] Font classes re-org to allow for bitmap fonts
+- [x] Font classes re-org to allow bitmap fonts
+- [ ] Tests with single PK file format
 - [ ] Create the IBMF font file format (my own file format design!)
 - [ ] Suite of tools to genereate IBMF font files
 - [ ] New class to manage Integrated BitMap Fonts (IBMF file format)

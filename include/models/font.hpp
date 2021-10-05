@@ -14,12 +14,13 @@
 class Font
 {
   public:
-    struct BitmapGlyph {
+    struct Glyph {
       unsigned char * buffer;
-      Dim     dim;
-      int16_t xoff, yoff;
-      int16_t advance;
-      int16_t pitch;
+      Dim             dim;
+      int16_t         xoff, yoff;
+      int16_t         advance;
+      int16_t         pitch;
+      int16_t         line_height;
     };
     
   private:
@@ -28,14 +29,11 @@ class Font
     std::mutex mutex;
 
   public:
-    Font(const std::string & filename);
-    Font(unsigned char * buffer, int32_t size);
+    Font();
    ~Font();
 
-    int16_t fonts_cache_index;
-    
-    inline bool ready() const { return face != nullptr; }
-    
+    inline bool is_ready() const { return ready; }
+
     /**
      * @brief Get a glyph object
      * 
@@ -44,42 +42,28 @@ class Font
      * already there.
      * 
      * @param charcode Character code as a unicode number.
-     * @return BitmapGlyph The glyph associated to the unicode character.
+     * @return Glyph The glyph associated to the unicode character.
      */
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
+      Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
     #else
-      BitmapGlyph * get_glyph(int32_t charcode, int16_t glyph_size);
+      Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
     #endif
 
-    /**
+    void clear_cache();
+
+    void get_size(const char * str, Dim * dim, int16_t glyph_size);
+
+    inline void    set_fonts_cache_index(int16_t index) { fonts_cache_index = index; }
+    inline int16_t get_fonts_cache_index()              { return fonts_cache_index;  }
+
+      /**
      * @brief Face normal line height
      * 
      * 
      * @return int32_t Normal line height of the face in pixels
      */
-    int32_t get_line_height(int16_t glyph_size)  {
-      std::scoped_lock guard(mutex);
-      if (current_size != glyph_size) set_font_size(glyph_size); 
-      return (face == nullptr) ? 0 : (face->size->metrics.height >> 6); 
-    }
-
-    /**
-     * @brief EM width
-     * 
-     * @return int32_t EM width in pixels related to the current font size. 
-     */
-    int32_t get_em_width(int16_t glyph_size) {
-      std::scoped_lock guard(mutex);
-      if (current_size != glyph_size) set_font_size(glyph_size); 
-      return (face == nullptr) ? 0 : face->size->metrics.x_ppem; 
-    }
-
-    int32_t get_em_height(int16_t glyph_size) { 
-      std::scoped_lock guard(mutex);
-      if (current_size != glyph_size) set_font_size(glyph_size);
-      return (face == nullptr) ? 0 : face->size->metrics.y_ppem; 
-    }
+    virtual int32_t get_line_height(int16_t glyph_size) = 0;
 
     /**
      * @brief Face descender height
@@ -87,39 +71,31 @@ class Font
      * @return int32_t The face descender height in pixels related to
      *                 the current font size.
      */
-    int32_t get_descender_height(int16_t glyph_size) {
-      std::scoped_lock guard(mutex);
-      if (current_size != glyph_size) set_font_size(glyph_size);
-      return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6); 
-    }
+    virtual int32_t get_descender_height(int16_t glyph_size) = 0;
 
-    void clear_cache();
-
-    void get_size(const char * str, Dim * dim, int16_t glyph_size);
-
-  private:
+protected:
     static constexpr uint16_t BYTE_POOL_SIZE = 16384*2;
 
-    typedef std::unordered_map<int32_t, BitmapGlyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
-    typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
-    typedef uint8_t BytePool[BYTE_POOL_SIZE];
-    typedef std::forward_list<BytePool *> BytePools;
+    typedef std::unordered_map<int32_t, Glyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
+    typedef std::unordered_map<int16_t, Glyphs>        GlyphsCache;
+    typedef uint8_t                                    BytePool[BYTE_POOL_SIZE];
+    typedef std::forward_list<BytePool *>              BytePools;
     
-    GlyphsCache cache;
-
-    MemoryPool<BitmapGlyph> bitmap_glyph_pool;
+    GlyphsCache             cache;
+    int16_t                 fonts_cache_index;
+    int8_t                  current_font_size;
+    bool                    ready;
     
-    BytePools byte_pools;
-    uint16_t  byte_pool_idx;
+    MemoryPool<Glyph> bitmap_glyph_pool;
+    
+    BytePools               byte_pools;
+    uint16_t                byte_pool_idx;
 
-    void add_buff_to_byte_pool();
+    void      add_buff_to_byte_pool();
     uint8_t * byte_pool_alloc(uint16_t size);
 
-    unsigned char * memory_font;                      ///< Buffer for memory fonts
-    int current_size;
+    unsigned char * memory_font;  ///< Buffer for memory fonts
 
-    void clear_face();
-    
     /**
      * @brief Set the font face object
      * 
@@ -130,19 +106,6 @@ class Font
      * @return false Some error (file not found, unsupported format)
      */
     bool set_font_face_from_file(const std::string font_filename);
-
-    /**
-     * @brief Set the font face object
-     * 
-     * Get a font from memory loaded and ready to supply glyphs. Note 
-     * that the buffer will be freed when the face will be removed.
-     * 
-     * @param buffer The buffer containing the font. 
-     * @param size   The buffer size in bytes.
-     * @return true The font was found and retrieved.
-     * @return false Some error (file not found, unsupported format).
-     */
-    bool set_font_face_from_memory(unsigned char * buffer, int32_t size);
 
     /**
      * @brief Set the font size
@@ -156,9 +119,22 @@ class Font
      */
     bool set_font_size(int16_t size);
 
+    /**
+     * @brief Set the font face object
+     * 
+     * Get a font from memory loaded and ready to supply glyphs. Note 
+     * that the buffer will be freed when the face will be removed.
+     * 
+     * @param buffer The buffer containing the font. 
+     * @param size   The buffer size in bytes.
+     * @return true The font was found and retrieved.
+     * @return false Some error (file not found, unsupported format).
+     */
+    virtual bool set_font_face_from_memory(unsigned char * buffer, int32_t size) = 0;
+
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      BitmapGlyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false);
+      virtual Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false) = 0;
     #else
-      BitmapGlyph *      get_glyph_internal(int32_t charcode, int16_t glyph_size);
+      virtual Glyph *      get_glyph_internal(int32_t charcode, int16_t glyph_size) = 0;
     #endif
 };

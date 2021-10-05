@@ -65,7 +65,7 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     Pos(((Screen::WIDTH - width ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT) >> 1) + 2));
 
   TTF * font = fonts.get(0);
-  TTF::BitmapGlyph * glyph = font->get_glyph(icon_char[severity], 24);
+  Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
 
   page.put_char_at(
     icon_char[severity], 

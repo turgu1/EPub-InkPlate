@@ -72,7 +72,7 @@ class Page
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
-          TTF::BitmapGlyph * glyph;    ///< Glyph
+          Font::Glyph * glyph;    ///< Glyph
           bool is_space;
         } glyph_entry;
         struct ImageEntry {            ///< Used for IMAGE
@@ -122,7 +122,7 @@ class Page
 
     void clear_display_list();
     void           add_line(const Format & fmt, bool justifyable);
-    void  add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font, bool is_space);
+    void  add_glyph_to_line(Font::Glyph * glyph, const Format & fmt, Font & font, bool is_space);
     void  add_image_to_line(Image & image, int16_t advance, const Format & fmt);
     int32_t      to_unicode(const char **str, CSS::TextTransform transform, bool first) const;
 

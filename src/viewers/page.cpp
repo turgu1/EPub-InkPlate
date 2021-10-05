@@ -134,9 +134,9 @@ Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) con
 void 
 Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 {
-  TTF::BitmapGlyph * glyph;
+  Font::Glyph * glyph;
   
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
 
   const char * s = str.c_str(); 
   if (fmt.align == CSS::Align::LEFT) {
@@ -235,9 +235,9 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 void 
 Page::put_char_at(char ch, Pos pos, const Format & fmt)
 {
-  TTF::BitmapGlyph * glyph;
+  Font::Glyph * glyph;
   
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
 
   glyph = font->get_glyph(ch, fmt.font_size);
   if (glyph != nullptr) {
@@ -393,7 +393,7 @@ Page::set_limits(const Format & fmt)
 bool
 Page::line_break(const Format & fmt, int8_t indent_next_line)
 {
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
   
   // LOG_D("line_break font index: %d", fmt.font_index);
 
@@ -415,7 +415,7 @@ Page::line_break(const Format & fmt, int8_t indent_next_line)
 bool 
 Page::new_paragraph(const Format & fmt, bool recover)
 {
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
 
   // Check if there is enough room for the first line of the paragraph.
   if (!recover) {
@@ -461,7 +461,7 @@ Page::break_paragraph(const Format & fmt)
 bool 
 Page::end_paragraph(const Format & fmt)
 {
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
 
   if (!line_list.empty()) {
     add_line(fmt, false);
@@ -598,7 +598,7 @@ Page::add_line(const Format & fmt, bool justifyable)
 }
 
 inline void 
-Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font, bool is_space)
+Page::add_glyph_to_line(Font::Glyph * glyph, const Format & fmt, Font & font, bool is_space)
 {
   if (is_space && (line_width == 0)) return;
 
@@ -611,7 +611,7 @@ Page::add_glyph_to_line(TTF::BitmapGlyph * glyph, const Format & fmt, TTF & font
   entry->pos.y                     = 0;
   entry->kind.glyph_entry.is_space = is_space;
   
-  if (glyphs_height < glyph->root->get_line_height(fmt.font_size)) glyphs_height = glyph->root->get_line_height(fmt.font_size);
+  if (glyphs_height < glyph->line_height) glyphs_height = glyph->line_height;
   if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
 
   line_width += (glyph->advance);
@@ -679,7 +679,7 @@ bool
   Page::add_word(const char * word,  const Format & fmt)
 #endif
 {
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
   if (font == nullptr) return false;
 
   if (line_list.empty()) {
@@ -687,7 +687,7 @@ bool
     if ((screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y)) return false;
   }
 
-  TTF::BitmapGlyph * glyph;
+  Font::Glyph * glyph;
 
   DisplayList      * the_list = new DisplayList;
   const char       * str      = word;
@@ -767,11 +767,11 @@ bool
 bool 
 Page::add_word(const char * word,  const Format & fmt)
 {
-  TTF::BitmapGlyph * glyph;
+  Font::Glyph * glyph;
   const char * str = word;
   int32_t code;
 
-  TTF * font = fonts.get(fmt.font_index, fmt.font_size);
+  Font * font = fonts.get(fmt.font_index, fmt.font_size);
 
   if (font == nullptr) return false;
 
@@ -830,9 +830,9 @@ Page::add_word(const char * word,  const Format & fmt)
 bool 
 Page::add_char(const char * ch, const Format & fmt)
 {
-  TTF::BitmapGlyph * glyph;
+  Font::Glyph * glyph;
 
-  TTF * font = fonts.get(fmt.font_index);
+  Font * font = fonts.get(fmt.font_index);
 
   if (font == nullptr) return false;
 
@@ -876,8 +876,8 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
   }
 
   // Compute the baseline advance for the bitmap, using info from the current font
-  TTF::BitmapGlyph * glyph;
-  TTF * font = fonts.get(fmt.font_index);
+  Font::Glyph * glyph;
+  Font * font = fonts.get(fmt.font_index);
 
   const char * str = "m";
   int32_t code = to_unicode(&str, fmt.text_transform, true);
@@ -1277,13 +1277,8 @@ Page::get_pixel_value(const CSS::Value & value, const Format & fmt, int16_t ref,
       return (value.num * Screen::RESOLUTION) / 72;
     case CSS::ValueType::EM:
     case CSS::ValueType::REM:
-      {
-        // TTF * f = fonts.get(fmt.font_index);
         return value.num * 
                ((fmt.font_size * Screen::RESOLUTION) / 72);
-              //  (vertical ? f->get_em_height(fmt.font_size) : 
-              //              f->get_em_width(fmt.font_size));
-      }
     case CSS::ValueType::PERCENT:
       return (value.num * ref) / 100;
     case CSS::ValueType::NO_TYPE:
@@ -1317,15 +1312,8 @@ Page::get_point_value(const CSS::Value & value, const Format & fmt, int16_t ref)
     case CSS::ValueType::PT:
       return value.num;  // Already in points
     case CSS::ValueType::EM:
-    case CSS::ValueType::REM: {
-          // TTF * font = fonts.get(1, normal_size);
-          // if (font != nullptr) {
-          //   return (value.num * font->get_em_height()) * 72 / Screen::RESOLUTION;
-          // }
-          // else {
+    case CSS::ValueType::REM:
             return value.num * ref;
-          // }
-        }
     case CSS::ValueType::CM:
       return (value.num * 72) / 2.54;
     case CSS::ValueType::PERCENT:
@@ -1546,7 +1534,7 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
       fmt.vertical_align = -5;
     }
     else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::VALUE) {
-      TTF * font = fonts.get(fmt.font_index);
+      Font * font = fonts.get(fmt.font_index);
 
       fmt.vertical_align = - get_pixel_value(*(vals->front()), fmt, font->get_line_height(fmt.font_size));
     }

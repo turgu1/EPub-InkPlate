@@ -122,7 +122,7 @@ FT_BEGIN_HEADER
   /**************************************************************************
    *
    * @type:
-   *   FT_BitmapGlyph
+   *   FT_Glyph
    *
    * @description:
    *   A handle to an object used to model a bitmap glyph image.  This is a

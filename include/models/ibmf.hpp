@@ -6,29 +6,26 @@
 #include "global.hpp"
 
 #include "models/font.hpp"
+#include "models/pk_font.hpp"
 #include "memory_pool.hpp"
 
-#include <ft2build.h>
-
-#include FT_FREETYPE_H
-#include FT_GLYPH_H
 
 #include <unordered_map>
 #include <forward_list>
 #include <mutex>
 
-class TTF : public Font
+class IBMF : public Font
 {
   private:
-    static constexpr char const * TAG = "TTF";
+    static constexpr char const * TAG = "IBMF";
 
-    FT_Face    face;
-    std::mutex mutex;
+    PKFont     * face;
+    std::mutex   mutex;
 
   public:
-    TTF(const std::string & filename);
-    TTF(unsigned char * buffer, int32_t size);
-   ~TTF();
+    IBMF(const std::string & filename);
+    IBMF(unsigned char * buffer, int32_t size);
+   ~IBMF();
 
     /**
      * @brief Get a glyph object
@@ -55,7 +52,7 @@ class TTF : public Font
     int32_t get_line_height(int16_t glyph_size)  {
       std::scoped_lock guard(mutex);
       if (current_font_size != glyph_size) set_font_size(glyph_size); 
-      return (face == nullptr) ? 0 : (face->size->metrics.height >> 6); 
+      return (face == nullptr) ? 0 : (face->get_line_height()); 
     }
 
     /**
@@ -67,11 +64,10 @@ class TTF : public Font
     int32_t get_descender_height(int16_t glyph_size) {
       std::scoped_lock guard(mutex);
       if (current_font_size != glyph_size) set_font_size(glyph_size);
-      return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6); 
+      return (face == nullptr) ? 0 : (face->get_descender_height()); 
     }
 
   private:
-    static FT_Library library;
     void clear_face();
     
     /**

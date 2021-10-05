@@ -5,7 +5,7 @@
 #pragma once
 #include "global.hpp"
 
-#include "models/ttf2.hpp"
+#include "models/font.hpp"
 #include "helpers/char_pool.hpp"
 
 #include <vector>
@@ -25,7 +25,7 @@ class Fonts
     enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
     struct FontEntry {
       std::string name;
-      TTF *       font;
+      Font *      font;
       FaceStyle   style;
     };
 
@@ -46,8 +46,8 @@ class Fonts
      * @return Pointer to the font at index. If there is no font at index,
      *         it returns the pointer to the first font in the list.
      */
-    TTF * get(int16_t index) {
-      TTF * f; 
+    Font * get(int16_t index) {
+      Font * f; 
       if (index >= font_cache.size()) {
         LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
         f = font_cache.at(1).font;
@@ -95,7 +95,9 @@ class Fonts
      * @return true The font was loaded
      * @return false Some error (file does not exists, etc.)
      */
-    bool add(const std::string & name, FaceStyle style, const std::string & filename);
+    bool add(const std::string & name, 
+             FaceStyle           style, 
+             const std::string & filename);
     
     /**
      * @brief Add a font from memory buffer
@@ -107,7 +109,11 @@ class Fonts
      * @return true The font was added
      * @return false Some error occured 
      */
-    bool add(const std::string & name, FaceStyle style, unsigned char * buffer, int32_t size);
+    bool add(const std::string & name, 
+             FaceStyle           style, 
+             unsigned char     * buffer, 
+             int32_t             size,
+             const std::string & filename);
 
     FaceStyle adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight) const;
 

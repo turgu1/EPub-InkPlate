@@ -15,11 +15,9 @@
 
 FT_Library TTF::library{ nullptr };
 
-TTF::TTF(const std::string & filename)
+TTF::TTF(const std::string & filename) : Font()
 {
-  face         = nullptr;
-  memory_font  = nullptr;
-  current_size = -1;
+  face  = nullptr;
 
   if (library == nullptr) {
     int error = FT_Init_FreeType(& library);
@@ -32,12 +30,10 @@ TTF::TTF(const std::string & filename)
   set_font_face_from_file(filename);
 }
 
-TTF::TTF(unsigned char * buffer, int32_t buffer_size)
+TTF::TTF(unsigned char * buffer, int32_t buffer_size) : Font()
 {
-  face         = nullptr;
-  memory_font  = nullptr;
-  current_size = -1;
-  
+  face  = nullptr;
+ 
   if (library == nullptr) {
     int error = FT_Init_FreeType(& library);
     if (error) {
@@ -54,37 +50,6 @@ TTF::~TTF()
 }
 
 void
-TTF::add_buff_to_byte_pool()
-{
-  BytePool * pool = (BytePool *) allocate(BYTE_POOL_SIZE);
-  if (pool == nullptr) {
-    LOG_E("Unable to allocated memory for bytes pool.");
-    msg_viewer.out_of_memory("ttf pool allocation");
-  }
-  byte_pools.push_front(pool);
-
-  byte_pool_idx = 0;
-}
-
-uint8_t * 
-TTF::byte_pool_alloc(uint16_t size)
-{
-  if (size > BYTE_POOL_SIZE) {
-    LOG_E("Byte Pool Size NOT BIG ENOUGH!!!");
-    std::abort();
-  }
-  if (byte_pools.empty() || (byte_pool_idx + size) > BYTE_POOL_SIZE) {
-    LOG_D("Adding new Byte Pool buffer.");
-    add_buff_to_byte_pool();
-  }
-
-  uint8_t * buff = &(*byte_pools.front())[byte_pool_idx];
-  byte_pool_idx += size;
-
-  return buff;
-}
-
-void
 TTF::clear_face()
 {
   clear_cache();
@@ -97,48 +62,11 @@ TTF::clear_face()
     memory_font = nullptr;
   }
   
-  current_size = -1;
+  ready             = false;
+  current_font_size = -1;
 }
 
-void
-TTF::clear_cache()
-{
-  std::scoped_lock guard(mutex);
-  
-  LOG_D("Clear cache...");
-  for (auto const & entry : cache) {
-    for (auto const & glyph : entry.second) {
-      bitmap_glyph_pool.deleteElement(glyph.second);      
-    }
-  }
-
-  for (auto * buff : byte_pools) {
-    free(buff);
-  }
-  byte_pools.clear();
-  
-  cache.clear();
-  cache.reserve(50);
-}
-
-TTF::BitmapGlyph *
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  TTF::get_glyph(int32_t charcode, int16_t glyph_size, bool debugging)
-  {
-    std::scoped_lock guard(mutex);
-
-    return get_glyph_internal(charcode, glyph_size, debugging);
-  }
-#else
-  TTF::get_glyph(int32_t charcode, int16_t glyph_size)
-  {
-    std::scoped_lock guard(mutex);
-
-    return get_glyph_internal(charcode, glyph_size);
-  }
-#endif
-
-TTF::BitmapGlyph *
+Font::Glyph *
 #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
   TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging)
 #else
@@ -167,7 +95,7 @@ TTF::BitmapGlyph *
       }
     #endif
 
-    if (current_size != glyph_size) set_font_size(glyph_size);
+    if (current_font_size != glyph_size) set_font_size(glyph_size);
 
     int glyph_index = FT_Get_Char_Index(face, charcode);
     if (glyph_index == 0) {
@@ -185,7 +113,7 @@ TTF::BitmapGlyph *
       }
     }
 
-    BitmapGlyph * glyph = bitmap_glyph_pool.newElement();
+    Glyph * glyph = bitmap_glyph_pool.newElement();
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
@@ -194,9 +122,9 @@ TTF::BitmapGlyph *
 
     FT_GlyphSlot slot = face->glyph;
 
-    glyph->root       = this;
-    glyph->dim.width  = slot->metrics.width  >> 6;
-    glyph->dim.height = slot->metrics.height >> 6;
+    glyph->dim.width   = slot->metrics.width  >> 6;
+    glyph->dim.height  = slot->metrics.height >> 6;
+    glyph->line_height = face->size->metrics.height >> 6;
 
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
       if (debugging && first_debug) {
@@ -228,9 +156,10 @@ TTF::BitmapGlyph *
       }
     }
 
-    glyph->pitch      = slot->bitmap.pitch;
-    glyph->dim.height = slot->bitmap.rows;
-    glyph->dim.width  = slot->bitmap.width;
+    glyph->pitch       = slot->bitmap.pitch;
+    glyph->dim.height  = slot->bitmap.rows;
+    glyph->dim.width   = slot->bitmap.width;
+    glyph->line_height = face->size->metrics.height >> 6;
 
     int32_t size = glyph->pitch * glyph->dim.height;
 
@@ -265,7 +194,7 @@ TTF::BitmapGlyph *
     //   " y:"  << glyph->yoff <<
     //   " a:"  << glyph->advance << std::endl;
 
-    cache[current_size][charcode] = glyph;
+    cache[current_font_size][charcode] = glyph;
 
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
       if (debugging && first_debug) {
@@ -294,49 +223,8 @@ TTF::set_font_size(int16_t size)
     return false;
   }
 
-  current_size = size;
+  current_font_size = size;
   return true;
-}
-
-bool 
-TTF::set_font_face_from_file(const std::string font_filename)
-{
-  LOG_D("set_font_face_from_file() ...");
-
-  FILE * font_file;
-  if ((font_file = fopen(font_filename.c_str(), "r")) == nullptr) {
-    LOG_E("set_font_face_from_file: Unable to open font file '%s'", font_filename.c_str());
-    return false;
-  }
-  else {
-    uint8_t * buffer;
-
-    struct stat stat_buf;
-    fstat(fileno(font_file), &stat_buf);
-    int32_t length = stat_buf.st_size;
-    
-    LOG_D("Font File Length: %d", length);
-
-    buffer = (uint8_t *) allocate(length + 1);
-
-    if (buffer == nullptr) {
-      LOG_E("Unable to allocate font buffer: %d", (int32_t) (length + 1));
-      msg_viewer.out_of_memory("font buffer allocation");
-    }
-
-    if (fread(buffer, length, 1, font_file) != 1) {
-      LOG_E("set_font_face_from_file: Unable to read file content");
-      fclose(font_file);
-      free(buffer);
-      return false;
-    }
-
-    fclose(font_file);
-
-    buffer[length] = 0;
-
-    return set_font_face_from_memory(buffer, length);
-  }
 }
 
 bool 
@@ -351,33 +239,7 @@ TTF::set_font_face_from_memory(unsigned char * buffer, int32_t buffer_size)
     return false;
   }
 
+  ready       = true;
   memory_font = buffer;
   return true;
-}
-
-void
-TTF::get_size(const char * str, Dim * dim, int16_t glyph_size)
-{
-  int16_t max_up   = 0;
-  int16_t max_down = 0;
-
-  dim->width  = 0;
-
-  { std::scoped_lock guard(mutex);
-  
-    while (*str) {
-      BitmapGlyph * glyph = get_glyph_internal(*str++, glyph_size);
-      if (glyph) {
-        dim->width += glyph->advance;
-
-        int16_t up   = -glyph->yoff;
-        int16_t down =  glyph->dim.height + glyph->yoff;
-      
-        if (up   > max_up  ) max_up   = up;
-        if (down > max_down) max_down = down;
-      }
-    }
-
-    dim->height = max_up + max_down;
-  }
 }

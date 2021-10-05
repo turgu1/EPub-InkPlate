@@ -6,6 +6,7 @@
 #include "models/fonts.hpp"
 
 #include "models/config.hpp"
+#include "models/font_factory.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
 #include "controllers/book_param_controller.hpp"
@@ -280,18 +281,18 @@ Fonts::replace(int16_t             index,
   std::scoped_lock guard(mutex);
   
   FontEntry f;
-  if ((f.font = new TTF(filename))) {
-    if (f.font->ready()) {
-      f.name                    = name;
-      f.font->fonts_cache_index = index;
-      f.style                   = style;
+  if ((f.font = FontFactory::create(filename))) {
+    if (f.font->is_ready()) {
+      f.name  = name;
+      f.style = style;
+      f.font->set_fonts_cache_index(index);
       delete font_cache.at(index).font;
       font_cache.at(index) = f;
 
       LOG_D("Font %s (%s) replacement at index %d and style %d.",
         f.name.c_str(), 
         filename.c_str(),
-        f.font->fonts_cache_index,
+        f.font->get_fonts_cache_index(),
         (int)f.style);
       return true;
     }
@@ -321,16 +322,16 @@ Fonts::add(const std::string & name,
   }
 
   FontEntry f;
-  if ((f.font = new TTF(filename))) {
-    if (f.font->ready()) {
-      f.name                    = name;
-      f.font->fonts_cache_index = font_cache.size();
-      f.style                   = style;
+  if ((f.font = FontFactory::create(filename))) {
+    if (f.font->is_ready()) {
+      f.name  = name;
+      f.style = style;
+      f.font->set_fonts_cache_index(font_cache.size());
       font_cache.push_back(f);
 
       LOG_D("Font %s added to cache at index %d and style %d.",
         f.name.c_str(), 
-        f.font->fonts_cache_index,
+        f.font->get_fonts_cache_index(),
         (int)f.style);
       return true;
     }
@@ -350,7 +351,8 @@ bool
 Fonts::add(const std::string & name, 
            FaceStyle           style,
            unsigned char *     buffer,
-           int32_t             size)
+           int32_t             size,
+           const std::string & filename)
 {
   std::scoped_lock guard(mutex);
   
@@ -362,16 +364,16 @@ Fonts::add(const std::string & name,
 
   FontEntry f;
 
-  if ((f.font = new TTF(buffer, size))) {
-    if (f.font->ready()) {
-      f.name                    = name;
-      f.font->fonts_cache_index = font_cache.size();
-      f.style                   = style;
+  if ((f.font = FontFactory::create(filename, buffer, size))) {
+    if (f.font->is_ready()) {
+      f.name  = name;
+      f.style = style;
+      f.font->set_fonts_cache_index(font_cache.size());
       font_cache.push_back(f);
 
       LOG_D("Font %s added to cache at index %d and style %d.",
         f.name.c_str(), 
-        f.font->fonts_cache_index,
+        f.font->get_fonts_cache_index(),
         (int)f.style);
       return true;
     }

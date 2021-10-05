@@ -7,7 +7,6 @@
 
 #include "viewers/book_viewer.hpp"
 #include "models/fonts.hpp"
-#include "models/ttf2.hpp"
 #include "viewers/page.hpp"
 #include "screen.hpp"
 #include "controllers/app_controller.hpp"
@@ -16,13 +15,13 @@ static const std::string TOUCH_AND_HOLD_STR = "Touch icon and hold for more info
 
 void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {
-  TTF * font = fonts.get(5);
+  Font * font = fonts.get(5);
 
   line_height = font->get_line_height(CAPTION_SIZE);
   text_height = line_height - font->get_descender_height(CAPTION_SIZE); 
 
   font = fonts.get(0);
-  TTF::BitmapGlyph * icon = font->get_glyph('A', ICON_SIZE);
+  Font::Glyph * icon = font->get_glyph('A', ICON_SIZE);
 
   icon_height = icon->dim.height;
 
@@ -69,7 +68,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
     if (menu[idx].visible) {
       char ch = icon_char[(int)menu[idx].icon];
-      TTF::BitmapGlyph * glyph;
+      Font::Glyph * glyph;
       glyph = font->get_glyph(ch, ICON_SIZE);
 
       entry_locs[idx].pos.x = pos.x;

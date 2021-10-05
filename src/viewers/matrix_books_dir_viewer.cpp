@@ -25,7 +25,7 @@
 void
 MatrixBooksDirViewer::setup()
 {
-  TTF * font = fonts.get(TITLE_FONT);
+  Font * font = fonts.get(TITLE_FONT);
   title_font_height = font->get_line_height(TITLE_FONT_SIZE);
 
   font = fonts.get(AUTHOR_FONT);
@@ -161,7 +161,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
   page.put_highlight(Dim(Screen::WIDTH - 20, 3), Pos(10, first_entry_ypos - 8));
 
-  TTF * font = fonts.get(0);
+  Font * font = fonts.get(0);
 
   fmt.line_height_factor = 1.0;
   fmt.font_index         = PAGENBR_FONT;
@@ -254,7 +254,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
 
     if (book == nullptr) return;
 
-    // TTF * font = fonts.get(5, 9);
+    // Font * font = fonts.get(5, 9);
 
     page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
                          Pos(xpos - 2, ypos - 2));
@@ -345,7 +345,7 @@ MatrixBooksDirViewer::clear_highlight()
 
   if (book == nullptr) return;
 
-  // TTF * font = fonts.get(5, 9);
+  // Font * font = fonts.get(5, 9);
 
   Page::Format fmt = {
     .line_height_factor = 0.8,

@@ -6,7 +6,6 @@
 #include "controllers/book_controller.hpp"
 #include "viewers/book_viewer.hpp"
 
-#include "models/ttf2.hpp"
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/html_interpreter.hpp"
@@ -49,7 +48,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     ESP::show_heaps_info();
   #endif
 
-  TTF * font  = fonts.get(0);
+  Font * font = fonts.get(0);
   page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
 
   //page.set_compute_mode(Page::ComputeMode::MOVE);

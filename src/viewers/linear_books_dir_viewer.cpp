@@ -82,12 +82,14 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     if (book == nullptr) break;
     
-    Image::ImageData image(Dim(book->cover_width, book->cover_height), (uint8_t *) book->cover_bitmap);
+    Image::ImageData image(Dim(book->cover_width, book->cover_height), 
+                           (uint8_t *) book->cover_bitmap);
     page.put_image(image, Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
 
     #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
-        page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height), 
+        page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
+                               BooksDir::max_cover_height), 
                            Pos(xpos - 5, ypos));
       }
     #endif
@@ -117,7 +119,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     ypos = top_pos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES;
   }
 
-  TTF * font = fonts.get(0);
+  Font * font = fonts.get(0);
 
   fmt.line_height_factor = 1.0;
   fmt.font_index         = PAGENBR_FONT;

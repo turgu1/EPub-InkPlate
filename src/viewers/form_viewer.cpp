@@ -6,7 +6,6 @@
 #include "viewers/form_viewer.hpp"
 
 #include "models/fonts.hpp"
-#include "models/ttf2.hpp"
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
@@ -35,10 +34,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
   entries = form_entries;
 
-  TTF *              font                      =  fonts.get(5);
-  TTF::BitmapGlyph * glyph                     =  font->get_glyph('M', FONT_SIZE);
-  uint8_t            base_line_offset          = -glyph->yoff;
-  uint8_t            next_available_choice_loc =  0;
+  Font *              font                      =  fonts.get(5);
+  Font::Glyph * glyph                     =  font->get_glyph('M', FONT_SIZE);
+  uint8_t             base_line_offset          = -glyph->yoff;
+  uint8_t             next_available_choice_loc =  0;
 
   line_height = font->get_line_height(FONT_SIZE);
   entry_count = size;

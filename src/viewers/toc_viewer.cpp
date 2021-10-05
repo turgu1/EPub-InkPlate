@@ -108,7 +108,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
     ypos += ENTRY_HEIGHT;
   }
 
-  TTF * font = fonts.get(0);
+  Font * font = fonts.get(0);
 
   fmt.line_height_factor = 1.0;
   fmt.font_index         = PAGENBR_FONT;
