@@ -22,6 +22,7 @@ class IBMF : public Font
     PKFont     * face;
     std::mutex   mutex;
 
+    
   public:
     IBMF(const std::string & filename);
     IBMF(unsigned char * buffer, int32_t size);
@@ -42,6 +43,8 @@ class IBMF : public Font
     #else
       Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
     #endif
+
+    Glyph * adjust_ligature_and_kern(Glyph * glyph, uint16_t glyph_size, uint32_t next_charcode, bool & ignore_next);
 
   /**
      * @brief Face normal line height

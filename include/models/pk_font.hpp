@@ -612,23 +612,8 @@ class PKFont
     }
 
     bool
-    get_glyph(uint32_t char_code, Glyph ** glyph, bool load_bitmap, uint8_t & glyph_code)
+    get_glyph(uint8_t & glyph_code, Glyph ** glyph, bool load_bitmap)
     {
-      if ((char_code > ' ') && (char_code < '{')) {
-        glyph_code = char_code;
-      }
-      else {
-        switch (char_code) {
-          case 0x2018:
-          case 0x02BB: glyph_code = 0x60; break;
-          case 0x2019:
-          case 0x02BC: glyph_code = 0x27; break;
-          case 0x201C: glyph_code = 0x5C; break;
-          case 0x201D: glyph_code = 0x22; break;
-          default:
-            return false;
-        }
-      }
       if ((glyph_code > MAX_GLYPH_COUNT) ||
           (glyph_table[glyph_code] == nullptr)) {
         std::cerr << "No entry for glyph code " 

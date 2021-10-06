@@ -93,6 +93,18 @@ Font::Glyph *
   }
 #endif
 
+Font::Glyph *
+Font::get_glyph(int32_t charcode, int32_t next_charcode, int16_t glyph_size, bool & ignore_next)
+{
+  std::scoped_lock guard(mutex);
+
+  Font::Glyph * glyph = get_glyph_internal(charcode, glyph_size);
+  return (glyph == nullptr) ? nullptr 
+                            : ((glyph->ligature_and_kern_pgm_index >= 0) ? 
+                                       adjust_ligature_and_kern(glyph, glyph_size, next_charcode, ignore_next)
+                                     : glyph);
+}
+
 bool 
 Font::set_font_face_from_file(const std::string font_filename)
 {

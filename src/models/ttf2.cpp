@@ -125,6 +125,7 @@ Font::Glyph *
     glyph->dim.width   = slot->metrics.width  >> 6;
     glyph->dim.height  = slot->metrics.height >> 6;
     glyph->line_height = face->size->metrics.height >> 6;
+    glyph->ligature_and_kern_pgm_index = -1;
 
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
       if (debugging && first_debug) {

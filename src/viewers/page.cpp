@@ -58,9 +58,9 @@ Page::clear_display_list()
 // 00010000 -- 001FFFFF: 	11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
 int32_t 
-Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) const
+Page::to_unicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
 {
-  const uint8_t * c    = (uint8_t *) *str;
+  const uint8_t * c    = (uint8_t *) str;
   int32_t         u    = 0;
   bool            done = false;
 
@@ -102,27 +102,27 @@ Page::to_unicode(const char **str, CSS::TextTransform transform, bool first) con
       u = *c++;
       done = true;
     }
-    else if ((**str & 0xF1) == 0xF0) {
+    else if ((*str & 0xF1) == 0xF0) {
       u = *c++ & 0x07;
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       done = true;
     }
-    else if ((**str & 0xF0) == 0xE0) {
+    else if ((*str & 0xF0) == 0xE0) {
       u = *c++ & 0x0F;
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       done = true;
     }
-    else if ((**str & 0xE0) == 0xC0) {
+    else if ((*str & 0xE0) == 0xC0) {
       u = *c++ & 0x1F;
       if (*c == 0) break; else u = (u << 6) + (*c++ & 0x3F);
       done = true;
     }
     break;
   }
-  *str = (char *) c;
+  *str2 = (char *) c;
   if (transform != CSS::TextTransform::NONE) {
     if      (transform == CSS::TextTransform::UPPERCASE) u = toupper(u);
     else if (transform == CSS::TextTransform::LOWERCASE) u = tolower(u);
@@ -142,8 +142,9 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
   if (fmt.align == CSS::Align::LEFT) {
     bool first = true;
     while (*s) {
-      
-      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      const char *s1;
+      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      s = s1;
       if (glyph != nullptr) {
         DisplayListEntry * entry = display_list_entry_pool.newElement();
         if (entry == nullptr) no_mem();
@@ -175,7 +176,9 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
     while (*s) {
       bool first = true;
-      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      const char * s1;
+      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      s = s1;
       if (glyph != nullptr) size += glyph->advance;
       first = false;
     }
@@ -202,7 +205,9 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
     s = str.c_str();
     bool first = true;
     while (*s) {
-      glyph = font->get_glyph(to_unicode(&s, fmt.text_transform, first), fmt.font_size);
+      const char * s1;
+      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      s = s1;
       if (glyph != nullptr) {
         
         DisplayListEntry * entry = display_list_entry_pool.newElement();
@@ -696,7 +701,17 @@ bool
   bool               first    = true;
  
   while (*str) {
-    glyph = font->get_glyph(to_unicode(&str, fmt.text_transform, first), fmt.font_size);
+    bool ignore_next;
+    const char * str1, * str2;
+    uint32_t uc1, uc2;
+
+    uc1 = to_unicode(str, fmt.text_transform, first, &str1);
+    uc2 = to_unicode(str1, fmt.text_transform, false, &str2);
+
+    glyph = font->get_glyph(uc1, uc2, fmt.font_size, ignore_next);
+
+    str = ignore_next ? str2 : str1;    
+
     if (glyph == nullptr) {
       glyph = font->get_glyph(' ', fmt.font_size);
     }
@@ -786,7 +801,9 @@ Page::add_word(const char * word,  const Format & fmt)
   int16_t width = 0;
   bool    first = true;
   while (*str) {
-    glyph = font->get_glyph(code = to_unicode(&str, fmt.text_transform, first), fmt.font_size);
+    const char * s1;
+    glyph = font->get_glyph(code = to_unicode(str, fmt.text_transform, first, &s1), fmt.font_size);
+    str = s1;
     if (glyph != nullptr) width += glyph->advance;
     first = false;
   }
@@ -811,7 +828,9 @@ Page::add_word(const char * word,  const Format & fmt)
   first = true;
   while (*word) {
     if (font) {
-      glyph = font->get_glyph(to_unicode(&word, fmt.text_transform, first), fmt.font_size);
+      const char * s1;
+      glyph = font->get_glyph(to_unicode(word, fmt.text_transform, first, &s1), fmt.font_size);
+      word = s1;
       if (glyph == nullptr) {
         glyph = font->get_glyph(' ', fmt.font_size);
       }
@@ -848,7 +867,8 @@ Page::add_char(const char * ch, const Format & fmt)
     }
   }
 
-  int32_t code = to_unicode(&ch, fmt.text_transform, true);
+  const char * s1;
+  int32_t code = to_unicode(ch, fmt.text_transform, true, &s1);
 
   glyph = font->get_glyph(code, fmt.font_size);
 
@@ -880,7 +900,8 @@ Page::add_image(Image & image, const Format & fmt /*, bool at_start_of_page*/)
   Font * font = fonts.get(fmt.font_index);
 
   const char * str = "m";
-  int32_t code = to_unicode(&str, fmt.text_transform, true);
+  const char * s1;
+  int32_t code = to_unicode(str, fmt.text_transform, true, &s1);
 
   glyph = font->get_glyph(code, fmt.font_size);
 

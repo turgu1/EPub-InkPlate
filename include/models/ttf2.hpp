@@ -46,6 +46,10 @@ class TTF : public Font
       Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
     #endif
 
+    Glyph * adjust_ligature_and_kern(Glyph * glyph, uint16_t glyph_size, uint32_t next_charcode, bool & ignore_next) { 
+      ignore_next = false; return glyph; 
+    }
+
   /**
      * @brief Face normal line height
      * 
