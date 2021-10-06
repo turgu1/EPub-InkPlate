@@ -150,6 +150,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
         if (entry == nullptr) no_mem();
         entry->command                   = DisplayListCommand::GLYPH;
         entry->kind.glyph_entry.glyph    = glyph;
+        entry->kind.glyph_entry.kern     = glyph->advance;
         entry->pos.x                     = pos.x + glyph->xoff;
         entry->pos.y                     = pos.y + glyph->yoff;
         entry->kind.glyph_entry.is_space = false; // for completeness but not supposed to be used...
@@ -215,6 +216,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
         entry->command                   = DisplayListCommand::GLYPH;
         entry->kind.glyph_entry.glyph    = glyph;
+        entry->kind.glyph_entry.kern     = glyph->advance;
         entry->pos.x                     = x + glyph->xoff;
         entry->pos.y                     = pos.y + glyph->yoff;
         entry->kind.glyph_entry.is_space = false;
@@ -250,6 +252,7 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
     if (entry == nullptr) no_mem();
     entry->command                   = DisplayListCommand::GLYPH;
     entry->kind.glyph_entry.glyph    = glyph;
+    entry->kind.glyph_entry.kern     = glyph->advance;
     entry->pos.x                     = pos.x + glyph->xoff;
     entry->pos.y                     = pos.y + glyph->yoff;
     entry->kind.glyph_entry.is_space = false;
@@ -560,7 +563,7 @@ Page::add_line(const Format & fmt, bool justifyable)
       int16_t x     = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x  = pos.x + entry->kind.glyph_entry.glyph->xoff;
       entry->pos.y += pos.y + entry->kind.glyph_entry.glyph->yoff;
-      pos.x += (x == 0) ? entry->kind.glyph_entry.glyph->advance : x;
+      pos.x += (x == 0) ? entry->kind.glyph_entry.kern : x;
     }
     else if (entry->command == DisplayListCommand::IMAGE) {
       if (fmt.align == CSS::Align::CENTER) {
@@ -612,6 +615,7 @@ Page::add_glyph_to_line(Font::Glyph * glyph, const Format & fmt, Font & font, bo
 
   entry->command                   = DisplayListCommand::GLYPH;
   entry->kind.glyph_entry.glyph    = glyph;
+  entry->kind.glyph_entry.kern     = glyph->advance;
   entry->pos.x                     = is_space ? glyph->advance : 0;
   entry->pos.y                     = 0;
   entry->kind.glyph_entry.is_space = is_space;
@@ -704,11 +708,12 @@ bool
     bool ignore_next;
     const char * str1, * str2;
     uint32_t uc1, uc2;
+    int16_t  kern;
 
-    uc1 = to_unicode(str, fmt.text_transform, first, &str1);
+    uc1 = to_unicode(str,  fmt.text_transform, first, &str1);
     uc2 = to_unicode(str1, fmt.text_transform, false, &str2);
 
-    glyph = font->get_glyph(uc1, uc2, fmt.font_size, ignore_next);
+    glyph = font->get_glyph(uc1, uc2, fmt.font_size, kern, ignore_next);
 
     str = ignore_next ? str2 : str1;    
 
@@ -717,7 +722,7 @@ bool
     }
 
     if (glyph) {
-      width += glyph->advance;
+      width += kern;
       first  = false;
 
       DisplayListEntry * entry = display_list_entry_pool.newElement();
@@ -725,6 +730,7 @@ bool
 
       entry->command                   = DisplayListCommand::GLYPH;
       entry->kind.glyph_entry.glyph    = glyph;
+      entry->kind.glyph_entry.kern     = kern;
       entry->pos.x                     = 0;
       entry->kind.glyph_entry.is_space = false;
       entry->pos.y                     = fmt.vertical_align;
@@ -1230,10 +1236,11 @@ Page::show_display_list(const DisplayList & list, const char * title) const
     for (auto * entry : list) {
       if (entry->command == DisplayListCommand::GLYPH) {
         std::cout << "GLYPH" <<
-          " x:" << entry->pos.x <<
-          " y:" << entry->pos.y <<
-          " w:" << entry->kind.glyph_entry.glyph->dim.width  <<
-          " h:" << entry->kind.glyph_entry.glyph->dim.height << std::endl;
+          " x:" <<  entry->pos.x <<
+          " y:" <<  entry->pos.y << 
+          " w:" <<  entry->kind.glyph_entry.glyph->dim.width  <<
+          " k:" <<  entry->kind.glyph_entry.kern <<
+          " h:" <<  entry->kind.glyph_entry.glyph->dim.height << std::endl;
       }
       else if (entry->command == DisplayListCommand::IMAGE) {
         std::cout << "IMAGE" <<

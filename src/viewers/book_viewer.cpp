@@ -71,7 +71,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     int16_t page_top = show_title != 0 ? 40 : 10;
 
     Page::Format fmt = {
-      .line_height_factor = 0.9,
+      .line_height_factor = 0.95,
       .font_index         = idx,
       .font_size          = font_size,
       .indent             =   0,

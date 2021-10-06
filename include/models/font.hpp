@@ -46,12 +46,16 @@ class Font
      * @return Glyph The glyph associated to the unicode character.
      */
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
+      virtual Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
     #else
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
+      virtual Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
     #endif
 
-    Glyph * get_glyph(int32_t charcode, int32_t next_charcode, int16_t glyph_size, bool & ignore_next);
+    virtual Glyph * get_glyph(int32_t   charcode, 
+                              int32_t   next_charcode, 
+                              int16_t   glyph_size,
+                              int16_t & kern,  
+                              bool    & ignore_next);
 
     void clear_cache();
 
@@ -141,5 +145,9 @@ protected:
       virtual Glyph *      get_glyph_internal(int32_t charcode, int16_t glyph_size) = 0;
     #endif
 
-    virtual Glyph * adjust_ligature_and_kern(Glyph * glyph, uint16_t glyph_size, uint32_t next_charcode, bool & ignore_next) = 0;
+    virtual Glyph * adjust_ligature_and_kern(Glyph   * glyph, 
+                                             uint16_t  glyph_size, 
+                                             uint32_t  next_charcode, 
+                                             int16_t & kern, 
+                                             bool    & ignore_next) = 0;
 };

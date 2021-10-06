@@ -21,7 +21,7 @@ class IBMF : public Font
 
     PKFont     * face;
     std::mutex   mutex;
-
+    uint32_t     last_charcode;
     
   public:
     IBMF(const std::string & filename);
@@ -41,10 +41,20 @@ class IBMF : public Font
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
       Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
     #else
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
+      Glyph * get_glyph(int32_t charcode, int16_t glyph_size) override;
     #endif
 
-    Glyph * adjust_ligature_and_kern(Glyph * glyph, uint16_t glyph_size, uint32_t next_charcode, bool & ignore_next);
+    Glyph * get_glyph(int32_t   charcode, 
+                      int32_t   next_charcode, 
+                      int16_t   glyph_size,
+                      int16_t & kern,  
+                      bool    & ignore_next) override;
+
+    Glyph * adjust_ligature_and_kern(Glyph   * glyph,
+                                     uint16_t  glyph_size, 
+                                     uint32_t  next_charcode,
+                                     int16_t & kern, 
+                                     bool    & ignore_next);
 
   /**
      * @brief Face normal line height

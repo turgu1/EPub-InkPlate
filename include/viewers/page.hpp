@@ -72,12 +72,13 @@ class Page
     struct DisplayListEntry {
       union Kind {
         struct GryphEntry {            ///< Used for GLYPH
-          Font::Glyph * glyph;    ///< Glyph
-          bool is_space;
+          Font::Glyph * glyph;         ///< Glyph
+          int16_t       kern;
+          bool          is_space;
         } glyph_entry;
         struct ImageEntry {            ///< Used for IMAGE
           Image::ImageData image;       
-          int16_t advance;             ///< Horizontal advance on the baseline
+          int16_t          advance;    ///< Horizontal advance on the baseline
         } image_entry;
         struct RegionEntry {           ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CLEAR_REGION
           Dim dim;                     ///< Region dimensions

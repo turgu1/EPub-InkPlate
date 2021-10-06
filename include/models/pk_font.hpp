@@ -444,14 +444,14 @@ class PKFont
                 glyph_info.bitmap = nullptr;
                 return false;
               }
-              std::cout << std::hex << +data << ' ';
+              // std::cout << std::hex << +data << ' ';
               count = 0;
             }
             rowp[col >> 3] |= (data & (0x80U >> count)) ? (0x80U >> (col & 7)) : 0;
             count++;
           }
         }
-        std::cout << std::endl;
+        // std::cout << std::endl;
       }
       else {
         uint32_t  count = 0;
@@ -467,12 +467,12 @@ class PKFont
                 return false;
               }
               black = !black;
-              if (black) {
-                std::cout << count << ' ';
-              }
-              else {
-                std::cout << '(' << count << ')' << ' ';
-              }
+              // if (black) {
+              //   std::cout << count << ' ';
+              // }
+              // else {
+              //   std::cout << '(' << count << ')' << ' ';
+              // }
             }
             if (black) rowp[col >> 3] |= (0x80U >> (col & 0x07));
             count--;
@@ -487,7 +487,7 @@ class PKFont
 
           glyph_info.repeat_count = 0;
         }
-        std::cout << std::endl;
+        // std::cout << std::endl;
       }
 
       return true;
@@ -617,7 +617,7 @@ class PKFont
       if ((glyph_code > MAX_GLYPH_COUNT) ||
           (glyph_table[glyph_code] == nullptr)) {
         std::cerr << "No entry for glyph code " 
-                 << glyph_code << " 0x" << std::hex << glyph_code
+                 << +glyph_code << " 0x" << std::hex << +glyph_code
                  << std::endl;         
         return false;
       }

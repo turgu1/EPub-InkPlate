@@ -30,24 +30,28 @@ class TTF : public Font
     TTF(unsigned char * buffer, int32_t size);
    ~TTF();
 
-    /**
-     * @brief Get a glyph object
-     * 
-     * Retrieve a glyph object and convert it to it's bitmap représentation. 
-     * The cache will be updated to contain the new glyph, if it's not 
-     * already there.
-     * 
-     * @param charcode Character code as a unicode number.
-     * @return Glyph The glyph associated to the unicode character.
-     */
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
-    #else
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
-    #endif
+    // /**
+    //  * @brief Get a glyph object
+    //  * 
+    //  * Retrieve a glyph object and convert it to it's bitmap représentation. 
+    //  * The cache will be updated to contain the new glyph, if it's not 
+    //  * already there.
+    //  * 
+    //  * @param charcode Character code as a unicode number.
+    //  * @return Glyph The glyph associated to the unicode character.
+    //  */
+    // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    //   Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
+    // #else
+    //   Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
+    // #endif
 
-    Glyph * adjust_ligature_and_kern(Glyph * glyph, uint16_t glyph_size, uint32_t next_charcode, bool & ignore_next) { 
-      ignore_next = false; return glyph; 
+    Glyph * adjust_ligature_and_kern(Glyph   * glyph, 
+                                     uint16_t  glyph_size, 
+                                     uint32_t  next_charcode,
+                                     int16_t & kern, 
+                                     bool    & ignore_next) { 
+      kern = 0; ignore_next = false; return glyph; 
     }
 
   /**
