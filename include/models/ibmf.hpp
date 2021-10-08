@@ -6,7 +6,7 @@
 #include "global.hpp"
 
 #include "models/font.hpp"
-#include "models/pk_font.hpp"
+#include "models/ibmf_font.hpp"
 #include "memory_pool.hpp"
 
 
@@ -19,10 +19,10 @@ class IBMF : public Font
   private:
     static constexpr char const * TAG = "IBMF";
 
-    PKFont     * face;
-    std::mutex   mutex;
-    uint32_t     last_charcode;
-    
+    IBMFFont            * face;
+    std::mutex            mutex;
+    IBMFFont::GlyphData * glyph_data;
+
   public:
     IBMF(const std::string & filename);
     IBMF(unsigned char * buffer, int32_t size);
@@ -62,7 +62,7 @@ class IBMF : public Font
      * 
      * @return int32_t Normal line height of the face in pixels
      */
-    int32_t get_line_height(int16_t glyph_size)  {
+    int32_t get_line_height(int16_t glyph_size) {
       std::scoped_lock guard(mutex);
       if (current_font_size != glyph_size) set_font_size(glyph_size); 
       return (face == nullptr) ? 0 : (face->get_line_height()); 
