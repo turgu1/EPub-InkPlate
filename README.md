@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.09.29)
+(Updated 2021.10.08)
 
 Update to version 1.3.2 - Not ready yet
 
@@ -10,10 +10,10 @@ TrueType fonts don't look that nice on the low-resolution eInk screens. This is 
 
 - [x] Font classes re-org to allow bitmap fonts
 - [x] Tests with single PK file format
-- [ ] Create the IBMF font file format (my own file format design!)
-- [ ] Suite of tools to genereate IBMF font files
+- [x] Create the IBMF font file format (my own file format design!)
+- [x] Suite of tools to genereate IBMF font files
 - [ ] New class to manage Integrated BitMap Fonts (IBMF file format)
-- [ ] `fonts_list.xml` format adjustments
+- [x] `fonts_list.xml` format adjustments
 
 - [ ] Valgrind
 - [ ] Tests Inkplate-6 / Inkplate-10
