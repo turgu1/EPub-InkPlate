@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Updated 2021.10.08)
+(Updated 2021.10.21)
 
 Update to version 1.3.2 - Not ready yet
 
@@ -12,10 +12,11 @@ TrueType fonts don't look that nice on the low-resolution eInk screens. This is 
 - [x] Tests with single PK file format
 - [x] Create the IBMF font file format (my own file format design!)
 - [x] Suite of tools to genereate IBMF font files
-- [ ] New class to manage Integrated BitMap Fonts (IBMF file format)
-- [ ] Character set translation
+- [x] New class to manage Integrated BitMap Fonts (IBMF file format)
+- [x] Character set translation
 - [x] Support for both [x] monochrome and [x] grayscale
-- [ ] Glyphs translation to latin1 (multiple glyphs merge for accents)
+- [x] Glyphs translation to latin1 (multiple glyphs merge for accents)
+- [x] Latin-A
 - [x] `fonts_list.xml` format adjustments
 
 - [ ] Valgrind
