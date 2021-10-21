@@ -13,6 +13,9 @@ TrueType fonts don't look that nice on the low-resolution eInk screens. This is 
 - [x] Create the IBMF font file format (my own file format design!)
 - [x] Suite of tools to genereate IBMF font files
 - [ ] New class to manage Integrated BitMap Fonts (IBMF file format)
+- [ ] Character set translation
+- [x] Support for both [x] monochrome and [x] grayscale
+- [ ] Glyphs translation to latin1 (multiple glyphs merge for accents)
 - [x] `fonts_list.xml` format adjustments
 
 - [ ] Valgrind

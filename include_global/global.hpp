@@ -95,3 +95,23 @@ struct Pos {
   }
   Pos() {}
 };
+
+struct Dim8 { 
+  uint8_t width; 
+  uint8_t height; 
+  Dim8(uint8_t w, uint8_t h) { 
+    width  = w; 
+    height = h;
+  }
+  Dim8() {}
+};
+
+struct Pos8 { 
+  int8_t x; 
+  int8_t y; 
+  Pos8(int8_t xpos, int8_t ypos) { 
+    x = xpos; 
+    y = ypos; 
+  }
+  Pos8() {}
+};

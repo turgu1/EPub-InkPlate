@@ -107,9 +107,5 @@ class TTF : public Font
      */
     bool set_font_size(int16_t size);
 
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false);
-    #else
-      Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size);
-    #endif
+    Glyph * get_glyph_internal(uint32_t charcode, int16_t glyph_size);
 };

@@ -21,7 +21,7 @@ class IBMF : public Font
 
     IBMFFont            * face;
     std::mutex            mutex;
-    IBMFFont::GlyphData * glyph_data;
+    IBMFFont::GlyphInfo * glyph_data;
 
   public:
     IBMF(const std::string & filename);
@@ -38,14 +38,11 @@ class IBMF : public Font
      * @param charcode Character code as a unicode number.
      * @return Glyph The glyph associated to the unicode character.
      */
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
-    #else
-      Glyph * get_glyph(int32_t charcode, int16_t glyph_size) override;
-    #endif
 
-    Glyph * get_glyph(int32_t   charcode, 
-                      int32_t   next_charcode, 
+    Glyph * get_glyph(uint32_t charcode, int16_t glyph_size) override;
+
+    Glyph * get_glyph(uint32_t  charcode, 
+                      uint32_t  next_charcode, 
                       int16_t   glyph_size,
                       int16_t & kern,  
                       bool    & ignore_next) override;
@@ -108,9 +105,7 @@ class IBMF : public Font
      */
     bool set_font_size(int16_t size);
 
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false);
-    #else
-      Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size);
-    #endif
+    Glyph * get_glyph_internal(uint32_t charcode, int16_t glyph_size);
+
+    uint32_t translate(uint32_t charcode);
 };

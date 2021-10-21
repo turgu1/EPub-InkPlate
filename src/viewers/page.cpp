@@ -334,22 +334,7 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
         entry->pos,
         Screen::BLACK_COLOR);
     }
-  };
-
-  #if 0 && DEBUGGING
-    Dim dim;
-    Pos pos;
-
-    pos.x = 0;
-    pos.y = 0;
-    dim.width  = 50;
-    dim.height = 0;
-
-    for (int i = 0; i < Screen::HEIGHT; i += 50) {
-      pos.y += 50;
-      screen.draw_rectangle(dim, pos, Screen::BLACK_COLOR);
-    }
-  #endif
+  }
 
   screen.update(no_full);
 }
@@ -375,8 +360,6 @@ Page::start(const Format & fmt)
 
   para_indent = 0;
   line_width  = 0;
-
-  // show_controls();
 }
 
 void
@@ -403,8 +386,6 @@ Page::line_break(const Format & fmt, int8_t indent_next_line)
 {
   Font * font = fonts.get(fmt.font_index);
   
-  // LOG_D("line_break font index: %d", fmt.font_index);
-
   if (!line_list.empty()) {
     add_line(fmt, false);
   }
@@ -682,11 +663,7 @@ Page::add_image_to_line(Image & image, int16_t advance, const Format & fmt)
 
 #if 1
 bool
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  Page::add_word(const char * word,  const Format & fmt, bool debugging)
-#else
-  Page::add_word(const char * word,  const Format & fmt)
-#endif
+Page::add_word(const char * word,  const Format & fmt)
 {
   Font * font = fonts.get(fmt.font_index);
   if (font == nullptr) return false;

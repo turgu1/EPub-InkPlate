@@ -77,24 +77,16 @@ Font::clear_cache()
 }
 
 Font::Glyph *
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  Font::get_glyph(int32_t charcode, int16_t glyph_size, bool debugging)
-  {
-    std::scoped_lock guard(mutex);
+Font::get_glyph(uint32_t charcode, int16_t glyph_size)
+{
+  std::scoped_lock guard(mutex);
 
-    return get_glyph_internal(charcode, glyph_size, debugging);
-  }
-#else
-  Font::get_glyph(int32_t charcode, int16_t glyph_size)
-  {
-    std::scoped_lock guard(mutex);
+  return get_glyph_internal(charcode, glyph_size);
+}
 
-    return get_glyph_internal(charcode, glyph_size);
-  }
-#endif
 
 Font::Glyph *
-Font::get_glyph(int32_t charcode, int32_t next_charcode, int16_t glyph_size, int16_t & kern, bool & ignore_next)
+Font::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, int16_t & kern, bool & ignore_next)
 {
   std::scoped_lock guard(mutex);
 

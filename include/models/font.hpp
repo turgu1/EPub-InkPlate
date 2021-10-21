@@ -46,13 +46,13 @@ class Font
      * @return Glyph The glyph associated to the unicode character.
      */
     #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      virtual Glyph * get_glyph(int32_t charcode, int16_t glyph_size, bool debugging = false);
+      virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size, bool debugging = false);
     #else
-      virtual Glyph * get_glyph(int32_t charcode, int16_t glyph_size);
+      virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size);
     #endif
 
-    virtual Glyph * get_glyph(int32_t   charcode, 
-                              int32_t   next_charcode, 
+    virtual Glyph * get_glyph(uint32_t  charcode, 
+                              uint32_t  next_charcode, 
                               int16_t   glyph_size,
                               int16_t & kern,  
                               bool    & ignore_next);
@@ -84,10 +84,10 @@ class Font
 protected:
     static constexpr uint16_t BYTE_POOL_SIZE = 16384*2;
 
-    typedef std::unordered_map<int32_t, Glyph *> Glyphs; ///< Cache for the glyphs'  bitmap 
-    typedef std::unordered_map<int16_t, Glyphs>        GlyphsCache;
-    typedef uint8_t                                    BytePool[BYTE_POOL_SIZE];
-    typedef std::forward_list<BytePool *>              BytePools;
+    typedef std::unordered_map<uint32_t, Glyph *> Glyphs; ///< Cache for the glyphs' bitmap 
+    typedef std::unordered_map<int16_t,  Glyphs>  GlyphsCache;
+    typedef uint8_t                              BytePool[BYTE_POOL_SIZE];
+    typedef std::forward_list<BytePool *>        BytePools;
     
     GlyphsCache        cache;
     int16_t            fonts_cache_index;
@@ -137,14 +137,8 @@ protected:
      * @return true The font was found and retrieved.
      * @return false Some error (file not found, unsupported format).
      */
-    virtual bool set_font_face_from_memory(unsigned char * buffer, int32_t size) = 0;
-
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      virtual Glyph * get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging = false) = 0;
-    #else
-      virtual Glyph *      get_glyph_internal(int32_t charcode, int16_t glyph_size) = 0;
-    #endif
-
+    virtual bool   set_font_face_from_memory(unsigned char * buffer, int32_t size) = 0;
+    virtual Glyph *       get_glyph_internal(uint32_t charcode, int16_t glyph_size) = 0;
     virtual Glyph * adjust_ligature_and_kern(Glyph   * glyph, 
                                              uint16_t  glyph_size, 
                                              uint32_t  next_charcode, 

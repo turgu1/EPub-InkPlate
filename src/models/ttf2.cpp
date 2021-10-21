@@ -67,11 +67,7 @@ TTF::clear_face()
 }
 
 Font::Glyph *
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size, bool debugging)
-#else
-  TTF::get_glyph_internal(int32_t charcode, int16_t glyph_size)
-#endif
+TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size)
 {
   int error;
   Glyphs::iterator git;
@@ -87,14 +83,6 @@ Font::Glyph *
     return git->second;
   }
   else {
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      static bool first_debug = true;
-      if (debugging && first_debug) {
-        LOG_D("get_glyph_internal()");
-        ESP::show_heaps_info();
-      }
-    #endif
-
     if (current_font_size != glyph_size) set_font_size(glyph_size);
 
     int glyph_index = FT_Get_Char_Index(face, charcode);
@@ -143,13 +131,6 @@ Font::Glyph *
         error = FT_Render_Glyph(face->glyph,            // glyph slot
                                 FT_RENDER_MODE_NORMAL); // render mode
       }
-
-      #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-        if (debugging && first_debug) {
-          LOG_D("after FT_Render_Glyph()");
-          ESP::show_heaps_info();
-        }
-      #endif
       
       if (error) {
         LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
@@ -196,14 +177,6 @@ Font::Glyph *
     //   " a:"  << glyph->advance << std::endl;
 
     cache[current_font_size][charcode] = glyph;
-
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      if (debugging && first_debug) {
-        LOG_D("end of get_glyph_internal()");
-        ESP::show_heaps_info();
-        first_debug = false;
-      }
-    #endif
 
     return glyph;
   }

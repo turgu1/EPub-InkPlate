@@ -9,6 +9,8 @@
 #include "models/font.hpp"
 #include "viewers/msg_viewer.hpp"
 
+#include "screen.hpp"
+
 /**
  * @brief Access to a IBMF font.
  * 
@@ -23,30 +25,30 @@ class IBMFFont
     #pragma pack(push, 1)
       struct LigKernStep {
         unsigned int next_char_code:7;
-        unsigned int stop:1;
+        unsigned int           stop:1;
         union {
           unsigned int char_code:7;
-          unsigned int kern_idx:7;  // Ligature: replacement char code, kern: displacement
+          unsigned int  kern_idx:7;  // Ligature: replacement char code, kern: displacement
         } u;
-        unsigned int tag:1;         // 0 = Ligature, 1 = Kern
+        unsigned int tag:1;          // 0 = Ligature, 1 = Kern
       };
 
       struct GlyphMetric {
-        unsigned int dyn_f:4;
+        unsigned int          dyn_f:4;
         unsigned int first_is_black:1;
-        unsigned int preamble_kind:3;
+        unsigned int         filler:3;
       };
 
-      struct GlyphData {
+      struct GlyphInfo {
         uint8_t     char_code;
         uint8_t     bitmap_width;
         uint8_t     bitmap_height;
         int8_t      horizontal_offset;
         int8_t      vertical_offset;
-        uint8_t     packet_length;
+        uint8_t     lig_kern_pgm_index; // = 255 if none
+        uint16_t    packet_length;
         FIX16       advance;
         GlyphMetric glyph_metric;
-        uint8_t     lig_kern_pgm_index; // = 255 if none
       };
     #pragma pack(pop)
 
@@ -63,8 +65,12 @@ class IBMFFont
 
     #pragma pack(push, 1)
       struct Preamble {
-        char marker[4];
-        uint16_t size_count;
+        char     marker[4];
+        uint8_t  size_count;
+        struct {
+          uint8_t   version:5;
+          uint8_t  char_set:3;
+        } bits;
         uint16_t font_offsets[1];
       };
 
@@ -84,13 +90,13 @@ class IBMFFont
       };
     #pragma pack(pop)
 
-    uint8_t  * memory;
-    uint32_t   memory_length;
+    uint8_t     * memory;
+    uint32_t      memory_length;
 
-    uint8_t  * memory_ptr;
-    uint8_t  * memory_end;
+    uint8_t     * memory_ptr;
+    uint8_t     * memory_end;
 
-    uint32_t    repeat_count;
+    uint32_t      repeat_count;
 
     Preamble    * preamble;
     uint8_t     * sizes;
@@ -98,14 +104,14 @@ class IBMFFont
     uint8_t     * current_font;
 
     Header      * header;
-    GlyphData   * glyph_data_table[MAX_GLYPH_COUNT];
+    GlyphInfo   * glyph_info_table[MAX_GLYPH_COUNT];
     LigKernStep * lig_kern_pgm;
     FIX16       * kerns;
 
     static constexpr uint8_t PK_REPEAT_COUNT =   14;
     static constexpr uint8_t PK_REPEAT_ONCE  =   15;
 
-    GlyphData * glyph_info;
+    GlyphInfo * glyph_info;
     Font::Glyph glyph;
 
     bool
@@ -165,12 +171,12 @@ class IBMFFont
     // end;
 
     bool
-    get_packed_number(uint32_t & val)
+    get_packed_number(uint32_t & val, const GlyphInfo & glyph)
     {
       uint8_t  nyb;
       uint32_t i, j, k;
 
-      uint8_t dyn_f = glyph_info->glyph_metric.dyn_f;
+      uint8_t dyn_f = glyph.glyph_metric.dyn_f;
 
       while (true) {
         if (!get_nybble(nyb)) return false; i = nyb;
@@ -202,7 +208,7 @@ class IBMFFont
           //   return false;
           // }
           if (i == PK_REPEAT_COUNT) {
-            if (!get_packed_number(repeat_count)) return false;
+            if (!get_packed_number(repeat_count, glyph)) return false;
           }
           else { // i == PK_REPEAT_ONCE
             repeat_count = 1;
@@ -213,82 +219,159 @@ class IBMFFont
     }
 
     bool
-    retrieve_bitmap()
+    retrieve_bitmap(GlyphInfo * glyph, uint8_t * bitmap, Dim8 dim, Pos8 offsets)
     {
-      uint32_t  row_size = (glyph_info->bitmap_width + 7) >> 3;
-      uint16_t  size     = row_size * glyph_info->bitmap_height;
+      // point on the glyphs' bitmap definition
+      memory_ptr = ((uint8_t *)glyph) + sizeof(GlyphInfo);
+      uint8_t * rowp;
 
-      uint8_t * bitmap   = font.byte_pool_alloc(size);
-      if (bitmap == nullptr) {
-        LOG_E("Unable to allocate memory for glyph's bitmap.");
-        msg_viewer.out_of_memory("glyph allocation");
-      }
+      if (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) {
+        uint32_t  row_size = (dim.width + 7) >> 3;
+        rowp = bitmap + (offsets.y * row_size);
 
-      memset(bitmap, 0, size);
-      glyph.buffer = bitmap;
+        if (glyph->glyph_metric.dyn_f == 14) {  // is a bitmap?
+          uint32_t  count = 8;
+          uint8_t   data;
 
-      uint8_t * rowp = bitmap;
-
-      repeat_count   = 0;
-      nybble_flipper = 0xf0U;
-
-      if (glyph_info->glyph_metric.dyn_f == 14) {  // is a bitmap?
-        uint32_t  count = 8;
-        uint8_t   data;
-
-        for (uint32_t row = 0; row < glyph_info->bitmap_height; row++, rowp += row_size) {
-          for (uint32_t col = 0; col < glyph_info->bitmap_width; col++) {
-            if (count >= 8) {
-              if (!getnext8(data)) {
-                std::cerr << "Not enough data!" << std::endl;
-                glyph.buffer = nullptr;
-                return false;
+          for (uint32_t row = 0; 
+               row < glyph->bitmap_height; 
+               row++, rowp += row_size) {
+            for (uint32_t col = offsets.x; 
+                 col < glyph->bitmap_width + offsets.x; 
+                 col++) {
+              if (count >= 8) {
+                if (!getnext8(data)) {
+                  LOG_E("Not enough bitmap data!");
+                  return false;
+                }
+                // std::cout << std::hex << +data << ' ';
+                count = 0;
               }
-              // std::cout << std::hex << +data << ' ';
-              count = 0;
+              rowp[col >> 3] |= (data & (0x80U >> count)) ? (0x80U >> (col & 7)) : 0;
+              count++;
             }
-            rowp[col >> 3] |= (data & (0x80U >> count)) ? (0x80U >> (col & 7)) : 0;
-            count++;
           }
+          // std::cout << std::endl;
         }
-        // std::cout << std::endl;
+        else {
+          uint32_t count = 0;
+
+          repeat_count   = 0;
+          nybble_flipper = 0xf0U;
+
+          bool black = !(glyph->glyph_metric.first_is_black == 1);
+
+          for (uint32_t row = 0; 
+               row < glyph->bitmap_height; 
+               row++, rowp += row_size) {
+            for (uint32_t col = offsets.x; 
+                 col < glyph->bitmap_width + offsets.x; 
+                 col++) {
+              if (count == 0) {
+                if (!get_packed_number(count, *glyph)) {
+                  return false;
+                }
+                black = !black;
+                // if (black) {
+                //   std::cout << count << ' ';
+                // }
+                // else {
+                //   std::cout << '(' << count << ')' << ' ';
+                // }
+              }
+              if (black) rowp[col >> 3] |= (0x80U >> (col & 0x07));
+              count--;
+            }
+
+            // if (repeat_count != 0) std::cout << "Repeat count: " << repeat_count << std::endl;
+            while ((row < glyph->bitmap_height) && (repeat_count-- > 0)) {
+              bcopy(rowp, 
+                    rowp + row_size, 
+                    row_size);
+              row++;
+              rowp += row_size;
+            }
+
+            repeat_count = 0;
+          }
+          // std::cout << std::endl;
+        }
       }
       else {
-        uint32_t  count = 0;
+        uint32_t  row_size = dim.width;
+        rowp = bitmap + (offsets.y * row_size);
 
-        bool black = !(glyph_info->glyph_metric.first_is_black == 1);
+        repeat_count   = 0;
+        nybble_flipper = 0xf0U;
 
-        for (uint32_t row = 0; row < glyph_info->bitmap_height; row++, rowp += row_size) {
-          for (uint32_t col = 0; col < glyph_info->bitmap_width; col++) {
-            if (count == 0) {
-              if (!get_packed_number(count)) {
-                glyph.buffer = nullptr;
-                return false;
+        if (glyph->glyph_metric.dyn_f == 14) {  // is a bitmap?
+          uint32_t  count = 8;
+          uint8_t   data;
+
+          for (uint32_t row = 0; 
+               row < (glyph->bitmap_height); 
+               row++, rowp += row_size) {
+            for (uint32_t col = offsets.x; 
+                 col < (glyph->bitmap_width + offsets.x); 
+                 col++) {
+              if (count >= 8) {
+                if (!getnext8(data)) {
+                  LOG_E("Not enough bitmap data!");
+                  return false;
+                }
+                // std::cout << std::hex << +data << ' ';
+                count = 0;
               }
-              black = !black;
-              // if (black) {
-              //   std::cout << count << ' ';
-              // }
-              // else {
-              //   std::cout << '(' << count << ')' << ' ';
-              // }
+              rowp[col] = (data & (0x80U >> count)) ? 0xFF : 0;
+              count++;
             }
-            if (black) rowp[col >> 3] |= (0x80U >> (col & 0x07));
-            count--;
           }
-
-          // if (repeat_count != 0) std::cout << "Repeat count: " << repeat_count << std::endl;
-          while ((row < glyph_info->bitmap_height) && (repeat_count-- > 0)) {
-            bcopy(rowp, rowp + row_size, row_size);
-            row++;
-            rowp += row_size;
-          }
-
-          repeat_count = 0;
+          // std::cout << std::endl;
         }
-        // std::cout << std::endl;
-      }
+        else {
+          uint32_t count = 0;
 
+          repeat_count   = 0;
+          nybble_flipper = 0xf0U;
+
+          bool black = !(glyph->glyph_metric.first_is_black == 1);
+
+          for (uint32_t row = 0; 
+               row < (glyph->bitmap_height); 
+               row++, rowp += row_size) {
+            for (uint32_t col = offsets.x; 
+                 col < (glyph->bitmap_width + offsets.x); 
+                 col++) {
+              if (count == 0) {
+                if (!get_packed_number(count, *glyph)) {
+                  return false;
+                }
+                black = !black;
+                // if (black) {
+                //   std::cout << count << ' ';
+                // }
+                // else {
+                //   std::cout << '(' << count << ')' << ' ';
+                // }
+              }
+              if (black) rowp[col] = 0xFF;
+              count--;
+            }
+
+            // if (repeat_count != 0) std::cout << "Repeat count: " << repeat_count << std::endl;
+            while ((row < dim.height) && (repeat_count-- > 0)) {
+              bcopy(rowp, 
+                    rowp + row_size, 
+                    row_size);
+              row++;
+              rowp += row_size;
+            }
+
+            repeat_count = 0;
+          }
+          // std::cout << std::endl;
+        }
+      }
       return true;
     }
 
@@ -306,8 +389,8 @@ class IBMFFont
     bool
     load_data()
     {
-      //for (uint8_t i = 0; i < MAX_GLYPH_COUNT; i++) glyph_data_table[i] = nullptr;
-      memset(glyph_data_table, 0, sizeof(glyph_data_table));
+      //for (uint8_t i = 0; i < MAX_GLYPH_COUNT; i++) glyph_info_table[i] = nullptr;
+      memset(glyph_info_table, 0, sizeof(glyph_info_table));
 
       uint8_t byte;
       bool    result    = true;
@@ -320,9 +403,9 @@ class IBMFFont
 
       memory_ptr += sizeof(Header);
       for (int i = 0; i < header->glyph_count; i++) {
-        glyph_info = (GlyphData *) memory_ptr;
-        glyph_data_table[glyph_info->char_code] = (GlyphData *) memory_ptr;
-        memory_ptr += sizeof(GlyphData) + glyph_info->packet_length;
+        glyph_info = (GlyphInfo *) memory_ptr;
+        glyph_info_table[glyph_info->char_code] = (GlyphInfo *) memory_ptr;
+        memory_ptr += sizeof(GlyphInfo) + glyph_info->packet_length;
         if (memory_ptr > memory_end) return false;
       }
 
@@ -333,7 +416,7 @@ class IBMFFont
       kerns = (FIX16 *) memory_ptr;
 
       memory_ptr += sizeof(FIX16) * header->kern_count;
-      if (memory_ptr != memory_end) return false;
+      if (memory_ptr > memory_end) return false;
 
       return true;
     }
@@ -380,48 +463,94 @@ class IBMFFont
       }
     }
 
-    inline uint8_t         get_font_size() { return  header->point_size;          }
-    inline uint16_t      get_line_height() { return  header->line_height;         }
-    inline int16_t  get_descender_height() { return -(int16_t)header->descender_height;    }
-    inline LigKernStep * get_lig_kern(uint8_t idx) { return &lig_kern_pgm[idx];   }
-    inline FIX16       get_kern(uint8_t i) { return kerns[i];                     }
-    inline GlyphData * get_glyph_data(uint8_t glyph_code) { return glyph_data_table[glyph_code]; }
+    inline bool                   is_initialized() { return initialized;                         }
+    inline uint8_t                 get_font_size() { return  header->point_size;                 }
+    inline uint16_t              get_line_height() { return  header->line_height;                }
+    inline int16_t          get_descender_height() { return -(int16_t)header->descender_height;  }
+    inline uint8_t                  get_char_set() { return preamble->bits.char_set;             }
+    inline LigKernStep * get_lig_kern(uint8_t idx) { return &lig_kern_pgm[idx];                  }
+    inline FIX16               get_kern(uint8_t i) { return kerns[i];                            }
+    inline GlyphInfo * get_glyph_info(uint8_t glyph_code) { return glyph_info_table[glyph_code]; }
 
     bool
-    get_glyph(uint8_t & glyph_code, 
+    get_glyph(uint32_t    & glyph_code, 
               Font::Glyph & app_glyph, 
-              GlyphData ** glyph_data, 
-              bool load_bitmap)
+              GlyphInfo  ** glyph_data, 
+              bool          load_bitmap)
     {
-      if ((glyph_code > MAX_GLYPH_COUNT) ||
-          (glyph_data_table[glyph_code] == nullptr)) {
+      uint8_t     accent      = (glyph_code & 0x0000FF00) >> 8;
+      GlyphInfo * accent_info = accent ? glyph_info_table[accent] : nullptr;
+
+      if (((glyph_code & 0xFF) > MAX_GLYPH_COUNT) ||
+          (glyph_info_table[glyph_code & 0xFF] == nullptr)) {
         std::cerr << "No entry for glyph code " 
-                 << +glyph_code << " 0x" << std::hex << +glyph_code
-                 << std::endl;         
+                  << +glyph_code << " 0x" << std::hex << +glyph_code
+                  << std::endl;         
         return false;
       }
 
-      uint8_t temp;
-
       memset(&glyph, 0, sizeof(Font::Glyph));
 
-      glyph_info = glyph_data_table[glyph_code];
+      glyph_info = glyph_info_table[glyph_code & 0xFF];
 
-      memory_ptr = ((uint8_t *) glyph_info) + sizeof(GlyphData);
+      Dim8 dim           = Dim8(glyph_info->bitmap_width, glyph_info->bitmap_height);
+      Pos8 offsets       = Pos8(0, 0);
+      uint8_t added_left = 0;
 
-      if (load_bitmap && retrieve_bitmap()) {}
+      if (accent_info != nullptr) {
+        offsets.x = ((glyph_info->bitmap_width > accent_info->bitmap_width) ?
+                        ((glyph_info->bitmap_width - accent_info->bitmap_width) >> 1) : 0)
+                    + ((((int32_t)glyph_info->bitmap_height - (header->x_height >> 6)) * header->slant_correction) >> 6);
 
-      glyph.dim     =  Dim(glyph_info->bitmap_width, glyph_info->bitmap_height);
-      glyph.xoff    = -glyph_info->horizontal_offset;
-      glyph.yoff    = -glyph_info->vertical_offset;
-      glyph.advance =  glyph_info->advance >> 6;
-      glyph.pitch   = (glyph_info->bitmap_width + 7) >> 3;
+        if (accent_info->vertical_offset >= (header->x_height >> 6)) {
+          // Accents that are on top of a main glyph
+          dim.height += (accent_info->vertical_offset - (header->x_height >> 6));
+        }
+        else if (accent_info->vertical_offset < 5) {
+          // Accents below the main glyph (cedilla)
+          int16_t added_height = (glyph_info->bitmap_height - glyph_info->vertical_offset) - 
+                                 ((-accent_info->vertical_offset) + accent_info->bitmap_height);
+          if (added_height < 0) dim.height += -added_height;
+          offsets.y = glyph_info->vertical_offset - accent_info->vertical_offset;
+        }
+        if (glyph_info->bitmap_width < accent_info->bitmap_width)  {
+          added_left = (accent_info->bitmap_width - glyph_info->bitmap_width) >> 1;
+          dim.width = accent_info->bitmap_width;
+        }
+        if (dim.width < (offsets.x + accent_info->bitmap_width)) {
+          dim.width = offsets.x + accent_info->bitmap_width;
+        }
+      }
+
+      uint16_t size = (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) ?
+          dim.height * ((dim.width + 7) >> 3) : dim.height * dim.width;
+      glyph.buffer = font.byte_pool_alloc(size);
+      memset(glyph.buffer, 0, size);
+
+      if (accent_info != nullptr) {
+        if (load_bitmap) retrieve_bitmap(accent_info, glyph.buffer, dim, offsets);
+
+        offsets.y = (accent_info->vertical_offset >=  (header->x_height >> 6)) ?
+                        (accent_info->vertical_offset - (header->x_height >> 6)) : 0;
+        offsets.x = added_left;
+      }
+
+      if (load_bitmap) retrieve_bitmap(glyph_info, glyph.buffer, dim, offsets);
+
+      glyph.dim     =  Dim(dim.width, dim.height);
+      glyph.xoff    = -(glyph_info->horizontal_offset + offsets.x);
+      glyph.yoff    = -(glyph_info->vertical_offset   + offsets.y);
+      glyph.advance =   glyph_info->advance >> 6;
+      glyph.pitch   =  (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) ?
+                            (dim.width + 7) >> 3 : dim.width;
       glyph.ligature_and_kern_pgm_index = glyph_info->lig_kern_pgm_index;
       glyph.line_height = header->line_height;
 
       //bcopy(&glyph_info, &glyph, sizeof(Glyph));
       app_glyph  = glyph;
      *glyph_data = glyph_info;
+
+      if (accent_info != nullptr) show_glyph(glyph, glyph_code);
 
       return true;
     }
@@ -438,7 +567,7 @@ class IBMFFont
     }
 
     bool
-    show_glyph_data(const GlyphData & glyph, uint8_t char_code)
+    show_glyph_info(const GlyphInfo & glyph, uint8_t char_code)
     {
       std::cout << "Glyph Char Code: " << char_code << std::endl  
                 << "  Metrics: [" << std::dec
@@ -452,9 +581,9 @@ class IBMFFont
     }
 
     bool
-    show_glyph(const Font::Glyph & glyph, uint8_t char_code)
+    show_glyph(const Font::Glyph & glyph, uint32_t char_code)
     {
-      std::cout << "Glyph Char Code: " << char_code << std::endl
+      std::cout << "Glyph Char Code: " << std::hex << char_code << std::dec << std::endl
                 << "  Metrics: [" << std::dec
                 <<      glyph.dim.width  << ", " 
                 <<      glyph.dim.height << "] " << std::endl
@@ -491,6 +620,4 @@ class IBMFFont
 
       return true;
     }
-
-    inline bool is_initialized() { return initialized; }
 };
