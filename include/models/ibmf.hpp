@@ -107,5 +107,5 @@ class IBMF : public Font
 
     Glyph * get_glyph_internal(uint32_t charcode, int16_t glyph_size);
 
-    uint32_t translate(uint32_t charcode);
+    inline uint32_t translate(uint32_t charcode) { return face->translate(charcode); }
 };

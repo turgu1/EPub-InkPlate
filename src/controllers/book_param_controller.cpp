@@ -247,7 +247,12 @@ BookParamController::input_event(EventMgr::Event event)
     }
   }
   else if (delete_current_book) {
-    if (event == EventMgr::Event::SELECT) {
+    #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+      #define SELECTION EventMgr::Event::TAP
+    #else 
+      #define SELECTION EventMgr::Event::SELECT
+    #endif
+    if (event == SELECTION) {
       std::string filepath = epub.get_current_filename();
       struct stat file_stat;
 

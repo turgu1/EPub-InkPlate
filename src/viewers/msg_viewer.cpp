@@ -268,21 +268,28 @@ MsgViewer::out_of_memory(const char * raison)
   #endif
 
   screen.force_full_update();
-  
-  show(ALERT, true, true, "OUT OF MEMORY!!",
-    "It's a bit sad that the device is now out of "
-    "memory to continue. The reason: %s. "
-    "The device is now entering into Deep Sleep. "
-    "Press any key to restart.",
-    raison
-  );
 
-  #if EPUB_INKPLATE_BUILD
+  #if defined(INKPLATE_6PLUS)
+    #define MSG "Press the WakUp Button to restart."
+    #define INT_PIN TouchScreen::INTERRUPT_PIN
+  #else
+    #define MSG "Press a key to restart."
     #if EXTENDED_CASE
       #define INT_PIN PressKeys::INTERRUPT_PIN
     #else
       #define INT_PIN TouchKeys::INTERRUPT_PIN
     #endif
+  #endif
+  
+  show(ALERT, true, true, "OUT OF MEMORY!!",
+    "It's a bit sad that the device is now out of "
+    "memory to continue. The reason: %s. "
+    "The device is now entering into Deep Sleep. "
+    MSG,
+    raison
+  );
+
+  #if EPUB_INKPLATE_BUILD
     inkplate_platform.deep_sleep(INT_PIN, 1); // Never return
   #else
     exit(0);

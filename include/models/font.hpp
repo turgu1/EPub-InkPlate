@@ -22,6 +22,13 @@ class Font
       int16_t         line_height;
       int16_t         ligature_and_kern_pgm_index;
       unsigned char * buffer;
+      void clear() {
+        dim.height = dim.width = 0;
+        xoff = yoff = 0;
+        advance = pitch = line_height = 0;
+        ligature_and_kern_pgm_index = 255;
+        buffer = nullptr;
+      }
     };
     
   private:
@@ -31,7 +38,7 @@ class Font
 
   public:
     Font();
-   ~Font();
+    virtual ~Font() {};
 
     inline bool is_ready() const { return ready; }
 
@@ -45,11 +52,11 @@ class Font
      * @param charcode Character code as a unicode number.
      * @return Glyph The glyph associated to the unicode character.
      */
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size, bool debugging = false);
-    #else
+    // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    //   virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size, bool debugging = false);
+    // #else
       virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size);
-    #endif
+    // #endif
 
     virtual Glyph * get_glyph(uint32_t  charcode, 
                               uint32_t  next_charcode, 

@@ -24,6 +24,7 @@
   #include "viewers/msg_viewer.hpp"
 
   #include "touch_screen.hpp"
+  #include "logging.hpp"
 
   static xQueueHandle touchscreen_isr_queue   = NULL;
   static xQueueHandle touchscreen_event_queue = NULL;
@@ -60,7 +61,7 @@
         else {
           one_press = true;
           low_event = EventMgr::LowInputEvent::PRESS1;
-          if (xQueueReceive(touchscreen_isr_queue, &io_num, 250E3 / portTICK_PERIOD_MS)) {
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, 250 / portTICK_PERIOD_MS)) {
             count = touch_screen.get_positions(x, y);
             if (count == 0) {
               one_press = false;

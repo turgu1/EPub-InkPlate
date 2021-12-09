@@ -54,7 +54,7 @@
 
     // Show battery icon
 
-    TTF * font = fonts.get(0);
+    Font * font = fonts.get(0);
     float   value = ((voltage - 2.5) * 4.0) / 1.2;
     int16_t icon_index =  value; // max is 3.7
     if (icon_index > 4) icon_index = 4;

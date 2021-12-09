@@ -29,9 +29,9 @@ class FontFactory {
            int32_t             size) {
       std::string ext = filename.substr(filename.find_last_of(".") + 1);
 
-      if (ext == "ibmf") return new IBMF(filename);
+      if (ext == "ibmf") return new IBMF(buffer, size);
       else if ((ext == "ttf") || 
-               (ext == "otf")) return new TTF(filename);
+               (ext == "otf")) return new TTF(buffer, size);
 
       return nullptr;
     }

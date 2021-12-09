@@ -42,16 +42,22 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_it_off()
 {
-  #if EXTENDED_CASE
-    #define INT_PIN PressKeys::INTERRUPT_PIN
+  #if defined(INKPLATE_6PLUS)
+    #define MSG "Please press the WakUp Button to restart the device."
+    #define INT_PIN TouchScreen::INTERRUPT_PIN
   #else
-    #define INT_PIN TouchKeys::INTERRUPT_PIN
+    #define MSG "Please press a key to restart the device."
+    #if EXTENDED_CASE
+      #define INT_PIN PressKeys::INTERRUPT_PIN
+    #else
+      #define INT_PIN TouchKeys::INTERRUPT_PIN
+    #endif
   #endif
 
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE_BUILD
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
-      "Entering Deep Sleep mode. Please press a key to restart the device.");
+      "Entering Deep Sleep mode. " MSG);
     ESP::delay(500);
     inkplate_platform.deep_sleep(INT_PIN, 1);
   #else

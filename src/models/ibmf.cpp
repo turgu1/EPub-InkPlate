@@ -285,99 +285,99 @@ IBMF::clear_face()
   current_font_size = -1;
 }
 
-uint32_t IBMF::translate(uint32_t charcode)
-{
-  uint32_t glyph_code = charcode;
+// uint32_t IBMF::translate(uint32_t charcode)
+// {
+//   uint32_t glyph_code = charcode;
 
-  if (face->get_char_set() == 0) {
-    if ((charcode >= 0x20) && (charcode <= 0x7E)) {
-      switch (charcode) {
-        case '<':
-        case '>':
-        case '\\':
-        case '_':
-        case '{':
-        case '|':
-        case '}':
-          glyph_code = ' '; break;
-        case '`':
-          glyph_code = 0x12; break;
-        default:
-          glyph_code = charcode;
-      }
-    } 
-    else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
-      glyph_code = translation_latin_1[charcode - 0xA1];
-    }
-    else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
-      glyph_code = translation_latin_A[charcode - 0x100];
-    }
-    else {
-      switch (charcode) {
-        case 0x2013: // endash
-          glyph_code = 0x7B; break;
-        case 0x2014: // emdash
-          glyph_code = 0x7C; break;
-        case 0x2018: // quote left
-        case 0x02BB: // reverse apostrophe
-          glyph_code = 0x60; break;
-        case 0x2019: // quote right
-        case 0x02BC: // apostrophe
-          glyph_code = 0x27; break;
-        case 0x201C: glyph_code = 0x5C; break; // quoted left "
-        case 0x201D: glyph_code = 0x22; break; // quoted right
-        case 0x02C6: glyph_code = 0x5E; break; // circumflex
-        case 0x02DA: glyph_code = 0x17; break; // ring
-        case 0x02DC: glyph_code = 0x7E; break; // tilde ~
-        case 0x201A: glyph_code = 0x2C; break; // comma like ,
-        case 0x2032: glyph_code = 0x0C; break; // minute '
-        case 0x2033: glyph_code = 0x22; break; // second "
-        case 0x2044: glyph_code = 0x2F; break; // fraction /
-        default:
-          glyph_code = ' ';
-      }
-    }
-  }
-  else {  // char_set == 1 : Typewriter
-    if ((charcode >= ' ') && (charcode <= '~')) {
-      if (charcode == '\\') {
-        glyph_code = 0x22;
-      }
-      else glyph_code = charcode;
-    } else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
-      if       (charcode == 0xA1) glyph_code = 0x0E; // ¡
-      else if  (charcode == 0xBF) glyph_code = 0x0F; // ¿
-      else glyph_code = translation_latin_1[charcode - 0xA1];
-    }
-    else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
-      glyph_code = translation_latin_A[charcode - 0x100];
-    }
-    else {
-      switch (charcode) {
-        case 0x2018: // quote left
-        case 0x02BB: // reverse apostrophe
-          glyph_code = 0x60; break;
-        case 0x2019: // quote right
-        case 0x02BC: // apostrophe
-          glyph_code = 0x27; break;
-        case 0x201C: // quoted left "
-        case 0x201D: // quoted right
-          glyph_code = 0x22; break;
-        case 0x02C6: glyph_code = 0x5E; break; // circumflex
-        case 0x02DA: glyph_code = 0x17; break; // ring
-        case 0x02DC: glyph_code = 0x7E; break; // tilde ~
-        case 0x201A: glyph_code = 0x2C; break; // comma like ,
-        case 0x2032: glyph_code = 0x0C; break; // minute '
-        case 0x2033: glyph_code = 0x22; break; // second "
-        case 0x2044: glyph_code = 0x2F; break; // fraction /
-        default:
-          glyph_code = ' ';
-      }
-    }
-  }
+//   if (face->get_char_set() == 0) {
+//     if ((charcode >= 0x20) && (charcode <= 0x7E)) {
+//       switch (charcode) {
+//         case '<':
+//         case '>':
+//         case '\\':
+//         case '_':
+//         case '{':
+//         case '|':
+//         case '}':
+//           glyph_code = ' '; break;
+//         case '`':
+//           glyph_code = 0x12; break;
+//         default:
+//           glyph_code = charcode;
+//       }
+//     } 
+//     else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
+//       glyph_code = translation_latin_1[charcode - 0xA1];
+//     }
+//     else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
+//       glyph_code = translation_latin_A[charcode - 0x100];
+//     }
+//     else {
+//       switch (charcode) {
+//         case 0x2013: // endash
+//           glyph_code = 0x7B; break;
+//         case 0x2014: // emdash
+//           glyph_code = 0x7C; break;
+//         case 0x2018: // quote left
+//         case 0x02BB: // reverse apostrophe
+//           glyph_code = 0x60; break;
+//         case 0x2019: // quote right
+//         case 0x02BC: // apostrophe
+//           glyph_code = 0x27; break;
+//         case 0x201C: glyph_code = 0x5C; break; // quoted left "
+//         case 0x201D: glyph_code = 0x22; break; // quoted right
+//         case 0x02C6: glyph_code = 0x5E; break; // circumflex
+//         case 0x02DA: glyph_code = 0x17; break; // ring
+//         case 0x02DC: glyph_code = 0x7E; break; // tilde ~
+//         case 0x201A: glyph_code = 0x2C; break; // comma like ,
+//         case 0x2032: glyph_code = 0x0C; break; // minute '
+//         case 0x2033: glyph_code = 0x22; break; // second "
+//         case 0x2044: glyph_code = 0x2F; break; // fraction /
+//         default:
+//           glyph_code = ' ';
+//       }
+//     }
+//   }
+//   else {  // char_set == 1 : Typewriter
+//     if ((charcode >= ' ') && (charcode <= '~')) {
+//       if (charcode == '\\') {
+//         glyph_code = 0x22;
+//       }
+//       else glyph_code = charcode;
+//     } else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
+//       if       (charcode == 0xA1) glyph_code = 0x0E; // ¡
+//       else if  (charcode == 0xBF) glyph_code = 0x0F; // ¿
+//       else glyph_code = translation_latin_1[charcode - 0xA1];
+//     }
+//     else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
+//       glyph_code = translation_latin_A[charcode - 0x100];
+//     }
+//     else {
+//       switch (charcode) {
+//         case 0x2018: // quote left
+//         case 0x02BB: // reverse apostrophe
+//           glyph_code = 0x60; break;
+//         case 0x2019: // quote right
+//         case 0x02BC: // apostrophe
+//           glyph_code = 0x27; break;
+//         case 0x201C: // quoted left "
+//         case 0x201D: // quoted right
+//           glyph_code = 0x22; break;
+//         case 0x02C6: glyph_code = 0x5E; break; // circumflex
+//         case 0x02DA: glyph_code = 0x17; break; // ring
+//         case 0x02DC: glyph_code = 0x7E; break; // tilde ~
+//         case 0x201A: glyph_code = 0x2C; break; // comma like ,
+//         case 0x2032: glyph_code = 0x0C; break; // minute '
+//         case 0x2033: glyph_code = 0x22; break; // second "
+//         case 0x2044: glyph_code = 0x2F; break; // fraction /
+//         default:
+//           glyph_code = ' ';
+//       }
+//     }
+//   }
 
-  return glyph_code;
-}
+//   return glyph_code;
+// }
 
 Font::Glyph *
 IBMF::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, int16_t & kern, bool & ignore_next)
@@ -527,7 +527,7 @@ IBMF::adjust_ligature_and_kern(Glyph   * glyph,
       else {
         if (step->next_char_code == next_charcode) {
           LOG_D("Ligature between %c and %c", (char) glyph_data->char_code, (char) next_charcode);
-          glyph = get_glyph_internal(step->u.char_code, glyph_size);
+          glyph = get_glyph_internal(step->u.char_code | 0xFF00, glyph_size);
           ignore_next = true;
           break;
         }

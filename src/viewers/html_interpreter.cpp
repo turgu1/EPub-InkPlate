@@ -431,16 +431,7 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
               }
             #endif
 
-            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-              if (!page.add_word(word.c_str(), fmt, true)) {
-                if (first) {
-                  LOG_D("after page.add_word()");
-                  ESP::show_heaps_info();
-                  first = false;
-                }
-            #else
-              if (!page.add_word(word.c_str(), fmt)) {
-            #endif
+            if (!page.add_word(word.c_str(), fmt)) {
               if (!page_end(fmt)) return false;
               if (at_end()) {
                 page.break_paragraph(fmt);
@@ -450,15 +441,6 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
               page.new_paragraph(fmt, true);
               show_state("==> After New Paragraph 3 <==", fmt);
               page.add_word(word.c_str(), fmt);
-            }
-            else {
-              #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-                if (first) {
-                  LOG_D("after page.add_word()");
-                  ESP::show_heaps_info();
-                  first = false;
-                }
-              #endif
             }
           }
           current_offset += count;

@@ -73,10 +73,16 @@
 
       page_locs.setup();
 
-      #if EXTENDED_CASE
-        #define INT_PIN PressKeys::INTERRUPT_PIN
+      #if defined(INKPLATE_6PLUS)
+        #define MSG "Press the WakUp Button to restart."
+        #define INT_PIN TouchScreen::INTERRUPT_PIN
       #else
-        #define INT_PIN TouchKeys::INTERRUPT_PIN
+        #define MSG "Press a key to restart."
+        #if EXTENDED_CASE
+          #define INT_PIN PressKeys::INTERRUPT_PIN
+        #else
+          #define INT_PIN TouchKeys::INTERRUPT_PIN
+        #endif
       #endif
 
       if (fonts.setup()) {
@@ -92,7 +98,7 @@
 
         if (!nvs_mgr_res) {
           msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-            "Failed to initialise NVS Flash. Entering Deep Sleep. Press a key to restart."
+            "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG
           );
 
           ESP::delay(500);
@@ -101,7 +107,7 @@
     
         if (inkplate_err) {
           msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
-            "Unable to initialize the InkPlate drivers. Entering Deep Sleep. Press a key to restart."
+            "Unable to initialize the InkPlate drivers. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, 1);
@@ -109,7 +115,7 @@
 
         if (config_err) {
           msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
-            "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
+            "Unable to read/save configuration file. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, 1);
@@ -124,7 +130,7 @@
       else {
         LOG_E("Font loading error.");
         msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
-          "Unable to read required fonts. Entering Deep Sleep. Press a key to restart."
+          "Unable to read required fonts. Entering Deep Sleep. " MSG
         );
         ESP::delay(500);
         inkplate_platform.deep_sleep(INT_PIN, 1);

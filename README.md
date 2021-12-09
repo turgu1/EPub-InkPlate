@@ -2,11 +2,13 @@
 
 ## Last news
 
-(Updated 2021.10.21)
+(Updated 2021.12.08)
 
 Update to version 1.3.2 - Not ready yet
 
 TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that will be merged in a specific file format to simplify their management by the EPub-Inkplate application.
+
+This version will add Inkplate-6PLUS release. Some recoding required for touch events management (first cut not working well).
 
 - [x] Font classes re-org to allow bitmap fonts
 - [x] Tests with single PK file format
@@ -18,10 +20,12 @@ TrueType fonts don't look that nice on the low-resolution eInk screens. This is 
 - [x] Glyphs translation to latin1 (multiple glyphs merge for accents)
 - [x] Latin-A
 - [x] `fonts_list.xml` format adjustments
-
+- [ ] Inkplate-6PLUS Coding (work in progress...)
 - [ ] Valgrind
-- [ ] Tests Inkplate-6 / Inkplate-10
+- [x] Tests Inkplate-6 / Inkplate-10
+- [ ] Tests Inkplate-6PLUS
 - [ ] Documentation
+- [ ] Release generation script to be modified for Inkplate-6PLUS integration
 - [ ] New version release packaging
 
 Update to version 1.3.1

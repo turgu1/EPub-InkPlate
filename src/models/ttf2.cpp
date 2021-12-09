@@ -115,13 +115,6 @@ TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size)
     glyph->line_height = face->size->metrics.height >> 6;
     glyph->ligature_and_kern_pgm_index = -1;
 
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      if (debugging && first_debug) {
-        LOG_D("before FT_Render_Glyph()");
-        ESP::show_heaps_info();
-      }
-    #endif
-
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
       if (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) {
         error = FT_Render_Glyph(face->glyph,            // glyph slot

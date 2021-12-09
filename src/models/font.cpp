@@ -20,10 +20,6 @@ Font::Font()
   ready             = false;
  }
 
-Font::~Font()
-{
-}
-
 void
 Font::add_buff_to_byte_pool()
 {
@@ -93,13 +89,15 @@ Font::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, i
   ignore_next = false;
   Font::Glyph * glyph = get_glyph_internal(charcode, glyph_size);
 
-  if ((glyph != nullptr) && (glyph->ligature_and_kern_pgm_index >= 0)) {
-    int16_t k; // This is a FIX16...
-    glyph = adjust_ligature_and_kern(glyph, glyph_size, next_charcode, k, ignore_next);
-    kern = glyph->advance + k;
-  }
-  else {
-    kern = glyph->advance;
+  if (glyph != nullptr) {
+    if (glyph->ligature_and_kern_pgm_index >= 0) {
+      int16_t k; // This is a FIX16...
+      glyph = adjust_ligature_and_kern(glyph, glyph_size, next_charcode, k, ignore_next);
+      kern = glyph->advance + k;
+    }
+    else {
+      kern = glyph->advance;
+    }
   }
   return (glyph == nullptr) ? nullptr : glyph;
 }
