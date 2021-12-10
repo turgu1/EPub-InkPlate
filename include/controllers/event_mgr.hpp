@@ -13,13 +13,13 @@
 
 class EventMgr
 {
-  private:
+  protected:
     bool stay_on;
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-      enum class State { NONE, HOLDING, TAPING, SWIPING, PINCHING };
+      
       uint16_t x_pos,   y_pos;
       uint16_t x_start, y_start;
-      State    state;
+      uint16_t distance;
     #endif
 
   public:
@@ -28,24 +28,21 @@ class EventMgr
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
       enum class            Event { NONE,          TAP,             HOLD,           SWIPE_LEFT, 
                                     SWIPE_RIGHT,   PINCH_ENLARGE,   PINCH_REDUCE,   RELEASE      };
-      enum class    LowInputEvent { NONE,          PRESS1,          PRESS2, MOVE,   RELEASE      };
 
-      const char * event_str[8] = { "NONE",        "TAP",           "HOLD",         "SWIPE_LEFT", 
-                                    "SWIPE_RIGHT", "PINCH_ENLARGE", "PINCH_REDUCE", "RELEASE"    };
+      static const char * event_str[8];
 
       void           get_location(uint16_t & x, uint16_t & y) { x = x_pos;   y = y_pos;   }
       void     get_start_location(uint16_t & x, uint16_t & y) { x = x_start; y = y_start; }
+      uint16_t       get_distance()                           { return distance;          }
       uint16_t     get_pinch_size();
-      void        low_input_event(LowInputEvent event, uint16_t x, uint16_t y, bool hold);
+
+      void set_start_location(uint16_t x, uint16_t y) { x_start = x; y_start = y; }
+      void       set_distance(uint16_t dist         ) { distance = dist;          }
     #else
       enum class Event { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
     #endif
 
-    EventMgr() : stay_on(false)
-      #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-        , state(State::NONE)
-      #endif
-      { }
+    EventMgr() : stay_on(false) { }
 
     bool setup();
     

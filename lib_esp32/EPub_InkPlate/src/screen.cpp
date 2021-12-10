@@ -330,25 +330,32 @@ Screen::set_orientation(Orientation orient)
   }
 }
 
-void 
-Screen::to_user_coord(uint16_t & x, uint16_t & y)
-{
-  uint16_t temp;
-  if (orientation == Orientation::BOTTOM) {
-    // Nothing to do
+#if defined(INKPLATE_6PLUS)
+  void 
+  Screen::to_user_coord(uint16_t & x, uint16_t & y)
+  {
+    uint16_t temp;
+    if (orientation == Orientation::BOTTOM) {
+      LOG_D("Bottom...");
+      temp = y;
+      y = ((uint32_t) (HEIGHT - 1) *                                       x ) / touch_screen.get_x_resolution();
+      x = ((uint32_t) (WIDTH  - 1) * (touch_screen.get_y_resolution() - temp)) / touch_screen.get_y_resolution();
+    }
+    else if (orientation == Orientation::TOP) {
+      LOG_D("Top...");
+      temp = y;
+      y = ((uint32_t) (HEIGHT - 1) * (touch_screen.get_x_resolution() -    x)) / touch_screen.get_x_resolution();
+      x = ((uint32_t) (WIDTH  - 1) *                                    temp ) / touch_screen.get_y_resolution();
+    }
+    else if (orientation == Orientation::LEFT) {
+      LOG_D("Left...");
+      x = ((uint32_t) (WIDTH  - 1) * (touch_screen.get_x_resolution() - x)) / touch_screen.get_x_resolution();
+      y = ((uint32_t) (HEIGHT - 1) * (touch_screen.get_y_resolution() - y)) / touch_screen.get_y_resolution();
+    }
+    else {
+      LOG_D("Right...");
+      x = ((uint32_t) (WIDTH  - 1) * x) / touch_screen.get_x_resolution();
+      y = ((uint32_t) (HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+    }
   }
-  else if (orientation == Orientation::TOP) {
-    temp = y;
-    y    = x;
-    x    = WIDTH - 1 - temp;
-  }
-  else if (orientation == Orientation::LEFT) {
-    temp = y;
-    y    = HEIGHT - 1 - x;
-    x    = temp;
-  }
-  else {
-    x = HEIGHT - 1 - x;
-    y = WIDTH  - 1 - y;
-  }
-}
+#endif

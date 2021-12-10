@@ -169,8 +169,11 @@ class Screen : NonCopyable
     void set_pixel_resolution(PixelResolution resolution, bool force = false);
     void set_orientation(Orientation orient);
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
-    void to_user_coord(uint16_t & x, uint16_t & y);
     inline void force_full_update() { partial_count = 0; }
+
+    #if defined(INKPLATE_6PLUS)
+      void to_user_coord(uint16_t & x, uint16_t & y);
+    #endif
 };
 
 #if __SCREEN__

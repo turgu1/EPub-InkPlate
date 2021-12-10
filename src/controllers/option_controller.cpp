@@ -52,7 +52,7 @@ static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL  },
   { "Books Directory View :",     &dir_view,               2, FormViewer::dir_view_choices,    FormViewer::FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { "WakeUp Button Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL },
+    { "uSDCard Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL },
   #else
     { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL    },
   #endif

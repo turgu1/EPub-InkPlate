@@ -62,10 +62,10 @@ class FormViewer
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
       static constexpr Choice orientation_choices[4] = {
-        { "LEFT",   0 },
-        { "RIGHT",  1 },
-        { "BOTTOM", 2 },
-        { "TOP",    3 }
+        { "LEFT",   3 },
+        { "RIGHT",  2 },
+        { "TOP",    1 },
+        { "BOTTOM", 0 }
       };
     #else
       static constexpr Choice orientation_choices[3] = {

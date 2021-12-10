@@ -15,7 +15,10 @@
 #include <sys/param.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
-#include <dirent.h>
+
+extern "C" {
+  #include <dirent.h>
+}
 
 #include "esp_err.h"
 

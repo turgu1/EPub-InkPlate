@@ -16,7 +16,10 @@
   #include "esp.hpp"
 #endif
 
-#include <dirent.h>
+extern "C" { 
+  #include <dirent.h>
+}
+
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <sstream>

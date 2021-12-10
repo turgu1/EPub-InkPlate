@@ -12,7 +12,13 @@
 #include "controllers/app_controller.hpp"
 #include "models/config.hpp"
 
+const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD",         "SWIPE_LEFT", 
+                                        "SWIPE_RIGHT", "PINCH_ENLARGE", "PINCH_REDUCE", "RELEASE"    };
+
+
 #if EPUB_INKPLATE_BUILD
+
+  #include <cmath>
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -34,138 +40,145 @@
   {
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(touchscreen_isr_queue, &gpio_num, NULL);
+
   }
+
+  #define DISTANCE (pow(x_end - x_start, 2) + pow(y_end - y_start, 2))
 
   void
   get_event_task(void * param)
   {
-    EventMgr::LowInputEvent low_event = EventMgr::LowInputEvent::NONE;
+    static constexpr char const * TAG = "GetEventTask";
+
+    const uint32_t MAX_DELAY_MS  =     10E3;  // 10 seconds
+    const uint16_t DIST_TRESHOLD = (30 * 30); // treshold distance in pixels squared
+
+    enum class State { NONE, WAIT_NEXT, HOLDING, SWIPING, PINCHING };
+
+    EventMgr::Event event = EventMgr::Event::NONE;
+
     TouchScreen::TouchPositions x, y;
+
+    uint16_t 
+      x_start = 0, 
+      y_start = 0, 
+      x_end   = 0, 
+      y_end   = 0;
+
     uint32_t io_num;
     uint8_t  count;
-    bool one_press = false;
-    bool hold      = false;
+    
+    State    state = State::NONE;
 
     while (true) {
-      xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
-      count = touch_screen.get_positions(x, y);
-      if (count == 0) {
-        low_event = EventMgr::LowInputEvent::RELEASE;
-        one_press = hold = false;
-      }
-      else if (count == 1) {
-        screen.to_user_coord(x[0], y[0]);
-        if (one_press) {
-          low_event = EventMgr::LowInputEvent::MOVE;
-        }
-        else {
-          one_press = true;
-          low_event = EventMgr::LowInputEvent::PRESS1;
-          if (xQueueReceive(touchscreen_isr_queue, &io_num, 250 / portTICK_PERIOD_MS)) {
+      switch (state) {
+        case State::NONE:
+          xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
+          count = touch_screen.get_positions(x, y);
+          if (count == 1) {
+            state = State::WAIT_NEXT;
+            screen.to_user_coord(x[0], y[0]);
+            x_start = x[0];
+            y_start = y[0];
+          }
+          else if (count == 2) {
+            screen.to_user_coord(x[0], y[0]);
+            screen.to_user_coord(x[1], y[1]);
+            x_start = x[0]; x_end = x[1];
+            y_start = y[0]; y_end = y[1];
+            state = State::PINCHING;
+          }
+          break; 
+
+        case State::WAIT_NEXT:
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, 500 / portTICK_PERIOD_MS)) {
             count = touch_screen.get_positions(x, y);
             if (count == 0) {
-              one_press = false;
+              state = State::NONE;
+              event = EventMgr::Event::TAP;
+              event_mgr.set_start_location(x_start, y_start);
             }
             else if (count == 1) {
               screen.to_user_coord(x[0], y[0]);
-              low_event = EventMgr::LowInputEvent::MOVE;
-            }
-            else {
-              screen.to_user_coord(x[0], y[0]);
-              screen.to_user_coord(x[1], y[1]);
-              one_press = hold = false;
-              low_event = EventMgr::LowInputEvent::PRESS2;
-              x[0] = (x[0] > x[1]) ? x[0] - x[1] : x[1] - x[0];
-              y[0] = (y[0] > y[1]) ? y[0] - y[1] : y[1] - y[0];
+              x_end = x[0];
+              y_end = y[0];
+              if (DISTANCE > DIST_TRESHOLD) {
+                state = State::SWIPING;
+              }
             }
           }
           else {
-            // Nothing received. The finger didn't moved and still touching the
-            // surface. It is then considered a hold situation.
-            hold = true;
+            state = State::HOLDING;
+            event = EventMgr::Event::HOLD;
+            event_mgr.set_start_location(x_start, y_start);
           }
-        }
-      }
-      else if (count == 2) {
-        // When two fingers are detected, the difference of location between the two
-        // fingers is then computed as the application is using two fingers touch for
-        // pinch only
-        screen.to_user_coord(x[0], y[0]);
-        screen.to_user_coord(x[1], y[1]);
-        one_press = hold = false;
-        low_event = EventMgr::LowInputEvent::PRESS2;
-        x[0] = (x[0] > x[1]) ? x[0] - x[1] : x[1] - x[0];
-        y[0] = (y[0] > y[1]) ? y[0] - y[1] : y[1] - y[0];
-      }
-      
-      if (low_event != EventMgr::LowInputEvent::NONE) {
-        event_mgr.low_input_event(low_event, x[0], y[0], hold);
-      }
-    }
-  }
+          break;
 
-  void 
-  EventMgr::low_input_event(EventMgr::LowInputEvent low_event, 
-                            uint16_t x, 
-                            uint16_t y,
-                            bool hold)
-  {
-    Event event = Event::NONE;
+        case State::HOLDING:
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
+            count = touch_screen.get_positions(x, y);
+            if (count == 0) {
+              event = EventMgr::Event::RELEASE;
+              state = State::NONE;
+            }
+          }
+          else {
+            event = EventMgr::Event::RELEASE;
+            state = State::NONE;
+          }
+          break;
 
-    if (low_event == LowInputEvent::PRESS1) {
-      x_pos = x_start = x;
-      y_pos = y_start = y;
-      if (hold) {
-        event = Event::HOLD;
-        state = State::HOLDING;
-        // LOG_D("Holding...");
+        case State::SWIPING:
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
+            count = touch_screen.get_positions(x, y);
+            if (count == 0) {
+              event = (x_start < x_end) ? EventMgr::Event::SWIPE_RIGHT : EventMgr::Event::SWIPE_LEFT; 
+              state = State::NONE;
+            }
+            if (count == 1) {
+              screen.to_user_coord(x[0], y[0]);
+              x_end = x[0];
+              y_end = y[0];
+            }
+          }
+          else {
+            event = (x_start < x_end) ? EventMgr::Event::SWIPE_RIGHT : EventMgr::Event::SWIPE_LEFT; 
+            state = State::NONE;
+          }
+          break;
+
+        case State::PINCHING:
+          if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
+            count = touch_screen.get_positions(x, y);
+            if (count == 0) {
+              event = EventMgr::Event::RELEASE;
+              state = State::NONE;
+            }
+            else if (count == 2) {
+              screen.to_user_coord(x[0], y[0]);
+              screen.to_user_coord(x[1], y[1]);
+              uint16_t dist1 = DISTANCE;
+              x_start = x[0]; x_end = x[1];
+              y_start = y[0]; y_end = y[1];
+              uint16_t dist2 = DISTANCE;
+              if (dist1 != dist2) {
+                event = (dist1 < dist2) ? EventMgr::Event::PINCH_ENLARGE : EventMgr::Event::PINCH_REDUCE;
+                event_mgr.set_distance(abs(sqrt(dist1) - sqrt(dist2)));
+              }
+            }
+          }
+          else {
+            event = EventMgr::Event::RELEASE;
+            state = State::NONE;
+          }
+          break;
       }
-      else {
-        state = State::TAPING;
-        // LOG_D("Taping...");
+
+      if (event != EventMgr::Event::NONE) {
+        LOG_D("Input Event %s [%d, %d] [%d, %d]...", EventMgr::event_str[int(event)], x_start, y_start, x_end, y_end);
+        xQueueSend(touchscreen_event_queue, &event, 0);
+        event = EventMgr::Event::NONE;
       }
-    }
-    else if (low_event == LowInputEvent::PRESS2) {
-      x_pos = x_start = x;
-      y_pos = y_start = y;
-      state = State::PINCHING;
-      // LOG_D("Pinching...")
-    }
-    else if (low_event == LowInputEvent::MOVE) {
-      if (state == State::TAPING) {
-        x_pos = x;
-        y_pos = y;
-        if (abs(((int16_t) x) - ((int16_t) x_start)) > 50) {
-          state = State::SWIPING;
-          // LOG_D("Swiping...");
-        }
-      }
-      else if (state == State::PINCHING) {
-        if (abs(((int16_t) x) - ((int16_t) x_pos)) > 20) {
-          event = (x < x_pos) ? Event::PINCH_REDUCE : Event::PINCH_ENLARGE;
-          x_pos = x;
-          y_pos = y;
-        }
-      }
-    }
-    else if (low_event == LowInputEvent::RELEASE) {
-      x_pos = x;
-      y_pos = y;
-      if (state == State::TAPING) {
-        event = Event::TAP;
-      }
-      else if (state == State::SWIPING) {
-        event = (x < x_start) ? Event::SWIPE_LEFT : Event::SWIPE_RIGHT;
-      }
-      else { // PINCHING or HOLDING
-        event = Event::RELEASE;
-      }
-      state = State::NONE;
-      // LOG_D("None...");
-    }
-    if (event != Event::NONE) {
-      LOG_D("Input Event %s [%d, %d] [%d, %d]...", event_str[int(event)], x_start, y_start, x_pos, y_pos);
-      xQueueSend(touchscreen_event_queue, &event, 0);
     }
   }
 
