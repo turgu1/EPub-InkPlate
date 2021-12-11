@@ -10,16 +10,22 @@ class TocViewer
   private:
     static constexpr char const * TAG = "TocView";
 
-    static const int16_t TITLE_FONT            =  5;
-    static const int16_t ENTRY_FONT            =  5;
-    static const int16_t PAGENBR_FONT          =  5;
-    static const int16_t ENTRY_FONT_SIZE       = 11;
-    static const int16_t PAGENBR_FONT_SIZE     =  9;
-    static const int16_t TITLE_FONT_SIZE       = 14;
-    static const int16_t FIRST_ENTRY_YPOS      = 80;
-    static const int16_t ENTRY_HEIGHT          = 26;
-    static const int16_t MAX_TITLE_SIZE        = 90;
-    static const int16_t TITLE_YPOS            = 20;
+    static const int16_t TITLE_FONT            =   5;
+    static const int16_t ENTRY_FONT            =   5;
+    static const int16_t PAGENBR_FONT          =   5;
+    static const int16_t ENTRY_FONT_SIZE       =  11;
+    static const int16_t PAGENBR_FONT_SIZE     =   9;
+    static const int16_t TITLE_FONT_SIZE       =  14;
+    static const int16_t MAX_TITLE_SIZE        =  90;
+    static const int16_t TITLE_YPOS            =  20;
+
+    #if INKPLATE_6PLUS
+      static const int16_t ENTRY_HEIGHT        =  40;
+      static const int16_t FIRST_ENTRY_YPOS    = 100;
+    #else
+      static const int16_t ENTRY_HEIGHT        =  26;
+      static const int16_t FIRST_ENTRY_YPOS    =  80;
+    #endif
 
     int16_t current_entry_idx;
     int16_t current_screen_idx;

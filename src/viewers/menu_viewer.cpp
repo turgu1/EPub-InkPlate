@@ -77,6 +77,16 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
       page.put_char_at(ch, pos, fmt);
       pos.x += SPACE_BETWEEN_ICONS;
+
+      std::cout << "[" 
+                << entry_locs[idx].pos.x 
+                << ", " 
+                << entry_locs[idx].pos.y
+                << ":"
+                << entry_locs[idx].dim.width
+                << ", "
+                << entry_locs[idx].dim.height
+                << "] ";
     }
     else {
       entry_locs[idx].pos.x = -1;
@@ -85,6 +95,8 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
     idx++;
   }
+
+  std::cout << std::endl;
   
   max_index           = idx - 1;
   // It is expected that the last entry in the menu will be always visible
@@ -121,10 +133,10 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
     for (int8_t idx = 0; idx <= max_index; idx++) {
-      if ((x >=  entry_locs[idx].pos.x) &&
-          (x <= (entry_locs[idx].pos.x + entry_locs[idx].dim.width)) &&
-          (y >=  entry_locs[idx].pos.y) &&
-          (y <= (entry_locs[idx].pos.y + entry_locs[idx].dim.height))) {
+      if ((x >=  entry_locs[idx].pos.x - ((idx == 0) ? 5 : 15)) &&
+          (x <= (entry_locs[idx].pos.x + entry_locs[idx].dim.width + 15)) &&
+          //(y >=  0) &&
+          (y <= (entry_locs[idx].pos.y + entry_locs[idx].dim.height + 10))) {
         return idx;
       }
     }
@@ -179,7 +191,7 @@ MenuViewer::clear_highlight()
 }
 
 bool 
-MenuViewer::event(EventMgr::Event event)
+MenuViewer::event(const EventMgr::Event & event)
 {
   Page::Format fmt = {
     .line_height_factor =   1.0,
@@ -207,12 +219,9 @@ MenuViewer::event(EventMgr::Event event)
 
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
 
-    uint16_t x, y;
-
-    switch (event) {
-      case EventMgr::Event::HOLD:
-        event_mgr.get_start_location(x, y);
-        current_entry_index = find_index(x, y);
+    switch (event.kind) {
+      case EventMgr::EventKind::HOLD:
+        current_entry_index = find_index(event.x, event.y);
         if (current_entry_index <= max_index) {
           page.start(fmt);
 
@@ -229,13 +238,13 @@ MenuViewer::event(EventMgr::Event event)
         }
         break;
 
-      case EventMgr::Event::RELEASE:
+      case EventMgr::EventKind::RELEASE:
+        ESP::delay(1000);
         clear_highlight();
         break;
 
-      case EventMgr::Event::TAP:
-        event_mgr.get_start_location(x, y);
-        current_entry_index = find_index(x, y);
+      case EventMgr::EventKind::TAP:
+        current_entry_index = find_index(event.x, event.y);
         if (current_entry_index <= max_index) {
           if (menu[current_entry_index].func != nullptr) {
             page.start(fmt);
@@ -269,8 +278,8 @@ MenuViewer::event(EventMgr::Event event)
 
     page.start(fmt);
 
-    switch (event) {
-      case EventMgr::Event::PREV:
+    switch (event.kind) {
+      case EventMgr::EventKind::PREV:
         if (current_entry_index > 0) {
           current_entry_index--;
           // It is expected that the first entry in the menu will always be visible
@@ -280,7 +289,7 @@ MenuViewer::event(EventMgr::Event event)
           current_entry_index = max_index;
         }
         break;
-      case EventMgr::Event::NEXT:
+      case EventMgr::EventKind::NEXT:
         if (current_entry_index < max_index) {
           current_entry_index++;
           // It is expected that the last entry in the menu will always be visible
@@ -290,16 +299,16 @@ MenuViewer::event(EventMgr::Event event)
           current_entry_index = 0;
         }
         break;
-      case EventMgr::Event::DBL_PREV:
+      case EventMgr::EventKind::DBL_PREV:
         return false;
-      case EventMgr::Event::DBL_NEXT:
+      case EventMgr::EventKind::DBL_NEXT:
         return false;
-      case EventMgr::Event::SELECT:
+      case EventMgr::EventKind::SELECT:
         if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
         return false;
-      case EventMgr::Event::DBL_SELECT:
+      case EventMgr::EventKind::DBL_SELECT:
         return true;
-      case EventMgr::Event::NONE:
+      case EventMgr::EventKind::NONE:
         return false;
     }
 

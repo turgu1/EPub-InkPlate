@@ -18,7 +18,6 @@ class EventMgr
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
       
       uint16_t x_pos,   y_pos;
-      uint16_t x_start, y_start;
       uint16_t distance;
     #endif
 
@@ -26,29 +25,31 @@ class EventMgr
     static constexpr char const * TAG = "EventMgr";
 
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-      enum class            Event { NONE,          TAP,             HOLD,           SWIPE_LEFT, 
-                                    SWIPE_RIGHT,   PINCH_ENLARGE,   PINCH_REDUCE,   RELEASE      };
+      enum class            EventKind { NONE,          TAP,             HOLD,           SWIPE_LEFT, 
+                                        SWIPE_RIGHT,   PINCH_ENLARGE,   PINCH_REDUCE,   RELEASE      };
 
       static const char * event_str[8];
 
-      void           get_location(uint16_t & x, uint16_t & y) { x = x_pos;   y = y_pos;   }
-      void     get_start_location(uint16_t & x, uint16_t & y) { x = x_start; y = y_start; }
-      uint16_t       get_distance()                           { return distance;          }
-      uint16_t     get_pinch_size();
-
-      void set_start_location(uint16_t x, uint16_t y) { x_start = x; y_start = y; }
-      void       set_distance(uint16_t dist         ) { distance = dist;          }
+      struct Event {
+        EventKind kind;
+        uint16_t x, y, dist;
+      };
     #else
-      enum class Event { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+      enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+
+      struct Event {
+        EventKind kind;
+      };
     #endif
 
+    
     EventMgr() : stay_on(false) { }
 
     bool setup();
     
     void loop();
 
-    Event get_event();
+    const Event & get_event();
     
     #if EPUB_LINUX_BUILD
       #if TOUCH_TRIAL

@@ -44,7 +44,7 @@ CommonActions::power_it_off()
 {
   #if defined(INKPLATE_6PLUS)
     #define MSG "Please press the WakUp Button to restart the device."
-    #define INT_PIN TouchScreen::INTERRUPT_PIN
+    #define INT_PIN ((gpio_num_t) 0)
   #else
     #define MSG "Please press a key to restart the device."
     #if EXTENDED_CASE

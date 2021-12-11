@@ -34,23 +34,19 @@ TocController::enter()
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   void 
-  TocController::input_event(EventMgr::Event event)
+  TocController::input_event(const EventMgr::Event & event)
   {
-    uint16_t x, y;
-
-    switch (event) {
-      case EventMgr::Event::SWIPE_RIGHT:
+    switch (event.kind) {
+      case EventMgr::EventKind::SWIPE_RIGHT:
         current_entry_index = toc_viewer.prev_page();   
         break;
 
-      case EventMgr::Event::SWIPE_LEFT:
+      case EventMgr::EventKind::SWIPE_LEFT:
         current_entry_index = toc_viewer.next_page();   
         break;
 
-      case EventMgr::Event::TAP:
-        event_mgr.get_start_location(x, y);
-
-        current_entry_index = toc_viewer.get_index_at(x, y);
+      case EventMgr::EventKind::TAP:
+        current_entry_index = toc_viewer.get_index_at(event.x, event.y);
         if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
           if(toc.get_entry(current_entry_index).page_id.offset >= 0) {
             book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
@@ -62,10 +58,10 @@ TocController::enter()
         }
         break;
 
-      case EventMgr::Event::HOLD:
+      case EventMgr::EventKind::HOLD:
         break;
 
-      case EventMgr::Event::RELEASE:
+      case EventMgr::EventKind::RELEASE:
         toc_viewer.clear_highlight();
         break;
 
@@ -75,42 +71,42 @@ TocController::enter()
   }
 #else
   void 
-  TocController::input_event(EventMgr::Event event)
+  TocController::input_event(const EventMgr::Event & event)
   {
-    switch (event) {
+    switch (event.kind) {
       #if EXTENDED_CASE
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #else
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #endif
         current_entry_index = toc_viewer.prev_column();   
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #else
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #endif
         current_entry_index = toc_viewer.next_column();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #else
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #endif
         current_entry_index = toc_viewer.prev_item();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #else
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #endif
         current_entry_index = toc_viewer.next_item();
         break;
 
-      case EventMgr::Event::SELECT:
+      case EventMgr::EventKind::SELECT:
         if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
           if (toc.get_entry(current_entry_index).page_id.offset >= 0) {
             book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
@@ -119,11 +115,11 @@ TocController::enter()
         }
         break;
 
-      case EventMgr::Event::DBL_SELECT:
+      case EventMgr::EventKind::DBL_SELECT:
         app_controller.set_controller(AppController::Ctrl::BOOK);
         break;
         
-      case EventMgr::Event::NONE:
+      case EventMgr::EventKind::NONE:
         break;
     }
   }

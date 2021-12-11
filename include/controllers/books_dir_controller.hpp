@@ -27,7 +27,7 @@ class BooksDirController
   public:
     BooksDirController() {};
     void setup();
-    void input_event(EventMgr::Event event);
+    void input_event(const EventMgr::Event & event);
     void enter();
     void leave(bool going_to_deep_sleep = false);
     void save_last_book(const PageLocs::PageId & page_id, bool going_to_deep_sleep);

@@ -189,7 +189,7 @@ OptionController::leave(bool going_to_deep_sleep)
 }
 
 void 
-OptionController::input_event(EventMgr::Event event)
+OptionController::input_event(const EventMgr::Event & event)
 {
   if (main_form_is_shown) {
     if (form_viewer.event(event)) {

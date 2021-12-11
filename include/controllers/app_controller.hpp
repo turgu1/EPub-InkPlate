@@ -74,7 +74,7 @@ class AppController
      * 
      * @param event 
      */
-    void input_event(EventMgr::Event event);
+    void input_event(const EventMgr::Event & event);
 
     void going_to_deep_sleep();
     void launch();

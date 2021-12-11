@@ -22,7 +22,7 @@ class MenuViewer
       bool visible;
     };
     void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
-    bool event(EventMgr::Event event);
+    bool event(const EventMgr::Event & event);
     void clear_highlight();
     
   private:
@@ -30,7 +30,12 @@ class MenuViewer
 
     static const int16_t ICON_SIZE           = 15;
     static const int16_t CAPTION_SIZE        = 12;
-    static const int16_t SPACE_BETWEEN_ICONS = 50;
+
+    #if INKPLATE_6PLUS
+      static const int16_t SPACE_BETWEEN_ICONS = 80;
+    #else
+      static const int16_t SPACE_BETWEEN_ICONS = 50;
+    #endif
 
     uint8_t  current_entry_index;
     uint8_t  max_index;

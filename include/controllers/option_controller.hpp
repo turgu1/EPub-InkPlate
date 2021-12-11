@@ -23,7 +23,7 @@ class OptionController
                          books_refresh_needed(false), 
                          wait_for_key_after_wifi(false) { };
                          
-    void    input_event(EventMgr::Event event);
+    void    input_event(const EventMgr::Event & event);
     void          enter();
     void          leave(bool going_to_deep_sleep = false);
     void set_font_count(uint8_t count);

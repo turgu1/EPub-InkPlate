@@ -36,7 +36,7 @@ class Screen : NonCopyable
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #elif INKPLATE_6PLUS
       static constexpr int8_t   IDENT                 =   3;
-      static constexpr int16_t  PARTIAL_COUNT_ALLOWED = 999;
+      static constexpr int16_t  PARTIAL_COUNT_ALLOWED =  30;
       static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM, TOP };

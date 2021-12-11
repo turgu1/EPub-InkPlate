@@ -218,27 +218,24 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   void 
-  BooksDirController::input_event(EventMgr::Event event)
+  BooksDirController::input_event(const EventMgr::Event & event)
   {
     static std::string book_fname;
     static std::string book_title;
-    uint16_t x, y;
 
     const BooksDir::EBookRecord * book;
 
-    switch (event) {
-      case EventMgr::Event::SWIPE_RIGHT:
+    switch (event.kind) {
+      case EventMgr::EventKind::SWIPE_RIGHT:
         current_book_index = books_dir_viewer->prev_page();   
         break;
 
-      case EventMgr::Event::SWIPE_LEFT:
+      case EventMgr::EventKind::SWIPE_LEFT:
         current_book_index = books_dir_viewer->next_page();   
         break;
 
-      case EventMgr::Event::TAP:
-        event_mgr.get_start_location(x, y);
-
-        current_book_index = books_dir_viewer->get_index_at(x, y);
+      case EventMgr::EventKind::TAP:
+        current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
           book = books_dir.get_book_data(current_book_index);
           if (book != nullptr) {
@@ -260,16 +257,15 @@ BooksDirController::leave(bool going_to_deep_sleep)
         }
         break;
 
-      case EventMgr::Event::HOLD:
-        event_mgr.get_start_location(x, y);
-
-        current_book_index = books_dir_viewer->get_index_at(x, y);
+      case EventMgr::EventKind::HOLD:
+        current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
           books_dir_viewer->highlight_book(current_book_index);
         }
         break;
 
-      case EventMgr::Event::RELEASE:
+      case EventMgr::EventKind::RELEASE:
+        ESP::delay(1000);
         books_dir_viewer->clear_highlight();
         break;
 
@@ -279,47 +275,47 @@ BooksDirController::leave(bool going_to_deep_sleep)
   }
 #else
   void 
-  BooksDirController::input_event(EventMgr::Event event)
+  BooksDirController::input_event(const EventMgr::Event & event)
   {
     static std::string book_fname;
     static std::string book_title;
 
     const BooksDir::EBookRecord * book;
 
-    switch (event) {
+    switch (event.kind) {
       #if EXTENDED_CASE
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #else
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #endif
         current_book_index = books_dir_viewer->prev_column();   
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #else
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #endif
         current_book_index = books_dir_viewer->next_column();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #else
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #endif
         current_book_index = books_dir_viewer->prev_item();
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #else
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #endif
         current_book_index = books_dir_viewer->next_item();
         break;
 
-      case EventMgr::Event::SELECT:
+      case EventMgr::EventKind::SELECT:
         if (current_book_index < books_dir.get_book_count()) {
           book = books_dir.get_book_data(current_book_index);
           if (book != nullptr) {
@@ -346,11 +342,11 @@ BooksDirController::leave(bool going_to_deep_sleep)
         }
         break;
 
-      case EventMgr::Event::DBL_SELECT:
+      case EventMgr::EventKind::DBL_SELECT:
         app_controller.set_controller(AppController::Ctrl::OPTION);
         break;
         
-      case EventMgr::Event::NONE:
+      case EventMgr::EventKind::NONE:
         break;
     }
   }

@@ -78,15 +78,12 @@ BookController::open_book_file(
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   void 
-  BookController::input_event(EventMgr::Event event)
+  BookController::input_event(const EventMgr::Event & event)
   {
-    uint16_t x, y;
-
     const PageLocs::PageId * page_id;
-    switch (event) {
-      case EventMgr::Event::SWIPE_RIGHT:
-        event_mgr.get_start_location(x, y);
-        if (y < (Screen::HEIGHT - 40)) {
+    switch (event.kind) {
+      case EventMgr::EventKind::SWIPE_RIGHT:
+        if (event.y < (Screen::HEIGHT - 40)) {
           page_id = page_locs.get_prev_page_id(current_page_id);
           if (page_id != nullptr) {
             current_page_id.itemref_index = page_id->itemref_index;
@@ -104,9 +101,8 @@ BookController::open_book_file(
         }
         break;
 
-      case EventMgr::Event::SWIPE_LEFT:
-        event_mgr.get_start_location(x, y);
-        if (y < (Screen::HEIGHT - 40)) {
+      case EventMgr::EventKind::SWIPE_LEFT:
+        if (event.y < (Screen::HEIGHT - 40)) {
           page_id = page_locs.get_next_page_id(current_page_id);
           if (page_id != nullptr) {
             current_page_id.itemref_index = page_id->itemref_index;
@@ -124,11 +120,9 @@ BookController::open_book_file(
         }
         break;
       
-      case EventMgr::Event::TAP:
-        event_mgr.get_start_location(x, y);
-
-        if (y < (Screen::HEIGHT - 40)) {
-          if (x < (Screen::WIDTH / 3)) {
+      case EventMgr::EventKind::TAP:
+        if (event.y < (Screen::HEIGHT - 40)) {
+          if (event.x < (Screen::WIDTH / 3)) {
             page_id = page_locs.get_prev_page_id(current_page_id);
             if (page_id != nullptr) {
               current_page_id.itemref_index = page_id->itemref_index;
@@ -136,7 +130,7 @@ BookController::open_book_file(
               book_viewer.show_page(current_page_id);
             }
           }
-          else if (x > ((Screen::WIDTH / 3) * 2)) {
+          else if (event.x > ((Screen::WIDTH / 3) * 2)) {
             page_id = page_locs.get_next_page_id(current_page_id);
             if (page_id != nullptr) {
               current_page_id.itemref_index = page_id->itemref_index;
@@ -157,14 +151,14 @@ BookController::open_book_file(
   }
 #else
   void 
-  BookController::input_event(EventMgr::Event event)
+  BookController::input_event(const EventMgr::Event & event)
   {
     const PageLocs::PageId * page_id;
-    switch (event) {
+    switch (event.kind) {
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #else
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #endif
         page_id = page_locs.get_prev_page_id(current_page_id);
         if (page_id != nullptr) {
@@ -175,9 +169,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::PREV:
+        case EventMgr::EventKind::PREV:
       #else
-        case EventMgr::Event::DBL_PREV:
+        case EventMgr::EventKind::DBL_PREV:
       #endif
         page_id = page_locs.get_prev_page_id(current_page_id, 10);
         if (page_id != nullptr) {
@@ -188,9 +182,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #else
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #endif
         page_id = page_locs.get_next_page_id(current_page_id);
         if (page_id != nullptr) {
@@ -201,9 +195,9 @@ BookController::open_book_file(
         break;
 
       #if EXTENDED_CASE
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::NEXT:
       #else
-        case EventMgr::Event::DBL_NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
       #endif
         page_id = page_locs.get_next_page_id(current_page_id, 10);
         if (page_id != nullptr) {
@@ -213,12 +207,12 @@ BookController::open_book_file(
         }
         break;
       
-      case EventMgr::Event::SELECT:
-      case EventMgr::Event::DBL_SELECT:
+      case EventMgr::EventKind::SELECT:
+      case EventMgr::EventKind::DBL_SELECT:
         app_controller.set_controller(AppController::Ctrl::PARAM);
         break;
         
-      case EventMgr::Event::NONE:
+      case EventMgr::EventKind::NONE:
         break;
     }
   }

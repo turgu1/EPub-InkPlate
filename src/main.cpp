@@ -25,6 +25,10 @@
   #include "alloc.hpp"
   #include "esp.hpp"
 
+  #if INKPLATE_6PLUS
+    #include "controllers/back_lit.hpp"
+  #endif
+
   #include <stdio.h>
 
   #if TESTING
@@ -95,6 +99,10 @@
 
         event_mgr.setup();
         event_mgr.set_orientation(orientation);
+
+        #if INKPLATE_6PLUS
+          back_lit.setup();
+        #endif
 
         if (!nvs_mgr_res) {
           msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",

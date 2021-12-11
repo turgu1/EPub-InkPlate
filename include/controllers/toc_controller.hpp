@@ -22,7 +22,7 @@ class TocController
     TocController() :
       current_entry_index(-1),
       current_book_index(-1) {}
-    void input_event(EventMgr::Event event);
+    void input_event(const EventMgr::Event & event);
     void enter();
     void leave(bool going_to_deep_sleep = false) {}
 };

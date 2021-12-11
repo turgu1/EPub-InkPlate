@@ -136,7 +136,7 @@ class FormViewer
     FormEntries entries;
 
     void show(FormEntries form_entries, int8_t size, const std::string & bottom_msg);
-    bool event(EventMgr::Event event);
+    bool event(const EventMgr::Event & event);
 };
 
 #if __FORM_VIEWER__

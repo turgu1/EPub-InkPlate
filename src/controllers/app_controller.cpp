@@ -11,6 +11,11 @@
 #include "controllers/option_controller.hpp"
 #include "controllers/toc_controller.hpp"
 #include "controllers/event_mgr.hpp"
+
+#if INKPLATE_6PLUS
+  #include "controllers/back_lit.hpp"
+#endif
+
 #include "screen.hpp"
 
 AppController::AppController()
@@ -92,9 +97,20 @@ void AppController::launch()
 }
 
 void 
-AppController::input_event(EventMgr::Event event)
+AppController::input_event(const EventMgr::Event & event)
 {
   if (next_ctrl != Ctrl::NONE) launch();
+
+  #if INKPLATE_6PLUS
+    if (event.kind == EventMgr::EventKind::PINCH_ENLARGE) {
+      back_lit.adjust(event.dist);
+      return;
+    }
+    else if (event.kind == EventMgr::EventKind::PINCH_REDUCE) {
+      back_lit.adjust(-event.dist);
+      return;
+    }
+  #endif
 
   switch (current_ctrl) {
     case Ctrl::DIR:     books_dir_controller.input_event(event); break;
@@ -103,7 +119,7 @@ AppController::input_event(EventMgr::Event event)
     case Ctrl::OPTION:     option_controller.input_event(event); break;
     case Ctrl::TOC:           toc_controller.input_event(event); break;
     case Ctrl::NONE:
-    case Ctrl::LAST:                                         break;
+    case Ctrl::LAST:                                             break;
   }
 }
 
@@ -111,6 +127,11 @@ void
 AppController::going_to_deep_sleep()
 {
   if (next_ctrl != Ctrl::NONE) launch();
+
+  #if INKPLATE_6PLUS
+    back_lit.turn_off();
+    touch_screen.shutdown();
+  #endif
 
   switch (current_ctrl) {
     case Ctrl::DIR:     books_dir_controller.leave(true); break;

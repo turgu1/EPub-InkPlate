@@ -293,7 +293,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 #endif
 
 bool
-FormViewer::event(EventMgr::Event event)
+FormViewer::event(const EventMgr::Event & event)
 {
   int8_t old_choice_idx = 0;
   int8_t choice_idx     = 0;
@@ -302,15 +302,13 @@ FormViewer::event(EventMgr::Event event)
 
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-    uint16_t x, y;
-    switch (event) {
-      case EventMgr::Event::TAP:
-        event_mgr.get_start_location(x, y);
-        current_entry_idx = find_entry_idx(x, y);
+    switch (event.kind) {
+      case EventMgr::EventKind::TAP:
+        current_entry_idx = find_entry_idx(event.x, event.y);
 
         if (current_entry_idx >= 0) {
           old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
-          int8_t idx = find_choice_idx(current_entry_idx, x, y);
+          int8_t idx = find_choice_idx(current_entry_idx, event.x, event.y);
           if (idx >= 0) {
             choice_idx = idx;
             completed = entries[current_entry_idx].entry_type == FormViewer::FormEntryType::DONE;
@@ -324,28 +322,28 @@ FormViewer::event(EventMgr::Event event)
   #else
     int8_t old_entry_idx  = current_entry_idx;
     if (entry_selection) {
-      switch (event) {
-        case EventMgr::Event::DBL_PREV:
-        case EventMgr::Event::PREV:
+      switch (event.kind) {
+        case EventMgr::EventKind::DBL_PREV:
+        case EventMgr::EventKind::PREV:
           current_entry_idx--;
           if (current_entry_idx < 0) {
             current_entry_idx = entry_count - 1;
           }
           break;
-        case EventMgr::Event::DBL_NEXT:
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
+        case EventMgr::EventKind::NEXT:
           current_entry_idx++;
           if (current_entry_idx >= entry_count) {
             current_entry_idx = 0;
           }
           break;
-        case EventMgr::Event::SELECT:
+        case EventMgr::EventKind::SELECT:
           entry_selection = false;
           highlight_selection = true;
           break;
-        case EventMgr::Event::NONE:
+        case EventMgr::EventKind::NONE:
           return false;
-        case EventMgr::Event::DBL_SELECT:
+        case EventMgr::EventKind::DBL_SELECT:
           completed = true;
           break;
       }
@@ -353,22 +351,22 @@ FormViewer::event(EventMgr::Event event)
     else {
       old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
 
-      switch (event) {
-        case EventMgr::Event::DBL_PREV:
-        case EventMgr::Event::PREV:
+      switch (event.kind) {
+        case EventMgr::EventKind::DBL_PREV:
+        case EventMgr::EventKind::PREV:
           choice_idx--;
           if (choice_idx < entries_info[current_entry_idx].first_choice_loc_idx) {
             choice_idx = entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
           }
           break;
-        case EventMgr::Event::DBL_NEXT:
-        case EventMgr::Event::NEXT:
+        case EventMgr::EventKind::DBL_NEXT:
+        case EventMgr::EventKind::NEXT:
           choice_idx++;
           if (choice_idx >= entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count) {
             choice_idx = entries_info[current_entry_idx].first_choice_loc_idx;
           }
           break;
-        case EventMgr::Event::SELECT:
+        case EventMgr::EventKind::SELECT:
           entry_selection = true;
           old_entry_idx = current_entry_idx;
           current_entry_idx++;
@@ -376,9 +374,9 @@ FormViewer::event(EventMgr::Event event)
             current_entry_idx = 0;
           }
           break;
-        case EventMgr::Event::NONE:
+        case EventMgr::EventKind::NONE:
           return false;
-        case EventMgr::Event::DBL_SELECT:
+        case EventMgr::EventKind::DBL_SELECT:
           completed = true;
           break;
       }

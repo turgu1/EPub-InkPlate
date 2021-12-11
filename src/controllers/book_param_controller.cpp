@@ -212,7 +212,7 @@ BookParamController::leave(bool going_to_deep_sleep)
 }
 
 void 
-BookParamController::input_event(EventMgr::Event event)
+BookParamController::input_event(const EventMgr::Event & event)
 {
   if (book_params_form_is_shown) {
     if (form_viewer.event(event)) {
@@ -248,11 +248,11 @@ BookParamController::input_event(EventMgr::Event event)
   }
   else if (delete_current_book) {
     #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-      #define SELECTION EventMgr::Event::TAP
+      #define SELECTION EventMgr::EventKind::TAP
     #else 
-      #define SELECTION EventMgr::Event::SELECT
+      #define SELECTION EventMgr::EventKind::SELECT
     #endif
-    if (event == SELECTION) {
+    if (event.kind == SELECTION) {
       std::string filepath = epub.get_current_filename();
       struct stat file_stat;
 

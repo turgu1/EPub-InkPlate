@@ -133,7 +133,7 @@
 
       while (true) {
       
-        event = EventMgr::Event::NONE;
+        event.kind = EventMgr::EventKind::NONE;
 
         xQueueReceive(touchpad_isr_queue, &io_num, portMAX_DELAY);
 
@@ -180,21 +180,21 @@
             mcp_int.get_int_state();
             Wire::leave();  
 
-            if      (pads2 & SELECT_PAD) event = EventMgr::Event::DBL_SELECT;
-            else if (pads2 & NEXT_PAD  ) event = EventMgr::Event::DBL_NEXT;
-            else if (pads2 & PREV_PAD  ) event = EventMgr::Event::DBL_PREV;
+            if      (pads2 & SELECT_PAD) event.kind = EventMgr::EventKind::DBL_SELECT;
+            else if (pads2 & NEXT_PAD  ) event.kind = EventMgr::EventKind::DBL_NEXT;
+            else if (pads2 & PREV_PAD  ) event.kind = EventMgr::EventKind::DBL_PREV;
           }
           else {
 
             // Simple Click on a key
 
-            if      (pads & SELECT_PAD) event = EventMgr::Event::SELECT;
-            else if (pads & NEXT_PAD  ) event = EventMgr::Event::NEXT;
-            else if (pads & PREV_PAD  ) event = EventMgr::Event::PREV;
+            if      (pads & SELECT_PAD) event.kind = EventMgr::EventKind::SELECT;
+            else if (pads & NEXT_PAD  ) event.kind = EventMgr::EventKind::NEXT;
+            else if (pads & PREV_PAD  ) event.kind = EventMgr::EventKind::PREV;
           }
         }
 
-        if (event != EventMgr::Event::NONE) {
+        if (event.kind != EventMgr::EventKind::NONE) {
           xQueueSend(touchpad_event_queue, &event, 0);
         }  
       }     
@@ -221,17 +221,15 @@
     }
   #endif
 
-  EventMgr::Event 
+  const EventMgr::Event & 
   EventMgr::get_event() 
   {
-    Event event;
-    if (xQueueReceive(touchpad_event_queue, &event, pdMS_TO_TICKS(15E3))) {
-      return event;
+    static Event event;
+    if (!xQueueReceive(touchpad_event_queue, &event, pdMS_TO_TICKS(15E3))) {
+      event.kind = EventKind::NONE;
     }
-    else {
-      return Event::NONE;
-    }
-  }
+    return event;
+}
 
 #else
 
@@ -245,12 +243,12 @@
 
   #include "screen.hpp"
 
-  void EventMgr::left()   { app_controller.input_event(Event::PREV);       app_controller.launch(); }
-  void EventMgr::right()  { app_controller.input_event(Event::NEXT);       app_controller.launch(); }
-  void EventMgr::up()     { app_controller.input_event(Event::DBL_PREV);   app_controller.launch(); }
-  void EventMgr::down()   { app_controller.input_event(Event::DBL_NEXT);   app_controller.launch(); }
-  void EventMgr::select() { app_controller.input_event(Event::SELECT);     app_controller.launch(); }
-  void EventMgr::home()   { app_controller.input_event(Event::DBL_SELECT); app_controller.launch(); }
+  void EventMgr::left()   { Event event; event.kind = EventKind::PREV      ; app_controller.input_event(event); app_controller.launch(); }
+  void EventMgr::right()  { Event event; event.kind = EventKind::NEXT      ; app_controller.input_event(event); app_controller.launch(); }
+  void EventMgr::up()     { Event event; event.kind = EventKind::DBL_PREV  ; app_controller.input_event(event); app_controller.launch(); }
+  void EventMgr::down()   { Event event; event.kind = EventKind::DBL_NEXT  ; app_controller.input_event(event); app_controller.launch(); }
+  void EventMgr::select() { Event event; event.kind = EventKind::SELECT    ; app_controller.input_event(event); app_controller.launch(); }
+  void EventMgr::home()   { Event event; event.kind = EventKind::DBL_SELECT; app_controller.input_event(event); app_controller.launch(); }
 
   #define BUTTON_EVENT(button, msg) \
     static void button##_clicked(GObject * button, GParamSpec * property, gpointer data) { \
@@ -280,10 +278,10 @@
   {
     LOG_D("===> Loop...");
     while (1) {
-      EventMgr::Event event;
+      const EventMgr::Event & event = get_event();
 
-      if ((event = get_event()) != Event::NONE) {
-        LOG_D("Got event %d", (int)event);
+      if (event.kind != EventKind::NONE) {
+        LOG_D("Got event %d", (int)event.kind);
         app_controller.input_event(event);
         ESP::show_heaps_info();
         return;

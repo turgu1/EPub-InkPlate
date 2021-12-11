@@ -16,7 +16,7 @@ class BookController
       current_page_id = PageLocs::PageId(0, 0);
     }
     
-    void input_event(EventMgr::Event event);
+    void input_event(const EventMgr::Event & event);
     void enter();
     void leave(bool going_to_deep_sleep = false);
     bool open_book_file(std::string & book_title, 

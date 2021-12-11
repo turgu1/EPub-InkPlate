@@ -40,43 +40,57 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   {
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(touchscreen_isr_queue, &gpio_num, NULL);
-
   }
 
-  #define DISTANCE (pow(x_end - x_start, 2) + pow(y_end - y_start, 2))
+  #define DISTANCE  (sqrt(pow(x_end - x_start, 2) + pow(y_end - y_start, 2)))
+  #define DISTANCE2 (sqrt(pow(x[1] - x[0], 2) + pow(y[1] - y[0], 2)))
 
   void
   get_event_task(void * param)
   {
     static constexpr char const * TAG = "GetEventTask";
 
-    const uint32_t MAX_DELAY_MS  =     10E3;  // 10 seconds
-    const uint16_t DIST_TRESHOLD = (30 * 30); // treshold distance in pixels squared
+    const uint32_t MAX_DELAY_MS  =     4E3; // 10 seconds
+    const uint16_t DIST_TRESHOLD =      30; // treshold distance in pixels
 
     enum class State : uint8_t { NONE, WAIT_NEXT, HOLDING, SWIPING, PINCHING };
 
-    EventMgr::Event event = EventMgr::Event::NONE;
+    EventMgr::Event event;
 
     TouchScreen::TouchPositions x, y;
 
     uint16_t 
-      x_start = 0, 
-      y_start = 0, 
-      x_end   = 0, 
-      y_end   = 0;
+      x_start    = 0, 
+      y_start    = 0, 
+      x_end      = 0, 
+      y_end      = 0,
+      last_dist  = 0;
 
     uint32_t io_num;
     uint8_t  count;
     
-    State    state = State::NONE;
+    State    state   = State::NONE;
     bool     timeout = false;
 
+    // while (true) {
+    //   xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
+    //   count = touch_screen.get_position(x, y);
+    //   LOG_I("Got: %d, [%d, %d] [%d, %d]", count, x[0], y[0], x[1], y[1]);
+    // }
+
     while (true) {
+      event = {
+        .kind = EventMgr::EventKind::NONE,
+        .x    = 0,
+        .y    = 0,
+        .dist = 0
+      };
+
       LOG_D("State: %u", (uint8_t)state);
       switch (state) {
         case State::NONE:
           xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
-          count = touch_screen.get_positions(x, y);
+          count = touch_screen.get_position(x, y);
           if (timeout) {
             timeout = false;
           }
@@ -89,19 +103,19 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           else if (count == 2) {
             screen.to_user_coord(x[0], y[0]);
             screen.to_user_coord(x[1], y[1]);
-            x_start = x[0]; x_end = x[1];
-            y_start = y[0]; y_end = y[1];
-            state = State::PINCHING;
+            event.dist = last_dist = DISTANCE2;
+            state      = State::PINCHING;
           }
           break; 
 
         case State::WAIT_NEXT:
           if (xQueueReceive(touchscreen_isr_queue, &io_num, 500 / portTICK_PERIOD_MS)) {
-            count = touch_screen.get_positions(x, y);
+            count = touch_screen.get_position(x, y);
             if (count == 0) {
-              state = State::NONE;
-              event = EventMgr::Event::TAP;
-              event_mgr.set_start_location(x_start, y_start);
+              state      = State::NONE;
+              event.kind = EventMgr::EventKind::TAP;
+              event.x    = x_start;
+              event.y    = y_start;
             }
             else if (count == 1) {
               screen.to_user_coord(x[0], y[0]);
@@ -114,39 +128,40 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             else if (count == 2) {
               screen.to_user_coord(x[0], y[0]);
               screen.to_user_coord(x[1], y[1]);
-              x_start = x[0]; x_end = x[1];
-              y_start = y[0]; y_end = y[1];
-              state = State::PINCHING;
+              event.dist = last_dist = DISTANCE2;
+              state      = State::PINCHING;
             }
           }
           else {
-            state = State::HOLDING;
-            event = EventMgr::Event::HOLD;
-            event_mgr.set_start_location(x_start, y_start);
+            state      = State::HOLDING;
+            event.kind = EventMgr::EventKind::HOLD;
+            event.x    = x_start;
+            event.y    = y_start;
           }
           break;
 
         case State::HOLDING:
+          ESP::delay_microseconds(1000);
           if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
-            count = touch_screen.get_positions(x, y);
+            count = touch_screen.get_position(x, y);
             if (count == 0) {
-              event = EventMgr::Event::RELEASE;
-              state = State::NONE;
+              event.kind = EventMgr::EventKind::RELEASE;
+              state      = State::NONE;
             }
           }
-          else {
-            event   = EventMgr::Event::RELEASE;
-            state   = State::NONE;
-            timeout = true;
+          else { // timeout
+            event.kind   = EventMgr::EventKind::RELEASE;
+            state        = State::NONE;
+            timeout      = true;
           }
           break;
 
         case State::SWIPING:
           if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
-            count = touch_screen.get_positions(x, y);
+            count = touch_screen.get_position(x, y);
             if (count == 0) {
-              event = (x_start < x_end) ? EventMgr::Event::SWIPE_RIGHT : 
-                                          EventMgr::Event::SWIPE_LEFT; 
+              event.kind = (x_start < x_end) ? EventMgr::EventKind::SWIPE_RIGHT : 
+                                               EventMgr::EventKind::SWIPE_LEFT; 
               state = State::NONE;
             }
             if (count == 1) {
@@ -157,14 +172,13 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             else if (count == 2) {
               screen.to_user_coord(x[0], y[0]);
               screen.to_user_coord(x[1], y[1]);
-              x_start = x[0]; x_end = x[1];
-              y_start = y[0]; y_end = y[1];
-              state = State::PINCHING;
+              event.dist = last_dist = DISTANCE2;
+              state      = State::PINCHING;
             }
           }
-          else {
-            event   = (x_start < x_end) ? EventMgr::Event::SWIPE_RIGHT : 
-                                          EventMgr::Event::SWIPE_LEFT; 
+          else { // timeout
+            event.kind   = (x_start < x_end) ? EventMgr::EventKind::SWIPE_RIGHT : 
+                                               EventMgr::EventKind::SWIPE_LEFT; 
             state   = State::NONE;
             timeout = true;
           }
@@ -172,39 +186,41 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
         case State::PINCHING:
           if (xQueueReceive(touchscreen_isr_queue, &io_num, MAX_DELAY_MS / portTICK_PERIOD_MS)) {
-            count = touch_screen.get_positions(x, y);
+            count = touch_screen.get_position(x, y);
             if (count == 0) {
-              event = EventMgr::Event::RELEASE;
-              state = State::NONE;
+              event.kind = EventMgr::EventKind::RELEASE;
+              state      = State::NONE;
             }
             else if (count == 2) {
               screen.to_user_coord(x[0], y[0]);
               screen.to_user_coord(x[1], y[1]);
-              uint32_t dist1 = DISTANCE;
-              x_start = x[0]; x_end = x[1];
-              y_start = y[0]; y_end = y[1];
-              uint32_t dist2 = DISTANCE;
-              LOG_D("Distances: %u %u", dist1, dist2);
-              if (dist1 != dist2) {
-                event = (dist1 < dist2) ? EventMgr::Event::PINCH_ENLARGE : 
-                                          EventMgr::Event::PINCH_REDUCE;
-                event_mgr.set_distance(abs(sqrt(dist1) - sqrt(dist2)));
+              uint16_t this_dist = DISTANCE2;
+              uint16_t new_dist_diff = abs(last_dist - this_dist);
+              LOG_D("Distance diffs: %u %u", last_dist, new_dist_diff);
+              if (new_dist_diff != 0) {
+                event.kind = (last_dist < this_dist) ? 
+                                EventMgr::EventKind::PINCH_ENLARGE : 
+                                EventMgr::EventKind::PINCH_REDUCE;
+                event.dist = new_dist_diff;
+                last_dist  = this_dist;
               }
             }
           }
           else {
-            event   = EventMgr::Event::RELEASE;
-            state   = State::NONE;
-            timeout = true;
+            event.kind = EventMgr::EventKind::RELEASE;
+            state      = State::NONE;
+            timeout    = true;
           }
           break;
       }
 
-      if (event != EventMgr::Event::NONE) {
-        LOG_D("Input Event %s [%u, %u] [%u, %u]...", 
-              EventMgr::event_str[int(event)], x_start, y_start, x_end, y_end);
+      if (event.kind != EventMgr::EventKind::NONE) {
+        LOG_I("Input Event %s [%u, %u] (%u)...", 
+              EventMgr::event_str[int(event.kind)], 
+              event.x, event.y,
+              event.dist);
         xQueueSend(touchscreen_event_queue, &event, 0);
-        event = EventMgr::Event::NONE;
+        taskYIELD();
       }
     }
   }
@@ -214,16 +230,14 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   {
   }
 
-  EventMgr::Event 
+  const EventMgr::Event & 
   EventMgr::get_event() 
   {
-    Event event;
-    if (xQueueReceive(touchscreen_event_queue, &event, pdMS_TO_TICKS(15E3))) {
-      return event;
+    static Event event;
+    if (!xQueueReceive(touchscreen_event_queue, &event, pdMS_TO_TICKS(15E3))) {
+      event.kind = EventKind::NONE;
     }
-    else {
-      return Event::NONE;
-    }
+    return event;
   }
 #endif
 
@@ -239,7 +253,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
                             uint16_t y, 
                             bool hold)
   {
-    Event event = Event::NONE;
+    Event event.kind = Event::NONE;
 
     if (low_event == LowInputEvent::PRESS1) {
       x_pos = x_start = x;
@@ -358,10 +372,10 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   void EventMgr::loop()
   {
     while (1) {
-      EventMgr::Event event;
+      const EventMgr::Event & event = get_event();
 
-      if ((event = get_event()) != Event::NONE) {
-        LOG_D("Got Event %d", (int)event);
+      if (event.kind != EventKind::NONE) {
+        LOG_D("Got Event %d", (int)event.kind);
         app_controller.input_event(event);
         ESP::show_heaps_info();
         return;
@@ -377,7 +391,6 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
-
 
           if (inkplate_platform.light_sleep(light_sleep_duration, TouchScreen::INTERRUPT_PIN, 0)) {
 
