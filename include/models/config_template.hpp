@@ -13,7 +13,7 @@ class ConfigBase
 {
   public:
     typedef IdType Ident;
-    enum class EntryType { STRING, INT, BYTE };
+    enum class EntryType { STRING, INT, SINT, BYTE };
     struct ConfigDescr {
       Ident        ident;
       EntryType    type;
@@ -48,9 +48,11 @@ class ConfigBase
 
     bool get(IdType id, int32_t     * val);
     bool get(IdType id, int8_t      * val);
+    bool get(IdType id, uint16_t    * val);
     bool get(IdType id, std::string & val);
     void put(IdType id, int32_t       val);
     void put(IdType id, int8_t        val);
+    void put(IdType id, uint16_t      val);
     void put(IdType id, std::string & val);
 
     bool read();
@@ -72,6 +74,21 @@ ConfigBase<IdType, cfg_size>::get(IdType id, int32_t * val)
   for (auto & entry : cfg) {
     if((entry.ident == id) && (entry.type == EntryType::INT)) {
       *val = * ((int32_t *) entry.value);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ----- get(uint16_t) -----
+
+template <class IdType, int cfg_size>
+bool 
+ConfigBase<IdType, cfg_size>::get(IdType id, uint16_t * val) 
+{
+  for (auto & entry : cfg) {
+    if((entry.ident == id) && (entry.type == EntryType::SINT)) {
+      *val = * ((uint16_t *) entry.value);
       return true;
     }
   }
@@ -117,6 +134,21 @@ ConfigBase<IdType, cfg_size>::put(IdType id, int32_t val)
   for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT)) {
       *((int32_t *) entry.value) = val;
+      modified = true;
+      return;
+    }
+  }
+}
+
+// ----- put(uint16_t) -----
+
+template <class IdType, int cfg_size>
+void 
+ConfigBase<IdType, cfg_size>::put(IdType id, uint16_t val) 
+{
+  for (auto entry : cfg) {
+    if ((entry.ident == id) && (entry.type == EntryType::SINT)) {
+      *((uint16_t *) entry.value) = val;
       modified = true;
       return;
     }
@@ -226,6 +258,9 @@ ConfigBase<IdType, cfg_size>::read()
     else if (entry.type == EntryType::INT) {
       *((int32_t *) entry.value) = *((int32_t *) entry.default_value);
     }
+    else if (entry.type == EntryType::SINT) {
+      *((uint16_t *) entry.value) = *((uint16_t *) entry.default_value);
+    }
     else {
       *((int8_t *) entry.value) = *((int8_t *) entry.default_value);
     }
@@ -253,6 +288,9 @@ ConfigBase<IdType, cfg_size>::read()
           }
           else if (entry.type == EntryType::INT) {
             *((int32_t *) entry.value) = atoi(value);
+          }
+          else if (entry.type == EntryType::SINT) {
+            *((uint16_t *) entry.value) = atoi(value);
           }
           else  {
             *((int8_t *) entry.value) = atoi(value);
@@ -310,6 +348,9 @@ ConfigBase<IdType, cfg_size>::save(bool force)
       else if (entry.type == EntryType::INT) {
         *file << entry.caption << " = " << *(int32_t *) entry.value << std::endl;
       }
+      else if (entry.type == EntryType::SINT) {
+        *file << entry.caption << " = " << *(uint16_t *) entry.value << std::endl;
+      }
       else {
         *file << entry.caption << " = " << +*(int8_t *) entry.value << std::endl;
       }
@@ -337,6 +378,9 @@ ConfigBase<IdType, cfg_size>::save(bool force)
       }
       else if (entry.type == EntryType::INT) {
         LOG_D("%s = %d", entry.caption, *(int32_t *) entry.value);
+      }
+      else if (entry.type == EntryType::SINT) {
+        LOG_D("%s = %u", entry.caption, *(uint16_t *) entry.value);
       }
       else {
         LOG_D("%s = %d", entry.caption, *(int8_t *) entry.value);

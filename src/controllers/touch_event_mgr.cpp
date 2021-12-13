@@ -2,7 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+#if INKPLATE_6PLUS || TOUCH_TRIAL
 
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"
@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "controllers/app_controller.hpp"
+#include "viewers/page.hpp"
 #include "models/config.hpp"
 
 const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD",         "SWIPE_LEFT", 
@@ -97,6 +98,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           else if (count == 1) {
             state = State::WAIT_NEXT;
             screen.to_user_coord(x[0], y[0]);
+            event_mgr.set_position(x[0], y[0]);
             x_start = x[0];
             y_start = y[0];
           }
@@ -119,6 +121,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             }
             else if (count == 1) {
               screen.to_user_coord(x[0], y[0]);
+              event_mgr.set_position(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
               if (DISTANCE > DIST_TRESHOLD) {
@@ -166,6 +169,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             }
             if (count == 1) {
               screen.to_user_coord(x[0], y[0]);
+              event_mgr.set_position(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
             }
@@ -239,6 +243,45 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     }
     return event;
   }
+
+  void 
+  EventMgr::show_calibration()
+  {
+    auto cross_hair = [](uint16_t x, uint16_t y) {
+      page.put_highlight(Dim(41, 3), Pos(x - 20, y - 1));
+      page.put_highlight(Dim(43, 5), Pos(x - 21, y - 2));
+      page.put_highlight(Dim(45, 7), Pos(x - 22, y - 3));
+
+      page.put_highlight(Dim(3, 41), Pos(x - 1, y - 20));
+      page.put_highlight(Dim(5, 43), Pos(x - 2, y - 21));
+      page.put_highlight(Dim(7, 45), Pos(x - 3, y - 22));
+    };
+
+    cross_hair(100, 100);
+    cross_hair(screen.WIDTH - 100, screen.HEIGHT - 100);
+
+    calib_count = 0;
+    page.paint();
+  }
+
+  bool EventMgr::calibration_event(const Event & event)
+  {
+    switch (event.kind) {
+      case EventKind::TAP:
+        if (calib_count < 2) {
+          get_position(calib_data.x[calib_count], calib_data.y[calib_count]);
+          calib_count++;
+        }
+        return calib_count >= 2;
+        break;
+
+      default:
+        break;
+    }
+
+    return false;
+  }
+
 #endif
 
 #if EPUB_LINUX_BUILD

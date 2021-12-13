@@ -10,10 +10,17 @@
 enum class ConfigIdent { 
   VERSION, SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, 
   USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, 
-  SHOW_TITLE, FRONT_LIGHT, DIR_VIEW
+  SHOW_TITLE, FRONT_LIGHT, DIR_VIEW,
+  #if INKPLATE_6PLUS
+    CALIB_X1, CALIB_Y1, CALIB_X2, CALIB_Y2
+  #endif
 };
 
-typedef ConfigBase<ConfigIdent, 16> Config;
+#if INKPLATE_6PLUS
+  typedef ConfigBase<ConfigIdent, 20> Config;
+#else
+  typedef ConfigBase<ConfigIdent, 16> Config;
+#endif
 
 #if __CONFIG__
   #include <string>
@@ -37,20 +44,25 @@ typedef ConfigBase<ConfigIdent, 16> Config;
   static int8_t   front_light;
   static int8_t   dir_view;
 
-  static int32_t  default_port               = 80;
-  static int8_t   default_battery            =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
-  static int8_t   default_orientation        =  1;  // 0 = LEFT, 1 = RIGHT, 2 = BOTTOM
-  static int8_t   default_font_size          = 12;  // 8, 10, 12, 15 pts
-  static int8_t   default_timeout            = 15;  // 5, 15, 30 minutes
-  static int8_t   default_show_images        =  0;  // 0 = NO, 1 = YES
-  static int8_t   default_use_fonts_in_books =  1;  // 0 = NO, 1 = YES
-  static int8_t   default_default_font       =  1;  // 0 = CALADEA, 1 = CRIMSON, 2 = RED HAT, 3 = ASAP
-  static int8_t   default_resolution         =  0;  // 0 = 1bit, 1 = 3bits
-  static int8_t   default_show_heap          =  0;  // 0 = NO, 1 = YES
-  static int8_t   default_show_title         =  1;
-  static int8_t   default_front_light        = 15;  // value between 0 and 63
-  static int8_t   default_dir_view           =  0;  // 0 = linear view, 1 = matrix view
-  static int8_t   the_version                =  1;
+  #if INKPLATE_6PLUS
+    static uint16_t calib_x1, calib_y1, calib_x2, calib_y2;
+    static const uint16_t default_calib            =  0;
+  #endif
+
+  static const int32_t  default_port               = 80;
+  static const int8_t   default_battery            =  2;  // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
+  static const int8_t   default_orientation        =  1;  // 0 = LEFT, 1 = RIGHT, 2 = BOTTOM
+  static const int8_t   default_font_size          = 12;  // 8, 10, 12, 15 pts
+  static const int8_t   default_timeout            = 15;  // 5, 15, 30 minutes
+  static const int8_t   default_show_images        =  0;  // 0 = NO, 1 = YES
+  static const int8_t   default_use_fonts_in_books =  1;  // 0 = NO, 1 = YES
+  static const int8_t   default_default_font       =  1;  // 0 = CALADEA, 1 = CRIMSON, 2 = RED HAT, 3 = ASAP
+  static const int8_t   default_resolution         =  0;  // 0 = 1bit, 1 = 3bits
+  static const int8_t   default_show_heap          =  0;  // 0 = NO, 1 = YES
+  static const int8_t   default_show_title         =  1;
+  static const int8_t   default_front_light        = 15;  // value between 0 and 63
+  static const int8_t   default_dir_view           =  0;  // 0 = linear view, 1 = matrix view
+  static const int8_t   the_version                =  1;
 
   // static Config::CfgType conf = {{
 
@@ -71,7 +83,14 @@ typedef ConfigBase<ConfigIdent, 16> Config;
     { Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",          &show_heap,          &default_show_heap,          0 },
     { Config::Ident::SHOW_TITLE,         Config::EntryType::BYTE,   "show_title",         &show_title,         &default_show_title,         0 },
     { Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",        &front_light,        &default_front_light,        0 },
-    { Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",           &dir_view,           &default_dir_view,           0 }
+    { Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",           &dir_view,           &default_dir_view,           0 },
+
+    #if INKPLATE_6PLUS
+    { Config::Ident::CALIB_X1,           Config::EntryType::SINT,   "calib_x1",           &calib_x1,           &default_calib,              0 },
+    { Config::Ident::CALIB_Y1,           Config::EntryType::SINT,   "calib_y1",           &calib_y1,           &default_calib,              0 },
+    { Config::Ident::CALIB_X2,           Config::EntryType::SINT,   "calib_x2",           &calib_x2,           &default_calib,              0 },
+    { Config::Ident::CALIB_Y2,           Config::EntryType::SINT,   "calib_y2",           &calib_y2,           &default_calib,              0 }
+    #endif
   }};
 
   // Config config(conf, CONFIG_FILE);

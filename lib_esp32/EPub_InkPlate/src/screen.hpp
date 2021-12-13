@@ -171,7 +171,7 @@ class Screen : NonCopyable
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     inline void force_full_update() { partial_count = 0; }
 
-    #if defined(INKPLATE_6PLUS)
+    #if INKPLATE_6PLUS
       void to_user_coord(uint16_t & x, uint16_t & y);
     #endif
 };

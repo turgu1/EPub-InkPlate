@@ -6,8 +6,6 @@
 
 Update to version 1.3.2 - Not ready yet
 
-TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that will be merged in a specific file format to simplify their management by the EPub-Inkplate application.
-
 This version will add Inkplate-6PLUS release. Some ongoing debugging aspects:
 
 - [ ] Touch Screen HOLD Event not working properly. Sometimes, a RELEASE Event is sent but the finger is still on the screen.
@@ -15,6 +13,9 @@ This version will add Inkplate-6PLUS release. Some ongoing debugging aspects:
 - [ ] Menu's entry launch on a tap on screen does'nt always works.
 - [ ] Sometime, a TAP is sent as we are tryng to do a HOLD gesture. Need some kind of debouncing but how??
 - [ ] At the return of DeepSleep, the front light remains off. Normal as the WakeUp button is causing a reset. The current light level is kept in ESP32cRTC memory that is cleared on reset. More likely a feature than a bug, limiting battery drains... may use the RAM byte available with the external RTC.
+
+Also, TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that are merged in a specific file format to simplify their management by the EPub-Inkplate application.
+
 
 ---
 

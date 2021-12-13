@@ -255,22 +255,24 @@ MenuViewer::event(const EventMgr::Event & event)
         current_entry_index = find_index(event.x, event.y);
         if (current_entry_index <= max_index) {
           if (menu[current_entry_index].func != nullptr) {
-            page.start(fmt);
+            if (menu[current_entry_index].highlight) {
+              page.start(fmt);
 
-            fmt.font_index = 5;
-            fmt.font_size  = CAPTION_SIZE;
-          
-            page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
+              fmt.font_index = 5;
+              fmt.font_size  = CAPTION_SIZE;
+            
+              page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
 
-            std::string txt = menu[current_entry_index].caption; 
-            page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
-            hint_shown = true;
+              std::string txt = menu[current_entry_index].caption; 
+              page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
+              hint_shown = true;
 
-            page.put_highlight(
-              Dim(entry_locs[current_entry_index].dim.width  + 8, entry_locs[current_entry_index].dim.height + 8),
-              Pos(entry_locs[current_entry_index].pos.x - 4,      entry_locs[current_entry_index].pos.y - 4     ));
+              page.put_highlight(
+                Dim(entry_locs[current_entry_index].dim.width + 8, entry_locs[current_entry_index].dim.height + 8),
+                Pos(entry_locs[current_entry_index].pos.x - 4,     entry_locs[current_entry_index].pos.y - 4     ));
 
-            page.paint(false);
+              page.paint(false);
+            }
 
             (*menu[current_entry_index].func)();
           }

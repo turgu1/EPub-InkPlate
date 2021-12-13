@@ -330,7 +330,7 @@ Screen::set_orientation(Orientation orient)
   }
 }
 
-#if defined(INKPLATE_6PLUS)
+#if INKPLATE_6PLUS
   void 
   Screen::to_user_coord(uint16_t & x, uint16_t & y)
   {

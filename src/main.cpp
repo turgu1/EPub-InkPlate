@@ -77,7 +77,7 @@
 
       page_locs.setup();
 
-      #if defined(INKPLATE_6PLUS)
+      #if INKPLATE_6PLUS
         #define MSG "Press the WakUp Button to restart."
         #define INT_PIN TouchScreen::INTERRUPT_PIN
       #else

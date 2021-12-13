@@ -2,7 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#if defined(INKPLATE_6) || defined(INKPLATE_6_EXTENDED) || defined(INKPLATE_10) || defined(INKPLATE_10_EXTENDED) || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
+#if INKPLATE_6 || INKPLATE_6_EXTENDED ||INKPLATE_10 || INKPLATE_10_EXTENDED || (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
 
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"

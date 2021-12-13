@@ -42,7 +42,7 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_it_off()
 {
-  #if defined(INKPLATE_6PLUS)
+  #if INKPLATE_6PLUS
     #define MSG "Please press the WakUp Button to restart the device."
     #define INT_PIN ((gpio_num_t) 0)
     #define LEVEL 0

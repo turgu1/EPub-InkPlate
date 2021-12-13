@@ -7,24 +7,34 @@
 
 #include "screen.hpp"
 
-#if defined(INKPLATE_6PLUS)
+#if INKPLATE_6PLUS
   #include "touch_screen.hpp"
 #endif
 
 class EventMgr
 {
+  public:
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
+      struct CalibData {
+        uint16_t x[2], y[2];
+      };
+    #endif
+
   protected:
     bool stay_on;
-    #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
       
-      uint16_t x_pos,   y_pos;
+      CalibData calib_data;
+
+      uint16_t x_pos, y_pos;
       uint16_t distance;
+      uint8_t  calib_count;
     #endif
 
   public:
     static constexpr char const * TAG = "EventMgr";
 
-    #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
       enum class            EventKind { NONE,          TAP,             HOLD,           SWIPE_LEFT, 
                                         SWIPE_RIGHT,   PINCH_ENLARGE,   PINCH_REDUCE,   RELEASE      };
 
@@ -34,6 +44,12 @@ class EventMgr
         EventKind kind;
         uint16_t x, y, dist;
       };
+
+      void show_calibration();
+      bool calibration_event(const Event & event);
+      void set_position(uint16_t   x, uint16_t   y) { x_pos = x; y_pos = y; }
+      void get_position(uint16_t & x, uint16_t & y) { x = x_pos; y = y_pos; }
+      const CalibData & get_calib_data() { return calib_data; }
     #else
       enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
 

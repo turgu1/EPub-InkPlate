@@ -178,17 +178,17 @@ power_off()
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
 static MenuViewer::MenuEntry menu[10] = {
-  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last, true  },
-  { MenuViewer::Icon::TOC,         "Table of Content",                     toc_ctrl                     , false },
-  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   , true  },
-  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              , true  },
+  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last, true , true },
+  { MenuViewer::Icon::TOC,         "Table of Content",                     toc_ctrl                     , false, true },
+  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   , true , true },
+  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              , true , true },
   { MenuViewer::Icon::REVERT,      "Revert e-book parameters to "
-                                   "default values",                       revert_to_defaults           , true  },  
-  { MenuViewer::Icon::DELETE,      "Delete the current e-book",            delete_book                  , true  },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true  },
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true  },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               power_off                    , true  },
-  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      , false }
+                                   "default values",                       revert_to_defaults           , true , true },  
+  { MenuViewer::Icon::DELETE,      "Delete the current e-book",            delete_book                  , true , true },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true , true },
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true , true },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               power_off                    , true , true },
+  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      , false, true }
 }; 
 
 void

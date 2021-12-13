@@ -146,27 +146,32 @@ wifi_mode()
   #endif
 }
 
+void calibrate()
+{
+  event_mgr.show_calibration();
+  option_controller.set_calibration_is_shown();
+}
+
 // IMPORTANT!!!
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
-#if EPUB_LINUX_BUILD && DEBUGGING
-  static MenuViewer::MenuEntry menu[10] = {
-#else
-  static MenuViewer::MenuEntry menu[9] = {
-#endif
+static MenuViewer::MenuEntry menu[] = {
 
-  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true  },
-  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    , true  },
-  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  , true  },
-  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               , true  },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true  },
-  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true  },
-  #if EPUB_LINUX_BUILD && DEBUGGING
-    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true  },
+  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
+  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    , true,  true  },
+  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  , true,  true  },
+  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               , true,  true  },
+  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
+  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
+  #if INKPLATE_6PLUS
+    { MenuViewer::Icon::CALIB,     "Touch Screen Calibration",             calibrate                        , true,  false },
   #endif
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true  },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true  },
-  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false }
+  #if EPUB_LINUX_BUILD && DEBUGGING
+    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true,  true  },
+  #endif
+  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
+  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
+  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
 };
 
 void
@@ -232,6 +237,21 @@ OptionController::input_event(const EventMgr::Event & event)
           menu_viewer.clear_highlight();
         }
       // }
+    }
+  }
+  else if (calibration_is_shown) {
+    if (event_mgr.calibration_event(event)) {
+      calibration_is_shown = false;
+
+      const EventMgr::CalibData & calib_data = event_mgr.get_calib_data();
+
+      LOG_I("Calibration data: [%u, %u] [%u, %u]",
+        calib_data.x[0],
+        calib_data.y[0],
+        calib_data.x[1],
+        calib_data.y[1]
+      );
+      menu_viewer.show(menu, 0, true);
     }
   }
   else if (font_form_is_shown) {
