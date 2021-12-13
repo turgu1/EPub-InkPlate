@@ -168,6 +168,7 @@ class Screen : NonCopyable
     void setup(PixelResolution resolution, Orientation orientation);
     void set_pixel_resolution(PixelResolution resolution, bool force = false);
     void set_orientation(Orientation orient);
+    inline Orientation get_orientation() { return orientation; }
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     inline void force_full_update() { partial_count = 0; }
 

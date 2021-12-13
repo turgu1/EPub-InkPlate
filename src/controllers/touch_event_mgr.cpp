@@ -97,14 +97,14 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           }
           else if (count == 1) {
             state = State::WAIT_NEXT;
-            screen.to_user_coord(x[0], y[0]);
+            event_mgr.to_user_coord(x[0], y[0]);
             event_mgr.set_position(x[0], y[0]);
             x_start = x[0];
             y_start = y[0];
           }
           else if (count == 2) {
-            screen.to_user_coord(x[0], y[0]);
-            screen.to_user_coord(x[1], y[1]);
+            event_mgr.to_user_coord(x[0], y[0]);
+            event_mgr.to_user_coord(x[1], y[1]);
             event.dist = last_dist = DISTANCE2;
             state      = State::PINCHING;
           }
@@ -120,7 +120,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               event.y    = y_start;
             }
             else if (count == 1) {
-              screen.to_user_coord(x[0], y[0]);
+              event_mgr.to_user_coord(x[0], y[0]);
               event_mgr.set_position(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
@@ -129,8 +129,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               }
             }
             else if (count == 2) {
-              screen.to_user_coord(x[0], y[0]);
-              screen.to_user_coord(x[1], y[1]);
+              event_mgr.to_user_coord(x[0], y[0]);
+              event_mgr.to_user_coord(x[1], y[1]);
               event.dist = last_dist = DISTANCE2;
               state      = State::PINCHING;
             }
@@ -168,14 +168,14 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               state = State::NONE;
             }
             if (count == 1) {
-              screen.to_user_coord(x[0], y[0]);
+              event_mgr.to_user_coord(x[0], y[0]);
               event_mgr.set_position(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
             }
             else if (count == 2) {
-              screen.to_user_coord(x[0], y[0]);
-              screen.to_user_coord(x[1], y[1]);
+              event_mgr.to_user_coord(x[0], y[0]);
+              event_mgr.to_user_coord(x[1], y[1]);
               event.dist = last_dist = DISTANCE2;
               state      = State::PINCHING;
             }
@@ -196,8 +196,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               state      = State::NONE;
             }
             else if (count == 2) {
-              screen.to_user_coord(x[0], y[0]);
-              screen.to_user_coord(x[1], y[1]);
+              event_mgr.to_user_coord(x[0], y[0]);
+              event_mgr.to_user_coord(x[1], y[1]);
               uint16_t this_dist = DISTANCE2;
               uint16_t new_dist_diff = abs(last_dist - this_dist);
               LOG_D("Distance diffs: %u %u", last_dist, new_dist_diff);
@@ -264,6 +264,62 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     page.paint();
   }
 
+  void 
+  EventMgr::to_user_coord(uint16_t & x, uint16_t & y)
+  {
+    uint16_t temp;
+    Screen::Orientation orientation = screen.get_orientation();
+
+    if (x_resolution == 0) {
+      if (orientation == Screen::Orientation::BOTTOM) {
+        LOG_D("Bottom...");
+        temp = y;
+        y = ((uint32_t) (screen.HEIGHT - 1) *                                       x ) / touch_screen.get_x_resolution();
+        x = ((uint32_t) (screen.WIDTH  - 1) * (touch_screen.get_y_resolution() - temp)) / touch_screen.get_y_resolution();
+      }
+      else if (orientation == Screen::Orientation::TOP) {
+        LOG_D("Top...");
+        temp = y;
+        y = ((uint32_t) (screen.HEIGHT - 1) * (touch_screen.get_x_resolution() -    x)) / touch_screen.get_x_resolution();
+        x = ((uint32_t) (screen.WIDTH  - 1) *                                    temp ) / touch_screen.get_y_resolution();
+      }
+      else if (orientation == Screen::Orientation::LEFT) {
+        LOG_D("Left...");
+        x = ((uint32_t) (screen.WIDTH  - 1) * (touch_screen.get_x_resolution() - x)) / touch_screen.get_x_resolution();
+        y = ((uint32_t) (screen.HEIGHT - 1) * (touch_screen.get_y_resolution() - y)) / touch_screen.get_y_resolution();
+      }
+      else {
+        LOG_D("Right...");
+        x = ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
+        y = ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+      }
+    }
+    else {
+      if (orientation == Screen::Orientation::BOTTOM) {
+        LOG_D("Bottom...");
+        temp = y;
+        y = ((uint32_t) (screen.HEIGHT - 1) * (x - x_offset)) / x_resolution;
+        x = ((uint32_t) (screen.WIDTH  - 1) * (y_resolution - temp - y_offset)) / y_resolution;
+      }
+      else if (orientation == Screen::Orientation::TOP) {
+        LOG_D("Top...");
+        temp = y;
+        y = ((uint32_t) (screen.HEIGHT - 1) * (x_resolution - x - x_offset)) / x_resolution;
+        x = ((uint32_t) (screen.WIDTH  - 1) * (temp - y_offset)) / y_resolution;
+      }
+      else if (orientation == Screen::Orientation::LEFT) {
+        LOG_D("Left...");
+        x = ((uint32_t) (screen.WIDTH  - 1) * (x_resolution - x - x_offset)) / x_resolution;
+        y = ((uint32_t) (screen.HEIGHT - 1) * (y_resolution - y - y_offset)) / y_resolution;
+      }
+      else {
+        LOG_D("Right...");
+        x = ((uint32_t) (screen.WIDTH  - 1) * (x - x_offset)) / x_resolution;
+        y = ((uint32_t) (screen.HEIGHT - 1) * (y - y_offset)) / y_resolution;
+      }
+    }
+  }
+
   bool EventMgr::calibration_event(const Event & event)
   {
     switch (event.kind) {
@@ -272,7 +328,29 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           get_position(calib_data.x[calib_count], calib_data.y[calib_count]);
           calib_count++;
         }
-        return calib_count >= 2;
+        if (calib_count >= 2) {
+          uint16_t temp;
+          if (calib_data.x[0] > calib_data.x[1]) {
+            temp = calib_data.x[0];
+            calib_data.x[0] = calib_data.x[1];
+            calib_data.x[1] = temp;
+          } 
+          if (calib_data.y[0] < calib_data.y[1]) {
+            temp = calib_data.y[0];
+            calib_data.y[0] = calib_data.y[1];
+            calib_data.y[1] = temp;
+          }
+
+          config.put(Config::Ident::CALIB_X1, calib_data.x[0]);
+          config.put(Config::Ident::CALIB_X2, calib_data.x[1]);
+          config.put(Config::Ident::CALIB_Y1, calib_data.y[0]);
+          config.put(Config::Ident::CALIB_Y2, calib_data.y[1]);
+          config.save();
+
+          update_calibration_values();
+          
+          return true;
+        }
         break;
 
       default:
@@ -459,6 +537,33 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   }
 #endif
 
+void
+EventMgr::update_calibration_values()
+{
+  config.get(Config::Ident::CALIB_X1, &calib_data.x[0]);
+  config.get(Config::Ident::CALIB_Y1, &calib_data.y[0]);
+  config.get(Config::Ident::CALIB_X2, &calib_data.x[1]);
+  config.get(Config::Ident::CALIB_Y2, &calib_data.y[1]);
+
+  if (calib_data.x[0] == 0) {
+    x_resolution = y_resolution = x_offset = y_offset = 0;
+  }
+  else {
+    x_resolution = (((uint32_t)(calib_data.x[1] - calib_data.x[0])) * screen.RESOLUTION) / (e_ink.get_height() - 200);
+    y_resolution = (((uint32_t)(calib_data.y[1] - calib_data.y[0])) * screen.RESOLUTION) / (e_ink.get_width() - 200);
+
+    x_offset = ((uint32_t)x_resolution * 100) / screen.RESOLUTION;
+    y_offset = ((uint32_t)y_resolution * 100) / screen.RESOLUTION;
+  }
+
+  LOG_I("Resolutions: [%u, %u] Offsets: [%u, %u]",
+    x_resolution,
+    y_resolution,
+    x_offset,
+    y_offset
+  );
+}
+
 bool
 EventMgr::setup()
 {
@@ -470,9 +575,11 @@ EventMgr::setup()
                      screen.get_image());
   #else
     
-    touchscreen_isr_queue = xQueueCreate(          //create a queue to handle gpio event from isr
+    update_calibration_values();
+  
+    touchscreen_isr_queue = xQueueCreate(    //create a queue to handle gpio event from isr
       20, sizeof(uint32_t));
-    touchscreen_event_queue = xQueueCreate(          //create a queue to handle event from task
+    touchscreen_event_queue = xQueueCreate(  //create a queue to handle event from task
       20, sizeof(EventMgr::Event));
 
     touch_screen.set_app_isr_handler(touchscreen_isr_handler);

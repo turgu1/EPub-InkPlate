@@ -136,9 +136,9 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   uint8_t
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
-    page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
-    page.put_highlight(Dim(7, 7), Pos(x-3, y-3));
-    page.paint(false, true, true);
+    // page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
+    // page.put_highlight(Dim(7, 7), Pos(x-3, y-3));
+    // page.paint(false, true, true);
 
     for (int8_t idx = 0; idx <= max_index; idx++) {
       if ((x >=  entry_locs[idx].pos.x - 15) &&
@@ -249,6 +249,7 @@ MenuViewer::event(const EventMgr::Event & event)
       case EventMgr::EventKind::RELEASE:
         ESP::delay(1000);
         clear_highlight();
+        hint_shown = false;
         break;
 
       case EventMgr::EventKind::TAP:
@@ -272,6 +273,9 @@ MenuViewer::event(const EventMgr::Event & event)
                 Pos(entry_locs[current_entry_index].pos.x - 4,     entry_locs[current_entry_index].pos.y - 4     ));
 
               page.paint(false);
+            }
+            else {
+              hint_shown = false;
             }
 
             (*menu[current_entry_index].func)();
