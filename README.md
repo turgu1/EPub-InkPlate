@@ -2,13 +2,21 @@
 
 ## Last news
 
-(Updated 2021.12.08)
+(Updated 2021.12.13)
 
 Update to version 1.3.2 - Not ready yet
 
 TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that will be merged in a specific file format to simplify their management by the EPub-Inkplate application.
 
-This version will add Inkplate-6PLUS release. Some recoding required for touch events management (first cut not working well).
+This version will add Inkplate-6PLUS release. Some ongoing debugging aspects:
+
+- [ ] Touch Screen HOLD Event not working properly. Sometimes, a RELEASE Event is sent but the finger is still on the screen.
+- [ ] The screen is fading away at each Partial screen refresh. Suppose to be OK at every refresh.
+- [ ] Menu's entry launch on a tap on screen does'nt always works.
+- [ ] Sometime, a TAP is sent as we are tryng to do a HOLD gesture. Need some kind of debouncing but how??
+- [ ] At the return of DeepSleep, the front light remains off. Normal as the WakeUp button is causing a reset. The current light level is kept in ESP32cRTC memory that is cleared on reset. More likely a feature than a bug, limiting battery drains... may use the RAM byte available with the external RTC.
+
+---
 
 - [x] Font classes re-org to allow bitmap fonts
 - [x] Tests with single PK file format
@@ -20,7 +28,8 @@ This version will add Inkplate-6PLUS release. Some recoding required for touch e
 - [x] Glyphs translation to latin1 (multiple glyphs merge for accents)
 - [x] Latin-A
 - [x] `fonts_list.xml` format adjustments
-- [ ] Inkplate-6PLUS Coding (work in progress...)
+- [ ] Date/Time support for Inkplate-10 and Inkplate-6PLUS
+- [ ] Inkplate-6PLUS Debugging (work in progress...)
 - [ ] Valgrind
 - [x] Tests Inkplate-6 / Inkplate-10
 - [ ] Tests Inkplate-6PLUS

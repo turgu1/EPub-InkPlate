@@ -32,9 +32,11 @@ class MenuViewer
     static const int16_t CAPTION_SIZE        = 12;
 
     #if INKPLATE_6PLUS
-      static const int16_t SPACE_BETWEEN_ICONS = 80;
+      static const int16_t SPACE_BETWEEN_ICONS = 75;
+      static const int16_t ICONS_LEFT_OFFSET   = 20;
     #else
       static const int16_t SPACE_BETWEEN_ICONS = 50;
+      static const int16_t ICONS_LEFT_OFFSET   = 10;
     #endif
 
     uint8_t  current_entry_index;

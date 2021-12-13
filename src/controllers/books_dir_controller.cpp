@@ -261,6 +261,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
         current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
           books_dir_viewer->highlight_book(current_book_index);
+          LOG_I("Book Index: %d", current_book_index);
         }
         break;
 

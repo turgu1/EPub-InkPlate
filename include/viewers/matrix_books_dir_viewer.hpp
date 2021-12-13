@@ -60,6 +60,7 @@ class MatrixBooksDirViewer : public BooksDirViewer
     int16_t prev_column();
 
     int16_t get_index_at(uint16_t x, uint16_t y) {
+      if ((x < 5) || (y < first_entry_ypos)) return -1;
       int16_t line_idx = (y - first_entry_ypos) / (BooksDir::max_cover_height + vert_space_between_entries);
       int16_t column_idx = (x - 5) / (BooksDir::max_cover_width + horiz_space_between_entries);
       if ((line_idx >= line_count) || (column_idx >= column_count)) return -1;

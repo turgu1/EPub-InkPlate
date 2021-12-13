@@ -215,7 +215,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       }
 
       if (event.kind != EventMgr::EventKind::NONE) {
-        LOG_I("Input Event %s [%u, %u] (%u)...", 
+        LOG_D("Input Event %s [%u, %u] (%u)...", 
               EventMgr::event_str[int(event.kind)], 
               event.x, event.y,
               event.dist);
@@ -428,9 +428,9 @@ EventMgr::setup()
   #else
     
     touchscreen_isr_queue = xQueueCreate(          //create a queue to handle gpio event from isr
-      10, sizeof(uint32_t));
+      20, sizeof(uint32_t));
     touchscreen_event_queue = xQueueCreate(          //create a queue to handle event from task
-      10, sizeof(EventMgr::Event));
+      20, sizeof(EventMgr::Event));
 
     touch_screen.set_app_isr_handler(touchscreen_isr_handler);
 

@@ -5,12 +5,17 @@
 #include "models/jpeg_image.hpp"
 
 #include "helpers/unzip.hpp"
+#include "viewers/msg_viewer.hpp"
+
 #include "alloc.hpp"
 
 #include "tjpgdec.hpp"
 
 #include <iostream>
 #include <iomanip>
+
+static uint32_t  load_start_time;
+static bool      waiting_msg_shown;
 
 // static bool first = false;
 
@@ -53,6 +58,17 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
   Image::ImageData * image_data = (Image::ImageData *) jd->device;
   uint8_t * src, * dst;
   uint16_t y, bws, bwd;
+
+  if (!waiting_msg_shown && ((ESP::millis() - load_start_time) > 2000)) {
+    waiting_msg_shown = true;
+
+    msg_viewer.show(
+      MsgViewer::INFO, 
+      false, false, 
+      "Retrieving Image", 
+      "The application is retrieving an image from the EPub file. Please wait."
+    );
+  }
 
   if ((rect->right >= image_data->dim.width) || (rect->bottom >= image_data->dim.height)) {
     LOG_E("Rect outside of image dimensions!");
@@ -108,6 +124,8 @@ JPegImage::JPegImage(std::string filename, Dim max, bool load_bitmap) : Image(fi
         if ((image_data.bitmap = (uint8_t *) allocate(width * height)) != nullptr) {
           image_data.dim    = Dim(width, height);
           // first = true;
+          load_start_time   = ESP::millis();
+          waiting_msg_shown = false;
           res = jdec_decomp(&jdec, out_func, scale);
         }
       }

@@ -62,7 +62,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
   uint8_t idx = 0;
 
-  Pos pos(10, icon_ypos);
+  Pos pos(ICONS_LEFT_OFFSET, icon_ypos);
   
   while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != Icon::END_MENU)) {
 
@@ -74,6 +74,10 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
       entry_locs[idx].pos.x = pos.x;
       entry_locs[idx].pos.y = pos.y + glyph->yoff;
       entry_locs[idx].dim   = glyph->dim;
+
+      // page.put_highlight(
+      //   Dim(entry_locs[idx].dim.width + 30, entry_locs[idx].pos.y + entry_locs[idx].dim.height + 15), 
+      //   Pos(entry_locs[idx].pos.x - 15, 0));
 
       page.put_char_at(ch, pos, fmt);
       pos.x += SPACE_BETWEEN_ICONS;
@@ -132,11 +136,15 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   uint8_t
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
+    page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
+    page.put_highlight(Dim(7, 7), Pos(x-3, y-3));
+    page.paint(false, true, true);
+
     for (int8_t idx = 0; idx <= max_index; idx++) {
-      if ((x >=  entry_locs[idx].pos.x - ((idx == 0) ? 5 : 15)) &&
+      if ((x >=  entry_locs[idx].pos.x - 15) &&
           (x <= (entry_locs[idx].pos.x + entry_locs[idx].dim.width + 15)) &&
           //(y >=  0) &&
-          (y <= (entry_locs[idx].pos.y + entry_locs[idx].dim.height + 10))) {
+          (y <= (entry_locs[idx].pos.y + entry_locs[idx].dim.height + 15))) {
         return idx;
       }
     }

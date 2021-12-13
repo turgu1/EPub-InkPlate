@@ -42,7 +42,7 @@ class BackLit
 
     void adjust(int16_t value) {
       pinch_distance += value;
-      int16_t val = (pinch_distance > 0) ? pinch_distance / 3 : 0;
+      int16_t val = (pinch_distance > 0) ? pinch_distance / 4 : 0;
 
       lit_level = (val > MAX_LIT_LEVEL) ? MAX_LIT_LEVEL : val;
 
@@ -58,10 +58,10 @@ class BackLit
           front_light.enable();
         }
         front_light.set_level(lit_level);
-        if (lit_level == MAX_LIT_LEVEL) pinch_distance = MAX_LIT_LEVEL * 3;
+        if (lit_level == MAX_LIT_LEVEL) pinch_distance = MAX_LIT_LEVEL * 4;
       }
 
-      LOG_I("Adjust: %d, lit_level: %u", value, lit_level);
+      LOG_D("Adjust: %d, lit_level: %u", value, lit_level);
     }
 
     void turn_off() { lit = false; front_light.disable(); }

@@ -45,8 +45,10 @@ CommonActions::power_it_off()
   #if defined(INKPLATE_6PLUS)
     #define MSG "Please press the WakUp Button to restart the device."
     #define INT_PIN ((gpio_num_t) 0)
+    #define LEVEL 0
   #else
     #define MSG "Please press a key to restart the device."
+    #define LEVEL 1
     #if EXTENDED_CASE
       #define INT_PIN PressKeys::INTERRUPT_PIN
     #else
@@ -59,7 +61,7 @@ CommonActions::power_it_off()
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. " MSG);
     ESP::delay(500);
-    inkplate_platform.deep_sleep(INT_PIN, 1);
+    inkplate_platform.deep_sleep(INT_PIN, LEVEL);
   #else
     extern void exit_app();
     exit_app();
