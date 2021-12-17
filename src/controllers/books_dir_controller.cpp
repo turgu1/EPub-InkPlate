@@ -191,12 +191,11 @@ BooksDirController::show_last_book()
 void 
 BooksDirController::enter()
 {
-  int8_t viewer;
 
   LOG_D("===> enter()...");
-  config.get(Config::Ident::DIR_VIEW, &viewer);
-  books_dir_viewer = (viewer == 0) ? (BooksDirViewer *) &linear_books_dir_viewer : 
-                                     (BooksDirViewer *) &matrix_books_dir_viewer;
+  config.get(Config::Ident::DIR_VIEW, &viewer_id);
+  books_dir_viewer = (viewer_id == LINEAR_VIEWER) ? (BooksDirViewer *) &linear_books_dir_viewer : 
+                                        (BooksDirViewer *) &matrix_books_dir_viewer;
 
   books_dir_viewer->setup();
   screen.force_full_update();
@@ -235,21 +234,26 @@ BooksDirController::leave(bool going_to_deep_sleep)
         break;
 
       case EventMgr::EventKind::TAP:
-        current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
-        if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
-          book = books_dir.get_book_data(current_book_index);
-          if (book != nullptr) {
-            last_read_book_index = current_book_index;
-            book_fname    = BOOKS_FOLDER "/";
-            book_fname   += book->filename;
-            book_title    = book->title;
-            book_filename = book->filename;
-            
-            PageLocs::PageId page_id = { 0, 0 };
-            
-            if (book_controller.open_book_file(book_title, book_fname, page_id)) {
-              app_controller.set_controller(AppController::Ctrl::BOOK);
+        if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::WIDTH / 3))) {
+          current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
+          if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+            book = books_dir.get_book_data(current_book_index);
+            if (book != nullptr) {
+              last_read_book_index = current_book_index;
+              book_fname    = BOOKS_FOLDER "/";
+              book_fname   += book->filename;
+              book_title    = book->title;
+              book_filename = book->filename;
+              
+              PageLocs::PageId page_id = { 0, 0 };
+              
+              if (book_controller.open_book_file(book_title, book_fname, page_id)) {
+                app_controller.set_controller(AppController::Ctrl::BOOK);
+              }
             }
+          }
+          else {
+            app_controller.set_controller(AppController::Ctrl::OPTION);
           }
         }
         else {

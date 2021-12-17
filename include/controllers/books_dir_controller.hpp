@@ -15,6 +15,9 @@ class BooksDirController
   private:
     static constexpr char const * TAG = "BooksDirController";
 
+    const uint8_t LINEAR_VIEWER = 0;
+    const uint8_t MATRIX_VIEWER = 1;
+
     int32_t     book_offset;
     int16_t     current_book_index;
     int16_t     last_read_book_index;
@@ -23,6 +26,7 @@ class BooksDirController
 
     PageLocs::PageId book_page_id;
     BooksDirViewer * books_dir_viewer;
+    int8_t viewer_id;
 
   public:
     BooksDirController() {};

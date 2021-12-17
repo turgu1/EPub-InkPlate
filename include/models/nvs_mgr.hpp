@@ -23,7 +23,7 @@ class NVSMgr
     };
     #pragma pack(pop)
 
-    bool         setup();
+    bool         setup(bool       force_erase = false);
     bool save_location(uint32_t   id, const NVSData & nvs_data);
     bool      get_last(uint32_t & id,       NVSData & nvs_data);
     bool  get_location(uint32_t   id,       NVSData & nvs_data);

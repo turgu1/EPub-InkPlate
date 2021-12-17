@@ -1,6 +1,10 @@
 // Copyright (c) 2020 Guy Turcotte
 //
 // MIT License. Look at file licenses.txt for details.
+//
+//
+// Touch Screen calibration algorithm from: https://www.embedded.com/how-to-calibrate-touch-screens
+//
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
 
@@ -97,8 +101,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           }
           else if (count == 1) {
             state = State::WAIT_NEXT;
-            event_mgr.to_user_coord(x[0], y[0]);
             event_mgr.set_position(x[0], y[0]);
+            event_mgr.to_user_coord(x[0], y[0]);
             x_start = x[0];
             y_start = y[0];
           }
@@ -120,8 +124,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               event.y    = y_start;
             }
             else if (count == 1) {
-              event_mgr.to_user_coord(x[0], y[0]);
               event_mgr.set_position(x[0], y[0]);
+              event_mgr.to_user_coord(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
               if (DISTANCE > DIST_TRESHOLD) {
@@ -149,7 +153,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             count = touch_screen.get_position(x, y);
             if (count == 0) {
               event.kind = EventMgr::EventKind::RELEASE;
-              state      = State::NONE;
+              state      = State::NONE; 
             }
           }
           else { // timeout
@@ -168,8 +172,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               state = State::NONE;
             }
             if (count == 1) {
-              event_mgr.to_user_coord(x[0], y[0]);
               event_mgr.set_position(x[0], y[0]);
+              event_mgr.to_user_coord(x[0], y[0]);
               x_end = x[0];
               y_end = y[0];
             }
@@ -247,6 +251,11 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   void 
   EventMgr::show_calibration()
   {
+    calib_point = {
+      .x = { 100, ((uint16_t)(e_ink.get_height() - 100)), ((uint16_t)(e_ink.get_height() /   2)) },
+      .y = { 100, ((uint16_t)(e_ink.get_width()  /   2)), ((uint16_t)(e_ink.get_width()  - 100)) }
+    };
+
     auto cross_hair = [](uint16_t x, uint16_t y) {
       page.put_highlight(Dim(41, 3), Pos(x - 20, y - 1));
       page.put_highlight(Dim(43, 5), Pos(x - 21, y - 2));
@@ -257,8 +266,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       page.put_highlight(Dim(7, 45), Pos(x - 3, y - 22));
     };
 
-    cross_hair(100, 100);
-    cross_hair(screen.WIDTH - 100, screen.HEIGHT - 100);
+    for (int i = 0; i < 3; i++) cross_hair(calib_point.x[i], calib_point.y[i]);
 
     calib_count = 0;
     page.paint();
@@ -270,53 +278,71 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     uint16_t temp;
     Screen::Orientation orientation = screen.get_orientation();
 
-    if (x_resolution == 0) {
-      if (orientation == Screen::Orientation::BOTTOM) {
-        LOG_D("Bottom...");
-        temp = y;
-        y = ((uint32_t) (screen.HEIGHT - 1) *                                       x ) / touch_screen.get_x_resolution();
-        x = ((uint32_t) (screen.WIDTH  - 1) * (touch_screen.get_y_resolution() - temp)) / touch_screen.get_y_resolution();
-      }
-      else if (orientation == Screen::Orientation::TOP) {
-        LOG_D("Top...");
-        temp = y;
-        y = ((uint32_t) (screen.HEIGHT - 1) * (touch_screen.get_x_resolution() -    x)) / touch_screen.get_x_resolution();
-        x = ((uint32_t) (screen.WIDTH  - 1) *                                    temp ) / touch_screen.get_y_resolution();
-      }
-      else if (orientation == Screen::Orientation::LEFT) {
-        LOG_D("Left...");
-        x = ((uint32_t) (screen.WIDTH  - 1) * (touch_screen.get_x_resolution() - x)) / touch_screen.get_x_resolution();
-        y = ((uint32_t) (screen.HEIGHT - 1) * (touch_screen.get_y_resolution() - y)) / touch_screen.get_y_resolution();
-      }
-      else {
-        LOG_D("Right...");
-        x = ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
-        y = ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+    if (a == 0) {
+      LOG_I("Calibration required!");
+      switch (orientation) {
+        case Screen::Orientation::BOTTOM:
+          LOG_D("Bottom...");
+          temp = y;
+          y = ((uint32_t) (screen.HEIGHT - 1) *                   x) / touch_screen.get_x_resolution();
+          x = screen.WIDTH - ((uint32_t) (screen.WIDTH  - 1) * temp) / touch_screen.get_y_resolution();
+          break;
+
+        case Screen::Orientation::TOP:
+          LOG_D("Top...");
+          temp = y;
+          y = screen.HEIGHT - ((uint32_t) (screen.HEIGHT - 1) * x) / touch_screen.get_x_resolution();
+          x = ((uint32_t) (screen.WIDTH  - 1) *             temp ) / touch_screen.get_y_resolution();
+          break;
+      
+        case Screen::Orientation::LEFT:
+          LOG_D("Left...");
+          x = screen.WIDTH  - ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
+          y = screen.HEIGHT - ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+          break;
+
+        case Screen::Orientation::RIGHT:
+          LOG_D("Right...");
+          x = ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
+          y = ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+          break;
       }
     }
     else {
-      if (orientation == Screen::Orientation::BOTTOM) {
-        LOG_D("Bottom...");
-        temp = y;
-        y = ((uint32_t) (screen.HEIGHT - 1) * (x - x_offset)) / x_resolution;
-        x = ((uint32_t) (screen.WIDTH  - 1) * (y_resolution - temp - y_offset)) / y_resolution;
+      LOG_D("Coordinates to transform: [%u, %u]", x, y);
+
+      uint16_t xd = (a * x + b * y + c) / divider;
+      uint16_t yd = (d * x + e * y + f) / divider;
+
+      switch (orientation) {
+        case Screen::Orientation::BOTTOM:
+          LOG_D("Bottom...");
+          temp = y;
+          y = xd;;
+          x = screen.WIDTH - yd;
+          break;
+
+        case Screen::Orientation::TOP:
+          LOG_D("Top...");
+          temp = y;
+          y = screen.HEIGHT - xd;
+          x = yd;
+          break;
+
+        case Screen::Orientation::LEFT:
+          LOG_D("Left...");
+          x = screen.WIDTH  - xd;
+          y = screen.HEIGHT - yd;
+          break;
+      
+        case Screen::Orientation::RIGHT:
+          LOG_D("Right...");
+          x = xd;
+          y = yd;
+          break;
       }
-      else if (orientation == Screen::Orientation::TOP) {
-        LOG_D("Top...");
-        temp = y;
-        y = ((uint32_t) (screen.HEIGHT - 1) * (x_resolution - x - x_offset)) / x_resolution;
-        x = ((uint32_t) (screen.WIDTH  - 1) * (temp - y_offset)) / y_resolution;
-      }
-      else if (orientation == Screen::Orientation::LEFT) {
-        LOG_D("Left...");
-        x = ((uint32_t) (screen.WIDTH  - 1) * (x_resolution - x - x_offset)) / x_resolution;
-        y = ((uint32_t) (screen.HEIGHT - 1) * (y_resolution - y - y_offset)) / y_resolution;
-      }
-      else {
-        LOG_D("Right...");
-        x = ((uint32_t) (screen.WIDTH  - 1) * (x - x_offset)) / x_resolution;
-        y = ((uint32_t) (screen.HEIGHT - 1) * (y - y_offset)) / y_resolution;
-      }
+
+      LOG_D("Result of transform: [%u, %u]", x, y);
     }
   }
 
@@ -324,31 +350,77 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   {
     switch (event.kind) {
       case EventKind::TAP:
-        if (calib_count < 2) {
-          get_position(calib_data.x[calib_count], calib_data.y[calib_count]);
+        if (calib_count < 3) {
+          get_position(touch_point.x[calib_count], touch_point.y[calib_count]);
           calib_count++;
         }
-        if (calib_count >= 2) {
+        if (calib_count >= 3) {
           uint16_t temp;
-          if (calib_data.x[0] > calib_data.x[1]) {
-            temp = calib_data.x[0];
-            calib_data.x[0] = calib_data.x[1];
-            calib_data.x[1] = temp;
-          } 
-          if (calib_data.y[0] < calib_data.y[1]) {
-            temp = calib_data.y[0];
-            calib_data.y[0] = calib_data.y[1];
-            calib_data.y[1] = temp;
+          #define SWAP(i0, i1) { \
+            temp = touch_point.x[i0]; touch_point.x[i0] = touch_point.x[i1]; touch_point.x[i1] = temp; \
+            temp = touch_point.y[i0]; touch_point.y[i0] = touch_point.y[i1]; touch_point.y[i1] = temp; \
           }
+          if (touch_point.y[0] > touch_point.y[2]) SWAP(0, 2);
+          if (touch_point.y[0] > touch_point.y[1]) SWAP(0, 1);
+          if (touch_point.y[1] > touch_point.y[2]) SWAP(1, 2);
 
-          config.put(Config::Ident::CALIB_X1, calib_data.x[0]);
-          config.put(Config::Ident::CALIB_X2, calib_data.x[1]);
-          config.put(Config::Ident::CALIB_Y1, calib_data.y[0]);
-          config.put(Config::Ident::CALIB_Y2, calib_data.y[1]);
+          #undef SWAP
+
+          #define X0 touch_point.x[0]
+          #define X1 touch_point.x[1]
+          #define X2 touch_point.x[2]
+          #define Y0 touch_point.y[0]
+          #define Y1 touch_point.y[1]
+          #define Y2 touch_point.y[2]
+
+          #define XD0 calib_point.x[0]
+          #define XD1 calib_point.x[1]
+          #define XD2 calib_point.x[2]
+          #define YD0 calib_point.y[0]
+          #define YD1 calib_point.y[1]
+          #define YD2 calib_point.y[2]
+
+          LOG_D("Touch points: [%u, %u] [%u, %u] [%u, %u]",  X0,  Y0,  X1,  Y1,  X2,  Y2);
+          LOG_D("Calib points: [%u, %u] [%u, %u] [%u, %u]", XD0, YD0, XD1, YD1, XD2, YD2);
+
+          divider = ((X0 - X2) * (Y1 - Y2)) - ((X1 - X2) * (Y0 - Y2));
+          
+          a = (((XD0 - XD2) * ( Y1 -  Y2)) - ((XD1 - XD2) * (Y0 - Y2)));
+          b = ((( X0 -  X2) * (XD1 - XD2)) - ((XD0 - XD2) * (X1 - X2)));
+          c = ((Y0 * ((X2 * XD1) - (X1 * XD2))) +
+               (Y1 * ((X0 * XD2) - (X2 * XD0))) +
+               (Y2 * ((X1 * XD0) - (X0 * XD1))));
+          d = (((YD0 - YD2) * ( Y1 -  Y2)) - ((YD1 - YD2) * (Y0 - Y2)));
+          e = ((( X0 -  X2) * (YD1 - YD2)) - ((YD0 - YD2) * (X1 - X2)));
+          f = ((Y0 * ((X2 * YD1) - (X1 * YD2))) +
+               (Y1 * ((X0 * YD2) - (X2 * YD0))) +
+               (Y2 * ((X1 * YD0) - (X0 * YD1))));
+
+          LOG_D("Coefficients: a:%lld b:%lld c:%lld d:%lld e:%lld f:%lld divider:%lld", a, b, c, d, e, f, divider);
+
+          #undef X0
+          #undef X1
+          #undef X2
+          #undef Y0
+          #undef Y1
+          #undef Y2
+
+          #undef XD0
+          #undef XD1
+          #undef XD2
+          #undef YD0
+          #undef YD1
+          #undef YD2
+
+          config.put(Config::Ident::CALIB_A, a);
+          config.put(Config::Ident::CALIB_B, b);
+          config.put(Config::Ident::CALIB_C, c);
+          config.put(Config::Ident::CALIB_D, d);
+          config.put(Config::Ident::CALIB_E, e);
+          config.put(Config::Ident::CALIB_F, f);
+          config.put(Config::Ident::CALIB_DIVIDER, divider);
           config.save();
 
-          update_calibration_values();
-          
           return true;
         }
         break;
@@ -510,7 +582,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           int8_t light_sleep_duration;
           config.get(Config::Ident::TIMEOUT, &light_sleep_duration);
 
-          LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
+          LOG_D("Light Sleep for %d minutes...", light_sleep_duration);
           ESP::delay(500);
 
           if (inkplate_platform.light_sleep(light_sleep_duration, TouchScreen::INTERRUPT_PIN, 0)) {
@@ -538,30 +610,15 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 #endif
 
 void
-EventMgr::update_calibration_values()
+EventMgr::retrieve_calibration_values()
 {
-  config.get(Config::Ident::CALIB_X1, &calib_data.x[0]);
-  config.get(Config::Ident::CALIB_Y1, &calib_data.y[0]);
-  config.get(Config::Ident::CALIB_X2, &calib_data.x[1]);
-  config.get(Config::Ident::CALIB_Y2, &calib_data.y[1]);
-
-  if (calib_data.x[0] == 0) {
-    x_resolution = y_resolution = x_offset = y_offset = 0;
-  }
-  else {
-    x_resolution = (((uint32_t)(calib_data.x[1] - calib_data.x[0])) * screen.RESOLUTION) / (e_ink.get_height() - 200);
-    y_resolution = (((uint32_t)(calib_data.y[1] - calib_data.y[0])) * screen.RESOLUTION) / (e_ink.get_width() - 200);
-
-    x_offset = ((uint32_t)x_resolution * 100) / screen.RESOLUTION;
-    y_offset = ((uint32_t)y_resolution * 100) / screen.RESOLUTION;
-  }
-
-  LOG_I("Resolutions: [%u, %u] Offsets: [%u, %u]",
-    x_resolution,
-    y_resolution,
-    x_offset,
-    y_offset
-  );
+  config.get(Config::Ident::CALIB_A, &a);
+  config.get(Config::Ident::CALIB_B, &b);
+  config.get(Config::Ident::CALIB_C, &c);
+  config.get(Config::Ident::CALIB_D, &d);
+  config.get(Config::Ident::CALIB_E, &e);
+  config.get(Config::Ident::CALIB_F, &f);
+  config.get(Config::Ident::CALIB_DIVIDER, &divider);
 }
 
 bool
@@ -575,7 +632,7 @@ EventMgr::setup()
                      screen.get_image());
   #else
     
-    update_calibration_values();
+    retrieve_calibration_values();
   
     touchscreen_isr_queue = xQueueCreate(    //create a queue to handle gpio event from isr
       20, sizeof(uint32_t));

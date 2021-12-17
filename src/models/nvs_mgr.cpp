@@ -4,22 +4,32 @@
 #include "models/nvs_mgr.hpp"
 #include "models/books_dir.hpp"
 bool
-NVSMgr::setup()
+NVSMgr::setup(bool force_erase)
 {
   bool erased = false;
+  esp_err_t err;
+
   initialized = false;
   track_count = 0;
   next_idx    = 0;
-
+  
   track_list.clear();
 
-  esp_err_t err = nvs_flash_init();
-  if (err != ESP_OK) {
-    if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
-      LOG_I("Erasing NVS Partition... (Because of %s)", esp_err_to_name(err));
-      if ((err = nvs_flash_erase()) == ESP_OK) {
-        err    = nvs_flash_init();
-        erased = true;
+  if (force_erase) {
+    if ((err = nvs_flash_erase()) == ESP_OK) {
+      err    = nvs_flash_init();
+      erased = true;
+    }
+  }
+  else {
+    err = nvs_flash_init();
+    if (err != ESP_OK) {
+      if ((err == ESP_ERR_NVS_NO_FREE_PAGES) || (err == ESP_ERR_NVS_NEW_VERSION_FOUND)) {
+        LOG_I("Erasing NVS Partition... (Because of %s)", esp_err_to_name(err));
+        if ((err = nvs_flash_erase()) == ESP_OK) {
+          err    = nvs_flash_init();
+          erased = true;
+        }
       }
     }
   } 

@@ -85,8 +85,8 @@ static bool check_file(const char * filename)
   if (check_str(filename)) {
     if (stat(full_name.c_str(), &file_stat) != -1) {
       font_size += file_stat.st_size;
-      if (font_size > (1024 * 200)) {
-        LOG_E("Font size to big for %s", filename);
+      if (font_size > (1024 * 300)) {
+        LOG_E("Font size too big for %s", filename);
       }
       else return true;
     }

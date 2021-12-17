@@ -82,15 +82,15 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
       page.put_char_at(ch, pos, fmt);
       pos.x += SPACE_BETWEEN_ICONS;
 
-      std::cout << "[" 
-                << entry_locs[idx].pos.x 
-                << ", " 
-                << entry_locs[idx].pos.y
-                << ":"
-                << entry_locs[idx].dim.width
-                << ", "
-                << entry_locs[idx].dim.height
-                << "] ";
+      // std::cout << "[" 
+      //           << entry_locs[idx].pos.x 
+      //           << ", " 
+      //           << entry_locs[idx].pos.y
+      //           << ":"
+      //           << entry_locs[idx].dim.width
+      //           << ", "
+      //           << entry_locs[idx].dim.height
+      //           << "] ";
     }
     else {
       entry_locs[idx].pos.x = -1;
@@ -100,7 +100,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
     idx++;
   }
 
-  std::cout << std::endl;
+  // std::cout << std::endl;
   
   max_index           = idx - 1;
   // It is expected that the last entry in the menu will be always visible
@@ -136,6 +136,8 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   uint8_t
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
+    LOG_I("Find Index: [%u %u]", x, y);
+    
     // page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
     // page.put_highlight(Dim(7, 7), Pos(x-3, y-3));
     // page.paint(false, true, true);

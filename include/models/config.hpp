@@ -12,12 +12,12 @@ enum class ConfigIdent {
   USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, 
   SHOW_TITLE, FRONT_LIGHT, DIR_VIEW,
   #if INKPLATE_6PLUS
-    CALIB_X1, CALIB_Y1, CALIB_X2, CALIB_Y2
+    CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER
   #endif
 };
 
 #if INKPLATE_6PLUS
-  typedef ConfigBase<ConfigIdent, 20> Config;
+  typedef ConfigBase<ConfigIdent, 23> Config;
 #else
   typedef ConfigBase<ConfigIdent, 16> Config;
 #endif
@@ -45,8 +45,8 @@ enum class ConfigIdent {
   static int8_t   dir_view;
 
   #if INKPLATE_6PLUS
-    static uint16_t calib_x1, calib_y1, calib_x2, calib_y2;
-    static const uint16_t default_calib            =  0;
+    static int64_t calib_a, calib_b, calib_c, calib_d, calib_e, calib_f, calib_divider;
+    static const int64_t default_calib             =  0;
   #endif
 
   static const int32_t  default_port               = 80;
@@ -86,10 +86,13 @@ enum class ConfigIdent {
     { Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",           &dir_view,           &default_dir_view,           0 },
 
     #if INKPLATE_6PLUS
-    { Config::Ident::CALIB_X1,           Config::EntryType::SINT,   "calib_x1",           &calib_x1,           &default_calib,              0 },
-    { Config::Ident::CALIB_Y1,           Config::EntryType::SINT,   "calib_y1",           &calib_y1,           &default_calib,              0 },
-    { Config::Ident::CALIB_X2,           Config::EntryType::SINT,   "calib_x2",           &calib_x2,           &default_calib,              0 },
-    { Config::Ident::CALIB_Y2,           Config::EntryType::SINT,   "calib_y2",           &calib_y2,           &default_calib,              0 }
+    { Config::Ident::CALIB_A,            Config::EntryType::INT64,    "calib_a",            &calib_a,            &default_calib,              0 },
+    { Config::Ident::CALIB_B,            Config::EntryType::INT64,    "calib_b",            &calib_b,            &default_calib,              0 },
+    { Config::Ident::CALIB_C,            Config::EntryType::INT64,    "calib_c",            &calib_c,            &default_calib,              0 },
+    { Config::Ident::CALIB_D,            Config::EntryType::INT64,    "calib_d",            &calib_d,            &default_calib,              0 },
+    { Config::Ident::CALIB_E,            Config::EntryType::INT64,    "calib_e",            &calib_e,            &default_calib,              0 },
+    { Config::Ident::CALIB_F,            Config::EntryType::INT64,    "calib_f",            &calib_f,            &default_calib,              0 },
+    { Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,    "calib_divider",      &calib_divider,      &default_calib,              0 },
     #endif
   }};
 

@@ -14,7 +14,7 @@ class MenuViewer
 
     enum class Icon { RETURN, REVERT, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, 
                       FONT_PARAMS, POWEROFF, WIFI, INFO, TOC, DEBUG, DELETE, CALIB, END_MENU };
-    char icon_char[14] = { '@', 'H', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I', 'L', 'Y', 'K', 'D' };
+    char icon_char[14] = { '@', 'Q', 'R', 'E', 'F', 'C', 'A', 'Z', 'S', 'I', 'L', 'H', 'K', 'M' };
     struct MenuEntry {
       Icon icon;
       const char * caption;
@@ -33,7 +33,7 @@ class MenuViewer
     static const int16_t CAPTION_SIZE        = 12;
 
     #if INKPLATE_6PLUS
-      static const int16_t SPACE_BETWEEN_ICONS = 75;
+      static const int16_t SPACE_BETWEEN_ICONS = 70;
       static const int16_t ICONS_LEFT_OFFSET   = 20;
     #else
       static const int16_t SPACE_BETWEEN_ICONS = 50;

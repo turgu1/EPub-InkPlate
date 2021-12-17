@@ -14,6 +14,7 @@
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/epub.hpp"
+#include "models/nvs_mgr.hpp"
 
 #if EPUB_INKPLATE_BUILD
   #include "esp_system.h"
@@ -146,6 +147,28 @@ wifi_mode()
   #endif
 }
 
+static void
+init_nvs()
+{
+  menu_viewer.clear_highlight();
+  if (nvs_mgr.setup(true)) {
+    msg_viewer.show(
+      MsgViewer::BOOK, 
+      false,
+      false,
+      "E-Books History Cleared", 
+      "The E-Books History has been initialized with success.");
+  }
+  else {
+    msg_viewer.show(
+      MsgViewer::BOOK, 
+      false,
+      false,
+      "E-Books History Clearing Error", 
+      "The E-Books History has not been initialized properly. "
+      "Potential hardware problem or software framework issue.");
+  }
+}
 void calibrate()
 {
   event_mgr.show_calibration();
@@ -169,6 +192,7 @@ static MenuViewer::MenuEntry menu[] = {
   #if EPUB_LINUX_BUILD && DEBUGGING
     { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true,  true  },
   #endif
+  { MenuViewer::Icon::REVERT,      "Clear e-books' read history",          init_nvs                         , true,  true  },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
   { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
@@ -242,15 +266,6 @@ OptionController::input_event(const EventMgr::Event & event)
   else if (calibration_is_shown) {
     if (event_mgr.calibration_event(event)) {
       calibration_is_shown = false;
-
-      const EventMgr::CalibData & calib_data = event_mgr.get_calib_data();
-
-      LOG_I("Calibration data: [%u, %u] [%u, %u]",
-        calib_data.x[0],
-        calib_data.y[0],
-        calib_data.x[1],
-        calib_data.y[1]
-      );
       menu_viewer.show(menu, 0, true);
     }
   }
