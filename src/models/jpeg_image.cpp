@@ -66,7 +66,7 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
       MsgViewer::INFO, 
       false, false, 
       "Retrieving Image", 
-      "The application is retrieving an image from the EPub file. Please wait."
+      "The application is retrieving image(s) from the e-book file. Please wait."
     );
   }
 

@@ -28,20 +28,21 @@ on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
 {
   static constexpr char const * TAG = "PngImageOnDraw";
   
-  if (!waiting_msg_shown && (--pix_count == 0)) {
-    pix_count = 2048;
+  // if (!waiting_msg_shown && (--pix_count == 0)) {
+  //   pix_count = 2048;
 
-    if ((ESP::millis() - load_start_time) > 2000) {
-      waiting_msg_shown = true;
+  //   if ((ESP::millis() - load_start_time) > 2000) {
+  //     waiting_msg_shown = true;
 
-      msg_viewer.show(
-        MsgViewer::INFO, 
-        false, false, 
-        "Retrieving Image", 
-        "The application is retrieving an image from the EPub file. Please wait."
-      );
-    }
-  }
+  //     msg_viewer.show(
+  //       MsgViewer::INFO, 
+  //       false, false, 
+  //       "Retrieving Image", 
+  //       "The application is retrieving image(s) from the e-book. Please wait."
+  //     );
+  //   }
+  // }
+
   const Image::ImageData * data = ((PngImage *) mypngle_get_user_data(pngle))->get_image_data();
   int8_t   scale = ((PngImage *) mypngle_get_user_data(pngle))->get_scale_factor();
   uint16_t trans = alpha; // 0: fully transparent, 255: fully opaque
@@ -62,7 +63,7 @@ on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
 
 PngImage::PngImage(std::string filename, Dim max, bool load_bitmap) : Image(filename)
 {
-  LOG_D("Loading image file %s", filename.c_str());
+  LOG_I("Loading PNG image file %s", filename.c_str());
 
   if (unzip.open_stream_file(filename.c_str(), file_size)) {
 
@@ -151,6 +152,8 @@ PngImage::PngImage(std::string filename, Dim max, bool load_bitmap) : Image(file
     free(work);
     mypngle_destroy(pngle);
     unzip.close_stream_file();
+
+    LOG_I("PNG Image load complete");
   }
 }
 

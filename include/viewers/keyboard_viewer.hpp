@@ -2,6 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+#if 0
 #pragma once
 #include "global.hpp"
 
@@ -60,4 +61,6 @@ class KeyboardViewer
   KeyboardViewer keyboard_viewer;
 #else
   extern KeyboardViewer keyboard_viewer;
+#endif
+
 #endif
