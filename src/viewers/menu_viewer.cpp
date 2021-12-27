@@ -71,6 +71,8 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
       Font::Glyph * glyph;
       glyph = font->get_glyph(ch, ICON_SIZE);
 
+      if (menu[idx].icon == Icon::NEXT_MENU) pos.x = screen.WIDTH - SPACE_BETWEEN_ICONS;
+
       entry_locs[idx].pos.x = pos.x;
       entry_locs[idx].pos.y = pos.y + glyph->yoff;
       entry_locs[idx].dim   = glyph->dim;
@@ -136,7 +138,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   uint8_t
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
-    LOG_I("Find Index: [%u %u]", x, y);
+    LOG_D("Find Index: [%u %u]", x, y);
     
     // page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
     // page.put_highlight(Dim(7, 7), Pos(x-3, y-3));

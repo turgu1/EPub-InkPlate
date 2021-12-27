@@ -35,6 +35,8 @@ static int8_t show_title;
 static int8_t dir_view;
 static int8_t done;
 
+static uint16_t test_data = 0;
+
 static Screen::Orientation     old_orientation;
 static Screen::PixelResolution  old_resolution;
 static int8_t old_show_images;
@@ -45,24 +47,25 @@ static int8_t old_show_title;
 static int8_t old_dir_view;
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
-  static constexpr int8_t MAIN_FORM_SIZE = 8;
+  static constexpr int8_t MAIN_FORM_SIZE = 9;
 #else
-  static constexpr int8_t MAIN_FORM_SIZE = 7;
+  static constexpr int8_t MAIN_FORM_SIZE = 8;
 #endif
-static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Minutes Before Sleeping :",  &timeout,                3, FormViewer::timeout_choices,     FormViewer::FormEntryType::HORIZONTAL  },
-  { "Books Directory View :",     &dir_view,               2, FormViewer::dir_view_choices,    FormViewer::FormEntryType::HORIZONTAL  },
+static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
+  { "Test :",                     &test_data,              0, nullptr,                            FormEntryType::UINT16      },
+  { "Minutes Before Sleeping :",  &timeout,                3, FormChoice::timeout_choices,        FormEntryType::HORIZONTAL  },
+  { "Books Directory View :",     &dir_view,               2, FormChoice::dir_view_choices,       FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { "uSDCard Position (*):", (int8_t *) &orientation, 4, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL },
+    { "uSDCard Position (*):", (int8_t *) &orientation,    4, FormChoice::orientation_choices,    FormEntryType::VERTICAL    },
   #else
-    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormViewer::orientation_choices, FormViewer::FormEntryType::VERTICAL    },
+    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormChoice::orientation_choices,    FormEntryType::VERTICAL    },
   #endif
-  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormViewer::resolution_choices,  FormViewer::FormEntryType::HORIZONTAL  },
-  { "Show Battery Level :",       &show_battery,           4, FormViewer::battery_visual,      FormViewer::FormEntryType::VERTICAL    },
-  { "Show Title (*):",            &show_title,             2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL  },
-  { "Show Heap Sizes :",          &show_heap,              2, FormViewer::yes_no_choices,      FormViewer::FormEntryType::HORIZONTAL  },
+  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormChoice::resolution_choices,     FormEntryType::HORIZONTAL  },
+  { "Show Battery Level :",       &show_battery,           4, FormChoice::battery_visual_choices, FormEntryType::VERTICAL    },
+  { "Show Title (*):",            &show_title,             2, FormChoice::yes_no_choices,         FormEntryType::HORIZONTAL  },
+  { "Show Heap Sizes :",          &show_heap,              2, FormChoice::yes_no_choices,         FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                    &done,                   1, FormViewer::done_choices,        FormViewer::FormEntryType::DONE        }
+    { nullptr,                    &done,                   1, FormChoice::done_choices,           FormEntryType::DONE        }
   #endif
 };
 
@@ -71,13 +74,13 @@ static FormViewer::FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
 #else
   static constexpr int8_t FONT_FORM_SIZE = 4;
 #endif
-static FormViewer::FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",      &font_size,          4, FormViewer::font_size_choices, FormViewer::FormEntryType::HORIZONTAL },
-  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL },
-  { "Default Font (*):",           &default_font,       8, FormViewer::font_choices,      FormViewer::FormEntryType::VERTICAL   },
-  { "Show Images in E-books (*):", &show_images,        2, FormViewer::yes_no_choices,    FormViewer::FormEntryType::HORIZONTAL },
+static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
+  { "Default Font Size (*):",      &font_size,          4, FormChoice::font_size_choices, FormEntryType::HORIZONTAL },
+  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { "Default Font (*):",           &default_font,       8, FormChoice::font_choices,      FormEntryType::VERTICAL   },
+  { "Show Images in E-books (*):", &show_images,        2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                     &done,               1, FormViewer::done_choices,      FormViewer::FormEntryType::DONE       }
+    { nullptr,                     &done,               1, FormChoice::done_choices,      FormEntryType::DONE       }
   #endif
 };
 
@@ -151,29 +154,43 @@ static void
 init_nvs()
 {
   menu_viewer.clear_highlight();
-  if (nvs_mgr.setup(true)) {
-    msg_viewer.show(
-      MsgViewer::BOOK, 
-      false,
-      false,
-      "E-Books History Cleared", 
-      "The E-Books History has been initialized with success.");
-  }
-  else {
-    msg_viewer.show(
-      MsgViewer::BOOK, 
-      false,
-      false,
-      "E-Books History Clearing Error", 
-      "The E-Books History has not been initialized properly. "
-      "Potential hardware problem or software framework issue.");
-  }
+  #if EPUB_INKPLATE_BUILD
+    if (nvs_mgr.setup(true)) {
+      msg_viewer.show(
+        MsgViewer::BOOK, 
+        false,
+        false,
+        "E-Books History Cleared", 
+        "The E-Books History has been initialized with success.");
+    }
+    else {
+      msg_viewer.show(
+        MsgViewer::BOOK, 
+        false,
+        false,
+        "E-Books History Clearing Error", 
+        "The E-Books History has not been initialized properly. "
+        "Potential hardware problem or software framework issue.");
+    }
+  #endif
 }
-void calibrate()
-{
-  event_mgr.show_calibration();
-  option_controller.set_calibration_is_shown();
-}
+
+#if INKPLATE_6PLUS
+  static void goto_next();
+  static void goto_prev();
+
+  static void 
+  calibrate()
+  {
+    event_mgr.show_calibration();
+    option_controller.set_calibration_is_shown();
+  }
+
+  static void 
+  clock_adjust()
+  {
+  }
+#endif
 
 // IMPORTANT!!!
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
@@ -186,17 +203,30 @@ static MenuViewer::MenuEntry menu[] = {
   { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               , true,  true  },
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
   { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
-  #if INKPLATE_6PLUS
-    { MenuViewer::Icon::CALIB,     "Touch Screen Calibration",             calibrate                        , true,  false },
+  #if !INKPLATE_6PLUS
+    { MenuViewer::Icon::REVERT,    "Clear e-books' read history",         init_nvs                          , true,  true  },
   #endif
   #if EPUB_LINUX_BUILD && DEBUGGING
     { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true,  true  },
   #endif
-  { MenuViewer::Icon::REVERT,      "Clear e-books' read history",          init_nvs                         , true,  true  },
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
+  #if INKPLATE_6PLUS
+    { MenuViewer::Icon::NEXT_MENU, "Other options",                        goto_next                        , true,  true  },
+  #endif
   { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
 };
+
+#if INKPLATE_6PLUS
+static MenuViewer::MenuEntry sub_menu[] = {
+  { MenuViewer::Icon::PREV_MENU,    "Previous options",                    goto_prev                        , true,  true  },
+  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
+  { MenuViewer::Icon::CLOCK,        "Time/Date adjustments",               clock_adjust                     , true,  true  },
+  { MenuViewer::Icon::CALIB,        "Touch Screen Calibration",            calibrate                        , true,  false },
+  { MenuViewer::Icon::REVERT,       "Clear e-books' read history",         init_nvs                         , true,  true  },
+  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
+};
+#endif
 
 void
 OptionController::set_font_count(uint8_t count)
@@ -211,6 +241,20 @@ OptionController::enter()
   main_form_is_shown = false;
   font_form_is_shown = false;
 }
+
+#if INKPLATE_6PLUS
+  static void 
+  goto_next()
+  {
+    menu_viewer.show(sub_menu);
+  }
+
+  static void 
+  goto_prev()
+  {
+    menu_viewer.show(menu);
+  }
+#endif
 
 void 
 OptionController::leave(bool going_to_deep_sleep)
@@ -263,12 +307,6 @@ OptionController::input_event(const EventMgr::Event & event)
       // }
     }
   }
-  else if (calibration_is_shown) {
-    if (event_mgr.calibration_event(event)) {
-      calibration_is_shown = false;
-      menu_viewer.show(menu, 0, true);
-    }
-  }
   else if (font_form_is_shown) {
     if (form_viewer.event(event)) {
       font_form_is_shown = false;
@@ -300,6 +338,7 @@ OptionController::input_event(const EventMgr::Event & event)
       menu_viewer.clear_highlight();
     }
   }
+
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
       msg_viewer.show(MsgViewer::INFO, 
@@ -316,6 +355,16 @@ OptionController::input_event(const EventMgr::Event & event)
       esp_restart();
     }
   #endif
+
+  #if INKPLATE_6PLUS
+  else if (calibration_is_shown) {
+    if (event_mgr.calibration_event(event)) {
+      calibration_is_shown = false;
+      menu_viewer.show(menu, 0, true);
+    }
+  }
+  #endif
+  
   else {
     if (menu_viewer.event(event)) {
       if (books_refresh_needed) {

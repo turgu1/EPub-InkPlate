@@ -871,15 +871,15 @@ PageLocs::computation_completed()
     completed = true;
     toc.save();
     event_mgr.set_stay_on(false);
-    #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-      ESP::show_heaps_info();
-      RetrieveQueueData retrieve_queue_data = {
-        .req = RetrieveReq::SHOW_HEAP,
-        .itemref_index = 0
-      };
-      LOG_D("Sending SHOW_HEAP to Retriever");
-      QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-    #endif
+    // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    //   ESP::show_heaps_info();
+    //   RetrieveQueueData retrieve_queue_data = {
+    //     .req = RetrieveReq::SHOW_HEAP,
+    //     .itemref_index = 0
+    //   };
+    //   LOG_D("Sending SHOW_HEAP to Retriever");
+    //   QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
+    // #endif
   }
 }
 

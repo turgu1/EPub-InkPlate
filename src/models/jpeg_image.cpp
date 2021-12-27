@@ -59,16 +59,18 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
   uint8_t * src, * dst;
   uint16_t y, bws, bwd;
 
-  if (!waiting_msg_shown && ((ESP::millis() - load_start_time) > 2000)) {
-    waiting_msg_shown = true;
+  #if EPUB_INKPLATE_BUILD
+    if (!waiting_msg_shown && ((ESP::millis() - load_start_time) > 2000)) {
+      waiting_msg_shown = true;
 
-    msg_viewer.show(
-      MsgViewer::INFO, 
-      false, false, 
-      "Retrieving Image", 
-      "The application is retrieving image(s) from the e-book file. Please wait."
-    );
-  }
+      msg_viewer.show(
+        MsgViewer::INFO, 
+        false, false, 
+        "Retrieving Image", 
+        "The application is retrieving image(s) from the e-book file. Please wait."
+      );
+    }
+  #endif
 
   if ((rect->right >= image_data->dim.width) || (rect->bottom >= image_data->dim.height)) {
     LOG_E("Rect outside of image dimensions!");
@@ -124,8 +126,10 @@ JPegImage::JPegImage(std::string filename, Dim max, bool load_bitmap) : Image(fi
         if ((image_data.bitmap = (uint8_t *) allocate(width * height)) != nullptr) {
           image_data.dim    = Dim(width, height);
           // first = true;
-          load_start_time   = ESP::millis();
-          waiting_msg_shown = false;
+          #if EPUB_INKPLATE_BUILD
+            load_start_time   = ESP::millis();
+            waiting_msg_shown = false;
+          #endif
           res = jdec_decomp(&jdec, out_func, scale);
         }
       }

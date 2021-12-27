@@ -27,7 +27,8 @@ static void
 on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
 {
   static constexpr char const * TAG = "PngImageOnDraw";
-  
+
+  #if EPUB_INKPLATE_BUILD
   // if (!waiting_msg_shown && (--pix_count == 0)) {
   //   pix_count = 2048;
 
@@ -42,6 +43,7 @@ on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
   //     );
   //   }
   // }
+  #endif
 
   const Image::ImageData * data = ((PngImage *) mypngle_get_user_data(pngle))->get_image_data();
   int8_t   scale = ((PngImage *) mypngle_get_user_data(pngle))->get_scale_factor();
@@ -77,9 +79,11 @@ PngImage::PngImage(std::string filename, Dim max, bool load_bitmap) : Image(file
 
     mypngle_set_draw_callback(pngle, on_draw);
 
-    load_start_time = ESP::millis();
-    waiting_msg_shown = false;
-    pix_count = 2048;
+    #if EPUB_INKPLATE_BUILD
+      load_start_time   = ESP::millis();
+      waiting_msg_shown = false;
+      pix_count         = 2048;
+    #endif
 
     /* Prepare to decompress */
 

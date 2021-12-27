@@ -9,7 +9,7 @@
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
-FormViewer::Choice FormViewer::font_choices[8] = {
+FormChoice::Choice FormChoice::font_choices[8] = {
   { nullptr, 0 },
   { nullptr, 1 },
   { nullptr, 2 },
@@ -21,23 +21,16 @@ FormViewer::Choice FormViewer::font_choices[8] = {
 };
 
 void
-FormViewer::adjust_font_choices(char ** font_names, uint8_t size)
-{
-  for (uint8_t i = 0; i < size; i++) font_choices[i].caption = font_names[i];
-  font_choices_count = size; 
-}
-
-void
 FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::string & bottom_msg)
 {
   // Compute location of items on screen
 
   entries = form_entries;
 
-  Font *              font                      =  fonts.get(5);
+  Font *        font                      =  fonts.get(5);
   Font::Glyph * glyph                     =  font->get_glyph('M', FONT_SIZE);
-  uint8_t             base_line_offset          = -glyph->yoff;
-  uint8_t             next_available_choice_loc =  0;
+  uint8_t       base_line_offset          = -glyph->yoff;
+  uint8_t       next_available_choice_loc =  0;
 
   line_height = font->get_line_height(FONT_SIZE);
   entry_count = size;
@@ -55,15 +48,15 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     #else
       font->get_size(entries[i].caption, &entries_info[i].dim, FONT_SIZE);
     #endif
-    entries_info[i].first_choice_loc_idx = next_available_choice_loc;
+    entries_info[i].u.choice.first_choice_loc_idx = next_available_choice_loc;
 
     for (int j = 0, k = next_available_choice_loc; j < entries[i].choice_count; j++, k++) {
       font->get_size(
         entries[i].choices[j].caption, 
         &choice_loc[k].dim, 
         FONT_SIZE);
-      if (entries[i].choices[j].value == *entries[i].value) {
-        entries_info[i].choice_idx = k;
+      if (entries[i].choices[j].value == * (uint8_t *) entries[i].value) {
+        entries_info[i].u.choice.choice_idx = k;
       }
     }
     next_available_choice_loc += entries[i].choice_count;
@@ -80,28 +73,33 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     for (int i = 0; i < entry_count; i++) {
   #endif
 
-    int16_t choices_width  = 0;
-    int16_t choices_height = 0;
-    int16_t separator      = 0;
-    int16_t last_height    = 0;
+    if (entries[i].entry_type == FormEntryType::UINT16) {
 
-    if (entries[i].entry_type == FormEntryType::HORIZONTAL) {     
-      for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        if (choices_height < choice_loc[k].dim.height) choices_height = choice_loc[k].dim.height;
-        choices_width += choice_loc[k].dim.width + separator;
-        separator = 20;
-      }
     }
-    else { // VERTICAL
-      for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
-        if (choices_width < choice_loc[k].dim.width) choices_width = choice_loc[k].dim.width;
-        choices_height += line_height;
-        last_height     = choice_loc[k].dim.height;
+    else {
+      int16_t choices_width  = 0;
+      int16_t choices_height = 0;
+      int16_t separator      = 0;
+      int16_t last_height    = 0;
+
+      if (entries[i].entry_type == FormEntryType::HORIZONTAL) {     
+        for (int j = 0, k = entries_info[i].u.choice.first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
+          if (choices_height < choice_loc[k].dim.height) choices_height = choice_loc[k].dim.height;
+          choices_width += choice_loc[k].dim.width + separator;
+          separator = 20;
+        }
       }
-      choices_height += last_height - line_height;
+      else if (entries[i].entry_type == FormEntryType::VERTICAL) { // VERTICAL
+        for (int j = 0, k = entries_info[i].u.choice.first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
+          if (choices_width < choice_loc[k].dim.width) choices_width = choice_loc[k].dim.width;
+          choices_height += line_height;
+          last_height     = choice_loc[k].dim.height;
+        }
+        choices_height += last_height - line_height;
+      }
+      if (all_choices_width < choices_width) all_choices_width = choices_width;
+      entries_info[i].u.choice.choices_height = choices_height;
     }
-    if (all_choices_width < choices_width) all_choices_width = choices_width;
-    entries_info[i].choices_height = choices_height;
   }
 
   // Compute xpos, ypos
@@ -113,7 +111,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   #endif
     if (entries[i].entry_type == FormEntryType::HORIZONTAL) {     
       int16_t left_pos = right_xpos - all_choices_width - 10;
-      for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
+      for (int j = 0, k = entries_info[i].u.choice.first_choice_loc_idx; 
+           j < entries[i].choice_count; 
+           j++, k++) {
         choice_loc[k].pos.x = left_pos;
         choice_loc[k].pos.y = current_ypos + 10;
         left_pos += choice_loc[k].dim.width + 20;
@@ -121,7 +121,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     }
     else { // VERTICAL
       int16_t top_ypos = current_ypos + 10;
-      for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
+      for (int j = 0, k = entries_info[i].u.choice.first_choice_loc_idx; 
+           j < entries[i].choice_count; 
+           j++, k++) {
         choice_loc[k].pos.x = right_xpos - all_choices_width - 10;
         choice_loc[k].pos.y = top_ypos;
         top_ypos += line_height;
@@ -129,18 +131,18 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     }
     entries_info[i].pos.x = right_xpos - all_choices_width - 35 - entries_info[i].dim.width;
     entries_info[i].pos.y = current_ypos + 10;
-    current_ypos         += entries_info[i].choices_height + 20;
+    current_ypos         += entries_info[i].u.choice.choices_height + 20;
   }
 
   current_ypos += 20;
 
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    int k = entries_info[entry_count - 1].first_choice_loc_idx;
+    int k = entries_info[entry_count - 1].u.choice.first_choice_loc_idx;
     // int k = entries_info[entry_count].first_choice_loc_idx;
     choice_loc[k].pos.y     = choice_loc[k + 1].pos.y = current_ypos;
     choice_loc[k].pos.x     = (Screen::WIDTH >> 1) - choice_loc[k].dim.width - 20;
     // choice_loc[k + 1].pos.x = (Screen::WIDTH >> 1) + 20;
-    entries_info[entry_count - 1].choices_height = choice_loc[k].dim.height;
+    entries_info[entry_count - 1].u.choice.choices_height = choice_loc[k].dim.height;
     // entries_info[entry_count].choices_height = choice_loc[k].dim.height;
     //last_choices_width = choice_loc[k].dim.width + choice_loc[k + 1].dim.width + 40;
   #endif
@@ -193,7 +195,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
         fmt);
     }
 
-    for (int j = 0, k = entries_info[i].first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
+    for (int j = 0, k = entries_info[i].u.choice.first_choice_loc_idx; j < entries[i].choice_count; j++, k++) {
       page.put_str_at(
         entries[i].choices[j].caption,
         Pos(choice_loc[k].pos.x, choice_loc[k].pos.y + base_line_offset),
@@ -215,7 +217,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   // Highlight current values
 
   for (int i = 0; i < entry_count; i++) {
-    int8_t k = entries_info[i].choice_idx;
+    int8_t k = entries_info[i].u.choice.choice_idx;
 
     if (entries[i].entry_type == FormEntryType::DONE) {
       page.put_rounded(
@@ -250,9 +252,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
     entry_selection = true;
     page.put_highlight(
       Dim(all_choices_width + 20,
-          entries_info[0].choices_height + 20),
-      Pos(choice_loc[entries_info[0].first_choice_loc_idx].pos.x - 10,
-          choice_loc[entries_info[0].first_choice_loc_idx].pos.y - 10));
+          entries_info[0].u.choice.choices_height + 20),
+      Pos(choice_loc[entries_info[0].u.choice.first_choice_loc_idx].pos.x - 10,
+          choice_loc[entries_info[0].u.choice.first_choice_loc_idx].pos.y - 10));
   #endif
   
   page.paint(false);
@@ -263,10 +265,10 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   FormViewer::find_entry_idx(uint16_t x, uint16_t y)
   {
     for (int8_t idx = 0; idx < entry_count; idx++) {
-      if ((x >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.x - 5) &&
-          (x <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.x + all_choices_width + 5)) &&
-          (y >=  choice_loc[entries_info[idx].first_choice_loc_idx].pos.y - 5) &&
-          (y <= (choice_loc[entries_info[idx].first_choice_loc_idx].pos.y + entries_info[idx].choices_height + 5))) {
+      if ((x >=  choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.x - 5) &&
+          (x <= (choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.x + all_choices_width + 5)) &&
+          (y >=  choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.y - 5) &&
+          (y <= (choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.y + entries_info[idx].u.choice.choices_height + 5))) {
         LOG_D("Found entry: %d", idx);
         return idx;
       }
@@ -278,7 +280,9 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   int8_t
   FormViewer::find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y)
   {
-    for (int8_t idx = entries_info[entry_idx].first_choice_loc_idx, k = 0; k < entries[entry_idx].choice_count; idx++, k++) {
+    for (int8_t idx = entries_info[entry_idx].u.choice.first_choice_loc_idx, 
+         k = 0; 
+         k < entries[entry_idx].choice_count; idx++, k++) {
       if ((x >=  choice_loc[idx].pos.x - 10) &&
           (x <= (choice_loc[idx].pos.x + choice_loc[idx].dim.width + 10)) &&
           (y >=  choice_loc[idx].pos.y - 10) &&
@@ -307,7 +311,7 @@ FormViewer::event(const EventMgr::Event & event)
         current_entry_idx = find_entry_idx(event.x, event.y);
 
         if (current_entry_idx >= 0) {
-          old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
+          old_choice_idx = choice_idx = entries_info[current_entry_idx].u.choice.choice_idx;
           int8_t idx = find_choice_idx(current_entry_idx, event.x, event.y);
           if (idx >= 0) {
             choice_idx = idx;
@@ -349,21 +353,21 @@ FormViewer::event(const EventMgr::Event & event)
       }
     }
     else {
-      old_choice_idx = choice_idx = entries_info[current_entry_idx].choice_idx;
+      old_choice_idx = choice_idx = entries_info[current_entry_idx].u.choice.choice_idx;
 
       switch (event.kind) {
         case EventMgr::EventKind::DBL_PREV:
         case EventMgr::EventKind::PREV:
           choice_idx--;
-          if (choice_idx < entries_info[current_entry_idx].first_choice_loc_idx) {
-            choice_idx = entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
+          if (choice_idx < entries_info[current_entry_idx].u.choice.first_choice_loc_idx) {
+            choice_idx = entries_info[current_entry_idx].u.choice.first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
           }
           break;
         case EventMgr::EventKind::DBL_NEXT:
         case EventMgr::EventKind::NEXT:
           choice_idx++;
-          if (choice_idx >= entries_info[current_entry_idx].first_choice_loc_idx + entries[current_entry_idx].choice_count) {
-            choice_idx = entries_info[current_entry_idx].first_choice_loc_idx;
+          if (choice_idx >= entries_info[current_entry_idx].u.choice.first_choice_loc_idx + entries[current_entry_idx].choice_count) {
+            choice_idx = entries_info[current_entry_idx].u.choice.first_choice_loc_idx;
           }
           break;
         case EventMgr::EventKind::SELECT:
@@ -417,28 +421,28 @@ FormViewer::event(const EventMgr::Event & event)
           page.clear_highlight(
             // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
             Dim(all_choices_width + 20,
-                entries_info[old_entry_idx].choices_height + 20),
-            Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 10,
-                choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 10));
+                entries_info[old_entry_idx].u.choice.choices_height + 20),
+            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 10,
+                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 10));
           page.clear_highlight(
             // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
             Dim(all_choices_width + 22,
-                entries_info[old_entry_idx].choices_height + 22),
-            Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 11,
-                choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 11));
+                entries_info[old_entry_idx].u.choice.choices_height + 22),
+            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 11,
+                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 11));
           page.clear_highlight(
             // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
             Dim(all_choices_width + 24,
-                entries_info[old_entry_idx].choices_height + 24),
-            Pos(choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.x - 12,
-                choice_loc[entries_info[old_entry_idx].first_choice_loc_idx].pos.y - 12));
+                entries_info[old_entry_idx].u.choice.choices_height + 24),
+            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 12,
+                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 12));
 
           page.put_highlight(
             // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
             Dim(all_choices_width + 20,
-                entries_info[current_entry_idx].choices_height + 20),
-            Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 10,
-                choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 10));
+                entries_info[current_entry_idx].u.choice.choices_height + 20),
+            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 10,
+                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 10));
         #endif
 //      }
     }
@@ -449,20 +453,20 @@ FormViewer::event(const EventMgr::Event & event)
           page.put_highlight(
             // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
             Dim(all_choices_width + 22,
-                entries_info[current_entry_idx].choices_height + 22),
-            Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 11,
-                choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 11));
+                entries_info[current_entry_idx].u.choice.choices_height + 22),
+            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 11,
+                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 11));
           page.put_highlight(
             // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
             Dim(all_choices_width + 24,
-                entries_info[current_entry_idx].choices_height + 24),
-            Pos(choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.x - 12,
-                choice_loc[entries_info[current_entry_idx].first_choice_loc_idx].pos.y - 12));
+                entries_info[current_entry_idx].u.choice.choices_height + 24),
+            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 12,
+                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 12));
         }
       #endif
 
       if (choice_idx != old_choice_idx) {
-        entries_info[current_entry_idx].choice_idx = choice_idx;
+        entries_info[current_entry_idx].u.choice.choice_idx = choice_idx;
 
         page.clear_highlight(
           Dim(entries[current_entry_idx].entry_type == FormEntryType::HORIZONTAL ? choice_loc[old_choice_idx].dim.width + 10 : all_choices_width + 10,
@@ -480,8 +484,13 @@ FormViewer::event(const EventMgr::Event & event)
   }
   else {
     for (int i = 0; i < entry_count; i++) {
-      int8_t k = entries_info[i].choice_idx - entries_info[i].first_choice_loc_idx;
-      *entries[i].value = entries[i].choices[k].value;
+      if (entries[i].entry_type == FormEntryType::UINT16) {
+        * (uint16_t *) entries[i].value = entries_info[i].u.value;
+      }
+      else {
+        int8_t k = entries_info[i].u.choice.choice_idx - entries_info[i].u.choice.first_choice_loc_idx;
+        * (uint8_t *) entries[i].value = (uint8_t) entries[i].choices[k].value;
+      }
     }
     page.clear_region(
       Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
