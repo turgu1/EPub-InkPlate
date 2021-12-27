@@ -9,7 +9,7 @@
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
-FormChoice::Choice FormChoice::font_choices[8] = {
+Choice FormChoice::font_choices[8] = {
   { nullptr, 0 },
   { nullptr, 1 },
   { nullptr, 2 },
@@ -20,6 +20,7 @@ FormChoice::Choice FormChoice::font_choices[8] = {
   { nullptr, 7 }
 };
 
+#if 0
 void
 FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::string & bottom_msg)
 {
@@ -260,21 +261,17 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   page.paint(false);
 }
 
+@endif
+
 #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-  int8_t
+  Fields::iterator
   FormViewer::find_entry_idx(uint16_t x, uint16_t y)
   {
-    for (int8_t idx = 0; idx < entry_count; idx++) {
-      if ((x >=  choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.x - 5) &&
-          (x <= (choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.x + all_choices_width + 5)) &&
-          (y >=  choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.y - 5) &&
-          (y <= (choice_loc[entries_info[idx].u.choice.first_choice_loc_idx].pos.y + entries_info[idx].u.choice.choices_height + 5))) {
-        LOG_D("Found entry: %d", idx);
-        return idx;
-      }
+    for (Fields::iterator it = fields.begin(); it < fields.end(); it++) {
+      if ((*it)->is_pointed(x, y)) return it;
     }
 
-    return -1;
+    return fields.end();
   }
 
   int8_t
@@ -303,7 +300,6 @@ FormViewer::event(const EventMgr::Event & event)
   int8_t choice_idx     = 0;
 
   bool completed = false;
-
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
     switch (event.kind) {
@@ -324,26 +320,26 @@ FormViewer::event(const EventMgr::Event & event)
         break;
     }
   #else
-    int8_t old_entry_idx  = current_entry_idx;
-    if (entry_selection) {
+    Fields::iterator old_field = current_field;
+    if (field_focus) {
       switch (event.kind) {
         case EventMgr::EventKind::DBL_PREV:
         case EventMgr::EventKind::PREV:
-          current_entry_idx--;
-          if (current_entry_idx < 0) {
-            current_entry_idx = entry_count - 1;
+          if (current_field == fields.begin()) {
+            current_field = fields.end();
           }
+          current_field--;
           break;
         case EventMgr::EventKind::DBL_NEXT:
         case EventMgr::EventKind::NEXT:
-          current_entry_idx++;
-          if (current_entry_idx >= entry_count) {
-            current_entry_idx = 0;
+          current_field++;
+          if (current_field == fields.end()) {
+            current_field = fields.begin();
           }
           break;
         case EventMgr::EventKind::SELECT:
-          entry_selection = false;
-          highlight_selection = true;
+          field_focus = false;
+          field_select = true;
           break;
         case EventMgr::EventKind::NONE:
           return false;
@@ -371,11 +367,11 @@ FormViewer::event(const EventMgr::Event & event)
           }
           break;
         case EventMgr::EventKind::SELECT:
-          entry_selection = true;
-          old_entry_idx = current_entry_idx;
-          current_entry_idx++;
-          if (current_entry_idx >= entry_count) {
-            current_entry_idx = 0;
+          field_focus = true;
+          old_field = current_field;
+          current_field++;
+          if (current_field == fields.end()) {
+            current_field = fields.begin();
           }
           break;
         case EventMgr::EventKind::NONE:
@@ -415,53 +411,19 @@ FormViewer::event(const EventMgr::Event & event)
 
   if (!completed) {
 
-    if (entry_selection) {
+    if (field_focus) {
 //      if (current_entry_idx != old_entry_idx) {
         #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-          page.clear_highlight(
-            // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
-            Dim(all_choices_width + 20,
-                entries_info[old_entry_idx].u.choice.choices_height + 20),
-            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 10,
-                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 10));
-          page.clear_highlight(
-            // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
-            Dim(all_choices_width + 22,
-                entries_info[old_entry_idx].u.choice.choices_height + 22),
-            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 11,
-                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 11));
-          page.clear_highlight(
-            // Dim(((old_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
-            Dim(all_choices_width + 24,
-                entries_info[old_entry_idx].u.choice.choices_height + 24),
-            Pos(choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.x - 12,
-                choice_loc[entries_info[old_entry_idx].u.choice.first_choice_loc_idx].pos.y - 12));
-
-          page.put_highlight(
-            // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 20,
-            Dim(all_choices_width + 20,
-                entries_info[current_entry_idx].u.choice.choices_height + 20),
-            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 10,
-                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 10));
+          (*old_entry)->select(false);
+          (*current_entry)->focus(true);
         #endif
 //      }
     }
     else {
       #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-        if (highlight_selection) {
-          highlight_selection = false;
-          page.put_highlight(
-            // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 22,
-            Dim(all_choices_width + 22,
-                entries_info[current_entry_idx].u.choice.choices_height + 22),
-            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 11,
-                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 11));
-          page.put_highlight(
-            // Dim(((current_entry_idx == entry_count - 1) ? last_choices_width : all_choices_width) + 24,
-            Dim(all_choices_width + 24,
-                entries_info[current_entry_idx].u.choice.choices_height + 24),
-            Pos(choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.x - 12,
-                choice_loc[entries_info[current_entry_idx].u.choice.first_choice_loc_idx].pos.y - 12));
+        if (field_select) {
+          field_select = false;
+          (*current_field)->select(true);
         }
       #endif
 

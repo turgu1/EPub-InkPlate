@@ -51,6 +51,7 @@ static int8_t old_dir_view;
 #else
   static constexpr int8_t MAIN_FORM_SIZE = 8;
 #endif
+
 static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { "Test :",                     &test_data,              0, nullptr,                            FormEntryType::UINT16      },
   { "Minutes Before Sleeping :",  &timeout,                3, FormChoice::timeout_choices,        FormEntryType::HORIZONTAL  },

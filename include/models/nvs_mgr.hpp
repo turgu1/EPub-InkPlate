@@ -62,7 +62,7 @@ class NVSMgr
 
     inline std::string bld_key(const char * prefix, uint32_t index) {
       char str[12]; 
-      return std::string(prefix) + itoa(index, str, 10); 
+      return std::string(prefix) + int_to_str(index, str, 12); 
     }
 
     inline bool exists(uint32_t index) {

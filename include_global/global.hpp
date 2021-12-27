@@ -12,6 +12,7 @@
 #include <cstring>
 
 #include "strlcpy.hpp"
+#include "int_to_str.hpp"
 
 //#pragma GCC diagnostic error "-Wframe-larger-than=10"
 

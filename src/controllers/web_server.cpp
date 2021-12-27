@@ -177,8 +177,8 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
       LOG_E("Failed to stat %s : %s", entrytype, entry->d_name);
       continue;
     }
-    itoa(entry_stat.st_size, entrysize, 10);
-    LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
+
+    LOG_I("Found %s : %s (%d bytes)", entrytype, entry->d_name, entry_stat.st_size);
 
     std::string the_size;
     uint8_t     length       = strlen(entrysize);
