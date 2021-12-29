@@ -270,7 +270,10 @@ BooksDirController::leave(bool going_to_deep_sleep)
         break;
 
       case EventMgr::EventKind::RELEASE:
-        ESP::delay(1000);
+        #if INKPLATE_6PLUS
+          ESP::delay(1000);
+        #endif
+        
         books_dir_viewer->clear_highlight();
         break;
 

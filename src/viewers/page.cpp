@@ -186,7 +186,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
 
     int16_t x;
 
-    if (pos.x == -1) {
+    if (pos.x == HORIZONTAL_CENTER) {
       if (fmt.align == CSS::Align::CENTER) {
         x = min_x + ((max_x - min_x) >> 1) - (size >> 1);
       }

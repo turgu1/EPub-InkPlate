@@ -28,6 +28,8 @@
 class Page
 {
   public:
+    static const uint16_t HORIZONTAL_CENTER = 9999;
+
     struct Format {
       float              line_height_factor; ///< In EMs
       int16_t            font_index;

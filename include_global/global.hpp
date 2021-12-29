@@ -88,9 +88,9 @@ struct Dim {
 };
 
 struct Pos { 
-  int16_t x; 
-  int16_t y; 
-  Pos(int16_t xpos, int16_t ypos) { 
+  uint16_t x; 
+  uint16_t y; 
+  Pos(uint16_t xpos, uint16_t ypos) { 
     x = xpos; 
     y = ypos; 
   }
@@ -108,9 +108,9 @@ struct Dim8 {
 };
 
 struct Pos8 { 
-  int8_t x; 
-  int8_t y; 
-  Pos8(int8_t xpos, int8_t ypos) { 
+  uint8_t x; 
+  uint8_t y; 
+  Pos8(uint8_t xpos, uint8_t ypos) { 
     x = xpos; 
     y = ypos; 
   }

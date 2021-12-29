@@ -9,6 +9,9 @@
 #include "viewers/page.hpp"
 #include "screen.hpp"
 
+MemoryPool<FormChoice::Item> FormChoice::item_pool;
+uint8_t FormChoice::font_choices_count = 0;
+
 Choice FormChoice::font_choices[8] = {
   { nullptr, 0 },
   { nullptr, 1 },
@@ -29,11 +32,11 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   entries = form_entries;
 
   Font *        font                      =  fonts.get(5);
-  Font::Glyph * glyph                     =  font->get_glyph('M', FONT_SIZE);
+  Font::Glyph * glyph                     =  font->get_glyph('M', FORM_FONT_SIZE);
   uint8_t       base_line_offset          = -glyph->yoff;
   uint8_t       next_available_choice_loc =  0;
 
-  line_height = font->get_line_height(FONT_SIZE);
+  line_height = font->get_line_height(FORM_FONT_SIZE);
   entry_count = size;
 
   // Compute width / height of individual choices and entry captions
@@ -41,13 +44,13 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   for (int i = 0; i < entry_count; i++) {
     #if INKPLATE_6PLUS || TOUCH_TRIAL
       if (i < (entry_count - 1)) { // Don't do last entry (OK / CANCEL) or (DONE)
-        font->get_size(entries[i].caption, &entries_info[i].dim, FONT_SIZE);
+        font->get_size(entries[i].caption, &entries_info[i].dim, FORM_FONT_SIZE);
       }
       else {
         entries_info[i].dim.width = entries_info[i].dim.height = 0;
       }
     #else
-      font->get_size(entries[i].caption, &entries_info[i].dim, FONT_SIZE);
+      font->get_size(entries[i].caption, &entries_info[i].dim, FORM_FONT_SIZE);
     #endif
     entries_info[i].u.choice.first_choice_loc_idx = next_available_choice_loc;
 
@@ -55,7 +58,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
       font->get_size(
         entries[i].choices[j].caption, 
         &choice_loc[k].dim, 
-        FONT_SIZE);
+        FORM_FONT_SIZE);
       if (entries[i].choices[j].value == * (uint8_t *) entries[i].value) {
         entries_info[i].u.choice.choice_idx = k;
       }
@@ -153,7 +156,7 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   Page::Format fmt = {
     .line_height_factor =   1.0,
     .font_index         =     5,
-    .font_size          = FONT_SIZE,
+    .font_size          = FORM_FONT_SIZE,
     .indent             =     0,
     .margin_left        =     5,
     .margin_right       =     5,
@@ -261,11 +264,11 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
   page.paint(false);
 }
 
-@endif
+#endif
 
 #if (INKPLATE_6PLUS || TOUCH_TRIAL)
   Fields::iterator
-  FormViewer::find_entry_idx(uint16_t x, uint16_t y)
+  FormViewer::find_field(uint16_t x, uint16_t y)
   {
     for (Fields::iterator it = fields.begin(); it < fields.end(); it++) {
       if ((*it)->is_pointed(x, y)) return it;
@@ -296,23 +299,15 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 bool
 FormViewer::event(const EventMgr::Event & event)
 {
-  int8_t old_choice_idx = 0;
-  int8_t choice_idx     = 0;
-
   bool completed = false;
   
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)
     switch (event.kind) {
       case EventMgr::EventKind::TAP:
-        current_entry_idx = find_entry_idx(event.x, event.y);
+        current_field = find_field(event.x, event.y);
 
-        if (current_entry_idx >= 0) {
-          old_choice_idx = choice_idx = entries_info[current_entry_idx].u.choice.choice_idx;
-          int8_t idx = find_choice_idx(current_entry_idx, event.x, event.y);
-          if (idx >= 0) {
-            choice_idx = idx;
-            completed = entries[current_entry_idx].entry_type == FormViewer::FormEntryType::DONE;
-          }
+        if (current_field != fields.end()) {
+          completed = (*current_field)->select_item(event.x, event.y);
         }
         break;
 
@@ -325,17 +320,13 @@ FormViewer::event(const EventMgr::Event & event)
       switch (event.kind) {
         case EventMgr::EventKind::DBL_PREV:
         case EventMgr::EventKind::PREV:
-          if (current_field == fields.begin()) {
-            current_field = fields.end();
-          }
+          if (current_field == fields.begin()) current_field = fields.end();
           current_field--;
           break;
         case EventMgr::EventKind::DBL_NEXT:
         case EventMgr::EventKind::NEXT:
           current_field++;
-          if (current_field == fields.end()) {
-            current_field = fields.begin();
-          }
+          if (current_field == fields.end()) current_field = fields.begin();
           break;
         case EventMgr::EventKind::SELECT:
           field_focus = false;
@@ -349,35 +340,21 @@ FormViewer::event(const EventMgr::Event & event)
       }
     }
     else {
-      old_choice_idx = choice_idx = entries_info[current_entry_idx].u.choice.choice_idx;
+      (*current_field)->event(event);
 
       switch (event.kind) {
-        case EventMgr::EventKind::DBL_PREV:
-        case EventMgr::EventKind::PREV:
-          choice_idx--;
-          if (choice_idx < entries_info[current_entry_idx].u.choice.first_choice_loc_idx) {
-            choice_idx = entries_info[current_entry_idx].u.choice.first_choice_loc_idx + entries[current_entry_idx].choice_count - 1;
-          }
-          break;
-        case EventMgr::EventKind::DBL_NEXT:
-        case EventMgr::EventKind::NEXT:
-          choice_idx++;
-          if (choice_idx >= entries_info[current_entry_idx].u.choice.first_choice_loc_idx + entries[current_entry_idx].choice_count) {
-            choice_idx = entries_info[current_entry_idx].u.choice.first_choice_loc_idx;
-          }
-          break;
         case EventMgr::EventKind::SELECT:
           field_focus = true;
           old_field = current_field;
           current_field++;
-          if (current_field == fields.end()) {
-            current_field = fields.begin();
-          }
+          if (current_field == fields.end()) current_field = fields.begin();
           break;
         case EventMgr::EventKind::NONE:
           return false;
         case EventMgr::EventKind::DBL_SELECT:
           completed = true;
+          break;
+        default:
           break;
       }
     }
@@ -386,7 +363,7 @@ FormViewer::event(const EventMgr::Event & event)
   Page::Format fmt = {
     .line_height_factor = 1.0,
     .font_index         =   5,
-    .font_size          = FONT_SIZE,
+    .font_size          = FORM_FONT_SIZE,
     .indent             =   0,
     .margin_left        =   0,
     .margin_right       =   0,
@@ -414,8 +391,8 @@ FormViewer::event(const EventMgr::Event & event)
     if (field_focus) {
 //      if (current_entry_idx != old_entry_idx) {
         #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-          (*old_entry)->select(false);
-          (*current_entry)->focus(true);
+          (*old_field)->select(false);
+          (*current_field)->focus(true);
         #endif
 //      }
     }
@@ -427,33 +404,16 @@ FormViewer::event(const EventMgr::Event & event)
         }
       #endif
 
-      if (choice_idx != old_choice_idx) {
-        entries_info[current_entry_idx].u.choice.choice_idx = choice_idx;
-
-        page.clear_highlight(
-          Dim(entries[current_entry_idx].entry_type == FormEntryType::HORIZONTAL ? choice_loc[old_choice_idx].dim.width + 10 : all_choices_width + 10,
-              choice_loc[old_choice_idx].dim.height + 10),
-          Pos(choice_loc[old_choice_idx].pos.x - 5, choice_loc[old_choice_idx].pos.y - 5));
-
-        page.put_highlight(
-          Dim(entries[current_entry_idx].entry_type == FormEntryType::HORIZONTAL ? choice_loc[choice_idx].dim.width + 10 : all_choices_width + 10,
-              choice_loc[choice_idx].dim.height + 10),
-          Pos(choice_loc[choice_idx].pos.x - 5, choice_loc[choice_idx].pos.y - 5));
+      for (auto * field : fields) {
+        field->update_highlight();
       }
     }
 
     page.paint(false);
   }
   else {
-    for (int i = 0; i < entry_count; i++) {
-      if (entries[i].entry_type == FormEntryType::UINT16) {
-        * (uint16_t *) entries[i].value = entries_info[i].u.value;
-      }
-      else {
-        int8_t k = entries_info[i].u.choice.choice_idx - entries_info[i].u.choice.first_choice_loc_idx;
-        * (uint8_t *) entries[i].value = (uint8_t) entries[i].choices[k].value;
-      }
-    }
+    for (auto * field : fields) field->save_value();
+
     page.clear_region(
       Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
       Pos(20, TOP_YPOS));

@@ -13,9 +13,6 @@
 #include <stdio.h>
 #include <math.h>
  
-#pragma warning(push)
-#pragma warning(disable : 4838)
-
 void 
 KeypadViewer::show(uint16_t value, Pos pos, uint16_t min_value, uint16_t max_value)
 {
@@ -34,12 +31,11 @@ KeypadViewer::show(uint16_t value, Pos pos, uint16_t min_value, uint16_t max_val
 
   Font *        font             =  fonts.get(5);
   Font::Glyph * glyph            =  font->get_glyph('0', FONT_SIZE);
-  uint8_t       base_line_offset = -glyph->yoff;
 
   Pos           keypad_pos;
 
-  Dim           keypad_dim = { ((glyph->dim.width  + 22) * 3) - 2, 
-                               ((glyph->dim.height + 22) * 5) - 2};
+  Dim           keypad_dim = { (uint16_t)(((glyph->dim.width  + 22) * 3) - 2), 
+                               (uint16_t)(((glyph->dim.height + 22) * 5) - 2)};
 
   keypad_pos.x = (screen.WIDTH >> 1) - (keypad_dim.width >> 1);
   if (field_pos.y + 40 + keypad_dim.height > screen.HEIGHT) {
@@ -89,8 +85,9 @@ KeypadViewer::show(uint16_t value, Pos pos, uint16_t min_value, uint16_t max_val
   static char labels[12] = "789456123 0";
 
   Pos the_pos = keypad_pos;
-  key_dim = { glyph->dim.width + KEY_ADDED_WIDTH, glyph->dim.height + KEY_ADDED_HEIGHT };
-  key_dim2 = { (key_dim.width * 3) >> 1, key_dim.height };
+  key_dim = { (uint16_t)(glyph->dim.width + KEY_ADDED_WIDTH), 
+              (uint16_t)(glyph->dim.height + KEY_ADDED_HEIGHT) };
+  key_dim2 = { (uint16_t)((key_dim.width * 3) >> 1), key_dim.height };
 
   int k = 0;
   for (int i = 0; i < 14; i++) {
@@ -139,15 +136,13 @@ KeypadViewer::show(uint16_t value, Pos pos, uint16_t min_value, uint16_t max_val
   page.paint(false);
 }
 
-#pragma warning(pop)
-
 void
 KeypadViewer::update_value(bool show_cursor)
 {
   page.paint(false);
 }
 
-bool event(const EventMgr::Event & event)
+bool KeypadViewer::event(const EventMgr::Event & event)
 {
-
+  return true;
 }

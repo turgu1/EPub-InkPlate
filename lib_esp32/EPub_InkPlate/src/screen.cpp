@@ -54,8 +54,8 @@ Screen::draw_bitmap(
   //   }
   // }   
 
-  if (pos.x < 0) pos.x = 0;
-  if (pos.y < 0) pos.y = 0;
+  if (pos.x > WIDTH ) pos.x = 0;
+  if (pos.y > HEIGHT) pos.y = 0;
 
   uint32_t x_max = pos.x + dim.width;
   uint32_t y_max = pos.y + dim.height;

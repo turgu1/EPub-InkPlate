@@ -56,9 +56,10 @@ class EventMgr
 
       void show_calibration();
       bool calibration_event(const Event & event);
-      void set_position(uint16_t   x, uint16_t   y) { x_pos = x; y_pos = y; }
-      void get_position(uint16_t & x, uint16_t & y) { x = x_pos; y = y_pos; }
+      void  set_position(uint16_t   x, uint16_t   y) { x_pos = x; y_pos = y; }
+      void  get_position(uint16_t & x, uint16_t & y) { x = x_pos; y = y_pos; }
       void to_user_coord(uint16_t & x, uint16_t & y);
+
     #else
       enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
 

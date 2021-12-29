@@ -1055,6 +1055,8 @@ class IBMFFont
 
       glyph_info = glyph_info_table[glyph_code & 0xFF];
 
+      if (glyph_info == nullptr) return false;
+      
       Dim dim     = Dim(glyph_info->bitmap_width, glyph_info->bitmap_height);
       Pos offsets = Pos(0, 0);
 

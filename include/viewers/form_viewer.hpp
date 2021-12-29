@@ -13,6 +13,7 @@
 #include <list>
 
 enum class FormEntryType { HORIZONTAL, VERTICAL, UINT16, DONE };
+constexpr  uint8_t FORM_FONT_SIZE = 9;
 
 struct Choice {
   const char   * caption;
@@ -23,29 +24,38 @@ struct FormEntry {
   const char   * caption;
   void         * value;
   int8_t         choice_count;
-  Choice       * choices;
+  const Choice * choices;
   FormEntryType  entry_type;
 };
 
 class FormField
 {
   public:
-    static constexpr uint8_t FONT_SIZE = 9;
     FormField(FormEntry & form_entry, Font & font) :
       form_entry(form_entry), font(font) { 
-
-      compute_caption_dim();
-      compute_field_dim();
     };
-   ~FormField() { };
+    virtual ~FormField() { };
 
-    inline const Dim & get_field_dim() { return field_dim; }
+    inline const Dim &   get_field_dim() { return field_dim;   }
+    inline const Dim & get_caption_dim() { return caption_dim; }
 
-    virtual void             paint(Page::Format & fmt) = 0;
-    virtual void compute_field_pos(Pos from_pos) = 0;
+    inline const Pos &   get_field_pos() { return field_pos;   }
+    inline const Pos & get_caption_pos() { return caption_pos; }
+
+    void compute_caption_dim() {
+      font.get_size(form_entry.caption, &caption_dim, FORM_FONT_SIZE);
+    }
+
+    virtual void             paint(Page::Format & fmt)            = 0;
+    virtual void compute_field_dim()                              = 0;
+    virtual void compute_field_pos(Pos from_pos)                  = 0;
+    virtual void             event(const EventMgr::Event & event) = 0;
+    virtual void  update_highlight()                              = 0;
+    virtual void        save_value()                              = 0;
 
     void compute_caption_pos(Pos from_pos) {
-      caption_pos = { from_pos.x - caption_dim.width, from_pos.y };
+      caption_pos = { (uint16_t)(from_pos.x - caption_dim.width), 
+                      (uint16_t)(from_pos.y) };
     }
 
     void focus(bool show_it) {
@@ -55,7 +65,7 @@ class FormField
       }
       else {
         page.clear_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
-                             Pos(field_pos.x -10, field_pos.y - 10));
+                             Pos(field_pos.x - 10, field_pos.y - 10));
       }
     }
 
@@ -79,7 +89,7 @@ class FormField
     }
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      inline bool is_pointed(uint16_t x. uint16_t y) {
+      inline bool field_is_pointed(uint16_t x. uint16_t y) {
         return (x >= (field_pos.x - 10)) && 
                (x <= (field_pos.x + field_dim.width + 10)) &&
                (y >= (field_pos.y - 10)) &&
@@ -89,22 +99,16 @@ class FormField
 
   protected:
     
-    Font      & font;
     FormEntry & form_entry;
+    Font      & font;
     Dim         field_dim, caption_dim;
     Pos         field_pos, caption_pos;
 
-    virtual void compute_field_dim() = 0;
-
-    void compute_caption_dim() {
-      font.get_size(form_entry.caption, &caption_dim, FONT_SIZE);
-    }
 };
 
 class FormChoice : public FormField
 {
   public:
-
     static constexpr Choice done_choices[1] = {
       { "DONE",       1 }
     };
@@ -164,49 +168,18 @@ class FormChoice : public FormField
       };
     #endif
 
-    static Choice font_choices[8];
-    uint8_t font_choices_count;
-
-    void adjust_font_choices(char ** font_names, uint8_t size) {
-      for (uint8_t i = 0; i < size; i++) font_choices[i].caption = font_names[i];
-      font_choices_count = size; 
-    }
-
-    inline uint8_t get_font_choices_count() { return font_choices_count; }
-    void compute_field_pos(Pos from_pos) = 0;
-
-    void paint(Page::Format & fmt) {
-      page.put_str_at(form_entry.caption, caption_pos, fmt);
-      uint8_t i = 0;
-      for (auto * item : items) {
-        page.put_str_at(form_entry.choices[i].caption, item->pos, fmt);
-        i++;
-      }
-    }
-
-  protected:
-    struct Item {
-      Pos pos;
-      Dim dim;
-    };
-
-    static MemoryPool<Item> item_pool; // Shared by all FormChoice
-
-    typedef std::list<Item *> Items;
-    
-    Items items;
-    Items::iterator current_item;
+    static Choice  font_choices[8];
+    static uint8_t font_choices_count;
 
     void compute_field_dim() {
       field_dim = { 0, 0 };
-      for (int i = 0; i < form_entry.choice_count; i++) {
+      for (int8_t i = 0; i < form_entry.choice_count; i++) {
         Item * item = item_pool.newElement();
         items.push_back(item);
-        font.get_size(form_entry.choices[i].caption, &item->dim, FONT_SIZE);
+        font.get_size(form_entry.choices[i].caption, &item->dim, FORM_FONT_SIZE);
+        item->idx = i;
       }
 
-      current_item = items.begin();
-      
       int i = 0;
       for (Items::iterator it = items.begin(); it != items.end(); it++) {
         if (form_entry.choices[i].value == * (uint8_t *) form_entry.value) {
@@ -215,7 +188,80 @@ class FormChoice : public FormField
         }
         i++;        
       }
+
+      old_item = items.end();
     }
+
+    static void adjust_font_choices(char ** font_names, uint8_t size) {
+      for (uint8_t i = 0; i < size; i++) font_choices[i].caption = font_names[i];
+      font_choices_count = size; 
+    }
+
+    void compute_field_pos(Pos from_pos) = 0;
+
+    void paint(Page::Format & fmt) {
+
+      Font::Glyph * glyph  =  font.get_glyph('M', FORM_FONT_SIZE);
+      uint8_t       offset = -glyph->yoff;
+     
+      page.put_str_at(form_entry.caption, 
+                      { caption_pos.x, (uint16_t)(caption_pos.y + offset) }, 
+                      fmt);
+      for (auto * item : items) {
+        page.put_str_at(form_entry.choices[item->idx].caption, 
+                        { item->pos.x, (uint16_t)(item->pos.y + offset) }, 
+                        fmt);
+      }
+    }
+
+    void event(const EventMgr::Event & event) {
+      old_item = current_item;
+      switch (event.kind) {
+        case EventMgr::EventKind::DBL_PREV:
+        case EventMgr::EventKind::PREV:
+          if (current_item == items.begin()) current_item = items.end();
+          current_item--;
+          break;
+        case EventMgr::EventKind::DBL_NEXT:
+        case EventMgr::EventKind::NEXT:
+          current_item++;
+          if (current_item == items.end()) current_item = items.begin();
+          break;
+        default:
+          break;
+      }
+    }
+
+    void update_highlight() {
+      if (old_item != current_item) {
+        if (old_item != items.end()) {
+          page.clear_highlight(Dim((*old_item)->dim.width + 10, (*old_item)->dim.height + 10),
+                               Pos((*old_item)->pos.x     -  5, (*old_item)->pos.y      -  5));
+        }
+        page.put_highlight(Dim((*current_item)->dim.width + 10, (*current_item)->dim.height + 10),
+                           Pos((*current_item)->pos.x     -  5, (*current_item)->pos.y      -  5));
+      }
+      old_item = current_item;
+    }
+
+    void save_value() {
+      * (int8_t *) form_entry.value = form_entry.choices[(*current_item)->idx].value; 
+    }
+
+  protected:
+    struct Item {
+      Pos     pos;
+      Dim     dim;
+      uint8_t idx;
+    };
+
+    static MemoryPool<Item> item_pool; // Shared by all FormChoice
+
+    typedef std::list<Item *> Items;
+    
+    Items items;
+    Items::iterator current_item, old_item;
+
 
   public:
     using FormField::FormField;
@@ -230,20 +276,35 @@ class FormChoice : public FormField
 
 class VFormChoice : public FormChoice
 {
+  private:
+    static constexpr char const * TAG = "VFormChoice";
+
   public:
     using FormChoice::FormChoice;
 
-    void compute_field_pos(Pos from_pos) { field_pos = from_pos; }
+   ~VFormChoice() { }
+
+    void compute_field_pos(Pos from_pos) {
+      field_pos   = from_pos; 
+      Pos the_pos = from_pos;
+
+      uint8_t line_height = font.get_line_height(FORM_FONT_SIZE);
+      for (auto * item : items) {
+        item->pos  = the_pos;
+        the_pos.y += line_height;
+        LOG_D("Item position  [%d, %d]", item->pos.x, item->pos.y);
+      } 
+    }
     
-  protected:
     void compute_field_dim() {
       FormChoice::compute_field_dim();
-      uint8_t line_height = font.get_line_height(FONT_SIZE);
+      uint8_t line_height = font.get_line_height(FORM_FONT_SIZE);
       uint8_t last_height = 0;
       for (auto * item : items) {
         if (field_dim.width < item->dim.width) field_dim.width = item->dim.width;
         field_dim.height += line_height;
         last_height = item->dim.height;
+        LOG_D("Item dimension: [%d, %d]", item->dim.width, item->dim.height);
       }
       field_dim.height += last_height - line_height;
     }
@@ -251,12 +312,25 @@ class VFormChoice : public FormChoice
 
 class HFormChoice : public FormChoice
 {
+  private:
+    static constexpr char const * TAG = "HFormChoice";
+
   public:
     using FormChoice::FormChoice;
 
-    void compute_field_pos(Pos from_pos) { field_pos = from_pos; }
+   ~HFormChoice() { }
+
+    void compute_field_pos(Pos from_pos) { 
+      field_pos   = from_pos; 
+      Pos the_pos = from_pos;
+
+      for (auto * item : items) {
+        item->pos  = the_pos;
+        the_pos.x += item->dim.width + 20;
+        LOG_D("Item position: [%d, %d]", item->pos.x, item->pos.y);
+      }
+    }
     
-  protected:
     static constexpr uint8_t HORIZONTAL_SEPARATOR = 20;
 
     void compute_field_dim() {
@@ -266,6 +340,7 @@ class HFormChoice : public FormChoice
         if (field_dim.height < item->dim.height) field_dim.height = item->dim.height;
         field_dim.width += item->dim.width + separator;
         separator = HORIZONTAL_SEPARATOR;
+        LOG_D("Item dimension: [%d, %d]", item->dim.width, item->dim.height);
       }
     }
 };
@@ -275,17 +350,35 @@ class FormUInt16 : public FormField
   public:
     using FormField::FormField;
 
-    void compute_field_pos(Pos from_pos) { field_pos = from_pos; }
-    void paint(Page::Format & fmt) {
-      char val[8];
-      int_to_str(* (uint16_t *) form_entry.value, val, 8);
-      page.put_str_at(form_entry.caption, caption_pos, fmt);
-      page.put_str_at(val, field_pos, fmt);
+    void compute_field_pos(Pos from_pos) { 
+      field_pos = from_pos; 
     }
 
-  protected:
+    void paint(Page::Format & fmt) {
+      char val[8];
+      Font::Glyph * glyph  =  font.get_glyph('M', FORM_FONT_SIZE);
+      uint8_t       offset = -glyph->yoff;
+
+      int_to_str(* (uint16_t *) form_entry.value, val, 8);
+      page.put_str_at(form_entry.caption, 
+                      { caption_pos.x, (uint16_t)(caption_pos.y + offset) }, 
+                      fmt);
+      page.put_str_at(val, 
+                      { field_pos.x, (uint16_t)(field_pos.y + offset) }, 
+                      fmt);
+    }
+
+    void event(const EventMgr::Event & event) { 
+    }
+
+    void update_highlight() {
+    }
+
+    void save_value() {
+    }
+
     void compute_field_dim() {
-      font.get_size("XXXXX", &field_dim, FONT_SIZE);
+      font.get_size("XXXXX", &field_dim, FORM_FONT_SIZE);
     }
 };
 
@@ -303,6 +396,7 @@ class FieldFactory
         case FormEntryType::DONE:
           return nullptr;
       }
+      return nullptr;
     }
 };
 
@@ -338,16 +432,21 @@ class FormViewer
 
     void show(FormEntries form_entries, int8_t size, const std::string & bottom_msg) {
 
-      Font *        font                      =  fonts.get(5);
-      Font::Glyph * glyph                     =  font->get_glyph('M', FormField::FONT_SIZE);
-      uint8_t       base_line_offset          = -glyph->yoff;
+      Font * font =  fonts.get(5);
 
       for (auto * field : fields) delete field;
       fields.clear();
 
       for (int i = 0; i < size; i++) {
         FormField * field = FieldFactory::create(form_entries[i], *font); 
-        if (field != nullptr) fields.push_back(field);
+        if (field != nullptr) {
+          fields.push_back(field);
+          field->compute_caption_dim();
+          field->compute_field_dim();
+          LOG_D("Field dimentions: Caption: [%d, %d] Field: [%d, %d]", 
+                field->get_caption_dim().width, field->get_caption_dim().height,
+                field->get_field_dim().width, field->get_field_dim().height);
+        }
       }
 
       all_fields_width = 0;
@@ -356,23 +455,27 @@ class FormViewer
         if (width > all_fields_width) all_fields_width = width;
       }
 
-      int16_t       current_ypos  = TOP_YPOS + 10;
+      int16_t       current_ypos  = TOP_YPOS + 20;
       const int16_t right_xpos    = Screen::WIDTH - 60;
       int16_t       caption_right = right_xpos - all_fields_width - 35;
       int16_t       field_left    = right_xpos - all_fields_width - 10;
 
       for (auto * field : fields) {
-        field->compute_caption_pos(Pos(caption_right, current_ypos + 10));
-        field->compute_field_pos(Pos(field_left, current_ypos + 10));
+        field->compute_caption_pos(Pos(caption_right, current_ypos));
+        field->compute_field_pos(Pos(field_left, current_ypos));
         current_ypos += field->get_field_dim().height + 20;
+        LOG_D("Field positions: Caption: [%d, %d] Field: [%d, %d]", 
+              field->get_caption_pos().x, field->get_caption_pos().y,
+              field->get_field_pos().x, field->get_field_pos().y);
       }
 
+      Pos bottom_msg_pos = { 40, (uint16_t)(current_ypos + 30) };
       // Display the form
 
       Page::Format fmt = {
         .line_height_factor =   1.0,
         .font_index         =     5,
-        .font_size          = FormField::FONT_SIZE,
+        .font_size          = FORM_FONT_SIZE,
         .indent             =     0,
         .margin_left        =     5,
         .margin_right       =     5,
@@ -409,7 +512,10 @@ class FormViewer
 
       for (auto * field : fields) {
         field->paint(fmt);
+        field->update_highlight();
       }
+
+      page.put_str_at(bottom_msg, bottom_msg_pos, fmt);
 
       current_field = fields.begin();
 

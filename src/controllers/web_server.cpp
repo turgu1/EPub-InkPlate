@@ -178,7 +178,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
       continue;
     }
 
-    LOG_I("Found %s : %s (%d bytes)", entrytype, entry->d_name, entry_stat.st_size);
+    LOG_I("Found %s : %s (%ld bytes)", entrytype, entry->d_name, entry_stat.st_size);
 
     std::string the_size;
     uint8_t     length       = strlen(entrysize);

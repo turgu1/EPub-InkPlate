@@ -50,7 +50,7 @@ class MenuViewer
              text_height, 
              line_height,
              region_height;
-    int16_t  icon_ypos,
+    uint16_t icon_ypos,
              text_ypos;
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)

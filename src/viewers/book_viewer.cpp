@@ -160,14 +160,14 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
           else {
             ostr << t;
           } 
-          page.put_str_at(ostr.str(), Pos(-1, 25), fmt);
+          page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, 25), fmt);
         }
 
         if ((page_nbr != -1) && (page_count != -1)) {
           ostr.str(std::string());
           ostr << page_nbr + 1 << " / " << page_count;
           page.put_str_at(ostr.str(), 
-                          Pos(-1, Screen::HEIGHT + font->get_descender_height(9) - 2), 
+                          Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(9) - 2), 
                           fmt);
         }
 
@@ -184,7 +184,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
                  << heap_caps_get_free_size(MALLOC_CAP_8BIT);
             fmt.align = CSS::Align::RIGHT;
             page.put_str_at(ostr.str(), 
-                            Pos(-1, Screen::HEIGHT + font->get_descender_height(9) - 2), 
+                            Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(9) - 2), 
                             fmt);
           }
 

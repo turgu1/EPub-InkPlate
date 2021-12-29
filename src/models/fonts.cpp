@@ -175,7 +175,7 @@ bool Fonts::setup()
     return false;
   }
 
-  form_viewer.adjust_font_choices(font_names, font_count);
+  FormChoice::adjust_font_choices(font_names, font_count);
 
   book_param_controller.set_font_count(font_count);
       option_controller.set_font_count(font_count);

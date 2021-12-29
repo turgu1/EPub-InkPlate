@@ -393,6 +393,7 @@ IBMF::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, i
     if (glyph->ligature_and_kern_pgm_index >= 0) {
       IBMFFont::FIX16 k;
       glyph = adjust_ligature_and_kern(glyph, glyph_size, next_charcode, k, ignore_next);
+      if (glyph == nullptr) return nullptr;
       kern = (k == 0) ? glyph->advance : ((glyph_data->advance + k) >> 6);
     }
     else {
