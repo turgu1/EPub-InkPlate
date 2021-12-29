@@ -417,7 +417,6 @@ IBMF::get_glyph(uint32_t charcode, int16_t glyph_size)
 Font::Glyph *
 IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size)
 {
-  int error;
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
@@ -455,7 +454,7 @@ IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size)
     }
     else if (!face->get_glyph(glyph_code, *glyph, &glyph_data, true)) {
       bitmap_glyph_pool.deallocate(glyph);
-      LOG_E("Unable to render glyph for glyph_code: %d error: %d", glyph_code, error);
+      LOG_E("Unable to render glyph for glyph_code: %d", glyph_code);
       return nullptr;
     }
 

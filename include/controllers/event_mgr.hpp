@@ -44,8 +44,8 @@ class EventMgr
     static constexpr char const * TAG = "EventMgr";
 
     #if INKPLATE_6PLUS || TOUCH_TRIAL
-      enum class            EventKind { NONE,          TAP,             HOLD,           SWIPE_LEFT, 
-                                        SWIPE_RIGHT,   PINCH_ENLARGE,   PINCH_REDUCE,   RELEASE      };
+      enum class EventKind { NONE,        TAP,           HOLD,         SWIPE_LEFT, 
+                             SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE      };
 
       static const char * event_str[8];
 

@@ -266,36 +266,6 @@ FormViewer::show(FormViewer::FormEntries form_entries, int8_t size, const std::s
 
 #endif
 
-#if (INKPLATE_6PLUS || TOUCH_TRIAL)
-  Fields::iterator
-  FormViewer::find_field(uint16_t x, uint16_t y)
-  {
-    for (Fields::iterator it = fields.begin(); it < fields.end(); it++) {
-      if ((*it)->is_pointed(x, y)) return it;
-    }
-
-    return fields.end();
-  }
-
-  int8_t
-  FormViewer::find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y)
-  {
-    for (int8_t idx = entries_info[entry_idx].u.choice.first_choice_loc_idx, 
-         k = 0; 
-         k < entries[entry_idx].choice_count; idx++, k++) {
-      if ((x >=  choice_loc[idx].pos.x - 10) &&
-          (x <= (choice_loc[idx].pos.x + choice_loc[idx].dim.width + 10)) &&
-          (y >=  choice_loc[idx].pos.y - 10) &&
-          (y <= (choice_loc[idx].pos.y + choice_loc[idx].dim.height + 10))) {
-        LOG_D("Found choice loc: %d", idx);
-        return idx;
-      }
-    }
-
-    return -1;
-  }
-#endif
-
 bool
 FormViewer::event(const EventMgr::Event & event)
 {
@@ -307,7 +277,7 @@ FormViewer::event(const EventMgr::Event & event)
         current_field = find_field(event.x, event.y);
 
         if (current_field != fields.end()) {
-          completed = (*current_field)->select_item(event.x, event.y);
+          completed = (*current_field)->edit(event.x, event.y);
         }
         break;
 
@@ -316,7 +286,7 @@ FormViewer::event(const EventMgr::Event & event)
     }
   #else
     Fields::iterator old_field = current_field;
-    if (field_focus) {
+    if (highlighting_field) {
       switch (event.kind) {
         case EventMgr::EventKind::DBL_PREV:
         case EventMgr::EventKind::PREV:
@@ -329,8 +299,8 @@ FormViewer::event(const EventMgr::Event & event)
           if (current_field == fields.end()) current_field = fields.begin();
           break;
         case EventMgr::EventKind::SELECT:
-          field_focus = false;
-          field_select = true;
+          highlighting_field = false;
+          selecting_field = true;
           break;
         case EventMgr::EventKind::NONE:
           return false;
@@ -344,7 +314,7 @@ FormViewer::event(const EventMgr::Event & event)
 
       switch (event.kind) {
         case EventMgr::EventKind::SELECT:
-          field_focus = true;
+          highlighting_field = true;
           old_field = current_field;
           current_field++;
           if (current_field == fields.end()) current_field = fields.begin();
@@ -388,19 +358,19 @@ FormViewer::event(const EventMgr::Event & event)
 
   if (!completed) {
 
-    if (field_focus) {
+    if (highlighting_field) {
 //      if (current_entry_idx != old_entry_idx) {
         #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-          (*old_field)->select(false);
-          (*current_field)->focus(true);
+          (*old_field)->show_selected(false);
+          (*current_field)->show_highlighted(true);
         #endif
 //      }
     }
     else {
       #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-        if (field_select) {
-          field_select = false;
-          (*current_field)->select(true);
+        if (selecting_field) {
+          selecting_field = false;
+          (*current_field)->show_selected(true);
         }
       #endif
 

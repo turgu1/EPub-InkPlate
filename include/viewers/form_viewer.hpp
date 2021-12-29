@@ -12,7 +12,12 @@
 
 #include <list>
 
-enum class FormEntryType { HORIZONTAL, VERTICAL, UINT16, DONE };
+enum class FormEntryType { HORIZONTAL, VERTICAL, UINT16
+  #if INKPLATE_6PLUS || TOUCH_TRIAL
+    , DONE
+  #endif
+};
+
 constexpr  uint8_t FORM_FONT_SIZE = 9;
 
 struct Choice {
@@ -49,16 +54,22 @@ class FormField
     virtual void             paint(Page::Format & fmt)            = 0;
     virtual void compute_field_dim()                              = 0;
     virtual void compute_field_pos(Pos from_pos)                  = 0;
-    virtual void             event(const EventMgr::Event & event) = 0;
     virtual void  update_highlight()                              = 0;
     virtual void        save_value()                              = 0;
 
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      virtual void  event(const EventMgr::Event & event)          = 0;
+    #else
+      virtual bool edit(uint16_t x, uint16_t y) { return false; }
+    #endif
+
+    
     void compute_caption_pos(Pos from_pos) {
       caption_pos = { (uint16_t)(from_pos.x - caption_dim.width), 
                       (uint16_t)(from_pos.y) };
     }
 
-    void focus(bool show_it) {
+    void show_highlighted(bool show_it) {
       if (show_it) {
         page.put_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
                            Pos(field_pos.x - 10, field_pos.y - 10));
@@ -69,7 +80,7 @@ class FormField
       }
     }
 
-    void select(bool show_it) {
+    void show_selected(bool show_it) {
       if (show_it) {
         page.put_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
                            Pos(field_pos.x - 10, field_pos.y - 10));
@@ -89,12 +100,13 @@ class FormField
     }
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      inline bool field_is_pointed(uint16_t x. uint16_t y) {
+      inline bool is_pointed(uint16_t x, uint16_t y) {
         return (x >= (field_pos.x - 10)) && 
                (x <= (field_pos.x + field_dim.width + 10)) &&
                (y >= (field_pos.y - 10)) &&
                (y <= (field_pos.y + field_dim.height + 10));
       } 
+
     #endif
 
   protected:
@@ -154,7 +166,7 @@ class FormChoice : public FormField
     };
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      static constexpr orientation_choices[4] = {
+      static constexpr Choice orientation_choices[4] = {
         { "LEFT",     3 },
         { "RIGHT",    2 },
         { "TOP",      1 },
@@ -214,23 +226,39 @@ class FormChoice : public FormField
       }
     }
 
-    void event(const EventMgr::Event & event) {
-      old_item = current_item;
-      switch (event.kind) {
-        case EventMgr::EventKind::DBL_PREV:
-        case EventMgr::EventKind::PREV:
-          if (current_item == items.begin()) current_item = items.end();
-          current_item--;
-          break;
-        case EventMgr::EventKind::DBL_NEXT:
-        case EventMgr::EventKind::NEXT:
-          current_item++;
-          if (current_item == items.end()) current_item = items.begin();
-          break;
-        default:
-          break;
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+
+      void event(const EventMgr::Event & event) {
+        old_item = current_item;
+        switch (event.kind) {
+          case EventMgr::EventKind::DBL_PREV:
+          case EventMgr::EventKind::PREV:
+            if (current_item == items.begin()) current_item = items.end();
+            current_item--;
+            break;
+          case EventMgr::EventKind::DBL_NEXT:
+          case EventMgr::EventKind::NEXT:
+            current_item++;
+            if (current_item == items.end()) current_item = items.begin();
+            break;
+          default:
+            break;
+        }
       }
-    }
+    #else
+      bool edit(uint16_t x, uint16_t y) {
+        old_item = current_item;
+        Items::iterator it;
+        for (it = items.begin(); it != items.end(); it++) {
+          if ((x >= (*it)->pos.x - 5) && (x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
+              (y >= (*it)->pos.y - 5) && (y <= ((*it)->pos.y + (*it)->dim.height) + 5)) {
+            break;
+          }
+        }
+        if (it != items.end()) current_item = it;
+        return false;
+      }
+    #endif
 
     void update_highlight() {
       if (old_item != current_item) {
@@ -368,8 +396,10 @@ class FormUInt16 : public FormField
                       fmt);
     }
 
-    void event(const EventMgr::Event & event) { 
-    }
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      void event(const EventMgr::Event & event) { 
+      }
+    #endif
 
     void update_highlight() {
     }
@@ -382,6 +412,50 @@ class FormUInt16 : public FormField
     }
 };
 
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+class FormDone : public FormField
+{
+  public:
+    using FormField::FormField;
+
+    bool edit(uint16_t x, uint16_t y) { return true; }
+
+    void save_value() { }
+    void update_highlight() { 
+      page.put_rounded(
+        Dim(field_dim.width  + 16,
+            field_dim.height + 16),
+        Pos(field_pos.x - 8, field_pos.y - 8));
+      page.put_rounded(
+        Dim(field_dim.width  + 18,
+            field_dim.height + 18),
+        Pos(field_pos.x - 9, field_pos.y - 9));
+      page.put_rounded(
+        Dim(field_dim.width  + 20,
+            field_dim.height + 20),
+        Pos(field_pos.x - 10, field_pos.y - 10));
+    }
+
+    void compute_field_dim() {
+      font.get_size(" DONE ", &field_dim, FORM_FONT_SIZE);
+    }
+
+    void compute_field_pos(Pos from_pos) {
+      field_pos.x = Page::HORIZONTAL_CENTER;
+      field_pos.y = from_pos.y;
+    }
+
+    void paint(Page::Format & fmt) {
+      Font::Glyph * glyph  =  font.get_glyph('M', FORM_FONT_SIZE);
+      uint8_t       offset = -glyph->yoff;
+
+      page.put_str_at(" DONE ", 
+                      { field_pos.x, (uint16_t)(field_pos.y + offset) }, 
+                      fmt);
+    }
+};
+#endif
+
 class FieldFactory
 {
   public:
@@ -393,8 +467,10 @@ class FieldFactory
           return new VFormChoice(entry, font);
         case FormEntryType::UINT16:
           return new FormUInt16(entry, font);
+      #if INKPLATE_6PLUS || TOCH_TRIAL
         case FormEntryType::DONE:
-          return nullptr;
+          return new FormDone(entry, font);
+      #endif
       }
       return nullptr;
     }
@@ -412,8 +488,8 @@ class FormViewer
     int16_t all_fields_width;
     // int16_t last_choices_width;
     int8_t  line_height;
-    bool    field_focus;
-    bool    field_select;
+    bool    highlighting_field;
+    bool    selecting_field;
 
     typedef std::list<FormField *> Fields;
     
@@ -421,7 +497,14 @@ class FormViewer
     Fields::iterator current_field;
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      int8_t find_entry_idx(uint16_t x, uint16_t y);
+      Fields::iterator find_field(uint16_t x, uint16_t y) {
+        for (Fields::iterator it = fields.begin(); it != fields.end(); it++) {
+          if ((*it)->is_pointed(x, y)) return it;
+        }
+
+        return fields.end();
+      }
+
       int8_t find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y);
     #endif
 
@@ -519,13 +602,13 @@ class FormViewer
 
       current_field = fields.begin();
 
-      field_select = false;
+      selecting_field = false;
 
       #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-        field_focus = false;
+        highlighting_field = false;
       #else
-        field_focus = true;
-        (*current_field)->focus(true);
+        highlighting_field = true;
+        (*current_field)->show_highlighted(true);
       #endif
 
       page.paint(false);
