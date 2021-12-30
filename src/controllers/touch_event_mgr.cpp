@@ -12,6 +12,7 @@
 #include "controllers/event_mgr.hpp"
 
 #include <iostream>
+#include <cmath>
 
 #include "controllers/app_controller.hpp"
 #include "viewers/page.hpp"
@@ -23,7 +24,6 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
 #if EPUB_INKPLATE_BUILD
 
-  #include <cmath>
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -432,6 +432,17 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     return false;
   }
 
+  void
+  EventMgr::retrieve_calibration_values()
+  {
+    config.get(Config::Ident::CALIB_A, &a);
+    config.get(Config::Ident::CALIB_B, &b);
+    config.get(Config::Ident::CALIB_C, &c);
+    config.get(Config::Ident::CALIB_D, &d);
+    config.get(Config::Ident::CALIB_E, &e);
+    config.get(Config::Ident::CALIB_F, &f);
+    config.get(Config::Ident::CALIB_DIVIDER, &divider);
+  }
 #endif
 
 #if EPUB_LINUX_BUILD
@@ -440,114 +451,156 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
   #include "screen.hpp"
 
-  void 
-  EventMgr::low_input_event(EventMgr::LowInputEvent low_event, 
-                            uint16_t x, 
-                            uint16_t y, 
-                            bool hold)
-  {
-    Event event.kind = Event::NONE;
-
-    if (low_event == LowInputEvent::PRESS1) {
-      x_pos = x_start = x;
-      y_pos = y_start = y;
-      if (hold) {
-        event = Event::HOLD;
-        state = State::HOLDING;
-        // LOG_D("Holding...");
-      }
-      else {
-        state = State::TAPING;
-        // LOG_D("Taping...");
-      }
-    }
-    else if (low_event == LowInputEvent::PRESS2) {
-      x_pos = x_start = x;
-      y_pos = y_start = y;
-      state = State::PINCHING;
-      // LOG_D("Pinching...")
-    }
-    else if (low_event == LowInputEvent::MOVE) {
-      if (state == State::TAPING) {
-        x_pos = x;
-        y_pos = y;
-        if (abs(((int16_t) x) - ((int16_t) x_start)) > 50) {
-          state = State::SWIPING;
-          // LOG_D("Swiping...");
-        }
-      }
-      else if (state == State::PINCHING) {
-        if (abs(((int16_t) x) - ((int16_t) x_pos)) > 20) {
-          event = (x < x_pos) ? Event::PINCH_REDUCE : Event::PINCH_ENLARGE;
-          x_pos = x;
-          y_pos = y;
-        }
-      }
-    }
-    else if (low_event == LowInputEvent::RELEASE) {
-      x_pos = x;
-      y_pos = y;
-      if (state == State::TAPING) {
-        event = Event::TAP;
-      }
-      else if (state == State::SWIPING) {
-        event = (x < x_start) ? Event::SWIPE_LEFT : Event::SWIPE_RIGHT;
-      }
-      else { // PINCHING or HOLDING
-        event = Event::RELEASE;
-      }
-      state = State::NONE;
-      // LOG_D("None...");
-    }
-    if (event != Event::NONE) {
-      LOG_D("Input Event %s [%d, %d] [%d, %d]...", 
-            event_str[int(event)], x_start, y_start, x_pos, y_pos);
-      app_controller.input_event(event);
-      app_controller.launch();
-    }
-  }
-
   static gboolean
   mouse_event_callback(GtkWidget * event_box,
                        GdkEvent  * gdk_event,
                        gpointer    data) 
   {
-    EventMgr::LowInputEvent low_event = EventMgr::LowInputEvent::NONE;
-    uint16_t x, y;
+    #define DISTANCE  (sqrt(pow(x_end - x_start, 2) + pow(y_end - y_start, 2)))
+    #define DISTANCE2 ((x - x_start)  < 0 ? 0 : (x - x_start))
 
-    switch (gdk_event->type) {
-      case GDK_BUTTON_RELEASE:
-        x = ((GdkEventButton *) gdk_event)->x;
-        y = ((GdkEventButton *) gdk_event)->y;
-        low_event = EventMgr::LowInputEvent::RELEASE;
-        break;
-      case GDK_BUTTON_PRESS:
-        x = ((GdkEventButton *) gdk_event)->x;
-        y = ((GdkEventButton *) gdk_event)->y;
-        if (((GdkEventButton *) gdk_event)->button == 1) {
-          low_event = EventMgr::LowInputEvent::PRESS1;
-        }
-        else if (((GdkEventButton *) gdk_event)->button == 3) { // simulate pinch
-          low_event = EventMgr::LowInputEvent::PRESS2;
-        }
-        break;
-      case GDK_MOTION_NOTIFY:
-        x = ((GdkEventMotion *) gdk_event)->x;
-        y = ((GdkEventMotion *) gdk_event)->y;
-        low_event = EventMgr::LowInputEvent::MOVE;
-        break;
-      default:
-        break;
+    static constexpr char const * TAG = "MouseEventCallback";
+
+    const uint32_t MAX_DELAY_MS  =     4E3; // 10 seconds
+    const uint16_t DIST_TRESHOLD =      30; // treshold distance in pixels
+
+    enum class State : uint8_t { NONE, WAIT_NEXT, HOLDING, SWIPING, PINCHING };
+
+    static uint16_t 
+      x_start    = 0, 
+      y_start    = 0, 
+      x_end      = 0, 
+      y_end      = 0,
+      last_dist  = 0;
+    
+    static State    state   = State::NONE;
+    static bool     timeout = false;
+    
+    EventMgr::Event event = {
+      .kind = EventMgr::EventKind::NONE,
+      .x    = 0,
+      .y    = 0,
+      .dist = 0
+    };
+
+    uint8_t  count;
+    uint16_t x = ((GdkEventButton *) gdk_event)->x;
+    uint16_t y = ((GdkEventButton *) gdk_event)->y;
+    
+    if (gdk_event->type == GDK_BUTTON_RELEASE) {
+      count = 0;
     }
-
-    if (low_event != EventMgr::LowInputEvent::NONE) {
-      event_mgr.low_input_event(low_event, x, y, 
-                                ((GdkEventButton *) gdk_event)->state & GDK_CONTROL_MASK);
-      return true;
+    else if ((state != State::NONE) || (gdk_event->type != GDK_ENTER_NOTIFY)) {
+      count = ((GdkEventButton *) gdk_event)->button == 3 ? 2 : 1 ;
     }
     else {
-      return false;
+      count = 0;
     }
+
+
+    LOG_D("State: %u", (uint8_t)state);
+
+    switch (state) {
+      case State::NONE:
+        if (timeout) {
+          timeout = false;
+        }
+        else if (((GdkEventButton *) gdk_event)->state & GDK_CONTROL_MASK) {
+          state      = State::HOLDING;
+          event.kind = EventMgr::EventKind::HOLD;
+          event.x    = x;
+          event.y    = y;
+        }
+        else if (count == 1) {
+          state = State::WAIT_NEXT;
+          event_mgr.set_position(x, y);
+          x_start = x;
+          y_start = y;
+        }
+        else if (count == 2) {
+          x_start = x;
+          y_start = y;
+          event.dist = last_dist = DISTANCE2;
+          state      = State::PINCHING;
+        }
+        break; 
+
+      case State::WAIT_NEXT:
+        if (count == 0) {
+          state      = State::NONE;
+          event.kind = EventMgr::EventKind::TAP;
+          event.x    = x_start;
+          event.y    = y_start;
+        }
+        else if (count == 1) {
+          event_mgr.set_position(x, y);
+          x_end = x;
+          y_end = y;
+          if (DISTANCE > DIST_TRESHOLD) {
+            state = State::SWIPING;
+          }
+        }
+        else if (count == 2) {
+          event.dist = last_dist = DISTANCE2;
+          state      = State::PINCHING;
+        }
+        break;
+
+      case State::HOLDING:
+        if (count == 0) {
+          event.kind = EventMgr::EventKind::RELEASE;
+          state      = State::NONE; 
+        }
+        break;
+
+      case State::SWIPING:
+        if (count == 0) {
+          event.kind = (x_start < x_end) ? EventMgr::EventKind::SWIPE_RIGHT : 
+                                           EventMgr::EventKind::SWIPE_LEFT; 
+          state = State::NONE;
+        }
+        if (count == 1) {
+          event_mgr.set_position(x, y);
+          x_end = x;
+          y_end = y;
+        }
+        else if (count == 2) {
+          event.dist = last_dist = DISTANCE2;
+          state      = State::PINCHING;
+        }
+        break;
+
+      case State::PINCHING:
+        if (count == 0) {
+          event.kind = EventMgr::EventKind::RELEASE;
+          state      = State::NONE;
+        }
+        else if (count == 2) {
+          uint16_t this_dist = DISTANCE2;
+          uint16_t new_dist_diff = abs(last_dist - this_dist);
+          LOG_D("Distance diffs: %u %u", last_dist, new_dist_diff);
+          if (new_dist_diff != 0) {
+            event.kind = (last_dist < this_dist) ? 
+                            EventMgr::EventKind::PINCH_ENLARGE : 
+                            EventMgr::EventKind::PINCH_REDUCE;
+            event.dist = new_dist_diff;
+            last_dist  = this_dist;
+          }
+        }
+      break;
+    }
+
+    if (event.kind != EventMgr::EventKind::NONE) {
+      LOG_D("Input Event %s [%u, %u] (%u)...", 
+            EventMgr::event_str[int(event.kind)], 
+            event.x, event.y,
+            event.dist);
+      app_controller.input_event(event);
+      app_controller.launch();
+      return true;
+    }
+
+    return false;
   }
 
   void EventMgr::loop()
@@ -608,18 +661,6 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     }
   }
 #endif
-
-void
-EventMgr::retrieve_calibration_values()
-{
-  config.get(Config::Ident::CALIB_A, &a);
-  config.get(Config::Ident::CALIB_B, &b);
-  config.get(Config::Ident::CALIB_C, &c);
-  config.get(Config::Ident::CALIB_D, &d);
-  config.get(Config::Ident::CALIB_E, &e);
-  config.get(Config::Ident::CALIB_F, &f);
-  config.get(Config::Ident::CALIB_DIVIDER, &divider);
-}
 
 bool
 EventMgr::setup()

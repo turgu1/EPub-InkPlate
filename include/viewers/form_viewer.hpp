@@ -48,7 +48,12 @@ class FormField
     inline const Pos & get_caption_pos() { return caption_pos; }
 
     void compute_caption_dim() {
-      font.get_size(form_entry.caption, &caption_dim, FORM_FONT_SIZE);
+      if (form_entry.caption != nullptr) {
+        font.get_size(form_entry.caption, &caption_dim, FORM_FONT_SIZE);
+      }
+      else {
+        caption_dim = Dim(0, 0);
+      }
     }
 
     virtual void             paint(Page::Format & fmt)            = 0;
@@ -441,7 +446,7 @@ class FormDone : public FormField
     }
 
     void compute_field_pos(Pos from_pos) {
-      field_pos.x = Page::HORIZONTAL_CENTER;
+      field_pos.x = (Screen::WIDTH / 2) - (field_dim.width / 2);
       field_pos.y = from_pos.y;
     }
 
@@ -467,7 +472,7 @@ class FieldFactory
           return new VFormChoice(entry, font);
         case FormEntryType::UINT16:
           return new FormUInt16(entry, font);
-      #if INKPLATE_6PLUS || TOCH_TRIAL
+      #if INKPLATE_6PLUS || TOUCH_TRIAL
         case FormEntryType::DONE:
           return new FormDone(entry, font);
       #endif
@@ -505,7 +510,6 @@ class FormViewer
         return fields.end();
       }
 
-      int8_t find_choice_idx(int8_t entry_idx, uint16_t x, uint16_t y);
     #endif
 
   public:

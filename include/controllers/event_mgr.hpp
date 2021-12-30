@@ -37,8 +37,10 @@ class EventMgr
       uint16_t x_pos, y_pos;
       uint16_t distance;
 
-      void retrieve_calibration_values();
-  #endif
+      #if INKPLATE_6PLUS
+        void retrieve_calibration_values();
+      #endif
+    #endif
 
   public:
     static constexpr char const * TAG = "EventMgr";

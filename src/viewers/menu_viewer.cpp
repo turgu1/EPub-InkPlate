@@ -251,7 +251,9 @@ MenuViewer::event(const EventMgr::Event & event)
         break;
 
       case EventMgr::EventKind::RELEASE:
-        ESP::delay(1000);
+        #if EPUB_INKPLATE_BUILD
+          ESP::delay(1000);
+        #endif
         clear_highlight();
         hint_shown = false;
         break;
