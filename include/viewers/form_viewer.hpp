@@ -8,6 +8,7 @@
 #include "controllers/event_mgr.hpp"
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
+#include "viewers/keypad_viewer.hpp"
 #include "memory_pool.hpp"
 
 #include <list>
@@ -20,17 +21,17 @@ enum class FormEntryType { HORIZONTAL, VERTICAL, UINT16
 
 constexpr  uint8_t FORM_FONT_SIZE = 9;
 
-struct Choice {
+struct FormChoice {
   const char   * caption;
   int8_t         value;
 };
 
 struct FormEntry {
-  const char   * caption;
-  void         * value;
-  int8_t         choice_count;
-  const Choice * choices;
-  FormEntryType  entry_type;
+  const char       * caption;
+  void             * value;
+  int8_t             choice_count;
+  const FormChoice * choices;
+  FormEntryType      entry_type;
 };
 
 class FormField
@@ -41,7 +42,7 @@ class FormField
     };
     virtual ~FormField() { };
 
-    inline const Dim &   get_field_dim() { return field_dim;   }
+    virtual const Dim    get_field_dim() { return field_dim;   }
     inline const Dim & get_caption_dim() { return caption_dim; }
 
     inline const Pos &   get_field_pos() { return field_pos;   }
@@ -123,47 +124,43 @@ class FormField
 
 };
 
-class FormChoice : public FormField
+class FormChoiceField : public FormField
 {
   public:
-    static constexpr Choice done_choices[1] = {
-      { "DONE",       1 }
-    };
-
-    static constexpr Choice dir_view_choices[2] = {
+    static constexpr FormChoice dir_view_choices[2] = {
       { "LINEAR",     0 },
       { "MATRIX",     1 }
     };
 
-    static constexpr Choice ok_cancel_choices[2] = {
+    static constexpr FormChoice ok_cancel_choices[2] = {
       { "OK",         1 },
       { "CANCEL",     0 }
     };
 
-    static constexpr Choice yes_no_choices[2] = {
+    static constexpr FormChoice yes_no_choices[2] = {
       { "YES",        1 },
       { "NO",         0 }
     };
 
-    static constexpr Choice resolution_choices[2] = {
+    static constexpr FormChoice resolution_choices[2] = {
       { "1Bit",       0 },
       { "3Bits",      1 }
     };
 
-    static constexpr Choice timeout_choices[3] = {
+    static constexpr FormChoice timeout_choices[3] = {
       { "5",          5 },
       { "15",        15 },
       { "30",        30 }
     };
 
-    static constexpr Choice battery_visual_choices[4] = {
+    static constexpr FormChoice battery_visual_choices[4] = {
       { "NONE",       0 },
       { "PERCENT",    1 },
       { "VOLTAGE",    2 },
       { "ICON",       3 }
     };
 
-    static constexpr Choice font_size_choices[4] = {
+    static constexpr FormChoice font_size_choices[4] = {
       { "8",          8 },
       { "10",        10 },
       { "12",        12 },
@@ -171,21 +168,21 @@ class FormChoice : public FormField
     };
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      static constexpr Choice orientation_choices[4] = {
+      static constexpr FormChoice orientation_choices[4] = {
         { "LEFT",     3 },
         { "RIGHT",    2 },
         { "TOP",      1 },
         { "BOTTOM",   0 }
       };
     #else
-      static constexpr Choice orientation_choices[3] = {
+      static constexpr FormChoice orientation_choices[3] = {
         { "LEFT",     0 },
         { "RIGHT",    1 },
         { "BOTTOM",   2 }
       };
     #endif
 
-    static Choice  font_choices[8];
+    static FormChoice  font_choices[8];
     static uint8_t font_choices_count;
 
     void compute_field_dim() {
@@ -288,7 +285,7 @@ class FormChoice : public FormField
       uint8_t idx;
     };
 
-    static MemoryPool<Item> item_pool; // Shared by all FormChoice
+    static MemoryPool<Item> item_pool; // Shared by all FormChoiceField
 
     typedef std::list<Item *> Items;
     
@@ -299,7 +296,7 @@ class FormChoice : public FormField
   public:
     using FormField::FormField;
 
-   ~FormChoice() {
+   ~FormChoiceField() {
       for (auto * item : items) {
         item_pool.deleteElement(item);
       }
@@ -307,15 +304,15 @@ class FormChoice : public FormField
     }
 };
 
-class VFormChoice : public FormChoice
+class VFormChoiceField : public FormChoiceField
 {
   private:
-    static constexpr char const * TAG = "VFormChoice";
+    static constexpr char const * TAG = "VFormChoiceField";
 
   public:
-    using FormChoice::FormChoice;
+    using FormChoiceField::FormChoiceField;
 
-   ~VFormChoice() { }
+   ~VFormChoiceField() { }
 
     void compute_field_pos(Pos from_pos) {
       field_pos   = from_pos; 
@@ -330,7 +327,7 @@ class VFormChoice : public FormChoice
     }
     
     void compute_field_dim() {
-      FormChoice::compute_field_dim();
+      FormChoiceField::compute_field_dim();
       uint8_t line_height = font.get_line_height(FORM_FONT_SIZE);
       uint8_t last_height = 0;
       for (auto * item : items) {
@@ -343,15 +340,15 @@ class VFormChoice : public FormChoice
     }
 };
 
-class HFormChoice : public FormChoice
+class HFormChoiceField : public FormChoiceField
 {
   private:
-    static constexpr char const * TAG = "HFormChoice";
+    static constexpr char const * TAG = "HFormChoiceField";
 
   public:
-    using FormChoice::FormChoice;
+    using FormChoiceField::FormChoiceField;
 
-   ~HFormChoice() { }
+   ~HFormChoiceField() { }
 
     void compute_field_pos(Pos from_pos) { 
       field_pos   = from_pos; 
@@ -367,7 +364,7 @@ class HFormChoice : public FormChoice
     static constexpr uint8_t HORIZONTAL_SEPARATOR = 20;
 
     void compute_field_dim() {
-      FormChoice::compute_field_dim();
+      FormChoiceField::compute_field_dim();
       uint16_t separator = 0;
       for (auto * item : items) {
         if (field_dim.height < item->dim.height) field_dim.height = item->dim.height;
@@ -385,6 +382,12 @@ class FormUInt16 : public FormField
 
     void compute_field_pos(Pos from_pos) { 
       field_pos = from_pos; 
+    }
+
+    bool edit(uint16_t x, uint16_t y) {
+      keypad_viewer.show(* (uint16_t *) form_entry.value, field_pos, 0, 9999);
+
+      return false; 
     }
 
     void paint(Page::Format & fmt) {
@@ -425,6 +428,7 @@ class FormDone : public FormField
 
     bool edit(uint16_t x, uint16_t y) { return true; }
 
+    const Dim get_field_dim() { return Dim(field_dim.width, field_dim.height + 10);   }
     void save_value() { }
     void update_highlight() { 
       page.put_rounded(
@@ -447,7 +451,7 @@ class FormDone : public FormField
 
     void compute_field_pos(Pos from_pos) {
       field_pos.x = (Screen::WIDTH / 2) - (field_dim.width / 2);
-      field_pos.y = from_pos.y;
+      field_pos.y = from_pos.y + 10;
     }
 
     void paint(Page::Format & fmt) {
@@ -467,9 +471,9 @@ class FieldFactory
     static FormField * create(FormEntry & entry, Font & font) {
       switch (entry.entry_type) {
         case FormEntryType::HORIZONTAL:
-          return new HFormChoice(entry, font);
+          return new HFormChoiceField(entry, font);
         case FormEntryType::VERTICAL:
-          return new VFormChoice(entry, font);
+          return new VFormChoiceField(entry, font);
         case FormEntryType::UINT16:
           return new FormUInt16(entry, font);
       #if INKPLATE_6PLUS || TOUCH_TRIAL
@@ -618,7 +622,129 @@ class FormViewer
       page.paint(false);
     }
 
-    bool event(const EventMgr::Event & event);
+    bool event(const EventMgr::Event & event) {
+
+      bool completed = false;
+      
+      #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+        switch (event.kind) {
+          case EventMgr::EventKind::TAP:
+            current_field = find_field(event.x, event.y);
+
+            if (current_field != fields.end()) {
+              completed = (*current_field)->edit(event.x, event.y);
+            }
+            break;
+
+          default:
+            break;
+        }
+      #else
+        Fields::iterator old_field = current_field;
+        if (highlighting_field) {
+          switch (event.kind) {
+            case EventMgr::EventKind::DBL_PREV:
+            case EventMgr::EventKind::PREV:
+              if (current_field == fields.begin()) current_field = fields.end();
+              current_field--;
+              break;
+            case EventMgr::EventKind::DBL_NEXT:
+            case EventMgr::EventKind::NEXT:
+              current_field++;
+              if (current_field == fields.end()) current_field = fields.begin();
+              break;
+            case EventMgr::EventKind::SELECT:
+              highlighting_field = false;
+              selecting_field = true;
+              break;
+            case EventMgr::EventKind::NONE:
+              return false;
+            case EventMgr::EventKind::DBL_SELECT:
+              completed = true;
+              break;
+          }
+        }
+        else {
+          (*current_field)->event(event);
+
+          switch (event.kind) {
+            case EventMgr::EventKind::SELECT:
+              highlighting_field = true;
+              old_field = current_field;
+              current_field++;
+              if (current_field == fields.end()) current_field = fields.begin();
+              break;
+            case EventMgr::EventKind::NONE:
+              return false;
+            case EventMgr::EventKind::DBL_SELECT:
+              completed = true;
+              break;
+            default:
+              break;
+          }
+        }
+      #endif
+      
+      Page::Format fmt = {
+        .line_height_factor = 1.0,
+        .font_index         =   5,
+        .font_size          = FORM_FONT_SIZE,
+        .indent             =   0,
+        .margin_left        =   0,
+        .margin_right       =   0,
+        .margin_top         =   0,
+        .margin_bottom      =   0,
+        .screen_left        =  20,
+        .screen_right       =  20,
+        .screen_top         =  TOP_YPOS,
+        .screen_bottom      =  BOTTOM_YPOS,
+        .width              =   0,
+        .height             =   0,
+        .vertical_align     =   0,
+        .trim               = true,
+        .pre                = false,
+        .font_style         = Fonts::FaceStyle::NORMAL,
+        .align              = CSS::Align::LEFT,
+        .text_transform     = CSS::TextTransform::NONE,
+        .display            = CSS::Display::INLINE
+      };
+
+      page.start(fmt);
+
+      if (!completed) {
+
+        if (highlighting_field) {
+          #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+            (*old_field)->show_selected(false);
+            (*current_field)->show_highlighted(true);
+          #endif
+        }
+        else {
+          #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+            if (selecting_field) {
+              selecting_field = false;
+              (*current_field)->show_selected(true);
+            }
+          #endif
+
+          for (auto * field : fields) {
+            field->update_highlight();
+          }
+        }
+
+        page.paint(false);
+      }
+      else {
+        for (auto * field : fields) field->save_value();
+
+        page.clear_region(
+          Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+          Pos(20, TOP_YPOS));
+
+        page.paint(false);
+      }
+      return completed;
+    }
 };
 
 #if __FORM_VIEWER__

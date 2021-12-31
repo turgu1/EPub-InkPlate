@@ -53,20 +53,20 @@ static int8_t old_dir_view;
 #endif
 
 static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Test :",                     &test_data,              0, nullptr,                            FormEntryType::UINT16      },
-  { "Minutes Before Sleeping :",  &timeout,                3, FormChoice::timeout_choices,        FormEntryType::HORIZONTAL  },
-  { "Books Directory View :",     &dir_view,               2, FormChoice::dir_view_choices,       FormEntryType::HORIZONTAL  },
+  { "Test :",                     &test_data,              0, nullptr,                                 FormEntryType::UINT16      },
+  { "Minutes Before Sleeping :",  &timeout,                3, FormChoiceField::timeout_choices,        FormEntryType::HORIZONTAL  },
+  { "Books Directory View :",     &dir_view,               2, FormChoiceField::dir_view_choices,       FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { "uSDCard Position (*):", (int8_t *) &orientation,    4, FormChoice::orientation_choices,    FormEntryType::VERTICAL    },
+    { "uSDCard Position (*):", (int8_t *) &orientation,    4, FormChoiceField::orientation_choices,    FormEntryType::VERTICAL    },
   #else
-    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormChoice::orientation_choices,    FormEntryType::VERTICAL    },
+    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormChoiceField::orientation_choices,    FormEntryType::VERTICAL    },
   #endif
-  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormChoice::resolution_choices,     FormEntryType::HORIZONTAL  },
-  { "Show Battery Level :",       &show_battery,           4, FormChoice::battery_visual_choices, FormEntryType::VERTICAL    },
-  { "Show Title (*):",            &show_title,             2, FormChoice::yes_no_choices,         FormEntryType::HORIZONTAL  },
-  { "Show Heap Sizes :",          &show_heap,              2, FormChoice::yes_no_choices,         FormEntryType::HORIZONTAL  },
+  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormChoiceField::resolution_choices,     FormEntryType::HORIZONTAL  },
+  { "Show Battery Level :",       &show_battery,           4, FormChoiceField::battery_visual_choices, FormEntryType::VERTICAL    },
+  { "Show Title (*):",            &show_title,             2, FormChoiceField::yes_no_choices,         FormEntryType::HORIZONTAL  },
+  { "Show Heap Sizes :",          &show_heap,              2, FormChoiceField::yes_no_choices,         FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                    &done,                   1, FormChoice::done_choices,           FormEntryType::DONE        }
+    { nullptr,                    &done,                   0, nullptr,                                 FormEntryType::DONE        }
   #endif
 };
 
@@ -76,12 +76,12 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   static constexpr int8_t FONT_FORM_SIZE = 4;
 #endif
 static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",      &font_size,          4, FormChoice::font_size_choices, FormEntryType::HORIZONTAL },
-  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
-  { "Default Font (*):",           &default_font,       8, FormChoice::font_choices,      FormEntryType::VERTICAL   },
-  { "Show Images in E-books (*):", &show_images,        2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { "Default Font Size (*):",      &font_size,          4, FormChoiceField::font_size_choices, FormEntryType::HORIZONTAL },
+  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { "Default Font (*):",           &default_font,       8, FormChoiceField::font_choices,      FormEntryType::VERTICAL   },
+  { "Show Images in E-books (*):", &show_images,        2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                     &done,               1, FormChoice::done_choices,      FormEntryType::DONE       }
+    { nullptr,                     &done,               0, nullptr,                            FormEntryType::DONE       }
   #endif
 };
 

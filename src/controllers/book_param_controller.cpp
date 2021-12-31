@@ -44,12 +44,12 @@ static int8_t old_font;
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
 #endif
 static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
-  { "Font Size:",           &font_size,          4, FormChoice::font_size_choices, FormEntryType::HORIZONTAL },
-  { "Use fonts in book:",   &use_fonts_in_book,  2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
-  { "Font:",                &font,               8, FormChoice::font_choices,      FormEntryType::VERTICAL   },
-  { "Show Images in book:", &show_images,        2, FormChoice::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { "Font Size:",           &font_size,          4, FormChoiceField::font_size_choices, FormEntryType::HORIZONTAL },
+  { "Use fonts in book:",   &use_fonts_in_book,  2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { "Font:",                &font,               8, FormChoiceField::font_choices,      FormEntryType::VERTICAL   },
+  { "Show Images in book:", &show_images,        2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,              &done,               1, FormChoice::done_choices,      FormEntryType::DONE       }
+    { nullptr,              &done,               0, nullptr,                            FormEntryType::DONE       }
   #endif
 };
 
