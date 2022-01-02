@@ -11,15 +11,26 @@ enum class ConfigIdent {
   VERSION, SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, 
   USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, 
   SHOW_TITLE, FRONT_LIGHT, DIR_VIEW,
+  #if DATE_TIME_RTC
+    SHOW_RTC,
+  #endif
   #if INKPLATE_6PLUS
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER
   #endif
 };
 
 #if INKPLATE_6PLUS
-  typedef ConfigBase<ConfigIdent, 23> Config;
+  #if DATE_TIME_RTC
+    typedef ConfigBase<ConfigIdent, 24> Config;
+  #else
+    typedef ConfigBase<ConfigIdent, 23> Config;
+  #endif
 #else
-  typedef ConfigBase<ConfigIdent, 16> Config;
+  #if DATE_TIME_RTC
+    typedef ConfigBase<ConfigIdent, 17> Config;
+  #else
+    typedef ConfigBase<ConfigIdent, 16> Config;
+  #endif
 #endif
 
 #if __CONFIG__
@@ -44,6 +55,9 @@ enum class ConfigIdent {
   static int8_t   front_light;
   static int8_t   dir_view;
 
+  #if DATE_TIME_RTC
+    static int8_t show_rtc;
+  #endif
   #if INKPLATE_6PLUS
     static int64_t calib_a, calib_b, calib_c, calib_d, calib_e, calib_f, calib_divider;
     static const int64_t default_calib             =  0;
@@ -63,6 +77,8 @@ enum class ConfigIdent {
   static const int8_t   default_front_light        = 15;  // value between 0 and 63
   static const int8_t   default_dir_view           =  0;  // 0 = linear view, 1 = matrix view
   static const int8_t   the_version                =  1;
+
+  static const int8_t   default_show_rtc           =  0;
 
   // static Config::CfgType conf = {{
 
@@ -85,14 +101,18 @@ enum class ConfigIdent {
     { Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",        &front_light,        &default_front_light,        0 },
     { Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",           &dir_view,           &default_dir_view,           0 },
 
+    #if DATE_TIME_RTC
+    { Config::Ident::SHOW_RTC,           Config::EntryType::BYTE,   "show_rtc",           &show_rtc,           &default_show_rtc,           0 },
+    #endif
+
     #if INKPLATE_6PLUS
-    { Config::Ident::CALIB_A,            Config::EntryType::INT64,    "calib_a",            &calib_a,            &default_calib,              0 },
-    { Config::Ident::CALIB_B,            Config::EntryType::INT64,    "calib_b",            &calib_b,            &default_calib,              0 },
-    { Config::Ident::CALIB_C,            Config::EntryType::INT64,    "calib_c",            &calib_c,            &default_calib,              0 },
-    { Config::Ident::CALIB_D,            Config::EntryType::INT64,    "calib_d",            &calib_d,            &default_calib,              0 },
-    { Config::Ident::CALIB_E,            Config::EntryType::INT64,    "calib_e",            &calib_e,            &default_calib,              0 },
-    { Config::Ident::CALIB_F,            Config::EntryType::INT64,    "calib_f",            &calib_f,            &default_calib,              0 },
-    { Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,    "calib_divider",      &calib_divider,      &default_calib,              0 },
+    { Config::Ident::CALIB_A,            Config::EntryType::INT64,   "calib_a",           &calib_a,            &default_calib,              0 },
+    { Config::Ident::CALIB_B,            Config::EntryType::INT64,   "calib_b",           &calib_b,            &default_calib,              0 },
+    { Config::Ident::CALIB_C,            Config::EntryType::INT64,   "calib_c",           &calib_c,            &default_calib,              0 },
+    { Config::Ident::CALIB_D,            Config::EntryType::INT64,   "calib_d",           &calib_d,            &default_calib,              0 },
+    { Config::Ident::CALIB_E,            Config::EntryType::INT64,   "calib_e",           &calib_e,            &default_calib,              0 },
+    { Config::Ident::CALIB_F,            Config::EntryType::INT64,   "calib_f",           &calib_f,            &default_calib,              0 },
+    { Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,   "calib_divider",     &calib_divider,      &default_calib,              0 },
     #endif
   }};
 

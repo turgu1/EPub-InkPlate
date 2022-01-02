@@ -83,11 +83,3 @@ CommonActions::about()
     "with great support from e-Radionica.",
     APP_VERSION);
 }
-
-#if EPUB_LINUX_BUILD && DEBUGGING
-  void
-  CommonActions::debugging()
-  {
-    menu_viewer.clear_highlight();
-  }
-#endif

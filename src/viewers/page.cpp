@@ -44,7 +44,7 @@ Page::clear_display_list()
   for (auto * entry: display_list) {
     if (entry->command == DisplayListCommand::IMAGE) {
       if (entry->kind.image_entry.image.bitmap) {
-        free(entry->kind.image_entry.image.bitmap);
+        delete [] entry->kind.image_entry.image.bitmap;
       }
     }
     display_list_entry_pool.deleteElement(entry);

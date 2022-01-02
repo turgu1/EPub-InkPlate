@@ -9,6 +9,7 @@
 #include "models/config.hpp"
 #include "models/toc.hpp"
 #include "viewers/page.hpp"
+#include "viewers/screen_bottom.hpp"
 
 #if EPUB_INKPLATE_BUILD
   #include "viewers/battery_viewer.hpp"
@@ -108,42 +109,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
     ypos += ENTRY_HEIGHT;
   }
 
-  Font * font = fonts.get(0);
-
-  fmt.line_height_factor = 1.0;
-  fmt.font_index         = PAGENBR_FONT;
-  fmt.font_size          = PAGENBR_FONT_SIZE;
-  fmt.font_style         = Fonts::FaceStyle::NORMAL;
-  fmt.align              = CSS::Align::CENTER;
-  fmt.screen_left        = 10;
-  fmt.screen_right       = 10; 
-  fmt.screen_top         = 10;
-  fmt.screen_bottom      = 10;
-
-  page.set_limits(fmt);
-
-  std::ostringstream ostr;
-  ostr << page_nbr + 1 << " / " << page_count;
-
-  page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
-
-  #if EPUB_INKPLATE_BUILD
-    int8_t show_heap;
-    config.get(Config::Ident::SHOW_HEAP, &show_heap);
-
-    if (show_heap != 0) {
-      ostr.str(std::string());
-      ostr << uxTaskGetStackHighWaterMark(nullptr)
-           << " / "
-           << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
-           << " / " 
-           << heap_caps_get_free_size(MALLOC_CAP_8BIT);
-      fmt.align = CSS::Align::RIGHT;
-      page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(PAGENBR_FONT_SIZE) - 2), fmt);
-    }
-
-    BatteryViewer::show();
-  #endif
+  ScreenBottom::show(page_nbr, page_count);
 
   page.paint();
 }

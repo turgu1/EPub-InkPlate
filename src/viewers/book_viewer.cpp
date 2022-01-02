@@ -9,6 +9,7 @@
 #include "models/config.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/html_interpreter.hpp"
+#include "viewers/screen_bottom.hpp"
 #include "models/image_factory.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -163,33 +164,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
           page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, 25), fmt);
         }
 
-        if ((page_nbr != -1) && (page_count != -1)) {
-          ostr.str(std::string());
-          ostr << page_nbr + 1 << " / " << page_count;
-          page.put_str_at(ostr.str(), 
-                          Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(9) - 2), 
-                          fmt);
-        }
-
-        #if EPUB_INKPLATE_BUILD
-          int8_t show_heap;
-          config.get(Config::Ident::SHOW_HEAP, &show_heap);
-
-          if (show_heap != 0) {     
-            ostr.str(std::string());
-            ostr << uxTaskGetStackHighWaterMark(nullptr)
-                 << " / "
-                 << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) 
-                 << " / " 
-                 << heap_caps_get_free_size(MALLOC_CAP_8BIT);
-            fmt.align = CSS::Align::RIGHT;
-            page.put_str_at(ostr.str(), 
-                            Pos(Page::HORIZONTAL_CENTER, Screen::HEIGHT + font->get_descender_height(9) - 2), 
-                            fmt);
-          }
-
-          BatteryViewer::show();
-        #endif
+        ScreenBottom::show(page_nbr, page_count);
 
         page.paint();
       }

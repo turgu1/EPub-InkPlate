@@ -16,6 +16,9 @@ class OptionController
     bool font_form_is_shown;
     bool books_refresh_needed;
 
+    #if DATE_TIME_RTC
+      bool date_time_form_is_shown;
+    #endif
     #if INKPLATE_6PLUS
       bool calibration_is_shown;
     #endif
@@ -26,6 +29,9 @@ class OptionController
     OptionController() : main_form_is_shown(false), 
                          font_form_is_shown(false),
                          books_refresh_needed(false), 
+                         #if DATE_TIME_RTC
+                           date_time_form_is_shown(false),
+                         #endif
                          #if INKPLATE_6PLUS
                            calibration_is_shown(false),
                          #endif
@@ -36,19 +42,26 @@ class OptionController
     void          leave(bool going_to_deep_sleep = false);
     void set_font_count(uint8_t count);
      
-    inline void set_main_form_is_shown() { main_form_is_shown = true; }
-    inline void set_font_form_is_shown() { font_form_is_shown = true; }
+    inline void        set_main_form_is_shown() { main_form_is_shown      = true; }
+    inline void        set_font_form_is_shown() { font_form_is_shown      = true; }
+
+    #if DATE_TIME_RTC
+      inline void set_date_time_form_is_shown() { date_time_form_is_shown = true; }
+    #endif
 
     #if INKPLATE_6PLUS
-      inline void set_calibration_is_shown() { calibration_is_shown = true; }
+      inline void    set_calibration_is_shown() { calibration_is_shown    = true; }
     #endif
 
     inline void set_wait_for_key_after_wifi() { 
-      wait_for_key_after_wifi = true; 
-      main_form_is_shown      = false;
-      font_form_is_shown      = false;
+      wait_for_key_after_wifi   = true; 
+      main_form_is_shown        = false;
+      font_form_is_shown        = false;
+      #if DATE_TIME_RTC
+        date_time_form_is_shown = false;
+      #endif
       #if INKPLATE_6PLUS
-        calibration_is_shown  = false;
+        calibration_is_shown    = false;
       #endif
     }
 };

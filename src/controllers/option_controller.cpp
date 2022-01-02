@@ -24,18 +24,16 @@
 
 static Screen::Orientation     orientation;
 static Screen::PixelResolution  resolution;
+
 static int8_t show_battery;
 static int8_t timeout;
 static int8_t show_images;
 static int8_t font_size;
 static int8_t use_fonts_in_books;
 static int8_t default_font;
-static int8_t show_heap;
 static int8_t show_title;
 static int8_t dir_view;
 static int8_t done;
-
-static uint16_t test_data = 0;
 
 static Screen::Orientation     old_orientation;
 static Screen::PixelResolution  old_resolution;
@@ -46,29 +44,40 @@ static int8_t old_default_font;
 static int8_t old_show_title;
 static int8_t old_dir_view;
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
-  static constexpr int8_t MAIN_FORM_SIZE = 9;
+#if DATE_TIME_RTC
+  static int8_t show_heap_or_rtc;
+  static uint16_t year;
+  static uint16_t month, day, hour, minute, second;
 #else
+  static int8_t show_heap;
+#endif
+
+#if INKPLATE_6PLUS || TOUCH_TRIAL
   static constexpr int8_t MAIN_FORM_SIZE = 8;
+#else
+  static constexpr int8_t MAIN_FORM_SIZE = 7;
 #endif
 
 static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
-  { "Test :",                     &test_data,              0, nullptr,                                 FormEntryType::UINT16      },
-  { "Minutes Before Sleeping :",  &timeout,                3, FormChoiceField::timeout_choices,        FormEntryType::HORIZONTAL  },
-  { "Books Directory View :",     &dir_view,               2, FormChoiceField::dir_view_choices,       FormEntryType::HORIZONTAL  },
+  { .caption = "Minutes Before Sleeping :",  .u = { .ch = { .value = &timeout,                .choice_count = 3, .choices = FormChoiceField::timeout_choices        } }, .entry_type = FormEntryType::HORIZONTAL  },
+  { .caption = "Books Directory View :",     .u = { .ch = { .value = &dir_view,               .choice_count = 2, .choices = FormChoiceField::dir_view_choices       } }, .entry_type = FormEntryType::HORIZONTAL  },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { "uSDCard Position (*):", (int8_t *) &orientation,    4, FormChoiceField::orientation_choices,    FormEntryType::VERTICAL    },
+    { .caption = "uSDCard Position (*):",    .u = { .ch = { .value = (int8_t *) &orientation, .choice_count = 4, .choices = FormChoiceField::orientation_choices    } }, .entry_type = FormEntryType::VERTICAL    },
   #else
-    { "Buttons Position (*):",    (int8_t *) &orientation, 3, FormChoiceField::orientation_choices,    FormEntryType::VERTICAL    },
+    { .caption = "Buttons Position (*):",    .u = { .ch = { .value = (int8_t *) &orientation, .choice_count = 3, .choices = FormChoiceField::orientation_choices    } }, .entry_type = FormEntryType::VERTICAL    },
   #endif
-  { "Pixel Resolution :",         (int8_t *) &resolution,  2, FormChoiceField::resolution_choices,     FormEntryType::HORIZONTAL  },
-  { "Show Battery Level :",       &show_battery,           4, FormChoiceField::battery_visual_choices, FormEntryType::VERTICAL    },
-  { "Show Title (*):",            &show_title,             2, FormChoiceField::yes_no_choices,         FormEntryType::HORIZONTAL  },
-  { "Show Heap Sizes :",          &show_heap,              2, FormChoiceField::yes_no_choices,         FormEntryType::HORIZONTAL  },
+  { .caption = "Pixel Resolution :",         .u = { .ch = { .value = (int8_t *) &resolution,  .choice_count = 2, .choices = FormChoiceField::resolution_choices     } }, .entry_type = FormEntryType::HORIZONTAL  },
+  { .caption = "Show Battery Level :",       .u = { .ch = { .value = &show_battery,           .choice_count = 4, .choices = FormChoiceField::battery_visual_choices } }, .entry_type = FormEntryType::VERTICAL    },
+  { .caption = "Show Title (*):",            .u = { .ch = { .value = &show_title,             .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
+  #if DATE_TIME_RTC
+    { .caption = "Right Bottom Corner :",    .u = { .ch = { .value = &show_heap_or_rtc,       .choice_count = 3, .choices = FormChoiceField::right_corner_choices   } }, .entry_type = FormEntryType::HORIZONTAL  },
+  #else
+    { .caption = "Show Heap Sizes :",        .u = { .ch = { .value = &show_heap,              .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
+  #endif
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                    &done,                   0, nullptr,                                 FormEntryType::DONE        }
+    { .caption = nullptr,                    .u = { .ch = { .value = &done,                   .choice_count = 0, .choices = nullptr                                 } }, .entry_type = FormEntryType::DONE        }
   #endif
-};
+ };
 
 #if INKPLATE_6PLUS || TOUCH_TRIAL
   static constexpr int8_t FONT_FORM_SIZE = 5;
@@ -76,14 +85,35 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   static constexpr int8_t FONT_FORM_SIZE = 4;
 #endif
 static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
-  { "Default Font Size (*):",      &font_size,          4, FormChoiceField::font_size_choices, FormEntryType::HORIZONTAL },
-  { "Use Fonts in E-books (*):",   &use_fonts_in_books, 2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
-  { "Default Font (*):",           &default_font,       8, FormChoiceField::font_choices,      FormEntryType::VERTICAL   },
-  { "Show Images in E-books (*):", &show_images,        2, FormChoiceField::yes_no_choices,    FormEntryType::HORIZONTAL },
+  { .caption = "Default Font Size (*):",      .u = { .ch = { .value = &font_size,          .choice_count = 4, .choices = FormChoiceField::font_size_choices } }, .entry_type = FormEntryType::HORIZONTAL },
+  { .caption = "Use Fonts in E-books (*):",   .u = { .ch = { .value = &use_fonts_in_books, .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
+  { .caption = "Default Font (*):",           .u = { .ch = { .value = &default_font,       .choice_count = 8, .choices = FormChoiceField::font_choices      } }, .entry_type = FormEntryType::VERTICAL   },
+  { .caption = "Show Images in E-books (*):", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { nullptr,                     &done,               0, nullptr,                            FormEntryType::DONE       }
+    { .caption = nullptr,                     .u = { .ch = { .value = &done,               .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
   #endif
 };
+
+#if DATE_TIME_RTC
+  #if INKPLATE_6PLUS || TOUCH_TRIAL
+    static constexpr int8_t DATE_TIME_FORM_SIZE = 7;
+  #else
+    static constexpr int8_t DATE_TIME_FORM_SIZE = 6;
+  #endif
+
+  static FormEntry date_time_form_entries[DATE_TIME_FORM_SIZE] = {
+    { .caption = "Year :",   .u = { .val = { .value = &year,   .min = 2022, .max = 2099              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Month :",  .u = { .val = { .value = &month,  .min =    1, .max =   12              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Day :",    .u = { .val = { .value = &day,    .min =    1, .max =   31              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Hour :",   .u = { .val = { .value = &hour,   .min =    0, .max =   23              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Minute :", .u = { .val = { .value = &minute, .min =    0, .max =   59              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Second :", .u = { .val = { .value = &second, .min =    0, .max =   59              } }, .entry_type = FormEntryType::UINT16  },
+
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
+      { .caption = nullptr,  .u = { .ch  = { .value = &done,   .choice_count = 0, .choices = nullptr } }, .entry_type = FormEntryType::DONE    }
+    #endif
+  };
+#endif
 
 extern bool start_web_server();
 extern bool  stop_web_server();
@@ -96,8 +126,17 @@ main_parameters()
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution );
   config.get(Config::Ident::BATTERY,          &show_battery          );
   config.get(Config::Ident::SHOW_TITLE,       &show_title            );
-  config.get(Config::Ident::SHOW_HEAP,        &show_heap             );
   config.get(Config::Ident::TIMEOUT,          &timeout               );
+
+  #if DATE_TIME_RTC
+    int8_t show_heap, show_rtc;
+    config.get(Config::Ident::SHOW_RTC,       &show_rtc              );
+    config.get(Config::Ident::SHOW_HEAP,      &show_heap             );
+
+    show_heap_or_rtc = (show_rtc != 0) ? 1 : ((show_heap != 0) ? 2 : 0);
+  #else
+    config.get(Config::Ident::SHOW_HEAP,      &show_heap             );
+  #endif
 
   old_orientation = orientation;
   old_dir_view    = dir_view;
@@ -186,10 +225,52 @@ init_nvs()
     event_mgr.show_calibration();
     option_controller.set_calibration_is_shown();
   }
+#endif
 
+#if DATE_TIME_RTC
   static void 
-  clock_adjust()
+  clock_adjust_form()
   {
+    #if INKPLATE_6PLUS
+      constexpr uint8_t DD[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+      RTC::WeekDay tmp;
+      uint8_t m, d, h, mm, s;
+      rtc.get_date_time(year, m, d, h, mm, s, tmp);
+      if ((year < 2022) || (year > 2099)) year = 2022;
+      month  = ((m < 1) || (m > 12)) ? 1 : m;
+
+      uint8_t max = ((m != 2) || ((year & 3) != 0)) ? DD[m - 1] : 29;
+
+      day    = ((d < 1) || (d > max)) ? 1 : d;
+      hour   =  (h > 23) ? 12 :  h;
+      minute =  (mm > 59) ? 0 : mm;
+      second =  (s  > 59) ? 0 :  s;
+    #endif
+
+    form_viewer.show(date_time_form_entries, DATE_TIME_FORM_SIZE, "Hour is in 24 hours format.");
+    option_controller.set_date_time_form_is_shown();
+  }
+
+  static void
+  set_clock()
+  {
+    #if INKPLATE_6PLUS
+      auto dow = [=](uint16_t y, uint16_t m, uint16_t d) { 
+        RTC::WeekDay wd = (RTC::WeekDay)((d += m < 3 ? y-- : y - 2, 23*m/9 + d + 4 + y/4- y/100 + y/400) % 7); 
+        return wd;
+      };
+      rtc.set_date_time(year, month, day, hour, minute, second, dow(year, month, day));
+    #endif
+  }
+#endif
+
+#if EPUB_LINUX_BUILD && DEBUGGING
+  void
+  debugging()
+  {
+    #if DATE_TIME_RTC
+      clock_adjust_form();
+    #endif
   }
 #endif
 
@@ -208,7 +289,7 @@ static MenuViewer::MenuEntry menu[] = {
     { MenuViewer::Icon::REVERT,    "Clear e-books' read history",         init_nvs                          , true,  true  },
   #endif
   #if EPUB_LINUX_BUILD && DEBUGGING
-    { MenuViewer::Icon::DEBUG,     "Debugging",                            CommonActions::debugging         , true,  true  },
+    { MenuViewer::Icon::DEBUG,     "Debugging",                            debugging                        , true,  true  },
   #endif
   { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
   { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
@@ -221,8 +302,10 @@ static MenuViewer::MenuEntry menu[] = {
 #if INKPLATE_6PLUS
 static MenuViewer::MenuEntry sub_menu[] = {
   { MenuViewer::Icon::PREV_MENU,    "Previous options",                    goto_prev                        , true,  true  },
-  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
-  { MenuViewer::Icon::CLOCK,        "Time/Date adjustments",               clock_adjust                     , true,  true  },
+  { MenuViewer::Icon::RETURN,       "Return to the e-books list",          CommonActions::return_to_last    , true,  true  },
+  #if DATE_TIME_RTC
+    { MenuViewer::Icon::CLOCK,      "Set Date/Time",                       clock_adjust_form                , true,  true  },
+  #endif
   { MenuViewer::Icon::CALIB,        "Touch Screen Calibration",            calibrate                        , true,  false },
   { MenuViewer::Icon::REVERT,       "Clear e-books' read history",         init_nvs                         , true,  true  },
   { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
@@ -232,7 +315,7 @@ static MenuViewer::MenuEntry sub_menu[] = {
 void
 OptionController::set_font_count(uint8_t count)
 {
-  font_params_form_entries[2].choice_count = count;
+  font_params_form_entries[2].u.ch.choice_count = count;
 }
 
 void 
@@ -274,8 +357,15 @@ OptionController::input_event(const EventMgr::Event & event)
         config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
         config.put(Config::Ident::BATTERY,          show_battery        );
         config.put(Config::Ident::SHOW_TITLE,       show_title          );
-        config.put(Config::Ident::SHOW_HEAP,        show_heap           );
         config.put(Config::Ident::TIMEOUT,          timeout             );
+
+        #if DATE_TIME_RTC
+          config.put(Config::Ident::SHOW_HEAP,      (int8_t)(show_heap_or_rtc == 2 ? 1 : 0));
+          config.put(Config::Ident::SHOW_RTC,       (int8_t)(show_heap_or_rtc == 1 ? 1 : 0));
+        #else
+          config.put(Config::Ident::SHOW_HEAP,      show_heap           );
+        #endif
+
         config.save();
 
         if (old_orientation != orientation) {
@@ -339,6 +429,16 @@ OptionController::input_event(const EventMgr::Event & event)
       menu_viewer.clear_highlight();
     }
   }
+
+  #if DATE_TIME_RTC
+    else if (date_time_form_is_shown) {
+      if (form_viewer.event(event)) {
+        date_time_form_is_shown = false;
+        menu_viewer.clear_highlight();
+        set_clock();
+      }
+    }
+  #endif
 
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {

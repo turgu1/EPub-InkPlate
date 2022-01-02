@@ -16,10 +16,8 @@ class LinearBooksDirViewer : public BooksDirViewer
 
     static const int16_t TITLE_FONT            =  5;
     static const int16_t AUTHOR_FONT           =  6;
-    static const int16_t PAGENBR_FONT          =  5;
     static const int16_t TITLE_FONT_SIZE       = 11;
     static const int16_t AUTHOR_FONT_SIZE      =  9;
-    static const int16_t PAGENBR_FONT_SIZE     =  9;
     static const int16_t FIRST_ENTRY_YPOS      =  5;
     static const int16_t SPACE_BETWEEN_ENTRIES =  6;
     static const int16_t MAX_TITLE_SIZE        = 85;
@@ -30,8 +28,8 @@ class LinearBooksDirViewer : public BooksDirViewer
     int16_t books_per_page;
     int16_t page_count;
 
-    void       show_page(int16_t page_nbr, int16_t hightlight_item_idx);
-    void       highlight(int16_t item_idx);
+    void  show_page(int16_t page_nbr, int16_t hightlight_item_idx);
+    void  highlight(int16_t item_idx);
 
   public:
 

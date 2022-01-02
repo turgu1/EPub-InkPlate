@@ -18,3 +18,10 @@ FormChoice FormChoiceField::font_choices[8] = {
   { nullptr, 6 },
   { nullptr, 7 }
 };
+
+bool 
+FormDone::event(const EventMgr::Event & event) 
+{ 
+  form_viewer.set_completed(true); 
+  return false; 
+}

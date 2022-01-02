@@ -28,9 +28,18 @@ struct FormChoice {
 
 struct FormEntry {
   const char       * caption;
-  void             * value;
-  int8_t             choice_count;
-  const FormChoice * choices;
+  union {
+    struct {
+      int8_t           * value;
+      int8_t             choice_count;
+      const FormChoice * choices;
+    } ch;
+    struct {
+      uint16_t * value;
+      uint16_t   min;
+      uint16_t   max;
+    } val;
+  } u;
   FormEntryType      entry_type;
 };
 
@@ -63,53 +72,47 @@ class FormField
     virtual void  update_highlight()                              = 0;
     virtual void        save_value()                              = 0;
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-      virtual void  event(const EventMgr::Event & event)          = 0;
-    #else
-      virtual bool edit(uint16_t x, uint16_t y) { return false; }
-    #endif
+    virtual bool  event(const EventMgr::Event & event) { return false; }
 
-    
     void compute_caption_pos(Pos from_pos) {
-      caption_pos = { (uint16_t)(from_pos.x - caption_dim.width), 
-                      (uint16_t)(from_pos.y) };
+      caption_pos = Pos(from_pos.x - caption_dim.width, from_pos.y);
     }
 
     void show_highlighted(bool show_it) {
       if (show_it) {
         page.put_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
-                           Pos(field_pos.x - 10, field_pos.y - 10));
+                           Pos(field_pos.x     - 10, field_pos.y      - 10));
       }
       else {
         page.clear_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
-                             Pos(field_pos.x - 10, field_pos.y - 10));
+                             Pos(field_pos.x     - 10, field_pos.y      - 10));
       }
     }
 
     void show_selected(bool show_it) {
       if (show_it) {
         page.put_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
-                           Pos(field_pos.x - 10, field_pos.y - 10));
+                           Pos(field_pos.x     - 10, field_pos.y      - 10));
         page.put_highlight(Dim(field_dim.width + 22, field_dim.height + 22),
-                           Pos(field_pos.x - 11, field_pos.y - 11));
+                           Pos(field_pos.x     - 11, field_pos.y      - 11));
         page.put_highlight(Dim(field_dim.width + 24, field_dim.height + 24),
-                           Pos(field_pos.x - 12, field_pos.y - 12));
+                           Pos(field_pos.x     - 12, field_pos.y      - 12));
       }
       else {
         page.clear_highlight(Dim(field_dim.width + 20, field_dim.height + 20),
-                             Pos(field_pos.x -10, field_pos.y - 10));
+                             Pos(field_pos.x     - 10, field_pos.y      - 10));
         page.clear_highlight(Dim(field_dim.width + 22, field_dim.height + 22),
-                             Pos(field_pos.x -11, field_pos.y - 11));
+                             Pos(field_pos.x     - 11, field_pos.y      - 11));
         page.clear_highlight(Dim(field_dim.width + 24, field_dim.height + 24),
-                             Pos(field_pos.x -12, field_pos.y - 12));
+                             Pos(field_pos.x     - 12, field_pos.y      - 12));
       }
     }
 
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
       inline bool is_pointed(uint16_t x, uint16_t y) {
         return (x >= (field_pos.x - 10)) && 
-               (x <= (field_pos.x + field_dim.width + 10)) &&
                (y >= (field_pos.y - 10)) &&
+               (x <= (field_pos.x + field_dim.width  + 10)) &&
                (y <= (field_pos.y + field_dim.height + 10));
       } 
 
@@ -167,6 +170,14 @@ class FormChoiceField : public FormField
       { "15",        15 }
     };
 
+    #if DATE_TIME_RTC
+      static constexpr FormChoice right_corner_choices[3] = {
+        { "NONE",        0 },
+        { "DATE TIME",   1 },
+        { "HEAP INFO",   2 }
+      };
+    #endif
+
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
       static constexpr FormChoice orientation_choices[4] = {
         { "LEFT",     3 },
@@ -187,16 +198,16 @@ class FormChoiceField : public FormField
 
     void compute_field_dim() {
       field_dim = { 0, 0 };
-      for (int8_t i = 0; i < form_entry.choice_count; i++) {
+      for (int8_t i = 0; i < form_entry.u.ch.choice_count; i++) {
         Item * item = item_pool.newElement();
         items.push_back(item);
-        font.get_size(form_entry.choices[i].caption, &item->dim, FORM_FONT_SIZE);
+        font.get_size(form_entry.u.ch.choices[i].caption, &item->dim, FORM_FONT_SIZE);
         item->idx = i;
       }
 
       int i = 0;
       for (Items::iterator it = items.begin(); it != items.end(); it++) {
-        if (form_entry.choices[i].value == * (uint8_t *) form_entry.value) {
+        if (form_entry.u.ch.choices[i].value == * form_entry.u.ch.value) {
           current_item = it;
           break;
         }
@@ -219,18 +230,32 @@ class FormChoiceField : public FormField
       uint8_t       offset = -glyph->yoff;
      
       page.put_str_at(form_entry.caption, 
-                      { caption_pos.x, (uint16_t)(caption_pos.y + offset) }, 
+                      Pos(caption_pos.x, caption_pos.y + offset), 
                       fmt);
       for (auto * item : items) {
-        page.put_str_at(form_entry.choices[item->idx].caption, 
-                        { item->pos.x, (uint16_t)(item->pos.y + offset) }, 
+        page.put_str_at(form_entry.u.ch.choices[item->idx].caption, 
+                        Pos(item->pos.x, item->pos.y + offset), 
                         fmt);
       }
     }
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-
-      void event(const EventMgr::Event & event) {
+    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+      bool event(const EventMgr::Event & event) {
+        old_item = current_item;
+        Items::iterator it;
+        for (it = items.begin(); it != items.end(); it++) {
+          if ((event.x >= (*it)->pos.x - 5) && 
+              (event.y >= (*it)->pos.y - 5) && 
+              (event.x <= ((*it)->pos.x + (*it)->dim.width  + 5)) &&
+              (event.y <= ((*it)->pos.y + (*it)->dim.height + 5))) {
+            break;
+          }
+        }
+        if (it != items.end()) current_item = it;
+        return false;
+      }
+    #else
+      bool event(const EventMgr::Event & event) {
         old_item = current_item;
         switch (event.kind) {
           case EventMgr::EventKind::DBL_PREV:
@@ -246,18 +271,6 @@ class FormChoiceField : public FormField
           default:
             break;
         }
-      }
-    #else
-      bool edit(uint16_t x, uint16_t y) {
-        old_item = current_item;
-        Items::iterator it;
-        for (it = items.begin(); it != items.end(); it++) {
-          if ((x >= (*it)->pos.x - 5) && (x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
-              (y >= (*it)->pos.y - 5) && (y <= ((*it)->pos.y + (*it)->dim.height) + 5)) {
-            break;
-          }
-        }
-        if (it != items.end()) current_item = it;
         return false;
       }
     #endif
@@ -275,7 +288,7 @@ class FormChoiceField : public FormField
     }
 
     void save_value() {
-      * (int8_t *) form_entry.value = form_entry.choices[(*current_item)->idx].value; 
+      * form_entry.u.ch.value = form_entry.u.ch.choices[(*current_item)->idx].value; 
     }
 
   protected:
@@ -333,7 +346,7 @@ class VFormChoiceField : public FormChoiceField
       for (auto * item : items) {
         if (field_dim.width < item->dim.width) field_dim.width = item->dim.width;
         field_dim.height += line_height;
-        last_height = item->dim.height;
+        last_height       = item->dim.height;
         LOG_D("Item dimension: [%d, %d]", item->dim.width, item->dim.height);
       }
       field_dim.height += last_height - line_height;
@@ -377,6 +390,9 @@ class HFormChoiceField : public FormChoiceField
 
 class FormUInt16 : public FormField
 {
+  private:
+    bool keypad_shown;
+
   public:
     using FormField::FormField;
 
@@ -384,29 +400,56 @@ class FormUInt16 : public FormField
       field_pos = from_pos; 
     }
 
-    bool edit(uint16_t x, uint16_t y) {
-      keypad_viewer.show(* (uint16_t *) form_entry.value, field_pos, 0, 9999);
-
-      return false; 
-    }
-
     void paint(Page::Format & fmt) {
       char val[8];
       Font::Glyph * glyph  =  font.get_glyph('M', FORM_FONT_SIZE);
       uint8_t       offset = -glyph->yoff;
 
-      int_to_str(* (uint16_t *) form_entry.value, val, 8);
+      uint16_t v = * form_entry.u.val.value;
+      if (v < form_entry.u.val.min) {
+        v = form_entry.u.val.min;
+      }
+      else if (v > form_entry.u.val.max) {
+        v = form_entry.u.val.max;
+      }
+      * form_entry.u.val.value = v;
+
+      int_to_str(v, val, 8);
       page.put_str_at(form_entry.caption, 
-                      { caption_pos.x, (uint16_t)(caption_pos.y + offset) }, 
+                      Pos(caption_pos.x, caption_pos.y + offset), 
                       fmt);
       page.put_str_at(val, 
-                      { field_pos.x, (uint16_t)(field_pos.y + offset) }, 
+                      Pos(field_pos.x, field_pos.y + offset), 
                       fmt);
+      keypad_shown = false;
     }
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
-      void event(const EventMgr::Event & event) { 
+    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+      bool event(const EventMgr::Event & event) {
+        if (!keypad_shown) {
+          keypad_viewer.show(* form_entry.u.val.value, form_entry.caption);
+          keypad_shown = true;
+        }
+        else {
+          if (!keypad_viewer.event(event)) {
+            uint16_t v = keypad_viewer.get_value();
+            if (v < form_entry.u.val.min) {
+              v = form_entry.u.val.min;
+            }
+            else if (v > form_entry.u.val.max) {
+              v = form_entry.u.val.max;
+            }
+            * form_entry.u.val.value = v;
+            keypad_shown = false;
+            return false;
+          }
+        }
+        return true;
       }
+    #else
+      bool event(const EventMgr::Event & event) {
+        return false;
+      }  
     #endif
 
     void update_highlight() {
@@ -426,7 +469,7 @@ class FormDone : public FormField
   public:
     using FormField::FormField;
 
-    bool edit(uint16_t x, uint16_t y) { return true; }
+    bool event(const EventMgr::Event & event);
 
     const Dim get_field_dim() { return Dim(field_dim.width, field_dim.height + 10);   }
     void save_value() { }
@@ -459,7 +502,7 @@ class FormDone : public FormField
       uint8_t       offset = -glyph->yoff;
 
       page.put_str_at(" DONE ", 
-                      { field_pos.x, (uint16_t)(field_pos.y + offset) }, 
+                      Pos(field_pos.x, field_pos.y + offset), 
                       fmt);
     }
 };
@@ -473,7 +516,12 @@ class FieldFactory
         case FormEntryType::HORIZONTAL:
           return new HFormChoiceField(entry, font);
         case FormEntryType::VERTICAL:
-          return new VFormChoiceField(entry, font);
+          if ((screen.WIDTH > screen.HEIGHT) && (entry.u.ch.choice_count <= 4)) {
+            return new HFormChoiceField(entry, font);
+          }
+          else {
+            return new VFormChoiceField(entry, font);
+          }
         case FormEntryType::UINT16:
           return new FormUInt16(entry, font);
       #if INKPLATE_6PLUS || TOUCH_TRIAL
@@ -487,18 +535,25 @@ class FieldFactory
 
 class FormViewer
 {
+  public:
+    typedef FormEntry * FormEntries;
+
   private:
     static constexpr char const * TAG = "FormViewer";
 
     static constexpr uint8_t TOP_YPOS         = 100;
     static constexpr uint8_t BOTTOM_YPOS      =  50;
 
-    uint8_t entry_count;
-    int16_t all_fields_width;
+    FormEntries  form_entries;
+    uint8_t      size;
+    const char * bottom_msg;
+
+    int16_t all_fields_width, all_captions_width;
     // int16_t last_choices_width;
     int8_t  line_height;
     bool    highlighting_field;
     bool    selecting_field;
+    bool    completed;
 
     typedef std::list<FormField *> Fields;
     
@@ -518,10 +573,13 @@ class FormViewer
 
   public:
 
-    typedef FormEntry * FormEntries;
+    void set_completed(bool value) { completed = value; }
 
+    void show(FormEntries _form_entries, int8_t _size, const char * _bottom_msg) {
 
-    void show(FormEntries form_entries, int8_t size, const std::string & bottom_msg) {
+      form_entries = _form_entries;
+      size         = _size;
+      bottom_msg   = _bottom_msg;
 
       Font * font =  fonts.get(5);
 
@@ -540,14 +598,22 @@ class FormViewer
         }
       }
 
-      all_fields_width = 0;
+      all_fields_width = all_captions_width = 0;
+
+      int16_t width;
+      
       for (auto * field : fields) {
-        int16_t width = field->get_field_dim().width;
+        width = field->get_field_dim().width;
         if (width > all_fields_width) all_fields_width = width;
+        
+        width = field->get_caption_dim().width;
+        if (width > all_captions_width) all_captions_width = width;
       }
 
+      width = all_captions_width + all_fields_width + 35;
+      const int16_t right_xpos    = (Screen::WIDTH >> 1) + (width >> 1);
+
       int16_t       current_ypos  = TOP_YPOS + 20;
-      const int16_t right_xpos    = Screen::WIDTH - 60;
       int16_t       caption_right = right_xpos - all_fields_width - 35;
       int16_t       field_left    = right_xpos - all_fields_width - 10;
 
@@ -560,7 +626,7 @@ class FormViewer
               field->get_field_pos().x, field->get_field_pos().y);
       }
 
-      Pos bottom_msg_pos = { 40, (uint16_t)(current_ypos + 30) };
+      Pos bottom_msg_pos = Pos(40, current_ypos + 30);
       // Display the form
 
       Page::Format fmt = {
@@ -608,13 +674,13 @@ class FormViewer
 
       page.put_str_at(bottom_msg, bottom_msg_pos, fmt);
 
-      current_field = fields.begin();
-
       selecting_field = false;
 
       #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+        current_field = fields.end();
         highlighting_field = false;
       #else
+        current_field = fields.begin();
         highlighting_field = true;
         (*current_field)->show_highlighted(true);
       #endif
@@ -624,20 +690,34 @@ class FormViewer
 
     bool event(const EventMgr::Event & event) {
 
-      bool completed = false;
+      completed = false;
       
       #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-        switch (event.kind) {
-          case EventMgr::EventKind::TAP:
-            current_field = find_field(event.x, event.y);
+        if (current_field != fields.end()) {
+          if (!(*current_field)->event(event)) {
+            show(form_entries, size, bottom_msg);
+            current_field = fields.end();
+          }
+          return false;
+        }
+        else {
+          switch (event.kind) {
+            case EventMgr::EventKind::TAP:
+              current_field = find_field(event.x, event.y);
 
-            if (current_field != fields.end()) {
-              completed = (*current_field)->edit(event.x, event.y);
-            }
-            break;
+              if (current_field != fields.end()) {
+                if ((*current_field)->event(event)) {
+                  return false;
+                }
+                else {
+                  current_field = fields.end();
+                }
+              }
+              break;
 
-          default:
-            break;
+            default:
+              break;
+          }
         }
       #else
         Fields::iterator old_field = current_field;
@@ -743,6 +823,7 @@ class FormViewer
 
         page.paint(false);
       }
+
       return completed;
     }
 };

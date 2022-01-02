@@ -268,6 +268,33 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
     for (int i = 0; i < 3; i++) cross_hair(calib_point.x[i], calib_point.y[i]);
 
+    Page::Format fmt = {
+      .line_height_factor =   1.0,
+      .font_index         =     5,
+      .font_size          =     9,
+      .indent             =     0,
+      .margin_left        =     5,
+      .margin_right       =     5,
+      .margin_top         =     0,
+      .margin_bottom      =     0,
+      .screen_left        =    20,
+      .screen_right       =    20,
+      .screen_top         =     0,
+      .screen_bottom      =     0,
+      .width              =     0,
+      .height             =     0,
+      .vertical_align     =     0,
+      .trim               =  true,
+      .pre                = false,
+      .font_style         = Fonts::FaceStyle::NORMAL,
+      .align              = CSS::Align::CENTER,
+      .text_transform     = CSS::TextTransform::NONE,
+      .display            = CSS::Display::INLINE
+    };
+
+    page.put_str_at("Touch Sensor Calibration", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 50), fmt);
+    page.put_str_at("Please TAP once on each crosshair to calibrate.", Pos(screen.WIDTH >> 1, screen.HEIGHT >> 1), fmt);
+
     calib_count = 0;
     page.paint();
   }

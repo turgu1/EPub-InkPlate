@@ -1,7 +1,7 @@
 char * 
 int_to_str(int v, char * buffer, char size)
 {
-  char * str  = buffer;
+  char * str  = &buffer[size-1];
   bool   sign = v < 0;
 
   if (sign) v = -v;
