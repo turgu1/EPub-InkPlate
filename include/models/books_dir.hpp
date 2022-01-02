@@ -11,6 +11,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "helpers/simple_db.hpp"
 
@@ -107,7 +108,7 @@ class BooksDir
      */
     const EBookRecord *               get_book_data(uint16_t idx);
     const EBookRecord * get_book_data_from_db_index(uint16_t idx);
-    bool                                get_book_id(uint16_t idx, uint32_t & id);
+    bool                                get_book_id(uint16_t idx, uint32_t & id );
     bool                             get_book_index(uint32_t id,  uint16_t & idx);
     void                            set_track_order(uint32_t id,  int8_t     pos);
 

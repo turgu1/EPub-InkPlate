@@ -230,7 +230,7 @@ class CSS
           class_list.push_front(class_name);
           class_count += 1;
         }
-        void add_id(std::string the_id) {
+        void add_id(const std::string & the_id) {
           id = the_id;
           id_count += 1;
         }

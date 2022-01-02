@@ -31,7 +31,7 @@ static int8_t show_images;
 static int8_t font_size;
 static int8_t use_fonts_in_book;
 static int8_t font;
-static int8_t done;
+static int8_t done_res;
 
 static int8_t old_font_size;
 static int8_t old_show_images;
@@ -49,7 +49,7 @@ static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
   { .caption = "Font:",                .u = { .ch = { .value = &font,               .choice_count = 8, .choices = FormChoiceField::font_choices      } }, FormEntryType::VERTICAL   },
   { .caption = "Show Images in book:", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { .caption = nullptr,              .u = { .ch = { .value = &done,               .choice_count = 0, .choices = nullptr                            } }, FormEntryType::DONE       }
+    { .caption = nullptr,              .u = { .ch = { .value = &done_res,           .choice_count = 0, .choices = nullptr                            } }, FormEntryType::DONE       }
   #endif
 };
 
@@ -72,7 +72,7 @@ book_parameters()
   old_use_fonts_in_book  = use_fonts_in_book;
   old_font               = font;
   old_font_size          = font_size;
-  done                   = 1;
+  done_res               = 1;
 
   form_viewer.show(
     book_params_form_entries, 

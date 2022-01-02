@@ -441,10 +441,10 @@ class FormUInt16 : public FormField
             }
             * form_entry.u.val.value = v;
             keypad_shown = false;
-            return false;
+            return false; // release events control
           }
         }
-        return true;
+        return true; // keep events control
       }
     #else
       bool event(const EventMgr::Event & event) {
@@ -695,10 +695,12 @@ class FormViewer
       #if (INKPLATE_6PLUS || TOUCH_TRIAL)
         if (current_field != fields.end()) {
           if (!(*current_field)->event(event)) {
+            // The field releases control of future events
+            // Redraw the form
             show(form_entries, size, bottom_msg);
             current_field = fields.end();
           }
-          return false;
+          return false; // Not completed yet
         }
         else {
           switch (event.kind) {
@@ -707,9 +709,13 @@ class FormViewer
 
               if (current_field != fields.end()) {
                 if ((*current_field)->event(event)) {
+                  // The field needs to keep control of future events
+                  // current_field is not reset for next event loop to pass
+                  // control to it.
                   return false;
                 }
                 else {
+                  // The field doesn't need control of future events
                   current_field = fields.end();
                 }
               }
@@ -791,8 +797,20 @@ class FormViewer
 
       page.start(fmt);
 
-      if (!completed) {
+      if (completed) {
+        for (auto * field : fields) {
+          field->save_value();
+          delete field;
+        }
+        fields.clear();
 
+        page.clear_region(
+          Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+          Pos(20, TOP_YPOS));
+
+        page.paint(false);
+      }
+      else {
         if (highlighting_field) {
           #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
             (*old_field)->show_selected(false);
@@ -814,15 +832,7 @@ class FormViewer
 
         page.paint(false);
       }
-      else {
-        for (auto * field : fields) field->save_value();
-
-        page.clear_region(
-          Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
-          Pos(20, TOP_YPOS));
-
-        page.paint(false);
-      }
+    }
 
       return completed;
     }

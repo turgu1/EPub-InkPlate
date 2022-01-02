@@ -46,8 +46,8 @@ Screen::draw_bitmap(
   GdkPixbuf * pb = gtk_image_get_pixbuf(image_data.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  if (pos.x < 0) pos.x = 0;
-  if (pos.y < 0) pos.y = 0;
+  if (pos.x > WIDTH) pos.x = 0;
+  if (pos.y > HEIGHT) pos.y = 0;
 
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;

@@ -12,15 +12,15 @@
 class BookController
 {
   public:
-    BookController() {
-      current_page_id = PageLocs::PageId(0, 0);
-    }
+    BookController() :
+      current_page_id(PageLocs::PageId(0, 0))
+    { }
     
     void input_event(const EventMgr::Event & event);
     void enter();
     void leave(bool going_to_deep_sleep = false);
-    bool open_book_file(std::string & book_title, 
-                        std::string & book_filename, 
+    bool open_book_file(const std::string & book_title, 
+                        const std::string & book_filename, 
                         const PageLocs::PageId & page_id);
     void put_str(const char * str, int xpos, int ypos);
 

@@ -116,7 +116,12 @@ class PageLocs
 
   public:
 
-    PageLocs() : completed(false), item_count(0) { };
+    PageLocs() : 
+      completed(false), 
+      item_count(0),
+      page_count(0)
+
+      { };
 
     void setup();
     void abort_threads();

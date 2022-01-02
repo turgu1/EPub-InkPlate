@@ -7,7 +7,7 @@
 
 #include <iomanip>
 
-const char * ScreenBottom::dw[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+const std::string ScreenBottom::dw[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
 void
 ScreenBottom::show(int16_t page_nbr, int16_t page_count)
@@ -84,7 +84,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
         RTC::WeekDay dow;
         rtc.get_date_time(y, m, d, h, mm, s, dow);
       #else
-        int8_t dow = 7;
+        int8_t dow = 1;
         y = 2022; m = d = 1, h = mm = s = 0;
       #endif
 

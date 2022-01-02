@@ -55,6 +55,11 @@ class HTMLInterpreter
                    dom(the_dom),
           compute_mode(the_comp_mode), 
              item_info(the_item),
+        current_offset(0),
+          start_offset(0),
+            end_offset(0),
+           show_images(false),
+               started(false),
         show_the_state(false), 
              from_page(-1), 
                to_page(-1),
@@ -94,7 +99,7 @@ class HTMLInterpreter
         // std::cout << "--> Element CSS:" << std::endl;
         // if (element_css != nullptr) element_css->show();
         // std::cout << "[end show]" << std::endl;
-        CSS::RulesMap rules;
+        //CSS::RulesMap rules;
 
         // item_info.css->show();
         // std::cout << "======" << std::endl;
@@ -138,7 +143,7 @@ class HTMLInterpreter
 
     inline bool check_if_started() {
       if (!started) {
-        if ((started = current_offset >= start_offset)) {
+        if ((started = (current_offset >= start_offset))) {
           page.set_compute_mode(compute_mode);
           page.clean();
           LOG_D("---- PAGE START ----");

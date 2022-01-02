@@ -84,7 +84,7 @@ class DOM
         return this;
       }
 
-      Node * add_id(std::string the_id) {
+      Node * add_id(const std::string & the_id) {
         id = the_id;
         return this;
       }

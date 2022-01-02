@@ -21,8 +21,8 @@ class Image
     struct ImageData {
       uint8_t * bitmap;
       Dim       dim;
-      ImageData(Dim d, uint8_t * b) { dim = d; bitmap = b; }
-      ImageData() { dim = Dim(0, 0); bitmap = nullptr; }
+      ImageData(Dim d, uint8_t * b) : dim(d), bitmap(b) {}
+      ImageData() : dim(Dim(0, 0)), bitmap(nullptr) { }
     };
 
   protected:
@@ -32,10 +32,11 @@ class Image
     uint32_t    file_size;
 
   public:
-    Image(std::string & filename) {
-      size_retrieved = false;
-      orig_dim = Dim(0, 0);
-    } 
+    Image(std::string & filename) :
+      size_retrieved(false),
+      orig_dim(Dim(0, 0)),
+      file_size(0)
+    { } 
     ~Image() { free_bitmap(); }
 
     inline void free_bitmap() { 

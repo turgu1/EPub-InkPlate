@@ -13,5 +13,5 @@ class ScreenBottom
     static void show(int16_t page_nbr, int16_t page_count);
 
   private:
-    static const char * dw[7];
+    static const std::string dw[7];
 };

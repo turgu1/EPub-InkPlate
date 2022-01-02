@@ -18,9 +18,10 @@
 
 #include "screen.hpp"
 
-AppController::AppController()
+AppController::AppController() : 
+  current_ctrl(Ctrl::DIR),
+     next_ctrl(Ctrl::NONE)
 {
-  current_ctrl = Ctrl::DIR;
   for (int i = 0; i < LAST_COUNT; i++) {
     last_ctrl[i] = Ctrl::DIR;
   }

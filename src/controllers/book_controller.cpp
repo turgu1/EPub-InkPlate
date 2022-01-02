@@ -44,8 +44,8 @@ BookController::leave(bool going_to_deep_sleep)
 
 bool
 BookController::open_book_file(
-  std::string & book_title, 
-  std::string & book_filename, 
+  const std::string & book_title, 
+  const std::string & book_filename, 
   const PageLocs::PageId & page_id)
 {
   LOG_D("===> open_book_file()...");
