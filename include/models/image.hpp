@@ -21,8 +21,8 @@ class Image
     struct ImageData {
       uint8_t * bitmap;
       Dim       dim;
-      ImageData(Dim d, uint8_t * b) : dim(d), bitmap(b) {}
-      ImageData() : dim(Dim(0, 0)), bitmap(nullptr) { }
+      ImageData(Dim d, uint8_t * b) : bitmap(b), dim(d)  {}
+      ImageData() : bitmap(nullptr), dim(Dim(0, 0))  { }
     };
 
   protected:

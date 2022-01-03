@@ -251,10 +251,39 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   void 
   EventMgr::show_calibration()
   {
-    calib_point = {
-      .x = { 100, ((uint16_t)(e_ink.get_height() - 100)), ((uint16_t)(e_ink.get_height() /   2)) },
-      .y = { 100, ((uint16_t)(e_ink.get_width()  /   2)), ((uint16_t)(e_ink.get_width()  - 100)) }
-    };
+    switch (screen.get_orientation()) {
+      case Screen::Orientation::BOTTOM:
+        LOG_D("Bottom...");
+        calib_point = {
+          .x = { ((uint16_t)(screen.WIDTH  - 100)), ((uint16_t)(screen.WIDTH  / 2)), 100 },
+          .y = { 100, ((uint16_t)(screen.HEIGHT - 100)), ((uint16_t)(screen.HEIGHT / 2)) }
+        };
+        break;
+
+      case Screen::Orientation::TOP:
+        LOG_D("Top...");
+        calib_point = {
+          .x = { 100, ((uint16_t)(screen.WIDTH  / 2)), ((uint16_t)(screen.WIDTH  - 100)) },
+          .y = { ((uint16_t)(screen.HEIGHT - 100)), 100, ((uint16_t)(screen.HEIGHT / 2)) }
+        };
+        break;
+    
+      case Screen::Orientation::LEFT:
+        LOG_D("Left...");
+        calib_point = {
+          .x = { ((uint16_t)(screen.WIDTH  - 100)), 100, ((uint16_t)(screen.WIDTH  / 2)) },
+          .y = { ((uint16_t)(screen.HEIGHT - 100)), ((uint16_t)(screen.HEIGHT / 2)), 100 }
+        };
+        break;
+
+      case Screen::Orientation::RIGHT:
+        LOG_D("Right...");
+        calib_point = {
+          .x = { 100, ((uint16_t)(screen.WIDTH  - 100)), ((uint16_t)(screen.WIDTH  / 2)) },
+          .y = { 100, ((uint16_t)(screen.HEIGHT / 2)), ((uint16_t)(screen.HEIGHT - 100)) }
+        };
+        break;
+    }
 
     auto cross_hair = [](uint16_t x, uint16_t y) {
       page.put_highlight(Dim(41, 3), Pos(x - 20, y - 1));
@@ -271,7 +300,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     Page::Format fmt = {
       .line_height_factor =   1.0,
       .font_index         =     5,
-      .font_size          =     9,
+      .font_size          =    11,
       .indent             =     0,
       .margin_left        =     5,
       .margin_right       =     5,
@@ -292,8 +321,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       .display            = CSS::Display::INLINE
     };
 
-    page.put_str_at("Touch Sensor Calibration", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 50), fmt);
-    page.put_str_at("Please TAP once on each crosshair to calibrate.", Pos(screen.WIDTH >> 1, screen.HEIGHT >> 1), fmt);
+    page.put_str_at("Touch Sensor Calibration", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 150), fmt);
+    page.put_str_at("Please TAP once on each crosshair to calibrate.", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 100), fmt);
 
     calib_count = 0;
     page.paint();
@@ -399,6 +428,11 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           #define Y0 touch_point.y[0]
           #define Y1 touch_point.y[1]
           #define Y2 touch_point.y[2]
+
+          calib_point = {
+            .x = { 100, ((uint16_t)(e_ink.get_height() - 100)), ((uint16_t)(e_ink.get_height()  / 2)) },
+            .y = { 100, ((uint16_t)(e_ink.get_width()  /   2)), ((uint16_t)(e_ink.get_width() - 100)) }
+          };
 
           #define XD0 calib_point.x[0]
           #define XD1 calib_point.x[1]

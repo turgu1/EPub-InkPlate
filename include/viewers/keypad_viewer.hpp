@@ -20,8 +20,14 @@ class KeypadViewer
     static const uint8_t MAX_DIGITS       =  4;
     static const uint8_t KEY_COUNT        = 14;
     static const uint8_t FONT_SIZE        =  9;
-    static const uint8_t KEY_ADDED_WIDTH  = 30;
-    static const uint8_t KEY_ADDED_HEIGHT = 20;
+
+    #if INKPLATE_6PLUS
+      static const uint8_t KEY_ADDED_WIDTH  = 50;
+      static const uint8_t KEY_ADDED_HEIGHT = 30;
+    #else
+      static const uint8_t KEY_ADDED_WIDTH  = 30;
+      static const uint8_t KEY_ADDED_HEIGHT = 20;
+    #endif
 
     struct KeyLocation {
       Pos     pos;
@@ -170,7 +176,7 @@ class KeypadViewer
 
       page.put_str_at(caption, 
                       Pos(screen.WIDTH >> 1, 
-                          keypad_pos.y + glyph->dim.height + 10), 
+                          keypad_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                       fmt);
 
       page.put_highlight(
@@ -204,8 +210,8 @@ class KeypadViewer
           case 9:
             page.put_highlight(key_dim, the_pos);
             page.put_char_at(labels[i], 
-                             Pos(the_pos.x + 10 + (glyph->dim.width >> 1), 
-                                 the_pos.y + glyph->dim.height + 10), 
+                             Pos(the_pos.x + (key_dim.width >> 1) - (glyph->dim.width >> 1), 
+                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                              fmt);
             break;
           case -1: // Cancel
@@ -214,7 +220,7 @@ class KeypadViewer
                                Pos(the_pos.x      + 1, the_pos.y       + 1));
             page.put_str_at("CANCEL", 
                             Pos(the_pos.x + (key_dim2.width   >> 1), 
-                                the_pos.y + glyph->dim.height + 10), 
+                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
           case -2: // OK
@@ -223,21 +229,21 @@ class KeypadViewer
                                Pos(the_pos.x     + 1, the_pos.y      + 1));
             page.put_str_at("OK", 
                             Pos(the_pos.x + (key_dim.width >> 1), 
-                                the_pos.y + glyph->dim.height + 10), 
+                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
           case -3: // Backspace
             page.put_highlight(key_dim, the_pos);
             page.put_str_at("BSP", 
                             Pos(the_pos.x + (key_dim.width >> 1), 
-                                the_pos.y + glyph->dim.height + 10), 
+                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
           case -4: // Clear
             page.put_highlight(key_dim, the_pos);
             page.put_str_at("CLR", 
                             Pos(the_pos.x + (key_dim.width >> 1), 
-                                the_pos.y + glyph->dim.height + 10), 
+                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
         }

@@ -832,8 +832,7 @@ class FormViewer
 
         page.paint(false);
       }
-    }
-
+      
       return completed;
     }
 };

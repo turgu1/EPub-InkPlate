@@ -118,9 +118,8 @@ class PageLocs
 
     PageLocs() : 
       completed(false), 
-      item_count(0),
-      page_count(0)
-
+      page_count(0),
+      item_count(0)
       { };
 
     void setup();
