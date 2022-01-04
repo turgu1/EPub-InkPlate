@@ -225,8 +225,8 @@ void Screen::low_colorize_3bit(Dim dim, Pos pos, uint8_t color)
   int16_t  in_size_32   = (dim.width - (8 - (pos.x & 0x07)) - ((pos.x + dim.width - 1) & 0x07) + 1) / 8;
   uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
 
-  LOG_I("Line Size: %u, in_size: %d, remaining: %u", line_size_32, in_size_32, remaining_line_width_32);
-  LOG_I("Pos: [%d, %d], Dim: [%d, %d]", pos.x, pos.y, dim.width, dim.height);
+  LOG_D("Line Size: %u, in_size: %d, remaining: %u", line_size_32, in_size_32, remaining_line_width_32);
+  LOG_D("Pos: [%d, %d], Dim: [%d, %d]", pos.x, pos.y, dim.width, dim.height);
 
   color_mask = color | (color << 4);
   color_mask |= (color_mask <<  8);
@@ -235,7 +235,7 @@ void Screen::low_colorize_3bit(Dim dim, Pos pos, uint8_t color)
   uint32_t first_mask = ~(0x77777777 << ((pos.x & 0x07) << 2));
   uint32_t last_mask =  ~(0x77777777 >> ((8 - ((pos.x + dim.width - 1) & 0x07)) << 2));
 
-  LOG_I("Masks: %08X, %08X, %08X", first_mask, last_mask, color_mask);
+  LOG_D("Masks: %08X, %08X, %08X", first_mask, last_mask, color_mask);
 
   if (in_size_32 < 0) { // All pixels in a row are in the same 32 bits word
     first_mask &= last_mask;
