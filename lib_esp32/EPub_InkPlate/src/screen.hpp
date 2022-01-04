@@ -36,7 +36,7 @@ class Screen : NonCopyable
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
     #elif INKPLATE_6PLUS
       static constexpr int8_t   IDENT                 =   3;
-      static constexpr int16_t  PARTIAL_COUNT_ALLOWED =  30;
+      static constexpr int16_t  PARTIAL_COUNT_ALLOWED =  10;
       static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM, TOP };
@@ -47,6 +47,9 @@ class Screen : NonCopyable
     void       draw_rectangle(Dim dim, Pos pos, uint8_t color);
     void draw_round_rectangle(Dim dim, Pos pos, uint8_t color);
     void      colorize_region(Dim dim, Pos pos, uint8_t color);
+
+    void low_colorize_1bit(Dim dim, Pos pos, uint8_t color);
+    void low_colorize_3bit(Dim dim, Pos pos, uint8_t color);
 
     inline void clear()  {
       if (pixel_resolution == PixelResolution::ONE_BIT) { 

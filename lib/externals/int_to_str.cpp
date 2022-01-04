@@ -1,7 +1,9 @@
+#include <cinttypes>
+
 char * 
-int_to_str(int v, char * buffer, char size)
+int_to_str(int v, char * buffer, int8_t size)
 {
-  char * str  = &buffer[size-1];
+  char * str  = &buffer[size];
   bool   sign = v < 0;
 
   if (sign) v = -v;
@@ -9,15 +11,14 @@ int_to_str(int v, char * buffer, char size)
 
   do {
     *--str  = '0' + (v % 10);
-     v     /= 10;
-  } while ((v != 0) && (str > buffer));
+    v /= 10;
+  } while ((v != 0) && (str >= buffer));
   
   if (sign && (str > buffer)) *--str = '-';
 
   if (str != buffer) {
     char * str2 = buffer;
-    do *str2++ = *str++; while (*str);
-    *str2 = 0;
+    while ((*str2++ = *str++)) ;
   }
 
   return buffer;

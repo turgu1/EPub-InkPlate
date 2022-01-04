@@ -2,6 +2,7 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+// Not ready yet... not sure it will be used in the future...
 #if 0
 #pragma once
 #include "global.hpp"

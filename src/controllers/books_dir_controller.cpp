@@ -9,6 +9,7 @@
 #include "controllers/book_controller.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
+#include "models/nvs_mgr.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/linear_books_dir_viewer.hpp"
 #include "viewers/matrix_books_dir_viewer.hpp"
@@ -245,7 +246,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
               book_title    = book->title;
               book_filename = book->filename;
               
+              NVSMgr::NVSData nvs_data;
               PageLocs::PageId page_id = { 0, 0 };
+
+              if (nvs_mgr.get_location(book->id, nvs_data)) {
+                page_id = { nvs_data.itemref_index, nvs_data.offset };
+              }
               
               if (book_controller.open_book_file(book_title, book_fname, page_id)) {
                 app_controller.set_controller(AppController::Ctrl::BOOK);

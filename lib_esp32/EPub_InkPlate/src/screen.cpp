@@ -214,12 +214,148 @@ Screen::draw_round_rectangle(
   draw_arc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
 }
 
+// High performance Colorize a rectangle in the frame buffer
+
+void Screen::low_colorize_3bit(Dim dim, Pos pos, uint8_t color)
+{
+  uint32_t * temp = ((uint32_t *)(&(frame_buffer_3bit->get_data())[frame_buffer_3bit->get_line_size() * pos.y])) + (pos.x >> 3);
+ 
+  uint32_t color_mask;
+  uint16_t line_size_32 = frame_buffer_3bit->get_line_size() >> 2; // 32 bits count
+  int16_t  in_size_32   = (dim.width - (8 - (pos.x & 0x07)) - ((pos.x + dim.width - 1) & 0x07) + 1) / 8;
+  uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
+
+  LOG_I("Line Size: %u, in_size: %d, remaining: %u", line_size_32, in_size_32, remaining_line_width_32);
+  LOG_I("Pos: [%d, %d], Dim: [%d, %d]", pos.x, pos.y, dim.width, dim.height);
+
+  color_mask = color | (color << 4);
+  color_mask |= (color_mask <<  8);
+  color_mask |= (color_mask << 16);
+
+  uint32_t first_mask = ~(0x77777777 << ((pos.x & 0x07) << 2));
+  uint32_t last_mask =  ~(0x77777777 >> ((8 - ((pos.x + dim.width - 1) & 0x07)) << 2));
+
+  LOG_I("Masks: %08X, %08X, %08X", first_mask, last_mask, color_mask);
+
+  if (in_size_32 < 0) { // All pixels in a row are in the same 32 bits word
+    first_mask &= last_mask;
+    color_mask &= ~first_mask;
+    for (uint16_t i = 0; i < dim.height; i++) {
+      *temp = (*temp & first_mask) | color_mask;
+       temp += line_size_32;
+    }
+  }
+  else for (uint16_t i = 0; i < dim.height; i++) {
+    *temp = (*temp & first_mask) | (color_mask & ~first_mask); 
+     temp++;
+    for (int16_t j = 0; j < in_size_32; j++) {
+      *temp++ = color_mask;
+    }
+    *temp = (*temp & last_mask) | (color_mask & ~last_mask); 
+    temp += remaining_line_width_32 + 1;
+  }
+}
+
+void Screen::low_colorize_1bit(Dim dim, Pos pos, uint8_t color)
+{
+  uint32_t * temp = ((uint32_t *)(&(frame_buffer_1bit->get_data())[frame_buffer_1bit->get_line_size() * pos.y])) + (pos.x >> 5);
+ 
+  uint16_t line_size_32 = frame_buffer_1bit->get_line_size() >> 2; // 32 bits count
+  int16_t  in_size_32   = (dim.width - (32 - (pos.x & 0x1F)) - ((pos.x + dim.width - 1) & 0x1F) + 1) / 32;
+  uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
+
+  LOG_D("Line Size: %u, in_size: %d, remaining: %u", line_size_32, in_size_32, remaining_line_width_32);
+  LOG_D("Pos: [%d, %d], Dim: [%d, %d]", pos.x, pos.y, dim.width, dim.height);
+
+  if (color == 1) {
+    uint32_t first_mask = 0xFFFFFFFF << (pos.x & 0x1F);
+    uint32_t last_mask = 0xFFFFFFFF >> (32 - ((pos.x + dim.width - 1) & 0x1F));
+
+    LOG_D("Masks: %08X, %08X", first_mask, last_mask);
+
+    if (in_size_32 < 0) {
+      first_mask &= last_mask;
+      for (uint16_t i = 0; i < dim.height; i++) {
+        *temp |= first_mask;
+         temp += line_size_32;
+      }
+    }
+    else for (uint16_t i = 0; i < dim.height; i++) {
+      *temp++ |= first_mask;
+      for (int16_t j = 0; j < in_size_32; j++) {
+        *temp++ = 0xFFFFFFFF;
+      }
+      *temp++ |= last_mask;
+      temp += remaining_line_width_32;
+    }
+  }
+  else {
+    uint32_t first_mask = ~(0xFFFFFFFF << (pos.x & 0x1F));
+    uint32_t last_mask =  ~(0xFFFFFFFF >> (32 - ((pos.x + dim.width - 1) & 0x1F)));
+
+    LOG_D("Masks: %08X, %08X", first_mask, last_mask);
+
+    if (in_size_32 < 0) {
+      first_mask &= last_mask;
+      for (uint16_t i = 0; i < dim.height; i++) {
+        *temp &= first_mask;
+         temp += line_size_32;
+      }
+    }
+    else for (uint16_t i = 0; i < dim.height; i++) {
+      *temp++ &= first_mask;
+      for (int16_t j = 0; j < in_size_32; j++) {
+        *temp++ = 0;
+      }
+      *temp++ &= last_mask;
+      temp += remaining_line_width_32;
+    }
+  }
+}
+
 void
 Screen::colorize_region(
   Dim     dim,
   Pos     pos,
   uint8_t color) //, bool show)
 {
+  #if 1
+  if (pixel_resolution == PixelResolution::ONE_BIT) {
+    color = color == BLACK_COLOR ? 1 : 0;
+
+    switch (orientation) {
+      case Orientation::BOTTOM:
+        low_colorize_1bit(dim, pos, color);
+        break;
+      case Orientation::TOP:
+        low_colorize_1bit(dim, Pos(WIDTH - (pos.x + dim.width), HEIGHT - (pos.y + dim.height)), color);
+        break;
+      case Orientation::LEFT:
+        low_colorize_1bit(Dim(dim.height, dim.width), Pos(pos.y, WIDTH - (pos.x + dim.width)), color);
+        break;
+      case Orientation::RIGHT:
+        low_colorize_1bit(Dim(dim.height, dim.width), Pos(HEIGHT - (pos.y + dim.height), pos.x), color);
+        break;
+    }
+  }
+  else {
+    switch (orientation) {
+      case Orientation::BOTTOM:
+        low_colorize_3bit(dim, pos, color);
+        break;
+      case Orientation::TOP:
+        low_colorize_3bit(dim, Pos(WIDTH - (pos.x + dim.width), HEIGHT - (pos.y + dim.height)), color);
+        break;
+      case Orientation::LEFT:
+        low_colorize_3bit(Dim(dim.height, dim.width), Pos(pos.y, WIDTH - (pos.x + dim.width)), color);
+        break;
+      case Orientation::RIGHT:
+        low_colorize_3bit(Dim(dim.height, dim.width), Pos(HEIGHT - (pos.y + dim.height), pos.x), color);
+        break;
+    }
+  }
+
+#else  
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
@@ -242,6 +378,8 @@ Screen::colorize_region(
   }
 
   #undef CODE
+
+#endif
 }
 
 void 

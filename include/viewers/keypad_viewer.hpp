@@ -109,6 +109,8 @@ class KeypadViewer
 
       digits_count = strlen(digits);
 
+      //LOG_I("Digits: %s", digits);
+
       font         =  fonts.get(5);
       glyph        =  font->get_glyph('0', FONT_SIZE);
 
