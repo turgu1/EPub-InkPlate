@@ -177,7 +177,12 @@ Screen::draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner
     }                                                                          \
   }
 
-  if (pixel_resolution == PixelResolution::ONE_BIT) { SELECT(1bit); } else { SELECT(3bit) };
+  if (pixel_resolution == PixelResolution::ONE_BIT) { 
+    SELECT(1bit); 
+  } 
+  else { 
+    SELECT(3bit) 
+  };
 
   #undef CODE
 }
@@ -204,7 +209,13 @@ Screen::draw_round_rectangle(
     set_pixel_o_##orientation##_##resolution(x_max - 1, j, color); \
   }
 
-  if (pixel_resolution == PixelResolution::ONE_BIT) { SELECT(1bit); } else { SELECT(3bit); }
+  if (pixel_resolution == PixelResolution::ONE_BIT) { 
+    color = color == BLACK_COLOR ? 1 : 0;
+    SELECT(1bit); 
+  } 
+  else { 
+    SELECT(3bit); 
+  }
 
   #undef CODE
 

@@ -8,6 +8,7 @@
 #include "viewers/book_viewer.hpp"
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
+#include "viewers/screen_bottom.hpp"
 #include "screen.hpp"
 #include "controllers/app_controller.hpp"
 
@@ -130,6 +131,8 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   page.put_highlight(
     Dim(Screen::WIDTH - 20, 3), 
     Pos(10, region_height - 12));
+
+  ScreenBottom::show();
 
   page.paint(clear_screen);
 }
@@ -349,6 +352,9 @@ MenuViewer::event(const EventMgr::Event & event)
       std::string txt = menu[current_entry_index].caption; 
       page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
     }
+
+    ScreenBottom::show();
+
     page.paint(false);
   #endif
   

@@ -9,6 +9,7 @@
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
 #include "viewers/keypad_viewer.hpp"
+#include "viewers/screen_bottom.hpp"
 #include "memory_pool.hpp"
 
 #include <list>
@@ -685,6 +686,8 @@ class FormViewer
         (*current_field)->show_highlighted(true);
       #endif
 
+      ScreenBottom::show();
+      \
       page.paint(false);
     }
 
@@ -830,6 +833,8 @@ class FormViewer
           }
         }
 
+        ScreenBottom::show();
+        
         page.paint(false);
       }
       

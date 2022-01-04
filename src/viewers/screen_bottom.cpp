@@ -42,6 +42,9 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
 
   std::ostringstream ostr;
   
+  page.clear_region(Dim(screen.WIDTH, font->get_line_height(FONT_SIZE)),
+                    Pos(0, screen.HEIGHT - font->get_line_height(FONT_SIZE)));
+                    
   if ((page_nbr != -1) && (page_count != -1)) {
     ostr << page_nbr + 1 << " / " << page_count;
 

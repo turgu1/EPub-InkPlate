@@ -246,12 +246,14 @@ BooksDirController::leave(bool going_to_deep_sleep)
               book_title    = book->title;
               book_filename = book->filename;
               
-              NVSMgr::NVSData nvs_data;
               PageLocs::PageId page_id = { 0, 0 };
 
-              if (nvs_mgr.get_location(book->id, nvs_data)) {
-                page_id = { nvs_data.itemref_index, nvs_data.offset };
-              }
+              #if EPUB_INKPLATE_BUILD
+                NVSMgr::NVSData nvs_data;
+                if (nvs_mgr.get_location(book->id, nvs_data)) {
+                  page_id = { nvs_data.itemref_index, nvs_data.offset };
+                }
+              #endif
               
               if (book_controller.open_book_file(book_title, book_fname, page_id)) {
                 app_controller.set_controller(AppController::Ctrl::BOOK);
