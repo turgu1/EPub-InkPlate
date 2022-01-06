@@ -2,14 +2,14 @@
 
 ## Last news
 
-(Updated 2022.1.4)
+(Updated 2022.1.5)
 
-Update to version 1.3.2 - Not ready yet
+Update to version 2.0.0 - Not ready yet
 
 This version will add Inkplate-6PLUS release. Some ongoing debugging aspects:
 
 - [ ] Touch Screen HOLD Event not working properly. Sometimes, a RELEASE Event is sent but the finger is still on the screen.
-- [ ] The screen is fading away at each Partial screen refresh. Suppose to be OK at every refresh. May be related to the aging screen component.
+- [ ] The screen is fading away at each Partial screen refresh. Suppose to be OK at every refresh. May be related to the aging screen component or an issue with the partial update method.
 - [x] Corrected. Menu's entry launch on a tap on screen does'nt always works. Calibration was required.
 - [ ] Sometime, a TAP is sent as we are tryng to do a HOLD gesture. Need some kind of debouncing but how??
 - [x] Corrected. At the return of DeepSleep, the front light remains off. Normal as the WakeUp button is causing a reset. The current light level was kept in ESP32 RTC memory that is cleared on reset. More likely a feature than a bug, limiting battery drains... now uses the RAM byte available with the external RTC chip.

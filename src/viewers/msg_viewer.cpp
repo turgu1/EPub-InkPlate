@@ -85,7 +85,7 @@ void MsgViewer::show(
     Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
     fmt);
 
-  fmt.font_index =  5;
+  fmt.font_index =  1;
   fmt.font_size  = 10;
 
   // Title
@@ -133,7 +133,7 @@ void MsgViewer::show_progress(const char * title, ...)
 
   Page::Format fmt = {
     .line_height_factor = 1.0,
-    .font_index         =   5,
+    .font_index         =   1,
     .font_size          =  10,
     .indent             =   0,
     .margin_left        =  10,
@@ -272,6 +272,7 @@ MsgViewer::out_of_memory(const char * raison)
   #if INKPLATE_6PLUS
     #define MSG "Press the WakUp Button to restart."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
+    #define LEVEL 0
   #else
     #define MSG "Press a key to restart."
     #if EXTENDED_CASE
@@ -279,6 +280,7 @@ MsgViewer::out_of_memory(const char * raison)
     #else
       #define INT_PIN TouchKeys::INTERRUPT_PIN
     #endif
+    #define LEVEL 1
   #endif
   
   show(ALERT, true, true, "OUT OF MEMORY!!",
@@ -290,7 +292,7 @@ MsgViewer::out_of_memory(const char * raison)
   );
 
   #if EPUB_INKPLATE_BUILD
-    inkplate_platform.deep_sleep(INT_PIN, 1); // Never return
+    inkplate_platform.deep_sleep(INT_PIN, LEVEL); // Never return
   #else
     exit(0);
   #endif

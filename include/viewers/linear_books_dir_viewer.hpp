@@ -14,8 +14,8 @@ class LinearBooksDirViewer : public BooksDirViewer
   private:
     static constexpr char const * TAG = "LinearBooksDirView";
 
-    static const int16_t TITLE_FONT            =  5;
-    static const int16_t AUTHOR_FONT           =  6;
+    static const int16_t TITLE_FONT            =  1;
+    static const int16_t AUTHOR_FONT           =  2;
     static const int16_t TITLE_FONT_SIZE       = 11;
     static const int16_t AUTHOR_FONT_SIZE      =  9;
     static const int16_t FIRST_ENTRY_YPOS      =  5;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.0)
-set(PROJECT_VER "1.3.2")
+set(PROJECT_VER "2.0.0")
 set(PROJECT_NAME "EPub-Inkplate")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(EPub-InkPlate)

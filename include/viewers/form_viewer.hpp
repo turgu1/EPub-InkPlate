@@ -582,7 +582,7 @@ class FormViewer
       size         = _size;
       bottom_msg   = _bottom_msg;
 
-      Font * font =  fonts.get(5);
+      Font * font =  fonts.get(1);
 
       for (auto * field : fields) delete field;
       fields.clear();
@@ -632,7 +632,7 @@ class FormViewer
 
       Page::Format fmt = {
         .line_height_factor =   1.0,
-        .font_index         =     5,
+        .font_index         =     1,
         .font_size          = FORM_FONT_SIZE,
         .indent             =     0,
         .margin_left        =     5,
@@ -776,7 +776,7 @@ class FormViewer
       
       Page::Format fmt = {
         .line_height_factor = 1.0,
-        .font_index         =   5,
+        .font_index         =   1,
         .font_size          = FORM_FONT_SIZE,
         .indent             =   0,
         .margin_left        =   0,

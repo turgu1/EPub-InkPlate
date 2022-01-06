@@ -354,7 +354,7 @@ class Page
         }
         if (idx == -1) {
           fmt.font_style = Fonts::FaceStyle::NORMAL;
-          fmt.font_index = 1;
+          fmt.font_index = 3;
         }
         else {
           fmt.font_style = style;

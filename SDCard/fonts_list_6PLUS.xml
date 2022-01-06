@@ -19,49 +19,49 @@
 -->
 <fonts>
   <font name="CRIMSON SERIF">
-    <regular     filename="CrimsonPro-Regular.otf"/>
+    <normal      filename="CrimsonPro-Regular.otf"/>
     <bold        filename="CrimsonPro-Bold.otf"/>
     <italic      filename="CrimsonPro-Italic.otf"/>
     <bold-italic filename="CrimsonPro-BoldItalic.otf"/>
   </font>
   <font name="EURO COMP SERIF">
-    <regular     filename="EC-Regular_212.ibmf"/>
+    <normal      filename="EC-Regular_212.ibmf"/>
     <bold        filename="EC-Bold_212.ibmf"/>
     <italic      filename="EC-Italic_212.ibmf"/>
     <bold-italic filename="EC-BoldItalic_212.ibmf"/>
   </font>
   <font name="EURO COMP">
-    <regular     filename="ECSans-Regular_212.ibmf"/>
+    <normal      filename="ECSans-Regular_212.ibmf"/>
     <bold        filename="ECSans-Bold_212.ibmf"/>
     <italic      filename="ECSans-Italic_212.ibmf"/>
     <bold-italic filename="ECSans-BoldItalic_212.ibmf"/>
   </font>
   <font name="EURO COMP TYPEWRITER">
-    <regular     filename="ECTypewriter-Regular_212.ibmf"/>
+    <normal      filename="ECTypewriter-Regular_212.ibmf"/>
     <bold        filename="ECTypewriter-Regular_212.ibmf"/>
     <italic      filename="ECTypewriter-Italic_212.ibmf"/>
     <bold-italic filename="ECTypewriter-Italic_212.ibmf"/>
   </font>
   <font name="DEJAVU SERIF">
-    <regular     filename="DejaVuSerif-Regular.otf"/>
+    <normal      filename="DejaVuSerif-Regular.otf"/>
     <bold        filename="DejaVuSerif-Bold.otf"/>
     <italic      filename="DejaVuSerif-Italic.otf"/>
     <bold-italic filename="DejaVuSerif-BoldItalic.otf"/>
   </font>
   <font name="DEJAVU COND SERIF">
-    <regular     filename="DejaVuSerifCondensed-Regular.otf"/>
+    <normal      filename="DejaVuSerifCondensed-Regular.otf"/>
     <bold        filename="DejaVuSerifCondensed-Bold.otf"/>
     <italic      filename="DejaVuSerifCondensed-Italic.otf"/>
     <bold-italic filename="DejaVuSerifCondensed-BoldItalic.otf"/>
   </font>
   <font name="DEJAVU">
-    <regular     filename="DejaVuSans-Regular.otf"/>
+    <normal      filename="DejaVuSans-Regular.otf"/>
     <bold        filename="DejaVuSans-Bold.otf"/>
     <italic      filename="DejaVuSans-Italic.otf"/>
     <bold-italic filename="DejaVuSans-BoldItalic.otf"/>
   </font>
   <font name="DEJAVU COND">
-    <regular     filename="DejaVuSansCondensed-Regular.otf"/>
+    <normal      filename="DejaVuSansCondensed-Regular.otf"/>
     <bold        filename="DejaVuSansCondensed-Bold.otf"/>
     <italic      filename="DejaVuSansCondensed-Italic.otf"/>
     <bold-italic filename="DejaVuSansCondensed-BoldItalic.otf"/>

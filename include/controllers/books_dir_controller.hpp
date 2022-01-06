@@ -39,6 +39,7 @@ class BooksDirController
     void new_orientation() { if (books_dir_viewer != nullptr) books_dir_viewer->setup(); }
 
     inline int16_t get_current_book_index() { return current_book_index; }
+    inline void    set_current_book_index(int16_t idx) { current_book_index = idx; }
 };
 
 #if __BOOKS_DIR_CONTROLLER__

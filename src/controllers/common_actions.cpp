@@ -44,7 +44,7 @@ CommonActions::power_it_off()
 {
   #if INKPLATE_6PLUS
     #define MSG "Please press the WakUp Button to restart the device."
-    #define INT_PIN ((gpio_num_t) 0)
+    #define INT_PIN TouchScreen::INTERRUPT_PIN
     #define LEVEL 0
   #else
     #define MSG "Please press a key to restart the device."
@@ -58,9 +58,10 @@ CommonActions::power_it_off()
 
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE_BUILD
+    screen.force_full_update();
     msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. " MSG);
-    ESP::delay(500);
+    ESP::delay(1000);
     inkplate_platform.deep_sleep(INT_PIN, LEVEL);
   #else
     extern void exit_app();

@@ -70,7 +70,7 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { .caption = "Show Battery Level :",       .u = { .ch = { .value = &show_battery,           .choice_count = 4, .choices = FormChoiceField::battery_visual_choices } }, .entry_type = FormEntryType::VERTICAL    },
   { .caption = "Show Title (*):",            .u = { .ch = { .value = &show_title,             .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
   #if DATE_TIME_RTC
-    { .caption = "Right Bottom Corner :",    .u = { .ch = { .value = &show_heap_or_rtc,       .choice_count = 3, .choices = FormChoiceField::right_corner_choices   } }, .entry_type = FormEntryType::HORIZONTAL  },
+    { .caption = "Right Bottom Corner :",    .u = { .ch = { .value = &show_heap_or_rtc,       .choice_count = 3, .choices = FormChoiceField::right_corner_choices   } }, .entry_type = FormEntryType::VERTICAL    },
   #else
     { .caption = "Show Heap Sizes :",        .u = { .ch = { .value = &show_heap,              .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
   #endif
@@ -102,12 +102,12 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   #endif
 
   static FormEntry date_time_form_entries[DATE_TIME_FORM_SIZE] = {
-    { .caption = "Year :",   .u = { .val = { .value = &year,   .min = 2022, .max = 2099              } }, .entry_type = FormEntryType::UINT16  },
-    { .caption = "Month :",  .u = { .val = { .value = &month,  .min =    1, .max =   12              } }, .entry_type = FormEntryType::UINT16  },
-    { .caption = "Day :",    .u = { .val = { .value = &day,    .min =    1, .max =   31              } }, .entry_type = FormEntryType::UINT16  },
-    { .caption = "Hour :",   .u = { .val = { .value = &hour,   .min =    0, .max =   23              } }, .entry_type = FormEntryType::UINT16  },
-    { .caption = "Minute :", .u = { .val = { .value = &minute, .min =    0, .max =   59              } }, .entry_type = FormEntryType::UINT16  },
-    { .caption = "Second :", .u = { .val = { .value = &second, .min =    0, .max =   59              } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Year :",   .u = { .val = { .value = &year,   .min = 2022, .max = 2099 } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Month :",  .u = { .val = { .value = &month,  .min =    1, .max =   12 } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Day :",    .u = { .val = { .value = &day,    .min =    1, .max =   31 } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Hour :",   .u = { .val = { .value = &hour,   .min =    0, .max =   23 } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Minute :", .u = { .val = { .value = &minute, .min =    0, .max =   59 } }, .entry_type = FormEntryType::UINT16  },
+    { .caption = "Second :", .u = { .val = { .value = &second, .min =    0, .max =   59 } }, .entry_type = FormEntryType::UINT16  },
 
     #if INKPLATE_6PLUS || TOUCH_TRIAL
       { .caption = nullptr,  .u = { .ch  = { .value = &done,   .choice_count = 0, .choices = nullptr } }, .entry_type = FormEntryType::DONE    }
@@ -375,7 +375,7 @@ OptionController::input_event(const EventMgr::Event & event)
         }
 
         if (old_dir_view != dir_view) {
-
+          books_dir_controller.set_current_book_index(-1);
         }
 
         if (old_resolution != resolution) {

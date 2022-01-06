@@ -1433,7 +1433,7 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
     }
     if (idx == -1) {
       fmt.font_style = Fonts::FaceStyle::NORMAL;
-      fmt.font_index = 1;
+      fmt.font_index = 3;
     }
     else {
       // LOG_D("Font index: %d", idx);

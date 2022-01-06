@@ -80,6 +80,7 @@
       #if INKPLATE_6PLUS
         #define MSG "Press the WakUp Button to restart."
         #define INT_PIN TouchScreen::INTERRUPT_PIN
+        #define LEVEL 0
       #else
         #define MSG "Press a key to restart."
         #if EXTENDED_CASE
@@ -87,6 +88,7 @@
         #else
           #define INT_PIN TouchKeys::INTERRUPT_PIN
         #endif
+        #define LEVEL 1
       #endif
 
       if (fonts.setup()) {
@@ -110,7 +112,7 @@
           );
 
           ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, 1);
+          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
     
         if (inkplate_err) {
@@ -118,7 +120,7 @@
             "Unable to initialize the InkPlate drivers. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, 1);
+          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
         if (config_err) {
@@ -126,7 +128,7 @@
             "Unable to read/save configuration file. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, 1);
+          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
         msg_viewer.show(MsgViewer::INFO, false, true, "Starting", "One moment please...");
@@ -141,7 +143,7 @@
           "Unable to read required fonts. Entering Deep Sleep. " MSG
         );
         ESP::delay(500);
-        inkplate_platform.deep_sleep(INT_PIN, 1);
+        inkplate_platform.deep_sleep(INT_PIN, LEVEL);
       }
 
       #if DEBUGGING

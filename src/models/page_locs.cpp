@@ -571,7 +571,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
     int16_t idx;
 
     if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
-      idx = 1;
+      idx = 3;
     }
     
     int8_t font_size = current_format_params.font_size;

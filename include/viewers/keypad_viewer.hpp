@@ -111,7 +111,7 @@ class KeypadViewer
 
       //LOG_I("Digits: %s", digits);
 
-      font         =  fonts.get(5);
+      font         =  fonts.get(1);
       glyph        =  font->get_glyph('0', FONT_SIZE);
 
       key_dim  = Dim(glyph->dim.width  + KEY_ADDED_WIDTH, 
@@ -138,7 +138,7 @@ class KeypadViewer
 
       fmt = {
         .line_height_factor =   1.0,
-        .font_index         =     5,
+        .font_index         =     1,
         .font_size          = FONT_SIZE,
         .indent             =     0,
         .margin_left        =     5,
@@ -212,8 +212,8 @@ class KeypadViewer
           case 9:
             page.put_highlight(key_dim, the_pos);
             page.put_char_at(labels[i], 
-                             Pos(the_pos.x + (key_dim.width >> 1) - (glyph->dim.width >> 1), 
-                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
+                             Pos(the_pos.x + (key_dim.width     >> 1) - (glyph->dim.width >> 1), 
+                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height   >> 1)), 
                              fmt);
             break;
           case -1: // Cancel
@@ -221,7 +221,7 @@ class KeypadViewer
             page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2), 
                                Pos(the_pos.x      + 1, the_pos.y       + 1));
             page.put_str_at("CANCEL", 
-                            Pos(the_pos.x + (key_dim2.width   >> 1), 
+                            Pos(the_pos.x + (key_dim2.width    >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
@@ -230,21 +230,21 @@ class KeypadViewer
             page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2), 
                                Pos(the_pos.x     + 1, the_pos.y      + 1));
             page.put_str_at("OK", 
-                            Pos(the_pos.x + (key_dim.width >> 1), 
+                            Pos(the_pos.x + (key_dim.width     >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
           case -3: // Backspace
             page.put_highlight(key_dim, the_pos);
             page.put_str_at("BSP", 
-                            Pos(the_pos.x + (key_dim.width >> 1), 
+                            Pos(the_pos.x + (key_dim.width     >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;
           case -4: // Clear
             page.put_highlight(key_dim, the_pos);
             page.put_str_at("CLR", 
-                            Pos(the_pos.x + (key_dim.width >> 1), 
+                            Pos(the_pos.x + (key_dim.width     >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                             fmt);
             break;

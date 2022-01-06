@@ -14,8 +14,8 @@ class MatrixBooksDirViewer : public BooksDirViewer
   private:
     static constexpr char const * TAG = "MatrixBooksDirView";
 
-    static const int16_t TITLE_FONT                =  5;
-    static const int16_t AUTHOR_FONT               =  6;
+    static const int16_t TITLE_FONT                =  1;
+    static const int16_t AUTHOR_FONT               =  2;
     static const int16_t TITLE_FONT_SIZE           = 11;
     static const int16_t AUTHOR_FONT_SIZE          =  9;
     static const int16_t MIN_SPACE_BETWEEN_ENTRIES =  6;

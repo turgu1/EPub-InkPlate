@@ -10,8 +10,8 @@ class TocViewer
   private:
     static constexpr char const * TAG = "TocView";
 
-    static const int16_t TITLE_FONT            =   5;
-    static const int16_t ENTRY_FONT            =   5;
+    static const int16_t TITLE_FONT            =   1;
+    static const int16_t ENTRY_FONT            =   1;
     static const int16_t ENTRY_FONT_SIZE       =  11;
     static const int16_t TITLE_FONT_SIZE       =  14;
     static const int16_t MAX_TITLE_SIZE        =  90;

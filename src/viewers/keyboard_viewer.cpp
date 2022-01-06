@@ -72,7 +72,7 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
     fmt);
 
-  fmt.font_index =  5;
+  fmt.font_index =  1;
   fmt.font_size  = 10;
 
   // Title

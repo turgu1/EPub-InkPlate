@@ -299,7 +299,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
     Page::Format fmt = {
       .line_height_factor =   1.0,
-      .font_index         =     5,
+      .font_index         =     1,
       .font_size          =    11,
       .indent             =     0,
       .margin_left        =     5,
@@ -715,7 +715,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
               light_sleep_duration);
             ESP::delay(1000);
 
-            inkplate_platform.deep_sleep((gpio_num_t) 0, 0);
+            inkplate_platform.deep_sleep(TouchScreen::INTERRUPT_PIN, 0);
           }
         }
       }

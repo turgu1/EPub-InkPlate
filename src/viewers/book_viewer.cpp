@@ -61,7 +61,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     int16_t idx;
 
     if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
-      idx = 1;
+      idx = 3;
     }
 
     int8_t font_size = epub.get_book_format_params()->font_size;
@@ -141,7 +141,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
         int16_t page_count = page_locs.get_page_count();
 
         fmt.line_height_factor = 1.0;
-        fmt.font_index         =   6;
+        fmt.font_index         =   2;
         fmt.font_size          =   8;
         fmt.font_style         = Fonts::FaceStyle::ITALIC;
         fmt.align              = CSS::Align::CENTER;
@@ -191,7 +191,7 @@ BookViewer::show_fake_cover()
 {
   Page::Format fmt = {
     .line_height_factor = 1.0,
-    .font_index         =   6,
+    .font_index         =   2,
     .font_size          =  14,
     .indent             =   0,
     .margin_left        =   0,
@@ -222,7 +222,7 @@ BookViewer::show_fake_cover()
   page.add_text(author, fmt);
   page.end_paragraph(fmt);
 
-  fmt.font_index =   5;
+  fmt.font_index =   1;
   fmt.font_size  =  18;
   fmt.screen_top = 200;
   fmt.font_style = Fonts::FaceStyle::NORMAL;

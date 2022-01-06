@@ -144,7 +144,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
 
     if (book == nullptr) return;
 
-    // TTF * font = fonts.get(5, 9);
+    // TTF * font = fonts.get(1, 9);
 
     Page::Format fmt = {
       .line_height_factor = 0.8,
