@@ -13,6 +13,7 @@ enum class ConfigIdent {
   SHOW_TITLE, FRONT_LIGHT, DIR_VIEW,
   #if DATE_TIME_RTC
     SHOW_RTC,
+    NTP_SERVER,
   #endif
   #if INKPLATE_6PLUS
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER
@@ -21,13 +22,13 @@ enum class ConfigIdent {
 
 #if INKPLATE_6PLUS
   #if DATE_TIME_RTC
-    typedef ConfigBase<ConfigIdent, 24> Config;
+    typedef ConfigBase<ConfigIdent, 25> Config;
   #else
     typedef ConfigBase<ConfigIdent, 23> Config;
   #endif
 #else
   #if DATE_TIME_RTC
-    typedef ConfigBase<ConfigIdent, 17> Config;
+    typedef ConfigBase<ConfigIdent, 18> Config;
   #else
     typedef ConfigBase<ConfigIdent, 16> Config;
   #endif
@@ -57,6 +58,7 @@ enum class ConfigIdent {
 
   #if DATE_TIME_RTC
     static int8_t show_rtc;
+    static char   ntp_server[32];
   #endif
   #if INKPLATE_6PLUS
     static int64_t calib_a, calib_b, calib_c, calib_d, calib_e, calib_f, calib_divider;
@@ -103,6 +105,7 @@ enum class ConfigIdent {
 
     #if DATE_TIME_RTC
     { Config::Ident::SHOW_RTC,           Config::EntryType::BYTE,   "show_rtc",           &show_rtc,           &default_show_rtc,           0 },
+    { Config::Ident::NTP_SERVER,         Config::EntryType::STRING, "ntp_server",         ntp_server,          "pool.ntp.org",             32 },
     #endif
 
     #if INKPLATE_6PLUS
