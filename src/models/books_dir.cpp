@@ -508,13 +508,13 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
             first = false;
             //msg_viewer.show_progress("Computing new books pages location...");
             if (force_init) {
-              msg_viewer.show(MsgViewer::INFO, false, true, 
+              msg_viewer.show(MsgViewer::MsgType::INFO, false, true, 
                 "E-books metadata retrieval", 
                 "System parameters changed requiring metadata retrieval. "
                 "It will take between 5 and 10 seconds for each book.");
             }
             else {
-              msg_viewer.show(MsgViewer::INFO, false, true, 
+              msg_viewer.show(MsgViewer::MsgType::INFO, false, true, 
                 "New e-books metadata retrieval", 
                 "New e-books have been found. Please wait while we retrieve some metadata. "
                 "It will take between 5 and 10 seconds for each e-book.");

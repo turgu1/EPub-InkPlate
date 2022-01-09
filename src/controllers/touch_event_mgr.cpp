@@ -707,7 +707,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             
             screen.force_full_update();
             msg_viewer.show(
-              MsgViewer::INFO, 
+              MsgViewer::MsgType::INFO, 
               false, true, 
               "Deep Sleep", 
               "Timeout period exceeded (%d minutes). The device is now "

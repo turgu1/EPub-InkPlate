@@ -8,6 +8,7 @@
 #include "controllers/common_actions.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
+#include "controllers/ntp.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
@@ -179,7 +180,7 @@ wifi_mode()
 {
   #if EPUB_INKPLATE_BUILD  
     epub.close_file();
-    fonts.clear();
+    fonts.clear(true);
     fonts.clear_glyph_caches();
     
     event_mgr.set_stay_on(true); // DO NOT sleep
@@ -197,7 +198,7 @@ init_nvs()
   #if EPUB_INKPLATE_BUILD
     if (nvs_mgr.setup(true)) {
       msg_viewer.show(
-        MsgViewer::BOOK, 
+        MsgViewer::MsgType::BOOK, 
         false,
         false,
         "E-Books History Cleared", 
@@ -205,7 +206,7 @@ init_nvs()
     }
     else {
       msg_viewer.show(
-        MsgViewer::BOOK, 
+        MsgViewer::MsgType::BOOK, 
         false,
         false,
         "E-Books History Clearing Error", 
@@ -262,6 +263,38 @@ init_nvs()
       rtc.set_date_time(year, month, day, hour, minute, second, dow(year, month, day));
     #endif
   }
+
+  #if INKPLATE_6PLUS
+    static void
+    ntp_clock_adjust()
+    {
+      page_locs.abort_threads();
+      epub.close_file();
+
+      std::string ntp_server;
+      config.get(Config::Ident::NTP_SERVER, ntp_server);
+
+      msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, false, true, 
+        "Date/Time Retrival", 
+        "Retrieving Date and Time from NTP Server %s. Please wait.",
+        ntp_server.c_str());
+
+      if (ntp.get_and_set_time()) {
+        time_t time;
+        rtc.get_date_time(&time);
+        msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
+          "Date/Time Retrival Completed", 
+          "Time is %s. The device will now restart.", ctime(&time));
+      }
+      else {
+        msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
+          "Date/Time Retrival Failed", 
+          "Unable to get Date/Time from NTP Server! The device will now restart.");
+      }
+
+      option_controller.set_wait_for_key_after_wifi();
+    }
+  #endif
 #endif
 
 #if EPUB_LINUX_BUILD && DEBUGGING
@@ -305,6 +338,7 @@ static MenuViewer::MenuEntry sub_menu[] = {
   { MenuViewer::Icon::RETURN,       "Return to the e-books list",          CommonActions::return_to_last    , true,  true  },
   #if DATE_TIME_RTC
     { MenuViewer::Icon::CLOCK,      "Set Date/Time",                       clock_adjust_form                , true,  true  },
+    { MenuViewer::Icon::NTP_CLOCK,  "Set Date/Time from Time Server",      ntp_clock_adjust                 , true,  true  },
   #endif
   { MenuViewer::Icon::CALIB,        "Touch Screen Calibration",            calibrate                        , true,  false },
   { MenuViewer::Icon::REVERT,       "Clear e-books' read history",         init_nvs                         , true,  true  },
@@ -442,7 +476,7 @@ OptionController::input_event(const EventMgr::Event & event)
 
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
-      msg_viewer.show(MsgViewer::INFO, 
+      msg_viewer.show(MsgViewer::MsgType::INFO, 
                       false, true, 
                       "Restarting", 
                       "The device is now restarting. Please wait.");

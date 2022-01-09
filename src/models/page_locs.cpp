@@ -65,9 +65,9 @@ struct RetrieveQueueData {
       return cfg;
   }
 
-  static xQueueHandle mgr_queue;
-  static xQueueHandle state_queue;
-  static xQueueHandle retrieve_queue;
+  static xQueueHandle mgr_queue      = nullptr;
+  static xQueueHandle state_queue    = nullptr;
+  static xQueueHandle retrieve_queue = nullptr;
 
   #define QUEUE_SEND(q, m, t)        xQueueSend(q, &m, t)
   #define QUEUE_RECEIVE(q, m, t)  xQueueReceive(q, &m, t)
@@ -454,9 +454,11 @@ PageLocs::setup()
     retriever_thread = std::thread(retriever_task);
     state_thread     = std::thread(state_task);
   #else
-    mgr_queue      = xQueueCreate(5, sizeof(MgrQueueData));
-    state_queue    = xQueueCreate(5, sizeof(StateQueueData));
-    retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
+    esp_pthread_init();
+    
+    if (mgr_queue      == nullptr) mgr_queue      = xQueueCreate(5, sizeof(MgrQueueData));
+    if (state_queue    == nullptr) state_queue    = xQueueCreate(5, sizeof(StateQueueData));
+    if (retrieve_queue == nullptr) retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
 
     auto cfg = create_config("retrieverTask", 0, 60 * 1024, configMAX_PRIORITIES - 2);
     cfg.inherit_cfg = true;
@@ -482,7 +484,8 @@ PageLocs::abort_threads()
   QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
 
   retriever_thread.join();
-
+  retriever_thread.~thread();
+  
   StateQueueData state_queue_data;
   state_queue_data = {
     .req = StateReq::ABORT,
@@ -493,6 +496,7 @@ PageLocs::abort_threads()
   QUEUE_SEND(state_queue, state_queue_data, 0);
 
   state_thread.join();
+  state_thread.~thread();
 }
 
 class PageLocsInterp : public HTMLInterpreter 

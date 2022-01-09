@@ -9,6 +9,8 @@
 #include "lwip/sockets.h"
 #include <lwip/netdb.h>
 
+#include "inkplate_platform.hpp"
+
 bool NTP::error(const char * msg)
 {
   LOG_E("%s", msg);
@@ -16,7 +18,7 @@ bool NTP::error(const char * msg)
   return false;
 }
 
-bool NTP::get_time() 
+bool NTP::get_and_set_time() 
 {
   int sockfd;
 
@@ -68,15 +70,11 @@ bool NTP::get_time()
 
     // Send it the NTP packet it wants. If n == -1, it failed.
 
-    int n = write(sockfd, (char *) &packet, sizeof(ntp_packet));
-
-    if (n < 0) return error("ERROR writing to socket");
+    if (write(sockfd, (char *) &packet, sizeof(ntp_packet)) < 0) return error("ERROR writing to socket");
 
     // Wait and receive the packet back from the server. If n == -1, it failed.
 
-    n = read(sockfd, (char *) &packet, sizeof(ntp_packet));
-
-    if (n < 0) return error("ERROR reading from socket");
+    if (read(sockfd, (char *) &packet, sizeof(ntp_packet)) < 0) return error("ERROR reading from socket");
 
     wifi.stop();
 
@@ -92,11 +90,13 @@ bool NTP::get_time()
     // This leaves the seconds since the UNIX epoch of 1970.
     // (1900)------------------(1970)**************************************(Time Packet Left the Server)
 
-    time_t txTm = (time_t) (packet.txTm_s - NTP_TIMESTAMP_DELTA);
+    time_t time = (time_t) (packet.txTm_s - NTP_TIMESTAMP_DELTA);
 
     // Print the time we got from the server, accounting for local timezone and conversion from UTC time.
 
-    LOG_I("Time: %s", ctime((const time_t *) &txTm));
+    LOG_I("Time: %s", ctime((const time_t *) &time));
+
+    rtc.set_date_time(&time);
   }
   else {
     return false;

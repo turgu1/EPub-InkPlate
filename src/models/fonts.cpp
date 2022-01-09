@@ -107,7 +107,7 @@ bool Fonts::setup()
 
   LOG_D("Fonts initialization");
 
-  clear(true);
+  clear_everything();
 
   constexpr static const char * xml_fonts_descr = MAIN_FOLDER "/fonts_list.xml";
 
@@ -229,23 +229,37 @@ Fonts::clear(bool all)
   std::scoped_lock guard(mutex);
   
   // LOG_D("Fonts Clear!");
-  // Keep the first 5 fonts as they are reused. Caches will be cleared.
+  // Keep the first 7 fonts as they are reused. Caches will be cleared.
   #if USE_EPUB_FONTS
     int i = 0;
     for (auto & entry : font_cache) {
-      if (all || (i >= 7)) delete entry.font;
+      if ((all && (i >= 3)) || (i >= 7)) delete entry.font;
       else entry.font->clear_cache();
       i++;
     }
-    font_cache.resize(all ? 0 : 7);
+    font_cache.resize(all ? 3 : 7);
     font_cache.reserve(20);
   #endif
 }
 
 void
+Fonts::clear_everything()
+{
+  std::scoped_lock guard(mutex);
+  
+  // LOG_D("Fonts Clear!");
+  // Keep the first 7 fonts as they are reused. Caches will be cleared.
+  for (auto & entry : font_cache) {
+    delete entry.font;
+  }
+  font_cache.resize(0);
+  font_cache.reserve(20);
+}
+
+void
 Fonts::adjust_default_font(uint8_t font_index)
 {
-  if (font_cache.at(1).name.compare(font_names[font_index]) != 0) {
+  if (font_cache.at(3).name.compare(font_names[font_index]) != 0) {
     std::string normal      = std::string(FONTS_FOLDER "/").append(    regular_fname[font_index]);
     std::string bold        = std::string(FONTS_FOLDER "/").append(       bold_fname[font_index]);
     std::string italic      = std::string(FONTS_FOLDER "/").append(     italic_fname[font_index]);

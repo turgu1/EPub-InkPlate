@@ -105,7 +105,7 @@ revert_to_defaults()
 
   book_params->save();
 
-  msg_viewer.show(MsgViewer::INFO, 
+  msg_viewer.show(MsgViewer::MsgType::INFO, 
                   false, false, 
                   "E-book parameters reverted", 
                   "E-book parameters reverted to default values.");
@@ -134,7 +134,7 @@ books_list()
 static void
 delete_book()
 {
-  msg_viewer.show(MsgViewer::Severity::CONFIRM, true, false,
+  msg_viewer.show(MsgViewer::MsgType::CONFIRM, true, false,
                   "Delete e-book", 
                   "The e-book \"%s\" will be deleted. Are you sure?", 
                   epub.get_title());
@@ -155,7 +155,7 @@ wifi_mode()
 {
   #if EPUB_INKPLATE_BUILD
     epub.close_file();
-    fonts.clear();
+    fonts.clear(true);
     fonts.clear_glyph_caches();
     
     event_mgr.set_stay_on(true); // DO NOT sleep
@@ -247,59 +247,57 @@ BookParamController::input_event(const EventMgr::Event & event)
     }
   }
   else if (delete_current_book) {
-    #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
-      #define SELECTION EventMgr::EventKind::TAP
-    #else 
-      #define SELECTION EventMgr::EventKind::SELECT
-    #endif
-    if (event.kind == SELECTION) {
-      std::string filepath = epub.get_current_filename();
-      struct stat file_stat;
-
-      if (stat(filepath.c_str(), &file_stat) != -1) {
-        LOG_I("Deleting %s...", filepath.c_str());
-
-        epub.close_file();
-        unlink(filepath.c_str());
-
-        int16_t pos = filepath.find_last_of('.');
-
-        filepath.replace(pos, 5, ".pars");
+    bool ok;
+    if (msg_viewer.confirm(event, ok)) {
+      if (ok) {
+        std::string filepath = epub.get_current_filename();
+        struct stat file_stat;
 
         if (stat(filepath.c_str(), &file_stat) != -1) {
-          LOG_I("Deleting file : %s", filepath.c_str());
+          LOG_I("Deleting %s...", filepath.c_str());
+
+          epub.close_file();
           unlink(filepath.c_str());
+
+          int16_t pos = filepath.find_last_of('.');
+
+          filepath.replace(pos, 5, ".pars");
+
+          if (stat(filepath.c_str(), &file_stat) != -1) {
+            LOG_I("Deleting file : %s", filepath.c_str());
+            unlink(filepath.c_str());
+          }
+
+          filepath.replace(pos, 5, ".locs");
+
+          if (stat(filepath.c_str(), &file_stat) != -1) {
+            LOG_I("Deleting file : %s", filepath.c_str());
+            unlink(filepath.c_str());
+          }
+
+          filepath.replace(pos, 5, ".toc");
+
+          if (stat(filepath.c_str(), &file_stat) != -1) {
+            LOG_I("Deleting file : %s", filepath.c_str());
+            unlink(filepath.c_str());
+          }
+
+          int16_t dummy;
+          books_dir.refresh(nullptr, dummy, false);
+
+          app_controller.set_controller(AppController::Ctrl::DIR);
         }
-
-        filepath.replace(pos, 5, ".locs");
-
-        if (stat(filepath.c_str(), &file_stat) != -1) {
-          LOG_I("Deleting file : %s", filepath.c_str());
-          unlink(filepath.c_str());
-        }
-
-        filepath.replace(pos, 5, ".toc");
-
-        if (stat(filepath.c_str(), &file_stat) != -1) {
-          LOG_I("Deleting file : %s", filepath.c_str());
-          unlink(filepath.c_str());
-        }
-
-        int16_t dummy;
-        books_dir.refresh(nullptr, dummy, false);
-
-        app_controller.set_controller(AppController::Ctrl::DIR);
       }
+      else {
+        msg_viewer.show(MsgViewer::MsgType::INFO, false, false, 
+                        "Canceled", "The e-book was not deleted.");
+      }
+      delete_current_book = false;
     }
-    else {
-      msg_viewer.show(MsgViewer::Severity::INFO, false, false, 
-                      "Canceled", "The e-book was not deleted.");
-    }
-    delete_current_book = false;
   }
   #if EPUB_INKPLATE_BUILD
     else if (wait_for_key_after_wifi) {
-      msg_viewer.show(MsgViewer::INFO, 
+      msg_viewer.show(MsgViewer::MsgType::INFO, 
                       false, true, 
                       "Restarting", 
                       "The device is now restarting. Please wait.");

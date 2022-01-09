@@ -50,7 +50,7 @@ BookController::open_book_file(
 {
   LOG_D("===> open_book_file()...");
 
-  msg_viewer.show(MsgViewer::BOOK, false, false, "Loading a book",
+  msg_viewer.show(MsgViewer::MsgType::BOOK, false, false, "Loading a book",
      "The book \" %s \" is loading. Please wait.", book_title.c_str());
 
   bool new_document = book_filename != epub.get_current_filename();

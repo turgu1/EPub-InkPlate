@@ -59,7 +59,7 @@ CommonActions::power_it_off()
   app_controller.going_to_deep_sleep();
   #if EPUB_INKPLATE_BUILD
     screen.force_full_update();
-    msg_viewer.show(MsgViewer::INFO, false, true, "Power OFF",
+    msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Power OFF",
       "Entering Deep Sleep mode. " MSG);
     ESP::delay(1000);
     inkplate_platform.deep_sleep(INT_PIN, LEVEL);
@@ -75,7 +75,7 @@ CommonActions::about()
 {
   menu_viewer.clear_highlight();
   msg_viewer.show(
-    MsgViewer::BOOK, 
+    MsgViewer::MsgType::BOOK, 
     false,
     false,
     "About EPub-InkPlate", 

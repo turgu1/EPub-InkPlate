@@ -16,10 +16,10 @@
   #include "inkplate_platform.hpp"
 #endif
 
-char MsgViewer::icon_char[6] = { 'I',  '!', 'H', 'E', 'S', '!' };
+char MsgViewer::icon_char[7] = { 'I',  '!', 'H', 'E', 'S', 'Y', '!' };
 
 void MsgViewer::show(
-  Severity severity, 
+  MsgType msg_type, 
   bool press_a_key, 
   bool clear_screen,
   const char * title, 
@@ -78,10 +78,10 @@ void MsgViewer::show(
     Pos(((Screen::WIDTH - width ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT) >> 1) + 2));
 
   Font * font = fonts.get(0);
-  Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
+  Font::Glyph * glyph = font->get_glyph(icon_char[msg_type], 24);
 
   page.put_char_at(
-    icon_char[severity], 
+    icon_char[msg_type], 
     Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
     fmt);
 
@@ -100,7 +100,7 @@ void MsgViewer::show(
 
   fmt.align       = CSS::Align::LEFT;
   fmt.margin_top  = 80;
-  fmt.margin_left = 90;
+  fmt.margin_left = 100;
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
@@ -111,19 +111,85 @@ void MsgViewer::show(
   // Press a Key option
 
   if (press_a_key) {
-    fmt.align       = CSS::Align::CENTER;
-    fmt.font_size   =                  9;
-    fmt.margin_left =                 10;
-    fmt.margin_top  =                200;
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
+      if (msg_type != MsgType::CONFIRM) {
+        fmt.align       = CSS::Align::CENTER;
+        fmt.font_size   =                  9;
+        fmt.margin_left =                 10;
+        fmt.margin_top  =                200;
 
-    page.set_limits(fmt);
-    page.new_paragraph(fmt);
-    buffer = severity == Severity::CONFIRM ? "[Press SELECT to Confirm]" : "[Press a key]";
-    page.add_text(buffer, fmt);
-    page.end_paragraph(fmt);
+        page.set_limits(fmt);
+        page.new_paragraph(fmt);
+        buffer = "[Please TAP the screen]";
+        page.add_text(buffer, fmt);
+        page.end_paragraph(fmt);
+      } 
+      else {
+        font = fonts.get(1);
+        Dim dim, ok_dim;
+        font->get_size("CANCEL", &dim,    10); 
+        font->get_size("OK",     &ok_dim, 10); 
+        buttons_dim = Dim(dim.width + 20, dim.height + 20);
+        ok_pos = Pos((screen.WIDTH >> 1) - 20 - buttons_dim.width, fmt.screen_top + 220);
+        cancel_pos = Pos((screen.WIDTH >> 1) + 20, fmt.screen_top + 220);
+
+        page.put_rounded(buttons_dim, ok_pos);
+        page.put_rounded(Dim(buttons_dim.width + 2, buttons_dim.height + 2),
+                         Pos(ok_pos.x - 1,          ok_pos.y - 1));
+        page.put_rounded(Dim(buttons_dim.width + 4, buttons_dim.height + 4),
+                         Pos(ok_pos.x - 2,          ok_pos.y - 2));
+
+        page.put_str_at("OK", Pos(ok_pos.x + (buttons_dim.width  >> 1) - (ok_dim.width  >> 1),
+                                  ok_pos.y + (buttons_dim.height >> 1) + (ok_dim.height >> 1)), fmt);
+
+        page.put_rounded(buttons_dim, cancel_pos);
+        page.put_rounded(Dim(buttons_dim.width + 2, buttons_dim.height + 2),
+                         Pos(cancel_pos.x - 1,      cancel_pos.y - 1));
+        page.put_rounded(Dim(buttons_dim.width + 4, buttons_dim.height + 4),
+                         Pos(cancel_pos.x - 2,      cancel_pos.y - 2));
+
+        page.put_str_at("CANCEL", Pos(cancel_pos.x + (buttons_dim.width  >> 1) - (dim.width  >> 1),
+                                      cancel_pos.y + (buttons_dim.height >> 1) + (dim.height >> 1)), fmt);
+      }
+    #else
+      fmt.align       = CSS::Align::CENTER;
+      fmt.font_size   =                  9;
+      fmt.margin_left =                 10;
+      fmt.margin_top  =                200;
+
+      page.set_limits(fmt);
+      page.new_paragraph(fmt);
+      buffer = msg_type == MsgType::CONFIRM ? "[Press SELECT to Confirm]" : "[Press any key]";
+      page.add_text(buffer, fmt);
+      page.end_paragraph(fmt);
+    #endif
   }
 
   page.paint(clear_screen, !clear_screen, true);
+}
+
+bool MsgViewer::confirm(const EventMgr::Event & event, bool & ok)
+{
+  #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+
+    if (event.kind == EventMgr::EventKind::TAP) {
+      if ((event.x >= ok_pos.x) && (event.x <= (ok_pos.x + buttons_dim.width )) &&
+          (event.y >= ok_pos.y) && (event.y <= (ok_pos.y + buttons_dim.height))) {
+        ok = true;
+        return true;
+      }
+      else if ((event.x >= cancel_pos.x) && (event.x <= (cancel_pos.x + buttons_dim.width )) &&
+               (event.y >= cancel_pos.y) && (event.y <= (cancel_pos.y + buttons_dim.height))) {
+        ok = false;
+        return true;
+      }
+    }
+    return false;
+  #else 
+    ok = event.kind == EventMgr::EventKind::SELECT;
+    return true;
+  #endif
+
 }
 
 #if 0
@@ -290,6 +356,8 @@ MsgViewer::out_of_memory(const char * raison)
     MSG,
     raison
   );
+ 
+  #undef MSG
 
   #if EPUB_INKPLATE_BUILD
     inkplate_platform.deep_sleep(INT_PIN, LEVEL); // Never return

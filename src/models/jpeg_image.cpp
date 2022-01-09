@@ -64,7 +64,7 @@ static int out_func (       /* Returns 1 to continue, 0 to abort */
       waiting_msg_shown = true;
 
       msg_viewer.show(
-        MsgViewer::INFO, 
+        MsgViewer::MsgType::INFO, 
         false, false, 
         "Retrieving Image", 
         "The application is retrieving image(s) from the e-book file. Please wait."

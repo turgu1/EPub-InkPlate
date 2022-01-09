@@ -36,7 +36,7 @@ on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha)
   //     waiting_msg_shown = true;
 
   //     msg_viewer.show(
-  //       MsgViewer::INFO, 
+  //       MsgViewer::MsgType::INFO, 
   //       false, false, 
   //       "Retrieving Image", 
   //       "The application is retrieving image(s) from the e-book. Please wait."

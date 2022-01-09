@@ -38,7 +38,7 @@ class Fonts
      * @param all If true, default fonts will also be removed
      */
     void clear(bool all = false);
-
+    void clear_everything();
     /**
      * @brief Get font at index
      * 

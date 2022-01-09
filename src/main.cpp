@@ -68,7 +68,15 @@
 
       bool config_err = !config.read();
       if (config_err) LOG_E("Config Error.");
+      #if DATE_TIME_RTC
+        else {
+          std::string time_zone;
 
+          config.get(Config::Ident::TIME_ZONE, time_zone);
+          setenv("TZ", time_zone.c_str(), 1);
+        }
+      #endif
+      
       #if DEBUGGING
         config.show();
       #endif
@@ -107,7 +115,7 @@
         #endif
 
         if (!nvs_mgr_res) {
-          msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
             "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG
           );
 
@@ -116,7 +124,7 @@
         }
     
         if (inkplate_err) {
-          msg_viewer.show(MsgViewer::ALERT, false, true, "Hardware Problem!",
+          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
             "Unable to initialize the InkPlate drivers. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
@@ -124,14 +132,14 @@
         }
 
         if (config_err) {
-          msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
+          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
             "Unable to read/save configuration file. Entering Deep Sleep. " MSG
           );
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
-        msg_viewer.show(MsgViewer::INFO, false, true, "Starting", "One moment please...");
+        msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 
         books_dir_controller.setup();
         LOG_D("Initialization completed");
@@ -139,7 +147,7 @@
       }
       else {
         LOG_E("Font loading error.");
-        msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
+        msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
           "Unable to read required fonts. Entering Deep Sleep. " MSG
         );
         ESP::delay(500);
@@ -237,11 +245,17 @@
       screen.setup(resolution, orientation);
 
       event_mgr.setup();
-      books_dir_controller.setup(); 
+      books_dir_controller.setup();
+
+      #if defined(INKPLATE_6PLUS)
+        #define MSG "the WakeUp button"
+      #else
+        #define MSG "a key"
+      #endif
 
       if (config_err) {
-        msg_viewer.show(MsgViewer::ALERT, false, true, "Configuration Problem!",
-          "Unable to read/save configuration file. Entering Deep Sleep. Press a key to restart."
+        msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
+          "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG " to restart."
         );
         sleep(10);
         exit(0);
@@ -256,7 +270,7 @@
       #endif
     }
     else {
-      msg_viewer.show(MsgViewer::ALERT, false, true, "Font Loading Problem!",
+      msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
         "Unable to load default fonts."
       );
 

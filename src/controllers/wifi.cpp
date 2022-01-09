@@ -80,6 +80,8 @@ wifi_sta_event_handler(void        * arg,
 bool 
 WIFI::start(void)
 {
+  if (running) return true;
+
   bool connected = false;
   wifi_first_start = true;
 
@@ -155,23 +157,28 @@ WIFI::start(void)
     ESP_ERROR_CHECK(esp_event_loop_delete_default());
   }
 
+  running = true;
   return connected;
 }
 
 void
 WIFI::stop()
 {
-  ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
-  ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
+  if (running) {
+    ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
+    ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
 
-  vEventGroupDelete(wifi_event_group);
-  wifi_event_group = nullptr;
+    vEventGroupDelete(wifi_event_group);
+    wifi_event_group = nullptr;
 
-  esp_event_loop_delete_default();
+    esp_event_loop_delete_default();
 
-  esp_wifi_disconnect();
-  esp_wifi_stop();
-  esp_wifi_deinit();
+    esp_wifi_disconnect();
+    esp_wifi_stop();
+    esp_wifi_deinit();
+
+    running = false;
+  }
 }
 
 #endif

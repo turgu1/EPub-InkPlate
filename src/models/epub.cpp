@@ -527,7 +527,7 @@ EPub::retrieve_fonts_from_css(CSS & css)
               first = false;
               LOG_D("Displaying font loading msg.");
               msg_viewer.show(
-                MsgViewer::INFO, 
+                MsgViewer::MsgType::INFO, 
                 false, false, 
                 "Retrieving Font(s)", 
                 "The application is retrieving font(s) from the EPub file. Please wait."
@@ -727,7 +727,7 @@ EPub::get_item(pugi::xml_node itemref,
       if (res.status != status_ok) {
         LOG_E("item_doc xml load error: %d", res.status);
         // msg_viewer.show(
-        //   MsgViewer::ALERT, 
+        //   MsgViewer::MsgType::ALERT, 
         //   true, false, 
         //   "XML Error in eBook.", 
         //   "File %s contains XHTML errors and cannot be loaded.",

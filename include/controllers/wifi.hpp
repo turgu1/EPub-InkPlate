@@ -18,9 +18,13 @@ class WIFI
                                        int32_t           event_id, 
                                        void            * event_data);
     esp_ip4_addr_t ip_address;
+    bool running;
+
     inline void set_ip_address(esp_ip4_addr_t addr) { ip_address = addr; }
 
   public:
+    WIFI() : running(false) {}
+    
     bool start();
     void stop();
 

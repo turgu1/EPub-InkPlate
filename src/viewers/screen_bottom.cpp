@@ -6,6 +6,7 @@
 #include "screen.hpp"
 
 #include <iomanip>
+#include <ctime>
 
 const std::string ScreenBottom::dw[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
@@ -80,24 +81,33 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
     config.get(Config::Ident::SHOW_RTC, &show_rtc);
 
     if (show_rtc != 0) {
-      uint16_t y;
-      uint8_t m, d, h, mm, s;
+      struct tm time;
 
       #if EPUB_INKPLATE_BUILD
-        RTC::WeekDay dow;
-        rtc.get_date_time(y, m, d, h, mm, s, dow);
+        time_t epoch;
+        rtc.get_date_time(&epoch);
+        localtime_r(&epoch, &time);
       #else
-        int8_t dow = 1;
-        y = 2022; m = d = 1, h = mm = s = 0;
+       time = {
+          .tm_sec   =  0,
+          .tm_min   =  0,
+          .tm_hour  =  0,
+          .tm_mday  =  1,
+          .tm_mon   =  0,
+          .tm_year  =  2022 - 1970,
+          .tm_wday  =  1,
+          .tm_yday  =  1,
+          .tm_isdst = -1
+        };
       #endif
 
       ostr.str(std::string());
-      ostr << dw[(int8_t) dow] << " - "
+      ostr << dw[(int8_t) time.tm_wday] << " - "
            << std::setfill('0') 
-           << std::setw(2) <<  +m << '/' 
-           << std::setw(2) <<  +d << ' '
-           << std::setw(2) <<  +h << ':' 
-           << std::setw(2) << +mm;
+           << std::setw(2) << +(time.tm_mon + 1)  << '/' 
+           << std::setw(2) << +time.tm_mday << ' '
+           << std::setw(2) << +time.tm_hour << ':' 
+           << std::setw(2) << +time.tm_min;
 
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(),

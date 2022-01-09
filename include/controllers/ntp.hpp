@@ -1,3 +1,5 @@
+#pragma once
+
 #include "global.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -42,7 +44,7 @@ class NTP
 
   public:
 
-    bool get_time();
+    bool get_and_set_time();
 };
 
 #if __NTP__

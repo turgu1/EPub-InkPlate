@@ -7,7 +7,6 @@
 
 #if EPUB_INKPLATE_BUILD
 
-#include "controllers/wifi.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "models/config.hpp"
 #include "models/page_locs.hpp"
@@ -25,6 +24,17 @@ extern "C" {
 
 #include "esp_vfs.h"
 #include "esp_http_server.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+
+#include "lwip/err.h"
+#include "lwip/sys.h"
 
 #include "models/config.hpp"
 
@@ -118,33 +128,27 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     "</style>"
     "<script>"
     "function sortTable(n) {"
-      "var table, rows, switching, i, x, y, shouldSwitch, dir;"
-      "table = document.getElementById(\"sorted\");"
-      "switching = true;"
-      "dir = table.getAttribute(\"next_sort\");"
-      "while (switching) {"
-        "switching = false; rows = table.rows;"
-        "for (i = 1; i < (rows.length - 1); i++) {"
-          "shouldSwitch = false;"
-          "x = rows[i].getElementsByTagName(\"TD\")[n];"
-          "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
-          "if (dir == \"asc\") {"
-            "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {"
-              "shouldSwitch= true; break;"
-            "}"
-          "} else if (dir == \"desc\") {"
-            "if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {"
-              "shouldSwitch = true; break;"
-            "}"
-          "}"
-        "}"
-        "if (shouldSwitch) {"
-          "rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);"
-          "switching = true;"
-        "}"
-      "}"
-      "table.setAttribute(\"next_sort\", (dir == \"asc\") ? \"desc\" : \"asc\");"
-    "}"
+    "var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;"
+    "table = document.getElementById(\"sorted\");"
+    "switching = true; dir = \"asc\";"
+    "while (switching) {"
+    "switching = false; rows = table.rows;"
+    "for (i = 1; i < (rows.length - 1); i++) {"
+    "shouldSwitch = false;"
+    "x = rows[i].getElementsByTagName(\"TD\")[n];"
+    "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
+    "if (dir == \"asc\") {"
+    "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {"
+    "shouldSwitch= true; break;"
+    "}} else if (dir == \"desc\") {"
+    "if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {"
+    "shouldSwitch = true; break;}}}"
+    "if (shouldSwitch) {"
+    "rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);"
+    "switching = true; switchcount ++; } else {"
+    "if (switchcount == 0 && dir == \"asc\") {"
+    "dir = \"desc\"; switching = true;"
+    "}}}}"
     "</script>"
     "</head>"
     "<body>");
@@ -156,7 +160,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   httpd_resp_send_chunk(req, (const char *) upload_script_start, upload_script_size);
 
   httpd_resp_sendstr_chunk(req,
-    "<table class=\"fixed list\" id=\"sorted\" next_sort=\"asc\">"
+    "<table class=\"fixed list\" id=\"sorted\">"
     "<colgroup><col width=\"70%\"/><col width=\"8%\"/><col width=\"14%\"/><col width=\"8%\"/></colgroup>"
     "<thead><tr><th onclick=\"sortTable(0)\">Name</th><th>Type</th><th>Size (Bytes)</th><th>Delete</th></tr></thead>"
     "<tbody>");
@@ -173,9 +177,8 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
       LOG_E("Failed to stat %s : %s", entrytype, entry->d_name);
       continue;
     }
-
     itoa(entry_stat.st_size, entrysize, 10);
-    LOG_I("Found %s : %s (%ld bytes)", entrytype, entry->d_name, entry_stat.st_size);
+    LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
 
     std::string the_size;
     uint8_t     length       = strlen(entrysize);
@@ -237,8 +240,6 @@ extern unsigned char hex_to_bin(char ch);
 static std::string 
 get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
 {
-  LOG_D("get_path_from_uri, base_path: %s, uri: %s", base_path, uri);
-
   const size_t base_pathlen = strlen(base_path);
   size_t pathlen = strlen(uri);
 
@@ -275,17 +276,15 @@ get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
 static esp_err_t
 download_handler(httpd_req_t * req)
 {
-  LOG_D("download_handler(%s) %d", req->uri, (int) req->user_ctx);
+  LOG_D("download_handler(%s)", req->uri);
 
-  FILE * fd = nullptr;
+  FILE * fd = NULL;
   struct stat file_stat;
 
   std::string filepath;
   std::string filename = get_path_from_uri(filepath, 
                                            ((FileServerData *) req->user_ctx)->base_path,
                                            req->uri);
-
-  LOG_D("filepath = %s, filename = %s", filepath.c_str(), filename.c_str());
 
   if (filename.back() == '/') {
     return http_resp_dir_html(req, filepath.c_str());
@@ -499,14 +498,14 @@ delete_handler(httpd_req_t * req)
 static esp_err_t 
 http_server_start()
 {
-  if (server_data != nullptr) {
+  if (server_data) {
     LOG_E("File server already started");
     return ESP_ERR_INVALID_STATE;
   }
 
   /* Allocate memory for server data */
   server_data = (FileServerData *) calloc(1, sizeof(FileServerData));
-  if (server_data == nullptr) {
+  if (!server_data) {
     LOG_E("Failed to allocate memory for server data");
     return ESP_ERR_NO_MEM;
   }
@@ -514,14 +513,14 @@ http_server_start()
 
   httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
 
-  httpd_config.max_open_sockets = 4;
+  httpd_config.max_open_sockets = 2;
 
   int32_t port;
   config.get(Config::Ident::PORT, &port);
   httpd_config.uri_match_fn = httpd_uri_match_wildcard;
   httpd_config.server_port = (uint16_t) port;
 
-  LOG_I("Starting HTTP Server on port %d...", port);
+  LOG_I("Starting HTTP Server");
   esp_err_t res = httpd_start(&server, &httpd_config);
   if (res != ESP_OK) {
     LOG_E("Failed to start file server (%s)!", esp_err_to_name(res));
@@ -534,7 +533,6 @@ http_server_start()
     .handler   = download_handler,
     .user_ctx  = server_data 
   };
-
   httpd_register_uri_handler(server, &file_download);
 
   httpd_uri_t file_upload = {
@@ -543,8 +541,7 @@ http_server_start()
     .handler   = upload_handler,
     .user_ctx  = server_data 
   };
-
-  httpd_register_uri_handler(server, &file_upload  );
+  httpd_register_uri_handler(server, &file_upload);
 
   httpd_uri_t file_delete = {
     .uri       = "/delete/*",   // Match all URIs of type /delete/path/to/file
@@ -552,8 +549,7 @@ http_server_start()
     .handler   = delete_handler,
     .user_ctx  = server_data
   };
-
-  httpd_register_uri_handler(server, &file_delete  );
+  httpd_register_uri_handler(server, &file_delete);
 
   return ESP_OK;
 }
@@ -563,11 +559,171 @@ http_server_start()
 static void
 http_server_stop()
 {
-  if (server_data != nullptr) {
-    httpd_stop(server);
-    free(server_data);
-    server_data = nullptr;
+  httpd_stop(server);
+  free(server_data);
+  server_data = nullptr;
+}
+
+// ----- sta_event_handler() -----
+
+// The event group allows multiple bits for each event, but we 
+// only care about two events:
+// - we are connected to the AP with an IP
+// - we failed to connect after the maximum amount of retries
+
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT      BIT1
+
+// FreeRTOS event group to signal when we are connected
+
+static EventGroupHandle_t wifi_event_group = nullptr;
+static bool wifi_first_start = true;
+
+static constexpr int8_t ESP_MAXIMUM_RETRY = 6;
+
+static int s_retry_num = 0;
+static esp_ip4_addr_t ip_address;
+
+static void sta_event_handler(void            * arg, 
+                              esp_event_base_t  event_base,
+                              int32_t           event_id, 
+                              void            * event_data)
+{
+  LOG_I("STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
+
+  if (event_base == WIFI_EVENT) {
+    if (event_id == WIFI_EVENT_STA_START) {
+      esp_wifi_connect();
+    } 
+    else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+      if (wifi_first_start) {
+        if (s_retry_num < ESP_MAXIMUM_RETRY) {
+          vTaskDelay(pdMS_TO_TICKS(10E3));
+          LOG_I("retry to connect to the AP");
+          esp_wifi_connect();
+          s_retry_num++;
+        } 
+        else {
+          xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
+          LOG_I("connect to the AP fail");
+        }
+      }
+      else {
+        LOG_I("Wifi Disconnected.");
+        vTaskDelay(pdMS_TO_TICKS(10E3));
+        LOG_I("retry to connect to the AP");
+        esp_wifi_connect();
+      }
+    } 
   }
+  else if (event_base == IP_EVENT) {
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+      ip_event_got_ip_t * event = (ip_event_got_ip_t*) event_data;
+      LOG_I("got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+      ip_address = event->ip_info.ip;
+      s_retry_num = 0;
+      xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+      wifi_first_start = false;
+    }
+  }
+}
+
+// ----- wifi_start() -----
+
+static bool 
+wifi_start(void)
+{
+  bool connected = false;
+  wifi_first_start = true;
+
+  if (wifi_event_group == nullptr) wifi_event_group = xEventGroupCreate();
+
+  ESP_ERROR_CHECK(esp_netif_init());
+
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  esp_netif_create_default_wifi_sta();
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+  ESP_ERROR_CHECK(esp_event_handler_register(
+    WIFI_EVENT, 
+    ESP_EVENT_ANY_ID,    
+    &sta_event_handler, 
+    NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(
+    IP_EVENT,   
+    IP_EVENT_STA_GOT_IP, 
+    &sta_event_handler, 
+    NULL));
+
+  std::string wifi_ssid;
+  std::string wifi_pwd;
+
+  config.get(Config::Ident::SSID, wifi_ssid);
+  config.get(Config::Ident::PWD,  wifi_pwd );
+
+  wifi_config_t wifi_config;
+
+  bzero(&wifi_config, sizeof(wifi_config_t));
+
+  wifi_config.sta.bssid_set          = 0;
+  wifi_config.sta.pmf_cfg.capable    = true;
+  wifi_config.sta.pmf_cfg.required   = false;
+  wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+
+  strcpy((char *) wifi_config.sta.ssid,     wifi_ssid.c_str());
+  strcpy((char *) wifi_config.sta.password, wifi_pwd.c_str());
+
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+
+  LOG_I("wifi_init_sta finished.");
+
+  // Waiting until either the connection is established (WIFI_CONNECTED_BIT) 
+  // or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT). 
+  // The bits are set by event_handler() (see above)
+
+  EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
+    WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+    pdFALSE,
+    pdFALSE,
+    portMAX_DELAY);
+
+  if (bits & WIFI_CONNECTED_BIT) {
+    LOG_I("connected to ap SSID:%s password:%s",
+             wifi_ssid.c_str(), wifi_pwd.c_str());
+    connected = true;
+  } 
+  else if (bits & WIFI_FAIL_BIT) {
+    LOG_E("Failed to connect to SSID:%s, password:%s",
+             wifi_ssid.c_str(), wifi_pwd.c_str());
+  }
+  else {
+    LOG_E("UNEXPECTED EVENT");
+  }
+
+  if (!connected) {
+    ESP_ERROR_CHECK(esp_event_loop_delete_default());
+  }
+  return connected;
+}
+
+void
+wifi_stop()
+{
+  ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &sta_event_handler));
+  ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &sta_event_handler));
+
+  vEventGroupDelete(wifi_event_group);
+  wifi_event_group = nullptr;
+
+  esp_event_loop_delete_default();
+
+  esp_wifi_disconnect();
+  esp_wifi_stop();
+  esp_wifi_deinit();
 }
 
 bool
@@ -580,41 +736,31 @@ start_web_server()
     "Web Server Starting", 
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
-  #if defined(INKPLATE_6PLUS)
-    #define MSG "Tap the screen"
-  #else
-    #define MSG "Press a key"
-  #endif
-
-  if (wifi.start()) {
-    if (http_server_start() == ESP_OK) {
-      esp_ip4_addr_t ip = wifi.get_ip_address();
+  if (wifi_start()) {
+    EventBits_t bits = xEventGroupGetBits(wifi_event_group);
+    if (bits & WIFI_CONNECTED_BIT) {
       msg_viewer.show(MsgViewer::MsgType::WIFI, true, true, 
         "Web Server", 
-        "The Web server is now running at ip " IPSTR ". To stop it, please " MSG ".", IP2STR(&ip));
+        "The Web server is now running at ip " IPSTR ". To stop it, please press a key.", IP2STR(&ip_address));
+      return http_server_start() == ESP_OK;
     }
     else {
       msg_viewer.show(MsgViewer::MsgType::ALERT, true, true, 
         "Web Server Failed", 
-        "The Web server was not able to start. Correct the situation and try again.");
-      wifi.stop();
+        "The Web server was not able to start. Correct the situation and try again.", IP2STR(&ip_address));
     }
   }
   else {
-    msg_viewer.show(MsgViewer::MsgType::ALERT, true, true, 
-      "WiFi Startup Failed", 
-      "WiFi was not able to start the connection. Correct the situation and try again.");
-    wifi.stop();
+    wifi_stop();
   }
-
-  return true;
+  return false;
 }
 
 void
 stop_web_server()
 {
   http_server_stop();
-  wifi.stop();
+  wifi_stop();
 }
 
 #endif
