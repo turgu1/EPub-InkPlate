@@ -255,32 +255,32 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       case Screen::Orientation::BOTTOM:
         LOG_D("Bottom...");
         calib_point = {
-          .x = { ((uint16_t)(screen.WIDTH  - 100)), ((uint16_t)(screen.WIDTH  / 2)), 100 },
-          .y = { 100, ((uint16_t)(screen.HEIGHT - 100)), ((uint16_t)(screen.HEIGHT / 2)) }
+          .x = { ((uint16_t)(Screen::get_width()  - 100)), ((uint16_t)(Screen::get_width()  / 2)), 100 },
+          .y = { 100, ((uint16_t)(Screen::get_height() - 100)), ((uint16_t)(Screen::get_height() / 2)) }
         };
         break;
 
       case Screen::Orientation::TOP:
         LOG_D("Top...");
         calib_point = {
-          .x = { 100, ((uint16_t)(screen.WIDTH  / 2)), ((uint16_t)(screen.WIDTH  - 100)) },
-          .y = { ((uint16_t)(screen.HEIGHT - 100)), 100, ((uint16_t)(screen.HEIGHT / 2)) }
+          .x = { 100, ((uint16_t)(Screen::get_width()  / 2)), ((uint16_t)(Screen::get_width()  - 100)) },
+          .y = { ((uint16_t)(Screen::get_height() - 100)), 100, ((uint16_t)(Screen::get_height() / 2)) }
         };
         break;
     
       case Screen::Orientation::LEFT:
         LOG_D("Left...");
         calib_point = {
-          .x = { ((uint16_t)(screen.WIDTH  - 100)), 100, ((uint16_t)(screen.WIDTH  / 2)) },
-          .y = { ((uint16_t)(screen.HEIGHT - 100)), ((uint16_t)(screen.HEIGHT / 2)), 100 }
+          .x = { ((uint16_t)(Screen::get_width()  - 100)), 100, ((uint16_t)(Screen::get_width()  / 2)) },
+          .y = { ((uint16_t)(Screen::get_height() - 100)), ((uint16_t)(Screen::get_height() / 2)), 100 }
         };
         break;
 
       case Screen::Orientation::RIGHT:
         LOG_D("Right...");
         calib_point = {
-          .x = { 100, ((uint16_t)(screen.WIDTH  - 100)), ((uint16_t)(screen.WIDTH  / 2)) },
-          .y = { 100, ((uint16_t)(screen.HEIGHT / 2)), ((uint16_t)(screen.HEIGHT - 100)) }
+          .x = { 100, ((uint16_t)(Screen::get_width()  - 100)), ((uint16_t)(Screen::get_width()  / 2)) },
+          .y = { 100, ((uint16_t)(Screen::get_height() / 2)), ((uint16_t)(Screen::get_height() - 100)) }
         };
         break;
     }
@@ -321,8 +321,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       .display            = CSS::Display::INLINE
     };
 
-    page.put_str_at("Touch Sensor Calibration", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 150), fmt);
-    page.put_str_at("Please TAP once on each crosshair to calibrate.", Pos(screen.WIDTH >> 1, (screen.HEIGHT >> 1) - 100), fmt);
+    page.put_str_at("Touch Sensor Calibration", Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 150), fmt);
+    page.put_str_at("Please TAP once on each crosshair to calibrate.", Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 100), fmt);
 
     calib_count = 0;
     page.paint();
@@ -340,27 +340,27 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
         case Screen::Orientation::BOTTOM:
           LOG_D("Bottom...");
           temp = y;
-          y = ((uint32_t) (screen.HEIGHT - 1) *                   x) / touch_screen.get_x_resolution();
-          x = screen.WIDTH - ((uint32_t) (screen.WIDTH  - 1) * temp) / touch_screen.get_y_resolution();
+          y = ((uint32_t) (Screen::get_height() - 1) *                   x) / touch_screen.get_x_resolution();
+          x = Screen::get_width() - ((uint32_t) (Screen::get_width()  - 1) * temp) / touch_screen.get_y_resolution();
           break;
 
         case Screen::Orientation::TOP:
           LOG_D("Top...");
           temp = y;
-          y = screen.HEIGHT - ((uint32_t) (screen.HEIGHT - 1) * x) / touch_screen.get_x_resolution();
-          x = ((uint32_t) (screen.WIDTH  - 1) *             temp ) / touch_screen.get_y_resolution();
+          y = Screen::get_height() - ((uint32_t) (Screen::get_height() - 1) * x) / touch_screen.get_x_resolution();
+          x = ((uint32_t) (Screen::get_width()  - 1) *             temp ) / touch_screen.get_y_resolution();
           break;
       
         case Screen::Orientation::LEFT:
           LOG_D("Left...");
-          x = screen.WIDTH  - ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
-          y = screen.HEIGHT - ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+          x = Screen::get_width()  - ((uint32_t) (Screen::get_width()  - 1) * x) / touch_screen.get_x_resolution();
+          y = Screen::get_height() - ((uint32_t) (Screen::get_height() - 1) * y) / touch_screen.get_y_resolution();
           break;
 
         case Screen::Orientation::RIGHT:
           LOG_D("Right...");
-          x = ((uint32_t) (screen.WIDTH  - 1) * x) / touch_screen.get_x_resolution();
-          y = ((uint32_t) (screen.HEIGHT - 1) * y) / touch_screen.get_y_resolution();
+          x = ((uint32_t) (Screen::get_width()  - 1) * x) / touch_screen.get_x_resolution();
+          y = ((uint32_t) (Screen::get_height() - 1) * y) / touch_screen.get_y_resolution();
           break;
       }
     }
@@ -375,20 +375,20 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           LOG_D("Bottom...");
           temp = y;
           y = xd;;
-          x = screen.WIDTH - yd;
+          x = Screen::get_width() - yd;
           break;
 
         case Screen::Orientation::TOP:
           LOG_D("Top...");
           temp = y;
-          y = screen.HEIGHT - xd;
+          y = Screen::get_height() - xd;
           x = yd;
           break;
 
         case Screen::Orientation::LEFT:
           LOG_D("Left...");
-          x = screen.WIDTH  - xd;
-          y = screen.HEIGHT - yd;
+          x = Screen::get_width()  - xd;
+          y = Screen::get_height() - yd;
           break;
       
         case Screen::Orientation::RIGHT:

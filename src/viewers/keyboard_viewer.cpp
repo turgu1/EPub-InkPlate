@@ -17,7 +17,7 @@
 bool 
 KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
 {
-  width           = Screen::WIDTH - 60;
+  width           = Screen::get_width() - 60;
   current_kb_type = KBType::ALFA;
 
   if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return false; // Cannot be used durint location computation
@@ -46,10 +46,10 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     .display            = CSS::Display::INLINE
   };
 
-  fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_right       = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
+  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
+  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
@@ -58,18 +58,18 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
 #if 0
   page.clear_region(
     Dim(width, HEIGHT), 
-    Pos((Screen::WIDTH  - width ) >> 1, (Screen::HEIGHT - HEIGHT) >> 1));
+    Pos((Screen::get_width()  - width ) >> 1, (Screen::get_height() - HEIGHT) >> 1));
 
   page.put_highlight(
     Dim(width - 4, HEIGHT - 4), 
-    Pos(((Screen::WIDTH - width ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT) >> 1) + 2));
+    Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
 
   TTF * font = fonts.get(0);
   Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
 
   page.put_char_at(
     icon_char[severity], 
-    Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
+    Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
     fmt);
 
   fmt.font_index =  1;

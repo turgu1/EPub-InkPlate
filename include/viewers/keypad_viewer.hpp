@@ -125,8 +125,8 @@ class KeypadViewer
 
       keypad_dim = Dim(((key_dim.width + 2) * 3) - 2, (key_dim.height + 2) * 7);
 
-      keypad_pos = Pos((screen.WIDTH  >> 1) - (keypad_dim.width  >> 1), 
-                       (screen.HEIGHT >> 1) - (keypad_dim.height >> 1));
+      keypad_pos = Pos((Screen::get_width()  >> 1) - (keypad_dim.width  >> 1), 
+                       (Screen::get_height() >> 1) - (keypad_dim.height >> 1));
 
       field_pos = Pos(keypad_pos.x, keypad_pos.y + key_dim.height + 2);
 
@@ -177,7 +177,7 @@ class KeypadViewer
       constexpr char labels[12] = "789456123 0";
 
       page.put_str_at(caption, 
-                      Pos(screen.WIDTH >> 1, 
+                      Pos(Screen::get_width() >> 1, 
                           keypad_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
                       fmt);
 

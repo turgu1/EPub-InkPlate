@@ -37,13 +37,13 @@ MatrixBooksDirViewer::setup()
 
   first_entry_ypos = (title_font_height << 1) + author_font_height + SPACE_BELOW_INFO + 10;
 
-  line_count = (Screen::HEIGHT - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) / 
+  line_count = (Screen::get_height() - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) / 
                 (BooksDir::max_cover_height + MIN_SPACE_BETWEEN_ENTRIES);
 
-  column_count = (Screen::WIDTH - 10 + MIN_SPACE_BETWEEN_ENTRIES) / (BooksDir::max_cover_width + MIN_SPACE_BETWEEN_ENTRIES);
+  column_count = (Screen::get_width() - 10 + MIN_SPACE_BETWEEN_ENTRIES) / (BooksDir::max_cover_width + MIN_SPACE_BETWEEN_ENTRIES);
 
-  horiz_space_between_entries = (Screen::WIDTH - 10 - (BooksDir::max_cover_width * column_count)) / (column_count - 1);
-  vert_space_between_entries  = (Screen::HEIGHT - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR - (BooksDir::max_cover_height * line_count)) / (line_count - 1);
+  horiz_space_between_entries = (Screen::get_width() - 10 - (BooksDir::max_cover_width * column_count)) / (column_count - 1);
+  vert_space_between_entries  = (Screen::get_height() - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR - (BooksDir::max_cover_height * line_count)) / (line_count - 1);
   books_per_page              = line_count * column_count;
   page_count                  = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
 
@@ -102,7 +102,8 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     if (book == nullptr) break;
      
     Image::ImageData image(Dim(book->cover_width, book->cover_height), (uint8_t *) book->cover_bitmap);
-    page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1), ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
+    page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1), 
+                              ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
 
     #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
@@ -160,7 +161,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     page.end_paragraph(fmt);
   #endif
 
-  page.put_highlight(Dim(Screen::WIDTH - 20, 3), Pos(10, first_entry_ypos - 8));
+  page.put_highlight(Dim(Screen::get_width() - 20, 3), Pos(10, first_entry_ypos - 8));
 
   ScreenBottom::show(page_nbr, page_count);
 
@@ -227,7 +228,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
     page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
                          Pos(xpos - 3, ypos - 3));
 
-    page.clear_region(Dim(Screen::WIDTH - 10, (title_font_height << 1) + author_font_height),
+    page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                       Pos(10, 10));
   }
     // Highlight the new current item
@@ -253,7 +254,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
                       Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::WIDTH - 10, (title_font_height << 1) + author_font_height),
+  page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
 
   fmt.font_index    = TITLE_FONT;
@@ -325,7 +326,7 @@ MatrixBooksDirViewer::clear_highlight()
     .screen_left        = 10,
     .screen_right       = 10,
     .screen_top         = 10,
-    .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
+    .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
     .width              = 0,
     .height             = 0,
     .vertical_align     = 0,
@@ -344,7 +345,7 @@ MatrixBooksDirViewer::clear_highlight()
   page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
                         Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::WIDTH - 10, (title_font_height << 1) + author_font_height),
+  page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
 
   #if (INKPLATE_6PLUS || TOUCH_TRIAL)

@@ -16,8 +16,8 @@
 
 Screen Screen::singleton;
 
-uint16_t Screen::WIDTH;
-uint16_t Screen::HEIGHT;
+uint16_t Screen::width;
+uint16_t Screen::height;
 
 const uint8_t Screen::LUT1BIT[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
@@ -46,14 +46,14 @@ Screen::draw_bitmap(
   GdkPixbuf * pb = gtk_image_get_pixbuf(image_data.image);
   guchar    * g  = gdk_pixbuf_get_pixels(pb);
   
-  if (pos.x > WIDTH) pos.x = 0;
-  if (pos.y > HEIGHT) pos.y = 0;
+  if (pos.x > width) pos.x = 0;
+  if (pos.y > height) pos.y = 0;
 
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
     static int16_t err[601];
@@ -101,8 +101,8 @@ Screen::draw_rectangle(
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   for (int i = pos.x; i < x_max; i++) {
     setrgb(g, pos.y, i, image_data.stride, color);
@@ -184,8 +184,8 @@ Screen::draw_round_rectangle(
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   for (int i = pos.x + 10; i < x_max - 10; i++) {
     setrgb(g, pos.y, i, image_data.stride, color);
@@ -214,8 +214,8 @@ Screen::colorize_region(
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   for (int j = pos.y; j < y_max; j++) {
     for (int i = pos.x; i < x_max; i++) {
@@ -237,8 +237,8 @@ Screen::draw_glyph(
   int x_max = pos.x + dim.width;
   int y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
     for (int j = pos.y, q = 0; j < y_max; j++, q++) {
@@ -325,15 +325,15 @@ Screen::setup(PixelResolution resolution, Orientation orientation)
 
   gtk_init(nullptr, nullptr);
 
-  image_data.rows    = HEIGHT;
-  image_data.cols    = WIDTH;
-  image_data.stride  = WIDTH * BYTES_PER_PIXEL;
+  image_data.rows    = height;
+  image_data.cols    = width;
+  image_data.stride  = width * BYTES_PER_PIXEL;
   image_data.stride += (4 - (image_data.stride % 4)) % 4; // ensure multiple of 4
 
-  guchar * pixels = (guchar *) calloc(HEIGHT * image_data.stride, 1);
+  guchar * pixels = (guchar *) calloc(height * image_data.stride, 1);
   
-  for (int r = 0; r < HEIGHT; r++)
-    for (int c = 0; c < WIDTH; c++)
+  for (int r = 0; r < height; r++)
+    for (int c = 0; c < width; c++)
         setrgb(pixels, r, c, image_data.stride, 255);
 
   GdkPixbuf *pb = gdk_pixbuf_new_from_data(
@@ -341,8 +341,8 @@ Screen::setup(PixelResolution resolution, Orientation orientation)
     GDK_COLORSPACE_RGB, // colorspace
     0,                  // has_alpha
     8,                  // bits-per-sample
-    WIDTH,              // rows
-    HEIGHT,             // cols
+    width,              // rows
+    height,             // cols
     image_data.stride,  // rowstride
     free_pixels,        // destroy_fn
     nullptr             // destroy_fn_data
@@ -407,11 +407,11 @@ Screen::set_orientation(Orientation orient)
 {
   orientation = orient;
   if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
-    WIDTH  = 600;
-    HEIGHT = 800;
+    width  = 600;
+    height = 800;
   }
   else {
-    WIDTH  = 800;
-    HEIGHT = 600;
+    width  = 800;
+    height = 600;
   }
 }

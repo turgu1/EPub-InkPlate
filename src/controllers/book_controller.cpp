@@ -83,7 +83,7 @@ BookController::open_book_file(
     const PageLocs::PageId * page_id;
     switch (event.kind) {
       case EventMgr::EventKind::SWIPE_RIGHT:
-        if (event.y < (Screen::HEIGHT - 40)) {
+        if (event.y < (Screen::get_height() - 40)) {
           page_id = page_locs.get_prev_page_id(current_page_id);
           if (page_id != nullptr) {
             current_page_id.itemref_index = page_id->itemref_index;
@@ -102,7 +102,7 @@ BookController::open_book_file(
         break;
 
       case EventMgr::EventKind::SWIPE_LEFT:
-        if (event.y < (Screen::HEIGHT - 40)) {
+        if (event.y < (Screen::get_height() - 40)) {
           page_id = page_locs.get_next_page_id(current_page_id);
           if (page_id != nullptr) {
             current_page_id.itemref_index = page_id->itemref_index;
@@ -121,8 +121,8 @@ BookController::open_book_file(
         break;
       
       case EventMgr::EventKind::TAP:
-        if (event.y < (Screen::HEIGHT - 40)) {
-          if (event.x < (Screen::WIDTH / 3)) {
+        if (event.y < (Screen::get_height() - 40)) {
+          if (event.x < (Screen::get_width() / 3)) {
             page_id = page_locs.get_prev_page_id(current_page_id);
             if (page_id != nullptr) {
               current_page_id.itemref_index = page_id->itemref_index;
@@ -130,7 +130,7 @@ BookController::open_book_file(
               book_viewer.show_page(current_page_id);
             }
           }
-          else if (event.x > ((Screen::WIDTH / 3) * 2)) {
+          else if (event.x > ((Screen::get_width() / 3) * 2)) {
             page_id = page_locs.get_next_page_id(current_page_id);
             if (page_id != nullptr) {
               current_page_id.itemref_index = page_id->itemref_index;

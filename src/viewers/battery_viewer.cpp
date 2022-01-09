@@ -69,7 +69,7 @@
 
     Pos pos;
     pos.x = 4;
-    pos.y = Screen::HEIGHT + font->get_descender_height(9) - 2;
+    pos.y = Screen::get_height() + font->get_descender_height(9) - 2;
 
     page.clear_region(dim, pos);
 

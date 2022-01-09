@@ -235,7 +235,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
         break;
 
       case EventMgr::EventKind::TAP:
-        if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::WIDTH / 3))) {
+        if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::get_width() / 3))) {
           current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
           if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
             book = books_dir.get_book_data(current_book_index);

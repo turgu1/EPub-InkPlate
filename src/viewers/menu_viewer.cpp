@@ -57,7 +57,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
   page.start(fmt);
 
-  page.clear_region(Dim{ Screen::WIDTH, region_height }, Pos{ 0, 0 });
+  page.clear_region(Dim{ Screen::get_width(), region_height }, Pos{ 0, 0 });
 
   menu = the_menu;
 
@@ -72,7 +72,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
       Font::Glyph * glyph;
       glyph = font->get_glyph(ch, ICON_SIZE);
 
-      if (menu[idx].icon == Icon::NEXT_MENU) pos.x = screen.WIDTH - SPACE_BETWEEN_ICONS;
+      if (menu[idx].icon == Icon::NEXT_MENU) pos.x = Screen::get_width() - SPACE_BETWEEN_ICONS;
 
       entry_locs[idx].pos.x = pos.x;
       entry_locs[idx].pos.y = pos.y + glyph->yoff;
@@ -129,7 +129,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   #endif
 
   page.put_highlight(
-    Dim(Screen::WIDTH - 20, 3), 
+    Dim(Screen::get_width() - 20, 3), 
     Pos(10, region_height - 12));
 
   ScreenBottom::show();
@@ -197,7 +197,7 @@ MenuViewer::clear_highlight()
         Dim(entry_locs[current_entry_index].dim.width + 8, entry_locs[current_entry_index].dim.height + 8), 
         Pos(entry_locs[current_entry_index].pos.x - 4,     entry_locs[current_entry_index].pos.y - 4     ));
 
-      page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
+      page.clear_region(Dim(Screen::get_width(), text_height), Pos(0, text_ypos - line_height));
       page.put_str_at(TOUCH_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
     }
 
@@ -243,7 +243,7 @@ MenuViewer::event(const EventMgr::Event & event)
           fmt.font_index =  1;
           fmt.font_size  = CAPTION_SIZE;
         
-          page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
+          page.clear_region(Dim(Screen::get_width(), text_height), Pos(0, text_ypos - line_height));
 
           std::string txt = menu[current_entry_index].caption; 
           page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
@@ -271,7 +271,7 @@ MenuViewer::event(const EventMgr::Event & event)
               fmt.font_index = 1;
               fmt.font_size  = CAPTION_SIZE;
             
-              page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
+              page.clear_region(Dim(Screen::get_width(), text_height), Pos(0, text_ypos - line_height));
 
               std::string txt = menu[current_entry_index].caption; 
               page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);
@@ -347,7 +347,7 @@ MenuViewer::event(const EventMgr::Event & event)
       fmt.font_index = 1;
       fmt.font_size  = CAPTION_SIZE;
     
-      page.clear_region(Dim(Screen::WIDTH, text_height), Pos(0, text_ypos - line_height));
+      page.clear_region(Dim(Screen::get_width(), text_height), Pos(0, text_ypos - line_height));
 
       std::string txt = menu[current_entry_index].caption; 
       page.put_str_at(txt, Pos{ 10, text_ypos }, fmt);

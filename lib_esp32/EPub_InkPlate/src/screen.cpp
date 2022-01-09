@@ -19,8 +19,8 @@
 
 Screen Screen::singleton;
 
-uint16_t Screen::WIDTH;
-uint16_t Screen::HEIGHT;
+uint16_t Screen::width;
+uint16_t Screen::height;
 
 const uint8_t Screen::LUT1BIT[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 const uint8_t Screen::LUT1BIT_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
@@ -54,14 +54,14 @@ Screen::draw_bitmap(
   //   }
   // }   
 
-  if (pos.x > WIDTH ) pos.x = 0;
-  if (pos.y > HEIGHT) pos.y = 0;
+  if (pos.x > width ) pos.x = 0;
+  if (pos.y > height) pos.y = 0;
 
   uint32_t x_max = pos.x + dim.width;
   uint32_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
     static int16_t err[1201]; // This is the maximum width of all Inkplate devices + 1
@@ -116,8 +116,8 @@ Screen::draw_rectangle(
   uint32_t x_max = pos.x + dim.width;
   uint32_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
   
   #define CODE(resolution, orientation)                              \
     for (int i = pos.x; i < x_max; i++) {                            \
@@ -196,8 +196,8 @@ Screen::draw_round_rectangle(
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   #define CODE(resolution, orientation)                            \
   for (int i = pos.x + 10; i < x_max - 10; i++) {                  \
@@ -339,13 +339,13 @@ Screen::colorize_region(
         low_colorize_1bit(dim, pos, color);
         break;
       case Orientation::TOP:
-        low_colorize_1bit(dim, Pos(WIDTH - (pos.x + dim.width), HEIGHT - (pos.y + dim.height)), color);
+        low_colorize_1bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
         break;
       case Orientation::LEFT:
-        low_colorize_1bit(Dim(dim.height, dim.width), Pos(pos.y, WIDTH - (pos.x + dim.width)), color);
+        low_colorize_1bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
         break;
       case Orientation::RIGHT:
-        low_colorize_1bit(Dim(dim.height, dim.width), Pos(HEIGHT - (pos.y + dim.height), pos.x), color);
+        low_colorize_1bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
         break;
     }
   }
@@ -355,13 +355,13 @@ Screen::colorize_region(
         low_colorize_3bit(dim, pos, color);
         break;
       case Orientation::TOP:
-        low_colorize_3bit(dim, Pos(WIDTH - (pos.x + dim.width), HEIGHT - (pos.y + dim.height)), color);
+        low_colorize_3bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
         break;
       case Orientation::LEFT:
-        low_colorize_3bit(Dim(dim.height, dim.width), Pos(pos.y, WIDTH - (pos.x + dim.width)), color);
+        low_colorize_3bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
         break;
       case Orientation::RIGHT:
-        low_colorize_3bit(Dim(dim.height, dim.width), Pos(HEIGHT - (pos.y + dim.height), pos.x), color);
+        low_colorize_3bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
         break;
     }
   }
@@ -370,8 +370,8 @@ Screen::colorize_region(
   int16_t x_max = pos.x + dim.width;
   int16_t y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   #define CODE(resolution, orientation)                        \
     for (int j = pos.y; j < y_max; j++) {                      \
@@ -403,8 +403,8 @@ Screen::draw_glyph(
   int x_max = pos.x + dim.width;
   int y_max = pos.y + dim.height;
 
-  if (y_max > HEIGHT) y_max = HEIGHT;
-  if (x_max > WIDTH ) x_max = WIDTH;
+  if (y_max > height) y_max = height;
+  if (x_max > width ) x_max = width;
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
     #define CODE(resolution, orientation)                                     \
@@ -470,11 +470,11 @@ Screen::set_orientation(Orientation orient)
 {
   orientation = orient;
   if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
-    WIDTH  = e_ink.get_height();
-    HEIGHT = e_ink.get_width();
+    width  = e_ink.get_height();
+    height = e_ink.get_width();
   }
   else {
-    WIDTH  = e_ink.get_width();
-    HEIGHT = e_ink.get_height();
+    width  = e_ink.get_width();
+    height = e_ink.get_height();
   }
 }

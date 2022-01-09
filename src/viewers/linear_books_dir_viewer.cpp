@@ -22,7 +22,7 @@
 void
 LinearBooksDirViewer::setup()
 {
-  books_per_page = (Screen::HEIGHT - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) / 
+  books_per_page = (Screen::get_height() - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) / 
                    (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES);
   page_count = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
 
@@ -61,7 +61,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
       .screen_left        =  xpos,
       .screen_right       =    10,
       .screen_top         =  ypos,
-      .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
+      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
       .width              =     0,
       .height             =     0,
       .vertical_align     =     0,
@@ -89,7 +89,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
     #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
-        page.put_highlight(Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), 
+        page.put_highlight(Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), 
                                BooksDir::max_cover_height), 
                            Pos(xpos - 5, ypos));
       }
@@ -99,7 +99,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos;
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
+    fmt.screen_bottom = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -158,7 +158,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
       .screen_left        = xpos,
       .screen_right       = 10,
       .screen_top         = ypos,
-      .screen_bottom      = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20)),
+      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
       .width              = 0,
       .height             = 0,
       .vertical_align     = 0,
@@ -173,7 +173,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
     page.start(fmt);
 
     page.clear_highlight(
-      Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+      Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
       Pos(xpos - 5, ypos));
 
     page.set_limits(fmt);
@@ -204,7 +204,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
     if (book == nullptr) return;
     
     page.put_highlight(
-      Dim(Screen::WIDTH - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+      Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
       Pos(xpos - 5, ypos));
 
 
@@ -212,7 +212,7 @@ LinearBooksDirViewer::highlight(int16_t item_idx)
     fmt.font_size     = TITLE_FONT_SIZE;
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos;
-    fmt.screen_bottom = (int16_t)(Screen::HEIGHT - (ypos + BooksDir::max_cover_width + 20));
+    fmt.screen_bottom = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);

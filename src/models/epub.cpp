@@ -1046,7 +1046,7 @@ EPub::get_image(std::string & fname, bool load)
 
     std::string filename = filename_locate(fname.c_str());
     Image * img = ImageFactory::create(filename, 
-                                       Dim(Screen::WIDTH, Screen::HEIGHT), 
+                                       Dim(Screen::get_width(), Screen::get_height()), 
                                        load);
 
     if ((img == nullptr) || 

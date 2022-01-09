@@ -43,15 +43,15 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
 
   std::ostringstream ostr;
   
-  page.clear_region(Dim(screen.WIDTH, font->get_line_height(FONT_SIZE)),
-                    Pos(0, screen.HEIGHT - font->get_line_height(FONT_SIZE)));
+  page.clear_region(Dim(Screen::get_width(), font->get_line_height(FONT_SIZE)),
+                    Pos(0, Screen::get_height() - font->get_line_height(FONT_SIZE)));
                     
   if ((page_nbr != -1) && (page_count != -1)) {
     ostr << page_nbr + 1 << " / " << page_count;
 
     page.put_str_at(ostr.str(), 
                     Pos(Page::HORIZONTAL_CENTER, 
-                        Screen::HEIGHT + font->get_descender_height(FONT_SIZE) - 2), 
+                        Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2), 
                     fmt);
   }
 
@@ -69,7 +69,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(), 
                       Pos(Page::HORIZONTAL_CENTER, 
-                          Screen::HEIGHT + font->get_descender_height(FONT_SIZE) - 2), 
+                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2), 
                       fmt);
     }
 
@@ -112,7 +112,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
       fmt.align = CSS::Align::RIGHT;
       page.put_str_at(ostr.str(),
                       Pos(Page::HORIZONTAL_CENTER, 
-                          Screen::HEIGHT + font->get_descender_height(FONT_SIZE) - 2), 
+                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2), 
                       fmt);
     }
   #endif

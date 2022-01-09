@@ -159,7 +159,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
           if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
             LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
           }
-          else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+          else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
@@ -225,7 +225,7 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
           if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
             LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
           }
-          else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+          else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
@@ -261,7 +261,7 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
       if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
         LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
       }
-      else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+      else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
         LOG_E("Put_char_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
       }
     #endif
@@ -346,8 +346,8 @@ Page::start(const Format & fmt)
   pos.y = fmt.screen_top;
 
   min_y = fmt.screen_top;
-  max_x = Screen::WIDTH  - fmt.screen_right;
-  max_y = Screen::HEIGHT - fmt.screen_bottom;
+  max_x = Screen::get_width()  - fmt.screen_right;
+  max_y = Screen::get_height() - fmt.screen_bottom;
   min_x = fmt.screen_left;
 
   para_min_x = min_x;
@@ -368,8 +368,8 @@ Page::set_limits(const Format & fmt)
   pos.x = pos.y = 0;
 
   min_y = fmt.screen_top;
-  max_x = Screen::WIDTH  - fmt.screen_right;
-  max_y = Screen::HEIGHT - fmt.screen_bottom;
+  max_x = Screen::get_width()  - fmt.screen_right;
+  max_y = Screen::get_height() - fmt.screen_bottom;
   min_x = fmt.screen_left;
 
   screen_is_full = false;
@@ -566,7 +566,7 @@ Page::add_line(const Format & fmt, bool justifyable)
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
       }
-      else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+      else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
         LOG_E("add_line with a too large location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
@@ -1023,7 +1023,7 @@ Page::put_image(Image::ImageData & image,
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("draw_bitmap with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1045,7 +1045,7 @@ Page::put_highlight(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1067,7 +1067,7 @@ Page::clear_highlight(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1089,7 +1089,7 @@ Page::put_rounded(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1111,7 +1111,7 @@ Page::clear_rounded(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1133,7 +1133,7 @@ Page::clear_region(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1156,7 +1156,7 @@ Page::set_region(Dim dim, Pos pos)
     if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     }
-    else if ((entry->pos.x >= Screen::WIDTH) || (entry->pos.y >= Screen::HEIGHT)) {
+    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1177,16 +1177,16 @@ Page::show_cover(Image & img)
       Dim dim;
       Pos pos;
 
-      dim.width  = Screen::WIDTH;
-      dim.height = image_height * Screen::WIDTH / image_width;
+      dim.width  = Screen::get_width();
+      dim.height = image_height * Screen::get_width() / image_width;
 
-      if (dim.height > Screen::HEIGHT) {
-        dim.height = Screen::HEIGHT;
-        dim.width  = image_width * Screen::HEIGHT / image_height;
+      if (dim.height > Screen::get_height()) {
+        dim.height = Screen::get_height();
+        dim.width  = image_width * Screen::get_height() / image_height;
       }
 
-      pos.x = (Screen::WIDTH  - dim.width ) >> 1;
-      pos.y = (Screen::HEIGHT - dim.height) >> 1;
+      pos.x = (Screen::get_width()  - dim.width ) >> 1;
+      pos.y = (Screen::get_height() - dim.height) >> 1;
 
       img.resize(dim);
 
@@ -1466,8 +1466,8 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
     fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
   }
 
-  int16_t width_ref  = Screen::WIDTH  - fmt.screen_left - fmt.screen_right;
-  int16_t height_ref = Screen::HEIGHT - fmt.screen_top  - fmt.screen_bottom;
+  int16_t width_ref  = Screen::get_width()  - fmt.screen_left - fmt.screen_right;
+  int16_t height_ref = Screen::get_height() - fmt.screen_top  - fmt.screen_bottom;
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN))) {
 
@@ -1517,11 +1517,11 @@ Page::adjust_format_from_rules(Format & fmt, const CSS::RulesMap & rules)
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::WIDTH))) {
-    fmt.width = get_pixel_value(*(vals->front()), fmt, fmt.width /*Screen::WIDTH - fmt.screen_left - fmt.screen_right */);
+    fmt.width = get_pixel_value(*(vals->front()), fmt, fmt.width /*Screen::get_width() - fmt.screen_left - fmt.screen_right */);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::HEIGHT))) {
-    fmt.height = get_pixel_value(*(vals->front()), fmt, Screen::HEIGHT - fmt.screen_top - fmt.screen_bottom);
+    fmt.height = get_pixel_value(*(vals->front()), fmt, Screen::get_height() - fmt.screen_top - fmt.screen_bottom);
   }
 
   if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {

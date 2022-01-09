@@ -24,8 +24,6 @@
 class Screen : NonCopyable
 {
   public:
-    static uint16_t WIDTH;
-    static uint16_t HEIGHT;
     static constexpr int8_t   IDENT       =   99;
     static constexpr uint16_t RESOLUTION  =  166;  ///< Pixels per inch
     static constexpr uint8_t  BLACK_COLOR = 0x00;
@@ -51,6 +49,9 @@ class Screen : NonCopyable
     static Screen singleton;
     Screen() {};
 
+    static uint16_t width;
+    static uint16_t height;
+
     struct ImageData {
       GtkImage * image;
       int rows, cols, stride;
@@ -73,6 +74,9 @@ class Screen : NonCopyable
     GtkImage *                        get_image() { return image_data.image; }
     void                          to_user_coord(uint16_t & x, uint16_t & y) {}
     inline void               force_full_update() { }
+
+    inline static uint16_t get_width() { return width; }
+    inline static uint16_t get_height() { return height; }
     
     #if TOUCH_TRIAL
       GtkWidget

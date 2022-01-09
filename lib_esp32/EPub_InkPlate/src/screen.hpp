@@ -22,8 +22,6 @@
 class Screen : NonCopyable
 {
   public:
-    static uint16_t WIDTH;
-    static uint16_t HEIGHT;
     static constexpr uint8_t    BLACK_COLOR           =   0;
     static constexpr uint8_t    WHITE_COLOR           =   7;
     #if INKPLATE_10
@@ -87,6 +85,9 @@ class Screen : NonCopyable
     static constexpr char const * TAG = "Screen";
     static const uint8_t          LUT1BIT[8];
     static const uint8_t          LUT1BIT_INV[8];
+    
+    static uint16_t width;
+    static uint16_t height;
 
     static Screen singleton;
     Screen() : partial_count(0), 
@@ -178,6 +179,9 @@ class Screen : NonCopyable
     #if INKPLATE_6PLUS
       void to_user_coord(uint16_t & x, uint16_t & y);
     #endif
+
+    inline static uint16_t get_width() { return width; }
+    inline static uint16_t get_height() { return height; }
 };
 
 #if __SCREEN__

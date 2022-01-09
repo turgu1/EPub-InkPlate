@@ -494,7 +494,7 @@ class FormDone : public FormField
     }
 
     void compute_field_pos(Pos from_pos) {
-      field_pos.x = (Screen::WIDTH / 2) - (field_dim.width / 2);
+      field_pos.x = (Screen::get_width() / 2) - (field_dim.width / 2);
       field_pos.y = from_pos.y + 10;
     }
 
@@ -517,7 +517,7 @@ class FieldFactory
         case FormEntryType::HORIZONTAL:
           return new HFormChoiceField(entry, font);
         case FormEntryType::VERTICAL:
-          if ((screen.WIDTH > screen.HEIGHT) && (entry.u.ch.choice_count <= 4)) {
+          if ((Screen::get_width() > Screen::get_height()) && (entry.u.ch.choice_count <= 4)) {
             return new HFormChoiceField(entry, font);
           }
           else {
@@ -612,7 +612,7 @@ class FormViewer
       }
 
       width = all_captions_width + all_fields_width + 35;
-      const int16_t right_xpos    = (Screen::WIDTH >> 1) + (width >> 1);
+      const int16_t right_xpos    = (Screen::get_width() >> 1) + (width >> 1);
 
       int16_t       current_ypos  = TOP_YPOS + 20;
       int16_t       caption_right = right_xpos - all_fields_width - 35;
@@ -659,11 +659,11 @@ class FormViewer
       // The large rectangle into which the form will be drawn
 
       page.clear_region(
-        Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+        Dim(Screen::get_width() - 40, Screen::get_height() - fmt.screen_bottom - fmt.screen_top),
         Pos(20, TOP_YPOS));
 
       page.put_highlight(
-        Dim(Screen::WIDTH - 44, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top - 4),
+        Dim(Screen::get_width() - 44, Screen::get_height() - fmt.screen_bottom - fmt.screen_top - 4),
         Pos(22, TOP_YPOS + 2));
 
       // Show all captions (but the last one (OK / CANCEL) or (DONE)) and choices 
@@ -808,7 +808,7 @@ class FormViewer
         fields.clear();
 
         page.clear_region(
-          Dim(Screen::WIDTH - 40, Screen::HEIGHT - fmt.screen_bottom - fmt.screen_top),
+          Dim(Screen::get_width() - 40, Screen::get_height() - fmt.screen_bottom - fmt.screen_top),
           Pos(20, TOP_YPOS));
 
         page.paint(false);

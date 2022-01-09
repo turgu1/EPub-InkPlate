@@ -27,7 +27,7 @@ void MsgViewer::show(
 {
   char buff[200];
 
-  width = Screen::WIDTH - 60;
+  width = Screen::get_width() - 60;
 
   if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return; // Cannot be used durint location computation
 
@@ -60,10 +60,10 @@ void MsgViewer::show(
     .display            = CSS::Display::INLINE
   };
 
-  fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_right       = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
+  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
+  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
@@ -71,18 +71,18 @@ void MsgViewer::show(
 
   page.clear_region(
     Dim(width, HEIGHT), 
-    Pos((Screen::WIDTH  - width ) >> 1, (Screen::HEIGHT - HEIGHT) >> 1));
+    Pos((Screen::get_width()  - width ) >> 1, (Screen::get_height() - HEIGHT) >> 1));
 
   page.put_highlight(
     Dim(width - 4, HEIGHT - 4), 
-    Pos(((Screen::WIDTH - width ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT) >> 1) + 2));
+    Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
 
   Font * font = fonts.get(0);
   Font::Glyph * glyph = font->get_glyph(icon_char[msg_type], 24);
 
   page.put_char_at(
     icon_char[msg_type], 
-    Pos(((Screen::WIDTH  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::HEIGHT >> 1) + 20),
+    Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
     fmt);
 
   fmt.font_index =  1;
@@ -130,8 +130,8 @@ void MsgViewer::show(
         font->get_size("CANCEL", &dim,    10); 
         font->get_size("OK",     &ok_dim, 10); 
         buttons_dim = Dim(dim.width + 20, dim.height + 20);
-        ok_pos = Pos((screen.WIDTH >> 1) - 20 - buttons_dim.width, fmt.screen_top + 220);
-        cancel_pos = Pos((screen.WIDTH >> 1) + 20, fmt.screen_top + 220);
+        ok_pos = Pos((Screen::get_width() >> 1) - 20 - buttons_dim.width, fmt.screen_top + 220);
+        cancel_pos = Pos((Screen::get_width() >> 1) + 20, fmt.screen_top + 220);
 
         page.put_rounded(buttons_dim, ok_pos);
         page.put_rounded(Dim(buttons_dim.width + 2, buttons_dim.height + 2),
@@ -195,7 +195,7 @@ bool MsgViewer::confirm(const EventMgr::Event & event, bool & ok)
 #if 0
 void MsgViewer::show_progress(const char * title, ...)
 {
-  width = Screen::WIDTH - 60;
+  width = Screen::get_width() - 60;
 
   Page::Format fmt = {
     .line_height_factor = 1.0,
@@ -221,10 +221,10 @@ void MsgViewer::show_progress(const char * title, ...)
     .display            = CSS::Display::INLINE
   };
 
-  fmt.screen_left        = (Screen::WIDTH  - width  ) >> 1;
-  fmt.screen_right       = (Screen::WIDTH  - width  ) >> 1;
-  fmt.screen_top         = (Screen::HEIGHT - HEIGHT2) >> 1;
-  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT2) >> 1;
+  fmt.screen_left        = (Screen::get_width()  - width  ) >> 1;
+  fmt.screen_right       = (Screen::get_width()  - width  ) >> 1;
+  fmt.screen_top         = (Screen::get_height() - HEIGHT2) >> 1;
+  fmt.screen_bottom      = (Screen::get_height() - HEIGHT2) >> 1;
 
   char buff[80];
 
@@ -237,11 +237,11 @@ void MsgViewer::show_progress(const char * title, ...)
 
   page.clear_region(
     Dim(width, HEIGHT2), 
-    Pos((Screen::WIDTH  - width  ) >> 1, (Screen::HEIGHT - HEIGHT2) >> 1));
+    Pos((Screen::get_width()  - width  ) >> 1, (Screen::get_height() - HEIGHT2) >> 1));
 
   page.put_highlight(
     Dim(width - 4, HEIGHT2 - 4), 
-    Pos(((Screen::WIDTH - width  ) >> 1) + 2, ((Screen::HEIGHT - HEIGHT2) >> 1) + 2));
+    Pos(((Screen::get_width() - width  ) >> 1) + 2, ((Screen::get_height() - HEIGHT2) >> 1) + 2));
 
   // Title
 
@@ -255,11 +255,11 @@ void MsgViewer::show_progress(const char * title, ...)
 
   page.put_highlight(
     Dim(width - 42, HEIGHT2 - 100), 
-    Pos(((Screen::WIDTH - width) >> 1) +  23, (Screen::HEIGHT >> 1) - 120)
+    Pos(((Screen::get_width() - width) >> 1) +  23, (Screen::get_height() >> 1) - 120)
   );
 
   dot_zone.dim  = Dim(width -  46, HEIGHT2 - 104);
-  dot_zone.pos  = Pos(((Screen::WIDTH - width) >> 1) +  25, (Screen::HEIGHT >> 1) - 118);
+  dot_zone.pos  = Pos(((Screen::get_width() - width) >> 1) +  25, (Screen::get_height() >> 1) - 118);
   dot_zone.dots_per_line = (dot_zone.dim.width + 1) / 9;
   dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.dim.height + 1) / 9);
   dot_count = 0;
@@ -269,7 +269,7 @@ void MsgViewer::show_progress(const char * title, ...)
 
 void MsgViewer::add_dot()
 {
-  width = Screen::WIDTH - 60;
+  width = Screen::get_width() - 60;
 
   Page::Format fmt = {
     .line_height_factor = 1.0,
@@ -295,10 +295,10 @@ void MsgViewer::add_dot()
     .display            = CSS::Display::INLINE
   };
 
-  fmt.screen_left        = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_right       = (Screen::WIDTH  - width ) >> 1;
-  fmt.screen_top         = (Screen::HEIGHT - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::HEIGHT - HEIGHT) >> 1;
+  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
+  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
+  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
 
   page.start(fmt);
 
