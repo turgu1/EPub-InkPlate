@@ -7,11 +7,12 @@ For the installation process, please consult the `INSTALL.pdf` document.
 Here are the main characteristics of the application:
 
 - TTF and OTF embedded fonts support
+- Bitmap fonts support in a specific IBMF font format
 - Normal, Bold, Italic, Bold+Italic face types
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
-- InkPlate tactile keys (single and double click to get six buttons)
+- InkPlate tactile keys to interact with the device (single and double `click` to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
 - Linear and Matrix view of books directory
 - Up to 200 books are allowed in the directory
@@ -21,13 +22,17 @@ Here are the main characteristics of the application:
 - Limited CSS formatting
 - WiFi-based documents download
 - Battery state and power management (light, deep sleep, battery level display)
+- Real-Time clock (Inkplate-10 and Inkplate-6PLUS only)
 
 ## 1. Application startup
 
-When the device is turned ON, the application executes the following tasks:
+When the device turns ON, the application executes the following tasks:
 
-- Initializes itself, verify the presence of books on the SD-Card, and updates its database if required. The books must be located in the `books` folder, be in the EPub V2 or V3 format and have a filename ending with the `.epub` extension in lowercase.
-- Presents the list of books to the user, ready to let the user selects a book to read.
+- Loads configuration information from the `config.txt` file located in the main SD-Card folder. 
+- Loads fonts definition as defined in the `fonts_list.xml` file located in the main SD-Card folder. Fonts must be located in the `fonts` folder on the SD-Card.
+- Verifies the presence of books on the SD-Card, and updates its database if required. The books must be located in the `books` folder on the SD-Card, be in the EPub V2 or V3 format, and have a filename ending with the `.epub` extension in lowercase.
+- Presents the list of books to the user, ready to let the user selects a book to read. If a book was being read before, it will be presented to the location where the user was reading the last time.
+
 
 ## 2. Interacting with the application
 
@@ -233,33 +238,41 @@ Starting with version 1.3.0, the application is using a new *stream-based* appro
 
 JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some books, the rendering of images may not be possible. A script named `adjust_size.sh` and supplied with the application can be used to transform the resolution of the embedded images. It also may transform the images to a format that will be compatible with the application's capabilities. Look in section 3.3 for further details on how to use the script on your computer. 
 
-### 3.6 Moving the SDCard from an Inkplate model to another
+### 3.6 Moving the SD-Card from an Inkplate model to another
 
-For each book, the application may generate three additional files in the `books/` folder of the SDCard:
+For each book, the application may generate three additional files in the `books/` folder of the SD-Card:
 
-- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution and formatting parameters.
+- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution, selected fonts and formatting parameters.
 - Table of Content (files with extension `.toc`). They may also be tailored to the screen resolution and formatting parameters.
 - The book's formatting parameters (files with extension `.pars`).
 
 These files are automatically generated when they are not present (or when a formatting parameter will impact the page rendering) in the folder at the time the user opens a book to be read.
 
-Inkplate models are using different eInk screens that are using different pixel resolutions. If you ever want to transfer an SDCard from a model to another, it could be beneficial to erase some files in the SDCard's `books` folder.
-
-The best way to do it is to plug the SDCard into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
+Inkplate models are using different eInk screens that are using different pixel resolutions. If you ever want to transfer an SD-Card from a model to another, it could be beneficial to erase some files in the SD-Card's `books` folder. The best way to do it is to plug the SD-Card into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
 
 ### 3.7 Internal fonts replacement
 
-Starting with version 1.3.1, the application allows for the replacement of fonts that can be selected by the user through the configuration forms.
+Starting with version 1.3.1, the application allows for the replacement of fonts that can be selected by the user through the configuration forms. To do so, a fonts configuration file named `fonts_list.xml` is used to define which font can be selected. This file must be present in the main SD-Card folder. It is loaded at boot time or after deep sleep to initialize the structure of the fonts. 
 
-To do so, a fonts configuration file named `fonts_list.xml` is used to define which font can be selected. This file, if present in the main SDCard folder, is loaded at boot time or after deep sleep to initialize the structure of the font. Only the first 8 fonts will be read. 
+Two groups of fonts are defined: SYSTEM fonts that are used to display application controls, and USER's fonts that can be selected by the user to display books content.
   
-Each font must define regular, bold, italic, and bold-italic filenames. Too large font files may cause bad application behavior: the 4 files combined are limited to 200Kbytes by the application.
+Each font in the USER's group must define normal, bold, italic, and bold-italic filenames. Too large font files may cause bad application behavior: the 4 files combined are limited to 300 Kbytes by the application.
   
-The font files must reside in the `fonts` folder on the SDCard. 
+The SYSTEM group is tailored to the needs of the EPub-Inkplate software. Changes may impact the way that the application behaves.
+  
+The font files must reside in the `fonts` folder on the SD-Card. The EPub-Inkplate distribution contains many other fonts that are not used in the `fonts_list.xml` but can be selected by the user by modifying the content of the XML file. Two kinds of fonts are supplied: True Type fonts (with extension `.otf`) vector-based fonts, and bitmap fonts (with extension `.ibmf`). Bitmap fonts have been extracted from the Metafont system of font generation mainly used by the TeX typesetting tools.
 
-The application distribution contains a file named `fonts_list_sample.xml` that can be renamed and modified accordingly to your desire.
+As the bitmap fonts have been generated to support the specific resolution of each Inkplate type, their filename reflects this fact with an indication of the *dpi* (dots per inch) for which the fonts have been tailored for. 
 
-Please note that the `drawings` and all `CrimsomPro` fonts must remain available in the font folder as they are used by the application, irrelevant to the content of the fonts_list.xml file. DO NOT REMOVE THEM!
+The following are the dpi values of each Inkplate type:
+
+- Inkplate-6: 166 dpi
+- Inkplate-10: 150 dpi
+- Inkplate-6PLUS: 212 dpi
+
+To have a single `fonts_list.xml` file for all Inkplate devices types, the application replaces the string `%DPI%` (in uppercase) presents in filenames with the proper dpi value for the current device type. This allows having the SD-Card moved from one type of Inkplate to the other without changing the configuration information. Read section 3.6 on how to manage books when moving the SD-Card to another Inkplate device type.
+
+IMPORTANT: If you modify the fonts in the USER's group, the page's location computed by the application may become offset due to the change of glyph sizes that may happen in the newly selected fonts. It is then required to delete the files with the extension `.locs` in the books folder. The application will then recompute pages location automatically.
 
 ### 3.8 In case of a problem
 

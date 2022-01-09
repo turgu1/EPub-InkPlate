@@ -72,21 +72,16 @@ Fonts::get_file(const char * filename, uint32_t size)
 static uint32_t font_size;
 inline bool check_res(xml_parse_result res) { return res.status == status_ok; }
 
-inline bool check_str(const char * str) 
-{
-  return (str != nullptr) && (str[0] != 0);
-}
-
-static bool check_file(const char * filename) 
+static bool check_file(const std::string & filename) 
 {
   constexpr const char * TAG = "Check File";
   struct stat file_stat;
-  std::string full_name = std::string(FONTS_FOLDER "/").append(filename); 
-  if (check_str(filename)) {
+  if (!filename.empty()) {
+    std::string full_name = std::string(FONTS_FOLDER "/").append(filename); 
     if (stat(full_name.c_str(), &file_stat) != -1) {
       font_size += file_stat.st_size;
       if (font_size > (1024 * 300)) {
-        LOG_E("Font size too big for %s", filename);
+        LOG_E("Font size too big for %s", filename.c_str());
       }
       else return true;
     }
@@ -98,6 +93,17 @@ static bool check_file(const char * filename)
     LOG_E("Null string...");
   }
   return false;
+}
+
+std::string & Fonts::filter_filename(std::string & fname)
+{
+  std::size_t pos = fname.find("%DPI%");
+  if (pos != std::string::npos) {
+    char dpi[5];
+    int_to_str(Screen::RESOLUTION, dpi, 5);
+    fname.replace(pos, 5, dpi);
+  }
+  return fname;
 }
 
 bool Fonts::setup()
@@ -128,7 +134,7 @@ bool Fonts::setup()
       auto fnt = sys_group.find_child_by_attribute("font", "name", "ICON").child("normal");
       if (!(fnt && add("Icon", 
                        FaceStyle::ITALIC, 
-                       std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value())))) {
+                       filter_filename(std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value()))))) {
         LOG_E("Unable to find SYSTEM ICON font.");
         return false;
       }
@@ -136,7 +142,7 @@ bool Fonts::setup()
       fnt = sys_group.find_child_by_attribute("font", "name", "TEXT").child("normal");
       if (!(fnt && add("System", 
                       FaceStyle::NORMAL, 
-                      std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value())))) {
+                      filter_filename(std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value()))))) {
         LOG_E("Unable to find SYSTEM NORMAL font.");
         return false;
       }
@@ -144,7 +150,7 @@ bool Fonts::setup()
       fnt = sys_group.find_child_by_attribute("font", "name", "TEXT").child("italic");
       if (!(fnt && add("System", 
                       FaceStyle::ITALIC, 
-                      std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value())))) {
+                      filter_filename(std::string(FONTS_FOLDER "/").append(fnt.attribute("filename").value()))))) {
         LOG_E("Unable to find SYSTEM ITALIC font.");
         return false;
       }
@@ -158,19 +164,23 @@ bool Fonts::setup()
     auto user_group = fd.child("fonts").find_child_by_attribute("group", "name", "USER");
     for (auto fnt : user_group.children("font")) {
       if (font_count >= 8) break;
-      const char * str = fnt.attribute("name").value();
+      std::string str = fnt.attribute("name").value();
       font_size = 0;
-      if (check_str(str)) {
+      if (!str.empty()) {
         LOG_I("%s...", str);
-        font_names[font_count] = char_pool.set(std::string(str));
-        if (check_file(str = fnt.child("normal").attribute("filename").value())) {
-          regular_fname[font_count] = char_pool.set(std::string(str));
-          if (check_file(str = fnt.child("bold").attribute("filename").value())) {
-            bold_fname[font_count] = char_pool.set(std::string(str));
-            if (check_file(str = fnt.child("italic").attribute("filename").value())) {
-              italic_fname[font_count] = char_pool.set(std::string(str));
-              if (check_file(str = fnt.child("bold-italic").attribute("filename").value())) {
-                bold_italic_fname[font_count] = char_pool.set(std::string(str));
+        font_names[font_count] = char_pool.set(str);
+        str = fnt.child("normal").attribute("filename").value();
+        if (check_file(str = filter_filename(str))) {
+          regular_fname[font_count] = char_pool.set(str);
+          str = fnt.child("bold").attribute("filename").value();
+          if (check_file(str = filter_filename(str))) {
+            bold_fname[font_count] = char_pool.set(str);
+            str = fnt.child("italic").attribute("filename").value();
+            if (check_file(str = filter_filename(str))) {
+              italic_fname[font_count] = char_pool.set(str);
+              str = fnt.child("bold-italic").attribute("filename").value();
+              if (check_file(str = filter_filename(str))) {
+                bold_italic_fname[font_count] = char_pool.set(str);
                 LOG_I("Font %s OK", font_names[font_count]);
                 font_count++;
               }

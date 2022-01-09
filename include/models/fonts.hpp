@@ -146,6 +146,7 @@ class Fonts
     CharPool char_pool;
 
     char * get_file(const char * filename, uint32_t size);
+    std::string & filter_filename(std::string & fname);
 };
 
 #if __FONTS__

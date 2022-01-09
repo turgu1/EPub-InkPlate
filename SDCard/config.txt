@@ -27,6 +27,8 @@
 #      front_light
 #      dir_view
 #      show_rtc
+#      ntp_server
+#      tz
 # ---
 
 version = 1
@@ -46,4 +48,5 @@ show_title = 1
 front_light = 15
 dir_view = 0
 show_rtc = 1
+ntp_server = "pool.ntp.org"
 tz = "EST5EDT,M3.2.0,M11.1.0"

@@ -1,6 +1,6 @@
 # EPub-InkPlate - Installation Guide
 
-**Please Note: if you are updating from version 1.0 of the application, one font needs to be updated on the SD-Card: `fonts/drawings.otf`. You must replace it with the same font available in the current release bundle.**
+**Please Note: if you are updating from a version prior to V2.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for all the details.**
 
 Here is the installation procedure for the EPub-InkPlate application. This procedure can be adapted depending on your requirements.  
 
@@ -29,7 +29,25 @@ You then must retrieve the release from the Github repository. Look at this loca
 
 The SD-Card must be formatted with a FAT32 (or MS-DOS or VFAT) partition. This is usually the case with brand new cards. Do not use ExFAT as it is not supported by the application. The release's `SDCard` folder contains everything required to initialize the card's content. Simply copy the content of the folder (including the sub-folders) to the card as is.
 
-The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`) (as these parameters contain text information or number, they are not editable through the EPub-InkPlate application). This file is loaded at startup. This will allow for accessing the InkPlate device from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer.
+#### The config.txt file
+
+The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`), timezone information (`tz`), and Internet date/time server address (`ntp_server`). As these parameters contain text information or number, they are not editable through the EPub-InkPlate application forms. This file is loaded at startup. 
+
+The wifi parameters will permit the application to access your local network. This will allow for accessing the InkPlate device from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer. 
+
+Wifi will also be used to access a date/time Internet server to adjust the device clock. A default NTP Server address is already identified (`ntp_server` parameter) and be sufficient for most usage. It can be replaced by your selection. Please note that the date/time adjustment through the Internet must be manually started to update the internal clock. More information is available in the User's Guide.
+
+The timezone information (`tz` parameter) is a specially formatted string supplying proper information to translate the internal clock value (that is managed as a Greenwich UTC value) to the local time value. A file named `timezones.csv` is supplied with the Epub-Inkplate distribution. It contains the timezone values for more than 400 cities in the world. For example, for Zagreb, the timezone value would be "CET-1CEST,M3.5.0,M10.5.0/3". The actual format is described here: "https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html".
+
+The file `config.txt` contains other parameters that are managed through the application forms. Please do not modify their content by hand. If those parameters are deleted from the file, they will be re-initialized with default values by the application.
+
+#### Your books
+
+As indicated in the previous section, you can add books to the device using the supplied Web server and your Internet browser. Starting the server is described in the User's Guide.
+
+You can also add your books by hand. All books must be in the EPub format and have a filename with the extension `.epub` in lowercase. They must be located in the `books` folder of the SD-Card. This is done by inserting the SD-Card into your computer to access it directly.
+
+If the SD-Card has already been used by the application, you may find other files present in the `books` folder. They are used to manage various information about your interaction with the books. If deleted, these files will be re-initialized by the application at the proper time.
 
 Once done, insert the card into the device.
 
@@ -86,7 +104,7 @@ Hard resetting via RTS pin...
 $ 
 ```
 
-Once the upload is complete, the device will automatically reboot. The first task done would be the page location computation for all books present in the SD-Card `books` folder. This is a relatively long process that will take between 1 and 3 minutes per book. The duration depends on book size and the SD-Card access speed. Once the computation is completed, the application will show the list of books present on the device, allowing the user to select a book to read.
+Once the upload is complete, the device will automatically reboot. Please look in the user's guide for information on how to interact with the application.
 
 Some options on the esptool command may have to be modified depending on your computer:
 
