@@ -6,16 +6,16 @@
 
 Update to version 2.0.0 - Not ready yet
 
-This version will add Inkplate-6PLUS release. Some ongoing debugging aspects:
+The following are the main aspects that have been updated in this release:
 
-- [ ] Touch Screen HOLD Event not working properly. Sometimes, a RELEASE Event is sent but the finger is still on the screen.
-- [ ] The screen is fading away at each Partial screen refresh. Related to the required speed of the partial_update() method that is not fast enough. May not be resolvable as the ESP32 is too slow.
-- [x] Corrected. Menu's entry launch on a tap on screen does'nt always works. Calibration was required.
+- Add Inkplate-6PLUS support. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response.
+- Date/Time support for all Inkplate device types. Include both Date/Time adjustment by hand and through the Internet (NTP server). Uses the RTC Chip when available, or the ESP32 internal real-time clock.
+- Bitmap fonts to get more precise pixels painting on low-resolution screens. A specific font format was created to support such a feature (fonts with extension *.IBMF*)
+- Font configuration file (*font_list.xml*) allows for changing the fonts used by the application.
+- New fonts supplied with the distribution. Can be used to replace the fonts listed in the fonts configuration file.
+- Better support of some EPUB books that use XML namespace extensively.
 
-- [x] Corrected. At the return of DeepSleep, the front light remains off. Normal as the WakeUp button is causing a reset. The current light level was kept in ESP32 RTC memory that is cleared on reset. More likely a feature than a bug, limiting battery drains... now uses the RAM byte available with the external RTC chip.
-
-Also, TrueType fonts don't look that nice on the low-resolution eInk screens. This is my attempt to resolve this issue using METAFONT-generated fonts that are merged in a specific file format to simplify their management by the EPub-Inkplate application.
-
+Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card.
 
 ---
 
@@ -34,7 +34,7 @@ Also, TrueType fonts don't look that nice on the low-resolution eInk screens. Th
 - [x] Inkplate-6PLUS touch screen calibration
 - [x] FormViewer class redesign to support number fields
 - [x] EPUB XML namespace parsing support
-- [ ] Numerical keypad for entering numbers in forms
+- [x] Numerical keypad for entering numbers in forms
 - [ ] Inkplate-6PLUS Debugging (work in progress...)
 - [ ] Valgrind
 - [x] Tests Inkplate-6 / Inkplate-10
