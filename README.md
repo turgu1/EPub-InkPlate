@@ -3,7 +3,8 @@
 ## Last news
 
 (Updated 2022.1.16)
-(Look at file *changes.md* for current development state of changes)
+
+(Look at file *CHANGES.md* for current development state of changes)
 
 Update to version 2.0.0 - Not ready yet
 

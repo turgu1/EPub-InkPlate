@@ -32,8 +32,8 @@
 # ---
 
 version = 1
-wifi_ssid = ""
-wifi_pwd = ""
+wifi_ssid = "your_pwd_ssid"
+wifi_pwd = "your_wifi_pwd"
 http_port = 80
 battery = 2
 timeout = 5

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  To be effective, this file must be named fonts_list.xml
+
+  This file must be present in the top SDCard folder. It is loaded at boot time
+  or after deep sleep to initialize the structure of the fonts. Two groups of fonts
+  are defined: SYSTEM fonts that are used to display application controls, and
+  USER's fonts that can be selected by the user to display books content.
+  Only the first 8 user fonts will be read. 
+  
+  Each font in the USER's group must define normal, bold, italic, and bold-italic 
+  filenames. Too large font files may cause bad application behavior: the 4 files 
+  combined are limited to 300 Kbytes by the application.
+  
+  The SYSTEM group is taylored to the needs of the EPub-Inkplate software. Changes 
+  may impact the way that the application behave.
+
+  All font files must reside in the "fonts" folder on the SDCard. 
+
+-->
+<fonts>
+  <group name="SYSTEM">
+    <font name="TEXT">
+      <normal      filename="Roboto-Medium.otf"/>
+      <italic      filename="Roboto-MediumItalic.otf"/>
+    </font>
+    <font name="ICON">
+      <normal      filename="drawings.otf"/>
+    </font>
+  </group>
+  <group name="USER">
+    <font name="CRIMSON S">
+      <normal      filename="CrimsonPro-Medium.otf"/>
+      <bold        filename="CrimsonPro-Bold.otf"/>
+      <italic      filename="CrimsonPro-MediumItalic.otf"/>
+      <bold-italic filename="CrimsonPro-BoldItalic.otf"/>
+    </font>
+    <font name="ROBOTO">
+      <normal      filename="Roboto-Medium.otf"/>
+      <bold        filename="Roboto-Bold.otf"/>
+      <italic      filename="Roboto-MediumItalic.otf"/>
+      <bold-italic filename="Roboto-BoldItalic.otf"/>
+    </font>
+    <font name="ROBOTO COND">
+      <normal      filename="RobotoCondensed-Regular.otf"/>
+      <bold        filename="RobotoCondensed-Bold.otf"/>
+      <italic      filename="RobotoCondensed-Italic.otf"/>
+      <bold-italic filename="RobotoCondensed-BoldItalic.otf"/>
+    </font>
+    <font name="OPEN">
+      <normal      filename="OpenSans-Medium.otf"/>
+      <bold        filename="OpenSans-Bold.otf"/>
+      <italic      filename="OpenSans-MediumItalic.otf"/>
+      <bold-italic filename="OpenSans-BoldItalic.otf"/>
+    </font>
+    <font name="IBARRA S">
+      <normal      filename="IbarraRealNova-Medium.otf"/>
+      <bold        filename="IbarraRealNova-Bold.otf"/>
+      <italic      filename="IbarraRealNova-Italic.otf"/>
+      <bold-italic filename="IbarraRealNova-BoldItalic.otf"/>
+    </font>
+    <font name="TeX COMP S">
+      <normal      filename="EC-Regular_%DPI%.ibmf"/>
+      <bold        filename="EC-Bold_%DPI%.ibmf"/>
+      <italic      filename="EC-Italic_%DPI%.ibmf"/>
+      <bold-italic filename="EC-BoldItalic_%DPI%.ibmf"/>
+    </font>
+    <font name="TeX COMP">
+      <normal      filename="ECSans-Regular_%DPI%.ibmf"/>
+      <bold        filename="ECSans-Bold_%DPI%.ibmf"/>
+      <italic      filename="ECSans-Italic_%DPI%.ibmf"/>
+      <bold-italic filename="ECSans-BoldItalic_%DPI%.ibmf"/>
+    </font>
+    <font name="TeX TYPEWRITER">
+      <normal      filename="ECTypewriter-Regular_%DPI%.ibmf"/>
+      <bold        filename="ECTypewriter-Regular_%DPI%.ibmf"/>
+      <italic      filename="ECTypewriter-Italic_%DPI%.ibmf"/>
+      <bold-italic filename="ECTypewriter-Italic_%DPI%.ibmf"/>
+    </font>
+  </group>
+</fonts>

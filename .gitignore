@@ -18,7 +18,6 @@ SDCard/books/*.pars
 SDCard/books/*.locs
 SDCard/books/*.toc
 SDCard/last_book.txt
-SDCard/fonts_list.xml
 freetype-2.10.4/objs
 freetype-2.11.0
 lib_freetype-2.11.0
