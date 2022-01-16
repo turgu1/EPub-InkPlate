@@ -77,7 +77,7 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
     { .caption = "Show Heap Sizes :",        .u = { .ch = { .value = &show_heap,              .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
   #endif
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { .caption = nullptr,                    .u = { .ch = { .value = &done,                   .choice_count = 0, .choices = nullptr                                 } }, .entry_type = FormEntryType::DONE        }
+    { .caption = " DONE ",                   .u = { .ch = { .value = &done,                   .choice_count = 0, .choices = nullptr                                 } }, .entry_type = FormEntryType::DONE        }
   #endif
  };
 
@@ -92,7 +92,7 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   { .caption = "Default Font (*):",           .u = { .ch = { .value = &default_font,       .choice_count = 8, .choices = FormChoiceField::font_choices      } }, .entry_type = FormEntryType::VERTICAL   },
   { .caption = "Show Images in E-books (*):", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { .caption = nullptr,                     .u = { .ch = { .value = &done,               .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
+    { .caption = " DONE ",                    .u = { .ch = { .value = &done,               .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
   #endif
 };
 
@@ -112,7 +112,7 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
     { .caption = "Second :", .u = { .val = { .value = &second, .min =    0, .max =   59 } }, .entry_type = FormEntryType::UINT16  },
 
     #if INKPLATE_6PLUS || TOUCH_TRIAL
-      { .caption = nullptr,  .u = { .ch  = { .value = &done,   .choice_count = 0, .choices = nullptr } }, .entry_type = FormEntryType::DONE    }
+      { .caption = "DONE",   .u = { .ch  = { .value = &done,   .choice_count = 0, .choices = nullptr } }, .entry_type = FormEntryType::DONE    }
     #endif
   };
 #endif
@@ -318,41 +318,41 @@ init_nvs()
 
 static MenuViewer::MenuEntry menu[] = {
 
-  { MenuViewer::Icon::RETURN,      "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
-  { MenuViewer::Icon::BOOK,        "Return to the last e-book being read", CommonActions::show_last_book    , true,  true  },
-  { MenuViewer::Icon::MAIN_PARAMS, "Main parameters",                      main_parameters                  , true,  true  },
-  { MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters",           default_parameters               , true,  true  },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
-  { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
+  { MenuViewer::Icon::RETURN,        "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
+  { MenuViewer::Icon::BOOK,          "Return to the last e-book being read", CommonActions::show_last_book    , true,  true  },
+  { MenuViewer::Icon::MAIN_PARAMS,   "Main parameters",                      main_parameters                  , true,  true  },
+  { MenuViewer::Icon::FONT_PARAMS,   "Default e-books parameters",           default_parameters               , true,  true  },
+  { MenuViewer::Icon::WIFI,          "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
+  { MenuViewer::Icon::REFRESH,       "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
   #if !INKPLATE_6PLUS
-    { MenuViewer::Icon::REVERT,    "Clear e-books' read history",          init_nvs                          , true,  true  },
+    { MenuViewer::Icon::REVERT,      "Clear e-books' read history",          init_nvs                         , true,  true  },
     #if DATE_TIME_RTC
-      { MenuViewer::Icon::CLOCK,     "Set Date/Time",                      clock_adjust_form                , true,  true  },
-      { MenuViewer::Icon::NTP_CLOCK, "Set Date/Time from Time Server",     ntp_clock_adjust                 , true,  true  },
+      { MenuViewer::Icon::CLOCK,     "Set Date/Time",                        clock_adjust_form                , true,  true  },
+      { MenuViewer::Icon::NTP_CLOCK, "Retrieve Date/Time from Time Server",  ntp_clock_adjust                 , true,  true  },
     #endif
   #endif
   #if EPUB_LINUX_BUILD && DEBUGGING
-    { MenuViewer::Icon::DEBUG,     "Debugging",                            debugging                        , true,  true  },
+    { MenuViewer::Icon::DEBUG,       "Debugging",                            debugging                        , true,  true  },
   #endif
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
+  { MenuViewer::Icon::INFO,          "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
+  { MenuViewer::Icon::POWEROFF,      "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
   #if INKPLATE_6PLUS
-    { MenuViewer::Icon::NEXT_MENU, "Other options",                        goto_next                        , true,  true  },
+    { MenuViewer::Icon::NEXT_MENU,   "Other options",                        goto_next                        , true,  true  },
   #endif
-  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
+  { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
 };
 
 #if INKPLATE_6PLUS
 static MenuViewer::MenuEntry sub_menu[] = {
-  { MenuViewer::Icon::PREV_MENU,    "Previous options",                    goto_prev                        , true,  true  },
-  { MenuViewer::Icon::RETURN,       "Return to the e-books list",          CommonActions::return_to_last    , true,  true  },
+  { MenuViewer::Icon::PREV_MENU,     "Previous options",                     goto_prev                        , true,  true  },
+  { MenuViewer::Icon::RETURN,        "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
   #if DATE_TIME_RTC
-    { MenuViewer::Icon::CLOCK,      "Set Date/Time",                       clock_adjust_form                , true,  true  },
-    { MenuViewer::Icon::NTP_CLOCK,  "Set Date/Time from Time Server",      ntp_clock_adjust                 , true,  true  },
+    { MenuViewer::Icon::CLOCK,       "Set Date/Time",                        clock_adjust_form                , true,  true  },
+    { MenuViewer::Icon::NTP_CLOCK,   "Retrieve Date/Time from Time Server",  ntp_clock_adjust                 , true,  true  },
   #endif
-  { MenuViewer::Icon::CALIB,        "Touch Screen Calibration",            calibrate                        , true,  false },
-  { MenuViewer::Icon::REVERT,       "Clear e-books' read history",         init_nvs                         , true,  true  },
-  { MenuViewer::Icon::END_MENU,     nullptr,                               nullptr                          , false, false }
+  { MenuViewer::Icon::CALIB,         "Touch Screen Calibration",             calibrate                        , true,  false },
+  { MenuViewer::Icon::REVERT,        "Clear e-books' read history",          init_nvs                         , true,  true  },
+  { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
 };
 #endif
 

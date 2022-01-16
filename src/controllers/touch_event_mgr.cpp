@@ -522,7 +522,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
 
     static constexpr char const * TAG = "MouseEventCallback";
 
-    const uint32_t MAX_DELAY_MS  =     4E3; // 10 seconds
+    const uint32_t MAX_DELAY_MS  =     4E3; // 4 seconds  
     const uint16_t DIST_TRESHOLD =      30; // treshold distance in pixels
 
     enum class State : uint8_t { NONE, WAIT_NEXT, HOLDING, SWIPING, PINCHING };

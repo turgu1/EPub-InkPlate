@@ -489,7 +489,7 @@ class FormDone : public FormField
     }
 
     void compute_field_dim() {
-      font.get_size(" DONE ", &field_dim, FORM_FONT_SIZE);
+      font.get_size(form_entry.caption, &field_dim, FORM_FONT_SIZE);
     }
 
     void compute_field_pos(Pos from_pos) {
@@ -501,7 +501,7 @@ class FormDone : public FormField
       Font::Glyph * glyph  =  font.get_glyph('M', FORM_FONT_SIZE);
       uint8_t       offset = -glyph->yoff;
 
-      page.put_str_at(" DONE ", 
+      page.put_str_at(form_entry.caption, 
                       Pos(field_pos.x, field_pos.y + offset), 
                       fmt);
     }

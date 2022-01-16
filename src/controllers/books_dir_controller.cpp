@@ -261,10 +261,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
             }
           }
           else {
+            current_book_index = -1;
             app_controller.set_controller(AppController::Ctrl::OPTION);
           }
         }
         else {
+          current_book_index = -1;
           app_controller.set_controller(AppController::Ctrl::OPTION);
         }
         break;

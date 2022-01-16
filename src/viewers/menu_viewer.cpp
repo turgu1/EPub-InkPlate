@@ -12,7 +12,7 @@
 #include "screen.hpp"
 #include "controllers/app_controller.hpp"
 
-static const std::string TOUCH_AND_HOLD_STR = "Touch and hold for more info. Tap for action.";
+static const std::string TOUCH_AND_HOLD_STR = "Touch and hold icon for info. Tap for action.";
 
 void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_screen)
 {

@@ -20,7 +20,7 @@
 #include <iomanip>
 
 #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-  static const std::string TOUCH_AND_HOLD_STR = "Touch cover and hold for more info. Tap for action.";
+  static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
 void
