@@ -167,7 +167,7 @@ bool Fonts::setup()
       std::string str = fnt.attribute("name").value();
       font_size = 0;
       if (!str.empty()) {
-        LOG_I("%s...", str);
+        LOG_D("%s...", str.c_str());
         font_names[font_count] = char_pool.set(str);
         str = fnt.child("normal").attribute("filename").value();
         if (check_file(str = filter_filename(str))) {

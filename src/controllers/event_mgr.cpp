@@ -56,7 +56,7 @@
 
       while (true) {
       
-        event = EventMgr::Event::NONE;
+        event.kind = EventMgr::EventKind::NONE;
 
         xQueueReceive(touchpad_isr_queue, &io_num, portMAX_DELAY);
 
@@ -77,15 +77,15 @@
           mcp_int.get_int_state();
           Wire::leave();  
 
-          if      (pads & SELECT_PAD) event = EventMgr::Event::SELECT;
-          else if (pads & NEXT_PAD  ) event = EventMgr::Event::NEXT;
-          else if (pads & PREV_PAD  ) event = EventMgr::Event::PREV;
-          else if (pads & HOME_PAD  ) event = EventMgr::Event::DBL_SELECT;
-          else if (pads & DNEXT_PAD ) event = EventMgr::Event::DBL_NEXT;
-          else if (pads & DPREV_PAD ) event = EventMgr::Event::DBL_PREV;
+          if      (pads & SELECT_PAD) event.kind = EventMgr::EventKind::SELECT;
+          else if (pads & NEXT_PAD  ) event.kind = EventMgr::EventKind::NEXT;
+          else if (pads & PREV_PAD  ) event.kind = EventMgr::EventKind::PREV;
+          else if (pads & HOME_PAD  ) event.kind = EventMgr::EventKind::DBL_SELECT;
+          else if (pads & DNEXT_PAD ) event.kind = EventMgr::EventKind::DBL_NEXT;
+          else if (pads & DPREV_PAD ) event.kind = EventMgr::EventKind::DBL_PREV;
         }
 
-        if (event != EventMgr::Event::NONE) {
+        if (event.kind != EventMgr::EventKind::NONE) {
           xQueueSend(touchpad_event_queue, &event, 0);
         }  
       }     

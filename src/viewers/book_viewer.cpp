@@ -49,8 +49,8 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
     ESP::show_heaps_info();
   #endif
 
-  Font * font = fonts.get(0);
-  page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
+  Font * font = fonts.get(ScreenBottom::FONT);
+  page_bottom = font->get_line_height(ScreenBottom::FONT_SIZE) + (font->get_line_height(ScreenBottom::FONT_SIZE) >> 1);
 
   //page.set_compute_mode(Page::ComputeMode::MOVE);
 
@@ -60,16 +60,24 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
     int16_t idx;
 
+    int8_t show_title;
+    config.get(Config::Ident::SHOW_TITLE, &show_title);
+
+    int16_t page_top              = 0;
+    int16_t title_baseline_offset = 0;
+
+    if (show_title != 0) {
+      Font * title_font     = fonts.get(TITLE_FONT);
+      page_top              = title_font->get_chars_height(TITLE_FONT_SIZE) + 10;
+      title_baseline_offset = page_top + 
+                              title_font->get_descender_height(TITLE_FONT_SIZE);
+    }
+
     if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
 
     int8_t font_size = epub.get_book_format_params()->font_size;
-
-    int8_t show_title;
-    config.get(Config::Ident::SHOW_TITLE, &show_title);
-
-    int16_t page_top = show_title != 0 ? 40 : 10;
 
     Page::Format fmt = {
       .line_height_factor = 0.95,
@@ -128,7 +136,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
       #if EPUB_INKPLATE_BUILD
         esp_task_wdt_reset();
       #endif
-      
+
       Page::Format * new_fmt = interp->duplicate_fmt(fmt);
 
       if (interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
@@ -137,12 +145,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
         //TTF * font = fonts.get(0, 7);
 
-        int16_t page_nbr   = page_locs.get_page_nbr(page_id);
-        int16_t page_count = page_locs.get_page_count();
-
         fmt.line_height_factor = 1.0;
-        fmt.font_index         =   2;
-        fmt.font_size          =   8;
+        fmt.font_index         = TITLE_FONT;
+        fmt.font_size          = TITLE_FONT_SIZE;
         fmt.font_style         = Fonts::FaceStyle::ITALIC;
         fmt.align              = CSS::Align::CENTER;
         
@@ -161,10 +166,11 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
           else {
             ostr << t;
           } 
-          page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, 25), fmt);
+          // page.put_highlight(Dim(screen.get_width(), title_baseline_offset), Pos(0, 0));
+          page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, title_baseline_offset), fmt);
         }
 
-        ScreenBottom::show(page_nbr, page_count);
+        ScreenBottom::show(page_locs.get_page_nbr(page_id), page_locs.get_page_count());
 
         page.paint();
       }
@@ -219,7 +225,7 @@ BookViewer::show_fake_cover()
   page.start(fmt);
 
   page.new_paragraph(fmt, false);
-  page.add_text(author, fmt);
+  page.     add_text(author, fmt);
   page.end_paragraph(fmt);
 
   fmt.font_index =   1;
@@ -227,9 +233,9 @@ BookViewer::show_fake_cover()
   fmt.screen_top = 200;
   fmt.font_style = Fonts::FaceStyle::NORMAL;
 
-  page.set_limits(fmt);
+  page.   set_limits(fmt);
   page.new_paragraph(fmt, false);
-  page.add_text(title, fmt);
+  page.     add_text(title, fmt);
   page.end_paragraph(fmt);
 
   page.paint();

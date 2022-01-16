@@ -14,6 +14,7 @@
 #include "viewers/book_viewer.hpp"
 #include "helpers/unzip.hpp"
 
+#include "logging.hpp"
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
 #endif
@@ -25,6 +26,79 @@
 #include <cctype>
 
 using namespace pugi;
+
+const char * TAG = "EPUB";
+
+bool 
+package_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "package") == 0) || (strcmp(node.name(), "opf:package") == 0);
+  LOG_D("package() result: %d", res);
+  return res;
+} 
+
+bool 
+metadata_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "metadata") == 0) || (strcmp(node.name(), "opf:metadata") == 0);
+  LOG_D("metadata() result: %d", res);
+  return res;
+} 
+
+bool 
+manifest_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "manifest") == 0) || (strcmp(node.name(), "opf:manifest") == 0);
+  LOG_D("manifest() result: %d", res);
+  return res;
+} 
+
+bool 
+item_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "item") == 0) || (strcmp(node.name(), "opf:item") == 0);
+  LOG_D("item() result: %d", res);
+  return res;
+} 
+
+bool 
+spine_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "spine") == 0) || (strcmp(node.name(), "opf:spine") == 0);
+  LOG_D("spine() result: %d", res);
+  return res;
+} 
+
+bool 
+itemref_pred(xml_node node)
+{
+  bool res = (strcmp(node.name(), "itemref") == 0) || (strcmp(node.name(), "opf:itemref") == 0);
+  LOG_D("itemref() result: %d", res);
+  return res;
+}
+
+bool
+xmlns_pred(xml_attribute attr)
+{
+  bool res = (strcmp(attr.name(), "xmlns") == 0) || (strcmp(attr.name(), "xmlns:opf") == 0);
+  LOG_D("xmlns() result: %d", res);
+  return res;
+}
+
+xml_node one_by_attr(xml_node n, const char * name1, const char * name2, const char * attr, const char * value)
+{
+  xml_node res;
+  
+  if (!(res = n.find_child_by_attribute(name1, attr, value))) {
+    if ((res = n.find_child_by_attribute(name2, attr, value))) {
+      LOG_D("one by attr: %s Found", name2);
+    }
+    else LOG_D("one by attr: %s NOT Found", name2);
+  }
+  else LOG_D("one by attr: %s Found", name1);
+
+  return res;
+}
 
 EPub::EPub()
 {
@@ -194,14 +268,14 @@ std::string
 EPub::get_unique_identifier()
 {
   xml_attribute attr;
-  xml_node      node;
+  xml_node      node, node2;
   const char  * id;
 
-  if ((node = opf.child("package")) &&
-      (id   = node.attribute("unique-identifier").value()) &&
-      (node = node.child("metadata")
-                  .find_child_by_attribute("dc:identifier", "id", id))) {
-    return node.text().get();
+  if ((node  = opf.find_child(package_pred)) &&
+      (id    = node.attribute("unique-identifier").value()) &&
+      (node2 = node.find_child(metadata_pred)) &&
+      (node2.find_child_by_attribute("dc:identifier", "id", id))) {
+    return node2.text().get();
   }
   return "";
 }
@@ -314,8 +388,8 @@ EPub::get_opf(std::string & filename)
     }
 
     // Verifie that the OPF is of one of the version understood by this application
-    if (!((node = opf.child("package")) && 
-          (attr = node.attribute("xmlns")) &&
+    if (!((node = opf.find_child(package_pred)) && 
+          (attr = node.find_attribute(xmlns_pred)) &&
           (strcmp(attr.value(), "http://www.idpf.org/2007/opf") == 0) &&
           (attr = node.attribute("version")) &&
           ((strcmp(attr.value(), "1.0") == 0) || 
@@ -671,7 +745,7 @@ EPub::get_item(pugi::xml_node itemref,
 
   clear_item_data(item);
 
-  xml_node      node;
+  xml_node      node, node2;
   xml_attribute attr;
 
   const char * id = itemref.attribute("idref").value();
@@ -679,9 +753,8 @@ EPub::get_item(pugi::xml_node itemref,
   bool completed = false;
 
   while (!completed) {
-    if (!((node =  opf.child("package")
-                      .child("manifest")
-                      .find_child_by_attribute("item", "id", id)))) ERR(1);
+    if (!((node = opf.find_child(package_pred).find_child(manifest_pred)) &&
+          (node = one_by_attr(node, "item", "opf:item", "id", id)))) ERR(1);
 
     if (!(attr = node.attribute("media-type"))) ERR(2);
     const char* media_type = attr.value();
@@ -919,10 +992,15 @@ EPub::get_meta(const std::string & name)
 
   xml_node node;
   
-  if (!((node = opf.child("package" ).child("metadata")))) {
-    node = opf.child("package").child("opf:metadata");
+  if ((node = opf.find_child(package_pred).find_child(metadata_pred))) {
+    return node.child_value(name.c_str());
   }
-  return node == nullptr ? nullptr : node.child_value(name.c_str());
+  return nullptr;
+
+  // if (!((node = opf.child("package" ).child("metadata")))) {
+  //   node = opf.child("package").child("opf:metadata");
+  // }
+  // return node == nullptr ? nullptr : node.child_value(name.c_str());
 }
 
 const char *
@@ -938,30 +1016,34 @@ EPub::get_cover_filename()
 
   // First, try to find its from metadata
 
-  if ((node = opf.child("package")
-                 .child("metadata")
-                 .find_child_by_attribute("meta", "name", "cover")) &&
+  if ((node = opf.find_child(package_pred)
+                 .find_child(metadata_pred)) &&
+      (node = one_by_attr(node, "meta", "opf:meta", "name", "cover")) &&
       (itemref = node.attribute("content").value())) {
 
-    for (auto n : opf.child("package").child("manifest").children("item")) {
-      if ((((attr = n.attribute("id"        )) && (strcmp(attr.value(), itemref) == 0)) ||
-           ((attr = n.attribute("properties")) && (strcmp(attr.value(), itemref) == 0))) &&
-          (attr = n.attribute("href"))) {
-        filename = attr.value();
-        break;
+    for (auto n : opf.find_child(package_pred).find_child(manifest_pred).children()) {
+      if ((strcmp(n.name(), "item") == 0) || (strcmp(n.name(), "opf:item") == 0)) {
+        if ((((attr = n.attribute("id"        )) && (strcmp(attr.value(), itemref) == 0)) ||
+            ((attr = n.attribute("properties")) && (strcmp(attr.value(), itemref) == 0))) &&
+            (attr = n.attribute("href"))) {
+          filename = attr.value();
+          break;
+        }
       }
     }
   }
 
   if (filename == nullptr) {
     // Look inside manifest
-    for (auto n : opf.child("package").child("manifest").children("item")) {
-      if ((attr = n.attribute("id")) && 
-          ((strcmp(attr.value(), "cover-image") == 0) || 
-           (strcmp(attr.value(), "cover"      ) == 0)) && 
-          (attr = n.attribute("href"))) {
-        filename = attr.value();
-        break;
+    for (auto n : opf.find_child(package_pred).find_child(manifest_pred).children()) {
+      if ((strcmp(n.name(), "item") == 0) || (strcmp(n.name(), "opf:item") == 0)) {
+        if ((attr = n.attribute("id")) && 
+            ((strcmp(attr.value(), "cover-image") == 0) || 
+             (strcmp(attr.value(), "cover"      ) == 0)) && 
+            (attr = n.attribute("href"))) {
+          filename = attr.value();
+          break;
+        }
       }
     }
   }
@@ -974,8 +1056,16 @@ EPub::get_item_count()
 {
   if (!file_is_open) return 0;
 
-  auto it = opf.child("package").child("spine").children("itemref");
-  return std::distance(it.begin(), it.end());
+  auto it = opf.find_child(package_pred).find_child(spine_pred).children("itemref");
+  int16_t count = std::distance(it.begin(), it.end());
+  
+  if (count == 0) {
+    it = opf.find_child(package_pred).find_child(spine_pred).children("opf:itemref");
+    count = std::distance(it.begin(), it.end());
+  }
+
+  LOG_D("Item count: %d", count);
+  return count;
 }
 
 bool 
@@ -988,7 +1078,7 @@ EPub::get_item_at_index(int16_t itemref_index)
   xml_node node  = xml_node();
   int16_t  index = 0;
 
-  for (auto n : opf.child("package").child("spine").children("itemref")) {
+  for (auto n : opf.find_child(package_pred).find_child(spine_pred).children()) {
     if (index == itemref_index) { node = n; break; }
     index++;
   }
@@ -1020,7 +1110,7 @@ EPub::get_item_at_index(int16_t    itemref_index,
     xml_node node = xml_node();
     int16_t index = 0;
 
-    for (auto n : opf.child("package").child("spine").children("itemref")) {
+    for (auto n : opf.find_child(package_pred).find_child(spine_pred).children()) {
       if (index == itemref_index) { node = n; break; }
       index++;
     }

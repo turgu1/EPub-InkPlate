@@ -76,15 +76,23 @@ class Font
      * @brief Face normal line height
      * 
      * 
-     * @return int32_t Normal line height of the face in pixels
+     * @return int32_t Normal line height of the face in pixels related to the glyph size
      */
     virtual int32_t get_line_height(int16_t glyph_size) = 0;
 
     /**
+     * @brief Get Face characters height related to the glyph size
+     * 
+     */
+    virtual int32_t get_chars_height(int16_t glyph_size)  {
+      const Glyph * g = get_glyph_internal('E', glyph_size);
+      return g->dim.height - get_descender_height(glyph_size);
+    };
+ 
+     /**
      * @brief Face descender height
      * 
-     * @return int32_t The face descender height in pixels related to
-     *                 the current font size.
+     * @return int32_t The face descender height in pixels related to the glyph size.
      */
     virtual int32_t get_descender_height(int16_t glyph_size) = 0;
 

@@ -1,6 +1,7 @@
 #define _SCREEN_BOTTOM_ 1
 #include "viewers/screen_bottom.hpp"
 
+#include "controllers/clock.hpp"
 #include "models/config.hpp"
 #include "viewers/battery_viewer.hpp"
 #include "screen.hpp"
@@ -42,9 +43,16 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   page.set_limits(fmt);
 
   std::ostringstream ostr;
-  
-  page.clear_region(Dim(Screen::get_width(), font->get_line_height(FONT_SIZE)),
-                    Pos(0, Screen::get_height() - font->get_line_height(FONT_SIZE)));
+
+  // LOG_I("Dim [%u, %u], Pos[%u, %u]", 
+  //       Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10, 
+  //       0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10);
+
+  page.clear_region(Dim(Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10),
+                    Pos(0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10));
+
+  // page.put_highlight(Dim(Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10),
+  //                    Pos(0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10));
                     
   if ((page_nbr != -1) && (page_count != -1)) {
     ostr << page_nbr + 1 << " / " << page_count;
@@ -83,23 +91,9 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
     if (show_rtc != 0) {
       struct tm time;
 
-      #if EPUB_INKPLATE_BUILD
-        time_t epoch;
-        rtc.get_date_time(&epoch);
-        localtime_r(&epoch, &time);
-      #else
-       time = {
-          .tm_sec   =  0,
-          .tm_min   =  0,
-          .tm_hour  =  0,
-          .tm_mday  =  1,
-          .tm_mon   =  0,
-          .tm_year  =  2022 - 1970,
-          .tm_wday  =  1,
-          .tm_yday  =  1,
-          .tm_isdst = -1
-        };
-      #endif
+      time_t epoch;
+      Clock::get_date_time(epoch);
+      localtime_r(&epoch, &time);
 
       ostr.str(std::string());
       ostr << dw[(int8_t) time.tm_wday] << " - "

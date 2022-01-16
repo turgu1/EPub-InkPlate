@@ -21,18 +21,21 @@ class KeypadViewer
     static const uint8_t KEY_COUNT        = 14;
     static const uint8_t FONT_SIZE        =  9;
 
-    #if INKPLATE_6PLUS
-      static const uint8_t KEY_ADDED_WIDTH  = 50;
-      static const uint8_t KEY_ADDED_HEIGHT = 30;
-    #else
-      static const uint8_t KEY_ADDED_WIDTH  = 30;
-      static const uint8_t KEY_ADDED_HEIGHT = 20;
-    #endif
-
     struct KeyLocation {
       Pos     pos;
       int8_t  value; // 0-9 => value, -1 => cancel, -2 => OK, -3 => BackSpace, -4 => Clear
     };
+
+
+    static const uint8_t KEY_ADDED_WIDTH  = 50;
+    static const uint8_t KEY_ADDED_HEIGHT = 30;
+
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      KeyLocation * matrix[5][3];
+      KeyLocation * current_key;
+      KeyLocation * previous_key;
+      uint8_t  line, col;
+    #endif
 
     KeyLocation   key_locs[KEY_COUNT];
     Dim           keypad_dim;
@@ -46,30 +49,32 @@ class KeypadViewer
     Font *        font;
     Font::Glyph * glyph;
 
-    int8_t get_key_val(uint16_t x, uint16_t y) {
-      for (int i = 0; i < (KEY_COUNT - 1); i++) {
-        if ((x >= key_locs[i].pos.x) &&
-            (x <= key_locs[i].pos.x + key_dim.width) &&
-            (y >= key_locs[i].pos.y) &&
-            (y <= key_locs[i].pos.y + key_dim.height)) {
-          return key_locs[i].value;
+    #if INKPLATE_6PLUS || TOUCH_TRIAL
+      int8_t get_key_val(uint16_t x, uint16_t y) {
+        for (int i = 0; i < (KEY_COUNT - 1); i++) {
+          if ((x >= key_locs[i].pos.x) &&
+              (x <= key_locs[i].pos.x + key_dim.width) &&
+              (y >= key_locs[i].pos.y) &&
+              (y <= key_locs[i].pos.y + key_dim.height)) {
+            return key_locs[i].value;
+          }
         }
+        if ((x >= key_locs[KEY_COUNT - 1].pos.x) &&
+            (x <= key_locs[KEY_COUNT - 1].pos.x + key_dim2.width) &&
+            (y >= key_locs[KEY_COUNT - 1].pos.y) &&
+            (y <= key_locs[KEY_COUNT - 1].pos.y + key_dim2.height)) {
+          return key_locs[KEY_COUNT - 1].value;
+        }
+        return 99; // Not found
       }
-      if ((x >= key_locs[KEY_COUNT - 1].pos.x) &&
-          (x <= key_locs[KEY_COUNT - 1].pos.x + key_dim2.width) &&
-          (y >= key_locs[KEY_COUNT - 1].pos.y) &&
-          (y <= key_locs[KEY_COUNT - 1].pos.y + key_dim2.height)) {
-        return key_locs[KEY_COUNT - 1].value;
-      }
-      return 99; // Not found
-    }
+    #endif
 
     void update_value() {
       page.clear_region(Dim(keypad_dim.width - 6, key_dim.height - 6),
                         Pos(field_pos.x + 3, field_pos.y + 3));
       page.put_str_at(digits, 
                       Pos(field_pos.x + (keypad_dim.width >> 1), 
-                          field_pos.y + glyph->dim.height + 10),
+                          field_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
                       fmt);
     }
 
@@ -97,6 +102,47 @@ class KeypadViewer
         digits[--digits_count] = 0;
       }
     }
+
+    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      void update_highlight() {
+        if (previous_key != current_key) {
+          if (previous_key != nullptr) {
+            if (previous_key->value == -1) { // Cancel key
+              page.clear_highlight(Dim(key_dim2.width      - 2, key_dim2.height     - 2), 
+                                   Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
+              page.clear_highlight(Dim(key_dim2.width      - 4, key_dim2.height     - 4), 
+                                   Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
+              page.clear_highlight(Dim(key_dim2.width      - 6, key_dim2.height     - 6), 
+                                   Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
+            }
+            else {
+              page.clear_highlight(Dim(key_dim.width       - 2, key_dim.height      - 2), 
+                                   Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
+              page.clear_highlight(Dim(key_dim.width       - 4, key_dim.height      - 4), 
+                                   Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
+              page.clear_highlight(Dim(key_dim.width       - 6, key_dim.height      - 6), 
+                                   Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
+            }
+          }
+          if (current_key->value == -1) { // Cancel key
+            page.put_highlight(Dim(key_dim2.width     - 2, key_dim2.height    - 2), 
+                               Pos(current_key->pos.x + 1, current_key->pos.y + 1));
+            page.put_highlight(Dim(key_dim2.width     - 4, key_dim2.height    - 4), 
+                               Pos(current_key->pos.x + 2, current_key->pos.y + 2));
+            page.put_highlight(Dim(key_dim2.width     - 6, key_dim2.height    - 6), 
+                               Pos(current_key->pos.x + 3, current_key->pos.y + 3));
+          }
+          else {
+            page.put_highlight(Dim(key_dim.width      - 2, key_dim.height     - 2), 
+                               Pos(current_key->pos.x + 1, current_key->pos.y + 1));
+            page.put_highlight(Dim(key_dim.width      - 4, key_dim.height     - 4), 
+                               Pos(current_key->pos.x + 2, current_key->pos.y + 2));
+            page.put_highlight(Dim(key_dim.width      - 6, key_dim.height     - 6), 
+                               Pos(current_key->pos.x + 3, current_key->pos.y + 3));
+          }
+        }
+      }
+    #endif
 
   public:
 
@@ -160,7 +206,9 @@ class KeypadViewer
         .display            = CSS::Display::INLINE
       };
 
-      page.start(fmt);
+      #if INKPLATE_6PLUS || TOUCH_TRIAL
+        page.start(fmt);
+      #endif
 
       // The large rectangle into which the keypad will be drawn
 
@@ -195,8 +243,21 @@ class KeypadViewer
 
       Pos the_pos = Pos(keypad_pos.x, keypad_pos.y + (key_dim.height << 1) + 4);
 
+      #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+        line = col = 0;
+      #endif
+
       for (int i = 0; i < 14; i++) {
         key_locs[i] = { .pos = the_pos, .value = values[i] };
+
+        #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+          matrix[line][col] = &key_locs[i];
+          if (++col >= 3) {
+            col = 0;
+            line++;
+          }
+        #endif
+
         LOG_D("Key %d pos: [%d, %d]", i, the_pos.x, the_pos.y);
 
         switch (values[i]) {
@@ -218,8 +279,10 @@ class KeypadViewer
             break;
           case -1: // Cancel
             page.put_highlight(key_dim2, the_pos);
-            page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2), 
-                               Pos(the_pos.x      + 1, the_pos.y       + 1));
+            #if INKPLATE_6PLUS || TOUCH_TRIAL
+              page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2), 
+                                 Pos(the_pos.x      + 1, the_pos.y       + 1));
+            #endif
             page.put_str_at("CANCEL", 
                             Pos(the_pos.x + (key_dim2.width    >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
@@ -227,8 +290,10 @@ class KeypadViewer
             break;
           case -2: // OK
             page.put_highlight(key_dim, the_pos);
-            page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2), 
-                               Pos(the_pos.x     + 1, the_pos.y      + 1));
+            #if INKPLATE_6PLUS || TOUCH_TRIAL
+              page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2), 
+                                 Pos(the_pos.x     + 1, the_pos.y      + 1));
+            #endif
             page.put_str_at("OK", 
                             Pos(the_pos.x + (key_dim.width     >> 1), 
                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
@@ -258,30 +323,121 @@ class KeypadViewer
         }
       }
 
+      #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+        matrix[4][2] = matrix[4][1]; 
+        line = col = 1;
+        previous_key = nullptr;
+        current_key = matrix[1][1];
+        update_highlight();
+        previous_key = current_key;
+      #endif
+
       update_value();
-      page.paint(false);
+      #if INKPLATE_6PLUS || TOUCH_TRIAL
+        page.paint(false);
+      #endif
     }
 
+    /**
+     * @brief Event processing
+     * 
+     * @param event Event coming from the user interaction
+     * @return true The Keypad must keep control of events
+     * @return false Events processing is complete
+     */
     bool event(const EventMgr::Event & event) {
-      if (event.kind == EventMgr::EventKind::TAP) {
-        int8_t value = get_key_val(event.x, event.y);
-        if (value != 99) {
-          if (value >= 0) add_digit(value);
-          else if (value == -1) return false;
-          else if (value == -2) {
-            client_value = atoi(digits);
-            return false;
-          }
-          else if (value == -3) remove_digit();
-          else if (value == -4) clear_digits();
-        }
-      }
-      page.start(fmt);
-      update_value();
-      page.paint(false);
 
-      return true;
+      #if INKPLATE_6PLUS || TOUCH_TRIAL
+        if (event.kind == EventMgr::EventKind::TAP) {
+          int8_t value = get_key_val(event.x, event.y);
+          if (value != 99) {
+            if (value >= 0) add_digit(value);
+            else if (value == -1) return false;
+            else if (value == -2) {
+              client_value = atoi(digits);
+              return false;
+            }
+            else if (value == -3) remove_digit();
+            else if (value == -4) clear_digits();
+          }
+        }
+        page.start(fmt);
+        update_value();
+        page.paint(false);
+
+        return true;
+      #else
+        switch (event.kind) {
+          #if EXTENDED_CASE
+            case EventMgr::EventKind::PREV:
+          #else
+            case EventMgr::EventKind::DBL_PREV:
+          #endif
+            col = (col == 0) ? 2 : col - 1;
+            current_key = matrix[line][col];
+            break;
+
+          #if EXTENDED_CASE
+            case EventMgr::EventKind::NEXT:
+          #else
+            case EventMgr::EventKind::DBL_NEXT:
+          #endif
+            col = (col == 2) ? 0 : col + 1;
+            current_key = matrix[line][col];
+            break;
+
+          #if EXTENDED_CASE
+            case EventMgr::EventKind::DBL_PREV:
+          #else
+            case EventMgr::EventKind::PREV:
+          #endif
+            line = (line == 0) ? 4 : line - 1;
+            current_key = matrix[line][col];
+            break;
+
+          #if EXTENDED_CASE
+            case EventMgr::EventKind::DBL_NEXT:
+          #else
+            case EventMgr::EventKind::NEXT:
+          #endif
+            line = (line == 4) ? 0 : line + 1;
+            current_key = matrix[line][col];
+            break;
+
+          case EventMgr::EventKind::SELECT:
+          {
+              int8_t value = current_key->value;
+              if (value != 99) {
+                if (value >= 0) add_digit(value);
+                else if (value == -1) return false;
+                else if (value == -2) {
+                  client_value = atoi(digits);
+                  return false;
+                }
+                else if (value == -3) remove_digit();
+                else if (value == -4) clear_digits();
+              }
+            }
+            break;
+
+          case EventMgr::EventKind::DBL_SELECT:
+            return false;
+            break;
+
+          default:
+            break;
+        }      
+
+        page.start(fmt);
+        update_value();
+        update_highlight();
+        previous_key = current_key;
+        page.paint(false);
+
+        return true;
+      #endif
     }
+    
 };
 
 #if __KEYPAD_VIEWER__
@@ -294,6 +450,10 @@ class KeypadViewer
 
 Keypad:
 
+   +-----------------+
+   |     Caption     |
+   +-----------------+
+   |      Value      |
    +-----+-----+-----+
    |  7  |  8  |  9  |
    +-----+-----+-----+

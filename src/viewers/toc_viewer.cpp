@@ -109,7 +109,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
     ypos += ENTRY_HEIGHT;
   }
 
-  ScreenBottom::show(page_nbr, page_count);
+  ScreenBottom::show(current_page_nbr, page_count);
 
   page.paint();
 }
@@ -187,9 +187,7 @@ TocViewer::highlight(int16_t screen_idx)
     page.add_text(entry2.label, fmt);
     page.end_paragraph(fmt);
 
-    #if EPUB_INKPLATE_BUILD
-      BatteryViewer::show();
-    #endif
+    ScreenBottom::show(current_page_nbr, page_count);
 
     page.paint(false);
   }

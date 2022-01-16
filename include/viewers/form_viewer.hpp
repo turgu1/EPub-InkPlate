@@ -48,7 +48,7 @@ class FormField
 {
   public:
     FormField(FormEntry & form_entry, Font & font) :
-      form_entry(form_entry), font(font) { 
+      form_entry(form_entry), font(font), event_control(false) { 
     };
     virtual ~FormField() { };
 
@@ -67,6 +67,7 @@ class FormField
       }
     }
 
+    virtual bool form_refresh_required() { return false; }
     virtual void             paint(Page::Format & fmt)            = 0;
     virtual void compute_field_dim()                              = 0;
     virtual void compute_field_pos(Pos from_pos)                  = 0;
@@ -74,6 +75,8 @@ class FormField
     virtual void        save_value()                              = 0;
 
     virtual bool  event(const EventMgr::Event & event) { return false; }
+
+    inline bool in_event_control() { return event_control; }
 
     void compute_caption_pos(Pos from_pos) {
       caption_pos = Pos(from_pos.x - caption_dim.width, from_pos.y);
@@ -125,7 +128,7 @@ class FormField
     Font      & font;
     Dim         field_dim, caption_dim;
     Pos         field_pos, caption_pos;
-
+    bool        event_control;
 };
 
 class FormChoiceField : public FormField
@@ -207,6 +210,7 @@ class FormChoiceField : public FormField
       }
 
       int i = 0;
+      current_item = items.end();
       for (Items::iterator it = items.begin(); it != items.end(); it++) {
         if (form_entry.u.ch.choices[i].value == * form_entry.u.ch.value) {
           current_item = it;
@@ -214,6 +218,7 @@ class FormChoiceField : public FormField
         }
         i++;        
       }
+      if (current_item == items.end()) current_item = items.begin();
 
       old_item = items.end();
     }
@@ -391,11 +396,11 @@ class HFormChoiceField : public FormChoiceField
 
 class FormUInt16 : public FormField
 {
-  private:
-    bool keypad_shown;
 
   public:
     using FormField::FormField;
+
+    bool form_refresh_required() { return true; }
 
     void compute_field_pos(Pos from_pos) { 
       field_pos = from_pos; 
@@ -422,36 +427,30 @@ class FormUInt16 : public FormField
       page.put_str_at(val, 
                       Pos(field_pos.x, field_pos.y + offset), 
                       fmt);
-      keypad_shown = false;
-    }
+   }
 
-    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-      bool event(const EventMgr::Event & event) {
-        if (!keypad_shown) {
-          keypad_viewer.show(* form_entry.u.val.value, form_entry.caption);
-          keypad_shown = true;
-        }
-        else {
-          if (!keypad_viewer.event(event)) {
-            uint16_t v = keypad_viewer.get_value();
-            if (v < form_entry.u.val.min) {
-              v = form_entry.u.val.min;
-            }
-            else if (v > form_entry.u.val.max) {
-              v = form_entry.u.val.max;
-            }
-            * form_entry.u.val.value = v;
-            keypad_shown = false;
-            return false; // release events control
-          }
-        }
-        return true; // keep events control
+    bool event(const EventMgr::Event & event) {
+      if (!event_control) {
+        keypad_viewer.show(* form_entry.u.val.value, form_entry.caption);
+        event_control = true;
       }
-    #else
-      bool event(const EventMgr::Event & event) {
-        return false;
-      }  
-    #endif
+      else {
+        if (!keypad_viewer.event(event)) {
+          uint16_t v = keypad_viewer.get_value();
+          if (v < form_entry.u.val.min) {
+            v = form_entry.u.val.min;
+          }
+          else if (v > form_entry.u.val.max) {
+            v = form_entry.u.val.max;
+          }
+          * form_entry.u.val.value = v;
+          event_control = false;
+          
+          return false; // release events control
+        }
+      }
+      return true; // keep events control
+    }
 
     void update_highlight() {
     }
@@ -561,6 +560,8 @@ class FormViewer
     Fields fields;
     Fields::iterator current_field;
 
+    Pos bottom_msg_pos;
+
     #if (INKPLATE_6PLUS || TOUCH_TRIAL)
       Fields::iterator find_field(uint16_t x, uint16_t y) {
         for (Fields::iterator it = fields.begin(); it != fields.end(); it++) {
@@ -576,58 +577,61 @@ class FormViewer
 
     void set_completed(bool value) { completed = value; }
 
-    void show(FormEntries _form_entries, int8_t _size, const char * _bottom_msg) {
+    void show(FormEntries _form_entries, int8_t _size, const char * _bottom_msg, bool refresh = false) {
 
-      form_entries = _form_entries;
-      size         = _size;
-      bottom_msg   = _bottom_msg;
+      if (!refresh) {
+        form_entries = _form_entries;
+        size         = _size;
+        bottom_msg   = _bottom_msg;
 
-      Font * font =  fonts.get(1);
+        Font * font =  fonts.get(1);
 
-      for (auto * field : fields) delete field;
-      fields.clear();
+        for (auto * field : fields) delete field;
+        fields.clear();
 
-      for (int i = 0; i < size; i++) {
-        FormField * field = FieldFactory::create(form_entries[i], *font); 
-        if (field != nullptr) {
-          fields.push_back(field);
-          field->compute_caption_dim();
-          field->compute_field_dim();
-          LOG_D("Field dimentions: Caption: [%d, %d] Field: [%d, %d]", 
-                field->get_caption_dim().width, field->get_caption_dim().height,
-                field->get_field_dim().width, field->get_field_dim().height);
+        for (int i = 0; i < size; i++) {
+          FormField * field = FieldFactory::create(form_entries[i], *font); 
+          if (field != nullptr) {
+            fields.push_back(field);
+            field->compute_caption_dim();
+            field->compute_field_dim();
+            LOG_D("Field dimentions: Caption: [%d, %d] Field: [%d, %d]", 
+                  field->get_caption_dim().width, field->get_caption_dim().height,
+                  field->get_field_dim().width, field->get_field_dim().height);
+          }
         }
-      }
 
-      all_fields_width = all_captions_width = 0;
+        all_fields_width = all_captions_width = 0;
 
-      int16_t width;
-      
-      for (auto * field : fields) {
-        width = field->get_field_dim().width;
-        if (width > all_fields_width) all_fields_width = width;
+        int16_t width;
         
-        width = field->get_caption_dim().width;
-        if (width > all_captions_width) all_captions_width = width;
+        for (auto * field : fields) {
+          width = field->get_field_dim().width;
+          if (width > all_fields_width) all_fields_width = width;
+          
+          width = field->get_caption_dim().width;
+          if (width > all_captions_width) all_captions_width = width;
+        }
+
+        width = all_captions_width + all_fields_width + 35;
+        const int16_t right_xpos    = (Screen::get_width() >> 1) + (width >> 1);
+
+        int16_t       current_ypos  = TOP_YPOS + 20;
+        int16_t       caption_right = right_xpos - all_fields_width - 35;
+        int16_t       field_left    = right_xpos - all_fields_width - 10;
+
+        for (auto * field : fields) {
+          field->compute_caption_pos(Pos(caption_right, current_ypos));
+          field->compute_field_pos(Pos(field_left, current_ypos));
+          current_ypos += field->get_field_dim().height + 20;
+          LOG_D("Field positions: Caption: [%d, %d] Field: [%d, %d]", 
+                field->get_caption_pos().x, field->get_caption_pos().y,
+                field->get_field_pos().x, field->get_field_pos().y);
+        }
+
+        bottom_msg_pos = Pos(40, current_ypos + 30);
       }
 
-      width = all_captions_width + all_fields_width + 35;
-      const int16_t right_xpos    = (Screen::get_width() >> 1) + (width >> 1);
-
-      int16_t       current_ypos  = TOP_YPOS + 20;
-      int16_t       caption_right = right_xpos - all_fields_width - 35;
-      int16_t       field_left    = right_xpos - all_fields_width - 10;
-
-      for (auto * field : fields) {
-        field->compute_caption_pos(Pos(caption_right, current_ypos));
-        field->compute_field_pos(Pos(field_left, current_ypos));
-        current_ypos += field->get_field_dim().height + 20;
-        LOG_D("Field positions: Caption: [%d, %d] Field: [%d, %d]", 
-              field->get_caption_pos().x, field->get_caption_pos().y,
-              field->get_field_pos().x, field->get_field_pos().y);
-      }
-
-      Pos bottom_msg_pos = Pos(40, current_ypos + 30);
       // Display the form
 
       Page::Format fmt = {
@@ -675,19 +679,21 @@ class FormViewer
 
       page.put_str_at(bottom_msg, bottom_msg_pos, fmt);
 
-      selecting_field = false;
+      if (!refresh) {
+        selecting_field = false;
 
-      #if (INKPLATE_6PLUS || TOUCH_TRIAL)
-        current_field = fields.end();
-        highlighting_field = false;
-      #else
-        current_field = fields.begin();
-        highlighting_field = true;
-        (*current_field)->show_highlighted(true);
-      #endif
+        #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+          current_field = fields.end();
+          highlighting_field = false;
+        #else
+          current_field = fields.begin();
+          highlighting_field = true;
+          (*current_field)->show_highlighted(true);
+        #endif
+      }
 
       ScreenBottom::show();
-      \
+
       page.paint(false);
     }
 
@@ -700,7 +706,7 @@ class FormViewer
           if (!(*current_field)->event(event)) {
             // The field releases control of future events
             // Redraw the form
-            show(form_entries, size, bottom_msg);
+            show(form_entries, size, bottom_msg, true);
             current_field = fields.end();
           }
           return false; // Not completed yet
@@ -754,22 +760,32 @@ class FormViewer
           }
         }
         else {
-          (*current_field)->event(event);
-
-          switch (event.kind) {
-            case EventMgr::EventKind::SELECT:
-              highlighting_field = true;
-              old_field = current_field;
-              current_field++;
-              if (current_field == fields.end()) current_field = fields.begin();
-              break;
-            case EventMgr::EventKind::NONE:
-              return false;
-            case EventMgr::EventKind::DBL_SELECT:
-              completed = true;
-              break;
-            default:
-              break;
+          bool was_in_control = (*current_field)->in_event_control();
+          if (!(*current_field)->event(event)) {
+            if ((*current_field)->form_refresh_required()) {
+              show(form_entries, size, bottom_msg, true);
+            }
+            switch (event.kind) {
+              case EventMgr::EventKind::SELECT:
+                highlighting_field = true;
+                old_field = current_field;
+                current_field++;
+                if (current_field == fields.end()) current_field = fields.begin();
+                break;
+              case EventMgr::EventKind::NONE:
+                return false;
+              case EventMgr::EventKind::DBL_SELECT:
+                if (!was_in_control) completed = true;
+                else {
+                  highlighting_field = true;
+                  old_field = current_field;
+                  current_field++;
+                  if (current_field == fields.end()) current_field = fields.begin();
+                }
+                break;
+              default:
+                break;
+            }
           }
         }
       #endif
@@ -825,6 +841,7 @@ class FormViewer
             if (selecting_field) {
               selecting_field = false;
               (*current_field)->show_selected(true);
+              (*current_field)->event(event);
             }
           #endif
 

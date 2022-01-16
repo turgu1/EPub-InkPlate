@@ -13,5 +13,6 @@ class ScreenBottom
     static void show(int16_t page_nbr = -1, int16_t page_count = -1);
 
   private:
+    static constexpr char const * TAG = "ScreenBottom";
     static const std::string dw[7];
 };

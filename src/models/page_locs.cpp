@@ -9,6 +9,7 @@
 #include "models/config.hpp"
 #include "models/fonts.hpp"
 #include "controllers/event_mgr.hpp"
+#include "viewers/screen_bottom.hpp"
 
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
@@ -115,7 +116,7 @@ class StateTask
           asap_itemref = -1;
           if (!already_sent_to_mgr) {
             mgr_queue_data = {
-              .req = MgrReq::ASAP_READY,
+              .req           = MgrReq::ASAP_READY,
               .itemref_index = itemref
             };
             QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -125,11 +126,11 @@ class StateTask
           waiting_for_itemref = asap_itemref;
           asap_itemref        = -1;
           retrieve_queue_data = {
-            .req = RetrieveReq::GET_ASAP,
+            .req           = RetrieveReq::GET_ASAP,
             .itemref_index = waiting_for_itemref
           };
           QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-          retriever_iddle                   = false;
+          retriever_iddle = false;
           LOG_D("Sent GET_ASAP to Retriever");
           return;
         }
@@ -138,11 +139,11 @@ class StateTask
         waiting_for_itemref = next_itemref_to_get;
         next_itemref_to_get = -1;
         retrieve_queue_data = {
-          .req = RetrieveReq::RETRIEVE_ITEM,
+          .req           = RetrieveReq::RETRIEVE_ITEM,
           .itemref_index = waiting_for_itemref
         };
         QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-        retriever_iddle                   = false;
+        retriever_iddle = false;
         LOG_D("Sent RETRIEVE_ITEM to Retriever");
       } else {
         int16_t newref;
@@ -160,11 +161,11 @@ class StateTask
         if (newref != itemref) {
           waiting_for_itemref = newref;
           retrieve_queue_data = {
-            .req = RetrieveReq::RETRIEVE_ITEM,
+            .req           = RetrieveReq::RETRIEVE_ITEM,
             .itemref_index = waiting_for_itemref
           };
           QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-          retriever_iddle                   = false;
+          retriever_iddle = false;
           LOG_D("Sent RETRIEVE_ITEM to Retriever");
         } else {
           page_locs.computation_completed();
@@ -205,7 +206,7 @@ class StateTask
             }
             if (retriever_iddle) {
               mgr_queue_data = {
-                .req = MgrReq::STOPPED,
+                .req           = MgrReq::STOPPED,
                 .itemref_index = 0
               };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0); 
@@ -252,7 +253,7 @@ class StateTask
             // keep a mark when it will be back. If not, queue the request.
             if (itemref_count == -1) {
               mgr_queue_data = {
-                .req = MgrReq::ASAP_READY,
+                .req           = MgrReq::ASAP_READY,
                 .itemref_index = (int16_t) -(state_queue_data.itemref_index + 1)
               };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -262,7 +263,7 @@ class StateTask
               int16_t itemref = state_queue_data.itemref_index;
               if ((bitset[itemref >> 3] & ( 1 << (itemref & 7))) != 0) {
                 mgr_queue_data = {
-                  .req = MgrReq::ASAP_READY,
+                  .req           = MgrReq::ASAP_READY,
                   .itemref_index = itemref
                 };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -272,11 +273,11 @@ class StateTask
                 asap_itemref = itemref;
               }
               else {
-                asap_itemref                      = -1;
-                waiting_for_itemref               = itemref;
-                retriever_iddle                   = false;
+                asap_itemref        = -1;
+                waiting_for_itemref = itemref;
+                retriever_iddle     = false;
                 retrieve_queue_data = {
-                  .req = RetrieveReq::GET_ASAP,
+                  .req           = RetrieveReq::GET_ASAP,
                   .itemref_index = itemref
                 };
                 QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);       
@@ -307,7 +308,7 @@ class StateTask
                 stopping = false;
                 retriever_iddle  = true;
                 mgr_queue_data = {
-                  .req = MgrReq::STOPPED,
+                  .req           = MgrReq::STOPPED,
                   .itemref_index = 0
                 };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -321,7 +322,7 @@ class StateTask
                 stopping = false;
                 retriever_iddle  = true;
                 mgr_queue_data = {
-                  .req = MgrReq::STOPPED,
+                  .req           = MgrReq::STOPPED,
                   .itemref_index = 0
                 };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -337,7 +338,7 @@ class StateTask
             if (itemref_count != -1) {
               int16_t itemref              = state_queue_data.itemref_index;
               mgr_queue_data = {
-                .req = MgrReq::ASAP_READY,
+                .req           = MgrReq::ASAP_READY,
                 .itemref_index = itemref
               };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -351,7 +352,7 @@ class StateTask
                 stopping = false;
                 retriever_iddle  = true;
                 mgr_queue_data = {
-                  .req = MgrReq::STOPPED,
+                  .req           = MgrReq::STOPPED,
                   .itemref_index = 0
                 };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -365,7 +366,7 @@ class StateTask
                 stopping = false;
                 retriever_iddle  = true;
                 mgr_queue_data = {
-                  .req = MgrReq::STOPPED,
+                  .req           = MgrReq::STOPPED,
                   .itemref_index = 0
                 };
                 QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
@@ -477,7 +478,7 @@ PageLocs::abort_threads()
 {
   RetrieveQueueData retrieve_queue_data;
   retrieve_queue_data = {
-    .req = RetrieveReq::ABORT,
+    .req           = RetrieveReq::ABORT,
     .itemref_index = 0
   };
   LOG_D("abort_threads: Sending ABORT to Retriever");
@@ -488,7 +489,7 @@ PageLocs::abort_threads()
   
   StateQueueData state_queue_data;
   state_queue_data = {
-    .req = StateReq::ABORT,
+    .req           = StateReq::ABORT,
     .itemref_index = 0,
     .itemref_count = 0
   };
@@ -561,8 +562,8 @@ PageLocs::build_page_locs(int16_t itemref_index)
 {
   std::scoped_lock guard(book_viewer.get_mutex());
 
-  Font * font = fonts.get(0);
-  page_bottom = font->get_line_height(10) + (font->get_line_height(10) >> 1);
+  Font * font = fonts.get(ScreenBottom::FONT);
+  page_bottom = font->get_line_height(ScreenBottom::FONT_SIZE) + (font->get_line_height(ScreenBottom::FONT_SIZE) >> 1);
   
   //page_out.set_compute_mode(Page::ComputeMode::LOCATION);
 
@@ -583,7 +584,12 @@ PageLocs::build_page_locs(int16_t itemref_index)
     int8_t show_title;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
-    int16_t page_top = show_title != 0 ? 40 : 10;
+    int16_t page_top = 0;
+
+    if (show_title != 0) {
+      Font * title_font     = fonts.get(book_viewer.TITLE_FONT);
+      page_top              = title_font->get_chars_height(book_viewer.TITLE_FONT_SIZE) + 10;
+    }
 
     Page::Format fmt = {
       .line_height_factor = 0.95,
@@ -680,7 +686,7 @@ PageLocs::retrieve_asap(int16_t itemref_index)
 {
   StateQueueData state_queue_data;
   state_queue_data = {
-    .req = StateReq::GET_ASAP,
+    .req           = StateReq::GET_ASAP,
     .itemref_index = itemref_index,
     .itemref_count = 0
   };
@@ -704,7 +710,7 @@ PageLocs::stop_document()
 
   LOG_D("start_new_document: Sending STOP");
   state_queue_data = {
-    .req = StateReq::STOP,
+    .req           = StateReq::STOP,
     .itemref_index = 0,
     .itemref_count = 0
   };
@@ -763,7 +769,7 @@ PageLocs::check_and_find(const PageId & page_id)
 }
 
 const PageLocs::PageId * 
-PageLocs::get_next_page_id(const PageId & page_id, int16_t count) 
+PageLocs::get_next_page_id(const PageId & page_id, int16_t count)
 {
   std::scoped_lock guard(mutex);
 

@@ -27,10 +27,10 @@ void
 MatrixBooksDirViewer::setup()
 {
   Font * font = fonts.get(TITLE_FONT);
-  title_font_height = font->get_line_height(TITLE_FONT_SIZE);
+  title_font_height = font->get_line_height(TITLE_FONT_SIZE) * 0.8;
 
   font = fonts.get(AUTHOR_FONT);
-  author_font_height = font->get_line_height(AUTHOR_FONT_SIZE);
+  author_font_height = font->get_line_height(AUTHOR_FONT_SIZE) * 0.8;
 
   font = fonts.get(ScreenBottom::FONT);
   pagenbr_font_height = font->get_line_height(ScreenBottom::FONT_SIZE);
@@ -163,7 +163,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
   page.put_highlight(Dim(Screen::get_width() - 20, 3), Pos(10, first_entry_ypos - 8));
 
-  ScreenBottom::show(page_nbr, page_count);
+  ScreenBottom::show(current_page_nbr, page_count);
 
   page.paint();
 }
@@ -284,9 +284,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   page.add_text(book->author, fmt);
   page.end_paragraph(fmt);
 
-  #if EPUB_INKPLATE_BUILD
-    BatteryViewer::show();
-  #endif
+  ScreenBottom::show(current_page_nbr, page_count);
 
   page.paint(false);
 }

@@ -9,6 +9,7 @@
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/ntp.hpp"
+#include "controllers/clock.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
@@ -232,21 +233,18 @@ init_nvs()
   static void 
   clock_adjust_form()
   {
-    #if INKPLATE_6PLUS
-      constexpr uint8_t DD[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-      RTC::WeekDay tmp;
-      uint8_t m, d, h, mm, s;
-      rtc.get_date_time(year, m, d, h, mm, s, tmp);
-      if ((year < 2022) || (year > 2099)) year = 2022;
-      month  = ((m < 1) || (m > 12)) ? 1 : m;
+    time_t t;
+    tm tim;
+    Clock::get_date_time(t);
 
-      uint8_t max = ((m != 2) || ((year & 3) != 0)) ? DD[m - 1] : 29;
+    localtime_r(&t, &tim);
 
-      day    = ((d < 1) || (d > max)) ? 1 : d;
-      hour   =  (h > 23) ? 12 :  h;
-      minute =  (mm > 59) ? 0 : mm;
-      second =  (s  > 59) ? 0 :  s;
-    #endif
+    year   = tim.tm_year + 1900;
+    month  = tim.tm_mon + 1;
+    day    = tim.tm_mday;
+    hour   = tim.tm_hour;
+    minute = tim.tm_min;
+    second = tim.tm_sec;
 
     form_viewer.show(date_time_form_entries, DATE_TIME_FORM_SIZE, "Hour is in 24 hours format.");
     option_controller.set_date_time_form_is_shown();
@@ -255,46 +253,54 @@ init_nvs()
   static void
   set_clock()
   {
-    #if INKPLATE_6PLUS
-      auto dow = [=](uint16_t y, uint16_t m, uint16_t d) { 
-        RTC::WeekDay wd = (RTC::WeekDay)((d += m < 3 ? y-- : y - 2, 23*m/9 + d + 4 + y/4- y/100 + y/400) % 7); 
-        return wd;
-      };
-      rtc.set_date_time(year, month, day, hour, minute, second, dow(year, month, day));
-    #endif
+    time_t t;
+    tm tim;
+
+    tim = {
+      .tm_sec   = second,
+      .tm_min   = minute,
+      .tm_hour  = hour,
+      .tm_mday  = day,
+      .tm_mon   = month - 1,
+      .tm_year  = year - 1900,
+      .tm_wday  = 0,
+      .tm_yday  = 0,
+      .tm_isdst = -1
+    };
+
+    t = mktime(&tim);
+    Clock::set_date_time(t);
   }
 
-  #if INKPLATE_6PLUS
-    static void
-    ntp_clock_adjust()
-    {
-      page_locs.abort_threads();
-      epub.close_file();
+  static void
+  ntp_clock_adjust()
+  {
+    page_locs.abort_threads();
+    epub.close_file();
 
-      std::string ntp_server;
-      config.get(Config::Ident::NTP_SERVER, ntp_server);
+    std::string ntp_server;
+    config.get(Config::Ident::NTP_SERVER, ntp_server);
 
-      msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, false, true, 
-        "Date/Time Retrival", 
-        "Retrieving Date and Time from NTP Server %s. Please wait.",
-        ntp_server.c_str());
+    msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, false, true, 
+      "Date/Time Retrival", 
+      "Retrieving Date and Time from NTP Server %s. Please wait.",
+      ntp_server.c_str());
 
-      if (ntp.get_and_set_time()) {
-        time_t time;
-        rtc.get_date_time(&time);
-        msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
-          "Date/Time Retrival Completed", 
-          "Time is %s. The device will now restart.", ctime(&time));
-      }
-      else {
-        msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
-          "Date/Time Retrival Failed", 
-          "Unable to get Date/Time from NTP Server! The device will now restart.");
-      }
-
-      option_controller.set_wait_for_key_after_wifi();
+    if (ntp.get_and_set_time()) {
+      time_t time;
+      Clock::get_date_time(time);
+      msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
+        "Date/Time Retrival Completed", 
+        "Local Time is %s. The device will now restart.", ctime(&time));
     }
-  #endif
+    else {
+      msg_viewer.show(MsgViewer::MsgType::NTP_CLOCK, true, true, 
+        "Date/Time Retrival Failed", 
+        "Unable to get Date/Time from NTP Server! The device will now restart.");
+    }
+
+    option_controller.set_wait_for_key_after_wifi();
+  }
 #endif
 
 #if EPUB_LINUX_BUILD && DEBUGGING
@@ -319,7 +325,11 @@ static MenuViewer::MenuEntry menu[] = {
   { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
   { MenuViewer::Icon::REFRESH,     "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
   #if !INKPLATE_6PLUS
-    { MenuViewer::Icon::REVERT,    "Clear e-books' read history",         init_nvs                          , true,  true  },
+    { MenuViewer::Icon::REVERT,    "Clear e-books' read history",          init_nvs                          , true,  true  },
+    #if DATE_TIME_RTC
+      { MenuViewer::Icon::CLOCK,     "Set Date/Time",                      clock_adjust_form                , true,  true  },
+      { MenuViewer::Icon::NTP_CLOCK, "Set Date/Time from Time Server",     ntp_clock_adjust                 , true,  true  },
+    #endif
   #endif
   #if EPUB_LINUX_BUILD && DEBUGGING
     { MenuViewer::Icon::DEBUG,     "Debugging",                            debugging                        , true,  true  },

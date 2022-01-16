@@ -27,6 +27,10 @@ using namespace pugi;
 
 class BookViewer
 {
+  public:
+    const int16_t TITLE_FONT      = 2;
+    const int16_t TITLE_FONT_SIZE = 8;
+
   private:
     static constexpr char const * TAG = "BookViewer";
 

@@ -19,9 +19,11 @@ FormChoice FormChoiceField::font_choices[8] = {
   { nullptr, 7 }
 };
 
-bool 
-FormDone::event(const EventMgr::Event & event) 
-{ 
-  form_viewer.set_completed(true); 
-  return false; 
-}
+#if INKPLATE_6PLUS || TOUCH_TRIAL
+  bool 
+  FormDone::event(const EventMgr::Event & event) 
+  { 
+    form_viewer.set_completed(true); 
+    return false; 
+  }
+#endif

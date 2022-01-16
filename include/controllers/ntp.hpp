@@ -2,7 +2,7 @@
 
 #include "global.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if DATE_TIME_RTC
 
 class NTP 
 {
