@@ -2,13 +2,14 @@
 
 ## Last news
 
-(Updated 2022.1.5)
+(Updated 2022.1.16)
+(Look at file *changes.md* for current development state of changes)
 
 Update to version 2.0.0 - Not ready yet
 
 The following are the main aspects that have been updated in this release:
 
-- Add Inkplate-6PLUS support. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response.
+- Added Inkplate-6PLUS support as a new release. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response.
 - Date/Time support for all Inkplate device types. Include both Date/Time adjustment by hand and through the Internet (NTP server). Uses the RTC Chip when available, or the ESP32 internal real-time clock.
 - Bitmap fonts to get more precise pixels painting on low-resolution screens. A specific font format was created to support such a feature (fonts with extension *.IBMF*)
 - Font configuration file (*font_list.xml*) allows for changing the fonts used by the application.
@@ -19,164 +20,32 @@ Installing this version requires the complete replacement of the micro SD Card c
 
 ---
 
-- [x] Font classes re-org to allow bitmap fonts
-- [x] Tests with single PK file format
-- [x] Create the IBMF font file format (my own file format design!)
-- [x] Suite of tools to genereate IBMF font files
-- [x] New class to manage Integrated BitMap Fonts (IBMF file format)
-- [x] Character set translation
-- [x] Support for both [x] monochrome and [x] grayscale
-- [x] Glyphs translation to latin1 (multiple glyphs merge for accents)
-- [x] Latin-A
-- [x] `fonts_list.xml` format adjustments
-- [x] Clear screen region performance improvement (20x faster)
-- [x] RTC Date/Time support for all Inkplate devices
-- [x] Inkplate-6PLUS touch screen calibration
-- [x] FormViewer class redesign to support number fields
-- [x] EPUB XML namespace parsing support
-- [x] Numerical keypad for entering numbers in forms
-- [ ] Inkplate-6PLUS Debugging (work in progress...)
-- [ ] Valgrind
-- [x] Tests Inkplate-6 / Inkplate-10
-- [ ] Tests Inkplate-6PLUS
-- [ ] Documentation
-- [ ] Release generation script to be modified for Inkplate-6PLUS integration
-- [ ] New version release packaging
+This is an EPub reader for the e-Radionica made Inkplate devices.
 
-Update to version 1.3.1
+Here are the main characterics:
 
-- [x] Corrected an issue with books being read cleanup
-- [x] Books being read are put on top of the Books list
-- [x] Modifiable fonts list in the `fonts_list.xml` file
-- [x] Wordsmithing of the user's guide (long overdue...)
+- TTF, and OTF embedded fonts support.
+- Normal, Bold, Italic, Bold+Italic face types.
+- Bitmap images dithering display (JPEG, PNG).
+- EPub (V2, V3) book format subset.
+- UTF-8 characters (supplied fonts limited to latin1).
+- Inkplate tactile keys (single and double click to get six buttons).
+- Screen orientation (portrait / landscape).
+- Left, center, right, and justify text alignments.
+- Font size.
+- Indentation.
+- Some basic parameters and options.
+- Limited CSS formatting.
+- WiFi-based documents download (Web server based).
+- Battery state and power management (light, deep sleep, battery level display).
+- Table of content.
+- Multiple fonts choices selectable by the user.
+- Linear and matrix view of book list.
+- Real-Time clock.
+- Inkplate-6PLUS touch screen and backlit.
+- Keeps location of the last 10 books being read.
 
-- [x] Tests Inkplate-6 / Inkplate-10
-- [x] Valgrind
-- [x] Documentation
-- [x] New version release packaging
-
----
-
-Update to version 1.3.0
-
-New User functionalities:
-
-- [x] New ebook list Covers Matrix View (see pictures below).
-- [x] Integration with new image streaming classes (png and jpeg).
-- [x] Table of Content to select location to read inside an ebook.
-- [x] Ebook deletion from the device.
-- [x] Subscript/Superscript support.
-- [x] Tracking of the current page location of the last 10 books read by the user.
-- [x] Number of allowed ebooks changed from 100 to 200 maximum.
-
-Internal changes:
-
-- [x] Now using ESP-IDF version 4.3.0 through PlatformIO.
-- [x] Complete redesign of the CSS Interpreter.
-- [x] Integration in a single algorithm of the HTML Interpreter used by both the page location process and the screen painting process.
-- [x] Correction of many small page painting issues.
-- [x] Corrected an issue with the ebooks folder scanning process (simple db mgr bug).
-- [x] Corrected an issue with the PowerOff menu entry.
-- [x] Testing with 200 ebooks under Linux (page formatting and general functionalities).
-- [x] Changes related to the new PlatformIO way of managing sdkconfig.
-- [x] PNG image files transparency.
-- [x] Stack usage optimization.
-- [x] Web Server Enhancements (comma separated file size thousands, .epub file extension check).
-- [x] Font obfuscation support (both Adobe and IDPF methods).
-- [x] Non-volatile memory class to manage last books read tracking.
-- [x] Testing ebooks on InkPlate-6.
-- [x] Valgrind tests.
-- [x] Documentation update.
-
-Remaining steps to release:
-
-- [x] Testing ebooks on InkPlate-10.
-- [x] New version releases packaging.
-
----
-
-- [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (will happen for a future release).
-
-Linear vs Matrix View:
-
-<img src="doc/pictures/linear_view.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
-
----
-
-Update to version 1.2
-
-- [x] Recompiled to integrate ESP-IDF-Inkplate library v0.9.4
-- [x] Adjustments for the ESP-IDF v4.2 framework.
-- [x] Support for the 6-buttons extended board in new specific releases.
-- [x] bld_all.sh script to automatically build all releases zip files.
-
----
-
-Update to version 1.1.1
-
-- [x] Recompiled to integrate ESP-IDF-InkPlate library v0.9.2 (A2D attenuation correction).
-
-v1.1.0 information:
-
-This is in preparation for version 1.1.0 The main ongoing modifications are:
-
-- [x] Support of the new upcoming Inkplate-10 device.
-- [x] Just in time calculation of pages locations through multithreading (a **BIG** change...).
-- [x] Integration with the new ESP-IDF-Inkplate library.
-- [x] Trigger pages location recalculation when parameters have changed.
-- [x] Stop light-sleep, deep-sleep while pages location is being calculated.
-- [x] Adjust web server to only show epub files and remove params/locs files on ebook delete.
-- [x] Adjust Web server to stop page-locs to free memory before launching the server.
-- [x] Save computed pages location to sdcard for quick ebook load.
-- [x] Repair some known bugs (some issues to be addressed later).
-- [ ] Code refactoring and cleanup (tbd v1.2).
-- [x] Udate documentation.
-- [ ] Tests, tests, tests, ...
-
-Added functional features:
-
-- [x] Title showned at top of pages (as an option).
-- [x] Heap Size showned at bottom of pages (as an option).
-- [x] Form entry simplified (OK / Cancel param no longer there).
-- [x] Parameters for each ebook specific font/pictures adjustments.
-- [ ] Augmented CSS features (tbd v1.2).
-
-Known bugs:
-
-- [x] ebooks list geometry when screen orientation change.
-- [x] recovery from too large image (memory allocation).
-- [x] Page refresh on orientation/resolution changes.
-- [ ] PNG image files transparency (tbd v1.2).
-
------
-
-v1.0 information:
-
-The development is complete. The application is at version 1.0.0. Please look at the installation guide located in file `doc/INSTALL.md` and the user's guide located in `doc/USER GUIDE.md`. PDF versions of these guides are also available.
-
-- [x] Integration of touch buttons through interrupts (not perfect. to be revisited).
-- [x] Menu capability.
-- [x] Options / Parameters menus.
-- [x] Error dialogs.
-- [x] About box.
-- [x] Low-Level InkPlate Drivers refactoring.
-- [x] Power management (Deep-Sleep after 15 minutes timeout, Light-Sleep between touchpad events).
-- [x] Return to current book location between restarts.
-- [x] Configuration management (save/load from the SD-Card).
-- [x] Form tool to show / edit options / parameters.
-- [x] books directory refresh dialog.
-- [!] Over the Air (OTA) updates (No hope... not enough flash space).
-- [x] WiFi access to update ebooks (This item only added 600KB of code!).
-- [x] Performance on new book scans (80% completion to be revisited after first release).
-- [x] Options / Parameters form.
-- [x] Battery level display.
-- [x] Screen orientation (touchpads to the left (portrait) / right (portrait) / down (landscape) modes).
-- [x] User's Guide and installation manuals.
-- [x] Error dialog use (100% completion).
-- [x] Debugging remaining issues.
-
----
----
+A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that shows the first working version of the EPub-InkPlate application.
 
 Some pictures from the InkPlate-6 version:
 
@@ -191,46 +60,6 @@ A picture of the Web Server in a browser:
 
 <img src="doc/pictures/web_server.png" alt="drawing" width="500"/>
 
-A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that shows the first working version of the EPub-InkPlate application.
-
-## Characteristics
-
-The current release functionalities:
-
-- TTF, and OTF embedded fonts support.
-- Normal, Bold, Italic, Bold+Italic face types.
-- Bitmap images dithering display (JPEG, PNG).
-- EPub (V2, V3) book format subset.
-- UTF-8 characters (supplied fonts limited to latin1).
-- InkPlate tactile keys (single and double click to get six buttons).
-- Screen orientation (buttons located to the left, right, down positions from the screen).
-- Left, center, right, and justify text alignments.
-- Indentation.
-- Some basic parameters and options.
-- Limited CSS formatting.
-- WiFi-based documents download.
-- Battery state and power management (light, deep sleep, battery level display).
-- Table of content.
-- Multiple fonts choices selectable by the user.
-- Linear and matrix view of book list.
-
-Some elements to consider in the future (no specific order of priority):
-
-- External keypad integration (through i2c).
-- Various views for the ebooks list.
-- Hyperlinks (inside an ebook).
-- Others document download method (Dropbox, Calibre, others).
-- More CSS formatting.
-- Footnote management.
-- Kerning.
-- TXT, MOBI book formats.
-- `<table>` formatting.
-- Page progression direction: Right then left.
-- Notes.
-- Bookmarks.
-- Other elements proposed by users.
-
-And potentially many more...
 
 ### Runtime environment
 
