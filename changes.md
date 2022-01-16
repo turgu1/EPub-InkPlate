@@ -97,10 +97,6 @@ Remaining steps to release:
 
 - [ ] Support of the forecoming Inkplate 6Plus (touch screen, backlit). Debugging remains to be completed (will happen for a future release).
 
-Linear vs Matrix View:
-
-<img src="doc/pictures/linear_view.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
-
 ---
 
 Update to version 1.2

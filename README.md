@@ -45,7 +45,11 @@ Here are the main characterics:
 - Inkplate-6PLUS touch screen and backlit.
 - Keeps location of the last 10 books being read.
 
-A [Video](https://www.youtube.com/watch?v=VnTLMhEgsqA) is available on YouTube that shows the first working version of the EPub-InkPlate application.
+Some vidos are  available on YouTube:
+
+- The first working version of the EPub-InkPlate application [Here](https://www.youtube.com/watch?v=VnTLMhEgsqA).
+- Demostration on the InkPlate-10 [Here](https://www.youtube.com/watch?v=qNAjbnEax8k).
+- Demonstration on the Inkplate-6PLUS [Here](https://www.youtube.com/watch?v=z1nvakbxiUQ).
 
 Some pictures from the InkPlate-6 version:
 
@@ -59,6 +63,10 @@ Some pictures from the Linux version:
 A picture of the Web Server in a browser:
 
 <img src="doc/pictures/web_server.png" alt="drawing" width="500"/>
+
+Books Directory List: Linear vs Matrix View:
+
+<img src="doc/pictures/linear_view.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
 
 
 ### Runtime environment
