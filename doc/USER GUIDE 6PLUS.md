@@ -1,6 +1,6 @@
-# EPub-InkPlate - User's Guide - Version 2.0.0
+# EPub-InkPlate - Inkplate-6PLUS User's Guide - Version 2.0.0
 
-The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices for which a Mechanical Buttons Extended Case has been added. The extension can be found [here](https://github.com/turgu1/InkPlate-6-Extended-Case).
+The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices. This particular version of the manual is for the Inkplate-6PLUS device type.
 
 For the installation process, please consult the `INSTALL.pdf` document.
 
@@ -12,8 +12,8 @@ Here are the main characteristics of the application:
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
-- Six mechanical keys to interact with the device
-- Screen orientation (buttons located to the left, right, down positions from the screen)
+- InkPlate tactile keys to interact with the device (single and double `click` to get six buttons)
+- Screen orientation (SDCard located to the left, right, up, and down positions from the screen)
 - Linear and Matrix view of books directory
 - Up to 200 books are allowed in the directory
 - Left, center, right, and justify text alignments
@@ -33,46 +33,30 @@ When the device turns ON, the application executes the following tasks:
 - Verifies the presence of books on the SD-Card, and updates its database if required. The books must be located in the `books` folder on the SD-Card, be in the EPub V2 or V3 format, and have a filename ending with the `.epub` extension in lowercase.
 - Presents the list of books to the user, ready to let the user selects a book to read. If a book was being read before, it will be presented to the location where the user was reading the last time.
 
+
 ## 2. Interacting with the application
 
-Extended InkPlate devices possess six mechanical buttons that are used to interact with the application. The application allows for the selection of the screen orientation in the parameters form. Depending on the screen orientation, the function associated with the keys will change as follow:
+The InkPlate-6PLUS is supplied with a touch screen interface that is used to interact with the application. The following gestures are supported:
 
-- When the keys are on the **Bottom** side of the screen, from left to right:
 
-  - The **HOME** function
-  - The **LEFT** function
-  - The **UP** and **DOWN** function
-  - The **RIGHT** function
-  - The **SELECT** function
+- TAP ![TAP](pictures/icon-tap.png){ width=4% }: You briefly touch the screen surface with your fingertip. This is used in forms and menus when a selection is to be made. It is also used to change pages when reading a book.
 
-- When the keys are on the **Left** side of the screen, from top to bottom:
+- TOUCH-AND-HOLD ![TOUCH-AND-HOLD](pictures/icon-touch-and-hold.png){ width=5% }: You touch the surface with your fingertip and hold position for an extended period of time. This is used to get access to descriptive texts in menus, or to get the author/title information of a book when displaying the list of books in the matrix view.
 
-  - The **SELECT** function
-  - The **UP** function
-  - The **LEFT** and **RIGHT** function
-  - The **DOWN** function
-  - The **HOME** function
+- SWIPE-LEFT and SWIPE-RIGHT ![SWIPE-LEFT and SWIPE-RIGHT](pictures/icon-swipe.png){ width=9% }: You move your fingertip on the surface of the screen, from righ to left, or from left to right respectively. This is used to change pages when reading a book or looking at the list of books.
 
-- When the keys are on the **Right** side of the screen, from top to bottom:
-
-  - The **SELECT** function
-  - The **UP** function
-  - The **LEFT** and **RIGHT** function
-  - The **DOWN** function
-  - The **HOME** function
-
-In the following text, the functions are called buttons.
+- PINCH-IN and PINCH-OUT ![PINCH-IN and PINCH-OUT](pictures/icon-pinch.png){ width=11% }: You touch the screen surface with two fingers, moving them closer or apart respectively. This is used to diminish or augment the screen back-lit brightness.
 
 The application is having two main display modes:
 
-- The Books List mode - Presents the list of books available on the SD-Card, showing for each book a small title page caption, the title, and the author of the book. 
-- The Book Reader mode - Presents the book content, one page at a time for reading.
+- The Books List mode - Presents the list of books available on the SD-Card, showing for each book a small title page caption, the title, and the author of the book.
+- The Book Reader mode - Presents a book content, one page at a time for reading.
 
 Each display mode is also supplying a list of specific functions that can be selected by the user. They are presented in the following sub-sections after the description of the display mode.
 
 ### 2.1 The Books List mode
 
-The list presents all books available to the user for reading. Two views are offered: a *linear view* and a *matrix view*:
+The list presents all books available to the user for reading. Two views are offered: a **linear view** and a **matrix view**:
 
 - The Linear view will show books as a vertical list, showing the cover page on the left and the title/author on the right. 
 - The Matrix view will show covers arranged in a matrix with the title/author of the currently selected book at the top of the screen.
@@ -86,101 +70,114 @@ The books are presented in the following manner:
 
 The list may require several pages depending on the number of books present on the SD-Card.
 
-![The Books' List Linear View](pictures/linear_view_6.png){ width=50% }
+![The Books' List Linear View](pictures/linear-view-6PLUS.png){ width=50% }
 
-![The Books' List Matrix View](pictures/matrix_view_6.png){ width=50% }
+![The Books' List Matrix View](pictures/matrix-view-6PLUS.png){ width=50% }
 
-Use the **UP** and the **DOWN** buttons to highlight the appropriate book that you want to read, then use the **SELECT** button to have the book loaded, presenting the first page of it.
 
-The **LEFT** and **RIGHT** buttons can be used to move:
+Use the **TAP** gesture on the cover page to have the book loaded, presenting the first page of it, or the last page read. The **SWIPE-LEFT** and **SWIPE-RIGHT** can be used to move to the next or previous page.
 
-- one page at a time in the list for the linear view.
-- one column at a time in the list for the matrix view.
+Using the Linear view, you can use the **TAP** gesture in the center of the page to display the options menu.
 
-The **HOME** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
+Using the Matrix view, you can use the **TOUCH-AND-HOLD** gesture on a cover page to get the title and author information on the top of the screen. The **TAP** gesture in the top portion of the screen or outside of the covers space will display the options menu.
 
-![Books List options](pictures/dir-menu-options-6.png){ width=50% }
+The options menu is presented at the top of the screen with icons. The list is as follow:
+
+![Books List options](pictures/dir-menu-options-1-6PLUS.png){ width=50% }
 
 - ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
 - ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** - This will open the last book read by the user, to the last page shown on the screen. 
 - ![](pictures/icon-params.png){ width=15 } **Main parameters** - This will present the main parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
 - ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** - This will present the default parameters form, allowing the user to modify some elements related to the book's reader. Those parameters constitute default values for books preparation and presentation. Its content is described below.
-- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
-- ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - This will launch the books database refresher. This operation is usually done automatically at application startup and is not usually required to be used. Be aware that this action will refresh *all* books. Depending on the number of books present in the `books` folder, it could be a long process (it takes between five and ten seconds per book to gather metadata). 
-- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - This will erase all information about the books being read (the current location in the books and their appearance at the beginning of the book list). The books themselves are not deleted.
+- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, using the **TAP** gesture on the screen button will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
+- ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - This will launch the books database refresher. This operation is usually done automatically at application startup and is not usually required to be used. Be aware that this action will refresh *all* books. Depending on the number of books present in the `books` folder, it could be a long process (it takes between five and ten seconds per book to gather metadata).
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
+- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing the device WakeUp button.
+- ![](pictures/icon-next.png){ width=15 } Access the secondary menu.
+
+![Books List options](pictures/dir-menu-options-2-6PLUS.png){ width=50% }
+
+- ![](pictures/icon-prev.png){ width=15 } Return to the main menu.
+- ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
 - ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - This will show a form to allow the modification of the local date and time.
 - ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** -  This will launch the WiFi connexion and retrieve a Time packet from a NTP server. The server can be defined in the `config.txt` file. By default, it will be `pool.ntp.org`. Once retrieved, the Inkplate will be restarted.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
-- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
+- ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** - This will launch a calibration screen. Each crossmark must be pressed once by the user to adjust the coordinates used when touching the screen.
+- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - This will erase all information about the books being read (the current location in the books and their appearance at the beginning of the book list). The books themselves are not deleted.
 
-The **LEFT** and **RIGHT** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **HOME** button will simply get out of the options list, back to the list of books (The same behavior as if the first entry of the options list is selected).
+Use the **TOUCH-AND-HOLD** gesture on an icon to display the associated information text. Use the **TAP** gesture on the icon to select the option and execute its function.
+
 
 ### 2.2 The Book Reader mode
 
-The reader presents the book selected by the user one page at a time. Use the **UP** and **DOWN** buttons to go to the next or previous page. The **LEFT** and **RIGHT** buttons will go 10 pages at a time.
+The reader presents the book selected by the user one page at a time. 
 
-If the user presses the **UP** button when the first page of a book is presented, the reader will display the last page of the book. If the **DOWN** button is pressed when the last page of a book is presented, the reader will display the first page of the book.
+For the usage of the **TAP** gesture, the screen is divided in 3 vertical zones: The left, center, and right zones. To go to the next page, you **TAP** into the right zone. To go to the previous page, you **TAP** into the left zone. 
 
-As for the books list, the **HOME** button will open a list of options (the **SELECT** button will do the same). These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
+You can use the **SWIPE-LEFT** and **SWIPE-RIGHT** to go to the next and previous page respectively.
 
-![Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
+If the user requests the previous page when the first page of a book is presented, the reader will display the last page of the book. If next page is requested when the last page of a book is presented, the reader will display the first page of the book.
+
+To get access to the book options menu, you **TAP** into the center zone.
+
+![Book Reader options](pictures/ebook-reader-options-menu-6PLUS.png){ width=50% }
 
 - ![](pictures/icon-return.png){ width=15 } **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed book.
-- ![](pictures/icon-content.png){ width=15 } **Table of Content** - This, if present, will show the book's table of content. The user can move the cursor on one of the entries and press the **SELECT** button. The application will then move in the book to the selected table of content's entry. This option is available only if a table of content structure is available in the EPub file. 
+- ![](pictures/icon-content.png){ width=15 } **Table of Content** - This, if present, will show the book's table of content. The user can move from one page to the other of the table of content with the **SWIPE-LEFT** and **SWIPE-RIGHT** gestures, and use the **TAP** gesture on an entry to move in the book to the selected table of content's entry. This option is available only if a table of content structure is available in the EPub file. 
 - ![](pictures/icon-dir.png){ width=15 } **E-Books List** - This will get you out of the book reader, returning to the books list.
 - ![](pictures/icon-font.png){ width=15 } **Current e-book parameters** - This will present the parameters form, allowing the user to select specific values related to fonts and pictures usage for the currently displayed book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the books list and is described below.
 - ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** - This will reset the editable book formatting parameters to default values. 
-- ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** - This will remove the current book from the device. All related files will also be removed. A dialog will be shown asking the user to confirm the deletion of the book. Confirmation must be done using the **SELECT** button. Using another button will cancel the deletion. Once confirmed, the book will be removed and the list of books will then be shown to the user for further selection.
+- ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** - This will remove the current book from the device. All related files will also be removed. A dialog will be shown asking the user to confirm the deletion of the book. Confirmation must be done using the **TAP** gesture on the button. Using another button will cancel the deletion. Once confirmed, the book will be removed and the list of books will then be shown to the user for further selection.
 - ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled). 
 - ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
-- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button. At start time, if the user was reading a book, it will be presented on screen.
+- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing the device WakeUp button. At start time, if the user was reading a book, it will be presented on screen.
 
-The **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. **HOME** will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
+Use the **TOUCH-AND-HOLD** gesture on an icon to display the associated information text. Use the **TAP** gesture on the icon to select the option and execute its function.
+
 
 ### 2.3 The Main Parameters Form
 
 As indicated in section 2.1, the Main Parameters form allows for the modification of some items available to the user that will change some application behavior. Each item is presented with a list of options selectable through the use of the keys.
 
-![The Main Parameters Form](pictures/parameters-before-selection.png){ width=50% }
+![The Main Parameters Form](pictures/parameters-before-selection-6PLUS.png){ width=50% }
 
 The following items are displayed:
 
-- **Minutes Before Sleeping** - Options: 5, 15 or 30 minutes. This is the timeout period for which the application will wait before entering a Deep Sleep state. Deep Sleep is a means by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of a key.
-- **Books Directory View** - Options: Linear or Matrix. This will select how the list of books will be presented to the user. 
-- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. This item selects the orientation of the device, such that the keys will be located on the left, the right, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM to LEFT or RIGHT, or from LEFT or RIGHT to BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
+- **Minutes Before Sleeping** - Options: 5, 15 or 30 minutes. This is the timeout period for which the application will wait before entering a Deep Sleep state. Deep Sleep is a means by which battery power usage is minimal. Once sleeping, the device will be rebooted at the press of the device WakeUp button.
+- **Books Directory View** - Options: Linear or Matrix. This will select how the list of books will be presented to the user. The Linear view will show books as a vertical list, showing the cover page on the left and the title/author on the right. The Matrix view will show covers arranged in a matrix with the title/author of the currently selected book at the top of the screen.
+- **uSDCard Position** - Options: LEFT, RIGHT, TOP, BOTTOM. This item selects the orientation of the device, such that the uSDCard will be located on the left, the right, the top, or the bottom of the screen. Changing the orientation may trigger refreshing the page's location if passing from BOTTOM/TOP to LEFT/RIGHT, or from LEFT/RIGHT to TOP/BOTTOM. As the screen geometry is changing (between Portrait and Landscape), this impacts the amount of text that will appear on each page of all books.
 - **Pixel Resolution** - Select how many bits are used for each pixel on the screen. 3 bits per pixel allow for the use of antialiasing for fonts but will require a complete screen update on every page change. 1 bit per pixel allows for the use of partial screen update, much faster refresh, but no antialiasing possible: the glyphs are displayed with irregularities.
 - **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the books list and the book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
 - **Show Title** - When selected, display the book title at the top portion of pages.
-- **Show Heap Size** - When selected, the current stack and heap size will be displayed at the bottom of pages. Three numbers are showed (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
+- **Right Bottom Selection** - What to show on the bottom right of the screen. You can choose between nothing, the date/time, or the stack/heap size. When the data/time is selected, it will be shown as `MM/DD - HH:MM`. When the stack/heap size is selected, three numbers are shown (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
    
-When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. A bigger rectangle appears around all options of the first item in the form (see Figure 5). It is a thin line rectangle, called the selecting box, that can be moved from an item to the other.
+When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. To modify an option, simply use the **TAP** gesture on the desired option.
 
-![Buttons Position is selected](pictures/parameters-after-selection.png){ width=50% }
-
-To be able to modify an item, you must first move the selecting box from one item to the other using the **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options (see Figure 6). You can change the current option with the **UP** and **DOWN**, or **LEFT** and **RIGHT** buttons. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
-
-To quit the form, use the **HOME** button. The newly selected options will then be saved and applied by the application.
+To quit the form, use the **TAP** gesture on the **DONE** button. The newly selected options will then be saved and applied by the application.
 
 ### 2.4 The Default Parameters Form
 
 As indicated in section 2.1, the Default Parameters form allows for the modification of default values related to fonts and pictures usage. Each item is presented with a list of options selectable through the use of the keys.
 
-![The Default Parameters Form](pictures/default-parameters.png){ width=50% }
+![The Default Parameters Form](pictures/default-parameters-6PLUS.png){ width=50% }
 
 The following items are displayed:
 
-- **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable books. 
+- **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable books.
 - **Use Fonts in E-books** - If a book contains embedded fonts, this item permits to indicate if those fonts are to be used to present the pages.
 - **Default Font** - Height fonts are supplied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
 - **Show Images in E-books** - This item allows for the display or not of images present in books. This can be used to diminish the amount of memory required and the speed of rendition. 
 
 These are default values. They will be used for parameters that have not be modified for a book.
+   
+When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. To modify an option, simply use the **TAP** gesture on the desired option.
+
+To quit the form, use the **TAP** gesture on the **DONE** button. The newly selected options will then be saved and applied by the application.
 
 ### 2.5 The Current book parameters form
 
 As indicated in section 2.2, the current book parameters form allows for the selection of specific values related to fonts and pictures usage for the currently displayed book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the books list as described in section 2.4.
 
-![The Current E-book Parameters Form](pictures/current-parameters.png){ width=50% }
+![The Current Book Parameters Form](pictures/current-parameters-6PLUS.png){ width=50% }
 
 The following items are displayed:
 
@@ -192,14 +189,18 @@ The following items are displayed:
 When displayed, the form shows the current values being used to present the pages of the book. 
 
 Parameters for which no specific value has been chosen by the user will display the default value as specified in the Default Parameters form. If such a default parameter is modified in the `Current E-book Parameters` form, it will then be frozen for this book. If a parameter is not modified from its default value, it will retain the value present in the Default Parameters form. If the user changes the parameter in the Default Parameters form, it will then be applied to the book presentation.
-   
+
+When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. To modify an option, simply use the **TAP** gesture on the desired option.
+
+To quit the form, use the **TAP** gesture on the **DONE** button. The newly selected options will then be saved and applied by the application.
+
 ## 3. Additional information
 
 ### 3.1 The books database
 
 The application maintains a small database that contains minimal meta-data about the books (Title, author, description, small cover picture). This list is computed initially when the application sees for the first time the presence of a book on the SD-Card. This small database is used to present the list of books present on the SD-Card. 
 
-The only limit in terms of the number of books managed by the application is the SD-Card capacity. You can have as many books as possible to put on the SD-Card. Too many books would become difficult for the user to browse in the books list. A few dozen books are manageable. A few hundred books would become difficult to overlook.  
+The only limit in terms of the number of books managed by the application is the SD-Card capacity. You can have as many books as possible to put on the SD-Card. Too many books would become difficult for the user to browse in the books list. A few dozen books are manageable. A few hundred books would become difficult to overlook. 
 
 ### 3.2 The Pages location computation
 
@@ -221,7 +222,7 @@ The convert tool of *Calibre* can also shrink fonts such that they only contain 
 
 For images, to get them reasonably in line with the screen resolution of the InkPlate devices (that is 600x800 for the InkPlate-6), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. For example, even at this size, a 600x800 image will take close to 500 kilobytes. 
 
-It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more time to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 800x600 pixels (if you prefer, you can modify it to use 1200x825 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**.  
+It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more time to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 800x600 pixels (if you prefer, you can modify it to use 1200x825 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
 
 ### 3.4 In case of out of memory situation
 
@@ -242,13 +243,13 @@ If an internal problem related to memory allocation is found by the application,
 
 Starting with version 1.3.0, the application is using a new *stream-based* approach to render images that are part of a book. This approach optimizes the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
 
-JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some books, the rendering of images may not be possible. A script named `adjust_size.sh` and supplied with the application can be used to transform the resolution of the embedded images. It also may transform the images to a format that will be compatible with the application's capabilities. Look in section 3.3 for further details on how to use the script on your computer.
+JPeg and PNG image types are supported. Only basic formats of both types are recognized. For some books, the rendering of images may not be possible. A script named `adjust_size.sh` and supplied with the application can be used to transform the resolution of the embedded images. It also may transform the images to a format that will be compatible with the application's capabilities. Look in section 3.3 for further details on how to use the script on your computer. 
 
 ### 3.6 Moving the SD-Card from an Inkplate model to another
 
 For each book, the application may generate three additional files in the `books/` folder of the SD-Card:
 
-- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution and formatting parameters.
+- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution, selected fonts and formatting parameters.
 - Table of Content (files with extension `.toc`). They may also be tailored to the screen resolution and formatting parameters.
 - The book's formatting parameters (files with extension `.pars`).
 
@@ -282,7 +283,7 @@ IMPORTANT: If you modify the fonts in the USER's group, the page's location comp
 
 ### 3.8 In case of a problem
 
-The application may behave in a way that you don't understand. That may happen for a variety of reasons beyond the testing effort made by the author to ensure that the application is working properly.
+It is possible that the application behaves in a way that you don't understand. That may happen for a variety of reasons beyond the testing effort made by the author to ensure that the application is working properly.
 
 The first thing to do is to verify if your device is using the last version of the application. This can be done through the **About the EPub-InkPlate application** menu entry. The message will show which version you are using. From time to time, new versions are developed and made available [here](https://github.com/turgu1/EPub-InkPlate/releases). Please consult the Install Manual on how to update your Inkplate device.
 
@@ -305,4 +306,3 @@ The Inkplate devices are based on ESP32-WROVER MPU. This is a very capable chip 
 - *Maximum memory used for books' fonts content:* **800 Kbytes**. Fonts that are already loaded are kept for rendering. If the output is not appropriate, the user can disable the use of the fonts embedded with the book and use one of the fonts supplied with the application.
 - *Maximum nested HTML tags in book content:* **50**. Testing the application, the author never had to deal with books having more than 15 nested tags. This limit is to track potential nested issues that would reset the device (stack overflow).
 - *Image format types:* **subset of PNG and JPeg**. GIF and SVG are not supported. The subsets are imposed by libraries used to interpret the image file content. 
-

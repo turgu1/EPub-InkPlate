@@ -12,13 +12,13 @@ class MenuViewer
   public:
     static constexpr uint8_t MAX_MENU_ENTRY = 15;
 
-    enum class Icon { RETURN,      REVERT,    REFRESH,   BOOK,   BOOK_LIST, MAIN_PARAMS, 
-                      FONT_PARAMS, POWEROFF,  WIFI,      INFO,   TOC,       DEBUG, 
-                      DELETE,      CLOCK,     NTP_CLOCK, CALIB,  PREV_MENU, NEXT_MENU, END_MENU };
-    char icon_char[18] = { 
-                      '@',         'Q',       'R',       'E',    'F',       'C', 
-                      'A',         'Z',       'S',       'I',    'L',       'H', 
-                      'K',         'N',       'Y',       'M',    'O',       'P' };
+    enum class Icon { RETURN,      CLR_HISTORY, REFRESH,   BOOK,   BOOK_LIST, MAIN_PARAMS, 
+                      FONT_PARAMS, POWEROFF,    WIFI,      INFO,   TOC,       DEBUG, 
+                      DELETE,      CLOCK,       NTP_CLOCK, CALIB,  PREV_MENU, NEXT_MENU, REVERT, END_MENU };
+    char icon_char[19] = { 
+                      '@',         'T',         'R',       'E',    'F',       'C', 
+                      'A',         'Z',         'S',       'I',    'L',       'H', 
+                      'K',         'N',         'Y',       'M',    'O',       'P',   'U' };
     struct MenuEntry {
       Icon icon;
       const char * caption;

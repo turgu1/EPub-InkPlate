@@ -67,7 +67,7 @@ A picture of the Web Server in a browser:
 
 Books Directory List: Linear vs Matrix View:
 
-<img src="doc/pictures/linear_view.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view.png" alt="picture" width="300"/>
+<img src="doc/pictures/linear_view_6.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view_6.png" alt="picture" width="300"/>
 
 
 ### Runtime environment

@@ -217,10 +217,12 @@ init_nvs()
   #endif
 }
 
-#if INKPLATE_6PLUS
+#if INKPLATE_6PLUS || MENU_6PLUS
   static void goto_next();
   static void goto_prev();
+#endif
 
+#if INKPLATE_6PLUS
   static void 
   calibrate()
   {
@@ -324,8 +326,8 @@ static MenuViewer::MenuEntry menu[] = {
   { MenuViewer::Icon::FONT_PARAMS,   "Default e-books parameters",           default_parameters               , true,  true  },
   { MenuViewer::Icon::WIFI,          "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
   { MenuViewer::Icon::REFRESH,       "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
-  #if !INKPLATE_6PLUS
-    { MenuViewer::Icon::REVERT,      "Clear e-books' read history",          init_nvs                         , true,  true  },
+  #if !(INKPLATE_6PLUS || MENU_6PLUS)
+    { MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history",          init_nvs                         , true,  true  },
     #if DATE_TIME_RTC
       { MenuViewer::Icon::CLOCK,     "Set Date/Time",                        clock_adjust_form                , true,  true  },
       { MenuViewer::Icon::NTP_CLOCK, "Retrieve Date/Time from Time Server",  ntp_clock_adjust                 , true,  true  },
@@ -336,7 +338,7 @@ static MenuViewer::MenuEntry menu[] = {
   #endif
   { MenuViewer::Icon::INFO,          "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
   { MenuViewer::Icon::POWEROFF,      "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || MENU_6PLUS
     { MenuViewer::Icon::NEXT_MENU,   "Other options",                        goto_next                        , true,  true  },
   #endif
   { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
@@ -351,7 +353,19 @@ static MenuViewer::MenuEntry sub_menu[] = {
     { MenuViewer::Icon::NTP_CLOCK,   "Retrieve Date/Time from Time Server",  ntp_clock_adjust                 , true,  true  },
   #endif
   { MenuViewer::Icon::CALIB,         "Touch Screen Calibration",             calibrate                        , true,  false },
-  { MenuViewer::Icon::REVERT,        "Clear e-books' read history",          init_nvs                         , true,  true  },
+  { MenuViewer::Icon::CLR_HISTORY,   "Clear e-books' read history",          init_nvs                         , true,  true  },
+  { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
+};
+#elif MENU_6PLUS
+static MenuViewer::MenuEntry sub_menu[] = {
+  { MenuViewer::Icon::PREV_MENU,     "Previous options",                     goto_prev                        , true,  true  },
+  { MenuViewer::Icon::RETURN,        "Return to the e-books list",           nullptr                          , true,  true  },
+  #if DATE_TIME_RTC
+    { MenuViewer::Icon::CLOCK,       "Set Date/Time",                        nullptr                          , true,  true  },
+    { MenuViewer::Icon::NTP_CLOCK,   "Retrieve Date/Time from Time Server",  nullptr                          , true,  true  },
+  #endif
+  { MenuViewer::Icon::CALIB,         "Touch Screen Calibration",             nullptr                          , true,  false },
+  { MenuViewer::Icon::CLR_HISTORY,   "Clear e-books' read history",          nullptr                          , true,  true  },
   { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
 };
 #endif
@@ -370,7 +384,7 @@ OptionController::enter()
   font_form_is_shown = false;
 }
 
-#if INKPLATE_6PLUS
+#if INKPLATE_6PLUS || MENU_6PLUS
   static void 
   goto_next()
   {

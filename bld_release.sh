@@ -45,7 +45,10 @@ cp .pio/build/$release_folder/partitions.bin bin
 cp .pio/build/$release_folder/firmware.bin bin
 cp -r bin "$folder"
 
-cp -r SDCard "$folder"
+mkdir "$folder/SDCard"
+mkdir "$folder/fonts"
+cp SDCard/* "$folder/SDCard"
+cp SDCard/fonts/* "$folder/SDCard/fonts"
 rm -rf $folder/SDCard/books
 mkdir $folder/SDCard/books
 cp SDCard/books/Austen*.epub $folder/SDCard/books
@@ -60,16 +63,16 @@ then
   rm "$folder/SDCard/last_book.txt"
 fi
 
-if [ -f "$folder/SDCard/fonts_list.xml" ]
-then
-  rm "$folder/SDCard/fonts_list.xml"
-fi
-
 rm $folder/SDCard/config.txt
 
 if [ "$3" = "0" ]
 then
-  cp "doc/USER GUIDE.pdf" "$folder"
+  if [ "$2" = "6plus" ]
+  then
+    cp "doc/USER GUIDE 6PLUS.pdf" "$folder"
+  else
+    cp "doc/USER GUIDE.pdf" "$folder"
+  fi
 else
   cp "doc/USER GUIDE for Extended Case.pdf" "$folder"
 fi

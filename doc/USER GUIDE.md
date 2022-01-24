@@ -62,12 +62,12 @@ In the following text, the functions are called buttons.
 
 The application is having two main display modes:
 
-- Books List - Presents the list of books available on the SD-Card, showing for each book a small title page caption, the title, and the author of the book.
-- Book Reader - Presents book content, one page at a time for reading.
+- The Books List mode - Presents the list of books available on the SD-Card, showing for each book a small title page caption, the title, and the author of the book.
+- The Book Reader mode - Presents a book content, one page at a time for reading.
 
-Each of the display modes is also supplying a list of specific functions that can be selected by the user. They are presented in the following sub-sections after the description of the display mode.
+Each display mode is also supplying a list of specific functions that can be selected by the user. They are presented in the following sub-sections after the description of the display mode.
 
-### 2.1 The Books List
+### 2.1 The Books List mode
 
 The list presents all books available to the user for reading. Two views are offered: a *linear view* and a *matrix view*:
 
@@ -83,9 +83,9 @@ The books are presented in the following manner:
 
 The list may require several pages depending on the number of books present on the SD-Card.
 
-![The Books' List Linear View](pictures/linear_view.png){ width=50% }
+![The Books' List Linear View](pictures/linear_view_6.png){ width=50% }
 
-![The Books' List Matrix View](pictures/matrix_view.png){ width=50% }
+![The Books' List Matrix View](pictures/matrix_view_6.png){ width=50% }
 
 Use the **NEXT** and the **PREVIOUS** buttons to highlight the appropriate book that you want to read, then use the **SELECT** button to have the book loaded, presenting the first page of it.
 
@@ -96,20 +96,23 @@ The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons can be used to move:
 
 The **DOUBLE-SELECT** will open a list of options. These options are presented at the top of the screen with an icon and label shown below the icons. The list is as follow:
 
-![Books List options](pictures/ebooks-list-options-menu.png){ width=50% }
+![Books List options](pictures/dir-menu-options-6.png){ width=50% }
 
-- **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
-- **Return to the last e-book being read** - This will open the last book read by the user, to the last page shown on the screen. 
-- **Main parameters** - This will present the main parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
-- **Default e-book parameters** - This will present the default parameters form, allowing the user to modify some elements related to the book's reader. Those parameters constitute default values for books preparation and presentation. Its content is described below.
-- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
-- **Refresh the e-books list** - This will launch the books database refresher. This operation is usually done automatically at application startup and is not usually required to be used. Be aware that this action will refresh *all* books. Depending on the number of books present in the `books` folder, it could be a long process (it takes between five and ten seconds per book to gather metadata). 
-- **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
-- **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
+- ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
+- ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** - This will open the last book read by the user, to the last page shown on the screen. 
+- ![](pictures/icon-params.png){ width=15 } **Main parameters** - This will present the main parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
+- ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** - This will present the default parameters form, allowing the user to modify some elements related to the book's reader. Those parameters constitute default values for books preparation and presentation. Its content is described below.
+- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
+- ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - This will launch the books database refresher. This operation is usually done automatically at application startup and is not usually required to be used. Be aware that this action will refresh *all* books. Depending on the number of books present in the `books` folder, it could be a long process (it takes between five and ten seconds per book to gather metadata).
+- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - This will erase all information about the books being read (the current location in the books and their appearance at the beginning of the book list). The books themselves are not deleted.
+- ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - This will show a form to allow the modification of the local date and time.
+- ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** -  This will launch the WiFi connexion and retrieve a Time packet from a NTP server. The server can be defined in the `config.txt` file. By default, it will be `pool.ntp.org`. Once retrieved, the Inkplate will be restarted.
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
+- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button.
 
 The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. The **DOUBLE-SELECT** button will simply get out of the options list, back to the list of books (The same behavior as if the first entry of the options list is selected).
 
-### 2.2 The Book Reader
+### 2.2 The Book Reader mode
 
 The reader presents the book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons will go 10 pages at a time.
 
@@ -119,15 +122,15 @@ As for the books list, the **DOUBLE-SELECT** button will open a list of options 
 
 ![Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
 
-- **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed book.
-- **Table of Content** - This, if present, will show the book's table of content. The user can move the cursor on one of the entries and press the **SELECT** button. The application will then move in the book to the selected table of content's entry. This option is available only if a table of content structure is available in the EPub file. 
-- **E-Books List** - This will get you out of the book reader, returning to the books list.
-- **Current e-book parameters** - This will present the parameters form, allowing the user to select specific values related to fonts and pictures usage for the currently displayed book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the books list and is described below.
-- **Revert e-book parameters to default values** - This will reset the editable book formatting parameters to default values. 
-- **Delete the current e-book** - This will remove the current book from the device. All related files will also be removed. A dialog will be shown asking the user to confirm the deletion of the book. Confirmation must be done using the **SELECT** button. Using another button will cancel the deletion. Once confirmed, the book will be removed and the list of books will then be shown to the user for further selection.
-- **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled). 
-- **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
-- **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button. At start time, if the user was reading a book, it will be presented on screen.
+- ![](pictures/icon-return.png){ width=15 } **Return to the e-book reader** - This will simply get out of the options list, back to the page being read in the currently displayed book.
+- ![](pictures/icon-content.png){ width=15 } **Table of Content** - This, if present, will show the book's table of content. The user can move the cursor on one of the entries and press the **SELECT** button. The application will then move in the book to the selected table of content's entry. This option is available only if a table of content structure is available in the EPub file. 
+- ![](pictures/icon-dir.png){ width=15 } **E-Books List** - This will get you out of the book reader, returning to the books list.
+- ![](pictures/icon-font.png){ width=15 } **Current e-book parameters** - This will present the parameters form, allowing the user to select specific values related to fonts and pictures usage for the currently displayed book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the books list and is described below.
+- ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** - This will reset the editable book formatting parameters to default values. 
+- ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** - This will remove the current book from the device. All related files will also be removed. A dialog will be shown asking the user to confirm the deletion of the book. Confirmation must be done using the **SELECT** button. Using another button will cancel the deletion. Once confirmed, the book will be removed and the list of books will then be shown to the user for further selection.
+- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, pressing one of the keys on the device will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled). 
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple message box showing the application version number and the EPub-InkPlate developer name (me!).
+- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing any button. At start time, if the user was reading a book, it will be presented on screen.
 
 The **NEXT** and **PREVIOUS** buttons can be used to move the cursor from one option to the other. The **SELECT** button can then be used to select the option and execute its function. **DOUBLE-SELECT** will simply get out of the options list, back to the list of books (Same behavior as if the first entry of the options list is selected).
 
@@ -145,13 +148,13 @@ The following items are displayed:
 - **Pixel Resolution** - Select how many bits are used for each pixel on the screen. 3 bits per pixel allow for the use of antialiasing for fonts but will require a complete screen update on every page change. 1 bit per pixel allows for the use of partial screen update, much faster refresh, but no antialiasing possible: the glyphs are displayed with irregularities.
 - **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the books list and the book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
 - **Show Title** - When selected, display the book title at the top portion of pages.
-- **Show Heap Size** - When selected, the current stack and heap size will be displayed at the bottom of pages. Three numbers are showed (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
+- **Right Bottom Selection** - What to show on the bottom right of the screen. You can choose between nothing, the date/time, or the stack/heap size. When the data/time is selected, it will be shown as `MM/DD - HH:MM`. When the stack/heap size is selected, three numbers are shown (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
    
-When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. A bigger rectangle appears around all options of the first item in the form (see Figure 3). It is a thin line rectangle, called the selecting box, that can be moved from an item to the other.
+When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. A bigger rectangle appears around all options of the first item in the form (see Figure 5). It is a thin line rectangle, called the selecting box, that can be moved from an item to the other.
 
 ![Buttons Position is selected](pictures/parameters-after-selection.png){ width=50% }
 
-To be able to modify an item, you must first move the selecting box from one item to the other using the **NEXT** and **PREVIOUS** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options (see Figure 4). You can change the current option with the **NEXT** and **PREVIOUS** button. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
+To be able to modify an item, you must first move the selecting box from one item to the other using the **NEXT** and **PREVIOUS** buttons. Then, you press the **SELECT** button. The selection box will change as a **bold** rectangle around the options (see Figure 6). You can change the current option with the **NEXT** and **PREVIOUS** button. Pressing the **SELECT** button again will then *freeze* the selection. The selection box will change to thin lines and will go to the next item.
 
 To quit the form, use the **DOUBLE-SELECT** button. The newly selected options will then be saved and applied by the application.
 
@@ -159,7 +162,7 @@ To quit the form, use the **DOUBLE-SELECT** button. The newly selected options w
 
 As indicated in section 2.1, the Default Parameters form allows for the modification of default values related to fonts and pictures usage. Each item is presented with a list of options selectable through the use of the keys.
 
-![The Default Parameters Form](pictures/current-parameters.png){ width=50% }
+![The Default Parameters Form](pictures/default-parameters.png){ width=50% }
 
 The following items are displayed:
 
@@ -174,7 +177,7 @@ These are default values. They will be used for parameters that have not be modi
 
 As indicated in section 2.2, the current book parameters form allows for the selection of specific values related to fonts and pictures usage for the currently displayed book. Those parameters are specific to the currently displayed book and are kept in a `.pars` file on the SD-Card. Its content is similar to the Default parameters form of the books list as described in section 2.4.
 
-![The Current Book Parameters Form](pictures/default-parameters.png){ width=50% }
+![The Current Book Parameters Form](pictures/current-parameters.png){ width=50% }
 
 The following items are displayed:
 
@@ -248,7 +251,7 @@ For each book, the application may generate three additional files in the `books
 
 These files are automatically generated when they are not present (or when a formatting parameter will impact the page rendering) in the folder at the time the user opens a book to be read.
 
-Inkplate models are using different eInk screens that are using different pixel resolutions. If you ever want to transfer an SD-Card from a model to another, it could be beneficial to erase some files in the SD-Card's `books` folder. The best way to do it is to plug the SD-Card into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
+Inkplate device models use different eInk screens that have different pixel resolutions. If you ever want to transfer an SD-Card from one model to another, the application normally detects the change of screen resolution and regenerates the page's location when the user opens the book. If you suspect that the pages are not properly displayed, it could be beneficial to erase some files in the SD-Card's `books` folder. The best way to do it is to plug the SD-Card into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
 
 ### 3.7 Internal fonts replacement
 
@@ -294,8 +297,8 @@ The Inkplate devices are based on ESP32-WROVER MPU. This is a very capable chip 
 
 - *Maximum number of books:* **200**. The application must keep some information about the books to quickly build and show the directory content.
 - *Maximum single book size:* **25 Mbytes**.
-- *Font formats:* **TTF, OTF**.
-- *Maximum memory used for application internal fonts content:* **200 Kbytes**.
+- *Font formats:* **TTF, OTF, IBMF**.
+- *Maximum memory used for application internal fonts content:* **300 Kbytes**.
 - *Maximum memory used for books' fonts content:* **800 Kbytes**. Fonts that are already loaded are kept for rendering. If the output is not appropriate, the user can disable the use of the fonts embedded with the book and use one of the fonts supplied with the application.
 - *Maximum nested HTML tags in book content:* **50**. Testing the application, the author never had to deal with books having more than 15 nested tags. This limit is to track potential nested issues that would reset the device (stack overflow).
 - *Image format types:* **subset of PNG and JPeg**. GIF and SVG are not supported. The subsets are imposed by libraries used to interpret the image file content. 
