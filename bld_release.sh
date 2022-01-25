@@ -30,6 +30,8 @@ then
   return 1
 fi
 
+rm bin/*.bin
+
 pio run -e $environment
 
 if [ $? -ne 0 ]
@@ -46,24 +48,15 @@ cp .pio/build/$release_folder/firmware.bin bin
 cp -r bin "$folder"
 
 mkdir "$folder/SDCard"
-mkdir "$folder/fonts"
-cp SDCard/* "$folder/SDCard"
-cp SDCard/fonts/* "$folder/SDCard/fonts"
-rm -rf $folder/SDCard/books
-mkdir $folder/SDCard/books
+mkdir "$folder/SDCard/fonts"
+mkdir "$folder/SDCard/books"
+
+cp SDCard/config_distrib.txt $folder/SDCard/config.txt
+cp SDCard/fonts_list.xml $folder/SDCard/fonts_list.xml
+cp SDCard/fonts_list_orig.xml $folder/SDCard/fonts_list_orig.xml
+cp SDCard/fonts/* $folder/SDCard/fonts
 cp SDCard/books/Austen*.epub $folder/SDCard/books
-
-if [ -f "$folder/SDCard/books_dir.db" ]
-then
-  rm "$folder/SDCard/books_dir.db"
-fi
-
-if [ -f "$folder/SDCard/last_book.txt" ]
-then
-  rm "$folder/SDCard/last_book.txt"
-fi
-
-rm $folder/SDCard/config.txt
+cp doc/timezones.csv $folder
 
 if [ "$3" = "0" ]
 then

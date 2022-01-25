@@ -39,13 +39,13 @@ When the device turns ON, the application executes the following tasks:
 The InkPlate-6PLUS is supplied with a touch screen interface that is used to interact with the application. The following gestures are supported:
 
 
-- TAP ![TAP](pictures/icon-tap.png){ width=4% }: You briefly touch the screen surface with your fingertip. This is used in forms and menus when a selection is to be made. It is also used to change pages when reading a book.
+- **TAP** ![TAP](pictures/icon-tap.png){ width=4% }: You briefly touch the screen surface with your fingertip. This is used in forms and menus when a selection is to be made. It is also used to change pages when reading a book.
 
-- TOUCH-AND-HOLD ![TOUCH-AND-HOLD](pictures/icon-touch-and-hold.png){ width=5% }: You touch the surface with your fingertip and hold position for an extended period of time. This is used to get access to descriptive texts in menus, or to get the author/title information of a book when displaying the list of books in the matrix view.
+- **TOUCH-AND-HOLD** ![TOUCH-AND-HOLD](pictures/icon-touch-and-hold.png){ width=5% }: You touch the surface with your fingertip and hold position for an extended period of time. This is used to get access to descriptive texts in menus, or to get the author/title information of a book when displaying the list of books in the matrix view.
 
-- SWIPE-LEFT and SWIPE-RIGHT ![SWIPE-LEFT and SWIPE-RIGHT](pictures/icon-swipe.png){ width=9% }: You move your fingertip on the surface of the screen, from righ to left, or from left to right respectively. This is used to change pages when reading a book or looking at the list of books.
+- **SWIPE-LEFT** and **SWIPE-RIGHT** ![SWIPE-LEFT and SWIPE-RIGHT](pictures/icon-swipe.png){ width=9% }: You move your fingertip on the surface of the screen, from righ to left, or from left to right respectively. This is used to change pages when reading a book or looking at the list of books.
 
-- PINCH-IN and PINCH-OUT ![PINCH-IN and PINCH-OUT](pictures/icon-pinch.png){ width=11% }: You touch the screen surface with two fingers, moving them closer or apart respectively. This is used to diminish or augment the screen back-lit brightness.
+- **PINCH-IN** and **PINCH-OUT** ![PINCH-IN and PINCH-OUT](pictures/icon-pinch.png){ width=11% }: You touch the screen surface with two fingers, moving them closer or apart respectively. This is used to diminish or augment the screen back-lit brightness.
 
 The application is having two main display modes:
 
