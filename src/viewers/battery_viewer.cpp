@@ -55,6 +55,12 @@
     // Show battery icon
 
     Font * font = fonts.get(0);
+
+    if (font == nullptr) {
+      LOG_E("Internal error (Drawings Font not available!");
+      return;
+    }
+
     float   value = ((voltage - 2.5) * 4.0) / 1.2;
     int16_t icon_index =  value; // max is 3.7
     if (icon_index > 4) icon_index = 4;
@@ -68,10 +74,10 @@
     dim.height = -font->get_descender_height(9);
 
     Pos pos;
-    pos.x = 4;
+    // pos.x = 4;
     pos.y = Screen::get_height() + font->get_descender_height(9) - 2;
 
-    page.clear_region(dim, pos);
+    // page.clear_region(dim, pos);
 
     fmt.font_index = 0;  
     pos.x          = 5;
@@ -95,7 +101,7 @@
 
       font = fonts.get(1);
       fmt.font_index = 1;  
-      pos.x = 5 + glyph->advance + 5;
+      pos.x = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
       page.put_str_at(str, pos, fmt);
     }
   }

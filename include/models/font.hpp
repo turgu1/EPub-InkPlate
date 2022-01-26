@@ -86,7 +86,7 @@ class Font
      */
     virtual int32_t get_chars_height(int16_t glyph_size)  {
       const Glyph * g = get_glyph_internal('E', glyph_size);
-      return g->dim.height - get_descender_height(glyph_size);
+      return (g == nullptr) ? 0 : (g->dim.height - get_descender_height(glyph_size));
     };
  
      /**

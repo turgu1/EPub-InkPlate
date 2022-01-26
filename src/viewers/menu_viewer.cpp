@@ -18,17 +18,34 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 {
   Font * font = fonts.get(1);
 
+  if (font == nullptr) {
+    LOG_E("Internal error (Main Font not available!");
+    return;
+  }
+
   line_height = font->get_line_height(CAPTION_SIZE);
   text_height = line_height - font->get_descender_height(CAPTION_SIZE); 
 
   font = fonts.get(0);
+
+  if (font == nullptr) {
+    LOG_E("Internal error (Drawings Font not available!");
+    return;
+  }
+
   Font::Glyph * icon = font->get_glyph('A', ICON_SIZE);
 
-  icon_height = icon->dim.height;
+  if (icon == nullptr) {
+    icon_height   = 50;
+    icon_ypos     = 10 + icon_height;
+    text_ypos     = icon_ypos + line_height + 10;
+  }
+  else {
+    icon_height   = icon->dim.height;
+    icon_ypos     = 10 + icon_height;
+    text_ypos     = icon_ypos + line_height + 10;
+  }
 
-  icon_height   = icon->dim.height;
-  icon_ypos     = 10 + icon_height;
-  text_ypos     = icon_ypos + line_height + 10;
   region_height = text_ypos + 20;
 
   Page::Format fmt = {
@@ -74,10 +91,15 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 
       if (menu[idx].icon == Icon::NEXT_MENU) pos.x = Screen::get_width() - SPACE_BETWEEN_ICONS;
 
-      entry_locs[idx].pos.x = pos.x;
-      entry_locs[idx].pos.y = pos.y + glyph->yoff;
-      entry_locs[idx].dim   = glyph->dim;
-
+      if (glyph == nullptr) {
+        entry_locs[idx].pos = pos;
+        entry_locs[idx].dim = Dim(0, 0);
+      }
+      else {
+        entry_locs[idx].pos.x = pos.x;
+        entry_locs[idx].pos.y = pos.y + glyph->yoff;
+        entry_locs[idx].dim   = glyph->dim;
+      }
       // page.put_highlight(
       //   Dim(entry_locs[idx].dim.width + 30, entry_locs[idx].pos.y + entry_locs[idx].dim.height + 15), 
       //   Pos(entry_locs[idx].pos.x - 15, 0));

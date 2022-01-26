@@ -78,12 +78,20 @@ void MsgViewer::show(
     Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
 
   Font * font = fonts.get(0);
-  Font::Glyph * glyph = font->get_glyph(icon_char[msg_type], 24);
 
-  page.put_char_at(
-    icon_char[msg_type], 
-    Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
-    fmt);
+  if (font == nullptr) {
+    LOG_E("Internal error (Drawings Font not available!");
+    return;
+  }
+
+  Font::Glyph * glyph = font->get_glyph(icon_char[msg_type], 24);
+  
+  if (glyph != nullptr) {
+    page.put_char_at(
+      icon_char[msg_type], 
+      Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
+      fmt);
+  }
 
   fmt.font_index =  1;
   fmt.font_size  = 10;
@@ -126,6 +134,12 @@ void MsgViewer::show(
       } 
       else {
         font = fonts.get(1);
+
+        if (font == nullptr) {
+          LOG_E("Internal error (Main Font not available!");
+          return;
+        }
+
         Dim dim, ok_dim;
         font->get_size("CANCEL", &dim,    10); 
         font->get_size("OK",     &ok_dim, 10); 

@@ -50,7 +50,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
   #endif
 
   Font * font = fonts.get(ScreenBottom::FONT);
-  page_bottom = font->get_line_height(ScreenBottom::FONT_SIZE) + (font->get_line_height(ScreenBottom::FONT_SIZE) >> 1);
+  page_bottom = font->get_chars_height(ScreenBottom::FONT_SIZE) + 15;
 
   //page.set_compute_mode(Page::ComputeMode::MOVE);
 

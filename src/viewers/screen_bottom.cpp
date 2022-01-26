@@ -44,16 +44,18 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
 
   std::ostringstream ostr;
 
-  // LOG_I("Dim [%u, %u], Pos[%u, %u]", 
-  //       Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10, 
-  //       0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10);
+  uint16_t h = font->get_chars_height(FONT_SIZE) + 10;
 
-  page.clear_region(Dim(Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10),
-                    Pos(0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10));
+  LOG_D("Dim [%u, %u], Pos[%u, %u]", 
+        Screen::get_width(), h, 
+        0, Screen::get_height() - h);
 
-  // page.put_highlight(Dim(Screen::get_width(), font->get_chars_height(FONT_SIZE) + 10),
-  //                    Pos(0, Screen::get_height() - font->get_chars_height(FONT_SIZE) - 10));
-                    
+  page.clear_region(Dim(Screen::get_width(), h),
+                    Pos(0, Screen::get_height() - h));
+
+  // page.put_highlight(Dim(Screen::get_width(), h ),
+  //                    Pos(0, Screen::get_height() - h));
+
   if ((page_nbr != -1) && (page_count != -1)) {
     ostr << page_nbr + 1 << " / " << page_count;
 

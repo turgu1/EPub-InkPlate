@@ -18,6 +18,8 @@
 class MsgViewer {
 
   private:
+    static constexpr char const * TAG = "MsgViewer";
+
     uint16_t width;
     static constexpr uint16_t HEIGHT  = 300;
     static constexpr uint16_t HEIGHT2 = 450;

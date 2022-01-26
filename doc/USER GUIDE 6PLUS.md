@@ -89,7 +89,7 @@ The options menu is presented at the top of the screen with icons. The list is a
 - ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** - This will open the last book read by the user, to the last page shown on the screen. 
 - ![](pictures/icon-params.png){ width=15 } **Main parameters** - This will present the main parameters form, allowing the user to modify some elements of the application behavior. Its content is described below.
 - ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** - This will present the default parameters form, allowing the user to modify some elements related to the book's reader. Those parameters constitute default values for books preparation and presentation. Its content is described below.
-- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, using the **TAP** gesture on the screen button will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
+- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - This will start the WiFi connexion and a Web server, allowing the user to access - through a Web Browser - the list of books on the SD-Card, uploading, downloading, and removing books from there. Once started, using the **TAP** gesture on the screen will stop the server and the WiFi connexion, and the device will be restarted. Be aware that as the Web server is running, it is *not* lowering the use of the power (deep sleep and light sleep are disabled).
 - ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - This will launch the books database refresher. This operation is usually done automatically at application startup and is not usually required to be used. Be aware that this action will refresh *all* books. Depending on the number of books present in the `books` folder, it could be a long process (it takes between five and ten seconds per book to gather metadata).
 - ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - This will show a simple box showing the application version number and the EPub-InkPlate developer name (me!).
 - ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - This option will put the device in DeepSleep. The device will be restarted by pressing the device WakeUp button.
@@ -100,12 +100,31 @@ The options menu is presented at the top of the screen with icons. The list is a
 - ![](pictures/icon-prev.png){ width=15 } Return to the main menu.
 - ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - This will simply get out of the options list, back to the list of books.
 - ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - This will show a form to allow the modification of the local date and time.
-- ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** -  This will launch the WiFi connexion and retrieve a Time packet from a NTP server. The server can be defined in the `config.txt` file. By default, it will be `pool.ntp.org`. Once retrieved, the Inkplate will be restarted.
-- ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** - This will launch a calibration screen. Each crossmark must be pressed once by the user to adjust the coordinates used when touching the screen.
+- ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** -  This will launch the WiFi connexion and retrieve a Time packet from a NTP server. The server can be defined in the `config.txt` file. By default, it will be `pool.ntp.org`. Once retrieved, the Inkplate will be restarted. The user must **TAP** the screen to do so.
+- ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** - This will launch a calibration screen. Each crosshair must be pressed **only once** by the user to adjust the coordinates used when touching the screen. Please read subsection 2.1.1 for important information related to calibration.
 - ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - This will erase all information about the books being read (the current location in the books and their appearance at the beginning of the book list). The books themselves are not deleted.
 
 Use the **TOUCH-AND-HOLD** gesture on an icon to display the associated information text. Use the **TAP** gesture on the icon to select the option and execute its function.
 
+#### 2.1.1 Touchscreen Calibration
+
+The touch screen calibration function must be done properly to adjust the touch screen coordinates with the screen itself. For some device, it is not necessary as the two layers are sufficiently well aligned, but it is not always the case. You will find the need of using the calibration function if trying to access some menu entries or options inside forms is difficult (another nearby menu entry or option is selected instead).
+
+When using the calibration function, it is important to touch the crosshairs as precisely as possible. If not, the layers alignment may become worse: accessing menu entries and selecting items in forms may become more difficult, if not impossible. 
+
+If you can access again the calibration function, you can try to calibrate again. 
+
+If accessing the calibration function is not possible, the `config.txt` file on the SDCard will need to be modified with your computer to erase the calibration parameters that have been saved by the process. The name of the parameters to erase are the following: 
+
+- calib_a
+- calib_b
+- calib_c
+- calib_d
+- calib_e
+- calib_f
+- calib_divider 
+
+You just need to erase the corresponding lines. Once rebooted, the device will then use the default Touch Screen coordinates. You will then be able to re-calibrate.
 
 ### 2.2 The Book Reader mode
 
@@ -148,7 +167,7 @@ The following items are displayed:
 - **Pixel Resolution** - Select how many bits are used for each pixel on the screen. 3 bits per pixel allow for the use of antialiasing for fonts but will require a complete screen update on every page change. 1 bit per pixel allows for the use of partial screen update, much faster refresh, but no antialiasing possible: the glyphs are displayed with irregularities.
 - **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. This item is showing the battery level at the bottom left of the screen and is updated every time the screen is refreshed in the books list and the book reader modes (It is *not* refreshed when the options menus or the parameters form is displayed). PERCENT will show the power percentage (2.5 volts and below is 0%, 3.7 volts and higher is 100%). VOLTAGE will show the battery voltage. The ICON is shown for all options, but NONE.
 - **Show Title** - When selected, display the book title at the top portion of pages.
-- **Right Bottom Selection** - What to show on the bottom right of the screen. You can choose between nothing, the date/time, or the stack/heap size. When the data/time is selected, it will be shown as `MM/DD - HH:MM`. When the stack/heap size is selected, three numbers are shown (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
+- **Right Bottom Selection** - What to show on the bottom right of the screen. You can choose between nothing, the date/time, or the stack/heap size. When the data/time is selected, it will be shown as `DDD - MM/DD HH:MM` (For example: Mon - 01/24 22:44). When the stack/heap size is selected, three numbers are shown (from left to right): the size of the unused stack space, the size of the largest memory chunk available in the heap, and the total size of the heap available memory. This is mainly used to debug potential issues with memory allocation. The total stack size is 60 Kbytes and the heap size is ~4.3 Mbytes.
    
 When the form is presented on the screen, the currently selected option of each item is surrounded by a small rectangle. To modify an option, simply use the **TAP** gesture on the desired option.
 
@@ -164,7 +183,7 @@ The following items are displayed:
 
 - **Default Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable books.
 - **Use Fonts in E-books** - If a book contains embedded fonts, this item permits to indicate if those fonts are to be used to present the pages.
-- **Default Font** - Height fonts are supplied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
+- **Default Font** - Height fonts are supplied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts. Font names prefixed with *TeX* are bitmap fonts produced using the TeX MetaFont toolkit and are tailored for the specific screen resolution.
 - **Show Images in E-books** - This item allows for the display or not of images present in books. This can be used to diminish the amount of memory required and the speed of rendition. 
 
 These are default values. They will be used for parameters that have not be modified for a book.
@@ -183,7 +202,7 @@ The following items are displayed:
 
 - **Font Size** - Options: 8, 10, 12, 15 points. This item will select the size of the characters to be presented on the screen, in points (1 point = ~1/72 of an inch). Please note that this will only be effective with reflowable books. 
 - **Use Fonts in E-books** - If a book contains embedded fonts, this item permits to indicate if those fonts are to be used to present the pages.
-- **Font** - Height fonts are supplied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts.
+- **Font** - Height fonts are supplied with the application. This item permits the selection of the font to be used by default. Fonts with a **Cond** suffix are *Condensed* fonts. Fonts with a **S** suffix are *Serif* fonts. Font names prefixed with *TeX* are bitmap fonts produced using the TeX MetaFont toolkit and are tailored for the specific screen resolution.
 - **Show Images in E-books** - This item allows for the display or not of images present in books. This can be used to diminish the amount of memory required and the speed of rendition. 
 
 When displayed, the form shows the current values being used to present the pages of the book. 

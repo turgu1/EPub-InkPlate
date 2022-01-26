@@ -698,7 +698,7 @@ Page::add_word(const char * word,  const Format & fmt)
       glyph = font->get_glyph(' ', fmt.font_size);
     }
 
-    if (glyph) {
+    if (glyph != nullptr) {
       width += kern;
       first  = false;
 

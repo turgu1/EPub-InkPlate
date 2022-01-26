@@ -77,7 +77,7 @@ Font::get_glyph(uint32_t charcode, int16_t glyph_size)
 {
   std::scoped_lock guard(mutex);
 
-  return get_glyph_internal(charcode, glyph_size);
+  return ready ? get_glyph_internal(charcode, glyph_size) : nullptr;
 }
 
 
@@ -99,6 +99,7 @@ Font::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, i
       kern = glyph->advance;
     }
   }
+
   return (glyph == nullptr) ? nullptr : glyph;
 }
 
@@ -155,7 +156,7 @@ Font::get_size(const char * str, Dim * dim, int16_t glyph_size)
   
     while (*str) {
       Glyph * glyph = get_glyph_internal(*str++, glyph_size);
-      if (glyph) {
+      if (glyph != nullptr) {
         dim->width += glyph->advance;
 
         int16_t up   = -glyph->yoff;

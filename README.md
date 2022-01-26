@@ -2,11 +2,11 @@
 
 ## Last news
 
-(Updated 2022.1.24)
+(Updated 2022.1.25)
 
 (Look at file *CHANGES.md* for current development state of changes)
 
-Update to version 2.0.0 - Not ready yet
+Update to version 2.0.0
 
 The following are the main aspects that have been updated in this release:
 
@@ -17,9 +17,13 @@ The following are the main aspects that have been updated in this release:
 - New fonts supplied with the distribution. Can be used to replace the fonts listed in the fonts configuration file.
 - Better support of some EPUB books that use XML namespace extensively.
 
-Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card.
+Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card. The content of the config.txt file will need to be updated as stated in the installation manual.
 
 The supplied documents (installation guide and user's guide) have been modified to take into account the new functionalities.
+
+## Unresolved issue
+
+- A device reset may happen reading a book, and changing the current font as the background process is computing pages location. 
 
 ---
 

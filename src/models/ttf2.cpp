@@ -46,6 +46,7 @@ TTF::TTF(unsigned char * buffer, int32_t buffer_size) : Font()
 
 TTF::~TTF()
 {
+  ready = false;
   if (face != nullptr) clear_face();
 }
 

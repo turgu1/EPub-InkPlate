@@ -65,13 +65,21 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
 
   TTF * font = fonts.get(0);
+
+  if (font == nullptr) {
+    LOG_E("Internal error (Drawings Font not available!");
+    return;
+  }
+
   Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
 
-  page.put_char_at(
-    icon_char[severity], 
-    Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
-    fmt);
-
+  if (glyph != nullptr) {
+    page.put_char_at(
+      icon_char[severity], 
+      Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
+      fmt);
+  }
+  
   fmt.font_index =  1;
   fmt.font_size  = 10;
 

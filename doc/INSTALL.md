@@ -23,7 +23,7 @@ pip install esptool
 
 The InkPlate device uses a CH340 USB to UART converter. If your computer doesn't have a driver installed for the CH340, you have to install one. Look at this location for the proper procedure to install it: "https://e-radionica.com/en/blog/ch340-driver-installation-croduino-basic3-nova2/".
 
-You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release.VX.X.X.zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation document, and the user's guide document in PDF format.
+You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release-X.X.X-inkplate ... .zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation document, and the user's guide document in PDF format.
 
 ### Preparing the SD-Card
 
