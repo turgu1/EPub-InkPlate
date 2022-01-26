@@ -2,28 +2,13 @@
 
 ## Last news
 
-(Updated 2022.1.25)
+(Updated 2022.1.26)
 
-(Look at file *CHANGES.md* for current development state of changes)
-
-Update to version 2.0.0
-
-The following are the main aspects that have been updated in this release:
-
-- Added Inkplate-6PLUS support as a new release. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response. All interaction tools (menus, forms, viewers) have been extended to support gesture interactions. Gestures supported are Tap, Touch and hold, Pinching, Swipe left, Swipe right. 
-- Date/Time support for all Inkplate device types. Include both Date/Time adjustment by hand and through the Internet (NTP server). Uses the RTC Chip when available, or the ESP32 internal real-time clock.
-- Bitmap fonts to get more precise pixels painting on low-resolution screens. A specific font format was created to support such a feature (fonts with extension *.IBMF*)
-- Fonts configuration file (*font_list.xml*) allows for changing the fonts used by the application.
-- New fonts supplied with the distribution. Can be used to replace the fonts listed in the fonts configuration file.
-- Better support of some EPUB books that use XML namespace extensively.
-
-Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card. The content of the config.txt file will need to be updated as stated in the installation manual.
-
-The supplied documents (installation guide and user's guide) have been modified to take into account the new functionalities.
+Update to version 2.0.1 - Not ready yet
 
 ## Unresolved issue
 
-- A device reset may happen reading a book, and changing the current font as the background process is computing pages location. 
+[ ] A device reset may happen reading a book, and changing the current font as the background process is computing pages location. 
 
 ---
 
