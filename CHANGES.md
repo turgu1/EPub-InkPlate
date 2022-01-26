@@ -2,20 +2,22 @@
 
 ## Last news
 
-(Updated 2022.1.16)
+(Updated 2022.1.26)
 
-Update to version 2.0.0 - Not ready yet
+Update to version 2.0.0
 
 The following are the main aspects that have been updated in this release:
 
-- Add Inkplate-6PLUS support. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response.
+- Added Inkplate-6PLUS support as a new release. Mainly the touch screen, the WakeUp button, and the screen backlit capabilities. A calibration function is available to adjust the touch screen response. All interaction tools (menus, forms, viewers) have been extended to support gesture interactions. Gestures supported are Tap, Touch and hold, Pinching, Swipe left, Swipe right. 
 - Date/Time support for all Inkplate device types. Include both Date/Time adjustment by hand and through the Internet (NTP server). Uses the RTC Chip when available, or the ESP32 internal real-time clock.
 - Bitmap fonts to get more precise pixels painting on low-resolution screens. A specific font format was created to support such a feature (fonts with extension *.IBMF*)
-- Font configuration file (*font_list.xml*) allows for changing the fonts used by the application.
+- Fonts configuration file (*font_list.xml*) allows for changing the fonts used by the application.
 - New fonts supplied with the distribution. Can be used to replace the fonts listed in the fonts configuration file.
 - Better support of some EPUB books that use XML namespace extensively.
 
-Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card.
+Installing this version requires the complete replacement of the micro SD Card content. The *SDCard* folder that is part of the release must be used to initialize the micro SD Card. The content of the config.txt file will need to be updated as stated in the installation manual.
+
+The supplied documents (installation guide and user's guide) have been modified to take into account the new functionalities.
 
 ---
 
@@ -35,13 +37,13 @@ Installing this version requires the complete replacement of the micro SD Card c
 - [x] FormViewer class redesign to support number fields
 - [x] EPUB XML namespace parsing support
 - [x] Numerical keypad for entering numbers in forms
-- [ ] Inkplate-6PLUS Debugging (work in progress...)
-- [ ] Valgrind
+- [x] Inkplate-6PLUS Debugging (work in progress...)
+- [x] Valgrind
 - [x] Tests Inkplate-6 / Inkplate-10
-- [ ] Tests Inkplate-6PLUS
-- [ ] Documentation
-- [ ] Release generation script to be modified for Inkplate-6PLUS integration
-- [ ] New version release packaging
+- [x] Tests Inkplate-6PLUS
+- [x] Documentation
+- [x] Release generation script to be modified for Inkplate-6PLUS integration
+- [x] New version release packaging
 
 Update to version 1.3.1
 
