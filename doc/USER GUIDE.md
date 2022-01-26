@@ -1,4 +1,4 @@
-# EPub-InkPlate - User's Guide - Version 2.0.0
+# EPub-InkPlate - User's Guide - Version 2.0.1
 
 The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices.
 
