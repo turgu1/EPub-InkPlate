@@ -2,7 +2,13 @@
 
 ## Last news
 
-(Updated 2022.1.26)
+(Updated 2022.5.01)
+
+Update to version 2.0.1
+
+- For Inkplate-6PLUS and Inkplate-10: The ESP-IDF-Inkplate library has been updated (v0.9.6) to support some of these devices to be delivered without a second MCP chip onboard. The presence of the second MCP is now dynamically detected by the software.
+
+- For all Inkplate: Now using ESP-IDF framework v4.3.2
 
 Update to version 2.0.0
 
