@@ -2,7 +2,13 @@
 
 ## Last news
 
-(Updated 2022.1.26)
+(Updated 2022.5.01)
+
+Update to version 2.0.1
+
+- For Inkplate-6PLUS and Inkplate-10: The ESP-IDF-Inkplate library has been updated (v0.9.6) to support some of these devices to be delivered without a second MCP chip onboard. The presence of the second MCP is now dynamically detected by the software.
+
+- For all Inkplate: Now using ESP-IDF framework v4.3.2
 
 Update to version 2.0.0
 
@@ -37,7 +43,7 @@ The supplied documents (installation guide and user's guide) have been modified 
 - [x] FormViewer class redesign to support number fields
 - [x] EPUB XML namespace parsing support
 - [x] Numerical keypad for entering numbers in forms
-- [x] Inkplate-6PLUS Debugging (work in progress...)
+- [x] Inkplate-6PLUS Debugging
 - [x] Valgrind
 - [x] Tests Inkplate-6 / Inkplate-10
 - [x] Tests Inkplate-6PLUS
