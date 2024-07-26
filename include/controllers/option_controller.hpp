@@ -19,7 +19,7 @@ class OptionController
     #if DATE_TIME_RTC
       bool date_time_form_is_shown;
     #endif
-    #if INKPLATE_6PLUS
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
       bool calibration_is_shown;
     #endif
 
@@ -32,7 +32,7 @@ class OptionController
                          #if DATE_TIME_RTC
                            date_time_form_is_shown(false),
                          #endif
-                         #if INKPLATE_6PLUS
+                         #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
                            calibration_is_shown(false),
                          #endif
                          wait_for_key_after_wifi(false) { };
@@ -49,7 +49,7 @@ class OptionController
       inline void set_date_time_form_is_shown() { date_time_form_is_shown = true; }
     #endif
 
-    #if INKPLATE_6PLUS
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
       inline void    set_calibration_is_shown() { calibration_is_shown    = true; }
     #endif
 
@@ -60,7 +60,7 @@ class OptionController
       #if DATE_TIME_RTC
         date_time_form_is_shown = false;
       #endif
-      #if INKPLATE_6PLUS
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
         calibration_is_shown    = false;
       #endif
     }

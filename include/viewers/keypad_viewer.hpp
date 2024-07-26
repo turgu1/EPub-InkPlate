@@ -30,7 +30,7 @@ class KeypadViewer
     static const uint8_t KEY_ADDED_WIDTH  = 50;
     static const uint8_t KEY_ADDED_HEIGHT = 30;
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
       KeyLocation * matrix[5][3];
       KeyLocation * current_key;
       KeyLocation * previous_key;
@@ -49,7 +49,7 @@ class KeypadViewer
     Font *        font;
     Font::Glyph * glyph;
 
-    #if INKPLATE_6PLUS || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
       int8_t get_key_val(uint16_t x, uint16_t y) {
         for (int i = 0; i < (KEY_COUNT - 1); i++) {
           if ((x >= key_locs[i].pos.x) &&
@@ -103,7 +103,7 @@ class KeypadViewer
       }
     }
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
       void update_highlight() {
         if (previous_key != current_key) {
           if (previous_key != nullptr) {
@@ -206,7 +206,7 @@ class KeypadViewer
         .display            = CSS::Display::INLINE
       };
 
-      #if INKPLATE_6PLUS || TOUCH_TRIAL
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
         page.start(fmt);
       #endif
 
@@ -243,14 +243,14 @@ class KeypadViewer
 
       Pos the_pos = Pos(keypad_pos.x, keypad_pos.y + (key_dim.height << 1) + 4);
 
-      #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
         line = col = 0;
       #endif
 
       for (int i = 0; i < 14; i++) {
         key_locs[i] = { .pos = the_pos, .value = values[i] };
 
-        #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+        #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
           matrix[line][col] = &key_locs[i];
           if (++col >= 3) {
             col = 0;
@@ -279,7 +279,7 @@ class KeypadViewer
             break;
           case -1: // Cancel
             page.put_highlight(key_dim2, the_pos);
-            #if INKPLATE_6PLUS || TOUCH_TRIAL
+            #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
               page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2), 
                                  Pos(the_pos.x      + 1, the_pos.y       + 1));
             #endif
@@ -290,7 +290,7 @@ class KeypadViewer
             break;
           case -2: // OK
             page.put_highlight(key_dim, the_pos);
-            #if INKPLATE_6PLUS || TOUCH_TRIAL
+            #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
               page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2), 
                                  Pos(the_pos.x     + 1, the_pos.y      + 1));
             #endif
@@ -323,7 +323,7 @@ class KeypadViewer
         }
       }
 
-      #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
         matrix[4][2] = matrix[4][1]; 
         line = col = 1;
         previous_key = nullptr;
@@ -333,7 +333,7 @@ class KeypadViewer
       #endif
 
       update_value();
-      #if INKPLATE_6PLUS || TOUCH_TRIAL
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
         page.paint(false);
       #endif
     }
@@ -347,7 +347,7 @@ class KeypadViewer
      */
     bool event(const EventMgr::Event & event) {
 
-      #if INKPLATE_6PLUS || TOUCH_TRIAL
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
         if (event.kind == EventMgr::EventKind::TAP) {
           int8_t value = get_key_val(event.x, event.y);
           if (value != 99) {

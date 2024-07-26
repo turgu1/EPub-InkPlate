@@ -1,6 +1,6 @@
 #pragma once
 
-#if INKPLATE_6PLUS
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
 
 #include "global.hpp"
 #include "inkplate_platform.hpp"

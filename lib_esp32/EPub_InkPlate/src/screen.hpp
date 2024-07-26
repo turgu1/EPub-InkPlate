@@ -32,7 +32,7 @@ class Screen : NonCopyable
       static constexpr int8_t   IDENT                 =   1;
       static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  10;
       static constexpr uint16_t RESOLUTION            = 166;  ///< Pixels per inch
-    #elif INKPLATE_6PLUS
+    #elif INKPLATE_6PLUS || INKPLATE_6PLUS_V2
       static constexpr int8_t   IDENT                 =   3;
       static constexpr int16_t  PARTIAL_COUNT_ALLOWED =  10;
       static constexpr uint16_t RESOLUTION            = 212;  ///< Pixels per inch
@@ -176,7 +176,7 @@ class Screen : NonCopyable
     inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
     inline void force_full_update() { partial_count = 0; }
 
-    #if INKPLATE_6PLUS
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
       void to_user_coord(uint16_t & x, uint16_t & y);
     #endif
 

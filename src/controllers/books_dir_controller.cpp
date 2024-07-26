@@ -216,7 +216,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 }
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
   void 
   BooksDirController::input_event(const EventMgr::Event & event)
   {
@@ -280,7 +280,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
         break;
 
       case EventMgr::EventKind::RELEASE:
-        #if INKPLATE_6PLUS
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
           ESP::delay(1000);
         #endif
         

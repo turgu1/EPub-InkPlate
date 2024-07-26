@@ -16,12 +16,12 @@ enum class ConfigIdent {
     NTP_SERVER,
     TIME_ZONE,
   #endif
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER
   #endif
 };
 
-#if INKPLATE_6PLUS
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
   #if DATE_TIME_RTC
     typedef ConfigBase<ConfigIdent, 26> Config;
   #else
@@ -62,7 +62,7 @@ enum class ConfigIdent {
     static char   ntp_server[32];
     static char   time_zone[32];
   #endif
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
     static int64_t calib_a, calib_b, calib_c, calib_d, calib_e, calib_f, calib_divider;
     static const int64_t default_calib             =  0;
   #endif
@@ -111,7 +111,7 @@ enum class ConfigIdent {
     { Config::Ident::TIME_ZONE,          Config::EntryType::STRING, "tz",                 time_zone,           "",                         32 },
     #endif
 
-    #if INKPLATE_6PLUS
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
     { Config::Ident::CALIB_A,            Config::EntryType::INT64,   "calib_a",           &calib_a,            &default_calib,              0 },
     { Config::Ident::CALIB_B,            Config::EntryType::INT64,   "calib_b",           &calib_b,            &default_calib,              0 },
     { Config::Ident::CALIB_C,            Config::EntryType::INT64,   "calib_c",           &calib_c,            &default_calib,              0 },

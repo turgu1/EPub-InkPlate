@@ -87,7 +87,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
                            (uint8_t *) book->cover_bitmap);
     page.put_image(image, Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
         page.put_highlight(Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), 
                                BooksDir::max_cover_height), 
@@ -128,7 +128,7 @@ LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 void 
 LinearBooksDirViewer::highlight(int16_t item_idx)
 {
-  #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (current_item_idx != item_idx) {

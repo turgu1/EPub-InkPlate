@@ -25,7 +25,7 @@
   #include "alloc.hpp"
   #include "esp.hpp"
 
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
     #include "controllers/back_lit.hpp"
   #endif
 
@@ -85,7 +85,7 @@
 
       page_locs.setup();
 
-      #if INKPLATE_6PLUS
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
         #define MSG "Press the WakUp Button to restart."
         #define INT_PIN TouchScreen::INTERRUPT_PIN
         #define LEVEL 0
@@ -110,7 +110,7 @@
         event_mgr.setup();
         event_mgr.set_orientation(orientation);
 
-        #if INKPLATE_6PLUS
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
           back_lit.setup();
         #endif
 
@@ -247,7 +247,7 @@
       event_mgr.setup();
       books_dir_controller.setup();
 
-      #if defined(INKPLATE_6PLUS)
+      #if defined(INKPLATE_6PLUS || INKPLATE_6PLUS_V2)
         #define MSG "the WakeUp button"
       #else
         #define MSG "a key"

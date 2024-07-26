@@ -36,7 +36,7 @@ class MenuViewer
     static const int16_t ICON_SIZE           = 15;
     static const int16_t CAPTION_SIZE        = 12;
 
-    #if INKPLATE_6PLUS
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
       static const int16_t SPACE_BETWEEN_ICONS = 70;
       static const int16_t ICONS_LEFT_OFFSET   = 20;
     #else
@@ -53,7 +53,7 @@ class MenuViewer
     uint16_t icon_ypos,
              text_ypos;
 
-    #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
       bool    hint_shown;
       uint8_t find_index(uint16_t x, uint16_t y);
     #endif

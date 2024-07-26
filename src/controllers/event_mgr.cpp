@@ -65,7 +65,7 @@
         if ((pads = press_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
         }
         else {
@@ -74,7 +74,7 @@
 
           // Re-activating interrupts.
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
 
           if      (pads & SELECT_PAD) event.kind = EventMgr::EventKind::SELECT;
@@ -142,7 +142,7 @@
         if ((pads = touch_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
         }
         else {
@@ -151,7 +151,7 @@
 
           // Re-activating interrupts.
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
 
           // Wait for potential second key
@@ -164,7 +164,7 @@
 
             // There was no key, re-activate interrupts
             Wire::enter();
-            mcp_int.get_int_state();
+            io_expander_int.get_int_state();
             Wire::leave();  
           }
           // t2 = esp_timer_get_time();
@@ -177,7 +177,7 @@
 
             // Re-activating interrupts
             Wire::enter();
-            mcp_int.get_int_state();
+            io_expander_int.get_int_state();
             Wire::leave();  
 
             if      (pads2 & SELECT_PAD) event.kind = EventMgr::EventKind::DBL_SELECT;
@@ -364,7 +364,7 @@ EventMgr::setup()
       (void *) GPIO_NUM_34);
 
     Wire::enter();
-    mcp_int.get_int_state();                        // This is activating interrupts...
+    io_expander_int.get_int_state();                        // This is activating interrupts...
     Wire::leave();
   #endif
 

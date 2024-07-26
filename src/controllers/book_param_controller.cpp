@@ -38,7 +38,7 @@ static int8_t old_show_images;
 static int8_t old_use_fonts_in_book;
 static int8_t old_font;
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
 #else
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
@@ -48,7 +48,7 @@ static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
   { .caption = "Use fonts in book:",   .u = { .ch = { .value = &use_fonts_in_book,  .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, FormEntryType::HORIZONTAL },
   { .caption = "Font:",                .u = { .ch = { .value = &font,               .choice_count = 8, .choices = FormChoiceField::font_choices      } }, FormEntryType::VERTICAL   },
   { .caption = "Show Images in book:", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
     { .caption = " DONE ",             .u = { .ch = { .value = &done_res,           .choice_count = 0, .choices = nullptr                            } }, FormEntryType::DONE       }
   #endif
 };

@@ -580,7 +580,7 @@ start_web_server()
     "Web Server Starting", 
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
-  #if defined(INKPLATE_6PLUS)
+  #if defined(INKPLATE_6PLUS || INKPLATE_6PLUS_V2)
     #define MSG "Tap the screen"
   #else
     #define MSG "Press a key"
