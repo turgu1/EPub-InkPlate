@@ -66,9 +66,9 @@ struct RetrieveQueueData {
       return cfg;
   }
 
-  static xQueueHandle mgr_queue      = nullptr;
-  static xQueueHandle state_queue    = nullptr;
-  static xQueueHandle retrieve_queue = nullptr;
+  static QueueHandle_t mgr_queue      = nullptr;
+  static QueueHandle_t state_queue    = nullptr;
+  static QueueHandle_t retrieve_queue = nullptr;
 
   #define QUEUE_SEND(q, m, t)        xQueueSend(q, &m, t)
   #define QUEUE_RECEIVE(q, m, t)  xQueueReceive(q, &m, t)

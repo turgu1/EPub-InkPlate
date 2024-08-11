@@ -302,37 +302,37 @@ Page::paint(bool clear_screen, bool no_full, bool do_it)
       screen.draw_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos, 
-        Screen::BLACK_COLOR);
+        Screen::Color::BLACK);
     }
     else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
       screen.draw_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos,
-        Screen::WHITE_COLOR);
+        Screen::Color::WHITE);
     }
     else if (entry->command == DisplayListCommand::ROUNDED) {
       screen.draw_round_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos, 
-        Screen::BLACK_COLOR);
+        Screen::Color::BLACK);
     }
     else if (entry->command == DisplayListCommand::CLEAR_ROUNDED) {
       screen.draw_round_rectangle(
         entry->kind.region_entry.dim, 
         entry->pos,
-        Screen::WHITE_COLOR);
+        Screen::Color::WHITE);
     }
     else if (entry->command == DisplayListCommand::CLEAR_REGION) {
       screen.colorize_region(
         entry->kind.region_entry.dim, 
         entry->pos,
-        Screen::WHITE_COLOR);
+        Screen::Color::WHITE);
     }
     else if (entry->command == DisplayListCommand::SET_REGION) {
       screen.colorize_region(
         entry->kind.region_entry.dim, 
         entry->pos,
-        Screen::BLACK_COLOR);
+        Screen::Color::BLACK);
     }
   }
 

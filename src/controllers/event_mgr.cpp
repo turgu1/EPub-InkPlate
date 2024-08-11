@@ -29,8 +29,8 @@
     #include "touch_keys.hpp"
   #endif
 
-  static xQueueHandle touchpad_isr_queue   = NULL;
-  static xQueueHandle touchpad_event_queue = NULL;
+  static QueueHandle_t touchpad_isr_queue   = NULL;
+  static QueueHandle_t touchpad_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchpad_isr_handler(void * arg)

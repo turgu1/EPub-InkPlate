@@ -37,8 +37,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   #include "touch_screen.hpp"
   #include "logging.hpp"
 
-  static xQueueHandle touchscreen_isr_queue   = NULL;
-  static xQueueHandle touchscreen_event_queue = NULL;
+  static QueueHandle_t touchscreen_isr_queue   = NULL;
+  static QueueHandle_t touchscreen_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchscreen_isr_handler(void * arg)

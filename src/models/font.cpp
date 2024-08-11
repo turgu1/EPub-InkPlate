@@ -120,12 +120,12 @@ Font::set_font_face_from_file(const std::string font_filename)
     fstat(fileno(font_file), &stat_buf);
     int32_t length = stat_buf.st_size;
     
-    LOG_D("Font File Length: %d", length);
+    LOG_D("Font File Length: %" PRIi32, length);
 
     buffer = (uint8_t *) allocate(length + 1);
 
     if (buffer == nullptr) {
-      LOG_E("Unable to allocate font buffer: %d", (int32_t) (length + 1));
+      LOG_E("Unable to allocate font buffer: %" PRIi32, (int32_t) (length + 1));
       msg_viewer.out_of_memory("font buffer allocation");
     }
 

@@ -81,7 +81,7 @@ class HTMLInterpreter
 
     void check_for_completion() {
       if (current_offset != end_offset) {
-        LOG_E("Current page offset and end of page offset differ: %d vs %d", 
+        LOG_E("Current page offset and end of page offset differ: %" PRIi32 " vs %" PRIi32, 
               current_offset, end_offset);
       }
     }

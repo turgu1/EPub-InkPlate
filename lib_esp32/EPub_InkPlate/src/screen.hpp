@@ -8,6 +8,7 @@
 #include "non_copyable.hpp"
 #include "inkplate_platform.hpp"
 
+
 /**
  * @brief Low level logical Screen display
  * 
@@ -22,8 +23,6 @@
 class Screen : NonCopyable
 {
   public:
-    static constexpr uint8_t    BLACK_COLOR           =   0;
-    static constexpr uint8_t    WHITE_COLOR           =   7;
     #if INKPLATE_10
       static constexpr int8_t   IDENT                 =   2;
       static constexpr int8_t   PARTIAL_COUNT_ALLOWED =  10;
@@ -39,6 +38,8 @@ class Screen : NonCopyable
     #endif
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM, TOP };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+    
+    enum Color  { WHITE = 0, BLACK = 7 };
 
     void          draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
     void           draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
@@ -92,7 +93,7 @@ class Screen : NonCopyable
     static Screen singleton;
     Screen() : partial_count(0), 
                frame_buffer_1bit(nullptr), 
-               frame_buffer_3bit(nullptr) { };
+               frame_buffer_3bit(nullptr) {};
 
     int16_t           partial_count;
     FrameBuffer1Bit * frame_buffer_1bit;

@@ -55,9 +55,9 @@ BooksDirController::setup()
           last_read_book_index = current_book_index = idx;
           
           //LOG_D("Last book filename: %s",  book_fname);
-          LOG_D("Last book ref index: %d", book_page_id.itemref_index);
-          LOG_D("Last book offset: %d",    book_page_id.offset);
-          LOG_D("Show it now: %s",         book_was_shown ? "yes" : "no");
+          LOG_D("Last book ref index: %" PRIi16, book_page_id.itemref_index);
+          LOG_D("Last book offset: %"    PRIi32, book_page_id.offset);
+          LOG_D("Show it now: %s",               book_was_shown ? "yes" : "no");
         }
       }
     }

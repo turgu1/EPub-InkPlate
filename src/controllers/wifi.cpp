@@ -36,7 +36,7 @@ wifi_sta_event_handler(void        * arg,
                   void             * event_data)
 {
   static constexpr char const * TAG = "WiFi Event Hanfler";
-  LOG_I("STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
+  LOG_I("STA Event, Base: %p, Event: %" PRIi32 ".", (void *) event_base, event_id);
 
   static int s_retry_num = 0;
 

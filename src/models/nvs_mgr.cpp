@@ -61,8 +61,9 @@ NVSMgr::setup(bool force_erase)
     }
     
     if (initialized) {
-      nvs_iterator_t it = nvs_entry_find(PARTITION_NAME, NAMESPACE, NVS_TYPE_ANY);
-      while (it != NULL) {
+      nvs_iterator_t it;
+      esp_err_t res = nvs_entry_find(PARTITION_NAME, NAMESPACE, NVS_TYPE_ANY, &it);
+      while (res == ESP_OK) {
         nvs_entry_info_t info;
         nvs_entry_info(it, &info);
         if (strncmp(info.key, "ID_", 3) == 0) {
@@ -73,7 +74,7 @@ NVSMgr::setup(bool force_erase)
             track_count++;
           }
         }
-        it = nvs_entry_next(it);
+        res = nvs_entry_next(&it);
       };
       nvs_release_iterator(it);
     }

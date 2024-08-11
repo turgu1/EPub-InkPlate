@@ -34,6 +34,8 @@
   #if TESTING
     #include "gtest/gtest.h"
   #endif
+#include <esp_chip_info.h>
+#include <esp_flash.h>
 
   static constexpr char const * TAG = "main";
 
@@ -183,10 +185,13 @@
 
       printf("silicon revision %d, ", chip_info.revision);
 
-      printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+      uint32_t size_flash_chip;
+      esp_flash_get_size(NULL, &size_flash_chip);
+
+      printf("%" PRIu32 "MB %s flash\n", size_flash_chip / (1024 * 1024),
               (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-      printf("Minimum free heap size: %d bytes\n", esp_get_minimum_free_heap_size());
+      printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 
       heap_caps_print_heap_info(MALLOC_CAP_32BIT|MALLOC_CAP_8BIT|MALLOC_CAP_SPIRAM|MALLOC_CAP_INTERNAL);
 

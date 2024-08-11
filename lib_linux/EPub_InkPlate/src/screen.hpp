@@ -26,17 +26,16 @@ class Screen : NonCopyable
   public:
     static constexpr int8_t   IDENT       =   99;
     static constexpr uint16_t RESOLUTION  =  166;  ///< Pixels per inch
-    static constexpr uint8_t  BLACK_COLOR = 0x00;
-    static constexpr uint8_t  WHITE_COLOR = 0xFF;
     
     enum class Orientation     : int8_t { LEFT, RIGHT, BOTTOM };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
+    enum Color { WHITE = 0xFF, BLACK = 0 };
 
     void           draw_bitmap(const unsigned char * bitmap_data, Dim dim, Pos pos);
     void            draw_glyph(const unsigned char * bitmap_data, Dim dim, Pos pos, uint16_t pitch);
-    void        draw_rectangle(Dim dim, Pos pos, uint8_t color);
-    void  draw_round_rectangle(Dim dim, Pos pos, uint8_t color);
-    void       colorize_region(Dim dim, Pos pos, uint8_t color);
+    void        draw_rectangle(Dim dim, Pos pos, Color color);
+    void  draw_round_rectangle(Dim dim, Pos pos, Color color);
+    void       colorize_region(Dim dim, Pos pos, Color color);
     void                 clear();
     void                update(bool no_full = false); // Parameter only used by the InkPlate version
     void                  test();
@@ -62,7 +61,7 @@ class Screen : NonCopyable
     Orientation     orientation;
 
     enum class Corner : uint8_t { TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT };
-    void draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, uint8_t color);
+    void draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, Color color);
 
   public:
     static Screen &               get_singleton() noexcept { return singleton; }

@@ -115,7 +115,7 @@ Screen::draw_rectangle(
 }
 
 void
-Screen::draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, uint8_t color)
+Screen::draw_arc(uint16_t x_mid,  uint16_t y_mid,  uint8_t radius, Corner corner, Color color)
 {
   int16_t f     =  1 - radius;
   int16_t ddF_x =           1;

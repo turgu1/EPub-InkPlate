@@ -521,7 +521,7 @@ http_server_start()
   httpd_config.uri_match_fn = httpd_uri_match_wildcard;
   httpd_config.server_port = (uint16_t) port;
 
-  LOG_I("Starting HTTP Server on port %d...", port);
+  LOG_I("Starting HTTP Server on port %" PRIi32 "...", port);
   esp_err_t res = httpd_start(&server, &httpd_config);
   if (res != ESP_OK) {
     LOG_E("Failed to start file server (%s)!", esp_err_to_name(res));
@@ -580,7 +580,7 @@ start_web_server()
     "Web Server Starting", 
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
-  #if defined(INKPLATE_6PLUS || INKPLATE_6PLUS_V2)
+  #if defined(INKPLATE_6PLUS) || defined(INKPLATE_6PLUS_V2)
     #define MSG "Tap the screen"
   #else
     #define MSG "Press a key"

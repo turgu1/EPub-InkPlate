@@ -184,7 +184,7 @@ void MsgViewer::show(
 
 bool MsgViewer::confirm(const EventMgr::Event & event, bool & ok)
 {
-  #if defined(INKPLATE_6PLUS || INKPLATE_6PLUS_V2) || TOUCH_TRIAL
+  #if defined(INKPLATE_6PLUS) || defined(INKPLATE_6PLUS_V2) || TOUCH_TRIAL
 
     if (event.kind == EventMgr::EventKind::TAP) {
       if ((event.x >= ok_pos.x) && (event.x <= (ok_pos.x + buttons_dim.width )) &&

@@ -130,7 +130,7 @@ Screen::draw_rectangle(
     }
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    color = color == BLACK_COLOR ? 1 : 0;
+    color = color == Color::BLACK ? 1 : 0;
     SELECT(1bit);
   }
   else {
@@ -210,7 +210,7 @@ Screen::draw_round_rectangle(
   }
 
   if (pixel_resolution == PixelResolution::ONE_BIT) { 
-    color = color == BLACK_COLOR ? 1 : 0;
+    color = color == Color::BLACK ? 1 : 0;
     SELECT(1bit); 
   } 
   else { 
@@ -250,7 +250,7 @@ Screen::draw_round_rectangle(
     uint32_t first_mask = ~(0x77777777 << ((pos.x & 0x07) << 2));
     uint32_t last_mask =  ~(0x77777777 >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
 
-    LOG_D("Masks: %08X, %08X, %08X", first_mask, last_mask, color_mask);
+    LOG_D("Masks: %08" PRIX32 ", %08" PRIX32 ", %08" PRIX32, first_mask, last_mask, color_mask);
 
     if (in_size_32 < 0) { // All pixels in a row are in the same 32 bits word
       first_mask &= last_mask;
@@ -286,7 +286,7 @@ Screen::draw_round_rectangle(
       uint32_t first_mask = 0xFFFFFFFF << (pos.x & 0x1F);
       uint32_t last_mask  = 0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F));
 
-      LOG_D("Masks: %08X, %08X", first_mask, last_mask);
+      LOG_D("Masks: %08" PRIX32 ", %08" PRIX32, first_mask, last_mask);
 
       if (in_size_32 < 0) {
         first_mask &= last_mask;
@@ -308,7 +308,7 @@ Screen::draw_round_rectangle(
       uint32_t first_mask = ~(0xFFFFFFFF << (pos.x & 0x1F));
       uint32_t last_mask =  ~(0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F)));
 
-      LOG_D("Masks: %08X, %08X", first_mask, last_mask);
+      LOG_D("Masks: %08" PRIX32 ", %08" PRIX32, first_mask, last_mask);
 
       if (in_size_32 < 0) {
         first_mask |= last_mask;
@@ -338,7 +338,7 @@ Screen::colorize_region(
 {
   #if !defined(INKPLATE_10)
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    color = color == BLACK_COLOR ? 1 : 0;
+    color = color == Color::BLACK ? 1 : 0;
 
     switch (orientation) {
       case Orientation::BOTTOM:
@@ -387,7 +387,7 @@ Screen::colorize_region(
     }
 
   if (pixel_resolution == PixelResolution::ONE_BIT) {
-    color = color == BLACK_COLOR ? 1 : 0;
+    color = color == Color::BLACK ? 1 : 0;
     SELECT(1bit);
   }
   else {

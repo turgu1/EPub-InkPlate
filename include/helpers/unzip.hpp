@@ -12,7 +12,7 @@
 #define ZLIB  0
 
 #if MINIZ
-  #include "miniz.h"
+  #include "lib/externals/miniz.h"
 #else
   #include "zlib.h"
 #endif

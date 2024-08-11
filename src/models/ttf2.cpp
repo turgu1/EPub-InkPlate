@@ -88,7 +88,7 @@ TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size)
 
     int glyph_index = FT_Get_Char_Index(face, charcode);
     if (glyph_index == 0) {
-      LOG_D("Charcode not found in face: %d, font_index: %d", charcode, fonts_cache_index);
+      LOG_D("Charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, charcode, fonts_cache_index);
       return nullptr;
     }
     else {
@@ -97,7 +97,7 @@ TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size)
             glyph_index,      /* glyph index           */
             FT_LOAD_DEFAULT); /* load flags            */
       if (error) {
-        LOG_E("Unable to load glyph for charcode: %d", charcode);
+        LOG_E("Unable to load glyph for charcode: %" PRIu32, charcode);
         return nullptr;
       }
     }
@@ -127,7 +127,7 @@ TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size)
       }
       
       if (error) {
-        LOG_E("Unable to render glyph for charcode: %d error: %d", charcode, error);
+        LOG_E("Unable to render glyph for charcode: %" PRIu32 " error: %d", charcode, error);
         return nullptr;
       }
     }
