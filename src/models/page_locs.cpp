@@ -581,7 +581,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
     
     int8_t font_size = current_format_params.font_size;
 
-    int8_t show_title;
+    int8_t show_title = 0;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
     int16_t page_top = 0;

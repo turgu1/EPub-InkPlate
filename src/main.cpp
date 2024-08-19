@@ -252,7 +252,7 @@
       event_mgr.setup();
       books_dir_controller.setup();
 
-      #if defined(INKPLATE_6PLUS || INKPLATE_6PLUS_V2)
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
         #define MSG "the WakeUp button"
       #else
         #define MSG "a key"

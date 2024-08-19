@@ -202,7 +202,7 @@ bool Fonts::setup()
     book_param_controller.set_font_count(font_count);
         option_controller.set_font_count(font_count);
 
-    int8_t font_index;
+    int8_t font_index = 0;
     config.get(Config::Ident::DEFAULT_FONT, &font_index);
     if ((font_index < 0) || (font_index >= font_count)) font_index = 0;
 

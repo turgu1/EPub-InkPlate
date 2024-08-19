@@ -142,7 +142,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   fmt.font_index = 1;
   fmt.font_size  = CAPTION_SIZE;
   
-  #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
     page.put_str_at(TOUCH_AND_HOLD_STR, Pos{ 10, text_ypos }, fmt);
     hint_shown = false;
   #else
@@ -159,7 +159,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
   page.paint(clear_screen);
 }
 
-#if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
   uint8_t
   MenuViewer::find_index(uint16_t x, uint16_t y)
   {
@@ -185,7 +185,7 @@ void MenuViewer::show(MenuEntry * the_menu, uint8_t entry_index, bool clear_scre
 void 
 MenuViewer::clear_highlight()
 {
-  #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
     Page::Format fmt = {
       .line_height_factor =   1.0,
       .font_index         =     1,
@@ -254,7 +254,7 @@ MenuViewer::event(const EventMgr::Event & event)
     .display            = CSS::Display::INLINE
   };
 
-  #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
 
     switch (event.kind) {
       case EventMgr::EventKind::HOLD:

@@ -19,7 +19,7 @@
 
 #include <iomanip>
 
-#if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
   static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
@@ -153,7 +153,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     }
   }
 
-  #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
     fmt.screen_top = 10 + title_font_height;
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -346,7 +346,7 @@ MatrixBooksDirViewer::clear_highlight()
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
 
-  #if (INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
     fmt.screen_top = 10 + title_font_height;
     page.set_limits(fmt);
     page.new_paragraph(fmt);

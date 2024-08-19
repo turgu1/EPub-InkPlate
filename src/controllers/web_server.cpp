@@ -516,7 +516,7 @@ http_server_start()
 
   httpd_config.max_open_sockets = 4;
 
-  int32_t port;
+  int32_t port = 80;
   config.get(Config::Ident::PORT, &port);
   httpd_config.uri_match_fn = httpd_uri_match_wildcard;
   httpd_config.server_port = (uint16_t) port;
@@ -580,7 +580,7 @@ start_web_server()
     "Web Server Starting", 
     "The Web server is now establishing the connexion with the WiFi router. Please wait.");
 
-  #if defined(INKPLATE_6PLUS) || defined(INKPLATE_6PLUS_V2)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
     #define MSG "Tap the screen"
   #else
     #define MSG "Press a key"

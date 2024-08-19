@@ -693,7 +693,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
         // rebooting after the user press a key.
 
         if (!stay_on) { // Unless somebody wants to keep us awake...
-          int8_t light_sleep_duration;
+          int8_t light_sleep_duration = 2;
           config.get(Config::Ident::TIMEOUT, &light_sleep_duration);
 
           LOG_D("Light Sleep for %d minutes...", light_sleep_duration);

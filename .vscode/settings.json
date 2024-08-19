@@ -86,5 +86,6 @@
     ]
   },
   "cmake.configureOnOpen": false,
-  "C_Cpp.dimInactiveRegions": false
+  "C_Cpp.dimInactiveRegions": false,
+  "idf.adapterTargetName": "esp32"
 }

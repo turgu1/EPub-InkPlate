@@ -60,7 +60,7 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
     int16_t idx;
 
-    int8_t show_title;
+    int8_t show_title = 0;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
     int16_t page_top              = 0;

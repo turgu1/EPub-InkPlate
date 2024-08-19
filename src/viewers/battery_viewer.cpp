@@ -19,7 +19,7 @@
   void
   BatteryViewer::show()
   {
-    int8_t view_mode;
+    int8_t view_mode = 0;
     config.get(Config::Ident::BATTERY, &view_mode);
 
     if (view_mode == 0) return;
