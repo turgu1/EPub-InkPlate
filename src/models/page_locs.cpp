@@ -640,9 +640,9 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
         page_out.start(fmt);
 
-        #if EPUB_INKPLATE_BUILD
-          esp_task_wdt_reset();
-        #endif
+        // #if EPUB_INKPLATE_BUILD
+        //   esp_task_wdt_reset();
+        // #endif
         
         Page::Format * new_fmt = interp->duplicate_fmt(fmt);
         if (!interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {

@@ -27,3 +27,4 @@ temp
 SDCard/books/**/*
 !SDCard/books/Austen*.epub
 valgrind.log
+SDCard-Save

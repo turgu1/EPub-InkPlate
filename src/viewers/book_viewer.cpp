@@ -133,9 +133,9 @@ BookViewer::build_page_at(const PageLocs::PageId & page_id)
 
       page.start(fmt);
 
-      #if EPUB_INKPLATE_BUILD
-        esp_task_wdt_reset();
-      #endif
+      // #if EPUB_INKPLATE_BUILD
+      //   esp_task_wdt_reset();
+      // #endif
 
       Page::Format * new_fmt = interp->duplicate_fmt(fmt);
 

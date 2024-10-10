@@ -19,7 +19,7 @@ FormChoice FormChoiceField::font_choices[8] = {
   { nullptr, 7 }
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   bool 
   FormDone::event(const EventMgr::Event & event) 
   { 

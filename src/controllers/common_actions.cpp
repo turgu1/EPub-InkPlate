@@ -42,7 +42,7 @@ CommonActions::refresh_books_dir()
 void
 CommonActions::power_it_off()
 {
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "Please press the WakUp Button to restart the device."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
     #define LEVEL 0

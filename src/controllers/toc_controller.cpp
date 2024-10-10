@@ -32,7 +32,7 @@ TocController::enter()
   current_entry_index = toc_viewer.show_page_and_highlight(current_entry_index);
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   void 
   TocController::input_event(const EventMgr::Event & event)
   {

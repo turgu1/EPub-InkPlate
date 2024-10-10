@@ -162,9 +162,9 @@ class CSS
     uint8_t                get_priority() const { return priority;    }
 
 
-    enum class     ValueType : uint8_t { NO_TYPE, EM,  EX, PERCENT, STR, PX,      CM,   MM,  IN,  PT, 
-                                         PC,      VH,  VW, REM,     CH,  VMIN,    VMAX, DEG, RAD, GRAD, 
-                                         MSEC,    SEC, HZ, KHZ,     URL, INHERIT, DIMENSION };
+    enum class     ValueType : uint8_t { NO_TYPE, EM,  EX,    PERCENT, STR, PX,      CM,   MM,  IN,  PT, 
+                                         PC,      VH,  VW,    REM,     CH,  VMIN,    VMAX, DEG, RAD, GRAD, 
+                                         MSEC,    SEC, HERTZ, KHERTZ,  URL, INHERIT, DIMENSION };
 
     enum class         Align : uint8_t { LEFT,   CENTER,    RIGHT,     JUSTIFY      };
     enum class VerticalAlign : uint8_t { NORMAL, SUB,       SUPER,     VALUE        };

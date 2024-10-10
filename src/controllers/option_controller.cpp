@@ -54,7 +54,7 @@ static int8_t old_dir_view;
   static int8_t show_heap;
 #endif
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   static constexpr int8_t MAIN_FORM_SIZE = 8;
 #else
   static constexpr int8_t MAIN_FORM_SIZE = 7;
@@ -63,7 +63,7 @@ static int8_t old_dir_view;
 static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   { .caption = "Minutes Before Sleeping :",  .u = { .ch = { .value = &timeout,                .choice_count = 3, .choices = FormChoiceField::timeout_choices        } }, .entry_type = FormEntryType::HORIZONTAL  },
   { .caption = "Books Directory View :",     .u = { .ch = { .value = &dir_view,               .choice_count = 2, .choices = FormChoiceField::dir_view_choices       } }, .entry_type = FormEntryType::HORIZONTAL  },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     { .caption = "uSDCard Position (*):",    .u = { .ch = { .value = (int8_t *) &orientation, .choice_count = 4, .choices = FormChoiceField::orientation_choices    } }, .entry_type = FormEntryType::VERTICAL    },
   #else
     { .caption = "Buttons Position (*):",    .u = { .ch = { .value = (int8_t *) &orientation, .choice_count = 3, .choices = FormChoiceField::orientation_choices    } }, .entry_type = FormEntryType::VERTICAL    },
@@ -76,12 +76,12 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
   #else
     { .caption = "Show Heap Sizes :",        .u = { .ch = { .value = &show_heap,              .choice_count = 2, .choices = FormChoiceField::yes_no_choices         } }, .entry_type = FormEntryType::HORIZONTAL  },
   #endif
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     { .caption = " DONE ",                   .u = { .ch = { .value = &done,                   .choice_count = 0, .choices = nullptr                                 } }, .entry_type = FormEntryType::DONE        }
   #endif
  };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   static constexpr int8_t FONT_FORM_SIZE = 5;
 #else
   static constexpr int8_t FONT_FORM_SIZE = 4;
@@ -91,13 +91,13 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   { .caption = "Use Fonts in E-books (*):",   .u = { .ch = { .value = &use_fonts_in_books, .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
   { .caption = "Default Font (*):",           .u = { .ch = { .value = &default_font,       .choice_count = 8, .choices = FormChoiceField::font_choices      } }, .entry_type = FormEntryType::VERTICAL   },
   { .caption = "Show Images in E-books (*):", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     { .caption = " DONE ",                    .u = { .ch = { .value = &done,               .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
   #endif
 };
 
 #if DATE_TIME_RTC
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     static constexpr int8_t DATE_TIME_FORM_SIZE = 7;
   #else
     static constexpr int8_t DATE_TIME_FORM_SIZE = 6;
@@ -111,7 +111,7 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
     { .caption = "Minute :", .u = { .val = { .value = &minute, .min =    0, .max =   59 } }, .entry_type = FormEntryType::UINT16  },
     { .caption = "Second :", .u = { .val = { .value = &second, .min =    0, .max =   59 } }, .entry_type = FormEntryType::UINT16  },
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       { .caption = "DONE",   .u = { .ch  = { .value = &done,   .choice_count = 0, .choices = nullptr } }, .entry_type = FormEntryType::DONE    }
     #endif
   };
@@ -217,12 +217,12 @@ init_nvs()
   #endif
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || MENU_6PLUS
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
   static void goto_next();
   static void goto_prev();
 #endif
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   static void 
   calibrate()
   {
@@ -326,7 +326,7 @@ static MenuViewer::MenuEntry menu[] = {
   { MenuViewer::Icon::FONT_PARAMS,   "Default e-books parameters",           default_parameters               , true,  true  },
   { MenuViewer::Icon::WIFI,          "WiFi Access to the e-books folder",    wifi_mode                        , true,  true  },
   { MenuViewer::Icon::REFRESH,       "Refresh the e-books list",             CommonActions::refresh_books_dir , true,  true  },
-  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || MENU_6PLUS)
+  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS)
     { MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history",          init_nvs                         , true,  true  },
     #if DATE_TIME_RTC
       { MenuViewer::Icon::CLOCK,     "Set Date/Time",                        clock_adjust_form                , true,  true  },
@@ -338,13 +338,13 @@ static MenuViewer::MenuEntry menu[] = {
   #endif
   { MenuViewer::Icon::INFO,          "About the EPub-InkPlate application",  CommonActions::about             , true,  true  },
   { MenuViewer::Icon::POWEROFF,      "Power OFF (Deep Sleep)",               CommonActions::power_it_off      , true,  true  },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || MENU_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
     { MenuViewer::Icon::NEXT_MENU,   "Other options",                        goto_next                        , true,  true  },
   #endif
   { MenuViewer::Icon::END_MENU,       nullptr,                               nullptr                          , false, false }
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
 static MenuViewer::MenuEntry sub_menu[] = {
   { MenuViewer::Icon::PREV_MENU,     "Previous options",                     goto_prev                        , true,  true  },
   { MenuViewer::Icon::RETURN,        "Return to the e-books list",           CommonActions::return_to_last    , true,  true  },
@@ -384,7 +384,7 @@ OptionController::enter()
   font_form_is_shown = false;
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || MENU_6PLUS
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
   static void 
   goto_next()
   {
@@ -515,7 +515,7 @@ OptionController::input_event(const EventMgr::Event & event)
     }
   #endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   else if (calibration_is_shown) {
     if (event_mgr.calibration_event(event)) {
       calibration_is_shown = false;

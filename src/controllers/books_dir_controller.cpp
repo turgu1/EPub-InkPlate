@@ -216,7 +216,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   void 
   BooksDirController::input_event(const EventMgr::Event & event)
   {
@@ -227,10 +227,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
     switch (event.kind) {
       case EventMgr::EventKind::SWIPE_RIGHT:
+        LOG_I("[SWIPE_RIGHT]");
         current_book_index = books_dir_viewer->prev_page();   
         break;
 
       case EventMgr::EventKind::SWIPE_LEFT:
+        LOG_I("[SWIPE_LEFT]");
         current_book_index = books_dir_viewer->next_page();   
         break;
 
@@ -238,6 +240,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
         if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::get_width() / 3))) {
           current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
           if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+            LOG_I("[TAP] Book Index: %d", current_book_index);
             book = books_dir.get_book_data(current_book_index);
             if (book != nullptr) {
               last_read_book_index = current_book_index;
@@ -261,11 +264,13 @@ BooksDirController::leave(bool going_to_deep_sleep)
             }
           }
           else {
+            LOG_I("[OPTIONS MENU]");
             current_book_index = -1;
             app_controller.set_controller(AppController::Ctrl::OPTION);
           }
         }
         else {
+          LOG_I("[OPTIONS MENU]");
           current_book_index = -1;
           app_controller.set_controller(AppController::Ctrl::OPTION);
         }
@@ -274,13 +279,14 @@ BooksDirController::leave(bool going_to_deep_sleep)
       case EventMgr::EventKind::HOLD:
         current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+          LOG_I("[HOLD] Book Index: %d", current_book_index);
           books_dir_viewer->highlight_book(current_book_index);
-          LOG_I("Book Index: %d", current_book_index);
         }
         break;
 
       case EventMgr::EventKind::RELEASE:
-        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+        LOG_I("[RELEASE]");
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
           ESP::delay(1000);
         #endif
         

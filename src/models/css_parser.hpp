@@ -325,9 +325,9 @@ class CSSParser
           else if ((ch == 'c') && (str[0] == 'h')) { next_ch(); next_ch(); token = Token::LENGTH;     value_type = CSS::ValueType::CH;      }
           else if ((ch == 'm') && (str[0] == 's')) { next_ch(); next_ch(); token = Token::TIME  ;     value_type = CSS::ValueType::MSEC;    }
           else if  (ch == 's')                     { next_ch();            token = Token::TIME  ;     value_type = CSS::ValueType::SEC;     }
-          else if ((ch == 'h') && (str[0] == 'z')) { next_ch(); next_ch(); token = Token::FREQ  ;     value_type = CSS::ValueType::HZ;      }
+          else if ((ch == 'h') && (str[0] == 'z')) { next_ch(); next_ch(); token = Token::FREQ  ;     value_type = CSS::ValueType::HERTZ;   }
           else if ((ch == 'k') && (str[0] == 'h') && (str[1] == 'z')) {
-            remains -= 2; str += 2; next_ch(); token = Token::FREQ; value_type = CSS::ValueType::KHZ;
+            remains -= 2; str += 2; next_ch(); token = Token::FREQ; value_type = CSS::ValueType::KHERTZ;
           }
           else if ((ch == 'd') && (str[0] == 'e') && (str[1] == 'g')) {
             remains -= 2; str += 2; next_ch(); token = Token::ANGLE; value_type = CSS::ValueType::DEG;

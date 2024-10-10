@@ -12,7 +12,7 @@
 #include "controllers/toc_controller.hpp"
 #include "controllers/event_mgr.hpp"
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #include "controllers/back_lit.hpp"
 #endif
 
@@ -102,7 +102,7 @@ AppController::input_event(const EventMgr::Event & event)
 {
   if (next_ctrl != Ctrl::NONE) launch();
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     if (event.kind == EventMgr::EventKind::PINCH_ENLARGE) {
       back_lit.adjust(event.dist);
       return;
@@ -129,7 +129,7 @@ AppController::going_to_deep_sleep()
 {
   if (next_ctrl != Ctrl::NONE) launch();
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     back_lit.turn_off();
     touch_screen.shutdown();
   #endif

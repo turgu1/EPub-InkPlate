@@ -7,15 +7,19 @@
 
 #include "screen.hpp"
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
-  #include "touch_screen.hpp"
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if INKPLATE_6FLICK
+    #include "touch_screen_cypress.hpp"
+  #else
+    #include "touch_screen_elan.hpp"
+  #endif
   #include "inkplate_platform.hpp"
 #endif
 
 class EventMgr
 {
   public:
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       struct CalibPoint {
         uint16_t x[3], y[3];
       };
@@ -26,7 +30,7 @@ class EventMgr
 
   protected:
     bool stay_on;
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       
       int64_t    a, b, c, d, e, f, divider;
       
@@ -37,7 +41,7 @@ class EventMgr
       uint16_t x_pos, y_pos;
       uint16_t distance;
 
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
         void retrieve_calibration_values();
       #endif
     #endif
@@ -45,7 +49,7 @@ class EventMgr
   public:
     static constexpr char const * TAG = "EventMgr";
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       enum class EventKind { NONE,        TAP,           HOLD,         SWIPE_LEFT, 
                              SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE      };
 

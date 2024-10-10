@@ -17,7 +17,7 @@ class TocViewer
     static const int16_t MAX_TITLE_SIZE        =  90;
     static const int16_t TITLE_YPOS            =  20;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
       static const int16_t ENTRY_HEIGHT        =  40;
       static const int16_t FIRST_ENTRY_YPOS    = 100;
     #else
