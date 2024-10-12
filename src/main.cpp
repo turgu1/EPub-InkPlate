@@ -103,10 +103,14 @@
 
       if (fonts.setup()) {
         
-        Screen::Orientation    orientation;
-        Screen::PixelResolution resolution;
+        Screen::Orientation    orientation = Screen::Orientation::TOP;
+        Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
+
+        config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) Screen::PixelResolution::ONE_BIT);
+
         config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
         config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
+
         screen.setup(resolution, orientation);
 
         event_mgr.setup();

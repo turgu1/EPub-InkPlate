@@ -27,7 +27,7 @@ elseif(DEVICE MATCHES  "^INKPLATE_6PLUS$")
         MCP23017=1)
 elseif(DEVICE MATCHES "^INKPLATE_6PLUS_V2$")
     message("INKPLATE 6PLUS V2 defined")
-    set(DEVICE_NAME "I6Pv2")
+    set(DEVICE_NAME "I6PV2")
     add_compile_definitions(
         EPUB_INKPLATE_BUILD=1 
         INKPLATE_6PLUS_V2=1 
@@ -48,7 +48,7 @@ elseif(DEVICE MATCHES "^INKPLATE_10$")
         MCP23017=1)
 elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
     message("INKPLATE 10 V2 defined")
-    set(DEVICE_NAME "I10v2")
+    set(DEVICE_NAME "I10V2")
     add_compile_definitions(
         EPUB_INKPLATE_BUILD=1 
         INKPLATE_10_V2=1 

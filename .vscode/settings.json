@@ -61,7 +61,8 @@
     "set": "cpp",
     "future": "cpp",
     "iomanip": "cpp",
-    "*.ipp": "cpp"
+    "*.ipp": "cpp",
+    "format": "cpp"
   },
   "editor.tokenColorCustomizations": {
     "textMateRules": [
