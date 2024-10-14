@@ -134,6 +134,9 @@ Screen::draw_rectangle(
     SELECT(1bit);
   }
   else {
+    #if INKPLATE_6FLICK
+        color = color == Color::BLACK ? 0 : 7;
+    #endif
     SELECT(3bit);
   }
 
@@ -214,6 +217,9 @@ Screen::draw_round_rectangle(
     SELECT(1bit); 
   } 
   else { 
+    #if INKPLATE_6FLICK
+        color = color == Color::BLACK ? 0 : 7;
+    #endif
     SELECT(3bit); 
   }
 
@@ -356,6 +362,9 @@ Screen::colorize_region(
     }
   }
   else {
+    #if INKPLATE_6FLICK
+        color = color == Color::BLACK ? 0 : 7;
+    #endif
     switch (orientation) {
       case Orientation::BOTTOM:
         low_colorize_3bit(dim, pos, color);

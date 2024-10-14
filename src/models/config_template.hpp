@@ -377,13 +377,13 @@ ConfigBase<IdType, cfg_size>::save(bool force)
         LOG_D("%s = \"%s\"", entry.caption, (char *) entry.value);
       }
       else if (entry.type == EntryType::INT) {
-        LOG_D("%s = %d", entry.caption, *(int32_t *) entry.value);
+        LOG_D("%s = %" PRIi32, entry.caption, *(int32_t *) entry.value);
       }
       else if (entry.type == EntryType::INT64) {
-        LOG_D("%s = %u", entry.caption, *(int64_t *) entry.value);
+        LOG_D("%s = %" PRIi64, entry.caption, *(int64_t *) entry.value);
       }
       else {
-        LOG_D("%s = %d", entry.caption, *(int8_t *) entry.value);
+        LOG_D("%s = %" PRIi8, entry.caption, *(int8_t *) entry.value);
       }
     }
     LOG_D("---");

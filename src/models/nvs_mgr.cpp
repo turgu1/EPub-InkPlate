@@ -84,7 +84,7 @@ NVSMgr::setup(bool force_erase)
     LOG_E("Unable to access nvs: %s.", esp_err_to_name(err));
   }
 
-  #if DEBUGGING
+  #if 0 //DEBUGGING
     show();
   #endif
 
@@ -114,7 +114,7 @@ NVSMgr::save_location(uint32_t id, const NVSData & nvs_data)
     LOG_E("Unable to open NVS: %s", esp_err_to_name(err));
   }
 
-  #if DEBUGGING
+  #if 0 // DEBUGGING
     show();
   #endif
 
@@ -321,7 +321,7 @@ int8_t NVSMgr::get_pos(uint32_t id)
   return found ? pos : -1;
 }
 
-#if DEBUGGING
+#if 0 //DEBUGGING
   void
   NVSMgr::show()
   {
@@ -364,7 +364,7 @@ int8_t NVSMgr::get_pos(uint32_t id)
         if (nvs_get_u32(nvs_handle, key.c_str(), &id) == ESP_OK) {
           std::cout << "  " << key << ": " << rit->second << std::endl;
           if (id != rit->second) {
-            LOG_E("THE IS IS NOT CONFORM (%d vs %d)", id, rit->second);
+            LOG_E("THE IS IS NOT CONFORM (%" PRIu32 " vs %" PRIu32 ")", id, rit->second);
           }
         }
         key = bld_key("DATA_", rit->first);

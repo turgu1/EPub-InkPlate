@@ -156,10 +156,11 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
         entry->kind.glyph_entry.is_space = false; // for completeness but not supposed to be used...
 
         #if DEBUGGING
-          if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-            LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-          }
-          else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+          // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+          //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+          // }
+          // else 
+          if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
@@ -222,10 +223,11 @@ Page::put_str_at(const std::string & str, Pos pos, const Format & fmt)
         entry->kind.glyph_entry.is_space = false;
 
         #if DEBUGGING
-          if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-            LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-          }
-          else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+          // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+          //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+          // }
+          // else 
+          if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
@@ -258,10 +260,11 @@ Page::put_char_at(char ch, Pos pos, const Format & fmt)
     entry->kind.glyph_entry.is_space = false;
 
     #if DEBUGGING
-      if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-        LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-      }
-      else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+      // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+      //   LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+      // }
+      // else 
+      if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
         LOG_E("Put_char_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
       }
     #endif
@@ -561,12 +564,13 @@ Page::add_line(const Format & fmt, bool justifyable)
     }
 
     #if DEBUGGING
-      if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-        LOG_E("add_line entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
-        show_controls("  -> ");
-        show_fmt(fmt, "  -> ");
-      }
-      else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+      // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+      //   LOG_E("add_line entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
+      //   show_controls("  -> ");
+      //   show_fmt(fmt, "  -> ");
+      // }
+      // else 
+      if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
         LOG_E("add_line with a too large location: %d %d %d", entry->pos.x, entry->pos.y, (int)entry->command);
         show_controls("  -> ");
         show_fmt(fmt, "  -> ");
@@ -1020,10 +1024,11 @@ Page::put_image(Image::ImageData & image,
   entry->pos                         = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("draw_bitmap with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1042,10 +1047,11 @@ Page::put_highlight(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1064,10 +1070,11 @@ Page::clear_highlight(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1086,10 +1093,11 @@ Page::put_rounded(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1108,10 +1116,11 @@ Page::clear_rounded(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1130,10 +1139,11 @@ Page::clear_region(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
@@ -1153,10 +1163,11 @@ Page::set_region(Dim dim, Pos pos)
   entry->pos                   = pos;
 
   #if DEBUGGING
-    if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    }
-    else if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else 
+    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
