@@ -1,6 +1,9 @@
-# EPub-InkPlate - Inkplate-6PLUS User's Guide - Version 2.0.1
+# EPub-InkPlate - Inkplate With Touch Screen User's Guide - Version 2.1.0
 
-The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices. This particular version of the manual is for the Inkplate-6PLUS device type.
+The EPub-InkPlate is an EPub books reader application built specifically for the InkPlate ESP32 based devices. This particular version of the manual is for the following device types that use a Touch Screen:
+
+ - E-Radionica Inkplate-6PLUS
+ - Soldered Inkplate-6PLUS and Inkplate-6FLICK
 
 For the installation process, please consult the `INSTALL.pdf` document.
 
@@ -12,7 +15,6 @@ Here are the main characteristics of the application:
 - Bitmap images dithering display (JPEG, PNG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
-- InkPlate tactile keys to interact with the device (single and double `click` to get six buttons)
 - Screen orientation (SDCard located to the left, right, up, and down positions from the screen)
 - Linear and Matrix view of books directory
 - Up to 200 books are allowed in the directory

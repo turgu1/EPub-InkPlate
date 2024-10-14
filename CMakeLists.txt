@@ -54,7 +54,7 @@ elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
         INKPLATE_10_V2=1 
         PCAL6416=1)
 else()
-    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6")
+    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=V3.0.1")
 endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 

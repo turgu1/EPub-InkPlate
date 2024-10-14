@@ -20,3 +20,5 @@ class CommonActions
     static void about();
     static void power_it_off();
 };
+
+#undef PUBLIC
