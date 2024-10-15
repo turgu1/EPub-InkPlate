@@ -18,6 +18,7 @@ set(components
     memory_pool
     pictures
     esp_http_server
+    esp_app_format
     pthread
     freetype
 )

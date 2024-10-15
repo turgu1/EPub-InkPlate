@@ -25,7 +25,7 @@ void MsgViewer::show(
   const char * title, 
   const char * fmt_str, ...)
 {
-  char buff[200];
+  char buff[250];
 
   width = Screen::get_width() - 60;
 
@@ -33,7 +33,7 @@ void MsgViewer::show(
 
   va_list args;
   va_start(args, fmt_str);
-  vsnprintf(buff, 200, fmt_str, args);
+  vsnprintf(buff, 250, fmt_str, args);
   va_end(args);
 
   Page::Format fmt = {

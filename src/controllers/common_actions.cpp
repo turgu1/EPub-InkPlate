@@ -18,6 +18,9 @@
   #include "esp.hpp"
 #endif
 
+#include "esp_system.h"
+#include "esp_app_desc.h"
+
 void
 CommonActions::return_to_last()
 {
@@ -73,14 +76,16 @@ CommonActions::power_it_off()
 void
 CommonActions::about()
 {
+  const esp_app_desc_t * descr = esp_app_get_description();
+
   menu_viewer.clear_highlight();
   msg_viewer.show(
     MsgViewer::MsgType::BOOK, 
     false,
     false,
     "About EPub-InkPlate", 
-    "EPub EBook Reader Version %s for the InkPlate e-paper display devices. "
+    "EPub EBook Reader Version [%s] for the InkPlate e-paper display devices. "
     "This application was made by Guy Turcotte, Quebec, QC, Canada, "
-    "with great support from e-Radionica.",
-    APP_VERSION);
+    "with great support from e-Radionica, and now from Soldered.",
+    descr == nullptr ? APP_VERSION : descr->version);
 }

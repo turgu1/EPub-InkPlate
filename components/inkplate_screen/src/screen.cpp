@@ -134,9 +134,10 @@ Screen::draw_rectangle(
     SELECT(1bit);
   }
   else {
-    #if INKPLATE_6PLUS | INKPLATE_6PLUSV2 | INKPLATE_6FLICK
+    #if INKPLATE_6PLUS | INKPLATE_6PLUS_V2 | INKPLATE_6FLICK
         color = color == Color::BLACK ? 0 : 7;
     #endif
+    
     SELECT(3bit);
   }
 
@@ -217,9 +218,10 @@ Screen::draw_round_rectangle(
     SELECT(1bit); 
   } 
   else { 
-    #if INKPLATE_6PLUS | INKPLATE_6PLUSV2 | INKPLATE_6FLICK
+    #if INKPLATE_6PLUS | INKPLATE_6PLUS_V2 | INKPLATE_6FLICK
         color = color == Color::BLACK ? 0 : 7;
     #endif
+
     SELECT(3bit); 
   }
 
@@ -343,69 +345,69 @@ Screen::colorize_region(
   uint8_t color) //, bool show)
 {
   #if !INKPLATE_10
-  if (pixel_resolution == PixelResolution::ONE_BIT) {
-    color = color == Color::BLACK ? 1 : 0;
+    if (pixel_resolution == PixelResolution::ONE_BIT) {
+      color = color == Color::BLACK ? 1 : 0;
 
-    switch (orientation) {
-      case Orientation::BOTTOM:
-        low_colorize_1bit(dim, pos, color);
-        break;
-      case Orientation::TOP:
-        low_colorize_1bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
-        break;
-      case Orientation::LEFT:
-        low_colorize_1bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
-        break;
-      case Orientation::RIGHT:
-        low_colorize_1bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
-        break;
+      switch (orientation) {
+        case Orientation::BOTTOM:
+          low_colorize_1bit(dim, pos, color);
+          break;
+        case Orientation::TOP:
+          low_colorize_1bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
+          break;
+        case Orientation::LEFT:
+          low_colorize_1bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
+          break;
+        case Orientation::RIGHT:
+          low_colorize_1bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
+          break;
+      }
     }
-  }
-  else {
-    #if INKPLATE_6PLUS | INKPLATE_6PLUSV2 | INKPLATE_6FLICK
-        color = color == Color::BLACK ? 0 : 7;
-    #endif
-    switch (orientation) {
-      case Orientation::BOTTOM:
-        low_colorize_3bit(dim, pos, color);
-        break;
-      case Orientation::TOP:
-        low_colorize_3bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
-        break;
-      case Orientation::LEFT:
-        low_colorize_3bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
-        break;
-      case Orientation::RIGHT:
-        low_colorize_3bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
-        break;
-    }
-  }
-
-#else  
-  int16_t x_max = pos.x + dim.width;
-  int16_t y_max = pos.y + dim.height;
-
-  if (y_max > height) y_max = height;
-  if (x_max > width ) x_max = width;
-
-  #define CODE(resolution, orientation)                        \
-    for (int j = pos.y; j < y_max; j++) {                      \
-      for (int i = pos.x; i < x_max; i++) {                    \
-        set_pixel_o_##orientation##_##resolution(i, j, color); \
-      }                                                        \
+    else {
+      #if INKPLATE_6PLUS | INKPLATE_6PLUS_V2 | INKPLATE_6FLICK
+          color = color == Color::BLACK ? 0 : 7;
+      #endif
+      switch (orientation) {
+        case Orientation::BOTTOM:
+          low_colorize_3bit(dim, pos, color);
+          break;
+        case Orientation::TOP:
+          low_colorize_3bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
+          break;
+        case Orientation::LEFT:
+          low_colorize_3bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
+          break;
+        case Orientation::RIGHT:
+          low_colorize_3bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
+          break;
+      }
     }
 
-  if (pixel_resolution == PixelResolution::ONE_BIT) {
-    color = color == Color::BLACK ? 1 : 0;
-    SELECT(1bit);
-  }
-  else {
-    SELECT(3bit);
-  }
+  #else  
+    int16_t x_max = pos.x + dim.width;
+    int16_t y_max = pos.y + dim.height;
 
-  #undef CODE
+    if (y_max > height) y_max = height;
+    if (x_max > width ) x_max = width;
 
-#endif
+    #define CODE(resolution, orientation)                        \
+      for (int j = pos.y; j < y_max; j++) {                      \
+        for (int i = pos.x; i < x_max; i++) {                    \
+          set_pixel_o_##orientation##_##resolution(i, j, color); \
+        }                                                        \
+      }
+
+    if (pixel_resolution == PixelResolution::ONE_BIT) {
+      color = color == Color::BLACK ? 1 : 0;
+      SELECT(1bit);
+    }
+    else {
+      SELECT(3bit);
+    }
+
+    #undef CODE
+
+  #endif
 }
 
 void 

@@ -16,7 +16,9 @@
 
 //#pragma GCC diagnostic error "-Wframe-larger-than=10"
 
-#define APP_VERSION "2.0.1"
+#ifndef APP_VERSION
+  #define APP_VERSION "2.1.0"
+#endif
 
 #if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD) 
   #error "BUILD_TYPE Not Set."
