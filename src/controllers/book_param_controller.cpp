@@ -9,6 +9,7 @@
 #include "controllers/common_actions.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/web_server.hpp"
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
 #include "models/config.hpp"
@@ -146,9 +147,6 @@ toc_ctrl()
 {
   app_controller.set_controller(AppController::Ctrl::TOC);
 }
-
-extern bool start_web_server();
-extern bool  stop_web_server();
 
 static void
 wifi_mode()

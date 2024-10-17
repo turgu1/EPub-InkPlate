@@ -10,6 +10,7 @@
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/ntp.hpp"
 #include "controllers/clock.hpp"
+#include "controllers/web_server.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/form_viewer.hpp"
@@ -117,9 +118,6 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   };
 #endif
 
-extern bool start_web_server();
-extern bool  stop_web_server();
-
 static void
 main_parameters()
 {
@@ -186,7 +184,7 @@ wifi_mode()
     
     event_mgr.set_stay_on(true); // DO NOT sleep
 
-    if (start_web_server()) {
+    if (start_web_server(WebServerMode::STA)) {
       option_controller.set_wait_for_key_after_wifi();
     }
   #endif

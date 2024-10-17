@@ -41,7 +41,7 @@ bool NTP::get_and_set_time()
     memset(&packet, 0, sizeof(NTPPacket));
     packet.li_vn_mode = 0b00011011; // li = 0, vn = 3, mode = 3
 
-    if (wifi.start()) {
+    if (wifi.start_sta()) {
 
       // Create a UDP socket, convert the host-name to an IP address, set the port number,
       // connect to the server, send the packet, and then read in the return packet.

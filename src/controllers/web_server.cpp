@@ -28,6 +28,9 @@ extern "C" {
 
 #include "models/config.hpp"
 
+#define __WEB_SERVER__ 1
+#include "web_server.hpp"
+
 static constexpr char const * TAG = "WebServer";
 
 static constexpr int32_t      FILE_PATH_MAX     = 256;
@@ -571,7 +574,7 @@ http_server_stop()
 }
 
 bool
-start_web_server()
+start_web_server(WebServerMode server_mode)
 {
   page_locs.abort_threads();
   epub.close_file();
@@ -586,7 +589,8 @@ start_web_server()
     #define MSG "Press a key"
   #endif
 
-  if (wifi.start()) {
+  if (((server_mode == WebServerMode::STA) && wifi.start_sta()) || 
+      ((server_mode == WebServerMode::AP ) && wifi.start_ap())) {
     if (http_server_start() == ESP_OK) {
       esp_ip4_addr_t ip = wifi.get_ip_address();
       msg_viewer.show(MsgViewer::MsgType::WIFI, true, true, 

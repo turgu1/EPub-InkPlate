@@ -10,7 +10,7 @@
 enum class ConfigIdent { 
   VERSION, SSID, PWD, PORT, BATTERY, FONT_SIZE, TIMEOUT, ORIENTATION, 
   USE_FONTS_IN_BOOKS, DEFAULT_FONT, SHOW_IMAGES, PIXEL_RESOLUTION, SHOW_HEAP, 
-  SHOW_TITLE, FRONT_LIGHT, DIR_VIEW,
+  SHOW_TITLE, FRONT_LIGHT, DIR_VIEW, DNS_NAME, AP_SSID, AP_PWD,
   #if DATE_TIME_RTC
     SHOW_RTC,
     NTP_SERVER,
@@ -23,15 +23,15 @@ enum class ConfigIdent {
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #if DATE_TIME_RTC
-    typedef ConfigBase<ConfigIdent, 26> Config;
+    typedef ConfigBase<ConfigIdent, 29> Config;
   #else
-    typedef ConfigBase<ConfigIdent, 23> Config;
+    typedef ConfigBase<ConfigIdent, 26> Config;
   #endif
 #else
   #if DATE_TIME_RTC
-    typedef ConfigBase<ConfigIdent, 19> Config;
+    typedef ConfigBase<ConfigIdent, 22> Config;
   #else
-    typedef ConfigBase<ConfigIdent, 16> Config;
+    typedef ConfigBase<ConfigIdent, 19> Config;
   #endif
 #endif
 
@@ -43,6 +43,9 @@ enum class ConfigIdent {
   static int8_t   version;
   static char     ssid[32];
   static char     pwd[32];
+  static char     dns_name[32];
+  static char     ap_ssid[32];
+  static char     ap_pwd[32];
   static int32_t  port;
   static int8_t   battery;
   static int8_t   orientation;
@@ -91,6 +94,9 @@ enum class ConfigIdent {
     { Config::Ident::VERSION,            Config::EntryType::BYTE,   "version",            &version,            &the_version,                0 },
     { Config::Ident::SSID,               Config::EntryType::STRING, "wifi_ssid",          ssid,                "NONE",                     32 },
     { Config::Ident::PWD,                Config::EntryType::STRING, "wifi_pwd",           pwd,                 "NONE",                     32 },
+    { Config::Ident::DNS_NAME,           Config::EntryType::STRING, "dns_name",           dns_name,            "inkplate",                 32 },
+    { Config::Ident::AP_SSID,            Config::EntryType::STRING, "ap_wifi_ssid",       ap_ssid,             "inkplate",                 32 },
+    { Config::Ident::AP_PWD,             Config::EntryType::STRING, "ap_wifi_pwd",        ap_pwd,              "qwerty1234",               32 },
     { Config::Ident::PORT,               Config::EntryType::INT,    "http_port",          &port,               &default_port,               0 },
     { Config::Ident::BATTERY,            Config::EntryType::BYTE,   "battery",            &battery,            &default_battery,            0 },
     { Config::Ident::TIMEOUT,            Config::EntryType::BYTE,   "timeout",            &timeout,            &default_timeout,            0 },

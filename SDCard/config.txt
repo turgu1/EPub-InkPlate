@@ -13,6 +13,9 @@
 #      version
 #      wifi_ssid
 #      wifi_pwd
+#      dns_name
+#      ap_ssid
+#      ap_pwd
 #      http_port
 #      battery
 #      timeout
@@ -34,6 +37,9 @@
 version = 1
 wifi_ssid = "your_pwd_ssid"
 wifi_pwd = "your_wifi_pwd"
+dns_name = "inkplate"
+ap_ssid = "inkplate"
+ap_pwd = "qwerty1234"
 http_port = 80
 battery = 2
 timeout = 5

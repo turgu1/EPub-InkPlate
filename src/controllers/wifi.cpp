@@ -13,6 +13,10 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "wifi.hpp"
+#include "mdns.h"
+#include "esp_mac.h"
+
 
 static EventGroupHandle_t wifi_event_group = nullptr;
 static bool               wifi_first_start =    true;
@@ -28,14 +32,33 @@ static bool               wifi_first_start =    true;
 #define WIFI_FAIL_BIT      BIT1
 
 static constexpr int8_t ESP_MAXIMUM_RETRY = 6;
+void 
+wifi_ap_event_handler(void             * arg, 
+                      esp_event_base_t   event_base,
+                      int32_t            event_id, 
+                      void             * event_data)
+{
+  static constexpr char const * TAG = "WiFi AP Event Hanfler";
+  LOG_I("AP Event, Base: %p, Event: %" PRIi32 ".", (void *) event_base, event_id);
+
+  if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+    wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+    ESP_LOGI(TAG, "station " MACSTR " join, AID=%d",
+              MAC2STR(event->mac), event->aid);
+  } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+    wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+    ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
+              MAC2STR(event->mac), event->aid);
+  }
+}
 
 void 
-wifi_sta_event_handler(void        * arg, 
-                  esp_event_base_t   event_base,
-                  int32_t            event_id, 
-                  void             * event_data)
+wifi_sta_event_handler(void             * arg, 
+                       esp_event_base_t   event_base,
+                       int32_t            event_id, 
+                       void             * event_data)
 {
-  static constexpr char const * TAG = "WiFi Event Hanfler";
+  static constexpr char const * TAG = "WiFi STA Event Hanfler";
   LOG_I("STA Event, Base: %p, Event: %" PRIi32 ".", (void *) event_base, event_id);
 
   static int s_retry_num = 0;
@@ -78,9 +101,10 @@ wifi_sta_event_handler(void        * arg,
 }
 
 bool 
-WIFI::start(void)
+WIFI::start_sta(void)
 {
-  if (running) return true;
+  if (sta_running) return true;
+  if (ap_running) return false;
 
   bool connected = false;
   wifi_first_start = true;
@@ -108,9 +132,11 @@ WIFI::start(void)
 
   std::string wifi_ssid;
   std::string wifi_pwd;
+  std::string dns_name;
 
-  config.get(Config::Ident::SSID, wifi_ssid);
-  config.get(Config::Ident::PWD,  wifi_pwd );
+  config.get(Config::Ident::SSID,     wifi_ssid);
+  config.get(Config::Ident::PWD,      wifi_pwd );
+  config.get(Config::Ident::DNS_NAME, dns_name );
 
   wifi_config_t wifi_config;
 
@@ -128,7 +154,7 @@ WIFI::start(void)
   ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)ESP_IF_WIFI_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 
-  LOG_I("wifi_init_sta finished.");
+  ESP_LOGD(TAG, "start_sta() finished.");
 
   // Waiting until either the connection is established (WIFI_CONNECTED_BIT) 
   // or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT). 
@@ -143,6 +169,7 @@ WIFI::start(void)
   if (bits & WIFI_CONNECTED_BIT) {
     LOG_I("connected to ap SSID:%s password:%s",
             wifi_ssid.c_str(), wifi_pwd.c_str());
+    start_mdns_service(dns_name);
     connected = true;
   } 
   else if (bits & WIFI_FAIL_BIT) {
@@ -157,16 +184,111 @@ WIFI::start(void)
     ESP_ERROR_CHECK(esp_event_loop_delete_default());
   }
 
-  running = true;
+  sta_running = true;
   return connected;
+}
+
+void WIFI::start_mdns_service(const std::string &dns_name)
+{
+    //initialize mDNS service
+    esp_err_t err = mdns_init();
+    if (err) {
+        ESP_LOGE(TAG, "mDNS Init failed: %d\n", err);
+        return;
+    }
+
+    //set hostname
+    if (mdns_hostname_set(dns_name.c_str()) != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to set mDNS hostname.");
+      return;
+    }
+
+    //set default instance
+    if (mdns_instance_name_set("Inkplate EPub Reader") != ESP_OK) {
+      ESP_LOGE(TAG, "Unable to set mDNS instant name.");
+      return;
+    }
+
+    ESP_LOGD(TAG, "mDNS started.");
+    mdns_running = true;
+}
+
+bool 
+WIFI::start_ap(void)
+{
+  if (ap_running) return true;
+  if (sta_running) return false;
+
+  ESP_ERROR_CHECK(esp_netif_init());
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  esp_netif_create_default_wifi_ap();
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                      ESP_EVENT_ANY_ID,
+                                                      &wifi_ap_event_handler,
+                                                      NULL,
+                                                      NULL));
+
+  std::string ap_ssid;
+  std::string ap_pwd;
+  std::string dns_name;
+
+  uint8_t my_ap_ssid[32];
+  uint8_t my_ap_pwd[64];
+
+  config.get(Config::Ident::SSID,     ap_ssid);
+  config.get(Config::Ident::PWD,      ap_pwd );
+  config.get(Config::Ident::DNS_NAME, dns_name );
+
+  wifi_config_t wifi_config;
+
+  // wifi_config.ap.ssid = my_ap_ssid;
+  // wifi_config.ap.password = my_ap_pwd;
+  strncpy((char *)wifi_config.ap.ssid, ap_ssid.c_str(), 32);
+  strncpy((char *)wifi_config.ap.password, ap_pwd.c_str(), 32);
+
+  wifi_config.ap.ssid_len = ap_ssid.length();
+  wifi_config.ap.channel = 11;
+  wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK,
+  wifi_config.ap.max_connection = 5;
+  wifi_config.ap.pmf_cfg.required = false;
+
+  // #ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
+  //   wifi_config.ap.authmode = WIFI_AUTH_WPA3_PSK;
+  //   wifi_config.ap.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
+  // #else /* CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT */
+  //   wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
+  // #endif
+
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+
+  ESP_LOGD(TAG, "start_ap() finished. SSID:%s password:%s channel:%d",
+            (char *)my_ap_ssid, (char *)my_ap_pwd, 11);
+
+  ap_running = true;
+  return true;
 }
 
 void
 WIFI::stop()
 {
-  if (running) {
-    ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
-    ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
+  if (mdns_running) {
+    mdns_free();
+  }
+
+  if (sta_running || ap_running) {
+
+    if (sta_running) {
+      ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
+      ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
+    } else {
+      ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_ap_event_handler));
+    }
 
     vEventGroupDelete(wifi_event_group);
     wifi_event_group = nullptr;
@@ -177,7 +299,7 @@ WIFI::stop()
     esp_wifi_stop();
     esp_wifi_deinit();
 
-    running = false;
+    sta_running = ap_running = false;
   }
 }
 
