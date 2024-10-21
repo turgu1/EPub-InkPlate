@@ -66,7 +66,10 @@
     
     #else
       bool inkplate_err = !inkplate_platform.setup(true);
-      if (inkplate_err) LOG_E("InkPlate6Ctrl Error.");
+      if (inkplate_err) {
+        LOG_E("Inkplate Platform Setup Error. Restarting!");
+        esp_restart();
+      }
 
       bool config_err = !config.read();
       if (config_err) LOG_E("Config Error.");

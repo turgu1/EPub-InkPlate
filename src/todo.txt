@@ -1,0 +1,26 @@
+ToDo list
+---------
+
+Last update: October, 20th 2024
+
+[X] too many interrupts from touchscreen may cause reboot
+[X] watchdog trigger not enough when long computation occurs --> watchdog disabled
+[ ] Remove some menu refresh for 3bit mode
+[X] Update the i2c driver (using i2c_master.h) --> major update!
+[-] Checks on sd card busy state before deep sleep / light sleep --> not possible
+[ ] Web Server - wait some time to have the SDCard update completed
+[X] command not supported error for sd card --> OK. not error, but info
+[X] mDNS support for Web Server
+[X] front light i2c comm failed issue
+[X] touchscreen i2c bug at boot time
+[X] restart device when inkplate setup failed
+[ ] add battery-less support --> not for EPub-Inkplate
+[ ] AP Mode for Web Server
+[ ] e-Radionica Inkplate 6 update and tests
+[ ] e-Radionica Inkplate 10 update and tests
+[ ] keys extension to build system
+[ ] readme of both epub-inkplate and esp-idf-inkplate updates
+[ ] CMakefiles.txt update for all esp-idf-inkplate examples
+[ ] Update the freetype library
+[ ] Update the user guide about the danger of corrupting the sd card at power off.
+[ ] Update the user guide on new config parameters
