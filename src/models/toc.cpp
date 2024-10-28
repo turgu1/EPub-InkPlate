@@ -249,7 +249,7 @@ TOC::do_nav_points(pugi::xml_node & node, uint8_t level)
             if (!the_id.empty()) {
               infos.insert(std::make_pair(
                 std::make_pair(index, the_id),
-                (int16_t)entries.size()
+                static_cast<int16_t>(entries.size())
               ));
               some_ids = true;
             }

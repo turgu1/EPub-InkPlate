@@ -467,7 +467,7 @@ class IBMFFont
     inline bool                   is_initialized() { return initialized;                         }
     inline uint8_t                 get_font_size() { return  header->point_size;                 }
     inline uint16_t              get_line_height() { return  header->line_height;                }
-    inline int16_t          get_descender_height() { return -(int16_t)header->descender_height;  }
+    inline int16_t          get_descender_height() { return - static_cast<int16_t>(header->descender_height);  }
     inline uint8_t                  get_char_set() { return preamble->bits.char_set;             }
     inline LigKernStep * get_lig_kern(uint8_t idx) { return &lig_kern_pgm[idx];                  }
     inline FIX16               get_kern(uint8_t i) { return kerns[i];                            }

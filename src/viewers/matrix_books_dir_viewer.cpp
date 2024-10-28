@@ -324,7 +324,7 @@ MatrixBooksDirViewer::clear_highlight()
     .screen_left        = 10,
     .screen_right       = 10,
     .screen_top         = 10,
-    .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+    .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
     .width              = 0,
     .height             = 0,
     .vertical_align     = 0,

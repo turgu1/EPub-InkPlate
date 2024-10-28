@@ -11,6 +11,7 @@
 #include "controllers/option_controller.hpp"
 #include "controllers/toc_controller.hpp"
 #include "controllers/event_mgr.hpp"
+#include "controllers/common_actions.hpp"
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #include "controllers/back_lit.hpp"
@@ -109,6 +110,10 @@ AppController::input_event(const EventMgr::Event & event)
     }
     else if (event.kind == EventMgr::EventKind::PINCH_REDUCE) {
       back_lit.adjust(-event.dist);
+      return;
+    }
+    else if (event.kind == EventMgr::EventKind::WAKEUP_BUTTON) {
+      CommonActions::power_it_off();
       return;
     }
   #endif

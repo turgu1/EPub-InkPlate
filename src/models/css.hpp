@@ -329,7 +329,7 @@ class CSS
               std::cout << "url(" << str << ')';
             }
             else {
-              std::cout << num << value_type_str[(uint8_t)value_type];
+              std::cout << num << value_type_str[static_cast<uint8_t>(value_type)];
             }
           #endif
         }

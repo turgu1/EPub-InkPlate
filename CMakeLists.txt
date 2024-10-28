@@ -41,6 +41,18 @@ elseif(DEVICE MATCHES "^INKPLATE_10$")
     add_compile_definitions(
         INKPLATE_10=1 
         MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
+    message("INKPLATE 6 V2 defined")
+    set(DEVICE_NAME "I6V2")
+    add_compile_definitions(
+        INKPLATE_6_V2=1 
+        PCAL6416=1)
+elseif(DEVICE MATCHES "^INKPLATE_6COLOR$")
+    message("INKPLATE 6COLOR defined")
+    set(DEVICE_NAME "I6C")
+    add_compile_definitions(
+        INKPLATE_6COLOR=1 
+        PCAL6416=1)
 elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
     message("INKPLATE 10 V2 defined")
     set(DEVICE_NAME "I10V2")

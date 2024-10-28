@@ -1,27 +1,42 @@
 ToDo list
 ---------
 
-Last update: October, 20th 2024
+Last update: October, 28th 2024
+
+x Means it's completed
+- Means it won't be done
 
 [X] too many interrupts from touchscreen may cause reboot
 [X] watchdog trigger not enough when long computation occurs --> watchdog disabled
 [ ] Remove some menu refresh for 3bit mode
 [X] Update the i2c driver (using i2c_master.h) --> major update!
-[-] Checks on sd card busy state before deep sleep / light sleep --> not possible
+[X] Checks on sd card busy (pages calculation) before deep sleep
 [ ] Web Server - wait some time to have the SDCard update completed
+[X] Pages calculation percentage display ("PgCalc... xx%")
 [X] command not supported error for sd card --> OK. not error, but info
 [X] mDNS support for Web Server
 [X] front light i2c comm failed issue
 [X] touchscreen i2c bug at boot time
 [X] restart device when inkplate setup failed
-[ ] wake-up button: when running, goto deep-sleep
-[ ] add battery-less support --> not for EPub-Inkplate
+[X] SdRam setup failed at boot time after crash
+[-] wake-up button: when running, goto deep-sleep -> no way to infer button pressed
 [ ] AP Mode for Web Server
+[ ] Device change detection for config params update (calibration)
+[ ] Check battery voltage read-out
 [ ] e-Radionica Inkplate 6 update and tests
+[X] e-Radionica Inkplate 6PLUS update and tests
 [ ] e-Radionica Inkplate 10 update and tests
+[X] Soldered Inkplate 6PLUS integration
+[X] Soldered Inkplate 6FLICK integration
+[ ] Soldered Inkplate 6 integration in esp-idf-inkplate only
+[ ] Soldered Inkplate 10 integration in esp-idf-inkplate  only
+[ ] Soldered Inkplate 6COLOR integration in esp-idf-inkplate  only
+[ ] add battery-less support in esp-idf-inkplate only
 [ ] keys extension to build system
 [ ] readme of both epub-inkplate and esp-idf-inkplate updates
 [ ] CMakefiles.txt update for all esp-idf-inkplate examples
-[ ] Update the freetype library
+[X] Update the FreeType library
 [ ] Update the user guide about the danger of corrupting the sd card at power off.
 [ ] Update the user guide on new config parameters
+[ ] Merge code and generate releases - push them on github
+[ ] Change e-Radionica logo for Soldered

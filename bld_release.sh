@@ -31,9 +31,10 @@ if [ "$3" = "0" ]; then
   environment="inkplate_$2_release"
   case "$2" in
     "6") device="INKPLATE_6" ;;
-    "6v2") device="INKPLATE_6V2" ;;
+#    "6v2") device="INKPLATE_6V2" ;;
+#    "6color") device="INKPLATE_6COLOR" ;;
     "10") device="INKPLATE_10" ;;
-    "10v2") device="INKPLATE_10V2" ;;
+#    "10v2") device="INKPLATE_10V2" ;;
     "6plus") device="INKPLATE_6PLUS" ;;
     "6plusv2") device="INKPLATE_6PLUS_V2" ;;
     "6flick") device="INKPLATE_6FLICK" ;;

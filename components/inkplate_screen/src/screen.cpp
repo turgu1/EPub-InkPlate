@@ -244,7 +244,7 @@ Screen::draw_round_rectangle(
   
     uint32_t color_mask;
     uint16_t line_size_32 = frame_buffer_3bit->get_line_size() >> 2; // 32 bits count
-    //int16_t  in_size_32   = (((int16_t) dim.width) - (8 - (pos.x & 0x07)) - ((((int16_t) dim.width) + pos.x - 1) & 0x07) + 1) / 8;
+    //int16_t  in_size_32   = (static_cast<int16_t>(dim.width) - (8 - (pos.x & 0x07)) - ((static_cast<int16_t>(dim.width) + pos.x - 1) & 0x07) + 1) / 8;
     int16_t  in_size_32   = ((dim.width + (pos.x & 0x07) + (8 - ((dim.width + pos.x - 1) & 0x07))) >> 3) - 2;
     uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
 

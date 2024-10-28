@@ -60,7 +60,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
       .screen_left        =  xpos,
       .screen_right       =    10,
       .screen_top         =  ypos,
-      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + MAX_TITLE_SIZE + 20)),
+      .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + MAX_TITLE_SIZE + 20)),
       .width              =     0,
       .height             =     0,
       .vertical_align     =     0,
@@ -99,7 +99,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
 
     fmt.screen_left   = 20 + (entry.level * 20);
     fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::get_height() - (ypos + ENTRY_HEIGHT)),
+    fmt.screen_bottom = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT)),
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -143,7 +143,7 @@ TocViewer::highlight(int16_t screen_idx)
       .screen_left        = xpos,
       .screen_right       = 10,
       .screen_top         = ypos,
-      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
+      .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
       .width              = 0,
       .height             = 0,
       .vertical_align     = 0,

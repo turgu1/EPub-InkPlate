@@ -408,16 +408,16 @@ OptionController::input_event(const EventMgr::Event & event)
     if (form_viewer.event(event)) {
       main_form_is_shown = false;
       // if (ok) {
-        config.put(Config::Ident::ORIENTATION,      (int8_t) orientation);
+        config.put(Config::Ident::ORIENTATION,      static_cast<int8_t>(orientation));
         config.put(Config::Ident::DIR_VIEW,         dir_view            );
-        config.put(Config::Ident::PIXEL_RESOLUTION, (int8_t) resolution );
+        config.put(Config::Ident::PIXEL_RESOLUTION, static_cast<int8_t>(resolution));
         config.put(Config::Ident::BATTERY,          show_battery        );
         config.put(Config::Ident::SHOW_TITLE,       show_title          );
         config.put(Config::Ident::TIMEOUT,          timeout             );
 
         #if DATE_TIME_RTC
-          config.put(Config::Ident::SHOW_HEAP,      (int8_t)(show_heap_or_rtc == 2 ? 1 : 0));
-          config.put(Config::Ident::SHOW_RTC,       (int8_t)(show_heap_or_rtc == 1 ? 1 : 0));
+          config.put(Config::Ident::SHOW_HEAP,      static_cast<int8_t>(show_heap_or_rtc == 2 ? 1 : 0));
+          config.put(Config::Ident::SHOW_RTC,       static_cast<int8_t>(show_heap_or_rtc == 1 ? 1 : 0));
         #else
           config.put(Config::Ident::SHOW_HEAP,      show_heap           );
         #endif

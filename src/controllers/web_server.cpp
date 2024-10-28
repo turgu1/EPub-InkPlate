@@ -522,7 +522,7 @@ http_server_start()
   int32_t port = 80;
   config.get(Config::Ident::PORT, &port);
   httpd_config.uri_match_fn = httpd_uri_match_wildcard;
-  httpd_config.server_port = (uint16_t) port;
+  httpd_config.server_port = static_cast<uint16_t>(port);
 
   LOG_I("Starting HTTP Server on port %" PRIi32 "...", port);
   esp_err_t res = httpd_start(&server, &httpd_config);

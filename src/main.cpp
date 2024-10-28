@@ -65,6 +65,20 @@
       }
     
     #else
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+        #define MSG "Press the WakUp Button to restart."
+        #define INT_PIN TouchScreen::INTERRUPT_PIN
+        #define LEVEL 0
+      #else
+        #define MSG "Press a key to restart."
+        #if EXTENDED_CASE
+          #define INT_PIN PressKeys::INTERRUPT_PIN
+        #else
+          #define INT_PIN TouchKeys::INTERRUPT_PIN
+        #endif
+        #define LEVEL 1
+      #endif
+
       bool inkplate_err = !inkplate_platform.setup(true);
       if (inkplate_err) {
         LOG_E("Inkplate Platform Setup Error. Restarting!");
@@ -89,20 +103,6 @@
       pugi::set_memory_management_functions(allocate, free);
 
       page_locs.setup();
-
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        #define MSG "Press the WakUp Button to restart."
-        #define INT_PIN TouchScreen::INTERRUPT_PIN
-        #define LEVEL 0
-      #else
-        #define MSG "Press a key to restart."
-        #if EXTENDED_CASE
-          #define INT_PIN PressKeys::INTERRUPT_PIN
-        #else
-          #define INT_PIN TouchKeys::INTERRUPT_PIN
-        #endif
-        #define LEVEL 1
-      #endif
 
       if (fonts.setup()) {
         
@@ -130,14 +130,6 @@
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
     
-        if (inkplate_err) {
-          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
-            "Unable to initialize the InkPlate drivers. Entering Deep Sleep. " MSG
-          );
-          ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
-        }
-
         if (config_err) {
           msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
             "Unable to read/save configuration file. Entering Deep Sleep. " MSG

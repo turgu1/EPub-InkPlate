@@ -95,28 +95,28 @@
     EventMgr::set_orientation(Screen::Orientation orient)
     {
       if (orient == Screen::Orientation::LEFT) {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U1);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U6);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
       } 
       else if (orient == Screen::Orientation::RIGHT) {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U6);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U1);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
       } 
       else {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U6);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U1);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
       }
     }
   #else

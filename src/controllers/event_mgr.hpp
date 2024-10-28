@@ -29,7 +29,7 @@ class EventMgr
     #endif
 
   protected:
-    bool stay_on;
+    volatile bool stay_on;
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       
       int64_t    a, b, c, d, e, f, divider;
@@ -51,9 +51,10 @@ class EventMgr
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       enum class EventKind { NONE,        TAP,           HOLD,         SWIPE_LEFT, 
-                             SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE      };
+                             SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE,
+                             WAKEUP_BUTTON};
 
-      static const char * event_str[8];
+      static const char * event_str[9];
 
       struct Event {
         EventKind kind;
@@ -97,6 +98,7 @@ class EventMgr
     #endif
 
     inline void     set_stay_on(bool value) { stay_on = value; };
+    inline bool      staying_on() { return stay_on; };
     void        set_orientation(Screen::Orientation orient);
 };
 

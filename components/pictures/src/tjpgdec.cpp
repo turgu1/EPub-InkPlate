@@ -644,14 +644,14 @@ static void block_idct (
 
     // Descale the transformed values 8 bits and output a row   
 #if JD_FASTDECODE >= 1
-    dst[0] = (int16_t)((v0 + v7) >> 8);
-    dst[7] = (int16_t)((v0 - v7) >> 8);
-    dst[1] = (int16_t)((v1 + v6) >> 8);
-    dst[6] = (int16_t)((v1 - v6) >> 8);
-    dst[2] = (int16_t)((v2 + v5) >> 8);
-    dst[5] = (int16_t)((v2 - v5) >> 8);
-    dst[3] = (int16_t)((v3 + v4) >> 8);
-    dst[4] = (int16_t)((v3 - v4) >> 8);
+    dst[0] = static_cast<int16_t>((v0 + v7) >> 8);
+    dst[7] = static_cast<int16_t>((v0 - v7) >> 8);
+    dst[1] = static_cast<int16_t>((v1 + v6) >> 8);
+    dst[6] = static_cast<int16_t>((v1 - v6) >> 8);
+    dst[2] = static_cast<int16_t>((v2 + v5) >> 8);
+    dst[5] = static_cast<int16_t>((v2 - v5) >> 8);
+    dst[3] = static_cast<int16_t>((v3 + v4) >> 8);
+    dst[4] = static_cast<int16_t>((v3 - v4) >> 8);
 #else
     dst[0] = BYTECLIP((v0 + v7) >> 8);
     dst[7] = BYTECLIP((v0 - v7) >> 8);

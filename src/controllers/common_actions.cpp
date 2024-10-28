@@ -60,6 +60,16 @@ CommonActions::power_it_off()
   #endif
 
   app_controller.going_to_deep_sleep();
+
+  if (event_mgr.staying_on()) {
+    screen.force_full_update();
+    msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Waiting for Power OFF",
+      "Waiting for background tasks to complete before going to Deep Sleep mode.");
+    while (event_mgr.staying_on()) {
+      ESP::delay(5000);
+    }
+  }
+  
   #if EPUB_INKPLATE_BUILD
     screen.force_full_update();
     msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Power OFF",

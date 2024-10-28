@@ -139,7 +139,7 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
       NVSMgr::NVSData nvs_data = {
         .offset        = page_id.offset,
         .itemref_index = page_id.itemref_index,
-        .was_shown     = (uint8_t) (going_to_deep_sleep ? 1 : 0),
+        .was_shown     = static_cast<uint8_t>(going_to_deep_sleep ? 1 : 0),
         .filler1       = 0
       };
 

@@ -154,7 +154,7 @@ class PageLocs
       completed = false; 
     }
 
-    inline int16_t get_page_count() { return completed ? page_count : -1; }
+    int16_t get_page_count();
 
     inline int16_t get_page_nbr(const PageId & id) {
       std::scoped_lock guard(mutex);
