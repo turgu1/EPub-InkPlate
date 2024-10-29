@@ -55,7 +55,7 @@ HTMLInterpreter::build_pages_recurse(xml_node       node,
   DOM::Node  * dom_current_node = dom_node;
   DOM::Tags::iterator tag_it    = DOM::tags.end();
 
-  // xml bode without a tag name are internal data to be processed as string of chars
+  // xml node without a tag name are internal data to be processed as string of chars
   bool named_element = *(name = node.name()) != 0;
 
   if (named_element) {
