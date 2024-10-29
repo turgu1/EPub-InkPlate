@@ -46,7 +46,7 @@ void
 CommonActions::power_it_off()
 {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    #define MSG "Please press the WakUp Button to restart the device."
+    #define MSG "Please press the WakeUp Button to restart the device."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
     #define LEVEL 0
   #else
