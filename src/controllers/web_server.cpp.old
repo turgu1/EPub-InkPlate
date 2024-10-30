@@ -734,7 +734,7 @@ start_web_server()
 
   msg_viewer.show(MsgViewer::MsgType::WIFI, false, true, 
     "Web Server Starting", 
-    "The Web server is now establishing the connexion with the WiFi router. Please wait.");
+    "The Web server is now establishing a connection with the WiFi router. Please wait.");
 
   if (wifi_start()) {
     EventBits_t bits = xEventGroupGetBits(wifi_event_group);

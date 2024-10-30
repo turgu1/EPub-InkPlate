@@ -581,7 +581,7 @@ start_web_server(WebServerMode server_mode)
 
   msg_viewer.show(MsgViewer::MsgType::WIFI, false, true, 
     "Web Server Starting", 
-    "The Web server is now establishing the connexion with the WiFi router. Please wait.");
+    "The Web server is now establishing a connection with the WiFi router. Please wait.");
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "Tap the screen"
