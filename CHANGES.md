@@ -2,6 +2,19 @@
 
 ## Last news
 
+(Updated 2026.01.20)
+
+Update to version 2.1.0
+
+- Now using ESP-IDF framework v5.5.2
+- No longer using PlatformIO. Using cmake through idf.py to build applications
+
+- Added support through the ESP-IDF-InkPlace v0.9.8 project:
+  - Support for new devices Inkplace-6PLUS-V2, Inkplace-6FLICK
+  - Added support for PCAL GPIO chip (Soldered devices)
+  - Added support for Cypress touchscreen (6FLICK)
+  - Added support for SD Card power control (Soldered devices)
+
 (Updated 2022.5.01)
 
 Update to version 2.0.1

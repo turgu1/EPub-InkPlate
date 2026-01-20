@@ -4,6 +4,8 @@
 
 (Updated 2026.01.20)
 
+Update to version 2.1.0
+
 - Now using ESP-IDF framework v5.5.2
 - No longer using PlatformIO. Using cmake through idf.py to build applications
 
@@ -15,8 +17,7 @@
 
 ### Building the application image
 
-As the building process no longer uses PlatformIO, here is some explanation on how to get a new
-image ready to be uploaded.
+As the building process no longer uses PlatformIO, here is some explanation on how to get a new image ready to be uploaded.
 
 You must first install the v5.5.2 of the ESP-IDF framework. There is two way to do it: from an IDE like VSCode or manually. Look at the ESP-IDF framework  installation documentation. Here we assume that the framework has been installed in your `~/esp/v5.5.2` folder.
 
@@ -41,7 +42,7 @@ $  . ~/esp/v5.5.2/export.sh
 3. To build one image for a specific device, you can use the `idf.py build` command. There is two mandatory parameters to add to the command:
 
 - -DDEVICE=INKPLATE_XXX : For which device the build will be done
-- -DAPP_VERSION=2.2-BETA : The version number (Here `2.2-BETA` as an example)
+- -DAPP_VERSION=2.1.0-BETA : The version number (Here `2.1.0-BETA` as an example)
 
 Here is the list of potential device names to use:
 
@@ -54,7 +55,7 @@ Here is the list of potential device names to use:
 For example:
 
 ```bash
-$ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=2.2-BETA
+$ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=2.1.0-BETA
 ```
 
 Once completed without any error, the application image will be in the `build/EPub-InkPlate.bin` file.
@@ -73,7 +74,7 @@ To do so, two scripts in the main folder are used to automate the process. They 
 The `bld_all.sh`  requires one parameter: the release version number. For example:
 
 ```bash
-$ ./bld_all.sh 2.2-BETA
+$ ./bld_all.sh 2.1.0-BETA
 ```
 
 You will then get a serie of release files named `release-v<version>-inkplate_<XXX>.zip` located in the current main project folder.
@@ -82,7 +83,7 @@ You will then get a serie of release files named `release-v<version>-inkplate_<X
 
 The `bld_release.sh` requires 3 parameters and one optional parameter:
 
-- the first parameter is the version number (e.g. `2.2-BETA`, or `2.2`, etc)
+- the first parameter is the version number (e.g. `2.1.0-BETA`, or `2.1.0`, etc)
 - the second parameter is the device type from the following list: `6`, `10`, `6plus`, `6plusv2`, `6flick`
 - the third parameter is if the device is using the buttons extension. values are `0`: no extension, `1` : extension present. As of today, there is no people known of using that extension, so it must be 0.
 - the fourth parameter is used for some optimisation:
@@ -93,8 +94,10 @@ The `bld_release.sh` requires 3 parameters and one optional parameter:
 For example:
 
 ```bash
-$ ./bld_releae 2.2-BETA 6plusv2 0
+$ ./bld_releae 2.1.0-BETA 6plusv2 0
 ```
+
+You will then get a file named `release-v2.1.0-BETA-inkplate_6plusv2.zip`.
 
 ------
 
