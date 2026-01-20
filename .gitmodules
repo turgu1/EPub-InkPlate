@@ -1,0 +1,6 @@
+[submodule "ESP-IDF-InkPlate"]
+	path = ESP-IDF-InkPlate
+	url = https://github.com/turgu1/ESP-IDF-InkPlate.git
+[submodule "components/ESP-IDF-InkPlate"]
+	path = components/ESP-IDF-InkPlate
+	url = https://github.com/turgu1/ESP-IDF-InkPlate.git
