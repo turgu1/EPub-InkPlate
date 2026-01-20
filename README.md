@@ -19,32 +19,32 @@ Update to version 2.1.0
 
 As the building process no longer uses PlatformIO, here is some explanation on how to get a new image ready to be uploaded.
 
-You must first install the v5.5.2 of the ESP-IDF framework. There is two way to do it: from an IDE like VSCode or manually. Look at the ESP-IDF framework  installation documentation. Here we assume that the framework has been installed in your `~/esp/v5.5.2` folder.
+You must first install ESP-IDF framework v5.5.2. There are two ways to do this: using an IDE like VSCode or manually. Refer to the [ESP-IDF framework installation documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/). This guide assumes the framework is installed in `~/esp/v5.5.2`.
 
-You must retrieve a copy of this project locally using the `git` application. Pay attention to add the submodules through the --recursive option:
+Clone this project locally using `git`, and be sure to include submodules:
 
 ```bash
 $ git clone --recursive https://github.com/turgu1/EPub-InkPlate.git
 ```
 
-1. Go into the main EPub-InkPlate folder. For example, if it is located in your home folder:
+1. Go into the main EPub-InkPlate folder. For example, if located in your home directory:
 
 ```bash
 $ cd ~/EPub-InkPlate
 ```
 
-2. In a terminal, do the following (this must be done every time you use a terminal, or only once before launching your prefered IDE into which you would launch a sub-terminal):
+2. In a terminal, source the ESP-IDF environment script. This must be done each time you open a new terminal (or once before launching your IDE):
 
 ```bash
-$  . ~/esp/v5.5.2/export.sh
+$ . ~/esp/v5.5.2/export.sh
 ```
 
-3. To build one image for a specific device, you can use the `idf.py build` command. There is two mandatory parameters to add to the command:
+3. To build an image for a specific device, use the `idf.py build` command with two mandatory parameters:
 
-- -DDEVICE=INKPLATE_XXX : For which device the build will be done
-- -DAPP_VERSION=2.1.0-BETA : The version number (Here `2.1.0-BETA` as an example)
+- `-DDEVICE=INKPLATE_XXX` — the target device
+- `-DAPP_VERSION=2.1.0-BETA` — the version number (example: `2.1.0-BETA`)
 
-Here is the list of potential device names to use:
+Supported device names:
 
 - INKPLATE_6
 - INKPLATE_6PLUS
@@ -52,52 +52,54 @@ Here is the list of potential device names to use:
 - INKPLATE_6FLICK
 - INKPLATE_10
 
-For example:
+Example:
 
 ```bash
 $ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=2.1.0-BETA
 ```
 
-Once completed without any error, the application image will be in the `build/EPub-InkPlate.bin` file.
+Once completed without errors, the application image will be located at `build/EPub-InkPlate.bin`.
 
 ### Building application releases
 
-The releases are zip files that contain everything to get a device ready to use the application. That includes, the application binary image, the fonts, user guide and installation guide.
+Release files are zip archives containing everything needed to prepare a device, including the application binary, fonts, user guide, and installation guide.
 
-To do so, two scripts in the main folder are used to automate the process. They are:
+Two scripts automate this process:
 
-- `bld_release.sh` : To build a single release.
-- `bld_all.sh` : To generate releases for all Inkplate device types, using the `bld_release.sh` script.
+- `bld_release.sh` — build a single release
+- `bld_all.sh` — generate releases for all Inkplate device types (uses `bld_release.sh` internally)
 
-#### The bld_all.sh usage
+#### Using bld_all.sh
 
-The `bld_all.sh`  requires one parameter: the release version number. For example:
+The `bld_all.sh` script requires one parameter: the release version number.
+
+Example:
 
 ```bash
 $ ./bld_all.sh 2.1.0-BETA
 ```
 
-You will then get a serie of release files named `release-v<version>-inkplate_<XXX>.zip` located in the current main project folder.
+This generates release files named `release-v<version>-inkplate_<XXX>.zip` in the main project folder.
 
-#### The bld_release.sh usage
+#### Using bld_release.sh
 
-The `bld_release.sh` requires 3 parameters and one optional parameter:
+The `bld_release.sh` script requires three parameters and one optional parameter:
 
-- the first parameter is the version number (e.g. `2.1.0-BETA`, or `2.1.0`, etc)
-- the second parameter is the device type from the following list: `6`, `10`, `6plus`, `6plusv2`, `6flick`
-- the third parameter is if the device is using the buttons extension. values are `0`: no extension, `1` : extension present. As of today, there is no people known of using that extension, so it must be 0.
-- the fourth parameter is used for some optimisation:
-  - If not present, the build folder is cleared. The script check if there is a release zip file already done and if so, will abort the process.
-  - if present and = `1`, the build folder is cleared and the image is build, NO release file is built.
-  - if present and = `2`, the build folder is kept and the image is rebuilt, NO release file is built.
+- **First parameter**: version number (e.g., `2.1.0-BETA` or `2.1.0`)
+- **Second parameter**: device type — `6`, `10`, `6plus`, `6plusv2`, or `6flick`
+- **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
+- **Fourth parameter** (optional): optimization mode
+  - If omitted: the build folder is cleared, and the script aborts if a release zip already exists
+  - If `1`: build folder is cleared and rebuilt; no release file is created
+  - If `2`: build folder is kept and rebuilt; no release file is created
 
-For example:
+Example:
 
 ```bash
-$ ./bld_releae 2.1.0-BETA 6plusv2 0
+$ ./bld_release.sh 2.1.0-BETA 6plusv2 0
 ```
 
-You will then get a file named `release-v2.1.0-BETA-inkplate_6plusv2.zip`.
+This generates `release-v2.1.0-BETA-inkplate_6plusv2.zip`.
 
 ------
 

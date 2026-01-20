@@ -66,7 +66,7 @@
     
     #else
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        #define MSG "Press the WakUp Button to restart."
+        #define MSG "Press the WakeUp Button to restart."
         #define INT_PIN TouchScreen::INTERRUPT_PIN
         #define LEVEL 0
       #else
