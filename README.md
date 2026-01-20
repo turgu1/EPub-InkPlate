@@ -2,6 +2,102 @@
 
 ## Last news
 
+(Updated 2026.01.20)
+
+- Now using ESP-IDF framework v5.5.2
+- No longer using PlatformIO. Using cmake through idf.py to build applications
+
+- Added support through the ESP-IDF-InkPlace v0.9.8 project:
+  - Support for new devices Inkplace-6PLUS-V2, Inkplace-6FLICK
+  - Added support for PCAL GPIO chip (Soldered devices)
+  - Added support for Cypress touchscreen (6FLICK)
+  - Added support for SD Card power control (Soldered devices)
+
+### Building the application image
+
+As the building process no longer uses PlatformIO, here is some explanation on how to get a new
+image ready to be uploaded.
+
+You must first install the v5.5.2 of the ESP-IDF framework. There is two way to do it: from an IDE like VSCode or manually. Look at the ESP-IDF framework  installation documentation. Here we assume that the framework has been installed in your `~/esp/v5.5.2` folder.
+
+You must retrieve a copy of this project locally using the `git` application. Pay attention to add the submodules through the --recursive option:
+
+```bash
+$ git clone --recursive https://github.com/turgu1/EPub-InkPlate.git
+```
+
+1. Go into the main EPub-InkPlate folder. For example, if it is located in your home folder:
+
+```bash
+$ cd ~/EPub-InkPlate
+```
+
+2. In a terminal, do the following (this must be done every time you use a terminal, or only once before launching your prefered IDE into which you would launch a sub-terminal):
+
+```bash
+$  . ~/esp/v5.5.2/export.sh
+```
+
+3. To build one image for a specific device, you can use the `idf.py build` command. There is two mandatory parameters to add to the command:
+
+- -DDEVICE=INKPLATE_XXX : For which device the build will be done
+- -DAPP_VERSION=2.2-BETA : The version number (Here `2.2-BETA` as an example)
+
+Here is the list of potential device names to use:
+
+- INKPLATE_6
+- INKPLATE_6PLUS
+- INKPLATE_6PLUS_V2
+- INKPLATE_6FLICK
+- INKPLATE_10
+
+For example:
+
+```bash
+$ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=2.2-BETA
+```
+
+Once completed without any error, the application image will be in the `build/EPub-InkPlate.bin` file.
+
+### Building application releases
+
+The releases are zip files that contain everything to get a device ready to use the application. That includes, the application binary image, the fonts, user guide and installation guide.
+
+To do so, two scripts in the main folder are used to automate the process. They are:
+
+- `bld_release.sh` : To build a single release.
+- `bld_all.sh` : To generate releases for all Inkplate device types, using the `bld_release.sh` script.
+
+#### The bld_all.sh usage
+
+The `bld_all.sh`  requires one parameter: the release version number. For example:
+
+```bash
+$ ./bld_all.sh 2.2-BETA
+```
+
+You will then get a serie of release files named `release-v<version>-inkplate_<XXX>.zip` located in the current main project folder.
+
+#### The bld_release.sh usage
+
+The `bld_release.sh` requires 3 parameters and one optional parameter:
+
+- the first parameter is the version number (e.g. `2.2-BETA`, or `2.2`, etc)
+- the second parameter is the device type from the following list: `6`, `10`, `6plus`, `6plusv2`, `6flick`
+- the third parameter is if the device is using the buttons extension. values are `0`: no extension, `1` : extension present. As of today, there is no people known of using that extension, so it must be 0.
+- the fourth parameter is used for some optimisation:
+  - If not present, the build folder is cleared. The script check if there is a release zip file already done and if so, will abort the process.
+  - if present and = `1`, the build folder is cleared and the image is build, NO release file is built.
+  - if present and = `2`, the build folder is kept and the image is rebuilt, NO release file is built.
+
+For example:
+
+```bash
+$ ./bld_releae 2.2-BETA 6plusv2 0
+```
+
+------
+
 (Updated 2022.5.01)
 
 Update to version 2.0.1

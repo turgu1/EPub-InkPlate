@@ -88,5 +88,13 @@
   },
   "cmake.configureOnOpen": false,
   "C_Cpp.dimInactiveRegions": false,
-  "idf.adapterTargetName": "esp32"
+  "idf.adapterTargetName": "esp32",
+  "idf.pythonInstallPath": "/usr/bin/python3",
+
+  "idf.cmakeCompilerArgs": ["-DDEVICE=INKPLATE_6FLICK", "-DAPP_VERSION=V3.0.1"],
+  "idf.ninjaArgs": [
+    "-j",
+    "10"
+  ],
+  "idf.port": "/dev/ttyUSB0"
 }

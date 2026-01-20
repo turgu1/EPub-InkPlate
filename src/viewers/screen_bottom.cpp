@@ -74,7 +74,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   }
 
   #if EPUB_INKPLATE_BUILD
-    int8_t show_heap;
+    int8_t show_heap = 0;
     config.get(Config::Ident::SHOW_HEAP, &show_heap);
 
     if (show_heap != 0) {
@@ -95,7 +95,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   #endif
 
   #if DATE_TIME_RTC
-    int8_t show_rtc;
+    int8_t show_rtc = 0;
     config.get(Config::Ident::SHOW_RTC, &show_rtc);
 
     if (show_rtc != 0) {

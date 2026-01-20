@@ -21,6 +21,7 @@ set(components
     esp_app_format
     pthread
     freetype
+    spi_flash
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

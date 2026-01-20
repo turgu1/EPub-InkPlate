@@ -47,24 +47,11 @@ elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
     add_compile_definitions(
         INKPLATE_6_V2=1 
         PCAL6416=1)
-elseif(DEVICE MATCHES "^INKPLATE_6COLOR$")
-    message("INKPLATE 6COLOR defined")
-    set(DEVICE_NAME "I6C")
-    add_compile_definitions(
-        INKPLATE_6COLOR=1 
-        PCAL6416=1)
-elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
-    message("INKPLATE 10 V2 defined")
-    set(DEVICE_NAME "I10V2")
-    add_compile_definitions(
-        INKPLATE_10_V2=1 
-        PCAL6416=1)
 else()
-    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=V3.0.1")
+    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=3.0.1")
 endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 
-    "/home/turgu1/Dev/ESP-IDF-InkPlate"
     src 
 )
 
