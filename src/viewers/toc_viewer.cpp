@@ -60,7 +60,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
       .screen_left        =  xpos,
       .screen_right       =    10,
       .screen_top         =  ypos,
-      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + MAX_TITLE_SIZE + 20)),
+      .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + MAX_TITLE_SIZE + 20)),
       .width              =     0,
       .height             =     0,
       .vertical_align     =     0,
@@ -90,7 +90,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
 
     const TOC::EntryRecord & entry = toc.get_entry(entry_idx);
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (screen_idx == current_screen_idx) {
         page.put_highlight(Dim(Screen::get_width() - 30, ENTRY_HEIGHT + 5), 
                            Pos(15, ypos));
@@ -99,7 +99,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
 
     fmt.screen_left   = 20 + (entry.level * 20);
     fmt.screen_top    = ypos,
-    fmt.screen_bottom = (int16_t)(Screen::get_height() - (ypos + ENTRY_HEIGHT)),
+    fmt.screen_bottom = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT)),
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -117,7 +117,7 @@ TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx)
 void 
 TocViewer::highlight(int16_t screen_idx)
 {
-  #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (current_screen_idx != screen_idx) {
@@ -143,7 +143,7 @@ TocViewer::highlight(int16_t screen_idx)
       .screen_left        = xpos,
       .screen_right       = 10,
       .screen_top         = ypos,
-      .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
+      .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
       .width              = 0,
       .height             = 0,
       .vertical_align     = 0,

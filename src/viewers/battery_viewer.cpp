@@ -19,7 +19,7 @@
   void
   BatteryViewer::show()
   {
-    int8_t view_mode;
+    int8_t view_mode = 0;
     config.get(Config::Ident::BATTERY, &view_mode);
 
     if (view_mode == 0) return;
@@ -88,7 +88,7 @@
     // Show text
 
     if ((view_mode == 1) || (view_mode == 2)) {
-      char str[10];
+      char str[15];
 
       if (view_mode == 1) {
         int percentage = ((voltage - 2.5) * 100.0) / 1.2;

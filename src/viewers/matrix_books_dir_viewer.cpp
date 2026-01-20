@@ -19,7 +19,7 @@
 
 #include <iomanip>
 
-#if (INKPLATE_6PLUS || TOUCH_TRIAL)
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
@@ -105,7 +105,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1), 
                               ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
 
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
         page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
                            Pos(xpos - 2, ypos - 2));
@@ -153,7 +153,7 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     }
   }
 
-  #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     fmt.screen_top = 10 + title_font_height;
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -324,7 +324,7 @@ MatrixBooksDirViewer::clear_highlight()
     .screen_left        = 10,
     .screen_right       = 10,
     .screen_top         = 10,
-    .screen_bottom      = (int16_t)(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+    .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
     .width              = 0,
     .height             = 0,
     .vertical_align     = 0,
@@ -346,7 +346,7 @@ MatrixBooksDirViewer::clear_highlight()
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
 
-  #if (INKPLATE_6PLUS || TOUCH_TRIAL)
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     fmt.screen_top = 10 + title_font_height;
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -398,7 +398,7 @@ MatrixBooksDirViewer::next_page()
     current_book_idx = page_nbr * books_per_page;
   }
   else if ((page_nbr + 1) == page_count) {
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       highlight(books_dir.get_book_count() % books_per_page - 1);
     #endif
     current_book_idx = books_dir.get_book_count() - 1;
@@ -417,7 +417,7 @@ MatrixBooksDirViewer::prev_page()
     show_page(page_nbr, 0);
   }
   else {
-    #if !(INKPLATE_6PLUS || TOUCH_TRIAL)
+    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       highlight(0);
     #endif
   }

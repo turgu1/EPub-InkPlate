@@ -56,8 +56,16 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   // page.put_highlight(Dim(Screen::get_width(), h ),
   //                    Pos(0, Screen::get_height() - h));
 
-  if ((page_nbr != -1) && (page_count != -1)) {
+  if (page_nbr != -1) {
     ostr << page_nbr + 1 << " / " << page_count;
+
+    page.put_str_at(ostr.str(), 
+                    Pos(Page::HORIZONTAL_CENTER, 
+                        Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2), 
+                    fmt);
+  }
+  else if (page_count != -1) {
+    ostr << "PgCalc... " << page_count << "%";
 
     page.put_str_at(ostr.str(), 
                     Pos(Page::HORIZONTAL_CENTER, 
@@ -66,7 +74,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   }
 
   #if EPUB_INKPLATE_BUILD
-    int8_t show_heap;
+    int8_t show_heap = 0;
     config.get(Config::Ident::SHOW_HEAP, &show_heap);
 
     if (show_heap != 0) {
@@ -87,7 +95,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
   #endif
 
   #if DATE_TIME_RTC
-    int8_t show_rtc;
+    int8_t show_rtc = 0;
     config.get(Config::Ident::SHOW_RTC, &show_rtc);
 
     if (show_rtc != 0) {
@@ -98,7 +106,7 @@ ScreenBottom::show(int16_t page_nbr, int16_t page_count)
       localtime_r(&epoch, &time);
 
       ostr.str(std::string());
-      ostr << dw[(int8_t) time.tm_wday] << " - "
+      ostr << dw[static_cast<int8_t>(time.tm_wday)] << " - "
            << std::setfill('0') 
            << std::setw(2) << +(time.tm_mon + 1)  << '/' 
            << std::setw(2) << +time.tm_mday << ' '

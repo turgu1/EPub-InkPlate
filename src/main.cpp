@@ -25,7 +25,7 @@
   #include "alloc.hpp"
   #include "esp.hpp"
 
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #include "controllers/back_lit.hpp"
   #endif
 
@@ -34,6 +34,8 @@
   #if TESTING
     #include "gtest/gtest.h"
   #endif
+#include <esp_chip_info.h>
+#include <esp_flash.h>
 
   static constexpr char const * TAG = "main";
 
@@ -63,8 +65,25 @@
       }
     
     #else
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+        #define MSG "Press the WakUp Button to restart."
+        #define INT_PIN TouchScreen::INTERRUPT_PIN
+        #define LEVEL 0
+      #else
+        #define MSG "Press a key to restart."
+        #if EXTENDED_CASE
+          #define INT_PIN PressKeys::INTERRUPT_PIN
+        #else
+          #define INT_PIN TouchKeys::INTERRUPT_PIN
+        #endif
+        #define LEVEL 1
+      #endif
+
       bool inkplate_err = !inkplate_platform.setup(true);
-      if (inkplate_err) LOG_E("InkPlate6Ctrl Error.");
+      if (inkplate_err) {
+        LOG_E("Inkplate Platform Setup Error. Restarting!");
+        esp_restart();
+      }
 
       bool config_err = !config.read();
       if (config_err) LOG_E("Config Error.");
@@ -85,32 +104,20 @@
 
       page_locs.setup();
 
-      #if INKPLATE_6PLUS
-        #define MSG "Press the WakUp Button to restart."
-        #define INT_PIN TouchScreen::INTERRUPT_PIN
-        #define LEVEL 0
-      #else
-        #define MSG "Press a key to restart."
-        #if EXTENDED_CASE
-          #define INT_PIN PressKeys::INTERRUPT_PIN
-        #else
-          #define INT_PIN TouchKeys::INTERRUPT_PIN
-        #endif
-        #define LEVEL 1
-      #endif
-
       if (fonts.setup()) {
         
-        Screen::Orientation    orientation;
-        Screen::PixelResolution resolution;
+        Screen::Orientation    orientation = Screen::Orientation::TOP;
+        Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
+
         config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
         config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
+
         screen.setup(resolution, orientation);
 
         event_mgr.setup();
         event_mgr.set_orientation(orientation);
 
-        #if INKPLATE_6PLUS
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
           back_lit.setup();
         #endif
 
@@ -123,14 +130,6 @@
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
     
-        if (inkplate_err) {
-          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
-            "Unable to initialize the InkPlate drivers. Entering Deep Sleep. " MSG
-          );
-          ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
-        }
-
         if (config_err) {
           msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
             "Unable to read/save configuration file. Entering Deep Sleep. " MSG
@@ -183,10 +182,13 @@
 
       printf("silicon revision %d, ", chip_info.revision);
 
-      printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
+      uint32_t size_flash_chip;
+      esp_flash_get_size(NULL, &size_flash_chip);
+
+      printf("%" PRIu32 "MB %s flash\n", size_flash_chip / (1024 * 1024),
               (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-      printf("Minimum free heap size: %d bytes\n", esp_get_minimum_free_heap_size());
+      printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 
       heap_caps_print_heap_info(MALLOC_CAP_32BIT|MALLOC_CAP_8BIT|MALLOC_CAP_SPIRAM|MALLOC_CAP_INTERNAL);
 
@@ -247,7 +249,7 @@
       event_mgr.setup();
       books_dir_controller.setup();
 
-      #if defined(INKPLATE_6PLUS)
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
         #define MSG "the WakeUp button"
       #else
         #define MSG "a key"

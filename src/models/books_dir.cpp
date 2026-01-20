@@ -269,7 +269,7 @@ BooksDir::get_book_index(uint32_t id, uint16_t & idx)
     if (entry.second.id == id) { idx = i; found = true; break; }
     i++;
   }
-  if (!found) LOG_E("Unable to find id: 0x%08x", id);
+  if (!found) LOG_E("Unable to find id: 0x%08" PRIx32, id);
 
   return found;
 }
@@ -280,7 +280,7 @@ BooksDir::set_track_order(uint32_t id, int8_t pos)
   static bool no_recurse = false;
   if (no_recurse) return;
 
-  LOG_D("-------------------------> set_track_order(%u, %d)", id, pos);
+  LOG_D("-------------------------> set_track_order(%" PRIu32 ", %" PRIi8 ")", id, pos);
   bool found = false;
 
   for (auto & entry : sorted_index) {
@@ -420,16 +420,16 @@ BooksDir::refresh(char * book_filename, int16_t & book_index, bool force_init)
       do {
         int32_t size = db.get_record_size();
         if (size <= 0) {
-          LOG_E("Unable to get proper record size: %d from db", size);
+          LOG_E("Unable to get proper record size: %" PRIi32 " from db", size);
           goto error_clear;
         }
         EBookRecord * data = (EBookRecord *) allocate(size);
         if (data == nullptr) {
-          LOG_E("Unable to allocate %d bytes for ebook record", size);
+          LOG_E("Unable to allocate %" PRIi32 " bytes for ebook record", size);
           goto error_clear;
         }
         if (!db.get_record(data, size)) { 
-          LOG_E("Unable to get record of size %d from db", size);
+          LOG_E("Unable to get record of size %" PRIi32 " from db", size);
           free(data); 
           goto error_clear; 
         }

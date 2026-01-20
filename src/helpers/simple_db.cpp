@@ -88,7 +88,7 @@ SimpleDB::close()
 bool 
 SimpleDB::add_record(void * record, int32_t size) 
 {
-  LOG_D("Adding record of size %d", size);
+  LOG_D("Adding record of size %" PRIi32, size);
 
   if (record_count >= MAX_RECORD_COUNT) return false;
   if (fseek(db_file, 0, SEEK_END)) return false;

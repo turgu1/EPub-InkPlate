@@ -6,7 +6,7 @@
 // Touch Screen calibration algorithm from: https://www.embedded.com/how-to-calibrate-touch-screens
 //
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"
@@ -17,13 +17,15 @@
 #include "controllers/app_controller.hpp"
 #include "viewers/page.hpp"
 #include "models/config.hpp"
+#include "logging.hpp"
 
-const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD",         "SWIPE_LEFT", 
-                                        "SWIPE_RIGHT", "PINCH_ENLARGE", "PINCH_REDUCE", "RELEASE"    };
+const char * EventMgr::event_str[9] = { "NONE",        "TAP",           "HOLD",         "SWIPE_LEFT", 
+                                        "SWIPE_RIGHT", "PINCH_ENLARGE", "PINCH_REDUCE", "RELEASE",
+                                        "WAKEUP_BUTTON" };
 
+#define U16(v) static_cast<uint16_t>(v)
 
 #if EPUB_INKPLATE_BUILD
-
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -34,11 +36,16 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
   #include "inkplate_platform.hpp"
   #include "viewers/msg_viewer.hpp"
 
-  #include "touch_screen.hpp"
+  #if INKPLATE_6FLICK
+    #include "touch_screen_cypress.hpp"
+  #else
+    #include "touch_screen_elan.hpp"
+  #endif
+
   #include "logging.hpp"
 
-  static xQueueHandle touchscreen_isr_queue   = NULL;
-  static xQueueHandle touchscreen_event_queue = NULL;
+  static QueueHandle_t touchscreen_isr_queue   = NULL;
+  static QueueHandle_t touchscreen_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchscreen_isr_handler(void * arg)
@@ -90,8 +97,9 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
         .y    = 0,
         .dist = 0
       };
+      
+      LOG_D("State: %" PRIu8, uint8_t(state));
 
-      LOG_D("State: %u", (uint8_t)state);
       switch (state) {
         case State::NONE:
           xQueueReceive(touchscreen_isr_queue, &io_num, portMAX_DELAY);
@@ -112,6 +120,9 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
             event.dist = last_dist = DISTANCE2;
             state      = State::PINCHING;
           }
+          // else if (count == 0) {
+          //   event.kind = EventMgr::EventKind::WAKEUP_BUTTON;
+          // }
           break; 
 
         case State::WAIT_NEXT:
@@ -255,32 +266,32 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
       case Screen::Orientation::BOTTOM:
         LOG_D("Bottom...");
         calib_point = {
-          .x = { ((uint16_t)(Screen::get_width()  - 100)), ((uint16_t)(Screen::get_width()  / 2)), 100 },
-          .y = { 100, ((uint16_t)(Screen::get_height() - 100)), ((uint16_t)(Screen::get_height() / 2)) }
+          .x = { U16(Screen::get_width()  - 100), U16(Screen::get_width()  / 2), 100 },
+          .y = { 100, U16(Screen::get_height() - 100), U16(Screen::get_height() / 2) }
         };
         break;
 
       case Screen::Orientation::TOP:
         LOG_D("Top...");
         calib_point = {
-          .x = { 100, ((uint16_t)(Screen::get_width()  / 2)), ((uint16_t)(Screen::get_width()  - 100)) },
-          .y = { ((uint16_t)(Screen::get_height() - 100)), 100, ((uint16_t)(Screen::get_height() / 2)) }
+          .x = { 100, U16(Screen::get_width()  / 2), U16(Screen::get_width()  - 100) },
+          .y = { U16(Screen::get_height() - 100), 100, U16(Screen::get_height() / 2) }
         };
         break;
     
       case Screen::Orientation::LEFT:
         LOG_D("Left...");
         calib_point = {
-          .x = { ((uint16_t)(Screen::get_width()  - 100)), 100, ((uint16_t)(Screen::get_width()  / 2)) },
-          .y = { ((uint16_t)(Screen::get_height() - 100)), ((uint16_t)(Screen::get_height() / 2)), 100 }
+          .x = { U16(Screen::get_width()  - 100), 100, U16(Screen::get_width()  / 2) },
+          .y = { U16(Screen::get_height() - 100), U16(Screen::get_height() / 2), 100 }
         };
         break;
 
       case Screen::Orientation::RIGHT:
         LOG_D("Right...");
         calib_point = {
-          .x = { 100, ((uint16_t)(Screen::get_width()  - 100)), ((uint16_t)(Screen::get_width()  / 2)) },
-          .y = { 100, ((uint16_t)(Screen::get_height() / 2)), ((uint16_t)(Screen::get_height() - 100)) }
+          .x = { 100, U16(Screen::get_width()  - 100), U16(Screen::get_width()  / 2) },
+          .y = { 100, U16(Screen::get_height() / 2), U16(Screen::get_height() - 100) }
         };
         break;
     }
@@ -430,8 +441,8 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
           #define Y2 touch_point.y[2]
 
           calib_point = {
-            .x = { 100, ((uint16_t)(e_ink.get_height() - 100)), ((uint16_t)(e_ink.get_height()  / 2)) },
-            .y = { 100, ((uint16_t)(e_ink.get_width()  /   2)), ((uint16_t)(e_ink.get_width() - 100)) }
+            .x = { 100, U16(e_ink.get_height() - 100), U16(e_ink.get_height()  / 2) },
+            .y = { 100, U16(e_ink.get_width()  /   2), U16(e_ink.get_width() - 100) }
           };
 
           #define XD0 calib_point.x[0]
@@ -559,7 +570,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
     }
 
 
-    LOG_D("State: %u", (uint8_t)state);
+    LOG_D("State: %u", std::static_cast<uint8_t>(state));
 
     switch (state) {
       case State::NONE:
@@ -693,7 +704,7 @@ const char * EventMgr::event_str[8] = { "NONE",        "TAP",           "HOLD", 
         // rebooting after the user press a key.
 
         if (!stay_on) { // Unless somebody wants to keep us awake...
-          int8_t light_sleep_duration;
+          int8_t light_sleep_duration = 2;
           config.get(Config::Ident::TIMEOUT, &light_sleep_duration);
 
           LOG_D("Light Sleep for %d minutes...", light_sleep_duration);

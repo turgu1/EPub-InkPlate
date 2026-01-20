@@ -6,6 +6,7 @@ Here is the installation procedure for the EPub-InkPlate application. This proce
 
 The installation consists of
 
+- Preparing your computer with the proper applications needed for the installation process.
 - Preparing an SD-Card with the appropriate information.
 - Uploading the application to the InkPlate device.
   
@@ -15,13 +16,15 @@ The last version of the binaries for the Inkplate are located in release bundles
 
 ### Prerequesite
 
-The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 2 and 3. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, on Windows, Linux or MacOs, to install esptool, the following command must be executed (in a shell window):
+The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 3.7 or newer. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, on Windows, Linux or MacOs, to install esptool, the following command must be executed (in a shell window):
 
 ```sh
 pip install esptool
 ```
 
-The InkPlate device uses a CH340 USB to UART converter. If your computer doesn't have a driver installed for the CH340, you have to install one. Look at this location for the proper procedure to install it: "https://e-radionica.com/en/blog/ch340-driver-installation-croduino-basic3-nova2/".
+For more information, please consult the following link: "https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html".
+
+The InkPlate device uses a CH340 USB to UART converter. If your computer doesn't have a driver installed for the CH340, you have to install one. Look at this location for the proper procedure to install it: "https://soldered.com/learn/ch340-driver-installation-croduino-basic3-nova2/".
 
 You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release-X.X.X-inkplate ... .zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation document, and the user's guide document in PDF format.
 

@@ -16,7 +16,10 @@ fi
 # cd ..
 
 ./bld_release.sh $1 6 0
-./bld_release.sh $1 6 1
+#./bld_release.sh $1 6 1
 ./bld_release.sh $1 10 0
-./bld_release.sh $1 10 1
+#./bld_release.sh $1 10 1
 ./bld_release.sh $1 6plus 0
+./bld_release.sh $1 6plusv2 0
+./bld_release.sh $1 6flick 0
+

@@ -9,6 +9,7 @@
 #include "controllers/common_actions.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/web_server.hpp"
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
 #include "models/config.hpp"
@@ -38,18 +39,18 @@ static int8_t old_show_images;
 static int8_t old_use_fonts_in_book;
 static int8_t old_font;
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
 #else
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
 #endif
 static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
-  { .caption = "Font Size:",           .u = { .ch = { .value = &font_size,          .choice_count = 4, .choices = FormChoiceField::font_size_choices } }, FormEntryType::HORIZONTAL },
-  { .caption = "Use fonts in book:",   .u = { .ch = { .value = &use_fonts_in_book,  .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, FormEntryType::HORIZONTAL },
-  { .caption = "Font:",                .u = { .ch = { .value = &font,               .choice_count = 8, .choices = FormChoiceField::font_choices      } }, FormEntryType::VERTICAL   },
-  { .caption = "Show Images in book:", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || TOUCH_TRIAL
-    { .caption = " DONE ",             .u = { .ch = { .value = &done_res,           .choice_count = 0, .choices = nullptr                            } }, FormEntryType::DONE       }
+  { .caption = "Font Size:",           .u = { .ch = { .value = &font_size,          .choice_count = 4, .choices = FormChoiceField::font_size_choices } }, .entry_type = FormEntryType::HORIZONTAL },
+  { .caption = "Use fonts in book:",   .u = { .ch = { .value = &use_fonts_in_book,  .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
+  { .caption = "Font:",                .u = { .ch = { .value = &font,               .choice_count = 8, .choices = FormChoiceField::font_choices      } }, .entry_type = FormEntryType::VERTICAL   },
+  { .caption = "Show Images in book:", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    { .caption = " DONE ",             .u = { .ch = { .value = &done_res,           .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
   #endif
 };
 
@@ -146,9 +147,6 @@ toc_ctrl()
 {
   app_controller.set_controller(AppController::Ctrl::TOC);
 }
-
-extern bool start_web_server();
-extern bool  stop_web_server();
 
 static void
 wifi_mode()

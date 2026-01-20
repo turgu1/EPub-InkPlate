@@ -3,6 +3,8 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+managed_components
+dependencies.lock
 example
 build
 test/*
@@ -27,3 +29,4 @@ temp
 SDCard/books/**/*
 !SDCard/books/Austen*.epub
 valgrind.log
+SDCard-Save

@@ -787,7 +787,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
   
   char * data        = nullptr;
   char * window      = nullptr;
-  int    total       = 0;
+  uint32_t total       = 0;
   int    err         = 0;
   
   bool completed     = false;
@@ -809,7 +809,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
         data_ptr += size;
         total    += size;
 
-        LOG_D("Got %d bytes...", size);
+        LOG_D("Got %" PRIu32 " bytes...", size);
       }
       else {
         LOG_E("Got 0 bytes!!");
@@ -820,7 +820,7 @@ Unzip::get_file(const char * filename, uint32_t & file_size)
       size = file_size - total;
     }
 
-    LOG_D("File size: %d, received: %d", file_size, total);
+    LOG_D("File size: %" PRIu32 ", received: %" PRIu32, file_size, total);
     free(window);
     completed = true;
     break;

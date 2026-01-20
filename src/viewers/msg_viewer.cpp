@@ -25,7 +25,7 @@ void MsgViewer::show(
   const char * title, 
   const char * fmt_str, ...)
 {
-  char buff[200];
+  char buff[250];
 
   width = Screen::get_width() - 60;
 
@@ -33,7 +33,7 @@ void MsgViewer::show(
 
   va_list args;
   va_start(args, fmt_str);
-  vsnprintf(buff, 200, fmt_str, args);
+  vsnprintf(buff, 250, fmt_str, args);
   va_end(args);
 
   Page::Format fmt = {
@@ -119,7 +119,7 @@ void MsgViewer::show(
   // Press a Key option
 
   if (press_a_key) {
-    #if INKPLATE_6PLUS || TOUCH_TRIAL
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       if (msg_type != MsgType::CONFIRM) {
         fmt.align       = CSS::Align::CENTER;
         fmt.font_size   =                  9;
@@ -184,7 +184,7 @@ void MsgViewer::show(
 
 bool MsgViewer::confirm(const EventMgr::Event & event, bool & ok)
 {
-  #if defined(INKPLATE_6PLUS) || TOUCH_TRIAL
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 
     if (event.kind == EventMgr::EventKind::TAP) {
       if ((event.x >= ok_pos.x) && (event.x <= (ok_pos.x + buttons_dim.width )) &&
@@ -349,7 +349,7 @@ MsgViewer::out_of_memory(const char * raison)
 
   screen.force_full_update();
 
-  #if INKPLATE_6PLUS
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "Press the WakUp Button to restart."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
     #define LEVEL 0

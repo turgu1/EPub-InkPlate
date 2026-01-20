@@ -455,7 +455,7 @@ IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size)
     }
     else if (!face->get_glyph(glyph_code, *glyph, &glyph_data, true)) {
       bitmap_glyph_pool.deallocate(glyph);
-      LOG_E("Unable to render glyph for glyph_code: %d", glyph_code);
+      LOG_E("Unable to render glyph for glyph_code: %" PRIu32, glyph_code);
       return nullptr;
     }
 

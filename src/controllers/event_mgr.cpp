@@ -29,8 +29,8 @@
     #include "touch_keys.hpp"
   #endif
 
-  static xQueueHandle touchpad_isr_queue   = NULL;
-  static xQueueHandle touchpad_event_queue = NULL;
+  static QueueHandle_t touchpad_isr_queue   = NULL;
+  static QueueHandle_t touchpad_event_queue = NULL;
 
   static void IRAM_ATTR 
   touchpad_isr_handler(void * arg)
@@ -65,7 +65,7 @@
         if ((pads = press_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
         }
         else {
@@ -74,7 +74,7 @@
 
           // Re-activating interrupts.
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
 
           if      (pads & SELECT_PAD) event.kind = EventMgr::EventKind::SELECT;
@@ -95,28 +95,28 @@
     EventMgr::set_orientation(Screen::Orientation orient)
     {
       if (orient == Screen::Orientation::LEFT) {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U1);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U6);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
       } 
       else if (orient == Screen::Orientation::RIGHT) {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U6);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U1);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
       } 
       else {
-          NEXT_PAD = (1 << (uint8_t)PressKeys::Key::U5);
-          PREV_PAD = (1 << (uint8_t)PressKeys::Key::U2);
-        SELECT_PAD = (1 << (uint8_t)PressKeys::Key::U6);
-         DNEXT_PAD = (1 << (uint8_t)PressKeys::Key::U3);
-         DPREV_PAD = (1 << (uint8_t)PressKeys::Key::U4);
-          HOME_PAD = (1 << (uint8_t)PressKeys::Key::U1);
+          NEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U5));
+          PREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U2));
+        SELECT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U6));
+         DNEXT_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
+         DPREV_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
+          HOME_PAD = (1 << static_cast<uint8_t>(PressKeys::Key::U1));
       }
     }
   #else
@@ -142,7 +142,7 @@
         if ((pads = touch_keys.read_all_keys()) == 0) {
           // Not fast enough or not synch with start of key strucked. Re-activating interrupts...
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
         }
         else {
@@ -151,7 +151,7 @@
 
           // Re-activating interrupts.
           Wire::enter();
-          mcp_int.get_int_state();
+          io_expander_int.get_int_state();
           Wire::leave();  
 
           // Wait for potential second key
@@ -164,7 +164,7 @@
 
             // There was no key, re-activate interrupts
             Wire::enter();
-            mcp_int.get_int_state();
+            io_expander_int.get_int_state();
             Wire::leave();  
           }
           // t2 = esp_timer_get_time();
@@ -177,7 +177,7 @@
 
             // Re-activating interrupts
             Wire::enter();
-            mcp_int.get_int_state();
+            io_expander_int.get_int_state();
             Wire::leave();  
 
             if      (pads2 & SELECT_PAD) event.kind = EventMgr::EventKind::DBL_SELECT;
@@ -292,7 +292,7 @@
         // rebooting after the user press a key.
 
         if (!stay_on) { // Unless somebody wants to keep us awake...
-          int8_t light_sleep_duration;
+          int8_t light_sleep_duration = 5;
           config.get(Config::Ident::TIMEOUT, &light_sleep_duration);
 
           LOG_I("Light Sleep for %d minutes...", light_sleep_duration);
@@ -364,7 +364,7 @@ EventMgr::setup()
       (void *) GPIO_NUM_34);
 
     Wire::enter();
-    mcp_int.get_int_state();                        // This is activating interrupts...
+    io_expander_int.get_int_state();                        // This is activating interrupts...
     Wire::leave();
   #endif
 

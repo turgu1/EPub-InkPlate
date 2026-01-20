@@ -1,0 +1,14 @@
+prefix=/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.13.3/../../components/freetype
+exec_prefix=/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.13.3/../../components/freetype
+libdir=/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.13.3/../../components/freetype/lib
+includedir=/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.13.3/../../components/freetype/include
+
+Name: FreeType 2
+URL: https://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 26.2.20
+Requires: 
+Requires.private: 
+Libs: -L/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.13.3/../../components/freetype/lib -lfreetype 
+Libs.private: 
+Cflags: -I${includedir}/freetype2

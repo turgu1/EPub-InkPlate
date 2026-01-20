@@ -128,7 +128,7 @@ PngImage::PngImage(std::string filename, Dim max, bool load_bitmap) : Image(file
           w = width;
         }
 
-        LOG_D("Image size: [%d, %d] %d bytes.", w, h, w * h);
+        LOG_D("Image size: [%" PRIu32 ", %" PRIu32 "] %" PRIu32 " bytes.", w, h, w * h);
 
         if (load_bitmap) {
           if ((image_data.bitmap = (uint8_t *) allocate(w * h)) == nullptr) break;

@@ -54,10 +54,10 @@ BooksDirController::setup()
 
           last_read_book_index = current_book_index = idx;
           
-          //LOG_D("Last book filename: %s",  book_fname);
-          LOG_D("Last book ref index: %d", book_page_id.itemref_index);
-          LOG_D("Last book offset: %d",    book_page_id.offset);
-          LOG_D("Show it now: %s",         book_was_shown ? "yes" : "no");
+          //ESP_LOGD(TAG, "Last book filename: %s",  book_fname);
+          ESP_LOGD(TAG, "Last book ref index: %" PRIi16, book_page_id.itemref_index);
+          ESP_LOGD(TAG, "Last book offset: %"    PRIi32, book_page_id.offset);
+          ESP_LOGD(TAG, "Show it now: %s",               book_was_shown ? "yes" : "no");
         }
       }
     }
@@ -113,7 +113,7 @@ BooksDirController::setup()
       book_filename        = book_fname;
     }
 
-    LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", 
+    ESP_LOGD(TAG, "Book to show: idx:%d page:(%d, %d) was_shown:%s", 
           last_read_book_index, book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
 
     delete [] book_fname;
@@ -139,7 +139,7 @@ BooksDirController::save_last_book(const PageLocs::PageId & page_id, bool going_
       NVSMgr::NVSData nvs_data = {
         .offset        = page_id.offset,
         .itemref_index = page_id.itemref_index,
-        .was_shown     = (uint8_t) (going_to_deep_sleep ? 1 : 0),
+        .was_shown     = static_cast<uint8_t>(going_to_deep_sleep ? 1 : 0),
         .filler1       = 0
       };
 
@@ -171,7 +171,7 @@ BooksDirController::show_last_book()
 
   if (last_read_book_index == -1) return;
 
-  LOG_D("===> show_last_book()...");
+  ESP_LOGD(TAG, "===> show_last_book()...");
   static std::string            book_fname;
   static std::string            book_title;
   const BooksDir::EBookRecord * book;
@@ -193,7 +193,7 @@ void
 BooksDirController::enter()
 {
 
-  LOG_D("===> enter()...");
+  ESP_LOGD(TAG, "===> enter()...");
   config.get(Config::Ident::DIR_VIEW, &viewer_id);
   books_dir_viewer = (viewer_id == LINEAR_VIEWER) ? (BooksDirViewer *) &linear_books_dir_viewer : 
                                         (BooksDirViewer *) &matrix_books_dir_viewer;
@@ -216,7 +216,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
 }
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   void 
   BooksDirController::input_event(const EventMgr::Event & event)
   {
@@ -227,10 +227,12 @@ BooksDirController::leave(bool going_to_deep_sleep)
 
     switch (event.kind) {
       case EventMgr::EventKind::SWIPE_RIGHT:
+        ESP_LOGD(TAG, "[SWIPE_RIGHT]");
         current_book_index = books_dir_viewer->prev_page();   
         break;
 
       case EventMgr::EventKind::SWIPE_LEFT:
+        ESP_LOGD(TAG, "[SWIPE_LEFT]");
         current_book_index = books_dir_viewer->next_page();   
         break;
 
@@ -238,6 +240,7 @@ BooksDirController::leave(bool going_to_deep_sleep)
         if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::get_width() / 3))) {
           current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
           if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+            ESP_LOGD(TAG, "[TAP] Book Index: %d", current_book_index);
             book = books_dir.get_book_data(current_book_index);
             if (book != nullptr) {
               last_read_book_index = current_book_index;
@@ -261,11 +264,13 @@ BooksDirController::leave(bool going_to_deep_sleep)
             }
           }
           else {
+            ESP_LOGD(TAG, "[OPTIONS MENU]");
             current_book_index = -1;
             app_controller.set_controller(AppController::Ctrl::OPTION);
           }
         }
         else {
+          ESP_LOGD(TAG, "[OPTIONS MENU]");
           current_book_index = -1;
           app_controller.set_controller(AppController::Ctrl::OPTION);
         }
@@ -274,13 +279,14 @@ BooksDirController::leave(bool going_to_deep_sleep)
       case EventMgr::EventKind::HOLD:
         current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
+          ESP_LOGD(TAG, "[HOLD] Book Index: %d", current_book_index);
           books_dir_viewer->highlight_book(current_book_index);
-          LOG_I("Book Index: %d", current_book_index);
         }
         break;
 
       case EventMgr::EventKind::RELEASE:
-        #if INKPLATE_6PLUS
+        ESP_LOGD(TAG, "[RELEASE]");
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
           ESP::delay(1000);
         #endif
         

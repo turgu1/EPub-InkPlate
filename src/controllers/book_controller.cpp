@@ -76,7 +76,7 @@ BookController::open_book_file(
   return false;
 }
 
-#if INKPLATE_6PLUS || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   void 
   BookController::input_event(const EventMgr::Event & event)
   {

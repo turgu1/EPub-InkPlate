@@ -18,14 +18,14 @@
 #include <fstream>
 #include <ios>
 
-enum class MgrReq : int8_t { ASAP_READY, STOPPED };
+enum class MgrReq : int8_t { ASAP_READY, STOPPED, PERCENT };
 
 struct MgrQueueData {
   MgrReq req;
   int16_t itemref_index;
 };
 
-enum class StateReq  : int8_t { ABORT, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY };
+enum class StateReq  : int8_t { ABORT, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT };
 
 struct StateQueueData {
   StateReq req;
@@ -66,9 +66,9 @@ struct RetrieveQueueData {
       return cfg;
   }
 
-  static xQueueHandle mgr_queue      = nullptr;
-  static xQueueHandle state_queue    = nullptr;
-  static xQueueHandle retrieve_queue = nullptr;
+  static QueueHandle_t mgr_queue      = nullptr;
+  static QueueHandle_t state_queue    = nullptr;
+  static QueueHandle_t retrieve_queue = nullptr;
 
   #define QUEUE_SEND(q, m, t)        xQueueSend(q, &m, t)
   #define QUEUE_RECEIVE(q, m, t)  xQueueReceive(q, &m, t)
@@ -81,14 +81,15 @@ class StateTask
 
     bool retriever_iddle;
 
-    int16_t   itemref_count;       // Number of items in the document
-    int16_t   waiting_for_itemref; // Current item being processed by retrieval task
-    int16_t   next_itemref_to_get; // Non prioritize item to get next
-    int16_t   asap_itemref;        // Prioritize item to get next
-    uint8_t * bitset;              // Set of all items processed so far
-    uint8_t   bitset_size;         // bitset byte length
+    int16_t   itemref_count;        // Number of items in the document
+    int16_t   items_done_count;     // Number of items done
+    int16_t   waiting_for_itemref;  // Current item being processed by retrieval task
+    int16_t   next_itemref_to_get;  // Non prioritize item to get next
+    int16_t   asap_itemref;         // Prioritize item to get next
+    uint8_t * bitset;               // Set of all items processed so far
+    uint8_t   bitset_size;          // bitset byte length
     bool      stopping;
-    bool      forget_retrieval;    // Forget current item begin processed by retrieval task
+    bool      forget_retrieval;     // Forget current item begin processed by retrieval task
 
     StateQueueData       state_queue_data;
     RetrieveQueueData retrieve_queue_data;
@@ -111,7 +112,7 @@ class StateTask
     void request_next_item(int16_t itemref,
                           bool already_sent_to_mgr = false)
     {
-      if (asap_itemref != -1) {
+      if (asap_itemref != -1) { // is there an urgent spine to do?
         if (itemref == asap_itemref) {
           asap_itemref = -1;
           if (!already_sent_to_mgr) {
@@ -220,8 +221,10 @@ class StateTask
             LOG_D("-> START_DOCUMENT <-");
             if (bitset) delete [] bitset;
             itemref_count = state_queue_data.itemref_count;
-            bitset_size   = (itemref_count + 7) >> 3;
-            bitset        = new uint8_t[bitset_size];
+            items_done_count = 0;
+            // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count, itemref_count);
+            bitset_size      = (itemref_count + 7) >> 3;
+            bitset           = new uint8_t[bitset_size];
             if (bitset) {
               memset(bitset, 0, bitset_size);
               if (waiting_for_itemref == -1) {
@@ -254,7 +257,7 @@ class StateTask
             if (itemref_count == -1) {
               mgr_queue_data = {
                 .req           = MgrReq::ASAP_READY,
-                .itemref_index = (int16_t) -(state_queue_data.itemref_index + 1)
+                .itemref_index = static_cast<int16_t>(-(state_queue_data.itemref_index + 1))
               };
               QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
               LOG_D("Sent ASAP_READY to Mgr");
@@ -302,7 +305,11 @@ class StateTask
                   itemref = -(itemref + 1);
                   LOG_E("Unable to retrieve pages location for item %d", itemref);
                 }
-                bitset[itemref >> 3] |= (1 << (itemref & 7));
+                if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
+                  bitset[itemref >> 3] |= (1 << (itemref & 7));
+                  items_done_count += 1;
+                  // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count, itemref_count);
+                }
               }
               if (stopping) {
                 stopping = false;
@@ -347,7 +354,11 @@ class StateTask
                 itemref = -(itemref + 1);
                 LOG_E("Unable to retrieve pages location for item %d", itemref);
               }
-              bitset[itemref >> 3] |= (1 << (itemref & 7));
+              if ((bitset[itemref >> 3] & ( 1 << (itemref & 7))) == 0) {
+                bitset[itemref >> 3] |= (1 << (itemref & 7));
+                items_done_count += 1;
+                // ESP_LOGI(TAG,"items_done_count = %" PRIi16" of %" PRIi16, items_done_count, itemref_count);
+              }
               if (stopping) {
                 stopping = false;
                 retriever_iddle  = true;
@@ -373,12 +384,24 @@ class StateTask
               }
             }
             break;
+          case StateReq::PERCENT:
+            mgr_queue_data = {
+              .req = MgrReq::PERCENT,
+              .itemref_index = static_cast<int16_t>(percent_done())
+            };
+            QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
         }
       }
     }
 
     inline bool   retriever_is_iddle() { return retriever_iddle;  } 
     inline bool forgetting_retrieval() { return forget_retrieval; }
+
+    inline int percent_done() { 
+      int16_t percent = (items_done_count * 100) / itemref_count;
+      // ESP_LOGI(TAG, "Percent = %" PRIi16 " itemref count = %" PRIi16 " items done = %" PRIi16, percent, itemref_count, items_done_count);
+      return percent;
+    }
 
 } state_task;
 
@@ -461,7 +484,7 @@ PageLocs::setup()
     if (state_queue    == nullptr) state_queue    = xQueueCreate(5, sizeof(StateQueueData));
     if (retrieve_queue == nullptr) retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
 
-    auto cfg = create_config("retrieverTask", 0, 60 * 1024, configMAX_PRIORITIES - 2);
+    auto cfg = create_config("retrieverTask", 1, 60 * 1024, configMAX_PRIORITIES - 2);
     cfg.inherit_cfg = true;
     esp_pthread_set_cfg(&cfg);
     retriever_thread = std::thread(retriever_task);
@@ -581,7 +604,7 @@ PageLocs::build_page_locs(int16_t itemref_index)
     
     int8_t font_size = current_format_params.font_size;
 
-    int8_t show_title;
+    int8_t show_title = 0;
     config.get(Config::Ident::SHOW_TITLE, &show_title);
 
     int16_t page_top = 0;
@@ -640,9 +663,9 @@ PageLocs::build_page_locs(int16_t itemref_index)
 
         page_out.start(fmt);
 
-        #if EPUB_INKPLATE_BUILD
-          esp_task_wdt_reset();
-        #endif
+        // #if EPUB_INKPLATE_BUILD
+        //   esp_task_wdt_reset();
+        // #endif
         
         Page::Format * new_fmt = interp->duplicate_fmt(fmt);
         if (!interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
@@ -720,6 +743,29 @@ PageLocs::stop_document()
   LOG_D("==> Waiting for STOPPED... <==");
   QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
   LOG_D("-> %s <-", (mgr_queue_data.req == MgrReq::STOPPED) ? "STOPPED" : "ERROR!!!");
+}
+
+int16_t 
+PageLocs::get_page_count() { 
+  if (completed) return page_count;
+  
+  StateQueueData state_queue_data = {
+    .req           = StateReq::PERCENT,
+    .itemref_index = 0,
+    .itemref_count = 0
+  };
+
+  LOG_D("get_page_count: Sending PERCENT");
+  QUEUE_SEND(state_queue, state_queue_data, 0);
+
+  relax = true;
+  MgrQueueData mgr_queue_data;
+  LOG_D("==> Waiting for answer... <==");
+  QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
+  LOG_D("-> %s <-", mgr_queue_data.req == MgrReq::PERCENT ? "PERCENT" : "ERROR!!!");
+  relax = false;
+
+  return mgr_queue_data.itemref_index;
 }
 
 void 
