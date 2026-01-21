@@ -277,27 +277,29 @@ WIFI::start_ap(void)
 void
 WIFI::stop()
 {
+  vTaskDelay(pdMS_TO_TICKS(500));
+
   if (mdns_running) {
     mdns_free();
   }
 
   if (sta_running || ap_running) {
 
-    if (sta_running) {
-      ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
-      ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
-    } else {
-      ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_ap_event_handler));
-    }
+    esp_wifi_disconnect();
+    esp_wifi_stop();
+
+    // if (sta_running) {
+    //   ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_sta_event_handler));
+    //   ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, WIFI_EVENT_STA_START, &wifi_sta_event_handler));
+    // } else {
+    //   ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,     &wifi_ap_event_handler));
+    // }
+
+    esp_wifi_deinit();
+    esp_event_loop_delete_default();
 
     vEventGroupDelete(wifi_event_group);
     wifi_event_group = nullptr;
-
-    esp_event_loop_delete_default();
-
-    esp_wifi_disconnect();
-    esp_wifi_stop();
-    esp_wifi_deinit();
 
     sta_running = ap_running = false;
   }
