@@ -96,5 +96,8 @@
     "-j",
     "10"
   ],
-  "idf.port": "/dev/ttyUSB0"
+  "idf.port": "/dev/ttyUSB0",
+  "idf.flashType": "UART",
+  "idf.espIdfPath": "/home/turgu1/esp/v5.5.2/esp-idf",
+  "idf.toolsPath": "/home/turgu1/.espressif"
 }
