@@ -36,7 +36,7 @@ $ cd ~/EPub-InkPlate
 2. In a terminal, source the ESP-IDF environment script. This must be done each time you open a new terminal (or once before launching your IDE):
 
 ```bash
-$ . ~/esp/v5.5.2/export.sh
+$ . ~/esp/v5.5.2/esp-idf/export.sh
 ```
 
 3. To build an image for a specific device, use the `idf.py build` command with two mandatory parameters:
