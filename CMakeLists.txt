@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
+set(DEVICE "INKPLATE_6PLUS")
+set(APP_VERSION "3.0.0")
+
 set(IDF_TARGET esp32)
 
 set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
@@ -48,11 +51,12 @@ elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
         INKPLATE_6_V2=1 
         PCAL6416=1)
 else()
-    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=2.1.0")
+    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=3.0.0")
 endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 
     src 
+    ../ESP-IDF-InkPlate
 )
 
 string(TIMESTAMP THE_TIME "%Y%m%d-%H%MZ" UTC)

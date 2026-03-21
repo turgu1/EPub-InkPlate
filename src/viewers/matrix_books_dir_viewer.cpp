@@ -5,14 +5,14 @@
 #define __MATRIX_BOOKS_DIR_VIEWER__ 1
 #include "viewers/matrix_books_dir_viewer.hpp"
 
-#include "models/fonts.hpp"
 #include "models/config.hpp"
+#include "models/fonts.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include "viewers/battery_viewer.hpp"
   #include "models/nvs_mgr.hpp"
+  #include "viewers/battery_viewer.hpp"
 #endif
 
 #include "screen.hpp"
@@ -23,39 +23,40 @@
   static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
-void
-MatrixBooksDirViewer::setup()
-{
-  Font * font = fonts.get(TITLE_FONT);
+void MatrixBooksDirViewer::setup() {
+  Font *font        = fonts.get(TITLE_FONT);
   title_font_height = font->get_line_height(TITLE_FONT_SIZE) * 0.8;
 
-  font = fonts.get(AUTHOR_FONT);
+  font               = fonts.get(AUTHOR_FONT);
   author_font_height = font->get_line_height(AUTHOR_FONT_SIZE) * 0.8;
 
-  font = fonts.get(ScreenBottom::FONT);
+  font                = fonts.get(ScreenBottom::FONT);
   pagenbr_font_height = font->get_line_height(ScreenBottom::FONT_SIZE);
 
   first_entry_ypos = (title_font_height << 1) + author_font_height + SPACE_BELOW_INFO + 10;
 
-  line_count = (Screen::get_height() - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) / 
-                (BooksDir::max_cover_height + MIN_SPACE_BETWEEN_ENTRIES);
+  line_count = (Screen::get_height() - first_entry_ypos - pagenbr_font_height -
+                SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) /
+               (BooksDir::max_cover_height + MIN_SPACE_BETWEEN_ENTRIES);
 
-  column_count = (Screen::get_width() - 10 + MIN_SPACE_BETWEEN_ENTRIES) / (BooksDir::max_cover_width + MIN_SPACE_BETWEEN_ENTRIES);
+  column_count = (Screen::get_width() - 10 + MIN_SPACE_BETWEEN_ENTRIES) /
+                 (BooksDir::max_cover_width + MIN_SPACE_BETWEEN_ENTRIES);
 
-  horiz_space_between_entries = (Screen::get_width() - 10 - (BooksDir::max_cover_width * column_count)) / (column_count - 1);
-  vert_space_between_entries  = (Screen::get_height() - first_entry_ypos - pagenbr_font_height - SPACE_ABOVE_PAGENBR - (BooksDir::max_cover_height * line_count)) / (line_count - 1);
-  books_per_page              = line_count * column_count;
-  page_count                  = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
+  horiz_space_between_entries =
+      (Screen::get_width() - 10 - (BooksDir::max_cover_width * column_count)) / (column_count - 1);
+  vert_space_between_entries = (Screen::get_height() - first_entry_ypos - pagenbr_font_height -
+                                SPACE_ABOVE_PAGENBR - (BooksDir::max_cover_height * line_count)) /
+                               (line_count - 1);
+  books_per_page             = line_count * column_count;
+  page_count                 = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
 
   current_page_nbr = -1;
   current_book_idx = -1;
   current_item_idx = -1;
 }
 
-void 
-MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
-{
-  current_page_nbr = page_nbr;    // First page == 0
+void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx) {
+  current_page_nbr = page_nbr; // First page == 0
   current_item_idx = hightlight_item_idx;
 
   int16_t book_idx = page_nbr * books_per_page;
@@ -65,56 +66,40 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
 
   if (last > books_dir.get_book_count()) last = books_dir.get_book_count();
 
-  int16_t xpos = 5;
-  int16_t ypos = first_entry_ypos;
+  int16_t xpos     = 5;
+  int16_t ypos     = first_entry_ypos;
   int16_t line_pos = 0;
 
   Page::Format fmt = {
-      .line_height_factor =   0.8,
+      .line_height_factor = 0.8,
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
-      .indent             =     0,
-      .margin_left        =     0,
-      .margin_right       =     0,
-      .margin_top         =     0,
-      .margin_bottom      =     0,
-      .screen_left        =    10,
-      .screen_right       =    10,
-      .screen_top         =    10,
-      .screen_bottom      =   100,
-      .width              =     0,
-      .height             =     0,
-      .vertical_align     =     0,
-      .trim               =  true,
-      .pre                = false,
-      .font_style         = Fonts::FaceStyle::NORMAL,
-      .align              = CSS::Align::LEFT,
-      .text_transform     = CSS::TextTransform::NONE,
-      .display            = CSS::Display::INLINE
-    };
+      .screen_bottom      = 100,
+  };
 
   page.start(fmt);
 
   for (int item_idx = 0; book_idx < last; item_idx++, book_idx++) {
 
-    const BooksDir::EBookRecord * book = books_dir.get_book_data(book_idx);
+    const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
 
     if (book == nullptr) break;
-     
-    Image::ImageData image(Dim(book->cover_width, book->cover_height), (uint8_t *) book->cover_bitmap);
-    page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1), 
+
+    Image::ImageData image(Dim(book->cover_width, book->cover_height),
+                           (uint8_t *)book->cover_bitmap);
+    page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1),
                               ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
-        page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
+        page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
                            Pos(xpos - 2, ypos - 2));
-        page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
+        page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
                            Pos(xpos - 3, ypos - 3));
 
-        fmt.font_index    = TITLE_FONT;
-        fmt.font_size     = TITLE_FONT_SIZE;
-        fmt.font_style    = Fonts::FaceStyle::NORMAL;
+        fmt.font_index = TITLE_FONT;
+        fmt.font_size  = TITLE_FONT_SIZE;
+        fmt.font_style = Fonts::FaceStyle::NORMAL;
 
         char title[MAX_TITLE_SIZE];
         title[MAX_TITLE_SIZE - 1] = 0;
@@ -144,11 +129,10 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
     line_pos++;
 
     if (line_pos >= line_count) {
-      xpos    += BooksDir::MAX_COVER_WIDTH + horiz_space_between_entries;
+      xpos += BooksDir::MAX_COVER_WIDTH + horiz_space_between_entries;
       ypos     = first_entry_ypos;
       line_pos = 0;
-    }
-    else {
+    } else {
       ypos += BooksDir::MAX_COVER_HEIGHT + vert_space_between_entries;
     }
   }
@@ -168,37 +152,16 @@ MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx)
   page.paint();
 }
 
-void 
-MatrixBooksDirViewer::highlight(int16_t item_idx)
-{
-  int16_t book_idx,
-          column_idx, line_idx,
-          xpos, ypos;
+void MatrixBooksDirViewer::highlight(int16_t item_idx) {
+  int16_t book_idx, column_idx, line_idx, xpos, ypos;
 
-  const BooksDir::EBookRecord * book;
+  const BooksDir::EBookRecord *book;
 
   Page::Format fmt = {
-    .line_height_factor = 0.8,
-    .font_index         = TITLE_FONT,
-    .font_size          = TITLE_FONT_SIZE,
-    .indent             = 0,
-    .margin_left        = 0,
-    .margin_right       = 0,
-    .margin_top         = 0,
-    .margin_bottom      = 0,
-    .screen_left        = 10,
-    .screen_right       = 10,
-    .screen_top         = 10,
-    .screen_bottom      = 100,
-    .width              = 0,
-    .height             = 0,
-    .vertical_align     = 0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::LEFT,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
+      .line_height_factor = 0.8,
+      .font_index         = TITLE_FONT,
+      .font_size          = TITLE_FONT_SIZE,
+      .screen_bottom      = 100,
   };
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
@@ -215,7 +178,8 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
     line_idx   = current_item_idx % line_count;
 
     xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
-    ypos = first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
+    ypos =
+        first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
 
     book = books_dir.get_book_data(book_idx);
 
@@ -223,15 +187,15 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
 
     // Font * font = fonts.get(1, 9);
 
-    page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
+    page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
                          Pos(xpos - 2, ypos - 2));
-    page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
+    page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
                          Pos(xpos - 3, ypos - 3));
 
     page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                       Pos(10, 10));
   }
-    // Highlight the new current item
+  // Highlight the new current item
 
   current_item_idx = -1;
 
@@ -240,7 +204,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   book = books_dir.get_book_data(book_idx);
 
   if (book == nullptr) return;
-  
+
   current_item_idx = item_idx;
 
   column_idx = current_item_idx / line_count;
@@ -249,17 +213,17 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
   ypos = first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
 
-  page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
-                      Pos(xpos - 2, ypos - 2));
-  page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
-                      Pos(xpos - 3, ypos - 3));
+  page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+                     Pos(xpos - 2, ypos - 2));
+  page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+                     Pos(xpos - 3, ypos - 3));
 
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
 
-  fmt.font_index    = TITLE_FONT;
-  fmt.font_size     = TITLE_FONT_SIZE;
-  fmt.font_style    = Fonts::FaceStyle::NORMAL;
+  fmt.font_index = TITLE_FONT;
+  fmt.font_size  = TITLE_FONT_SIZE;
+  fmt.font_style = Fonts::FaceStyle::NORMAL;
 
   char title[MAX_TITLE_SIZE];
   title[MAX_TITLE_SIZE - 1] = 0;
@@ -289,9 +253,7 @@ MatrixBooksDirViewer::highlight(int16_t item_idx)
   page.paint(false);
 }
 
-void 
-MatrixBooksDirViewer::clear_highlight()
-{
+void MatrixBooksDirViewer::clear_highlight() {
   if (current_item_idx == -1) return;
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
@@ -304,44 +266,29 @@ MatrixBooksDirViewer::clear_highlight()
   int16_t line_idx   = current_item_idx % line_count;
 
   int16_t xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
-  int16_t ypos = first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
+  int16_t ypos =
+      first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
 
-  const BooksDir::EBookRecord * book = books_dir.get_book_data(book_idx);
+  const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
 
   if (book == nullptr) return;
 
   // Font * font = fonts.get(1, 9);
 
   Page::Format fmt = {
-    .line_height_factor = 0.8,
-    .font_index         = TITLE_FONT,
-    .font_size          = TITLE_FONT_SIZE,
-    .indent             = 0,
-    .margin_left        = 0,
-    .margin_right       = 0,
-    .margin_top         = 0,
-    .margin_bottom      = 0,
-    .screen_left        = 10,
-    .screen_right       = 10,
-    .screen_top         = 10,
-    .screen_bottom      = static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
-    .width              = 0,
-    .height             = 0,
-    .vertical_align     = 0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::LEFT,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
+      .line_height_factor = 0.8,
+      .font_index         = TITLE_FONT,
+      .font_size          = TITLE_FONT_SIZE,
+      .screen_bottom =
+          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
   };
 
   page.start(fmt);
 
-  page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4), 
-                        Pos(xpos - 2, ypos - 2));
-  page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6), 
-                        Pos(xpos - 3, ypos - 3));
+  page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+                       Pos(xpos - 2, ypos - 2));
+  page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+                       Pos(xpos - 3, ypos - 3));
 
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
                     Pos(10, 10));
@@ -363,32 +310,25 @@ MatrixBooksDirViewer::clear_highlight()
   current_item_idx = -1;
 }
 
-int16_t
-MatrixBooksDirViewer::show_page_and_highlight(int16_t book_idx)
-{
+int16_t MatrixBooksDirViewer::show_page_and_highlight(int16_t book_idx) {
   int16_t page_nbr = book_idx / books_per_page;
   int16_t item_idx = book_idx % books_per_page;
 
   if (current_page_nbr != page_nbr) {
     show_page(page_nbr, item_idx);
     current_page_nbr = page_nbr;
-  }
-  else {
+  } else {
     if (item_idx != current_item_idx) highlight(item_idx);
   }
   current_book_idx = book_idx;
   return current_book_idx;
 }
 
-void
-MatrixBooksDirViewer::highlight_book(int16_t book_idx)
-{
-  highlight(book_idx % books_per_page);  
+void MatrixBooksDirViewer::highlight_book(int16_t book_idx) {
+  highlight(book_idx % books_per_page);
 }
 
-int16_t
-MatrixBooksDirViewer::next_page()
-{
+int16_t MatrixBooksDirViewer::next_page() {
   int16_t page_nbr = current_page_nbr + 1;
   if (page_nbr >= page_count) {
     page_nbr = page_count - 1;
@@ -396,8 +336,7 @@ MatrixBooksDirViewer::next_page()
   if (current_page_nbr != page_nbr) {
     show_page(page_nbr, 0);
     current_book_idx = page_nbr * books_per_page;
-  }
-  else if ((page_nbr + 1) == page_count) {
+  } else if ((page_nbr + 1) == page_count) {
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       highlight(books_dir.get_book_count() % books_per_page - 1);
     #endif
@@ -406,17 +345,14 @@ MatrixBooksDirViewer::next_page()
   return current_book_idx;
 }
 
-int16_t
-MatrixBooksDirViewer::prev_page()
-{
+int16_t MatrixBooksDirViewer::prev_page() {
   int16_t page_nbr = current_page_nbr - 1;
   if (page_nbr < 0) {
     page_nbr = 0;
   }
   if (current_page_nbr != page_nbr) {
     show_page(page_nbr, 0);
-  }
-  else {
+  } else {
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       highlight(0);
     #endif
@@ -425,9 +361,7 @@ MatrixBooksDirViewer::prev_page()
   return current_book_idx;
 }
 
-int16_t
-MatrixBooksDirViewer::next_item()
-{
+int16_t MatrixBooksDirViewer::next_item() {
   int16_t book_idx = current_book_idx + 1;
   if (book_idx >= books_dir.get_book_count()) {
     book_idx = books_dir.get_book_count() - 1;
@@ -435,17 +369,13 @@ MatrixBooksDirViewer::next_item()
   return show_page_and_highlight(book_idx);
 }
 
-int16_t
-MatrixBooksDirViewer::prev_item()
-{
+int16_t MatrixBooksDirViewer::prev_item() {
   int16_t book_idx = current_book_idx - 1;
   if (book_idx < 0) book_idx = 0;
   return show_page_and_highlight(book_idx);
 }
 
-int16_t
-MatrixBooksDirViewer::next_column()
-{
+int16_t MatrixBooksDirViewer::next_column() {
   int16_t book_idx = current_book_idx + line_count;
   if (book_idx >= books_dir.get_book_count()) {
     book_idx = books_dir.get_book_count() - 1;
@@ -453,9 +383,7 @@ MatrixBooksDirViewer::next_column()
   return show_page_and_highlight(book_idx);
 }
 
-int16_t
-MatrixBooksDirViewer::prev_column()
-{
+int16_t MatrixBooksDirViewer::prev_column() {
   int16_t book_idx = current_book_idx - line_count;
   if (book_idx < 0) book_idx = 0;
   return show_page_and_highlight(book_idx);

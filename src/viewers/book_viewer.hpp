@@ -11,57 +11,53 @@
 #if EPUB_LINUX_BUILD
 #else
   #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
   #include "freertos/semphr.h"
+  #include "freertos/task.h"
 #endif
 
+#include "models/css.hpp"
+#include "models/dom.hpp"
+#include "models/epub.hpp"
+#include "models/fonts.hpp"
+#include "models/page_locs.hpp"
 #include "pugixml.hpp"
 #include "viewers/page.hpp"
-#include "models/epub.hpp"
-#include "models/page_locs.hpp"
-#include "models/css.hpp"
-#include "models/fonts.hpp"
-#include "models/dom.hpp"
 
 using namespace pugi;
 
-class BookViewer
-{
-  public:
-    const int16_t TITLE_FONT      = 2;
-    const int16_t TITLE_FONT_SIZE = 8;
+class BookViewer {
+public:
+  const int16_t TITLE_FONT      = 2;
+  const int16_t TITLE_FONT_SIZE = 8;
 
-  private:
-    static constexpr char const * TAG = "BookViewer";
+private:
+  static constexpr char const *TAG = "BookViewer";
 
-    std::mutex        mutex;
-    int16_t           page_bottom;
-    PageLocs::PageId  current_page_id;
+  std::mutex mutex;
+  uint16_t page_bottom;
+  PageLocs::PageId current_page_id;
 
-    void build_page_at(const PageLocs::PageId & page_id);
+  void build_page_at(const PageLocs::PageId &page_id);
 
-    struct PageEnd {
-      bool operator()(Page::Format & fmt) const {
-        return false;
-      }
-    };
+  struct PageEnd {
+    bool operator()(Page::Format &fmt) const { return false; }
+  };
 
-  public:
+public:
+  BookViewer() {}
+  ~BookViewer() {}
 
-    BookViewer() { }
-   ~BookViewer() { }
+  void init() { current_page_id = PageLocs::PageId(-1, -1); }
+  inline std::mutex &get_mutex() { return mutex; }
 
-    void                     init() { current_page_id = PageLocs::PageId(-1, -1); }
-    inline std::mutex & get_mutex() { return mutex; }
+  /**
+   * @brief Show a page on the display.
+   *
+   * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
+   */
+  void show_page(const PageLocs::PageId &page_id);
 
-    /**
-     * @brief Show a page on the display.
-     * 
-     * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
-     */
-    void show_page(const PageLocs::PageId & page_id);
-
-    void show_fake_cover();
+  void show_fake_cover();
 };
 
 #if __BOOK_VIEWER__

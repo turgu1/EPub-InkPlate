@@ -6,12 +6,12 @@
 
 // Not ready yet
 
-#define __KEYBOARD_VIEWER__ 1
+  #define __KEYBOARD_VIEWER__ 1
 #include "viewers/keyboard_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include "nvs.h"
   #include "inkplate_platform.hpp"
+  #include "nvs.h"
 #endif
 
 bool 
@@ -23,33 +23,15 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
   if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return false; // Cannot be used durint location computation
 
   fmt = {
-    .line_height_factor = 1.0,
     .font_index         =   0,
     .font_size          =  24,
-    .indent             =   0,
-    .margin_left        =  10,
-    .margin_right       =  10,
     .margin_top         =  30,
-    .margin_bottom      =  10,
-    .screen_left        =   0,
-    .screen_right       =   0,
-    .screen_top         =   0,
-    .screen_bottom      =   0,
-    .width              =   0,
-    .height             =   0,
-    .vertical_align     =   0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::CENTER,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
+    .screen_left        =  (Screen::get_width()  - width ) >> 1,
+    .screen_right       =  (Screen::get_width()  - width ) >> 1,
+    .screen_top         =  (Screen::get_height() - HEIGHT) >> 1,
+    .screen_bottom      =  (Screen::get_height() - HEIGHT) >> 1,
+    .align              =  CSS::Align::CENTER,
   };
-
-  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
   
