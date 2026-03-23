@@ -9,7 +9,7 @@
 - Page::Format default values in the struct definition. All use of the
   struct are now shrinked in the code to the changed parameters from the default.
 - Pages location are no longer being computed everytime a page formatting
-  parameter is changed by the user. This to reduce wait time between
+  parameter is changed by the user, this to reduce wait time between
   page changes.
 
 (Updated 2026.01.20)

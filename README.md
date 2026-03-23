@@ -2,6 +2,17 @@
 
 ## Last news
 
+(updated 2026.03.XX)
+
+- Now Version 3.0.0!
+- Now using ESP-IDF framework v5.5.3
+- Using C++ gnu++23 (As per ESP-IDF C++ support)
+- Page::Format default values in the struct definition. All use of the
+  struct are now shrinked in the code to the changed parameters from the default.
+- Pages location are no longer being computed everytime a page formatting
+  parameter is changed by the user, this to reduce wait time between
+  page changes.
+  
 (Updated 2026.01.20)
 
 Update to version 2.1.0
