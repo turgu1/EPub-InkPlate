@@ -34,6 +34,7 @@
 
     #include "inkplate_platform.hpp"
     #include "viewers/msg_viewer.hpp"
+    #include "viewers/screen_saver.hpp"
     #include "wire.hpp"
 
     #if INKPLATE_6FLICK
@@ -632,18 +633,17 @@
 
             if (inkplate_platform.light_sleep(light_sleep_duration, TouchScreen::INTERRUPT_PIN,
                                               0)) {
-
-              app_controller.going_to_deep_sleep();
-
-              LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
-
+              LOG_I("Timed out on Light Sleep. Going now to Deep Sleep");
               screen.force_full_update();
               msg_viewer.show(
                   MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
                   "Timeout period exceeded (%d minutes). The device is now "
-                  "entering into Deep Sleep mode. Please press the WakeUp Button to restart.",
+                  "entering into Deep Sleep mode. Please press the WakeUp button to restart.",
                   light_sleep_duration);
-              ESP::delay(1000);
+
+              screen_saver.show();
+              ESP::delay(5000);
+              app_controller.going_to_deep_sleep();
 
               inkplate_platform.deep_sleep(TouchScreen::INTERRUPT_PIN, 0);
             }

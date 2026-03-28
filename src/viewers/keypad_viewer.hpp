@@ -45,7 +45,7 @@ private:
   uint16_t client_value; // Computed value
   Page::Format fmt;
   Font *font;
-  Font::Glyph *glyph;
+  Glyph *glyph;
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     int8_t get_key_val(uint16_t x, uint16_t y) {

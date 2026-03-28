@@ -6,33 +6,31 @@
 #include "global.hpp"
 
 #include "models/font.hpp"
-#include "models/ttf2.hpp"
 #include "models/ibmf.hpp"
+#include "models/ttf2.hpp"
 
 class FontFactory {
 
-  public:
-    static Font * 
-    create(const std::string & filename) {
-      std::string ext = filename.substr(filename.find_last_of(".") + 1);
+public:
+  static Font *create(const std::string &filename) {
+    std::string ext = filename.substr(filename.find_last_of(".") + 1);
 
-      if (ext == "ibmf") return new IBMF(filename);
-      else if ((ext == "ttf") || 
-               (ext == "otf")) return new TTF(filename);
+    if (ext == "ibmf")
+      return new IBMF(filename);
+    else if ((ext == "ttf") || (ext == "otf"))
+      return new TTF(filename);
 
-      return nullptr;
-    }
+    return nullptr;
+  }
 
-    static Font * 
-    create(const std::string & filename, 
-           unsigned char *     buffer,
-           int32_t             size) {
-      std::string ext = filename.substr(filename.find_last_of(".") + 1);
+  static Font *create(const std::string &filename, MemoryFontPtr buffer, int32_t size) {
+    std::string ext = filename.substr(filename.find_last_of(".") + 1);
 
-      if (ext == "ibmf") return new IBMF(buffer, size);
-      else if ((ext == "ttf") || 
-               (ext == "otf")) return new TTF(buffer, size);
+    if (ext == "ibmf")
+      return new IBMF(std::move(buffer), size);
+    else if ((ext == "ttf") || (ext == "otf"))
+      return new TTF(std::move(buffer), size);
 
-      return nullptr;
-    }
-}; 
+    return nullptr;
+  }
+};

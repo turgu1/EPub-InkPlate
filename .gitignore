@@ -7,6 +7,7 @@ managed_components
 dependencies.lock
 example
 build
+build_linux
 test/*
 test-books
 release*
@@ -20,9 +21,8 @@ SDCard/books/*.pars
 SDCard/books/*.locs
 SDCard/books/*.toc
 SDCard/last_book.txt
-freetype-2.10.4/objs
-freetype-2.11.0
-lib_freetype-2.11.0
+freetype-distrib/freetype-2.14.3/objs
+lib_freetype
 bin/*.bin
 temp
 *.zip

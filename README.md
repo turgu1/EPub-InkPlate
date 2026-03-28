@@ -5,7 +5,7 @@
 (updated 2026.03.XX)
 
 - Now Version 3.0.0!
-- Now using ESP-IDF framework v5.5.3
+- Now using ESP-IDF framework v6.0.0
 - Using C++ gnu++23 (As per ESP-IDF C++ support)
 - Page::Format default values in the struct definition. All use of the
   struct are now shrinked in the code to the changed parameters from the default.
@@ -262,14 +262,14 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 2. The ESP-IDF SDK must be installed in the main user folder. Usually, it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
 
-3. The files `freetype-2.10.4/modules.cfg` and `freetype-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
+3. The files `freetype-2.14.3/modules.cfg` and `freetype-2.14.3/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
 
-4. A file named `freetype-2.10.4/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
+4. A file named `freetype-2.14.3/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
 
 5. The following commands are executed:
 
    ``` bash
-   $ cd freetype-2.10.4
+   $ cd freetype-distrib/freetype-2.14.3
    $ bash myconf.sh
    $ make
    $ make install
@@ -277,8 +277,10 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
    This will have created several files in the folder `lib_freetype`.
 
-6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains `harfbuzz` reference.
-7. Voilà...
+6. In the `components/freetype` folder, remove the `include`, `lib`, and `share` folders.
+
+7. Copy the three folders `include`, `lib`, and `share` to the `components/freetype` folder.
+8. Voilà...
 
 ### ESP-IDF configuration specifics
 

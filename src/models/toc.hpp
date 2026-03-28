@@ -21,9 +21,7 @@
 
 class TOC {
 public:
-  TOC()
-      : char_pool(nullptr), char_buffer(nullptr), char_buffer_size(0), ncx_opf(nullptr),
-        ncx_data(nullptr), ready(false), compacted(false), saved(false), some_ids(false) {}
+  TOC() = default;
   ~TOC() {
     if (char_pool != nullptr) delete char_pool;
     if (char_buffer != nullptr) free(char_buffer);
@@ -128,19 +126,16 @@ private:
 
   SimpleDB db; ///< The SimpleDB table
 
-  CharPool *char_pool;
-  char *char_buffer;
-  uint16_t char_buffer_size;
+  CharPool *char_pool{nullptr};
+  char *char_buffer{nullptr};
+  uint16_t char_buffer_size{0};
 
-  pugi::xml_document *ncx_opf;
-  char *ncx_data;
+  const pugi::xml_document *opf{nullptr};
 
-  const pugi::xml_document *opf;
-
-  volatile bool ready; // true if the table of content has been populated
-  bool compacted;
-  bool saved;
-  bool some_ids;
+  volatile bool ready{false}; // true if the table of content has been populated
+  bool compacted{false};
+  bool saved{false};
+  bool some_ids{false};
 
   void clean();
   void clean_filename(char *fname);

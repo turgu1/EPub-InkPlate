@@ -32,7 +32,7 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
     return;
   }
 
-  Font::Glyph *icon = font->get_glyph('A', ICON_SIZE);
+  Glyph *icon = font->get_glyph('A', ICON_SIZE);
 
   if (icon == nullptr) {
     icon_height = 50;
@@ -65,9 +65,8 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
   while ((idx < MAX_MENU_ENTRY) && (menu[idx].icon != Icon::END_MENU)) {
 
     if (menu[idx].visible) {
-      char ch = icon_char[(int)menu[idx].icon];
-      Font::Glyph *glyph;
-      glyph = font->get_glyph(ch, ICON_SIZE);
+      char ch      = icon_char[(int)menu[idx].icon];
+      Glyph *glyph = font->get_glyph(ch, ICON_SIZE);
 
       if (menu[idx].icon == Icon::NEXT_MENU) pos.x = Screen::get_width() - SPACE_BETWEEN_ICONS;
 
@@ -252,7 +251,7 @@ bool MenuViewer::event(const EventMgr::Event &event) {
     default:
       break;
     }
-  #else
+  #else // Non touch devices
     uint8_t old_index = current_entry_index;
 
     page.start(fmt);

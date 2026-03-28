@@ -5,6 +5,8 @@
 #define __LINEAR_BOOKS_DIR_VIEWER__ 1
 #include "viewers/linear_books_dir_viewer.hpp"
 
+#include "image.hpp"
+
 #include "models/config.hpp"
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
@@ -66,9 +68,9 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
     if (book == nullptr) break;
 
-    Image::ImageData image(Dim(book->cover_width, book->cover_height),
-                           (uint8_t *)book->cover_bitmap);
-    page.put_image(image, Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
+    ImagePtr image = make_unique_himem<Image>(Dim(book->cover_width, book->cover_height),
+                                              (uint8_t *)book->cover_bitmap, book->cover_size());
+    page.put_image(std::move(image), Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
@@ -119,9 +121,9 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
 
       int16_t book_idx = current_page_nbr * books_per_page + current_item_idx;
 
-      int16_t xpos = 20 + BooksDir::max_cover_width;
-      int16_t ypos = FIRST_ENTRY_YPOS +
-                     (current_item_idx * (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
+      uint16_t xpos = 20 + BooksDir::max_cover_width;
+      uint16_t ypos = FIRST_ENTRY_YPOS +
+                      (current_item_idx * (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
 
       const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
 
@@ -137,7 +139,7 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
           .screen_right       = 10,
           .screen_top         = ypos,
           .screen_bottom =
-              static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+              static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
       };
 
       page.start(fmt);

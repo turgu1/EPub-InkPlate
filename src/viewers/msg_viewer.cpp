@@ -10,17 +10,20 @@
 #include "viewers/page.hpp"
 
 #include <cstdarg>
+#include <memory>
 
 #if EPUB_INKPLATE_BUILD
   #include "inkplate_platform.hpp"
   #include "nvs.h"
 #endif
 
+#define BUFFER_SIZE 250
+
 char MsgViewer::icon_char[7] = {'I', '!', 'H', 'E', 'S', 'Y', '!'};
 
 void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, const char *title,
                      const char *fmt_str, ...) {
-  char buff[250];
+  std::unique_ptr<char[]> buff = std::make_unique<char[]>(BUFFER_SIZE);
 
   width = Screen::get_width() - 60;
 
@@ -29,7 +32,7 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
   va_list args;
   va_start(args, fmt_str);
-  vsnprintf(buff, 250, fmt_str, args);
+  vsnprintf(buff.get(), BUFFER_SIZE, fmt_str, args);
   va_end(args);
 
   Page::Format fmt = {
@@ -61,11 +64,12 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
     return;
   }
 
-  Font::Glyph *glyph = font->get_glyph(icon_char[msg_type], 24);
+  Glyph *glyph = font->get_glyph(icon_char[msg_type], 24);
 
   if (glyph != nullptr) {
-    page.put_char_at(icon_char[msg_type],
-                     Pos(fmt.screen_left + 50 - (glyph->dim.width >> 1), fmt.screen_top + 20), fmt);
+    page.put_char_at(
+        icon_char[msg_type],
+        Pos(fmt.screen_left + 50 - (glyph->dim.width >> 1), (Screen::get_height() >> 1) + 20), fmt);
   }
 
   fmt.font_index = 1;
@@ -75,8 +79,7 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
-  std::string buffer = title;
-  page.add_text(buffer, fmt);
+  page.add_text(title, fmt);
   page.end_paragraph(fmt);
 
   // Message
@@ -87,8 +90,7 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
-  buffer = buff;
-  page.add_text(buffer, fmt);
+  page.add_text(buff.get(), fmt);
   page.end_paragraph(fmt);
 
   // Press a Key option
@@ -103,8 +105,7 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
         page.set_limits(fmt);
         page.new_paragraph(fmt);
-        buffer = "[Please TAP the screen]";
-        page.add_text(buffer, fmt);
+        page.add_text("[Please TAP the screen]", fmt);
         page.end_paragraph(fmt);
       } else {
         font = fonts.get(1);
@@ -151,8 +152,8 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
       page.set_limits(fmt);
       page.new_paragraph(fmt);
-      buffer = msg_type == MsgType::CONFIRM ? "[Press SELECT to Confirm]" : "[Press any key]";
-      page.add_text(buffer, fmt);
+      page.add_text(msg_type == MsgType::CONFIRM ? "[Press SELECT to Confirm]" : "[Press any key]",
+                    fmt);
       page.end_paragraph(fmt);
     #endif
   }

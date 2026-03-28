@@ -5,14 +5,14 @@
 #pragma once
 #include "global.hpp"
 
-#include <forward_list>
 #include <string>
 
 #include "memory_pool.hpp"
 #include "models/css.hpp"
+#include "models/display_list.hpp"
 #include "models/fonts.hpp"
-#include "models/image.hpp"
 
+#include "image.hpp"
 #include "pugixml.hpp"
 
 /**
@@ -73,31 +73,6 @@ public:
 private:
   static constexpr char const *TAG = "Page";
 
-  enum class DisplayListCommand {
-    GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED
-  };
-  struct DisplayListEntry {
-    union Kind {
-      struct GryphEntry {   ///< Used for GLYPH
-        Font::Glyph *glyph; ///< Glyph
-        int16_t kern;
-        bool is_space;
-      } glyph_entry;
-      struct ImageEntry { ///< Used for IMAGE
-        Image::ImageData image;
-        int16_t advance; ///< Horizontal advance on the baseline
-      } image_entry;
-      struct RegionEntry { ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CLEAR_REGION
-        Dim dim;           ///< Region dimensions
-      } region_entry;
-      Kind() {}
-    } kind;
-    Pos pos;                    ///< Screen coordinates
-    DisplayListCommand command; ///< Command
-  };
-
-  typedef std::forward_list<DisplayListEntry *> DisplayList;
-
   /**
    * @brief Book Compute Mode
    *
@@ -107,14 +82,11 @@ private:
    * used by the book_view and page classes to optimize the speed of
    * computations.
    */
-  ComputeMode compute_mode;
-
-  MemoryPool<DisplayListEntry> display_list_entry_pool;
+  ComputeMode compute_mode{ComputeMode::DISPLAY};
+  bool screen_is_full{false}; ///< True if screen no more space to add characters
 
   DisplayList display_list; ///< The list of artefacts and their position to put on screen
   DisplayList line_list;    ///< Line preparation for paragraphs
-
-  bool screen_is_full; ///< True if screen no more space to add characters
 
   Pos pos;                            ///< Current drawing Screen position
   int16_t min_y, max_x, max_y, min_x; ///< Screen limits for page content
@@ -124,19 +96,14 @@ private:
   float line_height_factor;
   int16_t para_indent, top_margin;
 
-  // Entries of a line list are eventually migrated to the display_list.
-  // So the don't need to be erased.
-  inline void clear_line_list() { line_list.clear(); }
-
-  void clear_display_list();
   void add_line(const Format &fmt, bool justifyable);
-  void add_glyph_to_line(Font::Glyph *glyph, const Format &fmt, Font &font, bool is_space);
-  void add_image_to_line(Image &image, int16_t advance, const Format &fmt);
+  void add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font, bool is_space);
+  void add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt);
   int32_t to_unicode(const char *str, CSS::TextTransform transform, bool first,
                      const char **str2) const;
 
 public:
-  Page();
+  Page() = default;
   void clean();
 
   /**
@@ -232,7 +199,7 @@ public:
    * @return true The image has been added to the paragraph
    * @return false There is not enough room to add the image.
    */
-  bool add_image(Image &image, const Format &fmt /*, bool at_start_of_page*/);
+  bool add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page*/);
 
   /**
    * @brief Add text on page
@@ -244,7 +211,7 @@ public:
    * @param str Text to show
    * @param fmt Formatting parameters.
    */
-  void add_text(std::string str, const Format &fmt);
+  void add_text(const std::string &str, const Format &fmt);
 
   /**
    * @brief Put string to the screen.
@@ -293,9 +260,8 @@ public:
     #endif
   }
 
-  void show_display_list(const DisplayList &list, const char *title) const;
-  bool show_cover(Image &img);
-  void put_image(Image::ImageData &image, Pos pos);
+  bool show_cover(ImagePtr &img);
+  void put_image(ImagePtr image, Pos pos);
   void put_highlight(Dim dim, Pos pos);
   void clear_highlight(Dim dim, Pos pos);
   void put_rounded(Dim dim, Pos pos);

@@ -9,7 +9,7 @@ list(FILTER app_sources EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/src/embed/*.*")
 
 set(components
     global
-    miniz
+    zip
     pugixml
     sys_functions
     freertos
@@ -17,11 +17,13 @@ set(components
     inkplate_screen
     memory_pool
     pictures
+    image
     esp_http_server
     esp_app_format
     pthread
     freetype
     spi_flash
+    himem
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

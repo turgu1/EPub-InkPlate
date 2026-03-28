@@ -295,17 +295,15 @@ bool TOC::load_from_epub() {
   uint32_t ncx_size;
   bool result = false;
 
-  if ((ncx_data = epub.retrieve_file(filename, ncx_size)) != nullptr) {
-    if ((ncx_opf = new pugi::xml_document()) == nullptr) {
-      free(ncx_data);
-      return false;
-    }
-  } else
-    return false;
+  auto ncx_data = epub.retrieve_file(filename, ncx_size);
+  if (ncx_data == nullptr) return false;
+
+  auto ncx_opf = std::make_unique<pugi::xml_document>();
+  if (ncx_opf == nullptr) return false;
 
   // parse xml and load navPoint entries
 
-  xml_parse_result res = ncx_opf->load_buffer_inplace(ncx_data, ncx_size);
+  xml_parse_result res = ncx_opf->load_buffer_inplace(ncx_data.get(), ncx_size);
   if (res.status != status_ok) {
     LOG_E("xml load error: %d", res.status);
     goto error;
@@ -328,10 +326,6 @@ bool TOC::load_from_epub() {
 error:
   result = false;
 ok:
-  ncx_opf->reset();
-  free(ncx_data);
-  ncx_opf  = nullptr;
-  ncx_data = nullptr;
 
   #if DEBUGGING
     show();
@@ -381,17 +375,6 @@ void TOC::clean() {
   if (char_pool != nullptr) delete char_pool;
   if (char_buffer != nullptr) free(char_buffer);
 
-  if (ncx_opf != nullptr) {
-    ncx_opf->reset();
-    delete ncx_opf;
-    ncx_opf = nullptr;
-  }
-
-  if (ncx_data != nullptr) {
-    free(ncx_data);
-    ncx_data = nullptr;
-  }
-
   char_pool   = nullptr;
   char_buffer = nullptr;
 
@@ -423,7 +406,7 @@ void TOC::set(int32_t current_offset) {
       break;
     }
   }
-  if ((idx >= 0) && (idx < entries.size())) {
+  if ((idx >= 0) && (idx < (int16_t)entries.size())) {
     entries[idx].page_id.offset = current_offset;
   }
 }

@@ -5,11 +5,13 @@
 #pragma once
 #include "global.hpp"
 
+#include "himem.hpp"
+#include "image.hpp"
 #include "pugixml.hpp"
+#include "unzip.hpp"
 
 #include "models/book_params.hpp"
 #include "models/css.hpp"
-#include "models/image.hpp"
 #include "viewers/page.hpp"
 
 #include <forward_list>
@@ -27,16 +29,19 @@ public:
   };
   typedef std::list<CSS *> CSSList;
   struct ItemInfo {
-    std::string file_path;
-    int16_t itemref_index;
-    pugi::xml_document xml_doc;
+    std::string file_path{};
+    int16_t itemref_index{};
+    pugi::xml_document xml_doc{};
     CSSList css_cache; ///< style attributes part of the current processed item are kept here. They
                        ///< will be destroyed when the item is no longer required.
     CSSList css_list;  ///< List of css sources for the current item file shown. Those are indexes
                        ///< inside css_cache.
-    CSS *css; ///< Ghost CSS created through merging css suites from css_list and css_cache.
-    char *data;
-    MediaType media_type;
+    CSS *css{}; ///< Ghost CSS created through merging css suites from css_list and css_cache.
+    FileContentPtr data{};
+    MediaType media_type{};
+
+    ItemInfo()  = default;
+    ~ItemInfo() = default;
   };
 
   // This struct contains the current parameters that influence
@@ -66,24 +71,24 @@ private:
   pugi::xml_document encryption;
   pugi::xml_node current_itemref;
 
-  BinUUID bin_uuid;
-  ShaUUID sha_uuid;
+  BinUUID bin_uuid{};
+  ShaUUID sha_uuid{};
 
-  char *opf_data;
-  char *encryption_data;
-  std::string current_filename;
-  std::string opf_base_path;
+  FileContentPtr opf_data{};
+  FileContentPtr encryption_data{};
+  std::string current_filename{};
+  std::string opf_base_path{};
 
-  ItemInfo current_item_info;
-  BookParams *book_params;
-  BookFormatParams book_format_params;
+  ItemInfo current_item_info{};
+  BookParams *book_params{};
+  BookFormatParams book_format_params{};
 
   CSSList css_cache; ///< All css files in the ebook are maintained here.
 
-  bool file_is_open;
-  bool encryption_present;
-  bool fonts_size_too_large;
-  int32_t fonts_size;
+  bool file_is_open{};
+  bool encryption_present{};
+  bool fonts_size_too_large{};
+  int32_t fonts_size{};
 
   const char *get_meta(const std::string &name);
   bool get_opf(std::string &filename);
@@ -103,8 +108,8 @@ public:
   void open_params(const std::string &epub_filename);
   bool open_file(const std::string &epub_filename);
   bool close_file();
-  Image *get_image(std::string &fname, bool load);
-  char *retrieve_file(const char *fname, uint32_t &size);
+  auto get_image(std::string &fname, bool load) -> ImagePtr;
+  auto retrieve_file(const char *fname, uint32_t &size) -> himem_unique_ptr<uint8_t[]>;
   bool get_item(pugi::xml_node itemref, ItemInfo &item);
   bool get_item_at_index(int16_t itemref_index);
   bool get_item_at_index(int16_t itemref_index, ItemInfo &item);

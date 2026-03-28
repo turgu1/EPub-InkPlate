@@ -57,6 +57,7 @@ public:
                         [MAX_COVER_HEIGHT]; ///< Cover bitmap shrinked for books list presentation
     uint8_t cover_width;                    ///< Width of the cover bitmap
     uint8_t cover_height;                   ///< Height of the cover bitmap
+    uint32_t cover_size() const { return cover_width * cover_height; }
   };
 
   struct VersionRecord {

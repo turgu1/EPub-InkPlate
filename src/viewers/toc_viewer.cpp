@@ -109,8 +109,8 @@ void TocViewer::highlight(int16_t screen_idx) {
 
       const TOC::EntryRecord &entry = toc.get_entry(entry_idx);
 
-      int16_t xpos = 20 + (entry.level * 20);
-      int16_t ypos = FIRST_ENTRY_YPOS + (current_screen_idx * ENTRY_HEIGHT);
+      uint16_t xpos = 20 + (entry.level * 20);
+      uint16_t ypos = FIRST_ENTRY_YPOS + (current_screen_idx * ENTRY_HEIGHT);
 
       Page::Format fmt = {
           .line_height_factor = 0.8,
@@ -119,7 +119,7 @@ void TocViewer::highlight(int16_t screen_idx) {
           .screen_left        = xpos,
           .screen_right       = 10,
           .screen_top         = ypos,
-          .screen_bottom = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
+          .screen_bottom = static_cast<uint16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
       };
 
       page.start(fmt);

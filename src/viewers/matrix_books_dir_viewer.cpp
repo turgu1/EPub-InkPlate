@@ -5,6 +5,8 @@
 #define __MATRIX_BOOKS_DIR_VIEWER__ 1
 #include "viewers/matrix_books_dir_viewer.hpp"
 
+#include "image.hpp"
+
 #include "models/config.hpp"
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
@@ -85,10 +87,12 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
     if (book == nullptr) break;
 
-    Image::ImageData image(Dim(book->cover_width, book->cover_height),
-                           (uint8_t *)book->cover_bitmap);
-    page.put_image(image, Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1),
-                              ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
+    ImagePtr image = make_unique_himem<Image>(Dim(book->cover_width, book->cover_height),
+                                              (uint8_t *)book->cover_bitmap, book->cover_size());
+
+    page.put_image(std::move(image),
+                   Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1),
+                       ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {

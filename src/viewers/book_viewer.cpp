@@ -6,8 +6,8 @@
 #include "viewers/book_viewer.hpp"
 #include "controllers/book_controller.hpp"
 
+#include "image_factory.hpp"
 #include "models/config.hpp"
-#include "models/image_factory.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -215,11 +215,10 @@ void BookViewer::show_page(const PageLocs::PageId &page_id) {
       std::string fname = epub.get_cover_filename();
       if (!fname.empty()) {
         // LOG_D("Cover filename: %s", fname);
-        Image *img = epub.get_image(fname, true);
+        auto img = epub.get_image(fname, true);
 
         if (img != nullptr) {
-          page.show_cover(*img);
-          delete img;
+          page.show_cover(img);
         } else {
           LOG_D("Unable to retrieve cover file: %s", fname.c_str());
           show_fake_cover();

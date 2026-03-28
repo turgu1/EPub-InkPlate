@@ -5,18 +5,21 @@
 #define __EPUB__ 1
 #include "models/epub.hpp"
 
-#include "helpers/unzip.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/fonts.hpp"
-#include "models/image_factory.hpp"
 #include "models/page_locs.hpp"
+#include "unzip.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
+
+#include "image_factory.hpp"
 
 #include "logging.hpp"
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
+#else
+  #include <openssl/sha.h>
 #endif
 
 #include <algorithm>
@@ -108,7 +111,7 @@ void extract_path(const char *fname, std::string &path) {
 }
 
 bool EPub::check_mimetype() {
-  char *data;
+  FileContentPtr data;
   uint32_t size;
 
   // A file named 'mimetype' must be present and must contain the
@@ -116,13 +119,11 @@ bool EPub::check_mimetype() {
 
   LOG_D("Check mimetype.");
   if (!(data = unzip.get_file("mimetype", size))) return false;
-  if (strncmp(data, "application/epub+zip", 20)) {
+  if (strncmp(reinterpret_cast<const char *>(data.get()), "application/epub+zip", 20)) {
     LOG_E("This is not an EPUB ebook format.");
-    free(data);
     return false;
   }
 
-  free(data);
   return true;
 }
 
@@ -162,11 +163,9 @@ bool EPub::get_encryption_xml() {
   encryption_present = false;
 
   if ((unzip.file_exists(fname) && (encryption_data = unzip.get_file(fname, size)) != nullptr)) {
-    xml_parse_result res = encryption.load_buffer_inplace(encryption_data, size);
+    xml_parse_result res = encryption.load_buffer_inplace(encryption_data.get(), size);
     if (res.status != status_ok) {
       LOG_E("encryption.xml load error: %d", res.status);
-      free(encryption_data);
-      encryption_data = nullptr;
       return false;
     }
 
@@ -178,9 +177,6 @@ bool EPub::get_encryption_xml() {
       LOG_E("encryption.xml file format not supported.");
 
       encryption.reset();
-      free(encryption_data);
-      encryption_data = nullptr;
-
       return false;
     }
     get_keys();
@@ -192,21 +188,21 @@ bool EPub::get_encryption_xml() {
 
 bool EPub::get_opf_filename(std::string &filename) {
   int err = 0;
-  char *data;
   uint32_t size;
 
   // A file named 'META-INF/container.xml' must be present and point to the OPF file
   LOG_D("Check container.xml.");
-  if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
+  auto data = unzip.get_file("META-INF/container.xml", size);
+
+  if (!data) return false;
 
   xml_document doc;
   xml_node node;
   xml_attribute attr;
 
-  xml_parse_result res = doc.load_buffer_inplace(data, size);
+  xml_parse_result res = doc.load_buffer_inplace(data.get(), size);
   if (res.status != status_ok) {
     LOG_E("xml load error: %d", res.status);
-    free(data);
     return false;
   }
 
@@ -229,7 +225,6 @@ bool EPub::get_opf_filename(std::string &filename) {
   }
 
   doc.reset();
-  free(data);
 
   return completed;
 }
@@ -297,8 +292,8 @@ bool EPub::get_keys() {
   uint8_t pos = (unique_id.substr(0, 9) == "urn:uuid:") ? 9 : 0;
 
   // Basic validity checks
-  if ((unique_id.length() == (pos + 36)) && (str[pos + 8] == '-') && (str[pos + 13] == '-') &&
-      (str[pos + 18] == '-') && (str[pos + 23] == '-')) {
+  if ((unique_id.length() == (size_t)(pos + 36)) && (str[pos + 8] == '-') &&
+      (str[pos + 13] == '-') && (str[pos + 18] == '-') && (str[pos + 23] == '-')) {
 
     // Convert it to binary big-endien version
     static const uint8_t idxs[16] = {0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34};
@@ -327,12 +322,11 @@ bool EPub::get_opf(std::string &filename) {
 
     if (!(opf_data = unzip.get_file(filename.c_str(), size))) ERR(6);
 
-    xml_parse_result res = opf.load_buffer_inplace(opf_data, size);
+    xml_parse_result res = opf.load_buffer_inplace(opf_data.get(), size);
     if (res.status != status_ok) {
       LOG_E("xml load error: %d", res.status);
       opf.reset();
-      free(opf_data);
-      opf_data = nullptr;
+      opf_data.reset();
       return false;
     }
 
@@ -352,7 +346,7 @@ bool EPub::get_opf(std::string &filename) {
   if (!completed) {
     LOG_E("EPub get_opf error: %d", err);
     opf.reset();
-    free(opf_data);
+    opf_data.reset();
   }
 
   LOG_D("get_opf() completed.");
@@ -386,7 +380,7 @@ std::string EPub::filename_locate(const char *fname) {
   return filename;
 }
 
-char *EPub::retrieve_file(const char *fname, uint32_t &size) {
+auto EPub::retrieve_file(const char *fname, uint32_t &size) -> FileContentPtr {
   // Cleanup the filename that can contain characters as hexadecimal values
   // stating with '%' and relative folder change using '../'
 
@@ -396,7 +390,7 @@ char *EPub::retrieve_file(const char *fname, uint32_t &size) {
 
   // LOG_D("Retrieving file %s", filename.c_str());
 
-  char *str = unzip.get_file(filename.c_str(), size);
+  auto str = unzip.get_file(filename.c_str(), size);
 
   return str;
 }
@@ -442,17 +436,17 @@ bool EPub::load_font(const std::string filename, const std::string font_family,
       fonts_size_too_large = true;
       LOG_E("Fonts are using too much space (max 800K). Kept the first fonts read.");
     } else {
-      unsigned char *buffer;
+      FileContentPtr buffer;
       ObfuscationType obf_type = get_file_obfuscation(filename.c_str());
       if (obf_type != ObfuscationType::NONE) {
         if (obf_type != ObfuscationType::UNKNOWN) {
-          buffer = (unsigned char *)unzip.get_file(filename.c_str(), size);
+          buffer = unzip.get_file(filename.c_str(), size);
           if (buffer == nullptr) {
             LOG_E("Unable to retrieve font file: %s", filename.c_str());
           } else {
-            decrypt(buffer, size, obf_type);
+            decrypt(buffer.get(), size, obf_type);
 
-            if (fonts.add(font_family, style, buffer, size, filename)) {
+            if (fonts.add(font_family, style, std::move(buffer), size, filename)) {
               fonts_size += size;
               return true;
             }
@@ -461,11 +455,11 @@ bool EPub::load_font(const std::string filename, const std::string font_family,
           LOG_E("Font %s obfuscated with an unknown algorithm.", filename.c_str());
         }
       } else {
-        buffer = (unsigned char *)unzip.get_file(filename.c_str(), size);
+        buffer = unzip.get_file(filename.c_str(), size);
         if (buffer == nullptr) {
           LOG_E("Unable to retrieve font file: %s", filename.c_str());
         } else {
-          if (fonts.add(font_family, style, buffer, size, filename)) {
+          if (fonts.add(font_family, style, std::move(buffer), size, filename)) {
             fonts_size += size;
             return true;
           }
@@ -581,7 +575,7 @@ void EPub::retrieve_css(ItemInfo &item) {
           uint32_t size;
           std::string fname = item.file_path;
           fname.append(css_id.c_str());
-          char *data = retrieve_file(fname.c_str(), size);
+          auto data = retrieve_file(fname.c_str(), size);
 
           if (data != nullptr) {
             #if COMPUTE_SIZE
@@ -590,9 +584,8 @@ void EPub::retrieve_css(ItemInfo &item) {
             LOG_D("CSS Filename: %s", fname.c_str());
             std::string path;
             extract_path(fname.c_str(), path);
-            CSS *css_tmp = new CSS(css_id.c_str(), path.c_str(), data, size, 0);
+            CSS *css_tmp = new CSS(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0);
             if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-            free(data);
 
             // #if DEBUGGING
             //   css_tmp->show();
@@ -703,14 +696,14 @@ bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
     if (item.media_type == MediaType::XML) {
 
       char *str;
-      while ((str = strstr(item.data, "/*<![CDATA[*/")) != nullptr) {
+      while ((str = strstr((char *)item.data.get(), "/*<![CDATA[*/")) != nullptr) {
         *str++ = ' ';
         *str   = ' ';
         str += 10;
         *str++ = ' ';
         *str   = ' ';
       }
-      while ((str = strstr(item.data, "/*]]>*/")) != nullptr) {
+      while ((str = strstr((char *)item.data.get(), "/*]]>*/")) != nullptr) {
         *str++ = ' ';
         *str   = ' ';
         str += 4;
@@ -719,7 +712,7 @@ bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
       }
       LOG_D("Reading file %s", attr.value());
 
-      xml_parse_result res = item.xml_doc.load_buffer_inplace(item.data, size);
+      xml_parse_result res = item.xml_doc.load_buffer_inplace(item.data.get(), size);
       if (res.status != status_ok) {
         LOG_E("item_doc xml load error: %d", res.status);
         // msg_viewer.show(
@@ -731,8 +724,7 @@ bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
         // );
         item.xml_doc.reset();
         if (item.data != nullptr) {
-          free(item.data);
-          item.data = nullptr;
+          item.data.reset();
         }
         return false;
       }
@@ -846,8 +838,7 @@ bool EPub::open_file(const std::string &epub_filename) {
 void EPub::clear_item_data(ItemInfo &item) {
   item.xml_doc.reset();
   if (item.data != nullptr) {
-    free(item.data);
-    item.data = nullptr;
+    item.data.reset();
   }
 
   // for (auto * css : current_item_css_list) {
@@ -868,16 +859,14 @@ bool EPub::close_file() {
 
   if (opf_data) {
     opf.reset();
-    free(opf_data);
-    opf_data = nullptr;
+    opf_data.reset();
   }
 
   opf_base_path.clear();
 
   if (encryption_data) {
     encryption.reset();
-    free(encryption_data);
-    encryption_data = nullptr;
+    encryption_data.reset();
   }
 
   unzip.close_zip_file();
@@ -1043,19 +1032,18 @@ bool EPub::get_item_at_index(int16_t itemref_index, ItemInfo &item) {
   }
 }
 
-Image *EPub::get_image(std::string &fname, bool load) {
+auto EPub::get_image(std::string &fname, bool load) -> ImagePtr {
   LOG_D("Mutex lock...");
 
   {
     std::scoped_lock guard(mutex);
 
     std::string filename = filename_locate(fname.c_str());
-    Image *img =
-        ImageFactory::create(filename, Dim(Screen::get_width(), Screen::get_height()), load);
+    auto img = ImageFactory::create(filename, Dim(Screen::get_width(), Screen::get_height()), load);
 
     if ((img == nullptr) || (load && (img->get_bitmap() == nullptr)) ||
         (img->get_dim().height == 0) || (img->get_dim().width == 0)) {
-      if (img != nullptr) delete img;
+      if (img != nullptr) img.reset();
       img = nullptr;
     }
 

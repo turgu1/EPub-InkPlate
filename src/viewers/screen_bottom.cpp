@@ -24,6 +24,12 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
 
   std::ostringstream ostr;
 
+  int8_t show_heap = 0;
+
+  #if EPUB_INKPLATE_BUILD
+    config.get(Config::Ident::SHOW_HEAP, &show_heap);
+  #endif
+
   uint16_t h = font->get_chars_height(FONT_SIZE) + 10;
 
   LOG_D("Dim [%u, %u], Pos[%u, %u]", Screen::get_width(), h, 0, Screen::get_height() - h);
@@ -33,25 +39,25 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
   // page.put_highlight(Dim(Screen::get_width(), h ),
   //                    Pos(0, Screen::get_height() - h));
 
-  if (page_nbr != -1) {
-    ostr << page_nbr + 1 << " / " << page_count;
+  if (show_heap == 0) {
+    if (page_nbr != -1) {
+      ostr << page_nbr + 1 << " / " << page_count;
 
-    page.put_str_at(ostr.str(),
-                    Pos(Page::HORIZONTAL_CENTER,
-                        Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                    fmt);
-  } else if (page_count != -1) {
-    ostr << "PgCalc... " << page_count << "%";
+      page.put_str_at(ostr.str(),
+                      Pos(Page::HORIZONTAL_CENTER,
+                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                      fmt);
+    } else if (page_count != -1) {
+      ostr << "PgCalc... " << page_count << "%";
 
-    page.put_str_at(ostr.str(),
-                    Pos(Page::HORIZONTAL_CENTER,
-                        Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                    fmt);
+      page.put_str_at(ostr.str(),
+                      Pos(Page::HORIZONTAL_CENTER,
+                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                      fmt);
+    }
   }
 
   #if EPUB_INKPLATE_BUILD
-    int8_t show_heap = 0;
-    config.get(Config::Ident::SHOW_HEAP, &show_heap);
 
     if (show_heap != 0) {
       ostr.str(std::string());

@@ -189,8 +189,8 @@ public:
 
   void paint(Page::Format &fmt) {
 
-    Font::Glyph *glyph = font.get_glyph('M', FORM_FONT_SIZE);
-    uint8_t offset     = -glyph->yoff;
+    Glyph *glyph   = font.get_glyph('M', FORM_FONT_SIZE);
+    uint8_t offset = -glyph->yoff;
 
     page.put_str_at(form_entry.caption, Pos(caption_pos.x, caption_pos.y + offset), fmt);
     for (auto *item : items) {
@@ -355,8 +355,8 @@ public:
 
   void paint(Page::Format &fmt) {
     char val[8];
-    Font::Glyph *glyph = font.get_glyph('M', FORM_FONT_SIZE);
-    uint8_t offset     = -glyph->yoff;
+    Glyph *glyph   = font.get_glyph('M', FORM_FONT_SIZE);
+    uint8_t offset = -glyph->yoff;
 
     uint16_t v = *form_entry.u.val.value;
     if (v < form_entry.u.val.min) {

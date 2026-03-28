@@ -5,28 +5,33 @@
 #define __GLOBAL__ 1
 #include "global.hpp"
 
+#define TEST_HIMEM 0
+
 #if EPUB_INKPLATE_BUILD
   // InkPlate6 main function and main task
-  
+
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
 
-  #include "controllers/books_dir_controller.hpp"
-  #include "controllers/app_controller.hpp"
-  #include "models/fonts.hpp"
-  #include "models/epub.hpp"
-  #include "models/config.hpp"
-  #include "models/nvs_mgr.hpp"
-  #include "screen.hpp"
-  #include "inkplate_platform.hpp"
-  #include "helpers/unzip.hpp"
-  #include "viewers/msg_viewer.hpp"
-  #include "pugixml.hpp"
   #include "alloc.hpp"
+  #include "controllers/app_controller.hpp"
+  #include "controllers/books_dir_controller.hpp"
   #include "esp.hpp"
+  #include "inkplate_platform.hpp"
+  #include "models/config.hpp"
+  #include "models/epub.hpp"
+  #include "models/fonts.hpp"
+  #include "models/nvs_mgr.hpp"
+  #include "pugixml.hpp"
+  #include "screen.hpp"
+  #include "viewers/msg_viewer.hpp"
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #include "controllers/back_lit.hpp"
+  #endif
+
+  #if TEST_HIMEM
+    #include "himem_test.hpp"
   #endif
 
   #include <stdio.h>
@@ -34,16 +39,17 @@
   #if TESTING
     #include "gtest/gtest.h"
   #endif
-#include <esp_chip_info.h>
-#include <esp_flash.h>
+  #include <esp_chip_info.h>
+  #include <esp_flash.h>
 
-  static constexpr char const * TAG = "main";
+  static constexpr char const *TAG = "main";
 
-  void 
-  mainTask(void * params) 
-  {
-    LOG_I("EPub-Inkplate Startup.");
-    
+  void mainTask(void *params) {
+
+    // esp_log_level_set("PageLocs", ESP_LOG_DEBUG);
+
+    LOG_D("EPub-Inkplate Startup. (%" PRIi64 ")", esp_timer_get_time());
+
     bool nvs_mgr_res = nvs_mgr.setup();
 
     #if DEBUGGING
@@ -52,7 +58,16 @@
         fflush(stdout);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
       }
-      printf("\n"); fflush(stdout);
+      printf("\n");
+      fflush(stdout);
+    #endif
+
+    #if TEST_HIMEM
+      if (!himem_run_tests()) {
+        LOG_E("Himem tests failed.");
+      } else {
+        LOG_I("Yeah! Himem tests passed!");
+      }
     #endif
 
     #if TESTING
@@ -63,7 +78,7 @@
         printf(".");
         vTaskDelay(10000 / portTICK_PERIOD_MS);
       }
-    
+
     #else
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
         #define MSG "Press the WakeUp Button to restart."
@@ -82,7 +97,7 @@
       bool inkplate_err = !inkplate_platform.setup(true);
       if (inkplate_err) {
         LOG_E("Inkplate Platform Setup Error. Restarting!");
-        esp_restart();
+        inkplate_platform.restart();
       }
 
       bool config_err = !config.read();
@@ -95,7 +110,7 @@
           setenv("TZ", time_zone.c_str(), 1);
         }
       #endif
-      
+
       #if DEBUGGING
         config.show();
       #endif
@@ -105,12 +120,12 @@
       page_locs.setup();
 
       if (fonts.setup()) {
-        
-        Screen::Orientation    orientation = Screen::Orientation::TOP;
+
+        Screen::Orientation orientation    = Screen::Orientation::TOP;
         Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
 
-        config.get(Config::Ident::ORIENTATION,      (int8_t *) &orientation);
-        config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
+        config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
+        config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
 
         screen.setup(resolution, orientation);
 
@@ -123,17 +138,15 @@
 
         if (!nvs_mgr_res) {
           msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
-            "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG
-          );
+                          "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG);
 
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
-    
+
         if (config_err) {
           msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
-            "Unable to read/save configuration file. Entering Deep Sleep. " MSG
-          );
+                          "Unable to read/save configuration file. Entering Deep Sleep. " MSG);
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
@@ -143,12 +156,10 @@
         books_dir_controller.setup();
         LOG_D("Initialization completed");
         app_controller.start();
-      }
-      else {
+      } else {
         LOG_E("Font loading error.");
         msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
-          "Unable to read required fonts. Entering Deep Sleep. " MSG
-        );
+                        "Unable to read required fonts. Entering Deep Sleep. " MSG);
         ESP::delay(500);
         inkplate_platform.deep_sleep(INT_PIN, LEVEL);
       }
@@ -165,38 +176,35 @@
   #define STACK_SIZE 60000
 
   extern "C" {
-    
-    void 
-    app_main(void)
-    {
-      //printf("EPub InkPlate Reader Startup\n");
 
-      /* Print chip information */
-      esp_chip_info_t chip_info;
-      esp_chip_info(&chip_info);
-      printf("This is %s chip with %d CPU core(s), WiFi%s%s, ",
-              CONFIG_IDF_TARGET,
-              chip_info.cores,
-              (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-              (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+  void app_main(void) {
+    // printf("EPub InkPlate Reader Startup\n");
 
-      printf("silicon revision %d, ", chip_info.revision);
+    /* Print chip information */
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    printf("This is %s chip with %d CPU core(s), WiFi%s%s, ", CONFIG_IDF_TARGET, chip_info.cores,
+           (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
+           (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
 
-      uint32_t size_flash_chip;
-      esp_flash_get_size(NULL, &size_flash_chip);
+    printf("silicon revision %d, ", chip_info.revision);
 
-      printf("%" PRIu32 "MB %s flash\n", size_flash_chip / (1024 * 1024),
-              (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+    uint32_t size_flash_chip;
+    esp_flash_get_size(NULL, &size_flash_chip);
 
-      printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+    printf("%" PRIu32 "MB %s flash\n", size_flash_chip / (1024 * 1024),
+           (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-      heap_caps_print_heap_info(MALLOC_CAP_32BIT|MALLOC_CAP_8BIT|MALLOC_CAP_SPIRAM|MALLOC_CAP_INTERNAL);
+    printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 
-      TaskHandle_t xHandle = NULL;
+    heap_caps_print_heap_info(MALLOC_CAP_32BIT | MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM |
+                              MALLOC_CAP_INTERNAL);
 
-      xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *) 1, configMAX_PRIORITIES - 1, &xHandle);
-      configASSERT(xHandle);
-    }
+    TaskHandle_t xHandle = NULL;
+
+    xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *)1, configMAX_PRIORITIES - 1, &xHandle);
+    configASSERT(xHandle);
+  }
 
   } // extern "C"
 
@@ -204,31 +212,28 @@
 
   // Linux main function
 
-  #include "controllers/books_dir_controller.hpp"
   #include "controllers/app_controller.hpp"
-  #include "viewers/msg_viewer.hpp"
-  #include "models/fonts.hpp"
+  #include "controllers/books_dir_controller.hpp"
   #include "models/config.hpp"
+  #include "models/fonts.hpp"
   #include "models/page_locs.hpp"
   #include "screen.hpp"
+  #include "viewers/msg_viewer.hpp"
 
   #if TESTING
     #include "gtest/gtest.h"
   #endif
 
-  static const char * TAG = "Main";
+  static const char *TAG = "Main";
 
-  void exit_app()
-  {
+  void exit_app() {
     fonts.clear_glyph_caches();
     fonts.clear(true);
     epub.close_file();
     DOM::delete_pool();
   }
 
-  int 
-  main(int argc, char **argv) 
-  {
+  int main(int argc, char **argv) {
     bool config_err = !config.read();
     if (config_err) LOG_E("Config Error.");
 
@@ -237,28 +242,28 @@
     #endif
 
     page_locs.setup();
-    
+
     if (fonts.setup()) {
 
-      Screen::Orientation     orientation;
-      Screen::PixelResolution resolution;
-      config.get(Config::Ident::ORIENTATION,     (int8_t *) &orientation);
-      config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *) &resolution);
+      Screen::Orientation orientation{Screen::Orientation::RIGHT};
+      Screen::PixelResolution resolution{Screen::PixelResolution::ONE_BIT};
+      config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
+      config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
       screen.setup(resolution, orientation);
 
       event_mgr.setup();
       books_dir_controller.setup();
 
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        #define MSG "the WakeUp button"
+    #define MSG "the WakeUp button"
       #else
-        #define MSG "a key"
+    #define MSG "a key"
       #endif
 
       if (config_err) {
         msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
-          "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG " to restart."
-        );
+                        "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG
+                        " to restart.");
         sleep(10);
         exit(0);
       }
@@ -270,17 +275,14 @@
       #else
         app_controller.start();
       #endif
-    }
-    else {
+    } else {
       msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
-        "Unable to load default fonts."
-      );
+                      "Unable to load default fonts.");
 
       sleep(30);
       return 1;
-
     }
-    
+
     return 0;
   }
 
