@@ -5,7 +5,7 @@
 #define __LINEAR_BOOKS_DIR_VIEWER__ 1
 #include "viewers/linear_books_dir_viewer.hpp"
 
-#include "image.hpp"
+#include "picture.hpp"
 
 #include "models/config.hpp"
 #include "models/fonts.hpp"
@@ -23,7 +23,7 @@
 
 void LinearBooksDirViewer::setup() {
   books_per_page = (Screen::get_height() - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) /
-                   (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES);
+                   (BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES);
   page_count     = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
 
   current_page_nbr = -1;
@@ -44,18 +44,18 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
   if (last > books_dir.get_book_count()) last = books_dir.get_book_count();
 
-  uint16_t xpos = 20 + BooksDir::max_cover_width;
+  uint16_t xpos = 20 + BooksDir::cover_dim.width;
   uint16_t ypos = FIRST_ENTRY_YPOS;
 
   Page::Format fmt = {
-      .line_height_factor = 0.8,
+      .line_height_factor = 0.9,
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
       .screen_left        = xpos,
       .screen_right       = 10,
       .screen_top         = ypos,
       .screen_bottom =
-          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20)),
   };
 
   page.start(fmt);
@@ -64,18 +64,18 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
     int16_t top_pos = ypos;
 
-    const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
+    auto book = books_dir.get_book_data(book_idx);
 
-    if (book == nullptr) break;
-
-    ImagePtr image = make_unique_himem<Image>(Dim(book->cover_width, book->cover_height),
-                                              (uint8_t *)book->cover_bitmap, book->cover_size());
-    page.put_image(std::move(image), Pos(10 + books_dir.MAX_COVER_WIDTH - book->cover_width, ypos));
+    if (!book) break;
+    PicturePtr picture =
+        Picture::Make(book->cover_dim, (uint8_t *)book->cover_bitmap, book->cover_size());
+    page.put_picture(std::move(picture),
+                     Pos(10 + BooksDir::cover_dim.width - book->cover_dim.width, ypos));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
         page.put_highlight(
-            Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+            Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
             Pos(xpos - 5, ypos));
       }
     #endif
@@ -85,7 +85,7 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
     fmt.font_style    = Fonts::FaceStyle::NORMAL;
     fmt.screen_top    = ypos;
     fmt.screen_bottom = static_cast<int16_t>(
-        Screen::get_height() - (ypos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
+        Screen::get_height() - (ypos + BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES));
 
     page.set_limits(fmt);
     page.new_paragraph(fmt);
@@ -103,7 +103,7 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
     page.add_text(book->author, fmt);
     page.end_paragraph(fmt);
 
-    ypos = top_pos + BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES;
+    ypos = top_pos + BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES;
   }
 
   ScreenBottom::show(page_nbr, page_count);
@@ -121,31 +121,31 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
 
       int16_t book_idx = current_page_nbr * books_per_page + current_item_idx;
 
-      uint16_t xpos = 20 + BooksDir::max_cover_width;
+      uint16_t xpos = 20 + BooksDir::cover_dim.width;
       uint16_t ypos = FIRST_ENTRY_YPOS +
-                      (current_item_idx * (BooksDir::max_cover_height + SPACE_BETWEEN_ENTRIES));
+                      (current_item_idx * (BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES));
 
-      const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
+      auto book = books_dir.get_book_data(book_idx);
 
-      if (book == nullptr) return;
+      if (!book) return;
 
       // TTF * font = fonts.get(1, 9);
 
       Page::Format fmt = {
-          .line_height_factor = 0.8,
+          .line_height_factor = 0.9,
           .font_index         = TITLE_FONT,
           .font_size          = TITLE_FONT_SIZE,
           .screen_left        = xpos,
           .screen_right       = 10,
           .screen_top         = ypos,
           .screen_bottom =
-              static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+              static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20)),
       };
 
       page.start(fmt);
 
       page.clear_highlight(
-          Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+          Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
           Pos(xpos - 5, ypos));
 
       page.set_limits(fmt);
@@ -169,14 +169,14 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
       current_item_idx = item_idx;
 
       book_idx = current_page_nbr * books_per_page + current_item_idx;
-      ypos     = FIRST_ENTRY_YPOS + (current_item_idx * (BooksDir::max_cover_height + 6));
+      ypos     = FIRST_ENTRY_YPOS + (current_item_idx * (BooksDir::cover_dim.height + 6));
 
       book = books_dir.get_book_data(book_idx);
 
-      if (book == nullptr) return;
+      if (!book) return;
 
       page.put_highlight(
-          Dim(Screen::get_width() - (25 + BooksDir::max_cover_width), BooksDir::max_cover_height),
+          Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
           Pos(xpos - 5, ypos));
 
       fmt.font_index = TITLE_FONT;
@@ -184,7 +184,7 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
       fmt.font_style = Fonts::FaceStyle::NORMAL;
       fmt.screen_top = ypos;
       fmt.screen_bottom =
-          static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20));
+          static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20));
 
       page.set_limits(fmt);
       page.new_paragraph(fmt);

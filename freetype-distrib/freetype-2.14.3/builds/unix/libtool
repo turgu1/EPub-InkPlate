@@ -99,7 +99,7 @@ EGREP="/usr/bin/grep -E"
 FGREP="/usr/bin/grep -F"
 
 # A BSD- or MS-compatible name lister.
-NM="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/bin/xtensa-esp32-elf-nm -B"
+NM="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-nm -B"
 
 # Whether we need soft or hard links.
 LN_S="ln -s"
@@ -173,7 +173,7 @@ lock_old_archive_extraction=no
 LTCC="xtensa-esp32-elf-gcc"
 
 # LTCC compiler flags.
-LTCFLAGS="-mlongcalls -fvisibility=hidden "
+LTCFLAGS="-mlongcalls -O2 -fvisibility=hidden -DHAVE_FSSPEC=0 -DHAVE_FSREF=0 -DHAVE_QUICKDRAW_TOOLBOX=0 -DHAVE_QUICKDRAW_CARBON=0 -DHAVE_ATS=0 -I\$(TOP_DIR)/builds/mac/ "
 
 # Take the output of nm and produce a listing of raw symbols and C names.
 global_symbol_pipe="/usr/bin/sed -n -e 's/^.*[	 ]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[	 ][	 ]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p' | /usr/bin/sed '/ __gnu_lto/d'"
@@ -290,7 +290,7 @@ finish_eval=""
 hardcode_into_libs=no
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/xtensa-esp-elf/lib/esp32 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/lib/gcc /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/xtensa-esp-elf/lib /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/xtensa-esp-elf/usr/lib "
+sys_lib_search_path_spec="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0/esp32 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/xtensa-esp-elf/lib/esp32 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/lib/gcc/xtensa-esp-elf/14.2.0 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/lib/gcc /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/xtensa-esp-elf/lib /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/xtensa-esp-elf/usr/lib "
 
 # Detected run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib /usr/lib"
@@ -313,7 +313,7 @@ striplib="xtensa-esp32-elf-strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20251107/xtensa-esp-elf/xtensa-esp-elf/bin/ld"
+LD="/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/xtensa-esp-elf/bin/ld"
 
 # How to create reloadable object files.
 reload_flag=" -r"
@@ -3223,17 +3223,10 @@ libtool_validate_options ()
     # preserve --debug
     test : = "$debug_cmd" || func_append preserve_args " --debug"
 
-    case $host_os in
-      # Solaris2 added to fix http://debbugs.gnu.org/cgi/bugreport.cgi?bug=16452
-      # see also: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=59788
-      cygwin* | mingw* | windows* | pw32* | cegcc* | solaris2* | os2*)
-        # don't eliminate duplications in $postdeps and $predeps
-        opt_duplicate_compiler_generated_deps=:
-        ;;
-      *)
-        opt_duplicate_compiler_generated_deps=$opt_preserve_dup_deps
-        ;;
-    esac
+    # Keeping compiler generated duplicates in $postdeps and $predeps is not
+    # harmful, and is necessary in a majority of systems that use it to satisfy
+    # symbol dependencies.
+    opt_duplicate_compiler_generated_deps=:
 
     $opt_help || {
       # Sanity checks first:

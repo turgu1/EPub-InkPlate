@@ -7,9 +7,9 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-#include "image.hpp"
 #include "inkplate_platform.hpp"
 #include "non_copyable.hpp"
+#include "picture.hpp"
 
 /**
  * @brief Low level logical Screen display
@@ -48,7 +48,7 @@ public:
     WHITE = 0, BLACK = 7
   };
 
-  void draw_image(ImagePtr &image, Pos pos);
+  void draw_picture(PicturePtr &picture, Pos pos);
   void draw_glyph(const unsigned char *bitmap_data, Dim dim, Pos pos, uint16_t pitch);
   void draw_rectangle(Dim dim, Pos pos, uint8_t color);
   void draw_round_rectangle(Dim dim, Pos pos, uint8_t color);

@@ -79,7 +79,7 @@ T := -o$(space)
 #   We use our own FreeType configuration files overriding defaults.
 #
 CPPFLAGS := 
-CFLAGS   := -c -Wall -mlongcalls -fvisibility=hidden  \
+CFLAGS   := -c -Wall -mlongcalls -O2 -fvisibility=hidden -DHAVE_FSSPEC=0 -DHAVE_FSREF=0 -DHAVE_QUICKDRAW_TOOLBOX=0 -DHAVE_QUICKDRAW_CARBON=0 -DHAVE_ATS=0 -I$(TOP_DIR)/builds/mac/  \
             $DFT_CONFIG_CONFIG_H="<ftconfig.h>" \
             $DFT_CONFIG_MODULES_H="<ftmodule.h>" \
             $DFT_CONFIG_OPTIONS_H="<ftoption.h>"

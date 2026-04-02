@@ -440,7 +440,7 @@ void PageLocs::setup() {
     if (state_queue == nullptr) state_queue = xQueueCreate(5, sizeof(StateQueueData));
     if (retrieve_queue == nullptr) retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
 
-    auto cfg        = create_config("retrieverTask", 1, 60 * 1024, configMAX_PRIORITIES - 2);
+    auto cfg        = create_config("retrieverTask", 1, 40 * 1024, configMAX_PRIORITIES - 2);
     cfg.inherit_cfg = true;
     esp_pthread_set_cfg(&cfg);
     retriever_thread = std::thread(retriever_task);
@@ -495,8 +495,8 @@ protected:
 
     if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
       if (page_info.size == 0)
-        page_info.size =
-            1; // Patch for the case when it's the title page and no image is to be shown
+        // Patch for the case when it's the title page and no picture is to be shown
+        page_info.size = 1;
       if ((page_locs.get_item_info().itemref_index > 0) && (page.is_empty())) {
         page_info.size = -page_info.size; // The page will not be counted nor displayed
       }
@@ -537,7 +537,7 @@ bool PageLocs::build_page_locs(int16_t itemref_index) {
 
   // page_out.set_compute_mode(Page::ComputeMode::LOCATION);
 
-  // show_images = current_format_params.show_images == 1;
+  // show_pictures = current_format_params.show_pictures == 1;
 
   bool done = false;
 
@@ -578,7 +578,7 @@ bool PageLocs::build_page_locs(int16_t itemref_index) {
       interp->check_page_to_show(pages_map.size());
     #endif
 
-    interp->set_limits(0, 9999999, current_format_params.show_images == 1);
+    interp->set_limits(0, 9999999, current_format_params.show_pictures == 1);
 
     while (!done) {
 

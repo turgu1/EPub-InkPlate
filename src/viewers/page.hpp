@@ -6,13 +6,14 @@
 #include "global.hpp"
 
 #include <string>
+#include <utility>
 
 #include "memory_pool.hpp"
 #include "models/css.hpp"
 #include "models/display_list.hpp"
 #include "models/fonts.hpp"
 
-#include "image.hpp"
+#include "picture.hpp"
 #include "pugixml.hpp"
 
 /**
@@ -60,7 +61,7 @@ public:
    *
    * Used to select the level of processing made by the Page class to help
    * performance: LOCATION is used when computing the location of pages in
-   * the EPUB document. No screen updates, no images, no glyphs are
+   * the EPUB document. No screen updates, no pictures, no glyphs are
    * rasterized. MOVE is used when it's time to travel from the beginning
    * of a book item (often related to chapters) to the beginning of the
    * page to be shown. DISPLAY is used when preparing the page to be shown
@@ -98,7 +99,7 @@ private:
 
   void add_line(const Format &fmt, bool justifyable);
   void add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font, bool is_space);
-  void add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt);
+  void add_picture_to_line(PicturePtr picture, int16_t advance, const Format &fmt);
   int32_t to_unicode(const char *str, CSS::TextTransform transform, bool first,
                      const char **str2) const;
 
@@ -191,15 +192,17 @@ public:
   bool add_char(const char *ch, const Format &fmt);
 
   /**
-   * @brief Add an image to the paragraph.
+   * @brief Add an picture to the paragraph.
    *
-   * @param image Image data. Each pixel is a grayscaled byte.
+   * @param picture Picture data. Each pixel is a grayscaled byte.
    * @param fmt Formatting parameters.
    * @param at_start_of_page True if it's the first item in a page
-   * @return true The image has been added to the paragraph
-   * @return false There is not enough room to add the image.
+   * @return {true, nullptr} The picture has been added to the paragraph
+   * @return {false, picture} There is not enough room to add the picture. The picture is returned
+   * to the caller.
    */
-  bool add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page*/);
+  auto add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
+      -> std::pair<bool, PicturePtr>;
 
   /**
    * @brief Add text on page
@@ -260,8 +263,8 @@ public:
     #endif
   }
 
-  bool show_cover(ImagePtr &img);
-  void put_image(ImagePtr image, Pos pos);
+  bool show_cover(PicturePtr &pict);
+  void put_picture(PicturePtr picture, Pos pos);
   void put_highlight(Dim dim, Pos pos);
   void clear_highlight(Dim dim, Pos pos);
   void put_rounded(Dim dim, Pos pos);

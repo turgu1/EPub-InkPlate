@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(DEVICE "INKPLATE_6PLUS")
+# set(DEBUGGING 1)
+
 set(APP_VERSION "3.0.0")
 
 set(IDF_TARGET esp32)

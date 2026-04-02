@@ -4,14 +4,14 @@
 #include <iterator>
 #include <variant>
 
-#include "image.hpp"
 #include "memory_pool.hpp"
+#include "picture.hpp"
 
 #include "models/fonts.hpp"
 #include "viewers/msg_viewer.hpp"
 
 enum class DisplayListCommand {
-  GLYPH = 1, IMAGE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED
+  GLYPH = 1, PICTURE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED
 };
 
 struct GlyphEntry {      ///< Used for GLYPH
@@ -20,8 +20,8 @@ struct GlyphEntry {      ///< Used for GLYPH
   bool is_space{false};
 };
 
-struct ImageEntry { ///< Used for IMAGE
-  ImagePtr image{nullptr};
+struct PictureEntry { ///< Used for PICTURE
+  PicturePtr picture{nullptr};
   int16_t advance{0}; ///< Horizontal advance on the baseline
 };
 
@@ -34,16 +34,18 @@ public:
   DisplayListEntry *next{nullptr};
 
   DisplayListCommand command{DisplayListCommand::GLYPH}; ///< Command
-  std::variant<GlyphEntry, ImageEntry, RegionEntry> v;
+  std::variant<GlyphEntry, PictureEntry, RegionEntry> v;
   Pos pos{0, 0}; ///< Screen coordinates
 
   DisplayListEntry() = default;
   ~DisplayListEntry() {
-    if (command == DisplayListCommand::IMAGE && std::holds_alternative<ImageEntry>(v)) {
-      std::get<ImageEntry>(v).image.reset();
+    if (command == DisplayListCommand::PICTURE && std::holds_alternative<PictureEntry>(v)) {
+      std::get<PictureEntry>(v).picture.reset();
     }
   }
 };
+
+using DisplayListPtr = himem_unique_ptr<class DisplayList>;
 
 class DisplayList {
 private:
@@ -52,8 +54,16 @@ private:
 
   static MemoryPool<DisplayListEntry> entry_pool;
 
-public:
   DisplayList() = default;
+
+public:
+  friend class Page;
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<DisplayList>(); }
   ~DisplayList() { clear(); }
 
   // Iterator class (nested)
@@ -170,10 +180,10 @@ public:
                     << " w:" << e.glyph->dim.width << " k:" << e.kern
                     << " h:" << e.glyph->dim.height << " is_space:" << e.is_space << std::endl;
         } break;
-        case DisplayListCommand::IMAGE: {
-          auto &e = std::get<ImageEntry>(entry->v);
-          std::cout << "IMAGE" << " x:" << entry->pos.x << " y:" << entry->pos.y
-                    << " w:" << e.image->get_dim().width << " h:" << e.image->get_dim().height
+        case DisplayListCommand::PICTURE: {
+          auto &e = std::get<PictureEntry>(entry->v);
+          std::cout << "PICTURE" << " x:" << entry->pos.x << " y:" << entry->pos.y
+                    << " w:" << e.picture->get_dim().width << " h:" << e.picture->get_dim().height
                     << " advance:" << e.advance << std::endl;
         } break;
         case DisplayListCommand::HIGHLIGHT: {

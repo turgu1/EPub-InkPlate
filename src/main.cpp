@@ -200,6 +200,9 @@
     heap_caps_print_heap_info(MALLOC_CAP_32BIT | MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM |
                               MALLOC_CAP_INTERNAL);
 
+    UBaseType_t stack_hwm = uxTaskGetStackHighWaterMark(NULL);
+    LOG_I("Main task stack high water mark: %u bytes", stack_hwm * sizeof(StackType_t));
+
     TaskHandle_t xHandle = NULL;
 
     xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *)1, configMAX_PRIORITIES - 1, &xHandle);

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -83,11 +84,15 @@
 struct Dim {
   uint16_t width{0};
   uint16_t height{0};
-  Dim(uint16_t w, uint16_t h) {
-    width  = w;
-    height = h;
-  }
+  // Dim(uint16_t w, uint16_t h) {
+  //   width  = w;
+  //   height = h;
+  // }
   Dim() = default;
+  constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
+
+  constexpr uint16_t get_width() const { return width; }
+  constexpr uint16_t get_height() const { return height; }
 };
 
 struct Pos {

@@ -35,10 +35,10 @@ const uint8_t Screen::LUT1BIT_INV[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
     CODE(resolution, top);                                                                         \
   }
 
-void Screen::draw_image(ImagePtr &image, Pos pos) {
+void Screen::draw_picture(PicturePtr &picture, Pos pos) {
 
-  auto dim         = image->get_dim();
-  auto bitmap_data = image->get_bitmap();
+  auto dim         = picture->get_dim();
+  auto bitmap_data = picture->get_bitmap();
 
   if (pos.x > width) pos.x = 0;
   if (pos.y > height) pos.y = 0;

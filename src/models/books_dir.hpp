@@ -3,7 +3,10 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
+#include "simple_db.hpp"
 
 #include "models/epub.hpp"
 
@@ -11,9 +14,8 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <utility>
 #include <vector>
-
-#include "helpers/simple_db.hpp"
 
 /**
  * @brief Books Directory class
@@ -25,15 +27,21 @@
  */
 class BooksDir {
 public:
-  static const uint16_t BOOKS_DIR_DB_VERSION = 6;
+  static constexpr uint16_t BOOKS_DIR_DB_VERSION = 7;
 
-  static const uint8_t FILENAME_SIZE     = 128;
-  static const uint8_t TITLE_SIZE        = 128;
-  static const uint8_t AUTHOR_SIZE       = 64;
-  static const uint16_t DESCRIPTION_SIZE = 512;
+  static constexpr uint8_t FILENAME_SIZE     = 128;
+  static constexpr uint8_t TITLE_SIZE        = 128;
+  static constexpr uint8_t AUTHOR_SIZE       = 64;
+  static constexpr uint16_t DESCRIPTION_SIZE = 512;
 
-  static const uint8_t MAX_COVER_WIDTH  = 70;
-  static const uint8_t MAX_COVER_HEIGHT = 90;
+  static constexpr uint16_t SMALL_COVER_WIDTH  = 70;
+  static constexpr uint16_t SMALL_COVER_HEIGHT = 90;
+
+  static constexpr uint16_t MEDIUM_COVER_WIDTH  = 140;
+  static constexpr uint16_t MEDIUM_COVER_HEIGHT = 180;
+
+  static constexpr uint16_t LARGE_COVER_WIDTH  = 200;
+  static constexpr uint16_t LARGE_COVER_HEIGHT = 260;
 
   /**
    * @brief Single EBook Record
@@ -45,7 +53,27 @@ public:
    * by the epub class.
    */
   #pragma pack(push, 1)
-  struct EBookRecord {
+  class EBookRecord;
+  using EBookRecordPtr = himem_unique_ptr<EBookRecord>;
+
+  class EBookRecord {
+  private:
+    EBookRecord() = default;
+
+  public:
+    ~EBookRecord() = default;
+
+    template <typename T>
+      requires(!std::is_array_v<T>)
+    friend himem_unique_ptr<T> make_unique_himem(himem_sized_t sz);
+
+    static inline auto Make(int32_t size) -> himem_unique_ptr<EBookRecord> {
+      if (size >= static_cast<int32_t>(sizeof(EBookRecord))) {
+        return make_unique_himem<EBookRecord>(himem_sized(size));
+      }
+      return nullptr;
+    }
+
     char filename[FILENAME_SIZE];       ///< Ebook filename, no folder
                                         ///  MUST STAY AS FIRST ITEM IN EBookRecord
     int32_t file_size;                  ///< File size in bytes
@@ -53,17 +81,26 @@ public:
     char title[TITLE_SIZE];             ///< Title from epub meta-data
     char author[AUTHOR_SIZE];           ///< Author from epub meta-data
     char description[DESCRIPTION_SIZE]; ///< Description from epub meta-data
-    uint8_t cover_bitmap[MAX_COVER_WIDTH]
-                        [MAX_COVER_HEIGHT]; ///< Cover bitmap shrinked for books list presentation
-    uint8_t cover_width;                    ///< Width of the cover bitmap
-    uint8_t cover_height;                   ///< Height of the cover bitmap
-    uint32_t cover_size() const { return cover_width * cover_height; }
+    Dim cover_dim;                      ///< Dimensions of the cover bitmap
+    uint8_t cover_bitmap[];             ///< Cover bitmap shrinked for books list presentation
+
+    uint32_t cover_size() const { return cover_dim.width * cover_dim.height; }
   };
 
-  struct VersionRecord {
+  // The version record is used to identify the version of the database. In case of structure
+  // update, the version will be changed in the application and will trigger the reconstruction of
+  // the database.
+  //
+  // MUST STAY AS FIRST ITEM IN THE DB FILE and THE STRUCT FORMAT MUST NEVER CHANGE!!
+  class VersionRecord {
+  public:
     uint16_t version;
     char app_name[32];
+    VersionRecord()  = default;
+    ~VersionRecord() = default;
+    static inline auto Make() { return make_unique_himem<VersionRecord>(); }
   };
+  using VersionRecordPtr = himem_unique_ptr<VersionRecord>;
   #pragma pack(pop)
 
 private:
@@ -72,20 +109,37 @@ private:
   static constexpr char const *NEW_DIR_FILE   = MAIN_FOLDER "/new_dir.db";
   static constexpr char const *APP_NAME       = "EPUB-INKPLATE";
 
-  SimpleDB db; ///< The SimpleDB database
+  SimpleDBPtr db; ///< The SimpleDB database
 
+  /// @struct IndexInfo
+  /// @brief Stores index information for book entries in the database.
+  ///
+  /// This struct maintains a mapping between a book's unique identifier and its
+  /// corresponding database index position, allowing efficient lookup and retrieval
+  /// of book data from the database.
+  ///
+  /// @var IndexInfo::id
+  ///   The unique identifier for the book entry.
+  ///
+  /// @var IndexInfo::db_index
+  ///   The index position of this entry in the database.
   struct IndexInfo {
     uint32_t id;
     uint16_t db_index;
   };
 
-  typedef std::map<std::string, IndexInfo> SortedIndex; ///< Sorted map of book names and indexes.
+  using SortedIndex = std::map<std::string, IndexInfo>; ///< Sorted map of book names and indexes.
   SortedIndex sorted_index; ///< Books index pointing at the db index of each book
-  EBookRecord book;         ///< Book Record structure prepared to return to the caller
-  int16_t current_book_idx; ///< Current book index present in the book structure
+
+  void clear_db();
+  void set_cover_size();
+  void check_db_content(char *book_filename, int16_t &book_index, SortedIndex &temp_index);
+  auto cleanup_db(char *book_filename, int16_t &book_index) -> bool;
+  auto load_new_books_to_db(char *book_filename, int16_t &book_index, SortedIndex &temp_index)
+      -> std::pair<bool, bool>;
 
 public:
-  BooksDir() : current_book_idx(-1) {}
+  BooksDir() : db(SimpleDB::Make()) {}
   ~BooksDir() {
     sorted_index.clear();
     close_db();
@@ -106,11 +160,11 @@ public:
    * @param idx The index is a sequential number in the sorted list of ebooks, ranging 0 ..
    * get_book_count()-1.
    *
-   * @return const EBookRecord* Pointer to an EBookRecord structure, or NULL if not able to retrieve
-   * the data.
+   * @return const EBookRecordPtr Pointer to an EBookRecord structure, or nullptr if not able to
+   * retrieve the data.
    */
-  const EBookRecord *get_book_data(uint16_t idx);
-  const EBookRecord *get_book_data_from_db_index(uint16_t idx);
+  auto get_book_data(uint16_t idx) -> EBookRecordPtr;
+  // auto get_book_data_from_db_index(uint16_t idx) -> EBookRecordPtr;
   bool get_book_id(uint16_t idx, uint32_t &id);
   bool get_book_index(uint32_t id, uint16_t &idx);
   void set_track_order(uint32_t id, int8_t pos);
@@ -137,9 +191,7 @@ public:
     return -1;
   }
 
-  static const uint16_t max_cover_width =
-      MAX_COVER_WIDTH; ///< Bitmap width in pixels to present a book cover in the list
-  static const uint16_t max_cover_height = MAX_COVER_HEIGHT; ///< Bitmap height in pixels
+  static Dim cover_dim;
 
   /**
    * @brief Read and refresh the ebooks list database
@@ -180,7 +232,9 @@ public:
    * @brief Close the SimpleDB database
    *
    */
-  void close_db() { db.close(); }
+  void close_db() {
+    if (db) db->close();
+  }
 
   void show_db();
 };

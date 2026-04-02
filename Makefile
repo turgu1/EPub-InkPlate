@@ -60,7 +60,7 @@ INCLUDES := \
   -I components/pictures/src \
   -I components/memory_pool/src \
   -I components/himem/src \
-  -I components/image/src \
+  -I components/simple_db/src \
   $(FREETYPE_CFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -95,12 +95,13 @@ SRC_CPP += \
   components/sys_functions/strlcpy.cpp \
   components/pictures/src/mypngle.cpp \
   components/pictures/src/tjpgdec.cpp \
-  components/image/src/image.cpp \
-  components/image/src/jpeg_image.cpp \
-  components/image/src/png_image.cpp \
+  components/pictures/src/picture.cpp \
+  components/pictures/src/jpeg_picture.cpp \
+  components/pictures/src/png_picture.cpp \
+  components/simple_db/src/simple_db.cpp \
   components/zip/src/unzip.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp \
-  lib_linux/EPub_InkPlate/src/screen.cpp
+  lib_linux/EPub_InkPlate/src/screen.cpp \
 
 # Plain-C sources
 SRC_C := \

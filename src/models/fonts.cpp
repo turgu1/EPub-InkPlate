@@ -6,12 +6,14 @@
 #include "models/fonts.hpp"
 
 #include "alloc.hpp"
+#include "pugixml.hpp"
+#include "unzip.hpp"
+
 #include "controllers/book_param_controller.hpp"
 #include "controllers/option_controller.hpp"
 #include "models/config.hpp"
 #include "models/font_factory.hpp"
-#include "pugixml.hpp"
-#include "unzip.hpp"
+
 #include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 

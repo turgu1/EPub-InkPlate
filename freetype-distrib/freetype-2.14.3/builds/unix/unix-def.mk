@@ -55,7 +55,7 @@ DISTCLEAN += $(OBJ_BUILD)/config.cache  \
 
 # Standard installation variables.
 #
-prefix       := /home/turgu1/Dev/EPub-InkPlate/lib_freetype
+prefix       := /home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.14.3/../../components/freetype
 exec_prefix  := ${prefix}
 libdir       := ${exec_prefix}/lib
 bindir       := ${exec_prefix}/bin

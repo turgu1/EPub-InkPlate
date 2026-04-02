@@ -13,7 +13,7 @@
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#include "image_factory.hpp"
+#include "picture_factory.hpp"
 
 #include "logging.hpp"
 #if EPUB_INKPLATE_BUILD
@@ -671,13 +671,13 @@ bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
 
     if (strcmp(media_type, "application/xhtml+xml") == 0)
       item.media_type = MediaType::XML;
-    else if (strcmp(media_type, "image/jpeg") == 0)
+    else if (strcmp(media_type, "picture/jpeg") == 0)
       item.media_type = MediaType::JPEG;
-    else if (strcmp(media_type, "image/png") == 0)
+    else if (strcmp(media_type, "picture/png") == 0)
       item.media_type = MediaType::PNG;
-    else if (strcmp(media_type, "image/bmp") == 0)
+    else if (strcmp(media_type, "picture/bmp") == 0)
       item.media_type = MediaType::BMP;
-    else if (strcmp(media_type, "image/gif") == 0)
+    else if (strcmp(media_type, "picture/gif") == 0)
       item.media_type = MediaType::GIF;
     else
       ERR(3);
@@ -754,12 +754,12 @@ void EPub::update_book_format_params() {
                           .orientation =
                               0, // Get de compiler happy (no warning). Will be set below...
                           .show_title        = 0, // ... idem ...
-                          .show_images       = default_value,
+                          .show_pictures     = default_value,
                           .font_size         = default_value,
                           .use_fonts_in_book = default_value,
                           .font              = default_value};
   } else {
-    book_params->get(BookParams::Ident::SHOW_IMAGES, &book_format_params.show_images);
+    book_params->get(BookParams::Ident::SHOW_PICTURES, &book_format_params.show_pictures);
     book_params->get(BookParams::Ident::FONT_SIZE, &book_format_params.font_size);
     book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK, &book_format_params.use_fonts_in_book);
     book_params->get(BookParams::Ident::FONT, &book_format_params.font);
@@ -768,8 +768,8 @@ void EPub::update_book_format_params() {
   config.get(Config::Ident::ORIENTATION, &book_format_params.orientation);
   config.get(Config::Ident::SHOW_TITLE, &book_format_params.show_title);
 
-  if (book_format_params.show_images == default_value)
-    config.get(Config::Ident::SHOW_IMAGES, &book_format_params.show_images);
+  if (book_format_params.show_pictures == default_value)
+    config.get(Config::Ident::SHOW_PICTURES, &book_format_params.show_pictures);
   if (book_format_params.font_size == default_value)
     config.get(Config::Ident::FONT_SIZE, &book_format_params.font_size);
   if (book_format_params.use_fonts_in_book == default_value)
@@ -937,7 +937,8 @@ const char *EPub::get_cover_filename() {
     for (auto n : opf.find_child(package_pred).find_child(manifest_pred).children()) {
       if ((strcmp(n.name(), "item") == 0) || (strcmp(n.name(), "opf:item") == 0)) {
         if ((attr = n.attribute("id")) &&
-            ((strcmp(attr.value(), "cover-image") == 0) || (strcmp(attr.value(), "cover") == 0)) &&
+            ((strcmp(attr.value(), "cover-picture") == 0) ||
+             (strcmp(attr.value(), "cover") == 0)) &&
             (attr = n.attribute("href"))) {
           filename = attr.value();
           break;
@@ -1032,29 +1033,30 @@ bool EPub::get_item_at_index(int16_t itemref_index, ItemInfo &item) {
   }
 }
 
-auto EPub::get_image(std::string &fname, bool load) -> ImagePtr {
+auto EPub::get_picture(std::string &fname, bool load) -> PicturePtr {
   LOG_D("Mutex lock...");
 
   {
     std::scoped_lock guard(mutex);
 
     std::string filename = filename_locate(fname.c_str());
-    auto img = ImageFactory::create(filename, Dim(Screen::get_width(), Screen::get_height()), load);
+    auto pict =
+        PictureFactory::create(filename, Dim(Screen::get_width(), Screen::get_height()), load);
 
-    if ((img == nullptr) || (load && (img->get_bitmap() == nullptr)) ||
-        (img->get_dim().height == 0) || (img->get_dim().width == 0)) {
-      if (img != nullptr) img.reset();
-      img = nullptr;
+    if ((pict == nullptr) || (load && (pict->get_bitmap() == nullptr)) ||
+        (pict->get_dim().height == 0) || (pict->get_dim().width == 0)) {
+      if (pict != nullptr) pict.reset();
+      pict = nullptr;
     }
 
-    // if (img->get_bitmap() != nullptr) {
-    //   std::cout << "----- Image content -----" << std::endl;
+    // if (pict->get_bitmap() != nullptr) {
+    //   std::cout << "----- Picture content -----" << std::endl;
     //   for (int i = 0; i < 200; i++) {
-    //     std::cout << std::hex << std::setw(2) << +img->get_bitmap()[i];
+    //     std::cout << std::hex << std::setw(2) << +pict->get_bitmap()[i];
     //   }
     //   std::cout << std::endl << "-----" << std::endl;
     // }
     LOG_D("Mutex unlocked...");
-    return img;
+    return pict;
   }
 }

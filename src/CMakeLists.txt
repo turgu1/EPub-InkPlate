@@ -17,13 +17,13 @@ set(components
     inkplate_screen
     memory_pool
     pictures
-    image
     esp_http_server
     esp_app_format
     pthread
     freetype
     spi_flash
     himem
+    simple_db
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

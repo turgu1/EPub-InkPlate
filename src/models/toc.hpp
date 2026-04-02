@@ -6,13 +6,14 @@
 
 // Table of content class
 
-#include "alloc.hpp"
 #include "global.hpp"
+
+#include "alloc.hpp"
+#include "char_pool.hpp"
 #include "logging.hpp"
 #include "pugixml.hpp"
+#include "simple_db.hpp"
 
-#include "helpers/char_pool.hpp"
-#include "helpers/simple_db.hpp"
 #include "models/page_locs.hpp"
 
 #include <forward_list>
@@ -21,7 +22,7 @@
 
 class TOC {
 public:
-  TOC() = default;
+  TOC() : db(SimpleDB::Make()) {}
   ~TOC() {
     if (char_pool != nullptr) delete char_pool;
     if (char_buffer != nullptr) free(char_buffer);
@@ -124,7 +125,7 @@ private:
   Entries entries;
   Infos infos;
 
-  SimpleDB db; ///< The SimpleDB table
+  SimpleDBPtr db; ///< The SimpleDB table
 
   CharPool *char_pool{nullptr};
   char *char_buffer{nullptr};

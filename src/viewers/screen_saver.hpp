@@ -10,7 +10,7 @@
   private:
     static constexpr char const *TAG = "ScreenSaver";
 
-    std::vector<std::string> image_filenames;
+    std::vector<std::string> picture_filenames;
 
     auto setup() -> bool;
 

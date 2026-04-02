@@ -11,52 +11,49 @@
 
 /**
  * @brief Message presentation class
- * 
+ *
  * This class supply simple alert/info messages presentation to the user.
- * 
+ *
  */
 class MsgViewer {
 
-  private:
-    static constexpr char const * TAG = "MsgViewer";
+private:
+  static constexpr char const *TAG = "MsgViewer";
 
-    uint16_t width;
-    static constexpr uint16_t HEIGHT  = 300;
-    static constexpr uint16_t HEIGHT2 = 450;
+  uint16_t width;
+  static constexpr uint16_t HEIGHT  = 300;
+  static constexpr uint16_t HEIGHT2 = 450;
 
-    struct DotsZone {
-      Pos pos;
-      Dim dim;
-      int16_t max_dot_count;
-      int16_t dots_per_line;
-    } dot_zone;
+  struct ProgressLocation {
+    Dim dim;
+    Pos pos;
+  } progress_location;
 
-    int16_t dot_count;
+  uint16_t progress_previous_width;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      Pos ok_pos, cancel_pos;
-      Dim buttons_dim;
-      bool confirmation_required;
-    #endif
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    Pos ok_pos, cancel_pos;
+    Dim buttons_dim;
+    bool confirmation_required;
+  #endif
 
-  public:
-    MsgViewer() {};
+public:
+  MsgViewer() {};
 
-    enum MsgType { INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM };
-    static char icon_char[7];
+  enum MsgType {
+    INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM
+  };
+  static char icon_char[7];
 
-    void show(
-      MsgType msg_type, 
-      bool press_a_key, 
-      bool clear_screen,
-      const char * title, 
-      const char * fmt_str, ...);
-    
-    bool confirm(const EventMgr::Event & event, bool & ok);
+  void show(MsgType msg_type, bool press_a_key, bool clear_screen, const char *title,
+            const char *fmt_str, ...);
 
-    //void show_progress(const char * title, ...);
-    //void add_dot();
-    void out_of_memory(const char * raison);
+  bool confirm(const EventMgr::Event &event, bool &ok);
+
+  void show_progress(const char *title, ...);
+  void update_progress(u_int16_t percent);
+
+  void out_of_memory(const char *raison);
 };
 
 #if __MSG_VIEWER__

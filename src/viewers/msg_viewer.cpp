@@ -182,94 +182,96 @@ bool MsgViewer::confirm(const EventMgr::Event &event, bool &ok) {
   #endif
 }
 
-#if 0
-void MsgViewer::show_progress(const char * title, ...)
-{
-  width = Screen::get_width() - 60;
+#if 1
+  void MsgViewer::show_progress(const char *title, ...) {
+    width = Screen::get_width() - 60;
 
-  Page::Format fmt = {
-    .indent             =  0,
-    .margin_left        = 10,
-    .margin_right       = 10,
-    .margin_top         = 30, // 70,
-    .margin_bottom      = 10,
-    .screen_left        = static_cast<uint16_t>((Screen::get_width()  - width  ) >> 1),
-    .screen_right       = static_cast<uint16_t>((Screen::get_width()  - width  ) >> 1),
-    .screen_top         = static_cast<uint16_t>((Screen::get_height() - HEIGHT2) >> 1),
-    .screen_bottom      = static_cast<uint16_t>((Screen::get_height() - HEIGHT2) >> 1),
-    .align              = CSS::Align::CENTER,
-  };
+    Page::Format fmt = {
+        .indent        = 0,
+        .margin_left   = 10,
+        .margin_right  = 10,
+        .margin_top    = 30, // 70,
+        .margin_bottom = 10,
+        .screen_left   = static_cast<uint16_t>((Screen::get_width() - width) >> 1),
+        .screen_right  = static_cast<uint16_t>((Screen::get_width() - width) >> 1),
+        .screen_top    = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
+        .screen_bottom = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
+        .align         = CSS::Align::CENTER,
+    };
 
-  char buff[80];
+    char buff[80];
 
-  va_list args;
-  va_start(args, title);
-  vsnprintf(buff, 80, title, args);
-  va_end(args);
+    va_list args;
+    va_start(args, title);
+    vsnprintf(buff, 80, title, args);
+    va_end(args);
 
-  page.start(fmt);
+    page.start(fmt);
 
-  page.clear_region(
-    Dim(width, HEIGHT2), 
-    Pos(fmt.screen_left, fmt.screen_top));
+    page.clear_region(Dim(width, HEIGHT), Pos(fmt.screen_left, fmt.screen_top));
 
-  page.put_highlight(
-    Dim(width - 4, HEIGHT2 - 4), 
-    Pos(fmt.screen_left + 2, fmt.screen_top + 2));
+    page.put_highlight(Dim(width - 4, HEIGHT - 4), Pos(fmt.screen_left + 2, fmt.screen_top + 2));
 
-  // Title
+    // Title
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
-  std::string buffer = buff;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+    page.set_limits(fmt);
+    page.new_paragraph(fmt);
+    std::string buffer = buff;
+    page.add_text(buffer, fmt);
+    page.end_paragraph(fmt);
 
-  // Progress zone
+    // Progress zone
 
-  page.put_highlight(
-    Dim(width - 42, HEIGHT2 - 100), 
-    Pos(((Screen::get_width() - width) >> 1) +  23, (Screen::get_height() >> 1) - 120)
-  );
+    progress_location = {
+        .dim = Dim(width - 100, Screen::get_height() / 18),
+        .pos = Pos(((Screen::get_width() - width) >> 1) + 50, (Screen::get_height() >> 1) + 20),
+    };
 
-  dot_zone.dim  = Dim(width -  46, HEIGHT2 - 104);
-  dot_zone.pos  = Pos(((Screen::get_width() - width) >> 1) +  25, (Screen::get_height() >> 1) - 118);
-  dot_zone.dots_per_line = (dot_zone.dim.width + 1) / 9;
-  dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.dim.height + 1) / 9);
-  dot_count = 0;
+    progress_previous_width = 0;
 
-  page.paint(false);
-}
+    page.put_highlight(progress_location.dim, progress_location.pos);
 
-void MsgViewer::add_dot()
-{
-  width = Screen::get_width() - 60;
+    progress_location.dim.width -= 10;
+    progress_location.dim.height -= 10;
+    progress_location.pos.x += 5;
+    progress_location.pos.y += 5;
 
-  Page::Format fmt = {
-    .margin_top         = 30, // 70,
-    .screen_left        = static_cast<uint16_t>((Screen::get_width()  - width ) >> 1),
-    .screen_right       = static_cast<uint16_t>((Screen::get_width()  - width ) >> 1),
-    .screen_top         = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
-    .screen_bottom      = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
-    .align              = CSS::Align::CENTER,
-  };
-
-  page.start(fmt);
-
-  if (dot_count >= dot_zone.max_dot_count) {
-    page.clear_region(dot_zone.dim, dot_zone.pos);
-    dot_count = 0;
+    page.paint(false);
   }
 
-  Pos pos(dot_zone.pos.x + (dot_count % dot_zone.dots_per_line) * 9,
-          dot_zone.pos.y + (dot_count / dot_zone.dots_per_line) * 9);
+  void MsgViewer::update_progress(uint16_t percent) {
 
-  page.set_region(Dim{ 8, 8 }, pos);
+    if (percent > 100) return;
 
-  dot_count++;
+    width = Screen::get_width() - 60;
 
-  page.paint(false, true, true);
-}
+    Page::Format fmt = {
+        .margin_top    = 30, // 70,
+        .screen_left   = static_cast<uint16_t>((Screen::get_width() - width) >> 1),
+        .screen_right  = static_cast<uint16_t>((Screen::get_width() - width) >> 1),
+        .screen_top    = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
+        .screen_bottom = static_cast<uint16_t>((Screen::get_height() - HEIGHT) >> 1),
+        .align         = CSS::Align::CENTER,
+    };
+
+    page.start(fmt);
+
+    uint16_t progress_width =
+        percent >= 100 ? progress_location.dim.width
+                       : static_cast<uint16_t>(
+                             static_cast<uint32_t>(progress_location.dim.width * percent) / 100);
+
+    if (progress_width > progress_previous_width) {
+      progress_width -= progress_previous_width;
+      page.set_region(Dim{progress_width, progress_location.dim.height},
+                      Pos{static_cast<uint16_t>(progress_location.pos.x + progress_previous_width),
+                          static_cast<uint16_t>(progress_location.pos.y)});
+
+      progress_previous_width += progress_width;
+
+      page.paint(false, false, true);
+    }
+  }
 #endif
 
 void MsgViewer::out_of_memory(const char *raison) {

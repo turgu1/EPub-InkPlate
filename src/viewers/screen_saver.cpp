@@ -7,8 +7,8 @@
   #include <dirent.h>
   }
 
-  #include "image.hpp"
-  #include "image_factory.hpp"
+  #include "picture.hpp"
+  #include "picture_factory.hpp"
   #include "screen.hpp"
 
   #include "viewers/page.hpp"
@@ -21,7 +21,7 @@
 
     DIR *dir = nullptr;
 
-    image_filenames.clear();
+    picture_filenames.clear();
 
     if ((dir = opendir(SCREEN_SAVER_FOLDER)) != nullptr) {
       struct dirent *entry;
@@ -30,32 +30,32 @@
           std::string filename = std::string(SCREEN_SAVER_FOLDER) + "/" + entry->d_name;
           std::string ext      = filename.substr(filename.find_last_of(".") + 1);
           if ((ext == "jpg") || (ext == "jpeg")) {
-            image_filenames.push_back(filename);
+            picture_filenames.push_back(filename);
           }
         }
       }
       closedir(dir);
     }
 
-    LOG_D("Found %d images.", image_filenames.size());
-    return image_filenames.size() > 0;
+    LOG_D("Found %d pictures.", picture_filenames.size());
+    return picture_filenames.size() > 0;
   }
 
   void ScreenSaver::show() {
     LOG_D("Showing screen saver...");
     if (setup()) {
-      if (image_filenames.size() > 0) {
-        int index = (esp_random() * (unsigned long long)image_filenames.size()) >> 32;
+      if (picture_filenames.size() > 0) {
+        int index = (esp_random() * (unsigned long long)picture_filenames.size()) >> 32;
         if (index < 0) index = -index;
-        if (index >= image_filenames.size()) index = image_filenames.size() - 1;
-        LOG_D("Showing image at index %d: %s", index, image_filenames[index].c_str());
-        auto img = ImageFactory::create(image_filenames[index],
-                                        Dim(Screen::get_width(), Screen::get_height()), true, true);
-        if (img) {
-          // img->show();
-          page.show_cover(std::move(img));
+        if (index >= picture_filenames.size()) index = picture_filenames.size() - 1;
+        LOG_D("Showing picture at index %d: %s", index, picture_filenames[index].c_str());
+        auto pict = PictureFactory::create(
+            picture_filenames[index], Dim(Screen::get_width(), Screen::get_height()), true, true);
+        if (pict) {
+          // pict->show();
+          page.show_cover(pict);
         } else {
-          LOG_E("Unable to load image file %s", image_filenames[index].c_str());
+          LOG_E("Unable to load picture file %s", picture_filenames[index].c_str());
         }
       }
     }

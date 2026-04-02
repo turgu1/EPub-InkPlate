@@ -159,12 +159,11 @@ void BooksDirController::show_last_book() {
   LOG_D("===> show_last_book()...");
   static std::string book_fname;
   static std::string book_title;
-  const BooksDir::EBookRecord *book;
 
   book_was_shown = false;
-  book           = books_dir.get_book_data(last_read_book_index);
+  auto book      = books_dir.get_book_data(last_read_book_index);
 
-  if (book != nullptr) {
+  if (book) {
     book_fname = BOOKS_FOLDER "/";
     book_fname += book->filename;
     book_title = book->title;
@@ -199,7 +198,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
     static std::string book_fname;
     static std::string book_title;
 
-    const BooksDir::EBookRecord *book;
+    // auto book = books_dir.get_book_data(last_read_book_index);
 
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:
@@ -217,8 +216,8 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
         current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
         if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
           LOG_D("[TAP] Book Index: %d", current_book_index);
-          book = books_dir.get_book_data(current_book_index);
-          if (book != nullptr) {
+          auto book = books_dir.get_book_data(current_book_index);
+          if (book) {
             last_read_book_index = current_book_index;
             book_fname           = BOOKS_FOLDER "/";
             book_fname += book->filename;
@@ -276,8 +275,6 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
     static std::string book_fname;
     static std::string book_title;
 
-    const BooksDir::EBookRecord *book;
-
     switch (event.kind) {
       #if EXTENDED_CASE
       case EventMgr::EventKind::PREV:
@@ -313,8 +310,8 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
 
     case EventMgr::EventKind::SELECT:
       if (current_book_index < books_dir.get_book_count()) {
-        book = books_dir.get_book_data(current_book_index);
-        if (book != nullptr) {
+        auto book = books_dir.get_book_data(current_book_index);
+        if (book) {
           last_read_book_index = current_book_index;
           book_fname           = BOOKS_FOLDER "/";
           book_fname += book->filename;

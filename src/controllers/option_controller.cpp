@@ -19,6 +19,9 @@
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
+// #undef DEBUGGING
+// #define DEBUGGING 1
+
 #if EPUB_INKPLATE_BUILD
   #include "esp_system.h"
 #endif
@@ -30,22 +33,24 @@ static Screen::PixelResolution resolution;
 
 static int8_t show_battery;
 static int8_t timeout;
-static int8_t show_images;
+static int8_t show_pictures;
 static int8_t font_size;
 static int8_t use_fonts_in_books;
 static int8_t default_font;
 static int8_t show_title;
 static int8_t dir_view;
+static int8_t cover_size;
 static int8_t done;
 
 static Screen::Orientation old_orientation;
 static Screen::PixelResolution old_resolution;
-static int8_t old_show_images;
+static int8_t old_show_pictures;
 static int8_t old_font_size;
 static int8_t old_use_fonts_in_books;
 static int8_t old_default_font;
 static int8_t old_show_title;
 static int8_t old_dir_view;
+static int8_t old_cover_size;
 
 #if DATE_TIME_RTC
   static int8_t show_heap_or_rtc;
@@ -56,9 +61,9 @@ static int8_t old_dir_view;
 #endif
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static constexpr int8_t MAIN_FORM_SIZE = 8;
+  static constexpr int8_t MAIN_FORM_SIZE = 9;
 #else
-  static constexpr int8_t MAIN_FORM_SIZE = 7;
+  static constexpr int8_t MAIN_FORM_SIZE = 8;
 #endif
 
 static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
@@ -72,18 +77,23 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
                            .choice_count = 2,
                            .choices      = FormChoiceField::dir_view_choices}},
      .entry_type = FormEntryType::HORIZONTAL},
+    {.caption    = "Books Cover Size :",
+     .u          = {.ch = {.value        = &cover_size,
+                           .choice_count = 3,
+                           .choices      = FormChoiceField::cover_size_choices}},
+     .entry_type = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     {.caption    = "uSDCard Position (*):",
      .u          = {.ch = {.value        = (int8_t *)&orientation,
                            .choice_count = 4,
                            .choices      = FormChoiceField::orientation_choices}},
-     .entry_type = FormEntryType::VERTICAL},
+     .entry_type = FormEntryType::HORIZONTAL},
 #else
     {.caption    = "Buttons Position (*):",
      .u          = {.ch = {.value        = (int8_t *)&orientation,
                            .choice_count = 3,
                            .choices      = FormChoiceField::orientation_choices}},
-     .entry_type = FormEntryType::VERTICAL},
+     .entry_type = FormEntryType::HORIZONTAL},
 #endif
     {.caption    = "Pixel Resolution :",
      .u          = {.ch = {.value        = (int8_t *)&resolution,
@@ -105,7 +115,7 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
      .u          = {.ch = {.value        = &show_heap_or_rtc,
                            .choice_count = 3,
                            .choices      = FormChoiceField::right_corner_choices}},
-     .entry_type = FormEntryType::VERTICAL},
+     .entry_type = FormEntryType::HORIZONTAL},
 #else
     {.caption    = "Show Heap Sizes :",
      .u          = {.ch = {.value        = &show_heap,
@@ -142,7 +152,7 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
                            .choices      = FormChoiceField::font_choices}},
      .entry_type = FormEntryType::VERTICAL},
     {.caption    = "Show Images in E-books (*):",
-     .u          = {.ch = {.value        = &show_images,
+     .u          = {.ch = {.value        = &show_pictures,
                            .choice_count = 2,
                            .choices      = FormChoiceField::yes_no_choices}},
      .entry_type = FormEntryType::HORIZONTAL},
@@ -191,6 +201,7 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
 static void main_parameters() {
   config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
   config.get(Config::Ident::DIR_VIEW, &dir_view);
+  config.get(Config::Ident::COVER_SIZE, &cover_size);
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
   config.get(Config::Ident::BATTERY, &show_battery);
   config.get(Config::Ident::SHOW_TITLE, &show_title);
@@ -208,6 +219,7 @@ static void main_parameters() {
 
   old_orientation = orientation;
   old_dir_view    = dir_view;
+  old_cover_size  = cover_size;
   old_resolution  = resolution;
   old_show_title  = show_title;
   done            = 1;
@@ -219,12 +231,12 @@ static void main_parameters() {
 }
 
 static void default_parameters() {
-  config.get(Config::Ident::SHOW_IMAGES, &show_images);
+  config.get(Config::Ident::SHOW_PICTURES, &show_pictures);
   config.get(Config::Ident::FONT_SIZE, &font_size);
   config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
   config.get(Config::Ident::DEFAULT_FONT, &default_font);
 
-  old_show_images        = show_images;
+  old_show_pictures      = show_pictures;
   old_use_fonts_in_books = use_fonts_in_books;
   old_default_font       = default_font;
   old_font_size          = font_size;
@@ -339,11 +351,13 @@ static void init_nvs() {
   }
 #endif
 
-#if EPUB_LINUX_BUILD && DEBUGGING
+#if DEBUGGING
   void debugging() {
-    #if DATE_TIME_RTC
-      clock_adjust_form();
-    #endif
+    msg_viewer.show_progress("A small test to check the show progress capability. Please wait...");
+    for (int i = 0; i <= 10; i++) {
+      msg_viewer.update_progress(i * 10);
+      sleep(1);
+    }
   }
 #endif
 
@@ -369,7 +383,7 @@ static MenuViewer::MenuEntry menu[] = {
      true},
   #endif
 #endif
-#if EPUB_LINUX_BUILD && DEBUGGING
+#if DEBUGGING
     {MenuViewer::Icon::DEBUG, "Debugging", debugging, true, true},
 #endif
     {MenuViewer::Icon::INFO, "About the EPub-InkPlate application", CommonActions::about, true,
@@ -431,6 +445,7 @@ void OptionController::input_event(const EventMgr::Event &event) {
       // if (ok) {
       config.put(Config::Ident::ORIENTATION, static_cast<int8_t>(orientation));
       config.put(Config::Ident::DIR_VIEW, dir_view);
+      config.put(Config::Ident::COVER_SIZE, cover_size);
       config.put(Config::Ident::PIXEL_RESOLUTION, static_cast<int8_t>(resolution));
       config.put(Config::Ident::BATTERY, show_battery);
       config.put(Config::Ident::SHOW_TITLE, show_title);
@@ -455,6 +470,12 @@ void OptionController::input_event(const EventMgr::Event &event) {
         books_dir_controller.set_current_book_index(-1);
       }
 
+      if (old_cover_size != cover_size) {
+        int16_t dummy;
+        books_dir.refresh(nullptr, dummy, true);
+        menu_viewer.show(menu, 2, true);
+      }
+
       if (old_resolution != resolution) {
         fonts.clear_glyph_caches();
         screen.set_pixel_resolution(resolution);
@@ -475,13 +496,13 @@ void OptionController::input_event(const EventMgr::Event &event) {
     if (form_viewer.event(event)) {
       font_form_is_shown = false;
       // if (ok) {
-      config.put(Config::Ident::SHOW_IMAGES, show_images);
+      config.put(Config::Ident::SHOW_PICTURES, show_pictures);
       config.put(Config::Ident::FONT_SIZE, font_size);
       config.put(Config::Ident::DEFAULT_FONT, default_font);
       config.put(Config::Ident::USE_FONTS_IN_BOOKS, use_fonts_in_books);
       config.save();
 
-      if ((old_show_images != show_images) || (old_font_size != font_size) ||
+      if ((old_show_pictures != show_pictures) || (old_font_size != font_size) ||
           (old_default_font != default_font) || (old_use_fonts_in_books != use_fonts_in_books)) {
         epub.update_book_format_params();
       }

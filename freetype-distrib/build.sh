@@ -13,7 +13,7 @@
 # $ . ~/esp/esp-idf/export.sh
 #
 
-FREETYPE_DIR=freetype-2.13.3
+FREETYPE_DIR=freetype-2.14.3
 TARGET_LOC=../components/freetype
 
 rm -rf $TARGET_LOC

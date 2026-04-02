@@ -28,14 +28,14 @@
 
 #include <sys/stat.h>
 
-static int8_t show_images;
+static int8_t show_pictures;
 static int8_t font_size;
 static int8_t use_fonts_in_book;
 static int8_t font;
 static int8_t done_res;
 
 static int8_t old_font_size;
-static int8_t old_show_images;
+static int8_t old_show_pictures;
 static int8_t old_use_fonts_in_book;
 static int8_t old_font;
 
@@ -59,7 +59,7 @@ static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
      .u = {.ch = {.value = &font, .choice_count = 8, .choices = FormChoiceField::font_choices}},
      .entry_type = FormEntryType::VERTICAL},
     {.caption    = "Show Images in book:",
-     .u          = {.ch = {.value        = &show_images,
+     .u          = {.ch = {.value        = &show_pictures,
                            .choice_count = 2,
                            .choices      = FormChoiceField::yes_no_choices}},
      .entry_type = FormEntryType::HORIZONTAL},
@@ -73,17 +73,17 @@ static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
 static void book_parameters() {
   BookParams *book_params = epub.get_book_params();
 
-  book_params->get(BookParams::Ident::SHOW_IMAGES, &show_images);
+  book_params->get(BookParams::Ident::SHOW_PICTURES, &show_pictures);
   book_params->get(BookParams::Ident::FONT_SIZE, &font_size);
   book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK, &use_fonts_in_book);
   book_params->get(BookParams::Ident::FONT, &font);
 
-  if (show_images == -1) config.get(Config::Ident::SHOW_IMAGES, &show_images);
+  if (show_pictures == -1) config.get(Config::Ident::SHOW_PICTURES, &show_pictures);
   if (font_size == -1) config.get(Config::Ident::FONT_SIZE, &font_size);
   if (use_fonts_in_book == -1) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_book);
   if (font == -1) config.get(Config::Ident::DEFAULT_FONT, &font);
 
-  old_show_images       = show_images;
+  old_show_pictures     = show_pictures;
   old_use_fonts_in_book = use_fonts_in_book;
   old_font              = font;
   old_font_size         = font_size;
@@ -107,7 +107,7 @@ static void revert_to_defaults() {
 
   constexpr int8_t default_value = -1;
 
-  book_params->put(BookParams::Ident::SHOW_IMAGES, default_value);
+  book_params->put(BookParams::Ident::SHOW_PICTURES, default_value);
   book_params->put(BookParams::Ident::FONT_SIZE, default_value);
   book_params->put(BookParams::Ident::FONT, default_value);
   book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK, default_value);
@@ -202,8 +202,8 @@ void BookParamController::input_event(const EventMgr::Event &event) {
       // if (ok) {
       BookParams *book_params = epub.get_book_params();
 
-      if (show_images != old_show_images)
-        book_params->put(BookParams::Ident::SHOW_IMAGES, show_images);
+      if (show_pictures != old_show_pictures)
+        book_params->put(BookParams::Ident::SHOW_PICTURES, show_pictures);
       if (font_size != old_font_size) book_params->put(BookParams::Ident::FONT_SIZE, font_size);
       if (font != old_font) book_params->put(BookParams::Ident::FONT, font);
       if (use_fonts_in_book != old_use_fonts_in_book)

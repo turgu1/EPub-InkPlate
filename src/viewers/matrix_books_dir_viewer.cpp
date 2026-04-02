@@ -5,10 +5,11 @@
 #define __MATRIX_BOOKS_DIR_VIEWER__ 1
 #include "viewers/matrix_books_dir_viewer.hpp"
 
-#include "image.hpp"
+#include "picture.hpp"
 
 #include "models/config.hpp"
 #include "models/fonts.hpp"
+#include "viewers/msg_viewer.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
@@ -39,15 +40,15 @@ void MatrixBooksDirViewer::setup() {
 
   line_count = (Screen::get_height() - first_entry_ypos - pagenbr_font_height -
                 SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) /
-               (BooksDir::max_cover_height + MIN_SPACE_BETWEEN_ENTRIES);
+               (BooksDir::cover_dim.height + MIN_SPACE_BETWEEN_ENTRIES);
 
   column_count = (Screen::get_width() - 10 + MIN_SPACE_BETWEEN_ENTRIES) /
-                 (BooksDir::max_cover_width + MIN_SPACE_BETWEEN_ENTRIES);
+                 (BooksDir::cover_dim.width + MIN_SPACE_BETWEEN_ENTRIES);
 
   horiz_space_between_entries =
-      (Screen::get_width() - 10 - (BooksDir::max_cover_width * column_count)) / (column_count - 1);
+      (Screen::get_width() - 10 - (BooksDir::cover_dim.width * column_count)) / (column_count - 1);
   vert_space_between_entries = (Screen::get_height() - first_entry_ypos - pagenbr_font_height -
-                                SPACE_ABOVE_PAGENBR - (BooksDir::max_cover_height * line_count)) /
+                                SPACE_ABOVE_PAGENBR - (BooksDir::cover_dim.height * line_count)) /
                                (line_count - 1);
   books_per_page             = line_count * column_count;
   page_count                 = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
@@ -58,6 +59,7 @@ void MatrixBooksDirViewer::setup() {
 }
 
 void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx) {
+
   current_page_nbr = page_nbr; // First page == 0
   current_item_idx = hightlight_item_idx;
 
@@ -83,22 +85,22 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
   for (int item_idx = 0; book_idx < last; item_idx++, book_idx++) {
 
-    const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
+    auto book = books_dir.get_book_data(book_idx);
 
-    if (book == nullptr) break;
+    if (!book) break;
 
-    ImagePtr image = make_unique_himem<Image>(Dim(book->cover_width, book->cover_height),
-                                              (uint8_t *)book->cover_bitmap, book->cover_size());
+    PicturePtr picture =
+        Picture::Make(book->cover_dim, (uint8_t *)book->cover_bitmap, book->cover_size());
 
-    page.put_image(std::move(image),
-                   Pos(xpos + ((BooksDir::MAX_COVER_WIDTH - book->cover_width) >> 1),
-                       ypos + ((BooksDir::MAX_COVER_HEIGHT - book->cover_height) >> 1)));
+    page.put_picture(std::move(picture),
+                     Pos(xpos + ((BooksDir::cover_dim.width - book->cover_dim.width) >> 1),
+                         ypos + ((BooksDir::cover_dim.height - book->cover_dim.height) >> 1)));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
-        page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+        page.put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
                            Pos(xpos - 2, ypos - 2));
-        page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+        page.put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                            Pos(xpos - 3, ypos - 3));
 
         fmt.font_index = TITLE_FONT;
@@ -107,10 +109,14 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
         char title[MAX_TITLE_SIZE];
         title[MAX_TITLE_SIZE - 1] = 0;
+
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(title, book->title, MAX_TITLE_SIZE - 1);
         if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
           strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
         }
+        #pragma GCC diagnostic pop
 
         page.set_limits(fmt);
         page.new_paragraph(fmt);
@@ -133,11 +139,11 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
     line_pos++;
 
     if (line_pos >= line_count) {
-      xpos += BooksDir::MAX_COVER_WIDTH + horiz_space_between_entries;
+      xpos += BooksDir::cover_dim.width + horiz_space_between_entries;
       ypos     = first_entry_ypos;
       line_pos = 0;
     } else {
-      ypos += BooksDir::MAX_COVER_HEIGHT + vert_space_between_entries;
+      ypos += BooksDir::cover_dim.height + vert_space_between_entries;
     }
   }
 
@@ -159,7 +165,7 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   int16_t book_idx, column_idx, line_idx, xpos, ypos;
 
-  const BooksDir::EBookRecord *book;
+  BooksDir::EBookRecordPtr book;
 
   Page::Format fmt = {
       .line_height_factor = 0.8,
@@ -181,19 +187,19 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
     column_idx = current_item_idx / line_count;
     line_idx   = current_item_idx % line_count;
 
-    xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
+    xpos = 5 + ((BooksDir::cover_dim.width + horiz_space_between_entries) * column_idx);
     ypos =
-        first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
+        first_entry_ypos + ((BooksDir::cover_dim.height + vert_space_between_entries) * line_idx);
 
     book = books_dir.get_book_data(book_idx);
 
-    if (book == nullptr) return;
+    if (!book) return;
 
     // Font * font = fonts.get(1, 9);
 
-    page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+    page.clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
                          Pos(xpos - 2, ypos - 2));
-    page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+    page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                          Pos(xpos - 3, ypos - 3));
 
     page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
@@ -207,19 +213,19 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
 
   book = books_dir.get_book_data(book_idx);
 
-  if (book == nullptr) return;
+  if (!book) return;
 
   current_item_idx = item_idx;
 
   column_idx = current_item_idx / line_count;
   line_idx   = current_item_idx % line_count;
 
-  xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
-  ypos = first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
+  xpos = 5 + ((BooksDir::cover_dim.width + horiz_space_between_entries) * column_idx);
+  ypos = first_entry_ypos + ((BooksDir::cover_dim.height + vert_space_between_entries) * line_idx);
 
-  page.put_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+  page.put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
                      Pos(xpos - 2, ypos - 2));
-  page.put_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+  page.put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                      Pos(xpos - 3, ypos - 3));
 
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
@@ -231,10 +237,14 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
 
   char title[MAX_TITLE_SIZE];
   title[MAX_TITLE_SIZE - 1] = 0;
+
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wstringop-truncation"
   strncpy(title, book->title, MAX_TITLE_SIZE - 1);
   if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
     strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
   }
+  #pragma GCC diagnostic pop
 
   page.set_limits(fmt);
   page.new_paragraph(fmt);
@@ -269,13 +279,13 @@ void MatrixBooksDirViewer::clear_highlight() {
   int16_t column_idx = current_item_idx / line_count;
   int16_t line_idx   = current_item_idx % line_count;
 
-  int16_t xpos = 5 + ((BooksDir::max_cover_width + horiz_space_between_entries) * column_idx);
+  int16_t xpos = 5 + ((BooksDir::cover_dim.width + horiz_space_between_entries) * column_idx);
   int16_t ypos =
-      first_entry_ypos + ((BooksDir::max_cover_height + vert_space_between_entries) * line_idx);
+      first_entry_ypos + ((BooksDir::cover_dim.height + vert_space_between_entries) * line_idx);
 
-  const BooksDir::EBookRecord *book = books_dir.get_book_data(book_idx);
+  auto book = books_dir.get_book_data(book_idx);
 
-  if (book == nullptr) return;
+  if (!book) return;
 
   // Font * font = fonts.get(1, 9);
 
@@ -284,14 +294,14 @@ void MatrixBooksDirViewer::clear_highlight() {
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
       .screen_bottom =
-          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::max_cover_width + 20)),
+          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.height + 20)),
   };
 
   page.start(fmt);
 
-  page.clear_highlight(Dim(BooksDir::max_cover_width + 4, BooksDir::max_cover_height + 4),
+  page.clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
                        Pos(xpos - 2, ypos - 2));
-  page.clear_highlight(Dim(BooksDir::max_cover_width + 6, BooksDir::max_cover_height + 6),
+  page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                        Pos(xpos - 3, ypos - 3));
 
   page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),

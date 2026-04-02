@@ -656,8 +656,8 @@
   bool EventMgr::setup() {
     #if EPUB_LINUX_BUILD
 
-      g_signal_connect(G_OBJECT(screen.image_box), "event", G_CALLBACK(mouse_event_callback),
-                       screen.get_image());
+      g_signal_connect(G_OBJECT(screen.picture_box), "event", G_CALLBACK(mouse_event_callback),
+                       screen.get_picture());
     #else
 
       retrieve_calibration_values();

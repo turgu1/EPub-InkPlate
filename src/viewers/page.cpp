@@ -5,7 +5,7 @@
 #define __PAGE__ 1
 #include "models/epub.hpp"
 
-#include "image.hpp"
+#include "picture.hpp"
 
 #include "alloc.hpp"
 #include "screen.hpp"
@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <utility>
 
 void Page::clean() {
   display_list.clear();
@@ -284,8 +285,8 @@ void Page::paint(bool clear_screen, bool no_full, bool do_it) {
       } else {
         LOG_E("DISPLAY LIST CORRUPTED!!");
       }
-    } else if (entry->command == DisplayListCommand::IMAGE) {
-      screen.draw_image(std::get<ImageEntry>(entry->v).image, entry->pos);
+    } else if (entry->command == DisplayListCommand::PICTURE) {
+      screen.draw_picture(std::get<PictureEntry>(entry->v).picture, entry->pos);
     } else if (entry->command == DisplayListCommand::HIGHLIGHT) {
       screen.draw_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
     } else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
@@ -486,14 +487,14 @@ void Page::add_line(const Format &fmt, bool justifyable) {
       entry->pos.x = pos.x + std::get<GlyphEntry>(entry->v).glyph->xoff;
       entry->pos.y += pos.y + std::get<GlyphEntry>(entry->v).glyph->yoff;
       pos.x += (x == 0) ? std::get<GlyphEntry>(entry->v).kern : x;
-    } else if (entry->command == DisplayListCommand::IMAGE) {
+    } else if (entry->command == DisplayListCommand::PICTURE) {
       if (fmt.align == CSS::Align::CENTER) {
         entry->pos.x = para_min_x + ((para_max_x - para_min_x) >> 1) - (line_width >> 1);
       } else {
         entry->pos.x = pos.x;
       }
-      entry->pos.y = pos.y - std::get<ImageEntry>(entry->v).image->get_dim().height;
-      pos.x += std::get<ImageEntry>(entry->v).advance;
+      entry->pos.y = pos.y - std::get<PictureEntry>(entry->v).picture->get_dim().height;
+      pos.x += std::get<PictureEntry>(entry->v).advance;
     } else {
       LOG_E("Wrong entry type for add_line: %d", (int)entry->command);
     }
@@ -542,34 +543,34 @@ inline void Page::add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font,
   line_list.push_back(entry);
 }
 
-void Page::add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt) {
+void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format &fmt) {
   DisplayListEntry *entry = line_list.get_new_entry();
   if (entry == nullptr) return;
 
-  auto dim = image->get_dim();
+  auto dim = picture->get_dim();
 
-  entry->command = DisplayListCommand::IMAGE;
-  entry->v       = ImageEntry{std::move(image), advance};
+  entry->command = DisplayListCommand::PICTURE;
+  entry->v       = PictureEntry{std::move(picture), advance};
 
   // if (compute_mode == ComputeMode::DISPLAY) {
   //   if (copy) {
-  //     int32_t size = image.dim.width * image.dim.height;
-  //     if (image.bitmap != nullptr) {
-  //       if ((entry->kind.image_entry.image.bitmap = new unsigned char[size]) == nullptr) {
-  //         msg_viewer.out_of_memory("image bitmap allocation");
+  //     int32_t size = picture.dim.width * picture.dim.height;
+  //     if (picture.bitmap != nullptr) {
+  //       if ((entry->kind.picture_entry.picture.bitmap = new unsigned char[size]) == nullptr) {
+  //         msg_viewer.out_of_memory("picture bitmap allocation");
   //       }
-  //       memcpy((void *) entry->kind.image_entry.image.bitmap, image.bitmap, size);
+  //       memcpy((void *) entry->kind.picture_entry.picture.bitmap, picture.bitmap, size);
   //     }
   //     else {
-  //       entry->kind.image_entry.image.bitmap = nullptr;
+  //       entry->kind.picture_entry.picture.bitmap = nullptr;
   //     }
   //   }
   //   else {
-  //     entry->kind.image_entry.image.bitmap = image.bitmap;
+  //     entry->kind.picture_entry.picture.bitmap = picture.bitmap;
   //   }
   // }
   // else {
-  //   entry->kind.image_entry.image.bitmap = nullptr;
+  //   entry->kind.picture_entry.picture.bitmap = nullptr;
   // }
 
   entry->pos = {0, 0};
@@ -580,9 +581,9 @@ void Page::add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt)
   line_width += advance;
 
   // LOG_D(
-  //   "Image added to line: w:%d h:%d a:%d",
-  //   image.width, image.height,
-  //   entry->kind.image_entry.advance
+  //   "Picture added to line: w:%d h:%d a:%d",
+  //   picture.width, picture.height,
+  //   entry->kind.picture_entry.advance
   // );
 
   line_list.push_back(entry);
@@ -604,11 +605,11 @@ void Page::add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt)
 
     Glyph *glyph;
 
-    DisplayList *the_list = new DisplayList;
-    const char *str       = word;
-    int16_t height        = font->get_line_height(fmt.font_size);
-    int16_t width         = 0;
-    bool first            = true;
+    auto the_list   = DisplayList::Make();
+    const char *str = word;
+    int16_t height  = font->get_line_height(fmt.font_size);
+    int16_t width   = 0;
+    bool first      = true;
 
     while (*str) {
       bool ignore_next;
@@ -646,7 +647,6 @@ void Page::add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt)
 
     if (width >= avail_width) {
       if (strncasecmp(word, "http", 4) == 0) {
-        delete the_list;
         return add_word("[URL removed]", fmt);
       } else {
         LOG_E("WORD TOO LARGE!! '%s'", word);
@@ -657,13 +657,11 @@ void Page::add_image_to_line(ImagePtr image, int16_t advance, const Format &fmt)
       add_line(fmt, true);
       screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
       if (screen_is_full) {
-        delete the_list;
         return false;
       }
     }
 
-    line_list.merge(*the_list);
-    delete the_list;
+    line_list.merge(*the_list.get());
 
     if (glyphs_height < height) glyphs_height = height;
     if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
@@ -780,36 +778,37 @@ bool Page::add_char(const char *ch, const Format &fmt) {
 }
 
 /**
- * @brief Adds an image to the current page with automatic sizing and positioning.
+ * @brief Adds an picture to the current page with automatic sizing and positioning.
  *
- * This method attempts to place an image on the current page, automatically
+ * This method attempts to place an picture on the current page, automatically
  * calculating appropriate dimensions based on available space and format
- * specifications. If the image doesn't fit on the current line, a new line
- * is created. The image is resized if necessary when in DISPLAY compute mode.
+ * specifications. If the picture doesn't fit on the current line, a new line
+ * is created. The picture is resized if necessary when in DISPLAY compute mode.
  *
- * @param image A reference to the Image object to be added to the page.
- *              The image may be resized in-place if dimensions don't match target size.
+ * @param picture A reference to the Picture object to be added to the page.
+ *              The picture may be resized in-place if dimensions don't match target size.
  * @param fmt A reference to the Format object containing formatting directives
  *            such as font index, font size, text transform, and optional width/height
  *            constraints.
  *
- * @return true if the image was successfully added to the page; false if the screen
- *         is full or if image dimensions become zero during resizing.
+ * @return true if the picture was successfully added to the page; false if the screen
+ *         is full or if picture dimensions become zero during resizing.
  *
  * @details
  * - Calculates the gap between glyph advance and glyph width for proper spacing
- * - Determines target image dimensions based on available paragraph space and format constraints
- * - Maintains aspect ratio when scaling images
- * - Creates a new line if the image exceeds remaining space on the current line
- * - Only performs actual image resizing when compute_mode is DISPLAY
- * - Sets screen_is_full flag if adding the image causes content to exceed max_y
+ * - Determines target picture dimensions based on available paragraph space and format constraints
+ * - Maintains aspect ratio when scaling pictures
+ * - Creates a new line if the picture exceeds remaining space on the current line
+ * - Only performs actual picture resizing when compute_mode is DISPLAY
+ * - Sets screen_is_full flag if adding the picture causes content to exceed max_y
  *
- * @note The image object may be modified (resized) by this method.
+ * @note The picture object may be modified (resized) by this method.
  *       The method respects glyph baseline information from the current font.
  */
-bool Page::add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page*/) {
+auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
+    -> std::pair<bool, PicturePtr> {
   if (screen_is_full) {
-    return false;
+    return {false, std::move(picture)};
   }
 
   // Compute the baseline advance for the bitmap, using info from the current font
@@ -822,7 +821,7 @@ bool Page::add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page
 
   glyph = font->get_glyph(code, fmt.font_size);
 
-  // Compute available space to put the image.
+  // Compute available space to put the picture.
 
   int32_t w = 0;
   int32_t h = 0;
@@ -833,11 +832,11 @@ bool Page::add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page
     gap = glyph->advance - glyph->dim.width;
   }
 
-  // compute target w, h and advance for the image
+  // compute target w, h and advance for the picture
 
   int16_t target_width  = para_max_x - para_min_x;
   int16_t target_height = max_y - min_y;
-  auto dim              = image->get_dim();
+  auto dim              = picture->get_dim();
 
   if (fmt.width || fmt.height) {
     if (fmt.width && (fmt.width < target_width)) target_width = fmt.width;
@@ -879,7 +878,7 @@ bool Page::add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page
     // font->get_descender_height(); if (the_height < h) the_height = h;
   }
 
-  if ((screen_is_full = ((pos.y + h) > max_y))) return false;
+  if ((screen_is_full = ((pos.y + h) > max_y))) return {false, std::move(picture)};
 
   if ((w != dim.width) || (h != dim.height)) {
 
@@ -888,16 +887,16 @@ bool Page::add_image(ImagePtr image, const Format &fmt /*, bool at_start_of_page
     if (compute_mode == ComputeMode::DISPLAY) {
       if ((dim.width > 2) || (dim.height > 2)) {
 
-        if ((w == 0) || (h == 0)) return false;
+        if ((w == 0) || (h == 0)) return {false, std::move(picture)};
 
-        image->resize(Dim(w, h));
+        picture->resize(Dim(w, h));
       }
     }
   }
 
-  add_image_to_line(std::move(image), advance, fmt);
+  add_picture_to_line(std::move(picture), advance, fmt);
 
-  return true;
+  return {true, nullptr};
 }
 
 /**
@@ -943,14 +942,14 @@ void Page::add_text(const std::string &str, const Format &fmt) {
   }
 }
 
-void Page::put_image(ImagePtr image, Pos pos) {
+void Page::put_picture(PicturePtr picture, Pos pos) {
   DisplayListEntry *entry = display_list.get_new_entry();
   if (entry == nullptr) return;
 
   if (compute_mode == ComputeMode::DISPLAY) {
-    entry->v = ImageEntry{std::move(image), 0};
+    entry->v = PictureEntry{std::move(picture), 0};
   }
-  entry->command = DisplayListCommand::IMAGE;
+  entry->command = DisplayListCommand::PICTURE;
   entry->pos     = pos;
 
   #if DEBUGGING
@@ -1092,33 +1091,33 @@ void Page::set_region(Dim dim, Pos pos) {
   display_list.push_back(entry);
 }
 
-bool Page::show_cover(ImagePtr &img) {
+bool Page::show_cover(PicturePtr &pict) {
   if (compute_mode == ComputeMode::DISPLAY) {
-    int32_t image_width  = img->get_dim().width;
-    int32_t image_height = img->get_dim().height;
+    int32_t picture_width  = pict->get_dim().width;
+    int32_t picture_height = pict->get_dim().height;
 
-    if (img->get_bitmap() != nullptr) {
-      // LOG_D("Image: width: %d height: %d channel_count: %d", image_width, image_height,
+    if (pict->get_bitmap() != nullptr) {
+      // LOG_D("Picture: width: %d height: %d channel_count: %d", picture_width, picture_height,
       // channel_count);
 
       Dim dim;
       Pos pos;
 
       dim.width  = Screen::get_width();
-      dim.height = image_height * Screen::get_width() / image_width;
+      dim.height = picture_height * Screen::get_width() / picture_width;
 
       if (dim.height > Screen::get_height()) {
         dim.height = Screen::get_height();
-        dim.width  = image_width * Screen::get_height() / image_height;
+        dim.width  = picture_width * Screen::get_height() / picture_height;
       }
 
       pos = {(uint16_t)((Screen::get_width() - dim.width) >> 1),
              (uint16_t)((Screen::get_height() - dim.height) >> 1)};
 
-      img->resize(dim);
+      pict->resize(dim);
 
       screen.clear();
-      screen.draw_image(img, pos);
+      screen.draw_picture(pict, pos);
       screen.update();
     } else {
       LOG_D("Unable to load cover file");

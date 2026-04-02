@@ -3,9 +3,10 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
+#include "char_pool.hpp"
 #include "global.hpp"
 
-#include "helpers/char_pool.hpp"
 #include "models/font.hpp"
 
 #include <mutex>

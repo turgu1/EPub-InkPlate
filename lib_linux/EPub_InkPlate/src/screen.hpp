@@ -4,7 +4,7 @@
 
 #pragma once
 #include "global.hpp"
-#include "image.hpp"
+#include "picture.hpp"
 
 #include "non_copyable.hpp"
 
@@ -37,7 +37,7 @@ public:
     WHITE = 0xFF, BLACK = 0
   };
 
-  void draw_image(ImagePtr &image, Pos pos);
+  void draw_picture(PicturePtr &picture, Pos pos);
   void draw_glyph(const unsigned char *bitmap_data, Dim dim, Pos pos, uint16_t pitch);
   void draw_rectangle(Dim dim, Pos pos, Color color);
   void draw_round_rectangle(Dim dim, Pos pos, Color color);
@@ -57,12 +57,12 @@ private:
   static uint16_t width;
   static uint16_t height;
 
-  struct ImageData {
-    GtkImage *image;
+  struct PictureData {
+    GtkImage *picture;
     int rows, cols, stride;
   };
 
-  ImageData image_data;
+  PictureData picture_data;
   PixelResolution pixel_resolution;
   Orientation orientation;
 
@@ -77,7 +77,7 @@ public:
   void set_pixel_resolution(PixelResolution resolution, bool force = false);
   void set_orientation(Orientation orient);
   inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
-  GtkImage *get_image() { return image_data.image; }
+  GtkImage *get_picture() { return picture_data.picture; }
   // void to_user_coord(uint16_t &x, uint16_t &y) {}
   inline void force_full_update() {}
 
@@ -85,7 +85,7 @@ public:
   inline static uint16_t get_height() { return height; }
 
   #if TOUCH_TRIAL
-    GtkWidget *window, *image_box;
+    GtkWidget *window, *picture_box;
   #else
     GtkWidget *window, *left_button, *right_button, *up_button, *down_button, *select_button,
         *home_button;

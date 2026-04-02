@@ -6,7 +6,7 @@
 #include "global.hpp"
 
 #include "himem.hpp"
-#include "image.hpp"
+#include "picture.hpp"
 #include "pugixml.hpp"
 #include "unzip.hpp"
 
@@ -52,7 +52,7 @@ public:
     int8_t ident;       ///< Device identity (screen.hpp IDENT constant)
     int8_t orientation; ///< Config option only
     int8_t show_title;
-    int8_t show_images;
+    int8_t show_pictures;
     int8_t font_size;
     int8_t use_fonts_in_book;
     int8_t font;
@@ -108,7 +108,7 @@ public:
   void open_params(const std::string &epub_filename);
   bool open_file(const std::string &epub_filename);
   bool close_file();
-  auto get_image(std::string &fname, bool load) -> ImagePtr;
+  auto get_picture(std::string &fname, bool load) -> PicturePtr;
   auto retrieve_file(const char *fname, uint32_t &size) -> himem_unique_ptr<uint8_t[]>;
   bool get_item(pugi::xml_node itemref, ItemInfo &item);
   bool get_item_at_index(int16_t itemref_index);
@@ -127,7 +127,7 @@ public:
    *
    * Look inside the opf file to grab the cover filename. First search in the
    * metadata. If not found, search in the manifest for an entry with type
-   * cover-image
+   * cover-picture
    *
    * @return char * filename, or nullptr if not found
    */

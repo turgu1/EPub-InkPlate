@@ -32,7 +32,7 @@ bool TOC::load() {
 
   LOG_D("Reading toc: %s.", filename.c_str());
 
-  if (!db.open(filename)) {
+  if (!db->open(filename)) {
     LOG_E("Can't open toc: %s", filename.c_str());
     return false;
   }
@@ -42,10 +42,10 @@ bool TOC::load() {
   bool version_ok = false;
   VersionRecord version_record;
 
-  if (db.get_record_count() > 0) {
-    db.goto_first();
-    if (db.get_record_size() == sizeof(version_record)) {
-      db.get_record(&version_record, sizeof(version_record));
+  if (db->get_record_count() > 0) {
+    db->goto_first();
+    if (db->get_record_size() == sizeof(version_record)) {
+      db->get_record(&version_record, sizeof(version_record));
       if ((version_record.version == TOC_DB_VERSION) &&
           (strcmp(version_record.app_name, TOC_NAME) == 0)) {
         version_ok = true;
@@ -55,22 +55,22 @@ bool TOC::load() {
 
   if (!version_ok) {
     LOG_E("Toc is of a wrong version or is empty");
-    db.close();
+    db->close();
     return false;
   }
 
-  if (db.goto_next()) {
-    char_buffer_size = db.get_record_size();
+  if (db->goto_next()) {
+    char_buffer_size = db->get_record_size();
     if (char_buffer_size > 0) {
       char_buffer = (char *)allocate(char_buffer_size);
-      if (db.get_record(char_buffer, char_buffer_size)) {
-        uint16_t count = db.get_record_count() - 2;
+      if (db->get_record(char_buffer, char_buffer_size)) {
+        uint16_t count = db->get_record_count() - 2;
         if (count > 0) {
           entries.resize(count);
           uint16_t idx = 0;
-          while ((idx < count) && db.goto_next()) {
-            if (db.get_record_size() == sizeof(EntryRecord)) {
-              if (!db.get_record(&entries[idx], sizeof(EntryRecord))) break;
+          while ((idx < count) && db->goto_next()) {
+            if (db->get_record_size() == sizeof(EntryRecord)) {
+              if (!db->get_record(&entries[idx], sizeof(EntryRecord))) break;
               entries[idx].label = char_buffer + (size_t)entries[idx].label;
               idx++;
             } else {
@@ -98,7 +98,7 @@ bool TOC::load() {
     ready = compacted = saved = true;
   }
 
-  db.close();
+  db->close();
 
   #if DEBUGGING
     show();
@@ -118,18 +118,18 @@ bool TOC::save() {
   std::string filename = build_filename();
   if (!compact()) return false;
 
-  if (db.create(filename)) {
+  if (db->create(filename)) {
     VersionRecord version_record;
     strcpy(version_record.app_name, TOC_NAME);
     version_record.version = TOC_DB_VERSION;
 
-    if (db.add_record(&version_record, sizeof(VersionRecord))) {
-      if (db.add_record(char_buffer, char_buffer_size)) {
+    if (db->add_record(&version_record, sizeof(VersionRecord))) {
+      if (db->add_record(char_buffer, char_buffer_size)) {
         uint16_t idx;
         for (idx = 0; idx < entries.size(); idx++) {
           EntryRecord e = entries[idx];
           e.label       = e.label - (size_t)char_buffer;
-          if (!db.add_record(&e, sizeof(EntryRecord))) {
+          if (!db->add_record(&e, sizeof(EntryRecord))) {
             LOG_E("Unable to add entry record.");
             break;
           }
@@ -145,7 +145,7 @@ bool TOC::save() {
     LOG_E("Unable to create toc db.");
   }
 
-  db.close();
+  db->close();
 
   #if DEBUGGING
     show();

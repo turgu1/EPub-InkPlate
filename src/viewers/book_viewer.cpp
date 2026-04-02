@@ -6,8 +6,8 @@
 #include "viewers/book_viewer.hpp"
 #include "controllers/book_controller.hpp"
 
-#include "image_factory.hpp"
 #include "models/config.hpp"
+#include "picture_factory.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -53,7 +53,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
 
   // page.set_compute_mode(Page::ComputeMode::MOVE);
 
-  // show_images = epub.get_book_format_params()->show_images != 0;
+  // show_pictures = epub.get_book_format_params()->show_pictures != 0;
 
   if (epub.get_item_at_index(page_id.itemref_index)) {
 
@@ -100,7 +100,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
     BookViewerInterp *interp =
         new BookViewerInterp(page, *dom, Page::ComputeMode::DISPLAY, epub.get_current_item_info());
     interp->set_limits(page_id.offset, page_id.offset + page_info->size,
-                       epub.get_book_format_params()->show_images != 0);
+                       epub.get_book_format_params()->show_pictures != 0);
 
     #if DEBUGGING_AID
       interp->set_pages_to_show_state(PAGE_FROM, PAGE_TO);
@@ -211,14 +211,14 @@ void BookViewer::show_page(const PageLocs::PageId &page_id) {
   // if (page_locs.get_page_nbr(page_id) == 0) {
   if ((page_id.itemref_index == 0) && (page_id.offset == 0)) {
 
-    if (epub.get_book_format_params()->show_images != 0) {
+    if (epub.get_book_format_params()->show_pictures != 0) {
       std::string fname = epub.get_cover_filename();
       if (!fname.empty()) {
         // LOG_D("Cover filename: %s", fname);
-        auto img = epub.get_image(fname, true);
+        auto pict = epub.get_picture(fname, true);
 
-        if (img != nullptr) {
-          page.show_cover(img);
+        if (pict != nullptr) {
+          page.show_cover(pict);
         } else {
           LOG_D("Unable to retrieve cover file: %s", fname.c_str());
           show_fake_cover();

@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/home/turgu1/Dev/EPub-InkPlate/lib_freetype/lib'
+libdir='/home/turgu1/Dev/EPub-InkPlate/freetype-distrib/freetype-2.14.3/../../components/freetype/lib'

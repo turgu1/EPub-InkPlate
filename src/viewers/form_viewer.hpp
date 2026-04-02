@@ -5,8 +5,9 @@
 #pragma once
 #include "global.hpp"
 
-#include "controllers/event_mgr.hpp"
 #include "memory_pool.hpp"
+
+#include "controllers/event_mgr.hpp"
 #include "models/fonts.hpp"
 #include "viewers/keypad_viewer.hpp"
 #include "viewers/page.hpp"
@@ -15,9 +16,9 @@
 #include <list>
 
 enum class FormEntryType {
-  HORIZONTAL, VERTICAL, UINT16
+  HORIZONTAL, VERTICAL, UINT16,
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    , DONE
+    DONE
   #endif
 };
 
@@ -129,6 +130,8 @@ class FormChoiceField : public FormField {
 public:
   static constexpr FormChoice dir_view_choices[2] = {{"LINEAR", 0}, {"MATRIX", 1}};
 
+  static constexpr FormChoice cover_size_choices[3] = {{"SMALL", 0}, {"MEDIUM", 1}, {"LARGE", 2}};
+
   static constexpr FormChoice ok_cancel_choices[2] = {{"OK", 1}, {"CANCEL", 0}};
 
   static constexpr FormChoice yes_no_choices[2] = {{"YES", 1}, {"NO", 0}};
@@ -144,7 +147,7 @@ public:
 
   #if DATE_TIME_RTC
     static constexpr FormChoice right_corner_choices[3] = {
-        {"NONE", 0}, {"DATE TIME", 1}, {"HEAP INFO", 2}};
+        {"NONE", 0}, {"DATE TIME", 1}, {"HEAP", 2}};
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -425,8 +428,8 @@ public:
     }
 
     void paint(Page::Format &fmt) {
-      Font::Glyph *glyph = font.get_glyph('M', FORM_FONT_SIZE);
-      uint8_t offset     = -glyph->yoff;
+      Glyph *glyph   = font.get_glyph('M', FORM_FONT_SIZE);
+      uint8_t offset = -glyph->yoff;
 
       page.put_str_at(form_entry.caption, Pos(field_pos.x, field_pos.y + offset), fmt);
     }
@@ -498,6 +501,32 @@ private:
 public:
   void set_completed(bool value) { completed = value; }
 
+  /**
+   * @brief Displays a form with the given entries and optional message at the bottom.
+   *
+   * This method renders a form interface with multiple input fields. On the first call
+   * (when refresh=false), it initializes the form by creating field objects, calculating
+   * their dimensions, and computing their positions on the screen. Subsequent calls with
+   * refresh=true will redraw the form without reinitializing the fields.
+   *
+   * The form is centered horizontally on the screen with automatic spacing between fields.
+   * Each field displays a caption and an input area. The method also displays a message
+   * at the bottom of the form and manages field highlighting/selection based on the platform.
+   *
+   * @param _form_entries Array of FormEntry objects containing the form field definitions
+   * @param _size Number of entries in the form (number of form fields)
+   * @param _bottom_msg Pointer to a C-string containing the message to display at the bottom
+   *                     of the form (typically navigation instructions like "OK/CANCEL")
+   * @param refresh Boolean flag indicating whether to refresh the display without reinitializing.
+   *                If false (default), reinitializes form fields and calculates
+   * dimensions/positions. If true, redraws the existing form without recalculation.
+   *
+   * @note On non-touchscreen platforms, the first field is automatically highlighted.
+   *       On touchscreen-enabled platforms (INKPLATE_6PLUS, INKPLATE_6FLICK, etc.),
+   *       no field is initially highlighted.
+   *
+   * @see FormField, FieldFactory, Page, ScreenBottom
+   */
   void show(FormEntries _form_entries, int8_t _size, const char *_bottom_msg,
             bool refresh = false) {
 
@@ -535,11 +564,11 @@ public:
         if (width > all_captions_width) all_captions_width = width;
       }
 
-      width                    = all_captions_width + all_fields_width + 35;
+      width                    = all_captions_width + all_fields_width + 25;
       const int16_t right_xpos = (Screen::get_width() >> 1) + (width >> 1);
 
       int16_t current_ypos  = TOP_YPOS + 20;
-      int16_t caption_right = right_xpos - all_fields_width - 35;
+      int16_t caption_right = right_xpos - all_fields_width - 25;
       int16_t field_left    = right_xpos - all_fields_width - 10;
 
       for (auto *field : fields) {

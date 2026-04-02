@@ -53,7 +53,7 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
     return;
   }
 
-  Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
+  Glyph * glyph = font->get_glyph(icon_char[severity], 24);
 
   if (glyph != nullptr) {
     page.put_char_at(

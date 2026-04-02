@@ -4,7 +4,7 @@
  *
  *   User-selectable configuration macros (specification only).
  *
- * Copyright (C) 1996-2026 by
+ * Copyright (C) 1996-2024 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -149,12 +149,12 @@ FT_BEGIN_HEADER
 
 /**************************************************************************
  *
- * If this macro is defined, try to use an inlined 64-bit or assembler
- * version of the @FT_MulFix function, which is a 'hotspot' when loading
- * and hinting glyphs, and which should be executed as fast as possible.
+ * If this macro is defined, try to use an inlined assembler version of the
+ * @FT_MulFix function, which is a 'hotspot' when loading and hinting
+ * glyphs, and which should be executed as fast as possible.
  *
- * If your compiler is not C99-compliant or CPU assembly is not supported,
- * you can disable this option.
+ * Note that if your compiler or CPU is not supported, this will default to
+ * the standard and portable implementation found in `ftcalc.c`.
  */
 #define FT_CONFIG_OPTION_INLINE_MULFIX
 
@@ -275,30 +275,6 @@ FT_BEGIN_HEADER
  *   here with the configured one.
  */
 /* #undef FT_CONFIG_OPTION_USE_HARFBUZZ */
-
-/**************************************************************************
- *
- * HarfBuzz dynamic support.
- *
- *   Define this macro if you want the HarfBuzz library to be loaded at
- *   runtime instead of being linked to FreeType.
- *
- *   This option has no effect if `FT_CONFIG_OPTION_USE_HARFBUZZ` is not
- *   defined.
- *
- *   When this option is enabled, FreeType will try to load the HarfBuzz
- *   library at runtime, using `dlopen` or `LoadLibrary`, depending on the
- *   platform.  On Microsoft platforms, the library name looked up is
- *   `libharfbuzz-0.dll`.  On Apple platforms, the library name looked up
- *   is `libharfbuzz.0.dylib`.  On all other platforms, the library name
- *   looked up is `libharfbuzz.so.0`.  This name can be overridden by
- *   defining the macro `FT_LIBHARFBUZZ` at FreeType compilation time.
- *
- *   If you use a build system like cmake or the `configure` script,
- *   options set by those programs have precedence, overwriting the value
- *   here with the configured one.
- */
-/* #undef FT_CONFIG_OPTION_USE_HARFBUZZ_DYNAMIC */
 
 /**************************************************************************
  *
@@ -664,7 +640,7 @@ FT_BEGIN_HEADER
  * defined.
  *
  * [1]
- * https://learn.microsoft.com/typography/cleartype/truetypecleartype
+ * https://www.microsoft.com/typography/cleartype/truetypecleartype.aspx
  */
 #define TT_CONFIG_OPTION_SUBPIXEL_HINTING
 
@@ -681,7 +657,7 @@ FT_BEGIN_HEADER
  * flags array which can be used to disambiguate, but old fonts will not
  * have them.
  *
- *   https://learn.microsoft.com/typography/opentype/spec/glyf
+ *   https://www.microsoft.com/typography/otspec/glyf.htm
  *   https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6glyf.html
  */
 #undef TT_CONFIG_OPTION_COMPONENT_OFFSET_SCALED
@@ -715,13 +691,7 @@ FT_BEGIN_HEADER
 /**************************************************************************
  *
  * Define `TT_CONFIG_OPTION_BDF` if you want to include support for an
- * embedded 'BDF~' table within an SFNT-based `.otb` font file.  This table
- * is an extension used by X11 to preserve BDF properties after conversion
- * to SFNT containers.  See
- *
- *   https://fontforge.org/docs/techref/non-standard.html#non-standard-bdf
- *
- * for more details.
+ * embedded 'BDF~' table within SFNT-based bitmap formats.
  */
 #define TT_CONFIG_OPTION_BDF
 
@@ -745,10 +715,10 @@ FT_BEGIN_HEADER
 /**************************************************************************
  *
  * Option `TT_CONFIG_OPTION_GPOS_KERNING` enables a basic GPOS kerning
- * implementation (for TrueType and OpenType fonts only).  With this
- * defined, FreeType is able to get kerning pair data from the GPOS 'kern'
- * feature as well as legacy 'kern' tables; without this defined, FreeType
- * will only be able to use legacy 'kern' tables.
+ * implementation (for TrueType fonts only).  With this defined, FreeType
+ * is able to get kerning pair data from the GPOS 'kern' feature as well as
+ * legacy 'kern' tables; without this defined, FreeType will only be able
+ * to use legacy 'kern' tables.
  *
  * Note that FreeType does not support more advanced GPOS layout features;
  * even the 'kern' feature implemented here doesn't handle more
@@ -962,26 +932,23 @@ FT_BEGIN_HEADER
  * Check CFF darkening parameters.  The checks are the same as in function
  * `cff_property_set` in file `cffdrivr.c`.
  */
-#if CFF_CONFIG_OPTION_DARKENING_PARAMETER_X1 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X4 < 0 ||   \
-                                                      \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y1 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y2 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y3 < 0 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y4 < 0 ||   \
-                                                      \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X1 >        \
-        CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 >        \
-        CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 ||   \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 >        \
-        CFF_CONFIG_OPTION_DARKENING_PARAMETER_X4 ||   \
-                                                      \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y1 > 500 || \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y2 > 500 || \
-    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y3 > 500 || \
+#if CFF_CONFIG_OPTION_DARKENING_PARAMETER_X1 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X4 < 0 ||                                                \
+                                                                                                   \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y1 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y2 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y3 < 0 ||                                                \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y4 < 0 ||                                                \
+                                                                                                   \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X1 > CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 ||         \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X2 > CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 ||         \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_X3 > CFF_CONFIG_OPTION_DARKENING_PARAMETER_X4 ||         \
+                                                                                                   \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y1 > 500 ||                                              \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y2 > 500 ||                                              \
+    CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y3 > 500 ||                                              \
     CFF_CONFIG_OPTION_DARKENING_PARAMETER_Y4 > 500
 #error "Invalid CFF darkening parameters!"
 #endif

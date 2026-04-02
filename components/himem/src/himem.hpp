@@ -168,6 +168,33 @@ void make_shared_himem(Args &&...) = delete;
 template <typename T>
 using himem_unique_ptr = std::unique_ptr<T, PsramDeleter<T>>;
 
+// Tag type for the sized single-object overload.
+// Pass himem_sized(n) to make_unique_himem<T> to allocate n bytes instead of sizeof(T).
+// Useful when T is followed by a variable-length trailing payload in the same allocation.
+struct himem_sized_t {
+  std::size_t bytes;
+};
+[[nodiscard]] inline himem_sized_t himem_sized(std::size_t n) noexcept { return {n}; }
+
+// Sized single-object overload  (e.g. make_unique_himem<T>(himem_sized(n)))
+// Allocates exactly sz.bytes bytes, default-constructs T in that buffer.
+template <typename T>
+  requires(!std::is_array_v<T>)
+[[nodiscard]] himem_unique_ptr<T> make_unique_himem(himem_sized_t sz) {
+  void *mem = HIMEM_MALLOC(sz.bytes);
+  if (!mem) throw std::bad_alloc{};
+
+  T *obj = nullptr;
+  try {
+    obj = ::new (mem) T();
+  } catch (...) {
+    HIMEM_FREE(mem);
+    throw;
+  }
+
+  return himem_unique_ptr<T>{obj};
+}
+
 // Single-object overload
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)

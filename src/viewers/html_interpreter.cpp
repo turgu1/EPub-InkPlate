@@ -45,7 +45,7 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
   check_if_started();
 
-  std::string image_filename;
+  std::string picture_filename;
   const char *name;
   const char *str             = nullptr;
   DOM::Node *dom_current_node = dom_node;
@@ -99,10 +99,10 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
         #else
         case DOM::Tag::IMG:
-          if (show_images) {
+          if (show_pictures) {
             if (started) {
               if ((attr = node.attribute("src")))
-                image_filename = attr.value();
+                picture_filename = attr.value();
               else
                 current_offset++;
             } else
@@ -116,10 +116,10 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
           break;
 
         case DOM::Tag::IMAGE:
-          if (show_images) {
+          if (show_pictures) {
             if (started) {
               if ((attr = node.attribute("xlink:href")))
-                image_filename = attr.value();
+                picture_filename = attr.value();
               else
                 current_offset++;
             } else
@@ -279,30 +279,32 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
   if (at_end()) return true;
 
-  if (show_images && !image_filename.empty()) {
+  if (show_pictures && !picture_filename.empty()) {
     if (current_offset < start_offset) {
       // As we move from the beginning of a file, we bypass everything that is there before
       // the start of the page offset
       current_offset++;
     } else {
       std::string fname = item_info.file_path;
-      fname.append(image_filename);
+      fname.append(picture_filename);
 
       if (started && (current_offset < end_offset)) {
 
-        auto img = epub.get_image(fname, page.get_compute_mode() == Page::ComputeMode::DISPLAY);
-        if (img != nullptr) {
-          if (!page.add_image(std::move(img), fmt /*, beginning_of_page */)) {
+        auto pict = epub.get_picture(fname, page.get_compute_mode() == Page::ComputeMode::DISPLAY);
+        if (pict != nullptr) {
+          bool added            = false;
+          std::tie(added, pict) = page.add_picture(std::move(pict), fmt /*, beginning_of_page */);
+          if (!added) {
             if (page.is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
 
-            page.add_image(std::move(img), fmt /*, beginning_of_page */);
+            page.add_picture(std::move(pict), fmt /*, beginning_of_page */);
             if (page.is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
           }
           show_state("After IMG", fmt);
         } else {
-          str = "[An image is not compatible or not found]";
+          str = "[An picture is not compatible or not found]";
         }
       }
       current_offset++;

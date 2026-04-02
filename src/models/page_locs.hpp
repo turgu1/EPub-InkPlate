@@ -104,7 +104,7 @@ private:
   // int32_t           current_offset;          ///< Where we are in current item
   // int32_t           start_of_page_offset;
   uint16_t page_bottom;
-  bool show_images;
+  bool show_pictures;
   // bool              start_of_paragraph;  ///< Required to manage paragraph indentation at
   // beginning of new page.
 
