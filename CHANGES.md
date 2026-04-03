@@ -2,7 +2,7 @@
 
 ## Last News
 
-(Updated 2026.03.XX)
+(Updated 2026.04.XX)
 
 Update to version 3.0.0
 

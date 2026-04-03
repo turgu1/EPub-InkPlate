@@ -1,8 +1,8 @@
 # EPub-InkPlate - Installation Guide
 
-**Please Note: if you are updating from a version prior to V2.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for all the details.**
+**Please Note: If you are updating from a version prior to V2.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for details.**
 
-Here is the installation procedure for the EPub-InkPlate application. This procedure can be adapted depending on your requirements.  
+This document describes the installation procedure for the EPub-InkPlate application, which can be adapted to suit your requirements.
 
 The installation consists of
 
@@ -10,53 +10,53 @@ The installation consists of
 - Preparing an SD-Card with the appropriate information.
 - Uploading the application to the InkPlate device.
   
-The last version of the binaries for the Inkplate are located in release bundles that you will find with the application GitHub project: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure shows how to install it using the *esptool* upload tool. This is the simplest way to install EPub-InkPlate as it does not require to have a full development environment (VSCode + PlatformIO + ESP_IDF) to install the binary version.
+The latest binaries for the InkPlate are available in release bundles on the application's GitHub project page: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure describes installation using the *esptool* upload tool, which is the simplest approach because it does not require a full development environment.
 
-(You can also compile and upload the result within a VSCode/PlatformIO development environment. The supplied `platformio.ini` file is already set up such that once the project is loaded into the IDE, you can launch the builder and the uploader.)
+If you want to build the application yourself, PlatformIO is no longer used. You must install Espressif's development tool suite, including ESP-IDF and the Espressif VS Code extension, and build the project from that environment.
 
-### Prerequesite
+### Prerequisites
 
-The *esptool* is a Python program that is used to upload an application to an ESP32 (or ESP8266) device. It must be installed on your computer. It is compatible with both *Python* versions 3.7 or newer. Verify that you have *Python* and *pip* installed on your computer (The following link may be useful: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, on Windows, Linux or MacOs, to install esptool, the following command must be executed (in a shell window):
+*esptool* is a Python program used to upload applications to ESP32 (or ESP8266) devices. It requires *Python* 3.7 or newer. First, ensure that *Python* and *pip* are installed on your computer (see: "https://wiki.python.org/moin/BeginnersGuide/Download"). Then, on Windows, Linux, or macOS, install esptool by running the following command in a shell window:
 
 ```sh
 pip install esptool
 ```
 
-For more information, please consult the following link: "https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html".
+For more information, consult: "https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html".
 
-The InkPlate device uses a CH340 USB to UART converter. If your computer doesn't have a driver installed for the CH340, you have to install one. Look at this location for the proper procedure to install it: "https://soldered.com/learn/ch340-driver-installation-croduino-basic3-nova2/".
+The InkPlate device uses a CH340 USB-to-UART converter. If your computer does not have a CH340 driver installed, you will need to install one. See the following page for the appropriate procedure: "https://soldered.com/learn/ch340-driver-installation-croduino-basic3-nova2/".
 
-You then must retrieve the release from the Github repository. Look at this location on GitHub: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release-X.X.X-inkplate ... .zip**. It is located in the `assets`, down under the description text. Extract its content. You will get two folders: `bin` and `SDCard`, the installation document, and the user's guide document in PDF format.
+Next, download the release from the GitHub repository at: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release-X.X.X-inkplate...zip**, found in the `Assets` section below the release description. Extract its contents — you will find two folders (`bin` and `SDCard`), along with the installation document and the user's guide in PDF format.
 
 ### Preparing the SD-Card
 
-The SD-Card must be formatted with a FAT32 (or MS-DOS or VFAT) partition. This is usually the case with brand new cards. Do not use ExFAT as it is not supported by the application. The release's `SDCard` folder contains everything required to initialize the card's content. Simply copy the content of the folder (including the sub-folders) to the card as is.
+The SD-Card must be formatted with a FAT32 (MS-DOS/VFAT) partition, which is typically the case for new cards. Do not use ExFAT, as it is not supported by the application. The release's `SDCard` folder contains everything needed to initialize the card. Simply copy the folder's contents (including all sub-folders) to the card.
 
 #### The config.txt file
 
-The file `config.txt` located in the card's root folder may be edited to identify your wifi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`), timezone information (`tz`), and Internet date/time server address (`ntp_server`). As these parameters contain text information or number, they are not editable through the EPub-InkPlate application forms. This file is loaded at startup. 
+The `config.txt` file in the card's root folder can be edited to set your Wi-Fi parameters (`wifi_ssid`, `wifi_pwd`, `http_port`), timezone (`tz`), and Internet time server address (`ntp_server`). Because these parameters contain free-form text or numeric values, they cannot be edited through the EPub-InkPlate application's menus — they must be set manually in this file. The file is loaded at startup.
 
-The wifi parameters will permit the application to access your local network. This will allow for accessing the InkPlate device from a Web browser to manage the list of books present on the card. This is optional as it's always possible to update the SD-Card content by inserting it into your computer. 
+The Wi-Fi parameters allow the application to access your local network, enabling you to manage the book collection on the card from a web browser. This is optional — you can always update the SD-Card contents by inserting it directly into your computer.
 
-Wifi will also be used to access a date/time Internet server to adjust the device clock. A default NTP Server address is already identified (`ntp_server` parameter) and be sufficient for most usage. It can be replaced by your selection. Please note that the date/time adjustment through the Internet must be manually started to update the internal clock. More information is available in the User's Guide.
+Wi-Fi is also used to synchronize the device clock with an Internet time server. A default NTP server address is pre-configured in the `ntp_server` parameter and should be sufficient for most users, but you may substitute your own. Note that clock synchronization must be started manually from within the application. See the User's Guide for details.
 
-The timezone information (`tz` parameter) is a specially formatted string supplying proper information to translate the internal clock value (that is managed as a Greenwich UTC value) to the local time value. A file named `timezones.csv` is supplied with the Epub-Inkplate distribution. It contains the timezone values for more than 400 cities in the world. For example, for Zagreb, the timezone value would be "CET-1CEST,M3.5.0,M10.5.0/3". The actual format is described here: "https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html".
+The `tz` parameter is a specially formatted string that tells the application how to convert the internal UTC clock to local time. A file named `timezones.csv` is included with the EPub-InkPlate distribution and contains timezone values for over 400 cities worldwide. For example, the timezone value for Zagreb is `CET-1CEST,M3.5.0,M10.5.0/3`. The full format specification is documented at: "https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html".
 
-The file `config.txt` contains other parameters that are managed through the application forms. Please do not modify their content by hand. If those parameters are deleted from the file, they will be re-initialized with default values by the application.
+`config.txt` also contains parameters that are managed through the application's menus. Do not modify these by hand. If they are deleted from the file, the application will restore them to their default values.
 
 #### Your books
 
-As indicated in the previous section, you can add books to the device using the supplied Web server and your Internet browser. Starting the server is described in the User's Guide.
+As mentioned in the previous section, you can add books to the device through the built-in web server using a browser. See the User's Guide for instructions on starting the server.
 
-You can also add your books by hand. All books must be in the EPub format and have a filename with the extension `.epub` in lowercase. They must be located in the `books` folder of the SD-Card. This is done by inserting the SD-Card into your computer to access it directly.
+Alternatively, you can add books manually. All books must be in EPub format with a lowercase `.epub` file extension, placed in the `books` folder on the SD-Card. Insert the SD-Card into your computer to do this directly.
 
-If the SD-Card has already been used by the application, you may find other files present in the `books` folder. They are used to manage various information about your interaction with the books. If deleted, these files will be re-initialized by the application at the proper time.
+If the SD-Card has been used by the application before, you may find additional files in the `books` folder. These are used to track your reading progress and interaction with each book. If deleted, the application will recreate them as needed.
 
-Once done, insert the card into the device.
+Once finished, insert the card into the device.
 
 ### Uploading the application program
 
-The release's `bin` folder contains the application, the bootloader, and the partitions binaries that must be downloaded to the device. To do so connects the device to a USB port, turn it on, change your current directory to that folder, and execute the following command:
+The release's `bin` folder contains the application, bootloader, and partition binaries. To upload them, connect the device to a USB port, turn it on, change your working directory to the `bin` folder, and run the appropriate command:
 
 **On Linux or MacOs (in a shell window):**
 
@@ -107,10 +107,10 @@ Hard resetting via RTS pin...
 $ 
 ```
 
-Once the upload is complete, the device will automatically reboot. Please look in the user's guide for information on how to interact with the application.
+Once the upload is complete, the device will automatically reboot. Refer to the User's Guide for information on how to use the application.
 
-Some options on the esptool command may have to be modified depending on your computer:
+Depending on your computer, you may need to adjust some options in the upload script:
 
-- The USB device connected to the InkPlate is expected to be named `/dev/ttyUSB0` (That is the case on Linux Mint and Ubuntu) on Linux and MacOs, or `COM3` on MS Windows. If it's not the case, you must find it and modify the `upload.sh` script for Linux and MacOS, or `upload.bat` in MS Windows. 
+- The USB device is expected to appear as `/dev/ttyUSB0` on Linux (e.g., Linux Mint, Ubuntu) and macOS, or as `COM3` on Windows. If your device uses a different name, locate it and update `upload.sh` (Linux/macOS) or `upload.bat` (Windows) accordingly.
 
-- Another issue you may have is the download speed that is too high for your computer. Again, you may change it in the `upload.sh` script (or `upload.bat`). The speed (baud rate) is **230400** in the file. You can change it to **115200** baud or lower.
+- If the upload fails due to a speed issue, reduce the baud rate in `upload.sh` (or `upload.bat`). The default is **230400**; you can lower it to **115200** or less.
