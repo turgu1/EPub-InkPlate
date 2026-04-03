@@ -6,6 +6,7 @@
 #include "global.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "viewers/menu_viewer.hpp"
 
 class OptionController {
 private:
@@ -27,6 +28,8 @@ private:
 
 public:
   OptionController() = default;
+
+  MenuViewerPtr menu_viewer;
 
   void input_event(const EventMgr::Event &event);
   void enter();

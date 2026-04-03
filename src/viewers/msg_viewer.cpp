@@ -55,7 +55,7 @@ void MsgViewer::show(MsgType msg_type, bool press_a_key, bool clear_screen, cons
 
   page.clear_region(Dim(width, HEIGHT), Pos(fmt.screen_left, fmt.screen_top));
 
-  page.put_highlight(Dim(width - 4, HEIGHT - 4), Pos(fmt.screen_left + 2, fmt.screen_top + 2));
+  page.put_rounded(Dim(width - 4, HEIGHT - 4), Pos(fmt.screen_left + 2, fmt.screen_top + 2));
 
   Font *font = fonts.get(0);
 
@@ -210,7 +210,7 @@ bool MsgViewer::confirm(const EventMgr::Event &event, bool &ok) {
 
     page.clear_region(Dim(width, HEIGHT), Pos(fmt.screen_left, fmt.screen_top));
 
-    page.put_highlight(Dim(width - 4, HEIGHT - 4), Pos(fmt.screen_left + 2, fmt.screen_top + 2));
+    page.put_rounded(Dim(width - 4, HEIGHT - 4), Pos(fmt.screen_left + 2, fmt.screen_top + 2));
 
     // Title
 

@@ -198,6 +198,10 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
   };
 #endif
 
+static constexpr char const *MAIN_PARAMS_CAPTION   = "Main parameters";
+static constexpr char const *BOOK_DEFAULTS_CAPTION = "Default e-books parameters";
+static constexpr char const *CLOCK_ADJUST_CAPTION  = "Set Date / Time";
+
 static void main_parameters() {
   config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
   config.get(Config::Ident::DIR_VIEW, &dir_view);
@@ -224,7 +228,7 @@ static void main_parameters() {
   old_show_title  = show_title;
   done            = 1;
 
-  form_viewer.show(main_params_form_entries, MAIN_FORM_SIZE,
+  form_viewer.show(MAIN_PARAMS_CAPTION, main_params_form_entries, MAIN_FORM_SIZE,
                    "(*) Will trigger e-book pages location recalc.");
 
   option_controller.set_main_form_is_shown();
@@ -242,7 +246,8 @@ static void default_parameters() {
   old_font_size          = font_size;
   done                   = 1;
 
-  form_viewer.show(font_params_form_entries, FONT_FORM_SIZE, "(*) Used as e-book default values.");
+  form_viewer.show(BOOK_DEFAULTS_CAPTION, font_params_form_entries, FONT_FORM_SIZE,
+                   "(*) Used as e-book default values.");
 
   option_controller.set_font_form_is_shown();
 }
@@ -263,7 +268,7 @@ static void wifi_mode() {
 }
 
 static void init_nvs() {
-  menu_viewer.clear_highlight();
+  // menu_viewer.clear_highlight();
   #if EPUB_INKPLATE_BUILD
     if (nvs_mgr.setup(true)) {
       msg_viewer.show(MsgViewer::MsgType::BOOK, false, false, "E-Books History Cleared",
@@ -275,11 +280,6 @@ static void init_nvs() {
     }
   #endif
 }
-
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
-  static void goto_next();
-  static void goto_prev();
-#endif
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   static void calibrate() {
@@ -303,7 +303,8 @@ static void init_nvs() {
     minute = tim.tm_min;
     second = tim.tm_sec;
 
-    form_viewer.show(date_time_form_entries, DATE_TIME_FORM_SIZE, "Hour is in 24 hours format.");
+    form_viewer.show(CLOCK_ADJUST_CAPTION, date_time_form_entries, DATE_TIME_FORM_SIZE,
+                     "Hour is in 24 hours format.");
     option_controller.set_date_time_form_is_shown();
   }
 
@@ -370,73 +371,48 @@ static MenuViewer::MenuEntry menu[] = {
      true},
     {MenuViewer::Icon::BOOK, "Return to the last e-book being read", CommonActions::show_last_book,
      true, true},
-    {MenuViewer::Icon::MAIN_PARAMS, "Main parameters", main_parameters, true, true},
-    {MenuViewer::Icon::FONT_PARAMS, "Default e-books parameters", default_parameters, true, true},
+    {MenuViewer::Icon::MAIN_PARAMS, MAIN_PARAMS_CAPTION, main_parameters, true, true},
+    {MenuViewer::Icon::FONT_PARAMS, BOOK_DEFAULTS_CAPTION, default_parameters, true, true},
     {MenuViewer::Icon::WIFI, "WiFi Access to the e-books folder", wifi_mode, true, true},
     {MenuViewer::Icon::REFRESH, "Refresh the e-books list", CommonActions::refresh_books_dir, true,
      true},
-#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS)
     {MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history", init_nvs, true, true},
-  #if DATE_TIME_RTC
-    {MenuViewer::Icon::CLOCK, "Set Date/Time", clock_adjust_form, true, true},
+#if DATE_TIME_RTC
+    {MenuViewer::Icon::CLOCK, CLOCK_ADJUST_CAPTION, clock_adjust_form, true, true},
     {MenuViewer::Icon::NTP_CLOCK, "Retrieve Date/Time from Time Server", ntp_clock_adjust, true,
      true},
-  #endif
+#endif
+
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    {MenuViewer::Icon::CALIB, "Touch Screen Calibration", calibrate, true, false},
+    {MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history", init_nvs, true, true},
+#elif MENU_6PLUS
+    {MenuViewer::Icon::CALIB, "Touch Screen Calibration", nullptr, true, false},
+    {MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history", nullptr, true, true},
 #endif
 #if DEBUGGING
     {MenuViewer::Icon::DEBUG, "Debugging", debugging, true, true},
 #endif
     {MenuViewer::Icon::INFO, "About the EPub-InkPlate application", CommonActions::about, true,
      true},
+    // This entry must be the last one before END_MENU and MUST ALWAYS BE VISIBLE!!
     {MenuViewer::Icon::POWEROFF, "Power OFF (Deep Sleep)", CommonActions::power_it_off, true, true},
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
-    {MenuViewer::Icon::NEXT_MENU, "Other options", goto_next, true, true},
-#endif
     {MenuViewer::Icon::END_MENU, nullptr, nullptr, false, false}};
-
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-  static MenuViewer::MenuEntry sub_menu[] = {
-      {MenuViewer::Icon::PREV_MENU, "Previous options", goto_prev, true, true},
-      {MenuViewer::Icon::RETURN, "Return to the e-books list", CommonActions::return_to_last, true,
-       true},
-  #if DATE_TIME_RTC
-      {MenuViewer::Icon::CLOCK, "Set Date/Time", clock_adjust_form, true, true},
-      {MenuViewer::Icon::NTP_CLOCK, "Retrieve Date/Time from Time Server", ntp_clock_adjust, true,
-       true},
-  #endif
-      {MenuViewer::Icon::CALIB, "Touch Screen Calibration", calibrate, true, false},
-      {MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history", init_nvs, true, true},
-      {MenuViewer::Icon::END_MENU, nullptr, nullptr, false, false}};
-#elif MENU_6PLUS
-  static MenuViewer::MenuEntry sub_menu[] = {
-      {MenuViewer::Icon::PREV_MENU, "Previous options", goto_prev, true, true},
-      {MenuViewer::Icon::RETURN, "Return to the e-books list", nullptr, true, true},
-  #if DATE_TIME_RTC
-      {MenuViewer::Icon::CLOCK, "Set Date/Time", nullptr, true, true},
-      {MenuViewer::Icon::NTP_CLOCK, "Retrieve Date/Time from Time Server", nullptr, true, true},
-  #endif
-      {MenuViewer::Icon::CALIB, "Touch Screen Calibration", nullptr, true, false},
-      {MenuViewer::Icon::CLR_HISTORY, "Clear e-books' read history", nullptr, true, true},
-      {MenuViewer::Icon::END_MENU, nullptr, nullptr, false, false}};
-#endif
 
 void OptionController::set_font_count(uint8_t count) {
   font_params_form_entries[2].u.ch.choice_count = count;
 }
 
 void OptionController::enter() {
-  menu_viewer.show(menu);
+  menu_viewer = MenuViewer::Make();
+  if (menu_viewer) {
+    menu_viewer->show(menu);
+  }
   main_form_is_shown = false;
   font_form_is_shown = false;
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
-  static void goto_next() { menu_viewer.show(sub_menu); }
-
-  static void goto_prev() { menu_viewer.show(menu); }
-#endif
-
-void OptionController::leave(bool going_to_deep_sleep) {}
+void OptionController::leave(bool going_to_deep_sleep) { menu_viewer.reset(); }
 
 void OptionController::input_event(const EventMgr::Event &event) {
   if (main_form_is_shown) {
@@ -473,7 +449,7 @@ void OptionController::input_event(const EventMgr::Event &event) {
       if (old_cover_size != cover_size) {
         int16_t dummy;
         books_dir.refresh(nullptr, dummy, true);
-        menu_viewer.show(menu, 2, true);
+        menu_viewer->show(menu, 2, true);
       }
 
       if (old_resolution != resolution) {
@@ -486,11 +462,12 @@ void OptionController::input_event(const EventMgr::Event &event) {
       }
 
       if ((old_orientation != orientation) || (old_resolution != resolution)) {
-        menu_viewer.show(menu, 2, true);
+        menu_viewer->show(menu, 2, true);
       } else {
-        menu_viewer.clear_highlight();
+        menu_viewer->clear_highlight();
       }
       // }
+      menu_viewer->show(menu, 2, true);
     }
   } else if (font_form_is_shown) {
     if (form_viewer.event(event)) {
@@ -518,7 +495,8 @@ void OptionController::input_event(const EventMgr::Event &event) {
         }
       }
       // }
-      menu_viewer.clear_highlight();
+      // menu_viewer.clear_highlight();
+      menu_viewer->show(menu, 3, true);
     }
   }
 
@@ -526,8 +504,9 @@ void OptionController::input_event(const EventMgr::Event &event) {
   else if (date_time_form_is_shown) {
       if (form_viewer.event(event)) {
         date_time_form_is_shown = false;
-        menu_viewer.clear_highlight();
+        menu_viewer->clear_highlight();
         set_clock();
+        menu_viewer->show(menu, 7, true);
       }
     }
   #endif
@@ -553,13 +532,13 @@ void OptionController::input_event(const EventMgr::Event &event) {
     else if (calibration_is_shown) {
       if (event_mgr.calibration_event(event)) {
         calibration_is_shown = false;
-        menu_viewer.show(menu, 0, true);
+        menu_viewer->show(menu, 0, true);
       }
     }
   #endif
 
     else {
-    if (menu_viewer.event(event)) {
+    if (menu_viewer->event(event)) {
       if (books_refresh_needed) {
         books_refresh_needed = false;
         int16_t dummy;

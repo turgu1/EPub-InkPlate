@@ -501,7 +501,7 @@ protected:
         page_info.size = -page_info.size; // The page will not be counted nor displayed
       }
       res = page_locs.insert(page_id, page_info);
-      #if 1 // DEBUGGING
+      #if DEBUGGING
         std::cout << page_id.offset << '|' << page_id.offset + page_info.size << ", "
                   << page_info.page_number << ", " << page_info.size << std::endl;
       #endif

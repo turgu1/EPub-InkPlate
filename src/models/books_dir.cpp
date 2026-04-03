@@ -441,17 +441,6 @@ void BooksDir::set_cover_size() {
  * @see nvs_mgr, db, sorted_index, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
  */
 void BooksDir::check_db_content(char *book_filename, int16_t &book_index, SortedIndex &temp_index) {
-  class PartialRecord {
-  public:
-    char filename[FILENAME_SIZE];
-    int32_t file_size;
-    uint32_t id;
-    char title[TITLE_SIZE];
-    PartialRecord()  = default;
-    ~PartialRecord() = default;
-    static inline auto Make() { return make_unique_himem<PartialRecord>(); }
-  };
-  // using PartialRecordPtr = himem_unique_ptr<PartialRecord>;
 
   auto partial_record = PartialRecord::Make();
 

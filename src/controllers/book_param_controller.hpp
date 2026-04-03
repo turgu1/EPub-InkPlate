@@ -6,6 +6,7 @@
 #include "global.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "viewers/menu_viewer.hpp"
 
 class BookParamController {
 private:
@@ -17,6 +18,8 @@ private:
 
 public:
   BookParamController() = default;
+
+  MenuViewerPtr menu_viewer;
 
   void input_event(const EventMgr::Event &event);
   void enter();

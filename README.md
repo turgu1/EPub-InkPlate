@@ -5,7 +5,7 @@
 (updated 2026.03.XX)
 
 - Now Version 3.0.0!
-- Now using ESP-IDF framework v6.0.0
+- Now using ESP-IDF framework v5.5.4
 - Using C++ gnu++23 (As per ESP-IDF C++ support)
 - Page::Format default values in the struct definition. All use of the
   struct are now shrinked in the code to the changed parameters from the default.

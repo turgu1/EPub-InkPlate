@@ -7,7 +7,7 @@
 Update to version 3.0.0
 
 - Now using:
-  - ESP-IDF framework version 6.0.0
+  - ESP-IDF framework version 5.5.4
   - PugiXML version 1.15
   - FreeType version 2.14.3
   - C++ gnu++23 (As per ESP-IDF C++ support)

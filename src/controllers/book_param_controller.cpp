@@ -70,6 +70,8 @@ static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
 #endif
 };
 
+static constexpr char const *BOOK_PARAMS_CAPTION = "Current e-book parameters";
+
 static void book_parameters() {
   BookParams *book_params = epub.get_book_params();
 
@@ -89,7 +91,7 @@ static void book_parameters() {
   old_font_size         = font_size;
   done_res              = 1;
 
-  form_viewer.show(book_params_form_entries, BOOK_PARAMS_FORM_SIZE,
+  form_viewer.show(BOOK_PARAMS_CAPTION, book_params_form_entries, BOOK_PARAMS_FORM_SIZE,
                    "(Any item change will trigger book refresh)");
 
   book_param_controller.set_book_params_form_is_shown();
@@ -171,15 +173,14 @@ static MenuViewer::MenuEntry menu[10] = {
      true},
     {MenuViewer::Icon::TOC, "Table of Content", toc_ctrl, false, true},
     {MenuViewer::Icon::BOOK_LIST, "E-Books list", books_list, true, true},
-    {MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters", book_parameters, true, true},
-    {MenuViewer::Icon::REVERT,
-     "Revert e-book parameters to "
-     "default values",
-     revert_to_defaults, true, true},
+    {MenuViewer::Icon::FONT_PARAMS, BOOK_PARAMS_CAPTION, book_parameters, true, true},
+    {MenuViewer::Icon::REVERT, "Revert e-book parameters to default values", revert_to_defaults,
+     true, true},
     {MenuViewer::Icon::DELETE, "Delete the current e-book", delete_book, true, true},
     {MenuViewer::Icon::WIFI, "WiFi Access to the e-books folder", wifi_mode, true, true},
     {MenuViewer::Icon::INFO, "About the EPub-InkPlate application", CommonActions::about, true,
      true},
+    // This entry must be the last one before END_MENU and MUST ALWAYS BE VISIBLE!!
     {MenuViewer::Icon::POWEROFF, "Power OFF (Deep Sleep)", power_off, true, true},
     {MenuViewer::Icon::END_MENU, nullptr, nullptr, false, true}};
 
@@ -189,11 +190,12 @@ void BookParamController::set_font_count(uint8_t count) {
 
 void BookParamController::enter() {
   menu[1].visible = toc.is_ready() && !toc.is_empty();
-  menu_viewer.show(menu);
+  menu_viewer     = MenuViewer::Make();
+  menu_viewer->show(menu);
   book_params_form_is_shown = false;
 }
 
-void BookParamController::leave(bool going_to_deep_sleep) {}
+void BookParamController::leave(bool going_to_deep_sleep) { menu_viewer.reset(); }
 
 void BookParamController::input_event(const EventMgr::Event &event) {
   if (book_params_form_is_shown) {
@@ -226,7 +228,8 @@ void BookParamController::input_event(const EventMgr::Event &event) {
         fonts.adjust_default_font(font);
       }
       // }
-      menu_viewer.clear_highlight();
+      // menu_viewer.clear_highlight();
+      menu_viewer->show(menu, 3, true);
     }
   } else if (delete_current_book) {
     bool ok;
@@ -286,7 +289,7 @@ void BookParamController::input_event(const EventMgr::Event &event) {
     }
   #endif
     else {
-    if (menu_viewer.event(event)) {
+    if (menu_viewer->event(event)) {
       app_controller.set_controller(AppController::Ctrl::LAST);
     }
   }

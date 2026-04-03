@@ -28,7 +28,7 @@
 
 void MatrixBooksDirViewer::setup() {
   Font *font        = fonts.get(TITLE_FONT);
-  title_font_height = font->get_line_height(TITLE_FONT_SIZE) * 0.8;
+  title_font_height = font->get_line_height(TITLE_FONT_SIZE) * 0.8 + 5;
 
   font               = fonts.get(AUTHOR_FONT);
   author_font_height = font->get_line_height(AUTHOR_FONT_SIZE) * 0.8;
@@ -36,7 +36,7 @@ void MatrixBooksDirViewer::setup() {
   font                = fonts.get(ScreenBottom::FONT);
   pagenbr_font_height = font->get_line_height(ScreenBottom::FONT_SIZE);
 
-  first_entry_ypos = (title_font_height << 1) + author_font_height + SPACE_BELOW_INFO + 10;
+  first_entry_ypos = (title_font_height << 1) + author_font_height + SPACE_BELOW_INFO + 25;
 
   line_count = (Screen::get_height() - first_entry_ypos - pagenbr_font_height -
                 SPACE_ABOVE_PAGENBR + MIN_SPACE_BETWEEN_ENTRIES) /
@@ -75,10 +75,14 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
   int16_t line_pos = 0;
 
   Page::Format fmt = {
-      .line_height_factor = 0.8,
+      .line_height_factor = 0.9,
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
+      .screen_left        = 20,
+      .screen_right       = 20,
+      .screen_top         = 18,
       .screen_bottom      = 100,
+      .align              = CSS::Align::CENTER,
   };
 
   page.start(fmt);
@@ -148,14 +152,14 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
   }
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    fmt.screen_top = 10 + title_font_height;
+    fmt.screen_top = 18;
     page.set_limits(fmt);
     page.new_paragraph(fmt);
     page.add_text(TOUCH_AND_HOLD_STR, fmt);
     page.end_paragraph(fmt);
   #endif
 
-  page.put_highlight(Dim(Screen::get_width() - 20, 3), Pos(10, first_entry_ypos - 8));
+  page.put_rounded(Dim(Screen::get_width() - 20, first_entry_ypos - 20), Pos(10, 10));
 
   ScreenBottom::show(current_page_nbr, page_count);
 
@@ -168,10 +172,14 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   BooksDir::EBookRecordPtr book;
 
   Page::Format fmt = {
-      .line_height_factor = 0.8,
+      .line_height_factor = 0.9,
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
+      .screen_left        = 15,
+      .screen_right       = 15,
+      .screen_top         = 18,
       .screen_bottom      = 100,
+      .align              = CSS::Align::CENTER,
   };
 
   page.set_compute_mode(Page::ComputeMode::DISPLAY);
@@ -202,8 +210,8 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
     page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                          Pos(xpos - 3, ypos - 3));
 
-    page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
-                      Pos(10, 10));
+    page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                      Pos(20, 20));
   }
   // Highlight the new current item
 
@@ -228,8 +236,8 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   page.put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                      Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
-                    Pos(10, 10));
+  page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                    Pos(20, 20));
 
   fmt.font_index = TITLE_FONT;
   fmt.font_size  = TITLE_FONT_SIZE;
@@ -290,7 +298,7 @@ void MatrixBooksDirViewer::clear_highlight() {
   // Font * font = fonts.get(1, 9);
 
   Page::Format fmt = {
-      .line_height_factor = 0.8,
+      .line_height_factor = 0.9,
       .font_index         = TITLE_FONT,
       .font_size          = TITLE_FONT_SIZE,
       .screen_bottom =
@@ -304,11 +312,11 @@ void MatrixBooksDirViewer::clear_highlight() {
   page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
                        Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::get_width() - 10, (title_font_height << 1) + author_font_height),
-                    Pos(10, 10));
+  page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                    Pos(20, 20));
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    fmt.screen_top = 10 + title_font_height;
+    fmt.screen_top = 18;
     page.set_limits(fmt);
     page.new_paragraph(fmt);
     page.add_text(TOUCH_AND_HOLD_STR, fmt);

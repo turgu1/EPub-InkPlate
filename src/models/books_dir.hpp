@@ -87,6 +87,18 @@ public:
     uint32_t cover_size() const { return cover_dim.width * cover_dim.height; }
   };
 
+  class PartialRecord {
+  public:
+    char filename[FILENAME_SIZE];
+    int32_t file_size;
+    uint32_t id;
+    char title[TITLE_SIZE];
+    PartialRecord()  = default;
+    ~PartialRecord() = default;
+    static inline auto Make() { return make_unique_himem<PartialRecord>(); }
+  };
+  using PartialRecordPtr = himem_unique_ptr<PartialRecord>;
+
   // The version record is used to identify the version of the database. In case of structure
   // update, the version will be changed in the application and will trigger the reconstruction of
   // the database.
@@ -101,6 +113,7 @@ public:
     static inline auto Make() { return make_unique_himem<VersionRecord>(); }
   };
   using VersionRecordPtr = himem_unique_ptr<VersionRecord>;
+
   #pragma pack(pop)
 
 private:
