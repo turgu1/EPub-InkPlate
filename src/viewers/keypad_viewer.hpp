@@ -4,14 +4,30 @@
 
 #pragma once
 
-#include "controllers/event_mgr.hpp"
 #include "global.hpp"
+
+#include "himem.hpp"
+
+#include "controllers/event_mgr.hpp"
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
 
+using KeypadViewerPtr = himem_unique_ptr<class KeypadViewer>;
+
 class KeypadViewer {
+private:
+  KeypadViewer() = default;
+  PagePtr page{Page::Make()};
+
 public:
   uint16_t get_value() { return client_value; }
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<KeypadViewer>(); }
+  ~KeypadViewer() = default;
 
 private:
   static constexpr char const *TAG = "KeypadViewer";
@@ -66,12 +82,12 @@ private:
   #endif
 
   void update_value() {
-    page.clear_region(Dim(keypad_dim.width - 6, key_dim.height - 6),
-                      Pos(field_pos.x + 3, field_pos.y + 3));
-    page.put_str_at(digits,
-                    Pos(field_pos.x + (keypad_dim.width >> 1),
-                        field_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                    fmt);
+    page->clear_region(Dim(keypad_dim.width - 6, key_dim.height - 6),
+                       Pos(field_pos.x + 3, field_pos.y + 3));
+    page->put_str_at(digits,
+                     Pos(field_pos.x + (keypad_dim.width >> 1),
+                         field_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                     fmt);
   }
 
   void add_digit(uint8_t d) {
@@ -102,35 +118,35 @@ private:
       if (previous_key != current_key) {
         if (previous_key != nullptr) {
           if (previous_key->value == -1) { // Cancel key
-            page.clear_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
-                                 Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
-            page.clear_highlight(Dim(key_dim2.width - 4, key_dim2.height - 4),
-                                 Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
-            page.clear_highlight(Dim(key_dim2.width - 6, key_dim2.height - 6),
-                                 Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
+            page->clear_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
+                                  Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
+            page->clear_highlight(Dim(key_dim2.width - 4, key_dim2.height - 4),
+                                  Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
+            page->clear_highlight(Dim(key_dim2.width - 6, key_dim2.height - 6),
+                                  Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
           } else {
-            page.clear_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
-                                 Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
-            page.clear_highlight(Dim(key_dim.width - 4, key_dim.height - 4),
-                                 Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
-            page.clear_highlight(Dim(key_dim.width - 6, key_dim.height - 6),
-                                 Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
+            page->clear_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
+                                  Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
+            page->clear_highlight(Dim(key_dim.width - 4, key_dim.height - 4),
+                                  Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
+            page->clear_highlight(Dim(key_dim.width - 6, key_dim.height - 6),
+                                  Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
           }
         }
         if (current_key->value == -1) { // Cancel key
-          page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
-                             Pos(current_key->pos.x + 1, current_key->pos.y + 1));
-          page.put_highlight(Dim(key_dim2.width - 4, key_dim2.height - 4),
-                             Pos(current_key->pos.x + 2, current_key->pos.y + 2));
-          page.put_highlight(Dim(key_dim2.width - 6, key_dim2.height - 6),
-                             Pos(current_key->pos.x + 3, current_key->pos.y + 3));
+          page->put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
+                              Pos(current_key->pos.x + 1, current_key->pos.y + 1));
+          page->put_highlight(Dim(key_dim2.width - 4, key_dim2.height - 4),
+                              Pos(current_key->pos.x + 2, current_key->pos.y + 2));
+          page->put_highlight(Dim(key_dim2.width - 6, key_dim2.height - 6),
+                              Pos(current_key->pos.x + 3, current_key->pos.y + 3));
         } else {
-          page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
-                             Pos(current_key->pos.x + 1, current_key->pos.y + 1));
-          page.put_highlight(Dim(key_dim.width - 4, key_dim.height - 4),
-                             Pos(current_key->pos.x + 2, current_key->pos.y + 2));
-          page.put_highlight(Dim(key_dim.width - 6, key_dim.height - 6),
-                             Pos(current_key->pos.x + 3, current_key->pos.y + 3));
+          page->put_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
+                              Pos(current_key->pos.x + 1, current_key->pos.y + 1));
+          page->put_highlight(Dim(key_dim.width - 4, key_dim.height - 4),
+                              Pos(current_key->pos.x + 2, current_key->pos.y + 2));
+          page->put_highlight(Dim(key_dim.width - 6, key_dim.height - 6),
+                              Pos(current_key->pos.x + 3, current_key->pos.y + 3));
         }
       }
     }
@@ -181,29 +197,29 @@ public:
     };
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      page.start(fmt);
+      page->start(fmt);
     #endif
 
     // The large rectangle into which the keypad will be drawn
 
-    page.clear_region(Dim(keypad_dim.width + 26, keypad_dim.height + 26),
-                      Pos(keypad_pos.x - 13, keypad_pos.y - 13));
-    page.put_highlight(Dim(keypad_dim.width + 20, keypad_dim.height + 20),
-                       Pos(keypad_pos.x - 10, keypad_pos.y - 10));
+    page->clear_region(Dim(keypad_dim.width + 26, keypad_dim.height + 26),
+                       Pos(keypad_pos.x - 13, keypad_pos.y - 13));
+    page->put_highlight(Dim(keypad_dim.width + 20, keypad_dim.height + 20),
+                        Pos(keypad_pos.x - 10, keypad_pos.y - 10));
 
     constexpr int8_t values[14] = {7, 8, 9, 4, 5, 6, 1, 2, 3, -4, 0, -3, -2, -1};
     constexpr char labels[12]   = "789456123 0";
 
-    page.put_str_at(caption,
-                    Pos(Screen::get_width() >> 1,
-                        keypad_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                    fmt);
+    page->put_str_at(caption,
+                     Pos(Screen::get_width() >> 1,
+                         keypad_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                     fmt);
 
-    page.put_highlight(Dim(keypad_dim.width, key_dim.height), Pos(field_pos.x, field_pos.y));
-    page.put_highlight(Dim(keypad_dim.width - 2, key_dim.height - 2),
-                       Pos(field_pos.x + 1, field_pos.y + 1));
-    page.put_highlight(Dim(keypad_dim.width - 4, key_dim.height - 4),
-                       Pos(field_pos.x + 2, field_pos.y + 2));
+    page->put_highlight(Dim(keypad_dim.width, key_dim.height), Pos(field_pos.x, field_pos.y));
+    page->put_highlight(Dim(keypad_dim.width - 2, key_dim.height - 2),
+                        Pos(field_pos.x + 1, field_pos.y + 1));
+    page->put_highlight(Dim(keypad_dim.width - 4, key_dim.height - 4),
+                        Pos(field_pos.x + 2, field_pos.y + 2));
 
     update_value();
 
@@ -237,47 +253,47 @@ public:
       case 7:
       case 8:
       case 9:
-        page.put_highlight(key_dim, the_pos);
-        page.put_char_at(labels[i],
-                         Pos(the_pos.x + (key_dim.width >> 1) - (glyph->dim.width >> 1),
+        page->put_highlight(key_dim, the_pos);
+        page->put_char_at(labels[i],
+                          Pos(the_pos.x + (key_dim.width >> 1) - (glyph->dim.width >> 1),
+                              the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                          fmt);
+        break;
+      case -1: // Cancel
+        page->put_highlight(key_dim2, the_pos);
+        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+          page->put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
+                              Pos(the_pos.x + 1, the_pos.y + 1));
+        #endif
+        page->put_str_at("CANCEL",
+                         Pos(the_pos.x + (key_dim2.width >> 1),
                              the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
                          fmt);
         break;
-      case -1: // Cancel
-        page.put_highlight(key_dim2, the_pos);
-        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-          page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2),
-                             Pos(the_pos.x + 1, the_pos.y + 1));
-        #endif
-        page.put_str_at("CANCEL",
-                        Pos(the_pos.x + (key_dim2.width >> 1),
-                            the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                        fmt);
-        break;
       case -2: // OK
-        page.put_highlight(key_dim, the_pos);
+        page->put_highlight(key_dim, the_pos);
         #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-          page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
-                             Pos(the_pos.x + 1, the_pos.y + 1));
+          page->put_highlight(Dim(key_dim.width - 2, key_dim.height - 2),
+                              Pos(the_pos.x + 1, the_pos.y + 1));
         #endif
-        page.put_str_at("OK",
-                        Pos(the_pos.x + (key_dim.width >> 1),
-                            the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                        fmt);
+        page->put_str_at("OK",
+                         Pos(the_pos.x + (key_dim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                         fmt);
         break;
       case -3: // Backspace
-        page.put_highlight(key_dim, the_pos);
-        page.put_str_at("BSP",
-                        Pos(the_pos.x + (key_dim.width >> 1),
-                            the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                        fmt);
+        page->put_highlight(key_dim, the_pos);
+        page->put_str_at("BSP",
+                         Pos(the_pos.x + (key_dim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                         fmt);
         break;
       case -4: // Clear
-        page.put_highlight(key_dim, the_pos);
-        page.put_str_at("CLR",
-                        Pos(the_pos.x + (key_dim.width >> 1),
-                            the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                        fmt);
+        page->put_highlight(key_dim, the_pos);
+        page->put_str_at("CLR",
+                         Pos(the_pos.x + (key_dim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
+                         fmt);
         break;
       }
       if (((i + 1) % 3) == 0) {
@@ -299,7 +315,7 @@ public:
 
     update_value();
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      page.paint(false);
+      page->paint(false);
     #endif
   }
 
@@ -329,9 +345,9 @@ public:
             clear_digits();
         }
       }
-      page.start(fmt);
+      page->start(fmt);
       update_value();
-      page.paint(false);
+      page->paint(false);
 
       return true;
     #else
@@ -397,22 +413,16 @@ public:
         break;
       }
 
-      page.start(fmt);
+      page->start(fmt);
       update_value();
       update_highlight();
       previous_key = current_key;
-      page.paint(false);
+      page->paint(false);
 
       return true;
     #endif
   }
 };
-
-#if __KEYPAD_VIEWER__
-  KeypadViewer keypad_viewer;
-#else
-  extern KeypadViewer keypad_viewer;
-#endif
 
 #if 0
 

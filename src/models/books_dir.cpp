@@ -445,7 +445,7 @@ void BooksDir::check_db_content(char *book_filename, int16_t &book_index, Sorted
   auto partial_record = PartialRecord::Make();
 
   if (!partial_record) {
-    msg_viewer.out_of_memory("partial record allocation");
+    MsgViewer::out_of_memory("partial record allocation");
     // Will not return...
   }
 
@@ -688,16 +688,17 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
 
           if (first) {
             first = false;
-            // msg_viewer.show_progress("Computing new books pages location...");
+            // MsgViewer::show_progress("Computing new books pages location...");
             if (db->get_record_count() == 1) {
-              msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "E-books metadata retrieval",
+              MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "E-books metadata retrieval",
                               "System parameters changed requiring metadata retrieval. "
                               "It will take between 5 and 10 seconds for each book.");
             } else {
-              msg_viewer.show(
+              MsgViewer::show(
                   MsgViewer::MsgType::INFO, false, true, "New e-books metadata retrieval",
-                  "New e-books have been found. Please wait while we retrieve some metadata. "
-                  "It will take between 5 and 10 seconds for each e-book.");
+                  "New e-books have been found (%s). Please wait while we retrieve some metadata. "
+                  "It will take between 5 and 10 seconds for each e-book.",
+                  de->d_name);
             }
           }
           some_added_record = true;
@@ -719,14 +720,16 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
 
           LOG_D("Opening file through the EPub class: %s", fname.c_str());
 
-          if (epub.open_file(fname)) {
-            std::string filename = epub.get_cover_filename();
+          auto epub = EPub::Make();
+
+          if (epub->open(fname)) {
+            std::string filename = epub->get_cover_filename();
 
             PicturePtr pict;
             if (!filename.empty()) {
 
               // LOG_D("Cover filename: %s", filename);
-              pict = epub.get_picture(filename, true);
+              pict = epub->get_picture(filename, true);
               if (!pict) {
                 LOG_D("Unable to retrieve cover file: %s", filename.c_str());
                 pict = PictureFactory::create(default_cover_dim, default_cover,
@@ -769,9 +772,9 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
 
             const char *str;
 
-            if ((str = epub.get_title())) strlcpy(the_book->title, str, TITLE_SIZE);
-            if ((str = epub.get_author())) strlcpy(the_book->author, str, AUTHOR_SIZE);
-            if ((str = epub.get_description()))
+            if ((str = epub->get_title())) strlcpy(the_book->title, str, TITLE_SIZE);
+            if ((str = epub->get_author())) strlcpy(the_book->author, str, AUTHOR_SIZE);
+            if ((str = epub->get_description()))
               strlcpy(the_book->description, str, DESCRIPTION_SIZE);
 
             if (!db->add_record(the_book.get(), book_record_size)) {
@@ -797,7 +800,7 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
                 book_index = db->get_record_count() - 1;
             }
 
-            epub.close_file();
+            epub->close_file();
 
             #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               ESP::show_heaps_info();

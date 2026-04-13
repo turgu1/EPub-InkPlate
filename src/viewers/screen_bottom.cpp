@@ -11,7 +11,7 @@
 
 const std::string ScreenBottom::dw[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
+void ScreenBottom::show(PagePtr &page, int16_t page_nbr, int16_t page_count) {
   Font *font = fonts.get(FONT);
 
   Page::Format fmt = {
@@ -20,7 +20,7 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
       .align      = CSS::Align::CENTER,
   };
 
-  page.set_limits(fmt);
+  page->set_limits(fmt);
 
   std::ostringstream ostr;
 
@@ -34,26 +34,26 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
 
   LOG_D("Dim [%u, %u], Pos[%u, %u]", Screen::get_width(), h, 0, Screen::get_height() - h);
 
-  page.clear_region(Dim(Screen::get_width(), h), Pos(0, Screen::get_height() - h));
+  page->clear_region(Dim(Screen::get_width(), h), Pos(0, Screen::get_height() - h));
 
-  // page.put_highlight(Dim(Screen::get_width(), h ),
+  // page->put_highlight(Dim(Screen::get_width(), h ),
   //                    Pos(0, Screen::get_height() - h));
 
   if (show_heap == 0) {
     if (page_nbr != -1) {
       ostr << page_nbr + 1 << " / " << page_count;
 
-      page.put_str_at(ostr.str(),
-                      Pos(Page::HORIZONTAL_CENTER,
-                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                      fmt);
+      page->put_str_at(ostr.str(),
+                       Pos(Page::HORIZONTAL_CENTER,
+                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                       fmt);
     } else if (page_count != -1) {
       ostr << "PgCalc... " << page_count << "%";
 
-      page.put_str_at(ostr.str(),
-                      Pos(Page::HORIZONTAL_CENTER,
-                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                      fmt);
+      page->put_str_at(ostr.str(),
+                       Pos(Page::HORIZONTAL_CENTER,
+                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                       fmt);
     }
   }
 
@@ -65,13 +65,13 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
            << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) << " / "
            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
       fmt.align = CSS::Align::RIGHT;
-      page.put_str_at(ostr.str(),
-                      Pos(Page::HORIZONTAL_CENTER,
-                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                      fmt);
+      page->put_str_at(ostr.str(),
+                       Pos(Page::HORIZONTAL_CENTER,
+                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                       fmt);
     }
 
-    BatteryViewer::show();
+    BatteryViewer::show(page);
   #endif
 
   #if DATE_TIME_RTC
@@ -91,10 +91,10 @@ void ScreenBottom::show(int16_t page_nbr, int16_t page_count) {
            << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
 
       fmt.align = CSS::Align::RIGHT;
-      page.put_str_at(ostr.str(),
-                      Pos(Page::HORIZONTAL_CENTER,
-                          Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                      fmt);
+      page->put_str_at(ostr.str(),
+                       Pos(Page::HORIZONTAL_CENTER,
+                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
+                       fmt);
     }
   #endif
 }

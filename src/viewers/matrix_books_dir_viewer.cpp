@@ -66,7 +66,7 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
   int16_t book_idx = page_nbr * books_per_page;
   int16_t last     = book_idx + books_per_page;
 
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+  page->set_compute_mode(Page::ComputeMode::DISPLAY);
 
   if (last > books_dir.get_book_count()) last = books_dir.get_book_count();
 
@@ -85,7 +85,7 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
       .align              = CSS::Align::CENTER,
   };
 
-  page.start(fmt);
+  page->start(fmt);
 
   for (int item_idx = 0; book_idx < last; item_idx++, book_idx++) {
 
@@ -96,16 +96,16 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
     PicturePtr picture =
         Picture::Make(book->cover_dim, (uint8_t *)book->cover_bitmap, book->cover_size());
 
-    page.put_picture(std::move(picture),
-                     Pos(xpos + ((BooksDir::cover_dim.width - book->cover_dim.width) >> 1),
-                         ypos + ((BooksDir::cover_dim.height - book->cover_dim.height) >> 1)));
+    page->put_picture(std::move(picture),
+                      Pos(xpos + ((BooksDir::cover_dim.width - book->cover_dim.width) >> 1),
+                          ypos + ((BooksDir::cover_dim.height - book->cover_dim.height) >> 1)));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
       if (item_idx == current_item_idx) {
-        page.put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
-                           Pos(xpos - 2, ypos - 2));
-        page.put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
-                           Pos(xpos - 3, ypos - 3));
+        page->put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
+                            Pos(xpos - 2, ypos - 2));
+        page->put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
+                            Pos(xpos - 3, ypos - 3));
 
         fmt.font_index = TITLE_FONT;
         fmt.font_size  = TITLE_FONT_SIZE;
@@ -122,21 +122,21 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
         }
         #pragma GCC diagnostic pop
 
-        page.set_limits(fmt);
-        page.new_paragraph(fmt);
+        page->set_limits(fmt);
+        page->new_paragraph(fmt);
         #if EPUB_INKPLATE_BUILD
-          if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
+          if (nvs_mgr.id_exists(book->id)) page->add_text("[Reading] ", fmt);
         #endif
-        page.add_text(title, fmt);
-        page.end_paragraph(fmt);
+        page->add_text(title, fmt);
+        page->end_paragraph(fmt);
 
         fmt.font_index = AUTHOR_FONT;
         fmt.font_size  = AUTHOR_FONT_SIZE;
         fmt.font_style = Fonts::FaceStyle::ITALIC;
 
-        page.new_paragraph(fmt);
-        page.add_text(book->author, fmt);
-        page.end_paragraph(fmt);
+        page->new_paragraph(fmt);
+        page->add_text(book->author, fmt);
+        page->end_paragraph(fmt);
       }
     #endif
 
@@ -153,17 +153,17 @@ void MatrixBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     fmt.screen_top = 18;
-    page.set_limits(fmt);
-    page.new_paragraph(fmt);
-    page.add_text(TOUCH_AND_HOLD_STR, fmt);
-    page.end_paragraph(fmt);
+    page->set_limits(fmt);
+    page->new_paragraph(fmt);
+    page->add_text(TOUCH_AND_HOLD_STR, fmt);
+    page->end_paragraph(fmt);
   #endif
 
-  page.put_rounded(Dim(Screen::get_width() - 20, first_entry_ypos - 20), Pos(10, 10));
+  page->put_rounded(Dim(Screen::get_width() - 20, first_entry_ypos - 20), Pos(10, 10));
 
-  ScreenBottom::show(current_page_nbr, page_count);
+  ScreenBottom::show(page, current_page_nbr, page_count);
 
-  page.paint();
+  page->paint();
 }
 
 void MatrixBooksDirViewer::highlight(int16_t item_idx) {
@@ -182,9 +182,9 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
       .align              = CSS::Align::CENTER,
   };
 
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+  page->set_compute_mode(Page::ComputeMode::DISPLAY);
 
-  page.start(fmt);
+  page->start(fmt);
 
   if ((current_item_idx != -1) && (current_item_idx != item_idx)) {
 
@@ -205,13 +205,13 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
 
     // Font * font = fonts.get(1, 9);
 
-    page.clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
-                         Pos(xpos - 2, ypos - 2));
-    page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
-                         Pos(xpos - 3, ypos - 3));
+    page->clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
+                          Pos(xpos - 2, ypos - 2));
+    page->clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
+                          Pos(xpos - 3, ypos - 3));
 
-    page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
-                      Pos(20, 20));
+    page->clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                       Pos(20, 20));
   }
   // Highlight the new current item
 
@@ -231,13 +231,13 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   xpos = 5 + ((BooksDir::cover_dim.width + horiz_space_between_entries) * column_idx);
   ypos = first_entry_ypos + ((BooksDir::cover_dim.height + vert_space_between_entries) * line_idx);
 
-  page.put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
-                     Pos(xpos - 2, ypos - 2));
-  page.put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
-                     Pos(xpos - 3, ypos - 3));
+  page->put_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
+                      Pos(xpos - 2, ypos - 2));
+  page->put_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
+                      Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
-                    Pos(20, 20));
+  page->clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                     Pos(20, 20));
 
   fmt.font_index = TITLE_FONT;
   fmt.font_size  = TITLE_FONT_SIZE;
@@ -254,31 +254,31 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   }
   #pragma GCC diagnostic pop
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
+  page->set_limits(fmt);
+  page->new_paragraph(fmt);
   #if EPUB_INKPLATE_BUILD
-    if (nvs_mgr.id_exists(book->id)) page.add_text("[Reading] ", fmt);
+    if (nvs_mgr.id_exists(book->id)) page->add_text("[Reading] ", fmt);
   #endif
-  page.add_text(title, fmt);
-  page.end_paragraph(fmt);
+  page->add_text(title, fmt);
+  page->end_paragraph(fmt);
 
   fmt.font_index = AUTHOR_FONT;
   fmt.font_size  = AUTHOR_FONT_SIZE;
   fmt.font_style = Fonts::FaceStyle::ITALIC;
 
-  page.new_paragraph(fmt);
-  page.add_text(book->author, fmt);
-  page.end_paragraph(fmt);
+  page->new_paragraph(fmt);
+  page->add_text(book->author, fmt);
+  page->end_paragraph(fmt);
 
-  ScreenBottom::show(current_page_nbr, page_count);
+  ScreenBottom::show(page, current_page_nbr, page_count);
 
-  page.paint(false);
+  page->paint(false);
 }
 
 void MatrixBooksDirViewer::clear_highlight() {
   if (current_item_idx == -1) return;
 
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+  page->set_compute_mode(Page::ComputeMode::DISPLAY);
 
   // Clear the highlighting of the current item
 
@@ -305,29 +305,29 @@ void MatrixBooksDirViewer::clear_highlight() {
           static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.height + 20)),
   };
 
-  page.start(fmt);
+  page->start(fmt);
 
-  page.clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
-                       Pos(xpos - 2, ypos - 2));
-  page.clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
-                       Pos(xpos - 3, ypos - 3));
+  page->clear_highlight(Dim(BooksDir::cover_dim.width + 4, BooksDir::cover_dim.height + 4),
+                        Pos(xpos - 2, ypos - 2));
+  page->clear_highlight(Dim(BooksDir::cover_dim.width + 6, BooksDir::cover_dim.height + 6),
+                        Pos(xpos - 3, ypos - 3));
 
-  page.clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
-                    Pos(20, 20));
+  page->clear_region(Dim(Screen::get_width() - 40, (title_font_height << 1) + author_font_height),
+                     Pos(20, 20));
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     fmt.screen_top = 18;
-    page.set_limits(fmt);
-    page.new_paragraph(fmt);
-    page.add_text(TOUCH_AND_HOLD_STR, fmt);
-    page.end_paragraph(fmt);
+    page->set_limits(fmt);
+    page->new_paragraph(fmt);
+    page->add_text(TOUCH_AND_HOLD_STR, fmt);
+    page->end_paragraph(fmt);
   #endif
 
   #if EPUB_INKPLATE_BUILD
-    BatteryViewer::show();
+    BatteryViewer::show(page);
   #endif
 
-  page.paint(false);
+  page->paint(false);
 
   current_item_idx = -1;
 }

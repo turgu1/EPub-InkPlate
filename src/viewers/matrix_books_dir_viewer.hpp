@@ -3,12 +3,15 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "models/books_dir.hpp"
 #include "viewers/books_dir_viewer.hpp"
 #include "viewers/page.hpp"
 
+using MatrixBooksDirViewerPtr = himem_unique_ptr<class MatrixBooksDirViewer>;
 class MatrixBooksDirViewer : public BooksDirViewer {
 private:
   static constexpr char const *TAG = "MatrixBooksDirView";
@@ -22,9 +25,9 @@ private:
   static const int16_t SPACE_ABOVE_PAGENBR       = 5;
   static const int16_t MAX_TITLE_SIZE            = 85;
 
-  int16_t current_item_idx; // Relative to the beginning of the page
-  int16_t current_book_idx; // Relative to the beginning of the complete boolk list
-  int16_t current_page_nbr;
+  int16_t current_item_idx{-1}; // Relative to the beginning of the page
+  int16_t current_book_idx{-1}; // Relative to the beginning of the complete boolk list
+  int16_t current_page_nbr{-1};
   int16_t books_per_page;
   int16_t column_count;
   int16_t line_count;
@@ -39,8 +42,18 @@ private:
   void show_page(int16_t page_nbr, int16_t hightlight_item_idx);
   void highlight(int16_t item_idx);
 
+  PagePtr page{Page::Make()};
+
+  MatrixBooksDirViewer() = default;
+
 public:
-  MatrixBooksDirViewer() : current_item_idx(-1), current_page_nbr(-1) {}
+  ~MatrixBooksDirViewer() = default;
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<MatrixBooksDirViewer>(); }
 
   void setup();
 
@@ -64,9 +77,3 @@ public:
     return (current_page_nbr * books_per_page) + (column_idx * line_count) + line_idx;
   }
 };
-
-#if __MATRIX_BOOKS_DIR_VIEWER__
-  MatrixBooksDirViewer matrix_books_dir_viewer;
-#else
-  extern MatrixBooksDirViewer matrix_books_dir_viewer;
-#endif

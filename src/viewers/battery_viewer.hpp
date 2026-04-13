@@ -3,17 +3,17 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
 
+#include "viewers/page.hpp"
+
 #if EPUB_INKPLATE_BUILD
-  namespace BatteryViewer {
+  class BatteryViewer {
+  private:
+    static constexpr char const *TAG = "BatteryViewer";
 
-    #if __BATTERY_VIEWER__
-      void show();
-    #else
-      extern void show();
-    #endif
-
-  }
+  public:
+    static void show(PagePtr &page);
+  };
 #endif
-

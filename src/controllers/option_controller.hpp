@@ -6,6 +6,7 @@
 #include "global.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "viewers/form_viewer.hpp"
 #include "viewers/menu_viewer.hpp"
 
 class OptionController {
@@ -26,10 +27,11 @@ private:
   bool wait_for_key_after_wifi{false};
   bool web_server_was_started{false};
 
+  MenuViewerPtr menu_viewer;
+  FormViewerPtr form_viewer;
+
 public:
   OptionController() = default;
-
-  MenuViewerPtr menu_viewer;
 
   void input_event(const EventMgr::Event &event);
   void enter();
@@ -59,6 +61,22 @@ public:
       calibration_is_shown = false;
     #endif
   }
+
+  void main_parameters();
+  void default_parameters();
+  void wifi_mode();
+  void init_nvs();
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    void calibrate();
+  #endif
+  #if DATE_TIME_RTC
+    void clock_adjust_form();
+    void set_clock();
+    void ntp_clock_adjust();
+  #endif
+  #if DEBUGGING
+    void debugging();
+  #endif
 };
 
 #if __OPTION_CONTROLLER__

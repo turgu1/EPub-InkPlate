@@ -11,8 +11,6 @@
   #include "picture_factory.hpp"
   #include "screen.hpp"
 
-  #include "viewers/page.hpp"
-
   #include "esp_random.h"
 
   #define SCREEN_SAVER_FOLDER MAIN_FOLDER "/screen_saver"
@@ -53,7 +51,7 @@
             picture_filenames[index], Dim(Screen::get_width(), Screen::get_height()), true, true);
         if (pict) {
           // pict->show();
-          page.show_cover(pict);
+          page->show_cover(pict);
         } else {
           LOG_E("Unable to load picture file %s", picture_filenames[index].c_str());
         }

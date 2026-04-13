@@ -96,6 +96,8 @@ bool Fonts::setup() {
 
   clear_everything();
 
+  char_pool = CharPool::Make();
+
   constexpr static const char *xml_fonts_descr = MAIN_FOLDER "/fonts_list.xml";
 
   xml_document fd;
@@ -150,19 +152,19 @@ bool Fonts::setup() {
       font_size       = 0;
       if (!str.empty()) {
         LOG_D("%s...", str.c_str());
-        font_names[font_count] = char_pool.set(str);
+        font_names[font_count] = char_pool->set(str);
         str                    = fnt.child("normal").attribute("filename").value();
         if (check_file(str = filter_filename(str))) {
-          regular_fname[font_count] = char_pool.set(str);
+          regular_fname[font_count] = char_pool->set(str);
           str                       = fnt.child("bold").attribute("filename").value();
           if (check_file(str = filter_filename(str))) {
-            bold_fname[font_count] = char_pool.set(str);
+            bold_fname[font_count] = char_pool->set(str);
             str                    = fnt.child("italic").attribute("filename").value();
             if (check_file(str = filter_filename(str))) {
-              italic_fname[font_count] = char_pool.set(str);
+              italic_fname[font_count] = char_pool->set(str);
               str                      = fnt.child("bold-italic").attribute("filename").value();
               if (check_file(str = filter_filename(str))) {
-                bold_italic_fname[font_count] = char_pool.set(str);
+                bold_italic_fname[font_count] = char_pool->set(str);
                 LOG_I("Font %s OK", font_names[font_count]);
                 font_count++;
               }
@@ -235,6 +237,8 @@ void Fonts::clear(bool all) {
 
 void Fonts::clear_everything() {
   std::scoped_lock guard(mutex);
+
+  char_pool.reset();
 
   // LOG_D("Fonts Clear!");
   // Keep the first 7 fonts as they are reused. Caches will be cleared.

@@ -17,6 +17,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if DEBUGGING
+  #include <iostream>
+#endif
+
 Unzip::Unzip() { zip_file_is_open = false; }
 
 /**
@@ -588,7 +592,6 @@ void Unzip::close_file() {
     // LOG_D("get_file: %s", filename);
 
     uint32_t total = 0;
-    int err        = 0;
 
     bool completed     = false;
     bool stream_opened = false;
@@ -596,12 +599,12 @@ void Unzip::close_file() {
     FileContentPtr data{nullptr};
 
     if (!open_stream_file(filename, file_size)) {
-      err = 18;
+      LOG_E("Unable to retrieve file %s", filename);
     } else {
       stream_opened = true;
 
       if ((data = make_unique_himem<uint8_t[]>(file_size + 1)) == nullptr) {
-        err = 19;
+        LOG_E("Not enough memory to retrieve file %s", filename);
       } else {
         data[file_size] = 0;
 
@@ -630,7 +633,6 @@ void Unzip::close_file() {
 
     if (!completed) {
       file_size = 0;
-      LOG_E("Unzip get (stream version): Error!: %d", err);
       return nullptr;
     } else {
       file_size = total;

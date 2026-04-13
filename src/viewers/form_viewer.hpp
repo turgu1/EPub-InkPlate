@@ -3,8 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-#include "global.hpp"
 
+#include "global.hpp"
+#include "himem.hpp"
 #include "memory_pool.hpp"
 
 #include "controllers/event_mgr.hpp"
@@ -46,17 +47,31 @@ struct FormEntry {
   FormEntryType entry_type;
 };
 
+using FormFieldPtr = himem_unique_ptr<class FormField>;
 class FormField {
+private:
+  static constexpr char const *TAG = "FormField";
+
+protected:
+  FormEntry &form_entry;
+  Font &font;
+  Page &page;
+  bool event_control;
+  Dim field_dim, caption_dim;
+  Pos field_pos, caption_pos;
+
 public:
-  FormField(FormEntry &form_entry, Font &font)
-      : form_entry(form_entry), font(font), event_control(false) {};
-  virtual ~FormField() {};
+  FormField(FormEntry &form_entry, Font &font, Page &page)
+      : form_entry(form_entry), font(font), page(page), event_control(false) {};
+  virtual ~FormField() { LOG_I("FormField destructor called"); }
 
   virtual const Dim get_field_dim() { return field_dim; }
   inline const Dim &get_caption_dim() { return caption_dim; }
 
   inline const Pos &get_field_pos() { return field_pos; }
   inline const Pos &get_caption_pos() { return caption_pos; }
+
+  inline FormEntryType get_type() { return form_entry.entry_type; }
 
   void compute_caption_dim() {
     if (form_entry.caption != nullptr) {
@@ -117,13 +132,6 @@ public:
     }
 
   #endif
-
-protected:
-  FormEntry &form_entry;
-  Font &font;
-  Dim field_dim, caption_dim;
-  Pos field_pos, caption_pos;
-  bool event_control;
 };
 
 class FormChoiceField : public FormField {
@@ -285,7 +293,12 @@ private:
 public:
   using FormChoiceField::FormChoiceField;
 
-  ~VFormChoiceField() {}
+  VFormChoiceField()  = default;
+  ~VFormChoiceField() = default;
+
+  static inline auto Make(FormEntry &form_entry, Font &font, Page &page) {
+    return make_unique_himem<VFormChoiceField>(form_entry, font, page);
+  }
 
   void compute_field_pos(Pos from_pos) {
     field_pos   = from_pos;
@@ -313,6 +326,8 @@ public:
   }
 };
 
+using HFormChoiceFieldPtr = himem_unique_ptr<class HFormChoiceField>;
+
 class HFormChoiceField : public FormChoiceField {
 private:
   static constexpr char const *TAG = "HFormChoiceField";
@@ -320,7 +335,12 @@ private:
 public:
   using FormChoiceField::FormChoiceField;
 
-  ~HFormChoiceField() {}
+  HFormChoiceField()  = default;
+  ~HFormChoiceField() = default;
+
+  static inline auto Make(FormEntry &form_entry, Font &font, Page &page) {
+    return make_unique_himem<HFormChoiceField>(form_entry, font, page);
+  }
 
   void compute_field_pos(Pos from_pos) {
     field_pos   = from_pos;
@@ -347,10 +367,21 @@ public:
   }
 };
 
+using FormUInt16Ptr = himem_unique_ptr<class FormUInt16>;
+
 class FormUInt16 : public FormField {
+private:
+  KeypadViewerPtr keypad_viewer{KeypadViewer::Make()};
 
 public:
   using FormField::FormField;
+
+  FormUInt16()  = default;
+  ~FormUInt16() = default;
+
+  static inline auto Make(FormEntry &form_entry, Font &font, Page &page) {
+    return make_unique_himem<FormUInt16>(form_entry, font, page);
+  }
 
   bool form_refresh_required() { return true; }
 
@@ -376,11 +407,11 @@ public:
 
   bool event(const EventMgr::Event &event) {
     if (!event_control) {
-      keypad_viewer.show(*form_entry.u.val.value, form_entry.caption);
+      keypad_viewer->show(*form_entry.u.val.value, form_entry.caption);
       event_control = true;
     } else {
-      if (!keypad_viewer.event(event)) {
-        uint16_t v = keypad_viewer.get_value();
+      if (!keypad_viewer->event(event)) {
+        uint16_t v = keypad_viewer->get_value();
         if (v < form_entry.u.val.min) {
           v = form_entry.u.val.min;
         } else if (v > form_entry.u.val.max) {
@@ -404,10 +435,18 @@ public:
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   class FormDone : public FormField {
+
   public:
     using FormField::FormField;
 
-    bool event(const EventMgr::Event &event);
+    FormDone()  = default;
+    ~FormDone() = default;
+
+    static inline auto Make(FormEntry &form_entry, Font &font, Page &page) {
+      return make_unique_himem<FormDone>(form_entry, font, page);
+    }
+
+    // bool event(const EventMgr::Event &event);
 
     const Dim get_field_dim() { return Dim(field_dim.width, field_dim.height + 10); }
     void save_value() {}
@@ -438,30 +477,47 @@ public:
 
 class FieldFactory {
 public:
-  static FormField *create(FormEntry &entry, Font &font) {
+  static auto create(FormEntry &entry, Font &font, Page &page) -> FormFieldPtr {
     switch (entry.entry_type) {
     case FormEntryType::HORIZONTAL:
-      return new HFormChoiceField(entry, font);
+      return HFormChoiceField::Make(entry, font, page);
     case FormEntryType::VERTICAL:
       if ((Screen::get_width() > Screen::get_height()) && (entry.u.ch.choice_count <= 4)) {
-        return new HFormChoiceField(entry, font);
+        return HFormChoiceField::Make(entry, font, page);
       } else {
-        return new VFormChoiceField(entry, font);
+        return VFormChoiceField::Make(entry, font, page);
       }
     case FormEntryType::UINT16:
-      return new FormUInt16(entry, font);
+      return FormUInt16::Make(entry, font, page);
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       case FormEntryType::DONE:
-        return new FormDone(entry, font);
+        return FormDone::Make(entry, font, page);
       #endif
     }
     return nullptr;
   }
 };
 
+using FormViewerPtr = himem_unique_ptr<class FormViewer>;
 class FormViewer {
+private:
+  FormViewer() = default;
+
+  PagePtr page{Page::Make()};
+
 public:
   typedef FormEntry *FormEntries;
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<FormViewer>(); }
+
+  ~FormViewer() {
+    LOG_I("FormViewer destructor called");
+    fields.clear();
+  }
 
 private:
   static constexpr char const *TAG = "FormViewer";
@@ -481,7 +537,7 @@ private:
   bool selecting_field;
   bool completed;
 
-  typedef std::list<FormField *> Fields;
+  typedef std::list<FormFieldPtr> Fields;
 
   Fields fields;
   Fields::iterator current_field;
@@ -506,9 +562,3 @@ public:
             bool refresh = false);
   bool event(const EventMgr::Event &event);
 };
-
-#if __FORM_VIEWER__
-  FormViewer form_viewer;
-#else
-  extern FormViewer form_viewer;
-#endif

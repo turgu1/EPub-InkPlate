@@ -2,10 +2,11 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __TOC__ 1
-#include "models/toc.hpp"
+// #undef DEBUGGING
+// #define DEBUGGING 1
 
-#include "models/epub.hpp"
+#include "models/toc.hpp"
+#include "models/page_locs.hpp"
 
 // Defined in epub.cpp
 
@@ -20,14 +21,14 @@ bool xmlns_pred(xml_attribute attr);
 extern xml_node one_by_attr(xml_node n, const char *name1, const char *name2, const char *attr,
                             const char *value);
 
-std::string TOC::build_filename() {
-  std::string epub_fname = epub.get_current_filename();
+auto TOC::build_filename(EPubPtr &epub) -> std::string {
+  std::string epub_fname = epub->get_current_filename();
   return epub_fname.substr(0, epub_fname.find_last_of('.')) + ".toc";
 }
 
-bool TOC::load() {
+auto TOC::load(EPubPtr &epub) -> bool {
   LOG_D("load()");
-  std::string filename = build_filename();
+  std::string filename = build_filename(epub);
   clean();
 
   LOG_D("Reading toc: %s.", filename.c_str());
@@ -62,8 +63,8 @@ bool TOC::load() {
   if (db->goto_next()) {
     char_buffer_size = db->get_record_size();
     if (char_buffer_size > 0) {
-      char_buffer = (char *)allocate(char_buffer_size);
-      if (db->get_record(char_buffer, char_buffer_size)) {
+      char_buffer = make_unique_himem<char[]>(char_buffer_size);
+      if (db->get_record(char_buffer.get(), char_buffer_size)) {
         uint16_t count = db->get_record_count() - 2;
         if (count > 0) {
           entries.resize(count);
@@ -71,7 +72,7 @@ bool TOC::load() {
           while ((idx < count) && db->goto_next()) {
             if (db->get_record_size() == sizeof(EntryRecord)) {
               if (!db->get_record(&entries[idx], sizeof(EntryRecord))) break;
-              entries[idx].label = char_buffer + (size_t)entries[idx].label;
+              entries[idx].label = char_buffer.get() + (size_t)entries[idx].label;
               idx++;
             } else {
               LOG_E("DB corrupted.");
@@ -111,11 +112,11 @@ bool TOC::load() {
   return ready;
 }
 
-bool TOC::save() {
+bool TOC::save(EPubPtr &epub) {
   LOG_D("save()");
   if (saved) return true;
 
-  std::string filename = build_filename();
+  std::string filename = build_filename(epub);
   if (!compact()) return false;
 
   if (db->create(filename)) {
@@ -124,11 +125,11 @@ bool TOC::save() {
     version_record.version = TOC_DB_VERSION;
 
     if (db->add_record(&version_record, sizeof(VersionRecord))) {
-      if (db->add_record(char_buffer, char_buffer_size)) {
+      if (db->add_record(char_buffer.get(), char_buffer_size)) {
         uint16_t idx;
         for (idx = 0; idx < entries.size(); idx++) {
           EntryRecord e = entries[idx];
-          e.label       = e.label - (size_t)char_buffer;
+          e.label       = e.label - (size_t)char_buffer.get();
           if (!db->add_record(&e, sizeof(EntryRecord))) {
             LOG_E("Unable to add entry record.");
             break;
@@ -174,6 +175,31 @@ void TOC::clean_filename(char *fname) {
   *d = 0;
 }
 
+/// @brief Recursively processes navigation points in an NCX (Navigation Control eXtensible)
+/// document.
+///
+/// Parses each navPoint element to extract the label and file reference, resolves the file
+/// to its corresponding spine itemref index, and builds a table of contents structure.
+/// Handles fragment identifiers (anchors) by storing them in an infos map for later lookup.
+///
+/// @param node Reference to the current XML navPoint node being processed.
+/// @param level The hierarchical depth level of this navPoint (0 for root level).
+///
+/// @return true if all navPoint elements were successfully processed and resolved;
+///         false if any inconsistency is found (missing manifest item, missing spine reference,
+///         malformed navPoint structure, or unable to resolve spine itemref).
+///
+/// @details
+/// - Extracts navLabel/text content as the TOC entry label.
+/// - Parses content/@src attribute to get the file reference and optional fragment ID.
+/// - Allocates memory from char_pool for label and filename strings.
+/// - Resolves the filename to a manifest item ID via OPF document.
+/// - Maps the item ID to its index in the spine's itemref list.
+/// - If a fragment ID exists, stores the mapping (itemref_index, fragment_id) -> entry_index.
+/// - Recursively processes nested navPoint children with incremented level.
+///
+/// @note Assumes opf, char_pool, and related class members are properly initialized.
+///       Returns false with error logging on any critical data structure mismatch.
 bool TOC::do_nav_points(pugi::xml_node &node, uint8_t level) {
   LOG_D("do_nav_points()");
 
@@ -191,7 +217,7 @@ bool TOC::do_nav_points(pugi::xml_node &node, uint8_t level) {
 
     entry.label = char_pool->allocate(strlen(label) + 1);
     strcpy(entry.label, label);
-    entry.page_id = PageLocs::PageId(0, -1);
+    entry.page_id = PageId(0, -1);
     entry.level   = level;
 
     const char *hash_pos = strchr(fname, '#');
@@ -264,14 +290,14 @@ bool TOC::do_nav_points(pugi::xml_node &node, uint8_t level) {
   return true;
 }
 
-bool TOC::load_from_epub() {
+bool TOC::load_from_epub(EPubPtr &epub) {
   LOG_D("load_from_epub()");
 
   xml_node node, node2;
   xml_attribute attr;
   const char *filename = nullptr;
 
-  opf = &epub.get_opf();
+  opf = &epub->get_opf();
 
   clean();
 
@@ -295,7 +321,7 @@ bool TOC::load_from_epub() {
   uint32_t ncx_size;
   bool result = false;
 
-  auto ncx_data = epub.retrieve_file(filename, ncx_size);
+  auto ncx_data = epub->retrieve_file(filename, ncx_size);
   if (ncx_data == nullptr) return false;
 
   auto ncx_opf = std::make_unique<pugi::xml_document>();
@@ -306,26 +332,16 @@ bool TOC::load_from_epub() {
   xml_parse_result res = ncx_opf->load_buffer_inplace(ncx_data.get(), ncx_size);
   if (res.status != status_ok) {
     LOG_E("xml load error: %d", res.status);
-    goto error;
   } else {
     if ((node = ncx_opf->child("ncx").child("navMap").child("navPoint"))) {
-
-      if (char_pool == nullptr) {
-        char_pool = new CharPool;
-        if (char_pool == nullptr) goto error;
+      if (!char_pool) char_pool = CharPool::Make();
+      if ((char_pool != nullptr) && do_nav_points(node, 0)) {
+        result = !entries.empty();
+      } else {
+        LOG_E("Unable to load nav points.");
       }
-
-      if (!do_nav_points(node, 0)) goto error;
-
-      result = !entries.empty();
     }
   }
-
-  goto ok;
-
-error:
-  result = false;
-ok:
 
   #if DEBUGGING
     show();
@@ -340,7 +356,7 @@ bool TOC::compact() {
 
   if (compacted) return true;
 
-  if (char_buffer != nullptr) free(char_buffer);
+  char_buffer.reset();
   char_buffer_size = 0;
 
   if (!entries.empty()) {
@@ -348,10 +364,10 @@ bool TOC::compact() {
       char_buffer_size += strlen(e.label) + 1;
     }
 
-    char_buffer = (char *)allocate(char_buffer_size);
-    if (char_buffer == nullptr) return false;
+    char_buffer = make_unique_himem<char[]>(char_buffer_size);
+    if (!char_buffer) return false;
 
-    char *buff = char_buffer;
+    char *buff = char_buffer.get();
     for (auto &e : entries) {
       strcpy(buff, e.label);
       e.label = buff;
@@ -359,10 +375,7 @@ bool TOC::compact() {
     }
   }
 
-  if (char_pool != nullptr) {
-    delete char_pool;
-    char_pool = nullptr;
-  }
+  char_pool.reset();
   infos.clear();
 
   compacted = true;
@@ -372,11 +385,8 @@ bool TOC::compact() {
 void TOC::clean() {
   LOG_D("clean()");
 
-  if (char_pool != nullptr) delete char_pool;
-  if (char_buffer != nullptr) free(char_buffer);
-
-  char_pool   = nullptr;
-  char_buffer = nullptr;
+  char_pool.reset();
+  char_buffer.reset();
 
   infos.clear();
   entries.clear();

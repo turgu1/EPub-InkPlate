@@ -9,6 +9,8 @@
 #include "models/epub.hpp"
 #include "models/page_locs.hpp"
 #include "viewers/books_dir_viewer.hpp"
+#include "viewers/linear_books_dir_viewer.hpp"
+#include "viewers/matrix_books_dir_viewer.hpp"
 
 class BooksDirController {
 private:
@@ -23,8 +25,9 @@ private:
   std::string book_filename;
   bool book_was_shown{false};
 
-  PageLocs::PageId book_page_id{0, 0};
-  BooksDirViewer *books_dir_viewer{nullptr};
+  PageId book_page_id{0, 0};
+  BooksDirViewerPtr books_dir_viewer{nullptr};
+
   int8_t viewer_id{0};
 
 public:
@@ -33,7 +36,7 @@ public:
   void input_event(const EventMgr::Event &event);
   void enter();
   void leave(bool going_to_deep_sleep = false);
-  void save_last_book(const PageLocs::PageId &page_id, bool going_to_deep_sleep);
+  void save_last_book(const PageId &page_id, bool going_to_deep_sleep);
   void show_last_book();
   void new_orientation() {
     if (books_dir_viewer != nullptr) books_dir_viewer->setup();

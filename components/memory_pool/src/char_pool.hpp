@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "himem.hpp"
 
 #include <cinttypes>
 #include <cstdlib>
@@ -8,38 +9,47 @@
 #include <forward_list>
 #include <string>
 
+using CharPoolPtr = himem_unique_ptr<class CharPool>;
 class CharPool {
 private:
   static constexpr char const *TAG = "CharPool";
   static const uint16_t POOL_SIZE  = 4096;
-  typedef char Pool[POOL_SIZE];
 
-  std::forward_list<Pool *> pool_list;
+  using PoolPtr = himem_unique_ptr<char[]>;
 
-  Pool *current;
-  uint16_t current_idx;
-  uint32_t total_allocated;
+  std::forward_list<PoolPtr> pool_list;
+
+  char *current{nullptr};
+  uint16_t current_idx{0};
+  uint32_t total_allocated{0};
+
+  CharPool() = default;
 
 public:
-  CharPool() : current(nullptr), current_idx(0), total_allocated(0) {}
+  ~CharPool() = default;
 
-  ~CharPool() {
-    for (auto *pool : pool_list) free(pool);
-  }
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<CharPool>(); }
 
   uint32_t get_total_allocated() { return total_allocated; }
+
   char *allocate(uint16_t size) {
     if ((current == nullptr) || ((current_idx + size) >= POOL_SIZE)) {
       LOG_D("New pool allocation.");
-      if ((current = (Pool *)malloc(sizeof(Pool))) != nullptr) {
-        pool_list.push_front(current);
+      auto pool = make_unique_himem<char[]>(POOL_SIZE);
+      if (pool) {
+        pool_list.push_front(std::move(pool));
+        current     = pool_list.front().get();
         current_idx = 0;
       } else {
         return nullptr;
       }
     }
 
-    char *tmp = &(((char *)current)[current_idx]);
+    char *tmp = &((current)[current_idx]);
 
     current_idx += size;
     total_allocated += size;

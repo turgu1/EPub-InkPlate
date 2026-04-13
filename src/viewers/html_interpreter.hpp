@@ -3,7 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "models/dom.hpp"
 #include "models/epub.hpp"
@@ -23,22 +25,23 @@ class HTMLInterpreter {
 protected:
   static constexpr char const *TAG = "HTMLInterpreter";
 
-  Page &page;
-  DOM &dom;
+  EPubPtr &epub;
+  PagePtr &page;
+  DOMPtr &dom;
   Page::ComputeMode compute_mode;
   const EPub::ItemInfo &item_info;
 
-  int32_t current_offset; ///< Where we are in current item
-  int32_t start_offset;
-  int32_t end_offset;
+  int32_t current_offset{0}; ///< Where we are in current item
+  int32_t start_offset{0};
+  int32_t end_offset{0};
 
-  bool show_pictures;
-  bool started;
+  bool show_pictures{false};
+  bool started{false};
   // bool beginning_of_page;
 
-  bool show_the_state;
-  int16_t from_page, to_page;
-  int16_t max_level;
+  bool show_the_state{false};
+  int16_t from_page{-1}, to_page{-1};
+  int16_t max_level{0};
 
   static MemoryPool<Page::Format> fmt_pool;
 
@@ -49,11 +52,10 @@ protected:
   virtual bool page_end(const Page::Format &fmt) = 0;
 
 public:
-  HTMLInterpreter(Page &the_page, DOM &the_dom, Page::ComputeMode the_comp_mode,
-                  const EPub::ItemInfo &the_item)
-      : page(the_page), dom(the_dom), compute_mode(the_comp_mode), item_info(the_item),
-        current_offset(0), start_offset(0), end_offset(0), show_pictures(false), started(false),
-        show_the_state(false), from_page(-1), to_page(-1), max_level(0) {}
+  HTMLInterpreter(EPubPtr &the_epub, PagePtr &the_page, DOMPtr &the_dom,
+                  Page::ComputeMode the_comp_mode, const EPub::ItemInfo &the_item)
+      : epub(the_epub), page(the_page), dom(the_dom), compute_mode(the_comp_mode),
+        item_info(the_item) {}
 
   virtual ~HTMLInterpreter() {}
 
@@ -64,7 +66,7 @@ public:
     start_offset   = start;
     end_offset     = end;
     show_pictures  = show_imgs;
-    page.set_compute_mode(Page::ComputeMode::MOVE);
+    page->set_compute_mode(Page::ComputeMode::MOVE);
   }
 
   bool build_pages_recurse(xml_node node, Page::Format &fmt, DOM::Node *dom_node, int16_t level);
@@ -77,12 +79,12 @@ public:
   }
 
   void show_state(const char *caption, const Page::Format &fmt,
-                  DOM::Node *dom_current_node = nullptr, CSS *element_css = nullptr) {
+                  DOM::Node *dom_current_node = nullptr /*, CSSPtr element_css = nullptr*/) {
     if (show_the_state) {
       std::cout << caption << " Offset:" << current_offset << " ";
-      page.show_controls("  ");
+      page->show_controls("  ");
       std::cout << "     ";
-      page.show_fmt(fmt, "  ");
+      page->show_fmt(fmt, "  ");
       // if (item_info.css != nullptr) item_info.css->show();
       // std::cout << "--> Element CSS:" << std::endl;
       // if (element_css != nullptr) element_css->show();
@@ -132,8 +134,8 @@ public:
   inline bool check_if_started() {
     if (!started) {
       if ((started = (current_offset >= start_offset))) {
-        page.set_compute_mode(compute_mode);
-        page.clean();
+        page->set_compute_mode(compute_mode);
+        page->clean();
         LOG_D("---- PAGE START ----");
       }
     }

@@ -6,6 +6,7 @@
 #include "global.hpp"
 
 #define TEST_HIMEM 0
+#define TEST_DOM 0
 
 #if EPUB_INKPLATE_BUILD
   // InkPlate6 main function and main task
@@ -32,6 +33,10 @@
 
   #if TEST_HIMEM
     #include "himem_test.hpp"
+  #endif
+
+  #if TEST_DOM
+    #include "models/dom_test.hpp"
   #endif
 
   #include <stdio.h>
@@ -70,8 +75,15 @@
       }
     #endif
 
-    #if TESTING
+    #if TEST_DOM
+      if (!dom_run_tests()) {
+        LOG_E("DOM tests failed.");
+      } else {
+        LOG_I("Yeah! DOM tests passed!");
+      }
+    #endif
 
+    #if TESTING
       testing::InitGoogleTest();
       RUN_ALL_TESTS();
       while (1) {
@@ -117,8 +129,6 @@
 
       pugi::set_memory_management_functions(allocate, free);
 
-      page_locs.setup();
-
       if (fonts.setup()) {
 
         Screen::Orientation orientation    = Screen::Orientation::TOP;
@@ -137,7 +147,7 @@
         #endif
 
         if (!nvs_mgr_res) {
-          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
+          MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
                           "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG);
 
           ESP::delay(500);
@@ -145,20 +155,20 @@
         }
 
         if (config_err) {
-          msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
+          MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
                           "Unable to read/save configuration file. Entering Deep Sleep. " MSG);
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
-        msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
+        MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 
         books_dir_controller.setup();
         LOG_D("Initialization completed");
         app_controller.start();
       } else {
         LOG_E("Font loading error.");
-        msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
+        MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
                         "Unable to read required fonts. Entering Deep Sleep. " MSG);
         ESP::delay(500);
         inkplate_platform.deep_sleep(INT_PIN, LEVEL);
@@ -217,6 +227,7 @@
 
   #include "controllers/app_controller.hpp"
   #include "controllers/books_dir_controller.hpp"
+  #include "helpers/debug_tool.hpp"
   #include "models/config.hpp"
   #include "models/fonts.hpp"
   #include "models/page_locs.hpp"
@@ -227,13 +238,15 @@
     #include "gtest/gtest.h"
   #endif
 
+  #if TEST_DOM
+    #include "models/dom_test.hpp"
+  #endif
+
   static const char *TAG = "Main";
 
   void exit_app() {
     fonts.clear_glyph_caches();
     fonts.clear(true);
-    epub.close_file();
-    DOM::delete_pool();
   }
 
   int main(int argc, char **argv) {
@@ -244,7 +257,15 @@
       config.show();
     #endif
 
-    page_locs.setup();
+    // DebugTool::print_all_class_sizes();
+
+    #if TEST_DOM
+      if (!dom_run_tests()) {
+        LOG_E("DOM tests failed.");
+      } else {
+        LOG_I("Yeah! DOM tests passed!");
+      }
+    #endif
 
     if (fonts.setup()) {
 
@@ -264,7 +285,7 @@
       #endif
 
       if (config_err) {
-        msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
+        MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
                         "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG
                         " to restart.");
         sleep(10);
@@ -279,7 +300,7 @@
         app_controller.start();
       #endif
     } else {
-      msg_viewer.show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
+      MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
                       "Unable to load default fonts.");
 
       sleep(30);

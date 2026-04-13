@@ -36,7 +36,7 @@ static void on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t
 }
 
 PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Picture() {
-  LOG_I("Loading PNG picture file %s", filename.c_str());
+  LOG_D("Loading PNG picture file %s", filename.c_str());
 
   if (unzip.open_stream_file(filename.c_str(), file_size)) {
 
@@ -126,6 +126,6 @@ PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Pictur
     mypngle_destroy(pngle);
     unzip.close_stream_file();
 
-    LOG_I("PNG Picture load complete");
+    LOG_D("PNG Picture load complete");
   }
 }

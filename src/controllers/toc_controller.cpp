@@ -6,8 +6,8 @@
 #include "controllers/toc_controller.hpp"
 
 #include "controllers/app_controller.hpp"
-#include "controllers/books_dir_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/toc.hpp"
@@ -18,109 +18,108 @@
 
 #include <string>
 
-void 
-TocController::enter()
-{
-  toc_viewer.setup();
-  
-  if ((current_entry_index == -1) || 
+void TocController::enter() {
+  toc_viewer = TocViewer::Make(epub);
+
+  toc_viewer->setup();
+
+  if ((current_entry_index == -1) ||
       (current_book_index != books_dir_controller.get_current_book_index())) {
     current_entry_index = 0;
   }
 
   current_book_index  = books_dir_controller.get_current_book_index();
-  current_entry_index = toc_viewer.show_page_and_highlight(current_entry_index);
+  current_entry_index = toc_viewer->show_page_and_highlight(current_entry_index);
 }
 
+void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
+
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void 
-  TocController::input_event(const EventMgr::Event & event)
-  {
+  void TocController::input_event(const EventMgr::Event &event) {
     switch (event.kind) {
-      case EventMgr::EventKind::SWIPE_RIGHT:
-        current_entry_index = toc_viewer.prev_page();   
-        break;
+    case EventMgr::EventKind::SWIPE_RIGHT:
+      current_entry_index = toc_viewer->prev_page();
+      break;
 
-      case EventMgr::EventKind::SWIPE_LEFT:
-        current_entry_index = toc_viewer.next_page();   
-        break;
+    case EventMgr::EventKind::SWIPE_LEFT:
+      current_entry_index = toc_viewer->next_page();
+      break;
 
-      case EventMgr::EventKind::TAP:
-        current_entry_index = toc_viewer.get_index_at(event.x, event.y);
-        if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
-          if(toc.get_entry(current_entry_index).page_id.offset >= 0) {
-            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-            app_controller.set_controller(AppController::Ctrl::BOOK);
-          }
-        }
-        else {
+    case EventMgr::EventKind::TAP:
+      current_entry_index = toc_viewer->get_index_at(event.x, event.y);
+      if ((current_entry_index >= 0) && (current_entry_index < epub->toc->get_entry_count())) {
+        if (epub->toc->get_entry(current_entry_index).page_id.offset >= 0) {
+          book_controller.set_current_page_id(epub->toc->get_entry(current_entry_index).page_id);
+          book_controller.set_ownership_of_book(epub);
           app_controller.set_controller(AppController::Ctrl::BOOK);
         }
-        break;
+      } else {
+        book_controller.set_ownership_of_book(epub);
+        app_controller.set_controller(AppController::Ctrl::BOOK);
+      }
+      break;
 
-      case EventMgr::EventKind::HOLD:
-        break;
+    case EventMgr::EventKind::HOLD:
+      break;
 
-      case EventMgr::EventKind::RELEASE:
-        toc_viewer.clear_highlight();
-        break;
+    case EventMgr::EventKind::RELEASE:
+      toc_viewer->clear_highlight();
+      break;
 
-      default:
-        break;
+    default:
+      break;
     }
   }
 #else
-  void 
-  TocController::input_event(const EventMgr::Event & event)
-  {
+  void TocController::input_event(const EventMgr::Event &event) {
     switch (event.kind) {
       #if EXTENDED_CASE
-        case EventMgr::EventKind::PREV:
+      case EventMgr::EventKind::PREV:
       #else
-        case EventMgr::EventKind::DBL_PREV:
+      case EventMgr::EventKind::DBL_PREV:
       #endif
-        current_entry_index = toc_viewer.prev_column();   
-        break;
+      current_entry_index = toc_viewer->prev_column();
+      break;
 
       #if EXTENDED_CASE
-        case EventMgr::EventKind::NEXT:
+      case EventMgr::EventKind::NEXT:
       #else
-        case EventMgr::EventKind::DBL_NEXT:
+      case EventMgr::EventKind::DBL_NEXT:
       #endif
-        current_entry_index = toc_viewer.next_column();
-        break;
+      current_entry_index = toc_viewer->next_column();
+      break;
 
       #if EXTENDED_CASE
-        case EventMgr::EventKind::DBL_PREV:
+      case EventMgr::EventKind::DBL_PREV:
       #else
-        case EventMgr::EventKind::PREV:
+      case EventMgr::EventKind::PREV:
       #endif
-        current_entry_index = toc_viewer.prev_item();
-        break;
+      current_entry_index = toc_viewer->prev_item();
+      break;
 
       #if EXTENDED_CASE
-        case EventMgr::EventKind::DBL_NEXT:
+      case EventMgr::EventKind::DBL_NEXT:
       #else
-        case EventMgr::EventKind::NEXT:
+      case EventMgr::EventKind::NEXT:
       #endif
-        current_entry_index = toc_viewer.next_item();
-        break;
+      current_entry_index = toc_viewer->next_item();
+      break;
 
-      case EventMgr::EventKind::SELECT:
-        if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
-          if (toc.get_entry(current_entry_index).page_id.offset >= 0) {
-            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-            app_controller.set_controller(AppController::Ctrl::BOOK);
-          }
+    case EventMgr::EventKind::SELECT:
+      if ((current_entry_index >= 0) && (current_entry_index < epub->toc->get_entry_count())) {
+        if (epub->toc->get_entry(current_entry_index).page_id.offset >= 0) {
+          book_controller.set_current_page_id(epub->toc->get_entry(current_entry_index).page_id);
+          app_controller.set_controller(AppController::Ctrl::BOOK);
         }
-        break;
+      }
+      break;
 
-      case EventMgr::EventKind::DBL_SELECT:
-        app_controller.set_controller(AppController::Ctrl::BOOK);
-        break;
-        
-      case EventMgr::EventKind::NONE:
-        break;
+    case EventMgr::EventKind::DBL_SELECT:
+      app_controller.set_controller(AppController::Ctrl::BOOK);
+      break;
+
+    case EventMgr::EventKind::NONE:
+      break;
     }
   }
 #endif

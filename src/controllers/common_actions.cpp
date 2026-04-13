@@ -50,7 +50,7 @@ void CommonActions::power_it_off() {
 
   if (event_mgr.staying_on()) {
     screen.force_full_update();
-    msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Waiting for Power OFF",
+    MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Waiting for Power OFF",
                     "Waiting for background tasks to complete before going to Deep Sleep mode.");
     while (event_mgr.staying_on()) {
       #if EPUB_INKPLATE_BUILD
@@ -61,9 +61,12 @@ void CommonActions::power_it_off() {
 
   #if EPUB_INKPLATE_BUILD
     screen.force_full_update();
-    msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Power OFF",
+    MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Power OFF",
                     "Entering Deep Sleep mode. " MSG);
-    screen_saver.show();
+
+    auto screen_saver = ScreenSaver::Make();
+    screen_saver->show();
+
     ESP::delay(5000);
 
     app_controller.going_to_deep_sleep();
@@ -80,14 +83,14 @@ void CommonActions::about() {
   #if EPUB_INKPLATE_BUILD
     const esp_app_desc_t *descr = esp_app_get_description();
 
-    menu_viewer.clear_highlight();
-    msg_viewer.show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
+    // menu_viewer.clear_highlight();
+    MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
                     "EPub EBook Reader Version [%s] for the InkPlate e-paper display devices. "
                     "This application was made by Guy Turcotte, Quebec, QC, Canada, "
-                    "with great support from e-Radionica, and now from Soldered.",
+                    "with great support from Soldered.",
                     descr == nullptr ? APP_VERSION : descr->version);
   #else
-    msg_viewer.show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
+    MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
                     "EPub EBook Reader Version [%s] for Linux. This application was made by Guy "
                     "Turcotte, Quebec, QC, Canada.",
                     APP_VERSION);

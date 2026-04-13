@@ -7,9 +7,7 @@
 
 #include "controllers/event_mgr.hpp"
 #include "models/config.hpp"
-#include "models/fonts.hpp"
-#include "models/toc.hpp"
-#include "viewers/screen_bottom.hpp"
+#include "models/page_locs_state.hpp"
 
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
@@ -18,400 +16,28 @@
 #include <ios>
 #include <iostream>
 
-enum class MgrReq : int8_t {
-  ASAP_READY, STOPPED, PERCENT
-};
-
-struct MgrQueueData {
-  MgrReq req;
-  int16_t itemref_index;
-};
-
-enum class StateReq : int8_t {
-  ABORT, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT
-};
-
-struct StateQueueData {
-  StateReq req;
-  int16_t itemref_index;
-  int16_t itemref_count;
-};
-
-enum class RetrieveReq : int8_t {
-  ABORT, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP
-};
-
-struct RetrieveQueueData {
-  RetrieveReq req;
-  int16_t itemref_index;
-};
-
 #if EPUB_LINUX_BUILD
   #include <chrono>
-
-  static mqd_t mgr_queue;
-  static mqd_t state_queue;
-  static mqd_t retrieve_queue;
-
-  static mq_attr mgr_attr      = {0, 5, sizeof(MgrQueueData), 0};
-  static mq_attr state_attr    = {0, 5, sizeof(StateQueueData), 0};
-  static mq_attr retrieve_attr = {0, 5, sizeof(RetrieveQueueData), 0};
-
-  #define QUEUE_SEND(q, m, t) mq_send(q, (const char *)&m, sizeof(m), 1)
-  #define QUEUE_RECEIVE(q, m, t) mq_receive(q, (char *)&m, sizeof(m), nullptr)
 #else
   #include <esp_pthread.h>
-
-  static esp_pthread_cfg_t create_config(const char *name, int core_id, int stack, int prio) {
-    auto cfg        = esp_pthread_get_default_config();
-    cfg.thread_name = name;
-    cfg.pin_to_core = core_id;
-    cfg.stack_size  = stack;
-    cfg.prio        = prio;
-    return cfg;
-  }
-
-  static QueueHandle_t mgr_queue      = nullptr;
-  static QueueHandle_t state_queue    = nullptr;
-  static QueueHandle_t retrieve_queue = nullptr;
-
-  #define QUEUE_SEND(q, m, t) xQueueSend(q, &m, t)
-  #define QUEUE_RECEIVE(q, m, t) xQueueReceive(q, &m, t)
 #endif
 
-class StateTask {
-private:
-  static constexpr const char *TAG = "StateTask";
+#if EPUB_INKPLATE_BUILD
+  QueueHandle_t PageLocs::mgr_queue{nullptr};
+#else
+  #include <mqueue.h>
+  mqd_t PageLocs::mgr_queue{-1};
+#endif
 
-  bool retriever_iddle;
+void PageLocs::setup_pages_computation(EPubPtr &epub) {
 
-  int16_t itemref_count;       // Number of items in the document
-  int16_t items_done_count;    // Number of items done
-  int16_t waiting_for_itemref; // Current item being processed by retrieval task
-  int16_t next_itemref_to_get; // Non prioritize item to get next
-  int16_t asap_itemref;        // Prioritize item to get next
-  uint8_t *bitset;             // Set of all items processed so far
-  uint8_t bitset_size;         // bitset byte length
-  bool stopping;
-  bool forget_retrieval; // Forget current item begin processed by retrieval task
+  abort_threads();
 
-  StateQueueData state_queue_data;
-  RetrieveQueueData retrieve_queue_data;
-  MgrQueueData mgr_queue_data;
+  state_task = PageLocsState::Make();
+  state_task->setup(epub->get_current_filename());
 
-  /**
-   * @brief Request next item to be retrieved
-   *
-   * This function is called to identify and send the
-   * next request for retrieval of pages location. It also
-   * identify when the whole process is completed, as all items from
-   * the document have been done. It will then send this information
-   * to the appliction through the Mgr queue.
-   *
-   * When this function is called, the retrieval task is waiting for
-   * the next task to do.
-   *
-   * @param itemref The last itemref index that was processed
-   */
-  void request_next_item(int16_t itemref, bool already_sent_to_mgr = false) {
-    if (asap_itemref != -1) { // is there an urgent spine to do?
-      if (itemref == asap_itemref) {
-        asap_itemref = -1;
-        if (!already_sent_to_mgr) {
-          mgr_queue_data = {.req = MgrReq::ASAP_READY, .itemref_index = itemref};
-          QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-          LOG_D("Sent ASAP_READY to Mgr");
-        }
-      } else {
-        waiting_for_itemref = asap_itemref;
-        asap_itemref        = -1;
-        retrieve_queue_data = {.req = RetrieveReq::GET_ASAP, .itemref_index = waiting_for_itemref};
-        QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-        retriever_iddle = false;
-        LOG_D("Sent GET_ASAP to Retriever");
-        return;
-      }
-    }
-    if (next_itemref_to_get != -1) {
-      waiting_for_itemref = next_itemref_to_get;
-      next_itemref_to_get = -1;
-      retrieve_queue_data = {.req           = RetrieveReq::RETRIEVE_ITEM,
-                             .itemref_index = waiting_for_itemref};
-      QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-      retriever_iddle = false;
-      LOG_D("Sent RETRIEVE_ITEM to Retriever");
-    } else {
-      int16_t newref;
-      if (itemref != -1) {
-        newref = (itemref + 1) % itemref_count;
-      } else {
-        itemref = 0;
-        newref  = 0;
-      }
-      while ((bitset[newref >> 3] & (1 << (newref & 7))) != 0) {
-        newref = (newref + 1) % itemref_count;
-        if (newref == itemref) break;
-      }
-      if (newref != itemref) {
-        waiting_for_itemref = newref;
-        retrieve_queue_data = {.req           = RetrieveReq::RETRIEVE_ITEM,
-                               .itemref_index = waiting_for_itemref};
-        QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-        retriever_iddle = false;
-        LOG_D("Sent RETRIEVE_ITEM to Retriever");
-      } else {
-        page_locs.computation_completed();
-        retriever_iddle = true;
-      }
-    }
-  }
-
-public:
-  StateTask()
-      : retriever_iddle(true), itemref_count(-1), waiting_for_itemref(-1), next_itemref_to_get(-1),
-        asap_itemref(-1), bitset(nullptr), bitset_size(0), stopping(false),
-        forget_retrieval(false) {}
-
-  void operator()() {
-    for (;;) {
-      LOG_D("==> Waiting for request... <==");
-      if (QUEUE_RECEIVE(state_queue, state_queue_data, portMAX_DELAY) == -1) {
-        LOG_E("Receive error: %d: %s", errno, strerror(errno));
-      } else
-        switch (state_queue_data.req) {
-        case StateReq::ABORT:
-          return;
-
-        case StateReq::STOP:
-          LOG_D("-> STOP <-");
-          itemref_count    = -1;
-          forget_retrieval = true;
-          if (bitset != nullptr) {
-            delete[] bitset;
-            bitset = nullptr;
-          }
-          if (retriever_iddle) {
-            mgr_queue_data = {.req = MgrReq::STOPPED, .itemref_index = 0};
-            QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-          } else {
-            stopping = true;
-          }
-          break;
-
-        case StateReq::START_DOCUMENT:
-          LOG_D("-> START_DOCUMENT <-");
-          if (bitset) delete[] bitset;
-          itemref_count    = state_queue_data.itemref_count;
-          items_done_count = 0;
-          // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count,
-          // itemref_count);
-          bitset_size = (itemref_count + 7) >> 3;
-          bitset      = new uint8_t[bitset_size];
-          if (bitset) {
-            memset(bitset, 0, bitset_size);
-            if (waiting_for_itemref == -1) {
-              retrieve_queue_data.req           = RetrieveReq::RETRIEVE_ITEM;
-              retrieve_queue_data.itemref_index = waiting_for_itemref =
-                  state_queue_data.itemref_index;
-              forget_retrieval = false;
-              QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-              LOG_D("Sent RETRIEVE_ITEM to retriever");
-            } else {
-              forget_retrieval    = true;
-              next_itemref_to_get = state_queue_data.itemref_index;
-            }
-            retriever_iddle = false;
-          } else {
-            itemref_count    = -1;
-            retriever_iddle  = true;
-            forget_retrieval = true;
-          }
-          break;
-
-        case StateReq::GET_ASAP:
-          LOG_D("-> GET_ASAP <-");
-          // Mgr request a specific item. If document retrieval not started,
-          // return a negative value.
-          // If already done, let it know it a.s.a.p. If currently being processed,
-          // keep a mark when it will be back. If not, queue the request.
-          if (itemref_count == -1) {
-            mgr_queue_data = {.req = MgrReq::ASAP_READY,
-                              .itemref_index =
-                                  static_cast<int16_t>(-(state_queue_data.itemref_index + 1))};
-            QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            LOG_D("Sent ASAP_READY to Mgr");
-          } else {
-            int16_t itemref = state_queue_data.itemref_index;
-            if ((bitset[itemref >> 3] & (1 << (itemref & 7))) != 0) {
-              mgr_queue_data = {.req = MgrReq::ASAP_READY, .itemref_index = itemref};
-              QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-              LOG_D("Sent ASAP_READY to Mgr");
-            } else if (waiting_for_itemref != -1) {
-              asap_itemref = itemref;
-            } else {
-              asap_itemref        = -1;
-              waiting_for_itemref = itemref;
-              retriever_iddle     = false;
-              retrieve_queue_data = {.req = RetrieveReq::GET_ASAP, .itemref_index = itemref};
-              QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
-              LOG_D("Sent GET_ASAP to Retriever");
-            }
-          }
-          break;
-
-        // This is sent by the retrieval task, indicating that an item has been
-        // processed.
-        case StateReq::ITEM_READY:
-          LOG_D("-> ITEM_READY <-");
-          waiting_for_itemref = -1;
-          if (itemref_count != -1) {
-            int16_t itemref = -1;
-            if (forget_retrieval) {
-              forget_retrieval = false;
-            } else {
-              itemref = state_queue_data.itemref_index;
-              if (itemref < 0) {
-                itemref = -(itemref + 1);
-                LOG_E("Unable to retrieve pages location for item %d", itemref);
-              }
-              if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
-                bitset[itemref >> 3] |= (1 << (itemref & 7));
-                items_done_count += 1;
-                // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count,
-                // itemref_count);
-              }
-            }
-            if (stopping) {
-              stopping        = false;
-              retriever_iddle = true;
-              mgr_queue_data  = {.req = MgrReq::STOPPED, .itemref_index = 0};
-              QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            } else {
-              request_next_item(itemref);
-            }
-          } else {
-            if (stopping) {
-              stopping        = false;
-              retriever_iddle = true;
-              mgr_queue_data  = {.req = MgrReq::STOPPED, .itemref_index = 0};
-              QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            }
-          }
-          break;
-
-        // This is sent by the retrieval task, indicating that an ASAP item has been
-        // processed.
-        case StateReq::ASAP_READY:
-          LOG_D("-> ASAP_READY <-");
-          waiting_for_itemref = -1;
-          if (itemref_count != -1) {
-            int16_t itemref = state_queue_data.itemref_index;
-            mgr_queue_data  = {.req = MgrReq::ASAP_READY, .itemref_index = itemref};
-            QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            LOG_D("Sent ASAP_READY to Mgr");
-            if (itemref < 0) {
-              itemref = -(itemref + 1);
-              LOG_E("Unable to retrieve pages location for item %d", itemref);
-            }
-            if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
-              bitset[itemref >> 3] |= (1 << (itemref & 7));
-              items_done_count += 1;
-              // ESP_LOGI(TAG,"items_done_count = %" PRIi16" of %" PRIi16, items_done_count,
-              // itemref_count);
-            }
-            if (stopping) {
-              stopping        = false;
-              retriever_iddle = true;
-              mgr_queue_data  = {.req = MgrReq::STOPPED, .itemref_index = 0};
-              QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            } else {
-              request_next_item(itemref, true);
-            }
-          } else {
-            if (stopping) {
-              stopping        = false;
-              retriever_iddle = true;
-              mgr_queue_data  = {.req = MgrReq::STOPPED, .itemref_index = 0};
-              QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-            }
-          }
-          break;
-        case StateReq::PERCENT:
-          mgr_queue_data = {.req           = MgrReq::PERCENT,
-                            .itemref_index = static_cast<int16_t>(percent_done())};
-          QUEUE_SEND(mgr_queue, mgr_queue_data, 0);
-        }
-    }
-  }
-
-  inline bool retriever_is_iddle() { return retriever_iddle; }
-  inline bool forgetting_retrieval() { return forget_retrieval; }
-
-  inline int percent_done() {
-    int16_t percent = (items_done_count * 100) / itemref_count;
-    // ESP_LOGI(TAG, "Percent = %" PRIi16 " itemref count = %" PRIi16 " items done = %" PRIi16,
-    // percent, itemref_count, items_done_count);
-    return percent;
-  }
-
-} state_task;
-
-class RetrieverTask {
-private:
-  static constexpr const char *TAG = "RetrieverTask";
-
-public:
-  void operator()() const {
-    RetrieveQueueData retrieve_queue_data;
-    StateQueueData state_queue_data;
-
-    for (;;) {
-      LOG_D("==> Waiting for request... <==");
-      if (QUEUE_RECEIVE(retrieve_queue, retrieve_queue_data, portMAX_DELAY) == -1) {
-        LOG_E("Receive error: %d: %s", errno, strerror(errno));
-      } else {
-        if (retrieve_queue_data.req == RetrieveReq::ABORT) return;
-        if (retrieve_queue_data.req == RetrieveReq::SHOW_HEAP) {
-          #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-            ESP::show_heaps_info();
-          #endif
-          continue;
-        }
-
-        LOG_D("-> %s <-",
-              (retrieve_queue_data.req == RetrieveReq::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
-
-        LOG_D("Retrieving itemref --> %d <--", retrieve_queue_data.itemref_index);
-
-        int16_t itemref_index;
-        if (!page_locs.build_page_locs(retrieve_queue_data.itemref_index)) {
-          // Unable to retrieve pages location for the requested index. Send back
-          // a negative value to indicate the issue to the state task
-          itemref_index = -(retrieve_queue_data.itemref_index + 1);
-        } else {
-          itemref_index = retrieve_queue_data.itemref_index;
-        }
-
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
-        state_queue_data = {.req           = (retrieve_queue_data.req == RetrieveReq::GET_ASAP)
-                                                 ? StateReq::ASAP_READY
-                                                 : StateReq::ITEM_READY,
-                            .itemref_index = itemref_index,
-                            .itemref_count = 0};
-
-        QUEUE_SEND(state_queue, state_queue_data, 0);
-        LOG_D("Sent %s to State",
-              (state_queue_data.req == StateReq::ASAP_READY) ? "ASAP_READY" : "ITEM_READY");
-      }
-    }
-  }
-} retriever_task;
-
-void PageLocs::setup() {
   #if EPUB_LINUX_BUILD
     mq_unlink("/mgr");
-    mq_unlink("/state");
-    mq_unlink("/retrieve");
 
     mgr_queue = mq_open("/mgr", O_RDWR | O_CREAT, S_IRWXU, &mgr_attr);
     if (mgr_queue == -1) {
@@ -419,274 +45,84 @@ void PageLocs::setup() {
       return;
     }
 
-    state_queue = mq_open("/state", O_RDWR | O_CREAT, S_IRWXU, &state_attr);
-    if (state_queue == -1) {
-      LOG_E("Unable to open state_queue: %d", errno);
-      return;
-    }
-
-    retrieve_queue = mq_open("/retrieve", O_RDWR | O_CREAT, S_IRWXU, &retrieve_attr);
-    if (retrieve_queue == -1) {
-      LOG_E("Unable to open retrieve_queue: %d", errno);
-      return;
-    }
-
-    retriever_thread = std::thread(retriever_task);
-    state_thread     = std::thread(state_task);
   #else
     esp_pthread_init();
 
-    if (mgr_queue == nullptr) mgr_queue = xQueueCreate(5, sizeof(MgrQueueData));
-    if (state_queue == nullptr) state_queue = xQueueCreate(5, sizeof(StateQueueData));
-    if (retrieve_queue == nullptr) retrieve_queue = xQueueCreate(5, sizeof(RetrieveQueueData));
+    if (mgr_queue == nullptr) mgr_queue = xQueueCreate(5, sizeof(QueueData));
 
-    auto cfg        = create_config("retrieverTask", 1, 40 * 1024, configMAX_PRIORITIES - 2);
-    cfg.inherit_cfg = true;
-    esp_pthread_set_cfg(&cfg);
-    retriever_thread = std::thread(retriever_task);
-
-    cfg             = create_config("stateTask", 0, 10 * 1024, configMAX_PRIORITIES - 2);
-    cfg.inherit_cfg = true;
-    esp_pthread_set_cfg(&cfg);
-    state_thread = std::thread(state_task);
   #endif
 }
 
 void PageLocs::abort_threads() {
-  RetrieveQueueData retrieve_queue_data;
-  retrieve_queue_data = {.req = RetrieveReq::ABORT, .itemref_index = 0};
-  LOG_D("abort_threads: Sending ABORT to Retriever");
-  QUEUE_SEND(retrieve_queue, retrieve_queue_data, 0);
+  if (state_task) {
+    LOG_D("abort_threads: Sending ABORT to State");
+    PageLocsState::send({.req = PageLocsState::Req::ABORT});
 
-  retriever_thread.join();
-  retriever_thread.~thread();
-
-  StateQueueData state_queue_data;
-  state_queue_data = {.req = StateReq::ABORT, .itemref_index = 0, .itemref_count = 0};
-  LOG_D("abort_threads: Sending ABORT to State");
-  QUEUE_SEND(state_queue, state_queue_data, 0);
-
-  state_thread.join();
-  state_thread.~thread();
-}
-
-class PageLocsInterp : public HTMLInterpreter {
-public:
-  PageLocsInterp(Page &the_page, DOM &the_dom, Page::ComputeMode the_comp_mode,
-                 const EPub::ItemInfo &the_item)
-      : HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
-  ~PageLocsInterp() {}
-
-  void doc_end(const Page::Format &fmt) { page_end(fmt); }
-
-protected:
-  bool page_end(const Page::Format &fmt) {
-
-    // if (page_locs.get_pages_map().size() == 38) {
-    //   LOG_D("PAGE END!!");
-    // }
-
-    bool res = true;
-    // if ((item_info.itemref_index == 0) || !page_out.is_empty()) {
-
-    PageLocs::PageId page_id =
-        PageLocs::PageId(page_locs.get_item_info().itemref_index, start_offset);
-    PageLocs::PageInfo page_info = PageLocs::PageInfo(current_offset - start_offset, -1);
-
-    if ((page_info.size > 0) || ((page_id.itemref_index == 0) && (page_id.offset == 0))) {
-      if (page_info.size == 0)
-        // Patch for the case when it's the title page and no picture is to be shown
-        page_info.size = 1;
-      if ((page_locs.get_item_info().itemref_index > 0) && (page.is_empty())) {
-        page_info.size = -page_info.size; // The page will not be counted nor displayed
-      }
-      res = page_locs.insert(page_id, page_info);
-      #if DEBUGGING
-        std::cout << page_id.offset << '|' << page_id.offset + page_info.size << ", "
-                  << page_info.page_number << ", " << page_info.size << std::endl;
-      #endif
-    }
-    // Gives the chance to book_viewer to show a page if required
-    book_viewer.get_mutex().unlock();
-    std::this_thread::yield();
-    book_viewer.get_mutex().lock();
-
-    // LOG_D("Page %d, offset: %d, size: %d", epub.get_page_count(), loc.offset, loc.size);
-
-    #if DEBUGGING
-      std::cout << page_locs.get_pages_map().size() << std::endl;
-    #endif
-    check_page_to_show(page_locs.get_pages_map().size()); // Debugging stuff
-    //}
-
-    start_offset = current_offset;
-
-    page.start(fmt); // Start a new page
-    // beginning_of_page = true;
-
-    return res;
+    state_task->wait_for_exit();
+    state_task.reset();
   }
-};
-
-bool PageLocs::build_page_locs(int16_t itemref_index) {
-  std::scoped_lock guard(book_viewer.get_mutex());
-
-  Font *font  = fonts.get(ScreenBottom::FONT);
-  page_bottom = font->get_line_height(ScreenBottom::FONT_SIZE) +
-                (font->get_line_height(ScreenBottom::FONT_SIZE) >> 1);
-
-  // page_out.set_compute_mode(Page::ComputeMode::LOCATION);
-
-  // show_pictures = current_format_params.show_pictures == 1;
-
-  bool done = false;
-
-  if (epub.get_item_at_index(itemref_index, item_info)) {
-
-    int16_t idx;
-
-    if ((idx = fonts.get_index("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
-      idx = 3;
-    }
-
-    int8_t font_size = current_format_params.font_size;
-
-    int8_t show_title = 0;
-    config.get(Config::Ident::SHOW_TITLE, &show_title);
-
-    uint16_t page_top = 0;
-
-    if (show_title != 0) {
-      Font *title_font = fonts.get(book_viewer.TITLE_FONT);
-      page_top         = title_font->get_chars_height(book_viewer.TITLE_FONT_SIZE) + 10;
-    }
-
-    Page::Format fmt = {
-        .line_height_factor = 0.95,
-        .font_index         = idx,
-        .font_size          = font_size,
-        .screen_top         = page_top,
-        .screen_bottom      = page_bottom,
-    };
-
-    DOM *dom = new DOM;
-    PageLocsInterp *interp =
-        new PageLocsInterp(page_out, *dom, Page::ComputeMode::LOCATION, item_info);
-
-    #if DEBUGGING_AID
-      interp->set_pages_to_show_state(PAGE_FROM, PAGE_TO);
-      interp->check_page_to_show(pages_map.size());
-    #endif
-
-    interp->set_limits(0, 9999999, current_format_params.show_pictures == 1);
-
-    while (!done) {
-
-      // current_offset       = 0;
-      // start_of_page_offset = 0;
-      xml_node node;
-
-      if ((node = item_info.xml_doc.child("html").child("body"))) {
-
-        page_out.start(fmt);
-
-        // #if EPUB_INKPLATE_BUILD
-        //   esp_task_wdt_reset();
-        // #endif
-
-        Page::Format *new_fmt = interp->duplicate_fmt(fmt);
-        if (!interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
-          interp->release_fmt(new_fmt);
-          LOG_D("html parsing issue or aborted by Mgr");
-          break;
-        }
-        interp->release_fmt(new_fmt);
-
-        if (page_out.some_data_waiting()) page_out.end_paragraph(fmt);
-      } else {
-        LOG_D("No <body>");
-        break;
-      }
-
-      interp->doc_end(fmt);
-
-      done = true;
-    }
-
-    // dom->show();
-    delete dom;
-    dom = nullptr;
-  }
-
-  // page_out.set_compute_mode(Page::ComputeMode::DISPLAY);
-
-  if (item_info.css != nullptr) {
-    delete item_info.css;
-    item_info.css = nullptr;
-  }
-
-  return done;
 }
 
 volatile bool relax = false;
 
 bool PageLocs::retrieve_asap(int16_t itemref_index) {
-  StateQueueData state_queue_data;
-  state_queue_data = {
-      .req = StateReq::GET_ASAP, .itemref_index = itemref_index, .itemref_count = 0};
   LOG_D("retrieve_asap: Sending GET_ASAP");
-  QUEUE_SEND(state_queue, state_queue_data, 0);
+  PageLocsState::send(
+      {.req = PageLocsState::Req::GET_ASAP, .itemref_index = itemref_index, .itemref_count = 0});
 
   relax = true;
-  MgrQueueData mgr_queue_data;
+  QueueData queue_data;
   LOG_D("==> Waiting for answer... <==");
-  QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
-  LOG_D("-> %s <-", mgr_queue_data.req == MgrReq::ASAP_READY ? "ASAP_READY" : "ERROR!!!");
+  receive(queue_data);
+  LOG_D("-> %s <-", queue_data.req == Req::ASAP_READY ? "ASAP_READY" : "ERROR!!!");
   relax = false;
 
   return true;
 }
 
 void PageLocs::stop_document() {
-  StateQueueData state_queue_data;
 
-  LOG_D("start_new_document: Sending STOP");
-  state_queue_data = {.req = StateReq::STOP, .itemref_index = 0, .itemref_count = 0};
-  QUEUE_SEND(state_queue, state_queue_data, 0);
+  if (!completed) {
+    if (state_task) {
+      LOG_D("Sending STOP");
+      PageLocsState::send({.req = PageLocsState::Req::STOP});
 
-  MgrQueueData mgr_queue_data;
-  LOG_D("==> Waiting for STOPPED... <==");
-  QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
-  LOG_D("-> %s <-", (mgr_queue_data.req == MgrReq::STOPPED) ? "STOPPED" : "ERROR!!!");
+      QueueData queue_data;
+      LOG_D("==> Waiting for STOPPED... <==");
+      receive(queue_data);
+      LOG_D("-> %s <-", (queue_data.req == Req::STOPPED) ? "STOPPED" : "ERROR!!!");
+
+      state_task->wait_for_exit();
+      state_task.reset();
+    }
+  }
 }
 
 int16_t PageLocs::get_page_count() {
   if (completed) return page_count;
 
-  StateQueueData state_queue_data = {
-      .req = StateReq::PERCENT, .itemref_index = 0, .itemref_count = 0};
-
   LOG_D("get_page_count: Sending PERCENT");
-  QUEUE_SEND(state_queue, state_queue_data, 0);
+  PageLocsState::send({.req = PageLocsState::Req::PERCENT});
 
   relax = true;
-  MgrQueueData mgr_queue_data;
+  QueueData queue_data;
   LOG_D("==> Waiting for answer... <==");
-  QUEUE_RECEIVE(mgr_queue, mgr_queue_data, portMAX_DELAY);
-  LOG_D("-> %s <-", mgr_queue_data.req == MgrReq::PERCENT ? "PERCENT" : "ERROR!!!");
+  receive(queue_data);
+  LOG_D("-> %s <-", queue_data.req == Req::PERCENT ? "PERCENT" : "ERROR!!!");
   relax = false;
 
-  return mgr_queue_data.itemref_index;
+  return queue_data.itemref_index;
 }
 
-void PageLocs::start_new_document(int16_t count, int16_t itemref_index) {
-  if (!state_task.retriever_is_iddle()) stop_document();
+void PageLocs::start_new_document(EPubPtr &epub, int16_t itemref_index) {
+  if (state_task && !state_task->retriever_is_iddle()) stop_document();
 
-  check_for_format_changes(count, itemref_index, !load(epub.get_current_filename()));
+  current_filename = epub->get_current_filename();
+  // check_for_format_changes(epub, itemref_index, !load(current_filename));
 }
 
 bool PageLocs::insert(PageId &id, PageInfo &info) {
-  if (!state_task.forgetting_retrieval()) {
+  if (!state_task || !state_task->forgetting_retrieval()) {
     while (true) {
       if (relax) {
         // The page_locs class is still in control of the mutex, but is waiting
@@ -718,7 +154,7 @@ PageLocs::PagesMap::iterator PageLocs::check_and_find(const PageId &page_id) {
   return it;
 }
 
-const PageLocs::PageId *PageLocs::get_next_page_id(const PageId &page_id, int16_t count) {
+const PageId *PageLocs::get_next_page_id(const PageId &page_id, int16_t count) {
   std::scoped_lock guard(mutex);
 
   PagesMap::iterator it = check_and_find(page_id);
@@ -752,7 +188,7 @@ const PageLocs::PageId *PageLocs::get_next_page_id(const PageId &page_id, int16_
   return (it == pages_map.end()) ? nullptr : &it->first;
 }
 
-const PageLocs::PageId *PageLocs::get_prev_page_id(const PageId &page_id, int count) {
+const PageId *PageLocs::get_prev_page_id(const PageId &page_id, int count) {
   std::scoped_lock guard(mutex);
 
   PagesMap::iterator it = check_and_find(page_id);
@@ -790,7 +226,7 @@ const PageLocs::PageId *PageLocs::get_prev_page_id(const PageId &page_id, int co
   return (it == pages_map.end()) ? nullptr : &it->first;
 }
 
-const PageLocs::PageId *PageLocs::get_page_id(const PageId &page_id) {
+const PageId *PageLocs::get_page_id(const PageId &page_id) {
   std::scoped_lock guard(mutex);
 
   PagesMap::iterator it     = check_and_find(PageId(page_id.itemref_index, 0));
@@ -818,13 +254,16 @@ void PageLocs::computation_completed() {
 
     page_count = page_nbr;
 
-    save(epub.get_current_filename());
+    save(current_filename);
 
     // show();
 
     completed = true;
-    toc.save();
+
+    // epub->toc->save(epub);
+
     event_mgr.set_stay_on(false);
+
     // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     //   ESP::show_heaps_info();
     //   RetrieveQueueData retrieve_queue_data = {
@@ -849,36 +288,34 @@ void PageLocs::computation_completed() {
   }
 #endif
 
-void PageLocs::check_for_format_changes(int16_t count, int16_t itemref_index, bool force) {
+void PageLocs::check_for_format_changes(EPubPtr &epub, int16_t itemref_index, bool force) {
   if (force ||
-      (memcmp(epub.get_book_format_params(), &current_format_params,
+      (memcmp(epub->get_book_format_params(), &current_format_params,
               sizeof(current_format_params)) != 0) ||
-      !toc.load()) {
+      !epub->toc->load(epub)) {
 
     LOG_D("==> Page locations recalc. <==");
 
-    if (!state_task.retriever_is_iddle()) stop_document();
+    if (state_task && !state_task->retriever_is_iddle()) stop_document();
 
     clear();
 
-    current_format_params = *epub.get_book_format_params();
+    setup_pages_computation(epub);
 
-    if (toc.load_from_epub() && !toc.there_is_some_ids()) {
+    current_format_params = *epub->get_book_format_params();
+
+    if (epub->toc->load_from_epub(epub) && !epub->toc->there_is_some_ids()) {
       // The table of content doesn't need to be synch with the
       // page location computation. I.e. there is no relation with HTML Ids
       // that would require information from the page location computation
       // to find where the table of content pages are located.
-      toc.save();
+      epub->toc->save(epub);
     }
 
-    item_count = count;
-    StateQueueData state_queue_data;
-
-    state_queue_data = {.req           = StateReq::START_DOCUMENT,
-                        .itemref_index = itemref_index,
-                        .itemref_count = item_count};
     LOG_D("start_new_document: Sending START_DOCUMENT");
-    QUEUE_SEND(state_queue, state_queue_data, 0);
+    PageLocsState::send({.req           = PageLocsState::Req::START_DOCUMENT,
+                         .itemref_index = itemref_index,
+                         .itemref_count = epub->get_item_count()});
 
     event_mgr.set_stay_on(true);
   }
@@ -963,15 +400,17 @@ bool PageLocs::save(const std::string &epub_filename) {
       break;
     if (file.write(reinterpret_cast<const char *>(&page_count), sizeof(page_count)).fail()) break;
 
-    for (auto &page : pages_map) {
-      if (file.write(reinterpret_cast<const char *>(&page.first.itemref_index),
-                     sizeof(page.first.itemref_index))
+    for (auto &page_map : pages_map) {
+      if (file.write(reinterpret_cast<const char *>(&page_map.first.itemref_index),
+                     sizeof(page_map.first.itemref_index))
               .fail())
         break;
-      if (file.write(reinterpret_cast<const char *>(&page.first.offset), sizeof(page.first.offset))
+      if (file.write(reinterpret_cast<const char *>(&page_map.first.offset),
+                     sizeof(page_map.first.offset))
               .fail())
         break;
-      if (file.write(reinterpret_cast<const char *>(&page.second.size), sizeof(page.second.size))
+      if (file.write(reinterpret_cast<const char *>(&page_map.second.size),
+                     sizeof(page_map.second.size))
               .fail())
         break;
     }

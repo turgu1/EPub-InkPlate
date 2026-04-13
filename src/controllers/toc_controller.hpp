@@ -7,24 +7,27 @@
 
 #include "controllers/event_mgr.hpp"
 #include "models/epub.hpp"
-#include "models/page_locs.hpp"
 #include "viewers/toc_viewer.hpp"
 
-class TocController
-{
-  private:
-    static constexpr char const * TAG = "TocController";
+class TocController {
+private:
+  static constexpr char const *TAG = "TocController";
 
-    int16_t current_entry_index;
-    int16_t current_book_index;
+  int16_t current_entry_index;
+  int16_t current_book_index;
 
-  public:
-    TocController() :
-      current_entry_index(-1),
-      current_book_index(-1) {}
-    void input_event(const EventMgr::Event & event);
-    void enter();
-    void leave(bool going_to_deep_sleep = false) {}
+  TocViewerPtr toc_viewer{nullptr};
+
+  EPubPtr epub{nullptr};
+
+public:
+  TocController() : current_entry_index(-1), current_book_index(-1) {}
+
+  inline void set_ownership_of_book(EPubPtr &epub_ptr) { epub = std::move(epub_ptr); }
+
+  void input_event(const EventMgr::Event &event);
+  void enter();
+  void leave(bool going_to_deep_sleep = false);
 };
 
 #if __TOC_CONTROLLER__

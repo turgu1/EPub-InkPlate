@@ -22,8 +22,8 @@ void MenuViewer::show_caption(std::string caption, Page::Format &fmt) {
   Font *font = fonts.get(1);
   Dim caption_dim;
   font->get_size(caption.c_str(), &caption_dim, CAPTION_SIZE);
-  page.put_str_at(caption,
-                  Pos{(uint16_t)((Screen::get_width() - caption_dim.width) >> 1), text_ypos}, fmt);
+  page->put_str_at(caption,
+                   Pos{(uint16_t)((Screen::get_width() - caption_dim.width) >> 1), text_ypos}, fmt);
 }
 
 void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_screen) {
@@ -41,7 +41,7 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
 
   entry_locs = std::make_unique<EntryLoc[]>(menu_entry_count);
   if (!entry_locs) {
-    msg_viewer.out_of_memory("Memory allocation failed for menu entry locations!");
+    MsgViewer::out_of_memory("Memory allocation failed for menu entry locations!");
     return;
   }
 
@@ -80,11 +80,11 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
       .screen_bottom = 100,
   };
 
-  page.start(fmt);
+  page->start(fmt);
 
-  page.clear_region(Dim{Screen::get_width(), uint16_t(region_height + 20)}, Pos{0, 0});
+  page->clear_region(Dim{Screen::get_width(), uint16_t(region_height + 20)}, Pos{0, 0});
 
-  page.put_rounded(Dim(Screen::get_width() - 20, region_height), Pos(10, 10));
+  page->put_rounded(Dim(Screen::get_width() - 20, region_height), Pos(10, 10));
 
   menu = the_menu;
 
@@ -117,11 +117,11 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
         }
       }
 
-      // page.put_highlight(
+      // page->put_highlight(
       //   Dim(entry_locs[idx].dim.width + 30, entry_locs[idx].pos.y + entry_locs[idx].dim.height +
       //   15), Pos(entry_locs[idx].pos.x - 15, 0));
 
-      page.put_char_at(ch, pos, fmt);
+      page->put_char_at(ch, pos, fmt);
       pos.x += SPACE_BETWEEN_ICONS;
 
       // std::cout << "["
@@ -146,7 +146,7 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
   current_entry_index = entry_index;
 
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-    page.put_highlight(
+    page->put_highlight(
         Dim(entry_locs[entry_index].dim.width + 8, entry_locs[entry_index].dim.height + 8),
         Pos(entry_locs[entry_index].pos.x - 4, entry_locs[entry_index].pos.y - 4));
   #endif
@@ -158,20 +158,20 @@ void MenuViewer::show(MenuEntry *the_menu, uint8_t entry_index, bool clear_scree
     show_caption(std::string(menu[entry_index].caption), fmt);
   #endif
 
-  // page.put_highlight(Dim(Screen::get_width() - 20, 3), Pos(10, region_height - 12));
+  // page->put_highlight(Dim(Screen::get_width() - 20, 3), Pos(10, region_height - 12));
 
-  ScreenBottom::show();
+  ScreenBottom::show(page);
 
-  page.paint(clear_screen);
+  page->paint(clear_screen);
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   uint8_t MenuViewer::find_index(uint16_t x, uint16_t y) {
     LOG_D("Find Index: [%u %u]", x, y);
 
-    // page.put_highlight(Dim(5, 5), Pos(x-2, y-2));
-    // page.put_highlight(Dim(7, 7), Pos(x-3, y-3));
-    // page.paint(false, true, true);
+    // page->put_highlight(Dim(5, 5), Pos(x-2, y-2));
+    // page->put_highlight(Dim(7, 7), Pos(x-3, y-3));
+    // page->paint(false, true, true);
 
     for (int8_t idx = 0; idx < menu_entry_count; idx++) {
       if ((x >= entry_locs[idx].pos.x - 15) &&
@@ -193,22 +193,22 @@ void MenuViewer::clear_highlight() {
         .screen_bottom = 0,
     };
 
-    page.start(fmt);
+    page->start(fmt);
 
     if (hint_shown) {
       hint_shown = false;
 
-      page.clear_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
-                               entry_locs[current_entry_index].dim.height + 8),
-                           Pos(entry_locs[current_entry_index].pos.x - 4,
-                               entry_locs[current_entry_index].pos.y - 4));
+      page->clear_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
+                                entry_locs[current_entry_index].dim.height + 8),
+                            Pos(entry_locs[current_entry_index].pos.x - 4,
+                                entry_locs[current_entry_index].pos.y - 4));
 
-      page.clear_region(Dim(Screen::get_width() - 22, text_height),
-                        Pos(11, text_ypos - line_height));
+      page->clear_region(Dim(Screen::get_width() - 22, text_height),
+                         Pos(11, text_ypos - line_height));
       show_caption(TOUCH_AND_HOLD_STR, fmt);
     }
 
-    page.paint(false);
+    page->paint(false);
   #endif
 }
 
@@ -224,15 +224,15 @@ bool MenuViewer::event(const EventMgr::Event &event) {
     case EventMgr::EventKind::HOLD:
       current_entry_index = find_index(event.x, event.y);
       if (current_entry_index < menu_entry_count) {
-        page.start(fmt);
+        page->start(fmt);
 
-        page.clear_region(Dim(Screen::get_width() - 22, text_height),
-                          Pos(11, text_ypos - line_height));
+        page->clear_region(Dim(Screen::get_width() - 22, text_height),
+                           Pos(11, text_ypos - line_height));
 
         show_caption(std::string(menu[current_entry_index].caption), fmt);
         hint_shown = true;
 
-        page.paint(false);
+        page->paint(false);
       }
       break;
 
@@ -249,25 +249,25 @@ bool MenuViewer::event(const EventMgr::Event &event) {
       if (current_entry_index < menu_entry_count) {
         if (menu[current_entry_index].func != nullptr) {
           if (menu[current_entry_index].highlight) {
-            page.start(fmt);
+            page->start(fmt);
 
-            page.clear_region(Dim(Screen::get_width() - 22, text_height),
-                              Pos(11, text_ypos - line_height));
+            page->clear_region(Dim(Screen::get_width() - 22, text_height),
+                               Pos(11, text_ypos - line_height));
 
             show_caption(std::string(menu[current_entry_index].caption), fmt);
             hint_shown = true;
 
-            page.put_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
-                                   entry_locs[current_entry_index].dim.height + 8),
-                               Pos(entry_locs[current_entry_index].pos.x - 4,
-                                   entry_locs[current_entry_index].pos.y - 4));
+            page->put_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
+                                    entry_locs[current_entry_index].dim.height + 8),
+                                Pos(entry_locs[current_entry_index].pos.x - 4,
+                                    entry_locs[current_entry_index].pos.y - 4));
 
-            page.paint(false);
+            page->paint(false);
           } else {
             hint_shown = false;
           }
 
-          (*menu[current_entry_index].func)();
+          (menu[current_entry_index].func)();
         }
         return false;
       }
@@ -279,7 +279,7 @@ bool MenuViewer::event(const EventMgr::Event &event) {
   #else // Non touch devices
     uint8_t old_index = current_entry_index;
 
-    page.start(fmt);
+    page->start(fmt);
 
     switch (event.kind) {
     case EventMgr::EventKind::PREV:
@@ -305,7 +305,7 @@ bool MenuViewer::event(const EventMgr::Event &event) {
     case EventMgr::EventKind::DBL_NEXT:
       return false;
     case EventMgr::EventKind::SELECT:
-      if (menu[current_entry_index].func != nullptr) (*menu[current_entry_index].func)();
+      if (menu[current_entry_index].func != nullptr) (menu[current_entry_index].func)();
       return false;
     case EventMgr::EventKind::DBL_SELECT:
       return true;
@@ -314,24 +314,24 @@ bool MenuViewer::event(const EventMgr::Event &event) {
     }
 
     if (current_entry_index != old_index) {
-      page.clear_highlight(
+      page->clear_highlight(
           Dim(entry_locs[old_index].dim.width + 8, entry_locs[old_index].dim.height + 8),
           Pos(entry_locs[old_index].pos.x - 4, entry_locs[old_index].pos.y - 4));
 
-      page.put_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
-                             entry_locs[current_entry_index].dim.height + 8),
-                         Pos(entry_locs[current_entry_index].pos.x - 4,
-                             entry_locs[current_entry_index].pos.y - 4));
+      page->put_highlight(Dim(entry_locs[current_entry_index].dim.width + 8,
+                              entry_locs[current_entry_index].dim.height + 8),
+                          Pos(entry_locs[current_entry_index].pos.x - 4,
+                              entry_locs[current_entry_index].pos.y - 4));
 
-      page.clear_region(Dim(Screen::get_width() - 22, text_height),
-                        Pos(11, text_ypos - line_height));
+      page->clear_region(Dim(Screen::get_width() - 22, text_height),
+                         Pos(11, text_ypos - line_height));
 
       show_caption(std::string(menu[current_entry_index].caption), fmt);
     }
 
-    ScreenBottom::show();
+    ScreenBottom::show(page);
 
-    page.paint(false);
+    page->paint(false);
   #endif
 
   return false;

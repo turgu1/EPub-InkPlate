@@ -13,9 +13,10 @@ Update to version 3.0.0
   - C++ gnu++23 (As per ESP-IDF C++ support)
 - Page::Format default values in the struct definition. All uses of the struct are now reduced in the code to the changed parameters from the default.
 - DisplayList is now a separate class that is faster than std::forward_list and better adapted to the needs of the Page class. No need to reverse entries anymore.
-- Pages location are no longer computed every time a page formatting parameter is changed by the user, reducing wait time between page changes.
+- All GUI has been revisited. 
+- Books list cover images can now be display in three sizes (small, medium, large).
 - Screen Saver: A `screen_saver` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display on screen when power is turned off or a deep sleep sequence is initiated by the application.
-
+- (still not sure for that one) Pages location are no longer computed every time a page formatting parameter is changed by the user, reducing wait time between page changes.
 
 (Updated 2026.01.20)
 

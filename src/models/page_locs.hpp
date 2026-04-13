@@ -3,7 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include <map>
 #include <mutex>
@@ -20,8 +22,8 @@
   // #include "freertos/semphr.h"
 #endif
 
-#include "models/dom.hpp"
 #include "models/epub.hpp"
+#include "models/page_locs_state.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/page.hpp"
 
@@ -38,19 +40,6 @@
 
 class PageLocs {
 public:
-  struct PageId {
-    int16_t itemref_index;
-    int32_t offset;
-    PageId(int16_t idx, int32_t off) {
-      itemref_index = idx;
-      offset        = off;
-    }
-    PageId() {
-      itemref_index = 0;
-      offset        = 0;
-    }
-  };
-
   struct PageInfo {
     int32_t size;
     int16_t page_number;
@@ -60,18 +49,6 @@ public:
     }
     PageInfo() {};
   };
-  typedef std::pair<const PageId, PageInfo> PagePair;
-
-private:
-  static constexpr const char *TAG                = "PageLocs";
-  static constexpr const int8_t LOCS_FILE_VERSION = 3;
-
-  Page page_out;
-
-  bool completed;
-  int16_t page_count;
-
-  DOM *dom;
 
   struct PageCompare {
     bool operator()(const PageId &lhs, const PageId &rhs) const {
@@ -80,17 +57,44 @@ private:
       return lhs.offset < rhs.offset;
     }
   };
-  typedef std::map<PageId, PageInfo, PageCompare> PagesMap;
-  typedef std::set<int16_t> ItemsSet;
+
+  using PagePair = std::pair<const PageId, PageInfo>;
+  using PagesMap = std::map<PageId, PageInfo, PageCompare>;
+  using ItemsSet = std::set<int16_t>;
+
+  enum class Req : int8_t {
+    NONE, ASAP_READY, STOPPED, PERCENT
+  };
+
+  struct QueueData {
+    Req req{Req::NONE};
+    int16_t itemref_index{0};
+  };
+
+  static inline auto send(const QueueData data, int timeout = 0) {
+    #if EPUB_LINUX_BUILD
+      return mq_send(mgr_queue, (const char *)&data, sizeof(data), 1);
+    #else
+      return xQueueSendToBack(mgr_queue, &data, timeout);
+    #endif
+  }
+
+private:
+  static constexpr const char *TAG                = "PageLocs";
+  static constexpr const int8_t LOCS_FILE_VERSION = 3;
+
+  bool completed;
+  int16_t page_count;
 
   std::recursive_timed_mutex mutex;
 
-  std::thread state_thread;
-  std::thread retriever_thread;
+  PageLocsStatePtr state_task;
 
   PagesMap pages_map;
   ItemsSet items_set;
   int16_t item_count;
+
+  std::string current_filename;
 
   void show();
   bool retrieve_asap(int16_t itemref_index);
@@ -103,8 +107,7 @@ private:
 
   // int32_t           current_offset;          ///< Where we are in current item
   // int32_t           start_of_page_offset;
-  uint16_t page_bottom;
-  bool show_pictures;
+
   // bool              start_of_paragraph;  ///< Required to manage paragraph indentation at
   // beginning of new page.
 
@@ -114,12 +117,27 @@ private:
   bool load(const std::string &epub_filename); ///< load pages location from .locs file
   bool save(const std::string &epub_filename); ///< save pages location to .locs file
 
+  #if EPUB_LINUX_BUILD
+    static mqd_t mgr_queue;
+    static constexpr mq_attr mgr_attr = {0, 5, sizeof(QueueData), 0};
+  #else
+    static QueueHandle_t mgr_queue;
+  #endif
+
+  auto receive(QueueData &data, int timeout = -1) {
+    #if EPUB_LINUX_BUILD
+      return mq_receive(mgr_queue, (char *)&data, sizeof(data), nullptr);
+    #else
+      return xQueueReceive(mgr_queue, &data, timeout);
+    #endif
+  }
+
+  void setup_pages_computation(EPubPtr &epub);
+
 public:
   PageLocs() : completed(false), page_count(0), item_count(0) {};
 
-  void setup();
   void abort_threads();
-  bool build_page_locs(int16_t itemref_index);
 
   const PageId *get_next_page_id(const PageId &page_id, int16_t count = 1);
   const PageId *get_prev_page_id(const PageId &page_id, int count = 1);
@@ -129,9 +147,9 @@ public:
   const EPub::ItemInfo &get_item_info() { return item_info; }
   const PagesMap &get_pages_map() { return pages_map; }
 
-  void check_for_format_changes(int16_t count, int16_t itemref_index, bool force = false);
+  void check_for_format_changes(EPubPtr &epub, int16_t itemref_index, bool force = false);
   void computation_completed();
-  void start_new_document(int16_t count, int16_t itemref_index);
+  void start_new_document(EPubPtr &epub, int16_t itemref_index);
   void stop_document();
 
   inline const PageInfo *get_page_info(const PageId &page_id) {
@@ -153,7 +171,10 @@ public:
 
   inline int16_t get_page_nbr(const PageId &id) {
     std::scoped_lock guard(mutex);
-    if (!completed) return -1;
+    if (!completed) {
+      LOG_W("Page Locs not completed.");
+      return -1;
+    }
     const PageInfo *info = get_page_info(id);
     return info == nullptr ? -1 : info->page_number;
   };

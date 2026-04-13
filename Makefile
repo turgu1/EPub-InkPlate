@@ -1,5 +1,9 @@
 # Makefile — Linux build for EPub-InkPlate
 #
+# This Makefile compiles the EPub-InkPlate application for Linux using g++. 
+# It's mainly used to debug all the code that is not tight to the specifics 
+# of the ESP32 platform, and to test the application on a desktop environment.
+#
 # Usage:
 #   make          # build (release)
 #   make DEBUG=1  # build with debug symbols
@@ -16,7 +20,7 @@ APP_VERSION := 3.0.0
 # Debug / Release flags
 # ---------------------------------------------------------------------------
 ifdef DEBUG
-  OPT_FLAGS := -O0 -g3 -DDEBUGGING=1
+  OPT_FLAGS := -O0 -g3 -DDEBUGGING=0
 else
   OPT_FLAGS := -O2 -DDEBUGGING=0
 endif

@@ -12,12 +12,12 @@ FormChoice FormChoiceField::font_choices[8] = {{nullptr, 0}, {nullptr, 1}, {null
                                                {nullptr, 3}, {nullptr, 4}, {nullptr, 5},
                                                {nullptr, 6}, {nullptr, 7}};
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  bool FormDone::event(const EventMgr::Event &event) {
-    form_viewer.set_completed(true);
-    return false;
-  }
-#endif
+// #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+//   bool FormDone::event(const EventMgr::Event &event) {
+//     form_viewer.set_completed(true);
+//     return false;
+//   }
+// #endif
 
 /**
  * @brief Displays a form with the given entries and optional message at the bottom.
@@ -56,18 +56,17 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
     size         = _size;
     bottom_msg   = _bottom_msg;
 
-    for (auto *field : fields) delete field;
     fields.clear();
 
     for (int i = 0; i < size; i++) {
-      FormField *field = FieldFactory::create(form_entries[i], *font);
+      FormFieldPtr field = FieldFactory::create(form_entries[i], *font, *page.get());
       if (field != nullptr) {
-        fields.push_back(field);
         field->compute_caption_dim();
         field->compute_field_dim();
         LOG_D("Field dimentions: Caption: [%d, %d] Field: [%d, %d]", field->get_caption_dim().width,
               field->get_caption_dim().height, field->get_field_dim().width,
               field->get_field_dim().height);
+        fields.push_back(std::move(field));
       }
     }
 
@@ -75,7 +74,7 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
 
     int16_t width;
 
-    for (auto *field : fields) {
+    for (auto &field : fields) {
       width = field->get_field_dim().width;
       if (width > all_fields_width) all_fields_width = width;
 
@@ -90,7 +89,7 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
     int16_t caption_right = right_xpos - all_fields_width - 25;
     int16_t field_left    = right_xpos - all_fields_width - 10;
 
-    for (auto *field : fields) {
+    for (auto &field : fields) {
       field->compute_caption_pos(Pos(caption_right, current_ypos));
       field->compute_field_pos(Pos(field_left, current_ypos));
       current_ypos += field->get_field_dim().height + 20;
@@ -113,15 +112,15 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
       .screen_bottom = BOTTOM_YPOS,
   };
 
-  page.start(fmt);
+  page->start(fmt);
 
-  page.put_rounded(Dim(Screen::get_width() - 44, TOP_YPOS - 20), Pos(22, 10));
+  page->put_rounded(Dim(Screen::get_width() - 44, TOP_YPOS - 20), Pos(22, 10));
 
   Dim title_dim;
 
   font->get_size(title, &title_dim, FORM_FONT_SIZE + 4);
 
-  page.put_str_at(
+  page->put_str_at(
       title,
       Pos((Screen::get_width() - title_dim.width) >> 1, (TOP_YPOS >> 1) + (title_dim.height >> 1)),
       fmt);
@@ -144,18 +143,18 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
   //     Dim(Screen::get_width() - 40, Screen::get_height() - fmt.screen_bottom - fmt.screen_top),
   //     Pos(20, TOP_YPOS));
 
-  page.put_rounded(
+  page->put_rounded(
       Dim(Screen::get_width() - 44, Screen::get_height() - fmt.screen_bottom - fmt.screen_top - 4),
       Pos(22, TOP_YPOS + 2));
 
   // Show all captions (but the last one (OK / CANCEL) or (DONE)) and choices
 
-  for (auto *field : fields) {
+  for (auto &field : fields) {
     field->paint(fmt);
     field->update_highlight();
   }
 
-  page.put_str_at(bottom_msg, bottom_msg_pos, fmt);
+  page->put_str_at(bottom_msg, bottom_msg_pos, fmt);
 
   if (!refresh) {
     selecting_field = false;
@@ -170,9 +169,9 @@ void FormViewer::show(const char *_title, FormEntries _form_entries, int8_t _siz
     #endif
   }
 
-  ScreenBottom::show();
+  ScreenBottom::show(page);
 
-  page.paint(true);
+  page->paint(true);
 }
 
 bool FormViewer::event(const EventMgr::Event &event) {
@@ -184,7 +183,7 @@ bool FormViewer::event(const EventMgr::Event &event) {
       if (!(*current_field)->event(event)) {
         // The field releases control of future events
         // Redraw the form
-        show(title, orm_entries, size, bottom_msg, true);
+        show(title, form_entries, size, bottom_msg, true);
         current_field = fields.end();
       }
       return false; // Not completed yet
@@ -193,15 +192,19 @@ bool FormViewer::event(const EventMgr::Event &event) {
       case EventMgr::EventKind::TAP:
         current_field = find_field(event.x, event.y);
 
-        if (current_field != fields.end()) {
-          if ((*current_field)->event(event)) {
-            // The field needs to keep control of future events
-            // current_field is not reset for next event loop to pass
-            // control to it.
-            return false;
-          } else {
-            // The field doesn't need control of future events
-            current_field = fields.end();
+        if ((*current_field)->get_type() == FormEntryType::DONE) {
+          completed = true;
+        } else {
+          if (current_field != fields.end()) {
+            if ((*current_field)->event(event)) {
+              // The field needs to keep control of future events
+              // current_field is not reset for next event loop to pass
+              // control to it.
+              return false;
+            } else {
+              // The field doesn't need control of future events
+              current_field = fields.end();
+            }
           }
         }
         break;
@@ -226,7 +229,7 @@ bool FormViewer::event(const EventMgr::Event &event) {
         break;
       case EventMgr::EventKind::SELECT:
         highlighting_field = false;
-        selecting_field    = true;
+        selecting_field = true;
         break;
       case EventMgr::EventKind::NONE:
         return false;
@@ -243,7 +246,7 @@ bool FormViewer::event(const EventMgr::Event &event) {
         switch (event.kind) {
         case EventMgr::EventKind::SELECT:
           highlighting_field = true;
-          old_field          = current_field;
+          old_field = current_field;
           current_field++;
           if (current_field == fields.end()) current_field = fields.begin();
           break;
@@ -254,7 +257,7 @@ bool FormViewer::event(const EventMgr::Event &event) {
             completed = true;
           else {
             highlighting_field = true;
-            old_field          = current_field;
+            old_field = current_field;
             current_field++;
             if (current_field == fields.end()) current_field = fields.begin();
           }
@@ -267,9 +270,8 @@ bool FormViewer::event(const EventMgr::Event &event) {
   #endif
 
   if (completed) {
-    for (auto *field : fields) {
+    for (auto &field : fields) {
       field->save_value();
-      delete field;
     }
     fields.clear();
 
@@ -282,7 +284,7 @@ bool FormViewer::event(const EventMgr::Event &event) {
         .screen_bottom = BOTTOM_YPOS,
     };
 
-    page.start(fmt);
+    page->start(fmt);
 
     if (highlighting_field) {
       #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
@@ -298,14 +300,14 @@ bool FormViewer::event(const EventMgr::Event &event) {
         }
       #endif
 
-      for (auto *field : fields) {
+      for (auto &field : fields) {
         field->update_highlight();
       }
     }
 
-    ScreenBottom::show();
+    ScreenBottom::show(page);
 
-    page.paint(false);
+    page->paint(false);
   }
 
   return completed;

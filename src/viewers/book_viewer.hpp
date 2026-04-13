@@ -3,7 +3,9 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include <mutex>
 #include <unordered_map>
@@ -25,29 +27,35 @@
 
 using namespace pugi;
 
-class BookViewer {
-public:
-  const int16_t TITLE_FONT      = 2;
-  const int16_t TITLE_FONT_SIZE = 8;
+using BookViewerPtr = himem_unique_ptr<class BookViewer>;
 
+class BookViewer {
 private:
   static constexpr char const *TAG = "BookViewer";
 
+  BookViewer() = default;
+
   std::mutex mutex;
   uint16_t page_bottom;
-  PageLocs::PageId current_page_id;
+  PageId current_page_id{-1, -1};
 
-  void build_page_at(const PageLocs::PageId &page_id);
+  PagePtr page{Page::Make()};
+
+  void build_page_at(const PageId &page_id, EPubPtr &epub);
 
   struct PageEnd {
     bool operator()(Page::Format &fmt) const { return false; }
   };
 
 public:
-  BookViewer() {}
-  ~BookViewer() {}
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
 
-  void init() { current_page_id = PageLocs::PageId(-1, -1); }
+  static inline auto Make() { return make_unique_himem<BookViewer>(); }
+
+  ~BookViewer() = default;
+
   inline std::mutex &get_mutex() { return mutex; }
 
   /**
@@ -55,13 +63,10 @@ public:
    *
    * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
    */
-  void show_page(const PageLocs::PageId &page_id);
+  void show_page(const PageId &page_id, EPubPtr &epub);
 
-  void show_fake_cover();
+  void show_fake_cover(EPubPtr &epub);
+
+  static constexpr int16_t TITLE_FONT      = 2;
+  static constexpr int16_t TITLE_FONT_SIZE = 8;
 };
-
-#if __BOOK_VIEWER__
-  BookViewer book_viewer;
-#else
-  extern BookViewer book_viewer;
-#endif

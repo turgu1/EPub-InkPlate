@@ -4,13 +4,7 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <unordered_map>
 
 #include <int_to_str.hpp>
 #include <strlcpy.hpp>
@@ -141,4 +135,14 @@ struct Glyph {
     buffer                        = nullptr;
   }
   Glyph() = default;
+};
+
+struct PageId {
+  int16_t itemref_index{0};
+  int32_t offset{0};
+  PageId(int16_t idx, int32_t off) {
+    itemref_index = idx;
+    offset        = off;
+  }
+  PageId() = default;
 };

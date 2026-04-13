@@ -3,18 +3,20 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-#include "global.hpp"
 
+#include "global.hpp"
+#include "himem.hpp"
+#include "memory_pool.hpp"
+#include "picture.hpp"
+#include "pugixml.hpp"
+
+#include <cstdint>
 #include <string>
 #include <utility>
 
-#include "memory_pool.hpp"
 #include "models/css.hpp"
 #include "models/display_list.hpp"
 #include "models/fonts.hpp"
-
-#include "picture.hpp"
-#include "pugixml.hpp"
 
 /**
  * @brief Page preparation
@@ -26,8 +28,22 @@
  * then be called to push the display list to the screen.
  *
  */
+
+using PagePtr = himem_unique_ptr<class Page>;
+
 class Page {
+private:
+  Page() = default;
+
 public:
+  ~Page() { LOG_D("Page destructor called"); };
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<Page>(); }
+
   static const uint16_t HORIZONTAL_CENTER = 9999;
 
   // clang-format off
@@ -86,8 +102,12 @@ private:
   ComputeMode compute_mode{ComputeMode::DISPLAY};
   bool screen_is_full{false}; ///< True if screen no more space to add characters
 
-  DisplayList display_list; ///< The list of artefacts and their position to put on screen
-  DisplayList line_list;    ///< Line preparation for paragraphs
+  DisplayListPool display_list_pool; ///< Memory pool for DisplayListEntry objects, shared across
+                                     ///< all DisplayList instances used by this Page instance
+
+  DisplayListPtr display_list = DisplayList::Make(display_list_pool);
+  DisplayListPtr line_list =
+      DisplayList::Make(display_list_pool); ///< Line preparation for paragraphs
 
   Pos pos;                            ///< Current drawing Screen position
   int16_t min_y, max_x, max_y, min_x; ///< Screen limits for page content
@@ -104,7 +124,6 @@ private:
                      const char **str2) const;
 
 public:
-  Page() = default;
   void clean();
 
   /**
@@ -286,17 +305,18 @@ public:
   inline ComputeMode get_compute_mode() const { return compute_mode; }
   inline int16_t paint_width() const { return max_x - min_x; }
   inline bool is_full() const { return screen_is_full; }
-  inline bool is_empty() const { return display_list.empty(); }
-  inline bool some_data_waiting() const { return !line_list.empty(); }
-  inline const DisplayList &get_display_list() const { return display_list; }
-  inline const DisplayList &get_line_list() const { return line_list; }
+  inline bool is_empty() const { return display_list->empty(); }
+  inline bool some_data_waiting() const { return !line_list->empty(); }
+  inline const DisplayList &get_display_list() const { return *display_list; }
+  inline const DisplayList &get_line_list() const { return *line_list; }
   inline int16_t get_pos_y() const { return pos.y; }
 
   int16_t get_pixel_value(const CSS::Value &value, const Format &fmt, int16_t ref,
                           bool vertical = false);
   int16_t get_point_value(const CSS::Value &value, const Format &fmt, int16_t ref);
   float get_factor_value(const CSS::Value &value, const Format &fmt, float ref);
-  void adjust_format(DOM::Node *dom_current_node, Format &fmt, CSS *element_css, CSS *item_css);
+  void adjust_format(DOM::Node *dom_current_node, Format &fmt, const CSSPtr &element_css,
+                     const CSSPtr &item_css);
   void adjust_format_from_rules(Format &fmt, const CSS::RulesMap &rules);
 
   inline void reset_font_index(Format &fmt, Fonts::FaceStyle style) {
@@ -316,9 +336,3 @@ public:
     }
   }
 };
-
-#if __PAGE__
-  Page page;
-#else
-  extern Page page;
-#endif

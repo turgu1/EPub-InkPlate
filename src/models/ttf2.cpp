@@ -94,7 +94,7 @@ Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
-      msg_viewer.out_of_memory("glyph allocation");
+      MsgViewer::out_of_memory("glyph allocation");
     }
 
     FT_GlyphSlot slot = face->glyph;
@@ -131,7 +131,7 @@ Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
 
       if (glyph->buffer == nullptr) {
         LOG_E("Unable to allocate memory for glyph.");
-        msg_viewer.out_of_memory("glyph allocation");
+        MsgViewer::out_of_memory("glyph allocation");
       }
       // else {
       //   LOG_D("Allocated %d bytes for glyph.", size)

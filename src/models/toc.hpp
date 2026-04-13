@@ -7,6 +7,7 @@
 // Table of content class
 
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "alloc.hpp"
 #include "char_pool.hpp"
@@ -14,24 +15,30 @@
 #include "pugixml.hpp"
 #include "simple_db.hpp"
 
-#include "models/page_locs.hpp"
+#include "models/epub.hpp"
 
 #include <forward_list>
 #include <map>
 #include <utility>
 
+using TOCPtr = himem_unique_ptr<class TOC>;
 class TOC {
-public:
+private:
   TOC() : db(SimpleDB::Make()) {}
-  ~TOC() {
-    if (char_pool != nullptr) delete char_pool;
-    if (char_buffer != nullptr) free(char_buffer);
-  };
+
+public:
+  ~TOC() = default;
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+
+  static inline auto Make() { return make_unique_himem<TOC>(); }
 
   #pragma pack(push, 1)
   struct EntryRecord {
     char *label;
-    PageLocs::PageId page_id;
+    PageId page_id;
     uint8_t level;
     EntryRecord() {
       label = nullptr;
@@ -49,15 +56,15 @@ public:
   };
   #pragma pack(pop)
 
-  typedef std::map<std::pair<int16_t, std::string>, uint16_t> Infos;
-  typedef std::vector<EntryRecord> Entries;
+  using Infos   = std::map<std::pair<int16_t, std::string>, uint16_t>;
+  using Entries = std::vector<EntryRecord>;
 
   const Entries &get_entries() { return entries; }
-  inline bool is_ready() { return ready; }
-  inline bool is_empty() { return entries.empty(); }
-  inline bool there_is_some_ids() { return some_ids; }
-  inline int16_t get_entry_count() { return entries.size(); }
-  inline const EntryRecord &get_entry(int16_t idx) { return entries[idx]; }
+  inline auto is_ready() -> bool { return ready; }
+  inline auto is_empty() -> bool { return entries.empty(); }
+  inline auto there_is_some_ids() -> bool { return some_ids; }
+  inline auto get_entry_count() -> int16_t { return entries.size(); }
+  inline auto get_entry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
 
   /**
    * @brief Load table of content from a file.
@@ -68,7 +75,7 @@ public:
    *
    * @return True if loading the file was successfull
    */
-  bool load();
+  auto load(EPubPtr &epub) -> bool;
 
   /**
    * @brief Save constructed table of content to a file.
@@ -79,7 +86,7 @@ public:
    *
    * @return True if saving was successfull.
    */
-  bool save();
+  auto save(EPubPtr &epub) -> bool;
 
   /**
    * @brief Load table of content from ePub file.
@@ -92,7 +99,7 @@ public:
    *
    * @return True if the information has been retrieved successfully.
    */
-  bool load_from_epub();
+  auto load_from_epub(EPubPtr &epub) -> bool;
 
   /**
    * @brief Compact the char strings to a single buffer.
@@ -102,7 +109,7 @@ public:
    *
    * @return True if the compaction was successfull.
    */
-  bool compact();
+  auto compact() -> bool;
 
   /**
    * @brief set table of content entry with page id
@@ -127,8 +134,8 @@ private:
 
   SimpleDBPtr db; ///< The SimpleDB table
 
-  CharPool *char_pool{nullptr};
-  char *char_buffer{nullptr};
+  CharPoolPtr char_pool{nullptr};
+  himem_unique_ptr<char[]> char_buffer{nullptr};
   uint16_t char_buffer_size{0};
 
   const pugi::xml_document *opf{nullptr};
@@ -140,17 +147,11 @@ private:
 
   void clean();
   void clean_filename(char *fname);
-  std::string build_filename();
-  bool do_nav_points(pugi::xml_node &node, uint8_t level);
+  auto build_filename(EPubPtr &epub) -> std::string;
+  auto do_nav_points(pugi::xml_node &node, uint8_t level) -> bool;
 
   #if DEBUGGING
     void show();
     void show_info();
   #endif
 };
-
-#if __TOC__
-  TOC toc;
-#else
-  extern TOC toc;
-#endif

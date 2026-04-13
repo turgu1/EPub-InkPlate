@@ -2,9 +2,6 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __PAGE__ 1
-#include "models/epub.hpp"
-
 #include "picture.hpp"
 
 #include "alloc.hpp"
@@ -19,11 +16,11 @@
 #include <utility>
 
 void Page::clean() {
-  display_list.clear();
-  line_list.clear();
-  para_indent    = 0;
-  top_margin     = 0;
-  compute_mode   = ComputeMode::DISPLAY;
+  display_list->clear();
+  line_list->clear();
+  para_indent = 0;
+  top_margin  = 0;
+  // compute_mode   = ComputeMode::DISPLAY;
   screen_is_full = false;
 }
 
@@ -153,7 +150,7 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
       glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
       s     = s1;
       if (glyph != nullptr) {
-        DisplayListEntry *entry = display_list.get_new_entry();
+        DisplayListEntry *entry = display_list->get_new_entry();
         if (entry == nullptr) return;
         entry->command = DisplayListCommand::GLYPH;
         entry->pos     = {static_cast<uint16_t>(pos.x + glyph->xoff),
@@ -170,7 +167,7 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
           }
         #endif
 
-        display_list.push_back(entry);
+        display_list->push_back(entry);
 
         pos.x += glyph->advance;
       }
@@ -213,7 +210,7 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
       s     = s1;
       if (glyph != nullptr) {
 
-        DisplayListEntry *entry = display_list.get_new_entry();
+        DisplayListEntry *entry = display_list->get_new_entry();
         if (entry == nullptr) return;
 
         entry->command = DisplayListCommand::GLYPH;
@@ -231,7 +228,7 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
           }
         #endif
 
-        display_list.push_back(entry);
+        display_list->push_back(entry);
 
         x += glyph->advance;
       }
@@ -247,7 +244,7 @@ void Page::put_char_at(char ch, Pos pos, const Format &fmt) {
 
   glyph = font->get_glyph(ch, fmt.font_size);
   if (glyph != nullptr) {
-    DisplayListEntry *entry = display_list.get_new_entry();
+    DisplayListEntry *entry = display_list->get_new_entry();
     if (entry == nullptr) return;
     entry->command = DisplayListCommand::GLYPH;
     entry->pos     = {static_cast<uint16_t>(pos.x + glyph->xoff),
@@ -264,45 +261,61 @@ void Page::put_char_at(char ch, Pos pos, const Format &fmt) {
       }
     #endif
 
-    display_list.push_back(entry);
+    display_list->push_back(entry);
   }
 }
 
 void Page::paint(bool clear_screen, bool no_full, bool do_it) {
   if (!do_it)
-    if ((display_list.empty()) || (compute_mode != ComputeMode::DISPLAY)) return;
+    if ((display_list->empty()) || (compute_mode != ComputeMode::DISPLAY)) return;
 
-  // display_list.show("DISPLAY LIST");
+  // display_list->show("DISPLAY LIST");
 
   if (clear_screen) screen.clear();
 
-  for (auto *entry : display_list) {
-    if (entry->command == DisplayListCommand::GLYPH) {
-      if (std::get<GlyphEntry>(entry->v).glyph != nullptr) {
+  int count = 0;
+
+  for (auto *entry : *display_list) {
+    switch (entry->command) {
+    case DisplayListCommand::GLYPH:
+      if (std::holds_alternative<GlyphEntry>(entry->v) &&
+          std::get<GlyphEntry>(entry->v).glyph != nullptr) {
         screen.draw_glyph(std::get<GlyphEntry>(entry->v).glyph->buffer,
                           std::get<GlyphEntry>(entry->v).glyph->dim, entry->pos,
                           std::get<GlyphEntry>(entry->v).glyph->pitch);
       } else {
         LOG_E("DISPLAY LIST CORRUPTED!!");
       }
-    } else if (entry->command == DisplayListCommand::PICTURE) {
+      break;
+    case DisplayListCommand::PICTURE:
       screen.draw_picture(std::get<PictureEntry>(entry->v).picture, entry->pos);
-    } else if (entry->command == DisplayListCommand::HIGHLIGHT) {
+      break;
+    case DisplayListCommand::HIGHLIGHT:
       screen.draw_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
-    } else if (entry->command == DisplayListCommand::CLEAR_HIGHLIGHT) {
+      break;
+    case DisplayListCommand::CLEAR_HIGHLIGHT:
       screen.draw_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
-    } else if (entry->command == DisplayListCommand::ROUNDED) {
+      break;
+    case DisplayListCommand::ROUNDED:
       screen.draw_round_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
                                   Screen::Color::BLACK);
-    } else if (entry->command == DisplayListCommand::CLEAR_ROUNDED) {
+      break;
+    case DisplayListCommand::CLEAR_ROUNDED:
       screen.draw_round_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
                                   Screen::Color::WHITE);
-    } else if (entry->command == DisplayListCommand::CLEAR_REGION) {
+      break;
+    case DisplayListCommand::CLEAR_REGION:
       screen.colorize_region(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
-    } else if (entry->command == DisplayListCommand::SET_REGION) {
+      break;
+    case DisplayListCommand::SET_REGION:
       screen.colorize_region(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
+      break;
     }
+
+    count++;
   }
+
+  LOG_I("Painted %d entries on screen", count);
 
   screen.update(no_full);
 }
@@ -321,8 +334,8 @@ void Page::start(const Format &fmt) {
 
   screen_is_full = false;
 
-  display_list.clear();
-  line_list.clear();
+  display_list->clear();
+  line_list->clear();
 
   para_indent = 0;
   line_width  = 0;
@@ -338,7 +351,7 @@ void Page::set_limits(const Format &fmt) {
 
   screen_is_full = false;
 
-  line_list.clear();
+  line_list->clear();
 
   para_indent = 0;
   line_width  = 0;
@@ -348,7 +361,7 @@ void Page::set_limits(const Format &fmt) {
 bool Page::line_break(const Format &fmt, int8_t indent_next_line) {
   Font *font = fonts.get(fmt.font_index);
 
-  if (!line_list.empty()) {
+  if (!line_list->empty()) {
     add_line(fmt, false);
   } else {
     pos.y += font->get_line_height(fmt.font_size) * fmt.line_height_factor;
@@ -398,7 +411,7 @@ bool Page::new_paragraph(const Format &fmt, bool recover) {
 }
 
 void Page::break_paragraph(const Format &fmt) {
-  if (!line_list.empty()) {
+  if (!line_list->empty()) {
     add_line(fmt, true);
   }
 }
@@ -406,7 +419,7 @@ void Page::break_paragraph(const Format &fmt) {
 bool Page::end_paragraph(const Format &fmt) {
   Font *font = fonts.get(fmt.font_index);
 
-  if (!line_list.empty()) {
+  if (!line_list->empty()) {
     add_line(fmt, false);
 
     int32_t descender = font->get_descender_height(fmt.font_size);
@@ -425,7 +438,7 @@ bool Page::end_paragraph(const Format &fmt) {
 void Page::add_line(const Format &fmt, bool justifyable) {
   if (pos.y == 0) pos.y = min_y;
 
-  // line_list.show("LINE");
+  // line_list->show("LINE");
 
   pos.x = para_min_x + para_indent;
   if (pos.x < min_x) pos.x = min_x;
@@ -443,24 +456,24 @@ void Page::add_line(const Format &fmt, bool justifyable) {
   // Get rid of space characters that are at the end of the line.
   // This is mainly required for the JUSTIFY alignment algo.
 
-  while (!line_list.empty()) {
-    DisplayListEntry *entry = line_list.last();
+  while (!line_list->empty()) {
+    DisplayListEntry *entry = line_list->last();
     if ((entry->command == DisplayListCommand::GLYPH) &&
         (std::get<GlyphEntry>(entry->v).is_space)) {
-      line_list.remove_last(); // This is O(N)...
+      line_list->remove_last(); // This is O(N)...
     } else {
       break;
     }
   }
 
-  if (!line_list.empty() && (compute_mode == ComputeMode::DISPLAY)) {
+  if (!line_list->empty() && (compute_mode == ComputeMode::DISPLAY)) {
 
     if ((fmt.align == CSS::Align::JUSTIFY) && justifyable) {
       int16_t target_width = (para_max_x - para_min_x - para_indent);
       int16_t loop_count   = 0;
       while ((line_width < target_width) && (++loop_count < 50)) {
         bool at_least_once = false;
-        for (auto *entry : line_list) {
+        for (auto *entry : *line_list) {
           if (entry->pos.x > 0) { // This means it's a white space
             at_least_once = true;
             entry->pos.x++;
@@ -470,7 +483,7 @@ void Page::add_line(const Format &fmt, bool justifyable) {
         if (!at_least_once) break; // No space available in line to justify the line
       }
       if (loop_count >= 50) {
-        for (auto *entry : line_list) entry->pos.x = 0;
+        for (auto *entry : *line_list) entry->pos.x = 0;
       }
     } else {
       if (fmt.align == CSS::Align::RIGHT) {
@@ -481,7 +494,7 @@ void Page::add_line(const Format &fmt, bool justifyable) {
     }
   }
 
-  for (auto *entry : line_list) {
+  for (auto *entry : *line_list) {
     if (entry->command == DisplayListCommand::GLYPH) {
       int16_t x    = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x = pos.x + std::get<GlyphEntry>(entry->v).glyph->xoff;
@@ -517,7 +530,7 @@ void Page::add_line(const Format &fmt, bool justifyable) {
   line_width = line_height = glyphs_height = 0;
   line_height_factor                       = 0.0;
 
-  display_list.merge(line_list);
+  display_list->merge(*line_list);
 
   para_indent = 0;
   top_margin  = 0;
@@ -528,7 +541,7 @@ void Page::add_line(const Format &fmt, bool justifyable) {
 inline void Page::add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font, bool is_space) {
   if (is_space && (line_width == 0)) return;
 
-  DisplayListEntry *entry = line_list.get_new_entry();
+  DisplayListEntry *entry = line_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::GLYPH;
@@ -540,11 +553,11 @@ inline void Page::add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font,
 
   line_width += (glyph->advance);
 
-  line_list.push_back(entry);
+  line_list->push_back(entry);
 }
 
 void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format &fmt) {
-  DisplayListEntry *entry = line_list.get_new_entry();
+  DisplayListEntry *entry = line_list->get_new_entry();
   if (entry == nullptr) return;
 
   auto dim = picture->get_dim();
@@ -586,7 +599,7 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
   //   entry->kind.picture_entry.advance
   // );
 
-  line_list.push_back(entry);
+  line_list->push_back(entry);
 }
 
 #define NEXT_LINE_REQUIRED_SPACE                                                                   \
@@ -598,14 +611,14 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
     Font *font = fonts.get(fmt.font_index);
     if (font == nullptr) return false;
 
-    if (line_list.empty()) {
+    if (line_list->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
       if ((screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y)) return false;
     }
 
     Glyph *glyph;
 
-    auto the_list   = DisplayList::Make();
+    auto the_list   = DisplayList::Make(display_list_pool);
     const char *str = word;
     int16_t height  = font->get_line_height(fmt.font_size);
     int16_t width   = 0;
@@ -661,7 +674,7 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
       }
     }
 
-    line_list.merge(*the_list.get());
+    line_list->merge(*the_list.get());
 
     if (glyphs_height < height) glyphs_height = height;
     if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
@@ -680,7 +693,7 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
 
     if (font == nullptr) return false;
 
-    if (line_list.empty()) {
+    if (line_list->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
       screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
       if (screen_is_full) {
@@ -745,7 +758,7 @@ bool Page::add_char(const char *ch, const Format &fmt) {
 
   if (screen_is_full) return false;
 
-  if (line_list.empty()) {
+  if (line_list->empty()) {
 
     // We are about to start a new line. Check if it will fit on the page.
 
@@ -866,7 +879,7 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
   // Verify that there is enough room for the bitmap on the line
 
   if ((line_width + advance) >= (para_max_x - para_min_x - para_indent)) {
-    //    if (!(line_list.empty() && at_start_of_page)) {
+    //    if (!(line_list->empty() && at_start_of_page)) {
     add_line(fmt, true);
     // }
     // else {
@@ -922,13 +935,13 @@ void Page::add_text(const std::string &str, const Format &fmt) {
 
   std::unique_ptr<char[]> buff = std::make_unique<char[]>(100);
 
-  if (buff == nullptr) msg_viewer.out_of_memory("temp buffer allocation");
+  if (buff == nullptr) MsgViewer::out_of_memory("temp buffer allocation");
   const char *s = str.c_str();
   while (*s) {
     if (uint8_t(*s) <= ' ') {
       if (*s == ' ') {
         myfmt.trim = *s == ' ';
-        if (!page.add_char(s, myfmt)) break;
+        if (!add_char(s, myfmt)) break;
       }
       s++;
     } else {
@@ -943,7 +956,7 @@ void Page::add_text(const std::string &str, const Format &fmt) {
 }
 
 void Page::put_picture(PicturePtr picture, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   if (compute_mode == ComputeMode::DISPLAY) {
@@ -962,11 +975,11 @@ void Page::put_picture(PicturePtr picture, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::put_highlight(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::HIGHLIGHT;
@@ -983,11 +996,11 @@ void Page::put_highlight(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::clear_highlight(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_HIGHLIGHT;
@@ -1004,11 +1017,11 @@ void Page::clear_highlight(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::put_rounded(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::ROUNDED;
@@ -1025,11 +1038,11 @@ void Page::put_rounded(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::clear_rounded(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_ROUNDED;
@@ -1046,11 +1059,11 @@ void Page::clear_rounded(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::clear_region(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_REGION;
@@ -1067,11 +1080,11 @@ void Page::clear_region(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 void Page::set_region(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list.get_new_entry();
+  DisplayListEntry *entry = display_list->get_new_entry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::SET_REGION;
@@ -1088,7 +1101,7 @@ void Page::set_region(Dim dim, Pos pos) {
     }
   #endif
 
-  display_list.push_back(entry);
+  display_list->push_back(entry);
 }
 
 bool Page::show_cover(PicturePtr &pict) {
@@ -1162,7 +1175,8 @@ int16_t Page::get_pixel_value(const CSS::Value &value, const Format &fmt, int16_
 }
 
 int16_t Page::get_point_value(const CSS::Value &value, const Format &fmt, int16_t ref) {
-  int8_t normal_size = epub.get_book_format_params()->font_size;
+  // int8_t normal_size = epub.get_book_format_params()->font_size;
+  int16_t normal_size = ref;
 
   switch (value.value_type) {
   case CSS::ValueType::PX:
@@ -1219,8 +1233,8 @@ float Page::get_factor_value(const CSS::Value &value, const Format &fmt, float r
   return 0;
 }
 
-void Page::adjust_format(DOM::Node *dom_current_node, Format &fmt, CSS *element_css,
-                         CSS *item_css) {
+void Page::adjust_format(DOM::Node *dom_current_node, Format &fmt, const CSSPtr &element_css,
+                         const CSSPtr &item_css) {
   CSS::RulesMap rules;
 
   // item_css->show();

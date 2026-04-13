@@ -30,9 +30,9 @@ using namespace pugi;
 
 class BookViewerInterp : public HTMLInterpreter {
 public:
-  BookViewerInterp(Page &the_page, DOM &the_dom, Page::ComputeMode the_comp_mode,
-                   const EPub::ItemInfo &the_item)
-      : HTMLInterpreter(the_page, the_dom, the_comp_mode, the_item) {}
+  BookViewerInterp(EPubPtr &the_epub, PagePtr &the_page, DOMPtr &the_dom,
+                   Page::ComputeMode the_comp_mode, const EPub::ItemInfo &the_item)
+      : HTMLInterpreter(the_epub, the_page, the_dom, the_comp_mode, the_item) {}
   ~BookViewerInterp() {}
 
 protected:
@@ -42,7 +42,7 @@ protected:
   }
 };
 
-void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
+void BookViewer::build_page_at(const PageId &page_id, EPubPtr &epub) {
   LOG_D("build_page_at()");
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
@@ -51,11 +51,11 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
   Font *font  = fonts.get(ScreenBottom::FONT);
   page_bottom = font->get_chars_height(ScreenBottom::FONT_SIZE) + 15;
 
-  // page.set_compute_mode(Page::ComputeMode::MOVE);
+  // page->set_compute_mode(Page::ComputeMode::MOVE);
 
-  // show_pictures = epub.get_book_format_params()->show_pictures != 0;
+  // show_pictures = epub->get_book_format_params()->show_pictures != 0;
 
-  if (epub.get_item_at_index(page_id.itemref_index)) {
+  if (epub->get_item_at_index(page_id.itemref_index)) {
 
     int16_t idx;
 
@@ -75,7 +75,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
       idx = 3;
     }
 
-    int8_t font_size = epub.get_book_format_params()->font_size;
+    int8_t font_size = epub->get_book_format_params()->font_size;
 
     Page::Format fmt = {
         .line_height_factor = 0.95,
@@ -96,11 +96,11 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
     // start_of_page_offset = page_id.offset;
     // end_of_page_offset   = page_id.offset + page_info->size;
 
-    DOM *dom = new DOM;
-    BookViewerInterp *interp =
-        new BookViewerInterp(page, *dom, Page::ComputeMode::DISPLAY, epub.get_current_item_info());
+    auto dom                 = DOM::Make();
+    BookViewerInterp *interp = new BookViewerInterp(epub, page, dom, Page::ComputeMode::DISPLAY,
+                                                    epub->get_current_item_info());
     interp->set_limits(page_id.offset, page_id.offset + page_info->size,
-                       epub.get_book_format_params()->show_pictures != 0);
+                       epub->get_book_format_params()->show_pictures != 0);
 
     #if DEBUGGING_AID
       interp->set_pages_to_show_state(PAGE_FROM, PAGE_TO);
@@ -109,9 +109,9 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
 
     xml_node node;
 
-    if ((node = epub.get_current_item().child("html").child("body"))) {
+    if ((node = epub->get_current_item().child("html").child("body"))) {
 
-      page.start(fmt);
+      page->start(fmt);
 
       // #if EPUB_INKPLATE_BUILD
       //   esp_task_wdt_reset();
@@ -121,7 +121,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
 
       if (interp->build_pages_recurse(node, *new_fmt, dom->body, 1)) {
 
-        if (page.some_data_waiting()) page.end_paragraph(fmt);
+        if (page->some_data_waiting()) page->end_paragraph(fmt);
 
         // TTF * font = fonts.get(0, 7);
 
@@ -134,7 +134,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
         std::ostringstream ostr;
 
         if (show_title != 0) {
-          const char *t = epub.get_title();
+          const char *t = epub->get_title();
           if (strlen(t) > 50) {
             // Only the first 50 characters of the title will be shown
             char str[55];
@@ -145,22 +145,19 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
           } else {
             ostr << t;
           }
-          // page.put_highlight(Dim(screen.get_width(), title_baseline_offset), Pos(0, 0));
-          page.put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, title_baseline_offset), fmt);
+          // page->put_highlight(Dim(screen.get_width(), title_baseline_offset), Pos(0, 0));
+          page->put_str_at(ostr.str(), Pos(Page::HORIZONTAL_CENTER, title_baseline_offset), fmt);
         }
 
-        ScreenBottom::show(page_locs.get_page_nbr(page_id), page_locs.get_page_count());
+        ScreenBottom::show(page, page_locs.get_page_nbr(page_id), page_locs.get_page_count());
 
-        page.paint();
+        page->paint();
       }
       interp->show_stat();
       interp->release_fmt(new_fmt);
     }
 
     interp->check_for_completion();
-
-    delete dom;
-    dom = nullptr;
 
     delete interp;
     interp = nullptr;
@@ -171,7 +168,7 @@ void BookViewer::build_page_at(const PageLocs::PageId &page_id) {
   #endif
 }
 
-void BookViewer::show_fake_cover() {
+void BookViewer::show_fake_cover(EPubPtr &epub) {
   Page::Format fmt = {
       .font_index    = 2,
       .font_size     = 14,
@@ -181,29 +178,29 @@ void BookViewer::show_fake_cover() {
       .align         = CSS::Align::CENTER,
   };
 
-  std::string title  = epub.get_title();
-  std::string author = epub.get_author();
+  std::string title  = epub->get_title();
+  std::string author = epub->get_author();
 
-  page.start(fmt);
+  page->start(fmt);
 
-  page.new_paragraph(fmt, false);
-  page.add_text(author, fmt);
-  page.end_paragraph(fmt);
+  page->new_paragraph(fmt, false);
+  page->add_text(author, fmt);
+  page->end_paragraph(fmt);
 
   fmt.font_index = 1;
   fmt.font_size  = 18;
   fmt.screen_top = 200;
   fmt.font_style = Fonts::FaceStyle::NORMAL;
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt, false);
-  page.add_text(title, fmt);
-  page.end_paragraph(fmt);
+  page->set_limits(fmt);
+  page->new_paragraph(fmt, false);
+  page->add_text(title, fmt);
+  page->end_paragraph(fmt);
 
-  page.paint();
+  page->paint();
 }
 
-void BookViewer::show_page(const PageLocs::PageId &page_id) {
+void BookViewer::show_page(const PageId &page_id, EPubPtr &epub) {
   std::scoped_lock guard(mutex);
 
   current_page_id = page_id;
@@ -211,26 +208,26 @@ void BookViewer::show_page(const PageLocs::PageId &page_id) {
   // if (page_locs.get_page_nbr(page_id) == 0) {
   if ((page_id.itemref_index == 0) && (page_id.offset == 0)) {
 
-    if (epub.get_book_format_params()->show_pictures != 0) {
-      std::string fname = epub.get_cover_filename();
+    if (epub->get_book_format_params()->show_pictures != 0) {
+      std::string fname = epub->get_cover_filename();
       if (!fname.empty()) {
         // LOG_D("Cover filename: %s", fname);
-        auto pict = epub.get_picture(fname, true);
+        auto pict = epub->get_picture(fname, true);
 
         if (pict != nullptr) {
-          page.show_cover(pict);
+          page->show_cover(pict);
         } else {
           LOG_D("Unable to retrieve cover file: %s", fname.c_str());
-          show_fake_cover();
+          show_fake_cover(epub);
         }
       } else {
         LOG_D("It seems there is no cover.");
-        build_page_at(page_id);
+        build_page_at(page_id, epub);
       }
     } else {
-      show_fake_cover();
+      show_fake_cover(epub);
     }
   } else {
-    build_page_at(page_id);
+    build_page_at(page_id, epub);
   }
 }

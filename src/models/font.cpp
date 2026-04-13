@@ -23,7 +23,7 @@ void Font::add_buff_to_byte_pool() {
   BytePool *pool = (BytePool *)allocate(BYTE_POOL_SIZE);
   if (pool == nullptr) {
     LOG_E("Unable to allocated memory for bytes pool.");
-    msg_viewer.out_of_memory("ttf pool allocation");
+    MsgViewer::out_of_memory("ttf pool allocation");
   }
   byte_pools.push_front(pool);
 
@@ -109,7 +109,7 @@ bool Font::set_font_face_from_file(const std::string font_filename) {
 
     if (buffer == nullptr) {
       LOG_E("Unable to allocate font buffer: %" PRIi32, (int32_t)(length + 1));
-      msg_viewer.out_of_memory("font buffer allocation");
+      MsgViewer::out_of_memory("font buffer allocation");
     }
 
     if (fread(buffer.get(), length, 1, font_file) != 1) {

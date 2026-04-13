@@ -2,7 +2,6 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __BATTERY_VIEWER__ 1
 #include "viewers/battery_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -10,13 +9,10 @@
   #include "logging.hpp"
   #include "models/config.hpp"
   #include "screen.hpp"
-  #include "viewers/page.hpp"
 
   #include <cstring>
 
-  static constexpr char const *TAG = "BatteryViewer";
-
-  void BatteryViewer::show() {
+  void BatteryViewer::show(PagePtr &page) {
     int8_t view_mode = 0;
     config.get(Config::Ident::BATTERY, &view_mode);
 
@@ -55,11 +51,11 @@
     // pos.x = 4;
     pos.y = Screen::get_height() + font->get_descender_height(9) - 2;
 
-    // page.clear_region(dim, pos);
+    // page->clear_region(dim, pos);
 
     fmt.font_index = 0;
     pos.x          = 5;
-    page.put_char_at(icons[icon_index], pos, fmt);
+    page->put_char_at(icons[icon_index], pos, fmt);
 
     // LOG_E("Battery icon index: %d (%c)", icon_index, icons[icon_index]);
 
@@ -79,7 +75,7 @@
       font           = fonts.get(1);
       fmt.font_index = 1;
       pos.x          = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
-      page.put_str_at(str, pos, fmt);
+      page->put_str_at(str, pos, fmt);
     }
   }
 #endif

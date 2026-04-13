@@ -11,8 +11,6 @@
 #include "models/config.hpp"
 #include "models/nvs_mgr.hpp"
 #include "viewers/book_viewer.hpp"
-#include "viewers/linear_books_dir_viewer.hpp"
-#include "viewers/matrix_books_dir_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
   #include "models/nvs_mgr.hpp"
@@ -116,7 +114,7 @@ void BooksDirController::setup() {
   #endif
 }
 
-void BooksDirController::save_last_book(const PageLocs::PageId &page_id, bool going_to_deep_sleep) {
+void BooksDirController::save_last_book(const PageId &page_id, bool going_to_deep_sleep) {
   // As we leave, we keep the information required to return to the book
   // in the NVS space. If this is called just before going to deep sleep, we
   // set the "WAS_SHOWN" boolean to true, such that when the device will
@@ -167,7 +165,7 @@ void BooksDirController::show_last_book() {
     book_fname = BOOKS_FOLDER "/";
     book_fname += book->filename;
     book_title = book->title;
-    if (book_controller.open_book_file(book_title, book_fname, book_page_id)) {
+    if (book_controller.open_book(book_title, book_fname, book_page_id)) {
       app_controller.set_controller(AppController::Ctrl::BOOK);
     }
   }
@@ -177,8 +175,11 @@ void BooksDirController::enter() {
 
   LOG_D("===> enter()...");
   config.get(Config::Ident::DIR_VIEW, &viewer_id);
-  books_dir_viewer = (viewer_id == LINEAR_VIEWER) ? (BooksDirViewer *)&linear_books_dir_viewer
-                                                  : (BooksDirViewer *)&matrix_books_dir_viewer;
+  if (viewer_id == LINEAR_VIEWER) {
+    books_dir_viewer = LinearBooksDirViewer::Make();
+  } else {
+    books_dir_viewer = MatrixBooksDirViewer::Make();
+  }
 
   books_dir_viewer->setup();
   screen.force_full_update();
@@ -191,7 +192,13 @@ void BooksDirController::enter() {
   }
 }
 
-void BooksDirController::leave(bool going_to_deep_sleep) {}
+void BooksDirController::leave(bool going_to_deep_sleep) {
+  LOG_D("===> leave()...");
+
+  save_last_book(book_page_id, going_to_deep_sleep);
+
+  books_dir_viewer.reset();
+}
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   void BooksDirController::input_event(const EventMgr::Event &event) {
@@ -224,7 +231,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
             book_title    = book->title;
             book_filename = book->filename;
 
-            PageLocs::PageId page_id = {0, 0};
+            PageId page_id = {0, 0};
 
             #if EPUB_INKPLATE_BUILD
               NVSMgr::NVSData nvs_data;
@@ -233,7 +240,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
               }
             #endif
 
-            if (book_controller.open_book_file(book_title, book_fname, page_id)) {
+            if (book_controller.open_book(book_title, book_fname, page_id)) {
               app_controller.set_controller(AppController::Ctrl::BOOK);
             }
           }
@@ -318,7 +325,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
           book_title    = book->title;
           book_filename = book->filename;
 
-          PageLocs::PageId page_id = {0, 0};
+          PageId page_id = {0, 0};
 
           #if EPUB_INKPLATE_BUILD
             NVSMgr::NVSData nvs_data;
@@ -328,7 +335,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {}
             }
           #endif
 
-          if (book_controller.open_book_file(book_title, book_fname, page_id)) {
+          if (book_controller.open_book(book_title, book_fname, page_id)) {
             app_controller.set_controller(AppController::Ctrl::BOOK);
           }
         }

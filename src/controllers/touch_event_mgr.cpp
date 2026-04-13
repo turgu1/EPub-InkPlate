@@ -231,6 +231,8 @@
     }
 
     void EventMgr::show_calibration() {
+      auto page = Page::Make();
+
       switch (screen.get_orientation()) {
       case Screen::Orientation::BOTTOM:
         LOG_D("Bottom...");
@@ -257,14 +259,14 @@
         break;
       }
 
-      auto cross_hair = [](uint16_t x, uint16_t y) {
-        page.put_highlight(Dim(41, 3), Pos(x - 20, y - 1));
-        page.put_highlight(Dim(43, 5), Pos(x - 21, y - 2));
-        page.put_highlight(Dim(45, 7), Pos(x - 22, y - 3));
+      auto cross_hair = [&page](uint16_t x, uint16_t y) {
+        page->put_highlight(Dim(41, 3), Pos(x - 20, y - 1));
+        page->put_highlight(Dim(43, 5), Pos(x - 21, y - 2));
+        page->put_highlight(Dim(45, 7), Pos(x - 22, y - 3));
 
-        page.put_highlight(Dim(3, 41), Pos(x - 1, y - 20));
-        page.put_highlight(Dim(5, 43), Pos(x - 2, y - 21));
-        page.put_highlight(Dim(7, 45), Pos(x - 3, y - 22));
+        page->put_highlight(Dim(3, 41), Pos(x - 1, y - 20));
+        page->put_highlight(Dim(5, 43), Pos(x - 2, y - 21));
+        page->put_highlight(Dim(7, 45), Pos(x - 3, y - 22));
       };
 
       for (int i = 0; i < 3; i++) cross_hair(calib_point.x[i], calib_point.y[i]);
@@ -280,13 +282,13 @@
           .align         = CSS::Align::CENTER,
       };
 
-      page.put_str_at("Touch Sensor Calibration",
-                      Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 150), fmt);
-      page.put_str_at("Please TAP once on each crosshair to calibrate.",
-                      Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 100), fmt);
+      page->put_str_at("Touch Sensor Calibration",
+                       Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 150), fmt);
+      page->put_str_at("Please TAP once on each crosshair to calibrate.",
+                       Pos(Screen::get_width() >> 1, (Screen::get_height() >> 1) - 100), fmt);
 
       calib_count = 0;
-      page.paint();
+      page->paint();
     }
 
     void EventMgr::to_user_coord(uint16_t &x, uint16_t &y) {
@@ -635,13 +637,15 @@
                                               0)) {
               LOG_I("Timed out on Light Sleep. Going now to Deep Sleep");
               screen.force_full_update();
-              msg_viewer.show(
+              MsgViewer::show(
                   MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
                   "Timeout period exceeded (%d minutes). The device is now "
                   "entering into Deep Sleep mode. Please press the WakeUp button to restart.",
                   light_sleep_duration);
 
-              screen_saver.show();
+              auto screen_saver = ScreenSaver::Make();
+              screen_saver->show();
+
               ESP::delay(5000);
               app_controller.going_to_deep_sleep();
 

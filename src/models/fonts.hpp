@@ -137,7 +137,7 @@ private:
   char *italic_fname[8];
   char *bold_italic_fname[8];
 
-  CharPool char_pool;
+  CharPoolPtr char_pool{nullptr};
 
   char *get_file(const char *filename, uint32_t size);
   std::string &filter_filename(std::string &fname);

@@ -10,12 +10,24 @@
 #include "controllers/event_mgr.hpp"
 #include "viewers/page.hpp"
 
+#include <functional>
+
 using MenuViewerPtr = himem_unique_ptr<class MenuViewer>;
 
 class MenuViewer {
+private:
+  static constexpr char const *TAG = "MenuViewer";
+
+  MenuViewer() = default;
+
+  PagePtr page = Page::Make();
+
 public:
-  MenuViewer()  = default;
-  ~MenuViewer() = default;
+  ~MenuViewer() { LOG_I("MenuViewer destructor called"); }
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
 
   static inline auto Make() { return make_unique_himem<MenuViewer>(); }
 
@@ -27,10 +39,15 @@ public:
                                          'I', 'L', 'H', 'K', 'N', 'Y', 'M', 'U'};
   struct MenuEntry {
     Icon icon;
-    const char *caption;
-    void (*func)();
     bool visible;
     bool highlight;
+    std::function<void()> func;
+    const char *caption;
+
+    template <typename T>
+    void bind(T *instance, void (T::*method)()) {
+      func = [instance, method]() { (instance->*method)(); };
+    }
   };
 
   void show_caption(std::string caption, Page::Format &fmt);
@@ -39,8 +56,6 @@ public:
   void clear_highlight();
 
 private:
-  static constexpr char const *TAG = "MenuViewer";
-
   static constexpr int16_t ICON_SIZE    = 15;
   static constexpr int16_t CAPTION_SIZE = 10;
 

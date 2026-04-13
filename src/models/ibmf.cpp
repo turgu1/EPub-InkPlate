@@ -422,7 +422,7 @@ Glyph *IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size) {
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
-      msg_viewer.out_of_memory("glyph allocation");
+      MsgViewer::out_of_memory("glyph allocation");
     }
 
     glyph_data = nullptr;

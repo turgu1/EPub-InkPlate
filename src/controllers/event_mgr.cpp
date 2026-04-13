@@ -332,7 +332,10 @@
                               "Timeout period exceeded (%d minutes). The device is now "
                               "entering into Deep Sleep mode. Please press a key to restart.",
                               light_sleep_duration);
-              screen_saver.show();
+
+              auto screen_saver = ScreenSaver::Make();
+              screen_saver->show();
+
               ESP::delay(5000);
 
               app_controller.going_to_deep_sleep();

@@ -1,6 +1,7 @@
 #pragma once
 #include "global.hpp"
 
+#include <iostream>
 #include <iterator>
 #include <variant>
 
@@ -8,7 +9,6 @@
 #include "picture.hpp"
 
 #include "models/fonts.hpp"
-#include "viewers/msg_viewer.hpp"
 
 enum class DisplayListCommand {
   GLYPH = 1, PICTURE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED
@@ -30,31 +30,43 @@ struct RegionEntry { ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CL
 };
 
 class DisplayListEntry {
+private:
+  static constexpr char const *TAG = "DisplayListEntry";
+
 public:
   DisplayListEntry *next{nullptr};
 
   DisplayListCommand command{DisplayListCommand::GLYPH}; ///< Command
-  std::variant<GlyphEntry, PictureEntry, RegionEntry> v;
+  std::variant<std::monostate, GlyphEntry, PictureEntry, RegionEntry> v;
   Pos pos{0, 0}; ///< Screen coordinates
 
   DisplayListEntry() = default;
   ~DisplayListEntry() {
+    // LOG_D("DisplayListEntry destructor called for command %d at pos (%d, %d)",
+    //       static_cast<int>(command), pos.x, pos.y);
     if (command == DisplayListCommand::PICTURE && std::holds_alternative<PictureEntry>(v)) {
       std::get<PictureEntry>(v).picture.reset();
     }
   }
 };
 
-using DisplayListPtr = himem_unique_ptr<class DisplayList>;
+using DisplayListPool = MemoryPool<DisplayListEntry>;
+using DisplayListPtr  = himem_unique_ptr<class DisplayList>;
 
 class DisplayList {
 private:
+  static constexpr char const *TAG = "DisplayList";
+
   DisplayListEntry *head{nullptr};
   DisplayListEntry *tail{nullptr};
 
-  static MemoryPool<DisplayListEntry> entry_pool;
+  // For memory management of DisplayListEntry objects, the entry_pool must be made
+  // available by the Page class instance  to ensure that all DisplayList instances used
+  // by the Page class share the same pool, allowing for efficient reuse and moving of
+  // DisplayListEntry objects across different DisplayList instances.
+  DisplayListPool &entry_pool;
 
-  DisplayList() = default;
+  DisplayList(DisplayListPool &pool) : entry_pool(pool) {}
 
 public:
   friend class Page;
@@ -63,7 +75,7 @@ public:
     requires(!std::is_array_v<T>)
   friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
 
-  static inline auto Make() { return make_unique_himem<DisplayList>(); }
+  static inline auto Make(DisplayListPool &pool) { return make_unique_himem<DisplayList>(pool); }
   ~DisplayList() { clear(); }
 
   // Iterator class (nested)
@@ -108,6 +120,19 @@ public:
 
   // Utility function to add elements (for testing)
   void push_back(DisplayListEntry *entry) {
+    // if ((size_t)entry < 0x900000) {
+    //   LOG_E("Invalid entry pointer: %p", reinterpret_cast<void *>(entry));
+    // }
+
+    // if (entry == nullptr) {
+    //   LOG_E("Cannot add null entry to DisplayList");
+    //   return;
+    // }
+
+    if (std::holds_alternative<std::monostate>(entry->v)) {
+      LOG_E("Cannot add entry with no content");
+      return;
+    }
     if (empty()) {
       head = tail = entry;
     } else {
@@ -119,9 +144,10 @@ public:
 
   // Destructor to free memory (essential for manual memory management)
   void clear() {
-    // NOTE: do NOT use the iterator here — deleteElement() recycles the node
+    // NOTE: do NOT use the iterator here — deleteElement() recycles the nodemake
     // back into the pool's free-list, overwriting entry->next before ++it
     // can read it, causing a use-after-free.
+
     DisplayListEntry *current = head;
     while (current) {
       DisplayListEntry *next = current->next; // save before freeing
@@ -131,15 +157,10 @@ public:
     head = tail = nullptr;
   }
 
-  DisplayListEntry *get_new_entry() {
-    DisplayListEntry *entry = entry_pool.newElement();
-    if (entry == nullptr) msg_viewer.out_of_memory("display list allocation");
-    // Not expected to come back here, but just in case, we return nullptr if the allocation
-    // failed
-    return entry;
-  }
+  auto get_new_entry() -> DisplayListEntry *;
 
   void merge(DisplayList &other) {
+
     if (other.empty()) return;
 
     if (empty()) {
@@ -160,16 +181,22 @@ public:
       head = tail = nullptr;
     } else {
       DisplayListEntry *current = head;
-      while (current->next != tail) {
+      while ((current) && (current->next != tail)) {
+        // std::cout << " " << current;
         current = current->next;
       }
-      entry_pool.deleteElement(tail);
-      tail       = current;
-      tail->next = nullptr;
+      if (!current) {
+        LOG_E("Error in remove_last: tail (%p) not found in list", reinterpret_cast<void *>(tail));
+      } else {
+        entry_pool.deleteElement(tail);
+        tail       = current;
+        tail->next = nullptr;
+      }
     }
   }
 
-  #if 1 // DEBUGGING
+  #if 0 // DEBUGGING
+    #include <iostream>
     void show(const char *title) {
       std::cout << "--- " << title << " ---" << std::endl;
       for (auto *entry : *this) {

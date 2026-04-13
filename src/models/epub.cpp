@@ -2,18 +2,16 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __EPUB__ 1
 #include "models/epub.hpp"
 
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/fonts.hpp"
-#include "models/page_locs.hpp"
-#include "unzip.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
 #include "picture_factory.hpp"
+#include "unzip.hpp"
 
 #include "logging.hpp"
 #if EPUB_INKPLATE_BUILD
@@ -32,50 +30,50 @@ using namespace pugi;
 
 const char *TAG = "EPUB";
 
-bool package_pred(xml_node node) {
+auto package_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "package") == 0) || (strcmp(node.name(), "opf:package") == 0);
   LOG_D("package() result: %d", res);
   return res;
 }
 
-bool metadata_pred(xml_node node) {
+auto metadata_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "metadata") == 0) || (strcmp(node.name(), "opf:metadata") == 0);
   LOG_D("metadata() result: %d", res);
   return res;
 }
 
-bool manifest_pred(xml_node node) {
+auto manifest_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "manifest") == 0) || (strcmp(node.name(), "opf:manifest") == 0);
   LOG_D("manifest() result: %d", res);
   return res;
 }
 
-bool item_pred(xml_node node) {
+auto item_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "item") == 0) || (strcmp(node.name(), "opf:item") == 0);
   LOG_D("item() result: %d", res);
   return res;
 }
 
-bool spine_pred(xml_node node) {
+auto spine_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "spine") == 0) || (strcmp(node.name(), "opf:spine") == 0);
   LOG_D("spine() result: %d", res);
   return res;
 }
 
-bool itemref_pred(xml_node node) {
+auto itemref_pred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "itemref") == 0) || (strcmp(node.name(), "opf:itemref") == 0);
   LOG_D("itemref() result: %d", res);
   return res;
 }
 
-bool xmlns_pred(xml_attribute attr) {
+auto xmlns_pred(xml_attribute attr) -> bool {
   bool res = (strcmp(attr.name(), "xmlns") == 0) || (strcmp(attr.name(), "xmlns:opf") == 0);
   LOG_D("xmlns() result: %d", res);
   return res;
 }
 
-xml_node one_by_attr(xml_node n, const char *name1, const char *name2, const char *attr,
-                     const char *value) {
+auto one_by_attr(xml_node n, const char *name1, const char *name2, const char *attr,
+                 const char *value) -> xml_node {
   xml_node res;
 
   if (!(res = n.find_child_by_attribute(name1, attr, value))) {
@@ -89,18 +87,6 @@ xml_node one_by_attr(xml_node n, const char *name1, const char *name2, const cha
   return res;
 }
 
-EPub::EPub() {
-  opf_data               = nullptr;
-  encryption_data        = nullptr;
-  current_item_info.data = nullptr;
-  file_is_open           = false;
-  fonts_size_too_large   = false;
-  fonts_size             = 0;
-  current_itemref        = xml_node(NULL);
-  opf_base_path.clear();
-  current_filename.clear();
-}
-
 EPub::~EPub() { close_file(); }
 
 void extract_path(const char *fname, std::string &path) {
@@ -110,7 +96,7 @@ void extract_path(const char *fname, std::string &path) {
   if (i > 0) path.assign(fname, ++i);
 }
 
-bool EPub::check_mimetype() {
+auto EPub::check_mimetype() -> bool {
   FileContentPtr data;
   uint32_t size;
 
@@ -133,7 +119,7 @@ bool EPub::check_mimetype() {
     break;                                                                                         \
   }
 
-EPub::ObfuscationType EPub::get_file_obfuscation(const char *filename) {
+auto EPub::get_file_obfuscation(const char *filename) -> ObfuscationType {
   ObfuscationType obf_type = ObfuscationType::NONE;
 
   if (encryption_is_present()) {
@@ -155,7 +141,7 @@ EPub::ObfuscationType EPub::get_file_obfuscation(const char *filename) {
   return obf_type;
 }
 
-bool EPub::get_encryption_xml() {
+auto EPub::get_encryption_xml() -> bool {
   static constexpr const char *fname = "META-INF/encryption.xml";
 
   uint32_t size;
@@ -186,7 +172,7 @@ bool EPub::get_encryption_xml() {
   return true;
 }
 
-bool EPub::get_opf_filename(std::string &filename) {
+auto EPub::get_opf_filename(std::string &filename) -> bool {
   int err = 0;
   uint32_t size;
 
@@ -229,7 +215,7 @@ bool EPub::get_opf_filename(std::string &filename) {
   return completed;
 }
 
-std::string EPub::get_unique_identifier() {
+auto EPub::get_unique_identifier() -> std::string {
   xml_attribute attr;
   xml_node node, node2;
   const char *id;
@@ -242,19 +228,19 @@ std::string EPub::get_unique_identifier() {
   return "";
 }
 
-uint8_t hex_to_bin(char ch) {
+auto hex_to_bin(char ch) -> uint8_t {
   if ((ch >= '0') && (ch <= '9')) return ch - '0';
   if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
   if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
   return 0;
 }
 
-inline bool valid_hex(char ch) {
+inline auto valid_hex(char ch) -> bool {
   return (((ch >= '0') && (ch <= '9')) || ((ch >= 'A') && (ch <= 'F')) ||
           ((ch >= 'a') && (ch <= 'f')));
 }
 
-inline bool to_bin(const char *from, uint8_t *to) {
+inline auto to_bin(const char *from, uint8_t *to) -> bool {
   if (valid_hex(from[0]) && valid_hex(from[1])) {
     *to = (hex_to_bin(from[0]) << 4) + hex_to_bin(from[1]);
     return true;
@@ -284,7 +270,7 @@ inline bool to_bin(const char *from, uint8_t *to) {
   }
 #endif
 
-bool EPub::get_keys() {
+auto EPub::get_keys() -> bool {
   std::string unique_id = get_unique_identifier();
   const char *str       = unique_id.c_str();
 
@@ -308,7 +294,7 @@ bool EPub::get_keys() {
   return true;
 }
 
-bool EPub::get_opf(std::string &filename) {
+auto EPub::get_opf(std::string &filename) -> bool {
   int err = 0;
   uint32_t size;
 
@@ -354,7 +340,7 @@ bool EPub::get_opf(std::string &filename) {
   return completed;
 }
 
-std::string EPub::filename_locate(const char *fname) {
+auto EPub::filename_locate(const char *fname) -> std::string {
   char name[256];
   uint8_t idx   = 0;
   const char *s = fname;
@@ -396,8 +382,8 @@ auto EPub::retrieve_file(const char *fname, uint32_t &size) -> FileContentPtr {
 }
 
 void EPub::load_fonts() {
-  for (auto *css : css_cache) {
-    retrieve_fonts_from_css(*css);
+  for (auto &css : css_cache) {
+    retrieve_fonts_from_css(css);
   }
 }
 
@@ -427,8 +413,8 @@ void EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obf_type) 
   }
 }
 
-bool EPub::load_font(const std::string filename, const std::string font_family,
-                     const Fonts::FaceStyle style) {
+auto EPub::load_font(const std::string filename, const std::string font_family,
+                     const Fonts::FaceStyle style) -> bool {
   uint32_t size;
   LOG_D("Font file name: %s", filename.c_str());
   if ((size = unzip.get_file_size(filename.c_str())) > 0) {
@@ -471,23 +457,35 @@ bool EPub::load_font(const std::string filename, const std::string font_family,
   return false;
 }
 
-void EPub::retrieve_fonts_from_css(CSS &css) {
+void EPub::retrieve_fonts_from_css(CSSPtr &css) {
   LOG_D("retrieve_fonts_from_css()");
+
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
+
   #if USE_EPUB_FONTS
 
     if ((book_format_params.use_fonts_in_book == 0) || (fonts_size_too_large)) return;
 
     CSS::RulesMap font_rules;
-    DOM *dom      = new DOM;
-    DOM::Node *ff = dom->body->add_child(DOM::Tag::FONT_FACE);
 
-    css.match(ff, font_rules);
+    auto dom = DOM::Make();
+    if (dom == nullptr) {
+      LOG_E("Failed to allocate DOM object for font extraction");
+      return;
+    }
 
-    delete dom;
-    dom = nullptr;
+    auto ff = dom->add_child(dom->body, DOM::Tag::FONT_FACE);
+    if (ff == nullptr) {
+      LOG_E("Failed to add FONT_FACE child to DOM");
+      dom.reset();
+      return;
+    }
+
+    css->match(ff, font_rules);
+
+    dom.reset();
 
     if (font_rules.empty()) return;
 
@@ -495,35 +493,35 @@ void EPub::retrieve_fonts_from_css(CSS &css) {
 
     for (auto &rule : font_rules) {
       const CSS::Values *values;
-      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
+      if ((values = css->get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
         Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
         Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
         Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
         std::string font_family      = values->front()->str;
 
-        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
+        if ((values = css->get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
           font_style = (Fonts::FaceStyle)values->front()->choice.face_style;
         }
-        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
+        if ((values = css->get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
           font_weight = (Fonts::FaceStyle)values->front()->choice.face_style;
         }
         style = fonts.adjust_font_style(style, font_style, font_weight);
         // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
         if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
-          if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
+          if ((values = css->get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
               (!values->empty()) && (values->front()->value_type == CSS::ValueType::URL)) {
 
             if (first) {
               first = false;
               LOG_D("Displaying font loading msg.");
-              msg_viewer.show(
+              MsgViewer::show(
                   MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
                   "The application is retrieving font(s) from the EPub file. Please wait.");
             }
 
-            std::string filename = css.get_folder_path() + values->front()->str;
+            std::string filename = css->get_folder_path() + values->front()->str;
             filename             = filename_locate(filename.c_str());
 
             load_font(filename, font_family, style);
@@ -533,7 +531,9 @@ void EPub::retrieve_fonts_from_css(CSS &css) {
       }
     }
   #endif
+
   LOG_D("end of retrieve_fonts_from_css()");
+
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
@@ -561,8 +561,8 @@ void EPub::retrieve_css(ItemInfo &item) {
         std::string css_id = attr.value(); // uses href as id
 
         // search the list of css files to see if it already been parsed
-        int16_t idx                    = 0;
-        CSSList::iterator css_cache_it = css_cache.begin();
+        int16_t idx       = 0;
+        auto css_cache_it = css_cache.begin();
 
         while (css_cache_it != css_cache.end()) {
           if ((*css_cache_it)->get_id().compare(css_id) == 0) break;
@@ -584,19 +584,20 @@ void EPub::retrieve_css(ItemInfo &item) {
             LOG_D("CSS Filename: %s", fname.c_str());
             std::string path;
             extract_path(fname.c_str(), path);
-            CSS *css_tmp = new CSS(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0);
-            if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
+            auto css_tmp = CSS::Make(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0);
+            if (css_tmp == nullptr) MsgViewer::out_of_memory("css temp allocation");
 
             // #if DEBUGGING
             //   css_tmp->show();
             // #endif
 
-            retrieve_fonts_from_css(*css_tmp);
-            css_cache.push_back(css_tmp);
-            item.css_list.push_back(css_tmp);
+            retrieve_fonts_from_css(css_tmp);
+            css_cache.push_back(std::move(css_tmp));
+            item.css_list.push_back(*css_cache.back());
           }
         } else {
-          item.css_list.push_back(*css_cache_it);
+          item.css_list.push_back(**css_cache_it); // The css file was found in the cache. Just add
+                                                   // it to the list of css for the current item.
         }
       }
     } while ((node = node.next_sibling("link")));
@@ -614,23 +615,22 @@ void EPub::retrieve_css(ItemInfo &item) {
       } else {
         buffer = node.child_value();
       }
-      CSS *css_tmp = new CSS("current-item", item.file_path.c_str(), buffer, strlen(buffer), 1);
-      if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-      retrieve_fonts_from_css(*css_tmp);
+      auto css_tmp = CSS::Make("current-item", item.file_path.c_str(), buffer, strlen(buffer), 1);
+      if (!css_tmp) MsgViewer::out_of_memory("css temp allocation");
+      retrieve_fonts_from_css(css_tmp);
       // css_tmp->show();
-      item.css_cache.push_back(css_tmp);
+      item.css_cache.push_back(std::move(css_tmp));
     } while ((node = node.next_sibling("style")));
   }
 
   // Populate the current item css structure with property suites present in
   // the identified css files in the <meta> portion of the html file.
 
-  if (item.css != nullptr) delete item.css;
-  if ((item.css = new CSS("MergedForItem")) == nullptr) {
-    msg_viewer.out_of_memory("css allocation");
+  if (!(item.css = CSS::Make("MergedForItem"))) {
+    MsgViewer::out_of_memory("css allocation");
   }
-  for (auto *css : item.css_list) item.css->retrieve_data_from_css(*css);
-  for (auto *css : item.css_cache) item.css->retrieve_data_from_css(*css);
+  for (auto &css : item.css_list) item.css->retrieve_data_from_css(css);
+  for (auto &css : item.css_cache) item.css->retrieve_data_from_css(*css.get());
 
   // item.css->show();
   LOG_D("end of retrieve_css()");
@@ -639,7 +639,7 @@ void EPub::retrieve_css(ItemInfo &item) {
   #endif
 }
 
-bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
+auto EPub::get_item(pugi::xml_node itemref, ItemInfo &item) -> bool {
   int err = 0;
   #define ERR(e)                                                                                   \
     {                                                                                              \
@@ -731,7 +731,7 @@ bool EPub::get_item(pugi::xml_node itemref, ItemInfo &item) {
 
       // current_item.parse<0>(current_item_data);
 
-      // if (css.size() > 0) css.clear();
+      // if (css->size() > 0) css->clear();
 
       retrieve_css(item);
     }
@@ -788,11 +788,9 @@ void EPub::open_params(const std::string &epub_filename) {
   }
 }
 
-bool EPub::open_file(const std::string &epub_filename) {
+auto EPub::open(const std::string &epub_filename) -> bool {
   if (file_is_open && (current_filename == epub_filename)) return true;
   if (file_is_open) close_file();
-
-  page_locs.clear();
 
   #if COMPUTE_SIZE
     memory_used = 0;
@@ -825,6 +823,12 @@ bool EPub::open_file(const std::string &epub_filename) {
 
   clear_item_data(current_item_info);
 
+  toc = TOC::Make();
+  if (toc == nullptr) {
+    LOG_E("Unable to allocate memory for the book table of content.");
+    return false;
+  }
+
   current_filename     = epub_filename;
   file_is_open         = true;
   fonts_size_too_large = false;
@@ -846,13 +850,12 @@ void EPub::clear_item_data(ItemInfo &item) {
   // }
   item.css_list.clear();
 
-  for (auto *css : item.css_cache) delete css;
   item.css_cache.clear();
 
   item.itemref_index = -1;
 }
 
-bool EPub::close_file() {
+auto EPub::close_file() -> bool {
   if (!file_is_open) return true;
 
   clear_item_data(current_item_info);
@@ -869,12 +872,12 @@ bool EPub::close_file() {
     encryption_data.reset();
   }
 
-  unzip.close_zip_file();
-
-  for (auto *css : css_cache) delete css;
+  if (!page_locs_instance) {
+    unzip.close_zip_file();
+    fonts.clear();
+  }
 
   css_cache.clear();
-  fonts.clear();
 
   file_is_open       = false;
   encryption_present = false;
@@ -889,7 +892,7 @@ bool EPub::close_file() {
   return true;
 }
 
-const char *EPub::get_meta(const std::string &name) {
+auto EPub::get_meta(const std::string &name) -> const char * {
   if (!file_is_open) return nullptr;
 
   xml_node node;
@@ -905,7 +908,7 @@ const char *EPub::get_meta(const std::string &name) {
   // return node == nullptr ? nullptr : node.child_value(name.c_str());
 }
 
-const char *EPub::get_cover_filename() {
+auto EPub::get_cover_filename() -> const char * {
   if (!file_is_open) return nullptr;
 
   xml_node node;
@@ -957,7 +960,7 @@ const char *EPub::get_cover_filename() {
 /// to a specific page in the book, and to be able to display the page number in the book viewer.
 ///
 /// @return The number of items in the spine.
-int16_t EPub::get_item_count() {
+auto EPub::get_item_count() -> int16_t {
   if (!file_is_open) return 0;
 
   auto it       = opf.find_child(package_pred).find_child(spine_pred).children("itemref");
@@ -972,7 +975,7 @@ int16_t EPub::get_item_count() {
   return count;
 }
 
-bool EPub::get_item_at_index(int16_t itemref_index) {
+auto EPub::get_item_at_index(int16_t itemref_index) -> bool {
   if (!file_is_open) return false;
 
   if (current_item_info.itemref_index == itemref_index) return true;
@@ -1002,7 +1005,7 @@ bool EPub::get_item_at_index(int16_t itemref_index) {
 // This is in support of the pages location retrieval mechanism. The ItemInfo
 // is being used to retrieve asynchroniously the book page numbers without
 // interfering with the main book viewer thread.
-bool EPub::get_item_at_index(int16_t itemref_index, ItemInfo &item) {
+auto EPub::get_item_at_index(int16_t itemref_index, ItemInfo &item) -> bool {
   if (!file_is_open) return false;
 
   LOG_D("Mutex lock...");

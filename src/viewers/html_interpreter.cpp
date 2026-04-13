@@ -5,8 +5,6 @@
 #include "viewers/html_interpreter.hpp"
 
 #include "models/config.hpp"
-#include "models/epub.hpp"
-#include "models/toc.hpp"
 
 MemoryPool<Page::Format> HTMLInterpreter::fmt_pool;
 
@@ -58,10 +56,10 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
     xml_attribute attr;
 
-    if ((page.get_compute_mode() == Page::ComputeMode::LOCATION) && toc.there_is_some_ids() &&
-        (attr = node.attribute("id"))) {
+    if ((page->get_compute_mode() == Page::ComputeMode::LOCATION) &&
+        epub->toc->there_is_some_ids() && (attr = node.attribute("id"))) {
       std::string id = attr.value();
-      toc.set(id, current_offset);
+      epub->toc->set(id, current_offset);
     }
     if (node.attribute("hidden")) return true;
 
@@ -76,12 +74,12 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
     if ((tag_it = DOM::tags.find(name)) != DOM::tags.end()) {
 
-      // LOG_D("==> %10s [%5d] %5d", name, current_offset, page.get_pos_y());
+      // LOG_D("==> %10s [%5d] %5d", name, current_offset, page->get_pos_y());
 
       if (tag_it->second != DOM::Tag::BODY) {
-        dom_current_node = dom_node->add_child(tag_it->second);
+        dom_current_node = dom->add_child(dom_node, tag_it->second);
       } else {
-        dom_current_node = dom.body;
+        dom_current_node = dom->body;
       }
       if ((attr = node.attribute("id"))) dom_current_node->add_id(attr.value());
       if ((attr = node.attribute("class"))) dom_current_node->add_classes(attr.value());
@@ -146,11 +144,11 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
       case DOM::Tag::BREAK:
         if (started) {
           show_state("Line Break", fmt);
-          if (!page.line_break(fmt)) {
+          if (!page->line_break(fmt)) {
             // At the end of the page
             if (!page_end(fmt)) return false;
             if (at_end()) return true;
-            page.line_break(fmt);
+            page->line_break(fmt);
           }
         }
         current_offset++;
@@ -163,7 +161,7 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
           style = Fonts::FaceStyle::BOLD;
         else if (style == Fonts::FaceStyle::ITALIC)
           style = Fonts::FaceStyle::BOLD_ITALIC;
-        page.reset_font_index(fmt, style);
+        page->reset_font_index(fmt, style);
       } break;
 
       case DOM::Tag::I:
@@ -173,7 +171,7 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
           style = Fonts::FaceStyle::ITALIC;
         else if (style == Fonts::FaceStyle::BOLD)
           style = Fonts::FaceStyle::BOLD_ITALIC;
-        page.reset_font_index(fmt, style);
+        page->reset_font_index(fmt, style);
       } break;
 
       case DOM::Tag::H1:
@@ -230,25 +228,24 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
       // if a 'style' attribute is present, parse it's content as it will be used
       // in the processing of the tag's format styling
 
-      CSS *element_css = nullptr;
+      CSSPtr element_css = nullptr;
       if ((attr = node.attribute("style"))) {
         const char *buffer = attr.value();
-        element_css        = new CSS("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
+        element_css        = CSS::Make("ELEMENT", tag_it->second, buffer, strlen(buffer), 99);
       }
 
       // Adjust the tag's format styling (the fmt struct) using both the current
       // DOM, the overall item css, and the element css data.
-      page.adjust_format(dom_current_node, fmt, element_css,
-                         item_info.css); // Adjust format from element attributes
+      page->adjust_format(dom_current_node, fmt, element_css,
+                          item_info.css); // Adjust format from element attributes
 
-      if (started) show_state(name, fmt, dom_current_node, element_css); // For debugging
-      if (element_css != nullptr) delete element_css; // Free the tag's specific css data
+      if (started) show_state(name, fmt, dom_current_node /*, element_css*/); // For debugging
     }
 
     if (fmt.display == CSS::Display::NONE) return true;
     if (tag_it->second == DOM::Tag::BODY) {
-      if (epub.get_book_format_params()->use_fonts_in_book == 0) {
-        fmt.font_size = epub.get_book_format_params()->font_size;
+      if (epub->get_book_format_params()->use_fonts_in_book == 0) {
+        fmt.font_size = epub->get_book_format_params()->font_size;
         // fmt.font_index = ;
       }
     }
@@ -256,20 +253,20 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
     if (started && (fmt.display == CSS::Display::BLOCK)) {
 
       int8_t iter = 5; // Allow for a paragraph taking at most 5 pages
-      while ((iter-- > 0) && page.some_data_waiting()) {
+      while ((iter-- > 0) && page->some_data_waiting()) {
         show_state("==> End Paragraph 1 <==", fmt);
-        if (!page.end_paragraph(fmt)) {
+        if (!page->end_paragraph(fmt)) {
           if (!page_end(fmt)) return false;
           if (at_end()) return true;
-          page.end_paragraph(fmt);
+          page->end_paragraph(fmt);
         }
       }
 
       show_state("==> New Paragraph 1 <==", fmt);
-      if (!page.new_paragraph(fmt)) {
+      if (!page->new_paragraph(fmt)) {
         if (!page_end(fmt)) return false;
         if (at_end()) return true;
-        page.new_paragraph(fmt);
+        page->new_paragraph(fmt);
       }
     }
   } else {
@@ -290,16 +287,17 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
 
       if (started && (current_offset < end_offset)) {
 
-        auto pict = epub.get_picture(fname, page.get_compute_mode() == Page::ComputeMode::DISPLAY);
+        auto pict =
+            epub->get_picture(fname, page->get_compute_mode() == Page::ComputeMode::DISPLAY);
         if (pict != nullptr) {
           bool added            = false;
-          std::tie(added, pict) = page.add_picture(std::move(pict), fmt /*, beginning_of_page */);
+          std::tie(added, pict) = page->add_picture(std::move(pict), fmt /*, beginning_of_page */);
           if (!added) {
-            if (page.is_full() && !page_end(fmt)) return false;
+            if (page->is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
 
-            page.add_picture(std::move(pict), fmt /*, beginning_of_page */);
-            if (page.is_full() && !page_end(fmt)) return false;
+            page->add_picture(std::move(pict), fmt /*, beginning_of_page */);
+            if (page->is_full() && !page_end(fmt)) return false;
             if (at_end()) return true;
           }
           show_state("After IMG", fmt);
@@ -316,12 +314,12 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
     current_offset++;
     xml_node sub = node.first_child();
     while (sub != nullptr) {
-      if (page.is_full() && !page_end(fmt)) return false;
+      if (page->is_full() && !page_end(fmt)) return false;
       if (at_end()) break;
       Page::Format *new_fmt = duplicate_fmt(fmt);
       if (!build_pages_recurse(sub, *new_fmt, dom_current_node, level + 1)) {
         release_fmt(new_fmt);
-        if (page.is_full() && !page_end(fmt)) return false;
+        if (page->is_full() && !page_end(fmt)) return false;
         if (at_end()) break;
         return false;
       }
@@ -333,9 +331,9 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
     // for remaining data if it's the head of the hierarchy ('body' tag)
     if (check_if_started()) {
       if (fmt.display == CSS::Display::BLOCK) {
-        if ((current_offset != start_offset) || page.some_data_waiting()) {
+        if ((current_offset != start_offset) || page->some_data_waiting()) {
           show_state("==> End Paragraph 2 <==", fmt);
-          page.end_paragraph(fmt);
+          page->end_paragraph(fmt);
           show_state("==> After End Paragraph 2 <==", fmt);
         }
       }
@@ -345,13 +343,13 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
       if ((tag_it != DOM::tags.end()) && (tag_it->second == DOM::Tag::BODY)) {
         int8_t iter = 5; // limit of 5 pages for a single paragraph...
         // Loop until the complete paragraph has been processed
-        while ((iter-- > 0) && page.some_data_waiting()) {
+        while ((iter-- > 0) && page->some_data_waiting()) {
           show_state("==> End Paragraph 3 <==", fmt);
-          if (!page.end_paragraph(fmt)) {
+          if (!page->end_paragraph(fmt)) {
             // The paragraph may not have been completly rendered. This means
             // that we found the end of a page
             if (!page_end(fmt)) return false;
-            page.end_paragraph(fmt);
+            page->end_paragraph(fmt);
           }
         }
       }
@@ -376,7 +374,7 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
           if (check_if_started()) {
             if (to_be_started) {
               to_be_started = false;
-              page.new_paragraph(fmt, true);
+              page->new_paragraph(fmt, true);
             }
             if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
               if ((fmt.trim = !fmt.pre)) { // white spaces will be trimmed at the beginning and the
@@ -389,19 +387,19 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
                 str--;
                 current_offset--;
               }
-              if (!page.add_char(" ", fmt)) {
+              if (!page->add_char(" ", fmt)) {
                 // Unable to add the character... the page must be full
                 if (!page_end(fmt)) return false;
                 if (at_end()) {
-                  page.break_paragraph(fmt);
+                  page->break_paragraph(fmt);
                   return true;
                 }
                 // We are at the beginning of a new page. We skip white spaces
                 show_state("==> New Paragraph 2 <==", fmt);
-                page.new_paragraph(fmt, true);
+                page->new_paragraph(fmt, true);
               }
             } else if (fmt.pre && (*str == '\n')) {
-              if (!page.line_break(fmt, 30)) {
+              if (!page->line_break(fmt, 30)) {
                 if (!page_end(fmt)) return false;
                 if (at_end()) return true;
               }
@@ -419,7 +417,7 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
           if (check_if_started()) {
             if (to_be_started) {
               to_be_started = false;
-              page.new_paragraph(fmt, true);
+              page->new_paragraph(fmt, true);
             }
             std::string word;
             word.assign(w, count);
@@ -427,34 +425,34 @@ bool HTMLInterpreter::build_pages_recurse(xml_node node, Page::Format &fmt, DOM:
             #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               static bool first = true;
               if (first) {
-                LOG_D("before page.add_word()");
+                LOG_D("before page->add_word()");
                 ESP::show_heaps_info();
               }
             #endif
 
-            if (!page.add_word(word.c_str(), fmt)) {
+            if (!page->add_word(word.c_str(), fmt)) {
               if (!page_end(fmt)) return false;
               if (at_end()) {
-                page.break_paragraph(fmt);
+                page->break_paragraph(fmt);
                 return true;
               }
               show_state("==> New Paragraph 3 <==", fmt);
-              page.new_paragraph(fmt, true);
+              page->new_paragraph(fmt, true);
               show_state("==> After New Paragraph 3 <==", fmt);
-              page.add_word(word.c_str(), fmt);
+              page->add_word(word.c_str(), fmt);
             }
           }
           current_offset += count;
         }
         // ToDo: Not sure the following test is required...
-        // if (page.is_full()) {
+        // if (page->is_full()) {
         //   if (!page_end(fmt)) return false;
         // }
         // ToDo: This may have to be moved down after the while loop..
         if (at_end()) {
           if (*str) {
             show_state("==> Before Break Paragraph 1 <==", fmt);
-            page.break_paragraph(fmt);
+            page->break_paragraph(fmt);
             show_state("==> After Break Paragraph 1 <==", fmt);
           }
           break;
