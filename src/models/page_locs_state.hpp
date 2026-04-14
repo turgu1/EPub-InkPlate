@@ -11,6 +11,7 @@
   #include <mqueue.h>
 #endif
 
+#include <atomic>
 #include <thread>
 
 class PageLocsState;
@@ -63,7 +64,7 @@ public:
 private:
   static constexpr const char *TAG = "PageLocsState";
 
-  bool retrieverIdle{true};
+  std::atomic<bool> retrieverIdle{true};
 
   int16_t itemrefCount{-1};      // Number of items in the document
   int16_t itemsDoneCount{-1};    // Number of items done
@@ -73,7 +74,7 @@ private:
   uint8_t *bitset{nullptr};      // Set of all items processed so far
   uint8_t bitsetSize{0};         // bitset byte length
   bool stopping{false};
-  bool forgetRetrieval{false}; // Forget current item begin processed by retrieval task
+  std::atomic<bool> forgetRetrieval{false}; // Forget current item being processed by retrieval task
 
   PageLocsRetriever retrieverTask;
 

@@ -73,7 +73,7 @@ auto xmlnsPred(xml_attribute attr) -> bool {
 }
 
 auto oneByAttr(xml_node n, const char *name1, const char *name2, const char *attr,
-                 const char *value) -> xml_node {
+               const char *value) -> xml_node {
   xml_node res;
 
   if (!(res = n.find_child_by_attribute(name1, attr, value))) {
@@ -513,12 +513,14 @@ void EPub::retrieveFontsFromCss(CSSPtr &css) {
           if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::SRC)) &&
               (!values->empty()) && (values->front()->valueType == CSS::ValueType::URL)) {
 
-            if (first) {
-              first = false;
-              LOG_D("Displaying font loading msg.");
-              MsgViewer::show(
-                  MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
-                  "The application is retrieving font(s) from the EPub file. Please wait.");
+            if (!pageLocsInstance) {
+              if (first) {
+                first = false;
+                LOG_D("Displaying font loading msg.");
+                MsgViewer::show(
+                    MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
+                    "The application is retrieving font(s) from the EPub file. Please wait.");
+              }
             }
 
             std::string filename = css->getFolderPath() + values->front()->str;
@@ -751,13 +753,13 @@ void EPub::updateBookFormatParams() {
 
   if (bookParams == nullptr) {
     bookFormatParams = {.ident = Screen::IDENT,
-                          .orientation =
-                              0, // Get de compiler happy (no warning). Will be set below...
-                          .showTitle      = 0, // ... idem ...
-                          .showPictures   = default_value,
-                          .fontSize       = default_value,
-                          .useFontsInBook = default_value,
-                          .font           = default_value};
+                        .orientation =
+                            0, // Get de compiler happy (no warning). Will be set below...
+                        .showTitle      = 0, // ... idem ...
+                        .showPictures   = default_value,
+                        .fontSize       = default_value,
+                        .useFontsInBook = default_value,
+                        .font           = default_value};
   } else {
     bookParams->get(BookParams::Ident::SHOW_PICTURES, &bookFormatParams.showPictures);
     bookParams->get(BookParams::Ident::FONT_SIZE, &bookFormatParams.fontSize);
@@ -782,7 +784,7 @@ void EPub::updateBookFormatParams() {
 
 void EPub::openParams(const std::string &epubFilename) {
   std::string paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
-  bookParams                = new BookParams(paramsFilename, false);
+  bookParams                 = new BookParams(paramsFilename, false);
   if (bookParams != nullptr) {
     bookParams->read();
   }
@@ -829,10 +831,10 @@ auto EPub::open(const std::string &epubFilename) -> bool {
     return false;
   }
 
-  currentFilename     = epubFilename;
-  fileIsOpen         = true;
+  currentFilename   = epubFilename;
+  fileIsOpen        = true;
   fontsSizeTooLarge = false;
-  fontsSize           = 0;
+  fontsSize         = 0;
 
   LOG_D("EPub file is now open.");
 
@@ -879,7 +881,7 @@ auto EPub::closeFile() -> bool {
 
   cssCache.clear();
 
-  fileIsOpen       = false;
+  fileIsOpen        = false;
   encryptionPresent = false;
   currentFilename.clear();
 

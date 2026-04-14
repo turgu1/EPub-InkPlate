@@ -12,6 +12,7 @@
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
 
+#include <atomic>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -63,7 +64,7 @@ void PageLocs::abortThreads() {
   }
 }
 
-volatile bool relax = false;
+std::atomic<bool> relax{false};
 
 auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   LOG_D("retrieveAsap: Sending GET_ASAP");
