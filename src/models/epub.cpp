@@ -251,7 +251,7 @@ inline auto toBin(const char *from, uint8_t *to) -> bool {
 #if EPUB_INKPLATE_BUILD
   #include "mbedtls/md.h"
 
-  void EPub::sha1(const std::string &data) {
+  auto EPub::sha1(const std::string &data) -> void {
     mbedtls_md_context_t ctx;
     mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
 
@@ -265,7 +265,7 @@ inline auto toBin(const char *from, uint8_t *to) -> bool {
 #else
   #include <openssl/sha.h>
 
-  void EPub::sha1(const std::string &data) {
+  auto EPub::sha1(const std::string &data) -> void {
     SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&shaUuid);
   }
 #endif
@@ -381,13 +381,13 @@ auto EPub::retrieveFile(const char *fname, uint32_t &size) -> FileContentPtr {
   return str;
 }
 
-void EPub::loadFonts() {
+auto EPub::loadFonts() -> void {
   for (auto &css : cssCache) {
     retrieveFontsFromCss(css);
   }
 }
 
-void EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) {
+auto EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void {
   uint16_t decryptLength;
   uint8_t *key;
   uint8_t keySize;
@@ -457,7 +457,7 @@ auto EPub::loadFont(const std::string filename, const std::string fontFamily,
   return false;
 }
 
-void EPub::retrieveFontsFromCss(CSSPtr &css) {
+auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
   LOG_D("retrieveFontsFromCss()");
 
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
@@ -541,7 +541,7 @@ void EPub::retrieveFontsFromCss(CSSPtr &css) {
   #endif
 }
 
-void EPub::retrieveCss(ItemInfo &item) {
+auto EPub::retrieveCss(ItemInfo &item) -> void {
 
   // Retrieve css files, puting them in the cssCache vector (as a cache).
   // The properties are then merged into the current_css map for the item
@@ -748,7 +748,7 @@ auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
   return completed;
 }
 
-void EPub::updateBookFormatParams() {
+auto EPub::updateBookFormatParams() -> void {
   constexpr int8_t default_value = -1;
 
   if (bookParams == nullptr) {
@@ -782,7 +782,7 @@ void EPub::updateBookFormatParams() {
   // if (!bookFormatParams.useFontsInBook) fonts.clear();
 }
 
-void EPub::openParams(const std::string &epubFilename) {
+auto EPub::openParams(const std::string &epubFilename) -> void {
   std::string paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
   bookParams                 = new BookParams(paramsFilename, false);
   if (bookParams != nullptr) {
@@ -841,7 +841,7 @@ auto EPub::open(const std::string &epubFilename) -> bool {
   return true;
 }
 
-void EPub::clearItemData(ItemInfo &item) {
+auto EPub::clearItemData(ItemInfo &item) -> void {
   item.xmlDoc.reset();
   if (item.data != nullptr) {
     item.data.reset();

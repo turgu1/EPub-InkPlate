@@ -9,17 +9,16 @@
 
 #include "stb_image_resize2.h"
 
-void Picture::resize(Dim new_dim) {
-  LOG_D("Resize to [%d, %d] %d bytes.", new_dim.width, new_dim.height,
-        new_dim.width * new_dim.height);
+auto Picture::resize(Dim newDim) -> void {
+  LOG_D("Resize to [%d, %d] %d bytes.", newDim.width, newDim.height, newDim.width * newDim.height);
 
   if (bitmap != nullptr) {
-    auto resized_bitmap = makeUniqueHimem<uint8_t[]>(new_dim.width * new_dim.height);
+    auto resizedBitmap = makeUniqueHimem<uint8_t[]>(newDim.width * newDim.height);
 
-    stbir_resize_uint8_linear(bitmap.get(), dim.width, dim.height, 0, resized_bitmap.get(),
-                              new_dim.width, new_dim.height, 0, (stbir_pixel_layout)1);
+    stbir_resize_uint8_linear(bitmap.get(), dim.width, dim.height, 0, resizedBitmap.get(),
+                              newDim.width, newDim.height, 0, (stbir_pixel_layout)1);
 
-    bitmap = std::move(resized_bitmap);
-    dim    = new_dim;
+    bitmap = std::move(resizedBitmap);
+    dim    = newDim;
   }
 }

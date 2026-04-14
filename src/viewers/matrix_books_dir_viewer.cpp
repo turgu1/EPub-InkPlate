@@ -26,7 +26,7 @@
   static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
-void MatrixBooksDirViewer::setup() {
+auto MatrixBooksDirViewer::setup() -> void {
   Font *font      = fonts.get(TITLE_FONT);
   titleFontHeight = font->getLineHeight(TITLE_FONT_SIZE) * 0.8 + 5;
 
@@ -58,7 +58,7 @@ void MatrixBooksDirViewer::setup() {
   currentItemIdx = -1;
 }
 
-void MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_idx) {
+auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_idx) -> void {
 
   currentPageNbr = page_nbr; // First page == 0
   currentItemIdx = hightlight_item_idx;
@@ -166,7 +166,7 @@ void MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
   page->paint();
 }
 
-void MatrixBooksDirViewer::highlight(int16_t item_idx) {
+auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
   int16_t book_idx, column_idx, line_idx, xpos, ypos;
 
   BooksDir::EBookRecordPtr book;
@@ -274,7 +274,7 @@ void MatrixBooksDirViewer::highlight(int16_t item_idx) {
   page->paint(false);
 }
 
-void MatrixBooksDirViewer::clearHighlight() {
+auto MatrixBooksDirViewer::clearHighlight() -> void {
   if (currentItemIdx == -1) return;
 
   page->setComputeMode(Page::ComputeMode::DISPLAY);
@@ -345,7 +345,7 @@ auto MatrixBooksDirViewer::showPageAndHighlight(int16_t book_idx) -> int16_t {
   return currentBookIdx;
 }
 
-void MatrixBooksDirViewer::highlightBook(int16_t book_idx) { highlight(book_idx % booksPerPage); }
+auto MatrixBooksDirViewer::highlightBook(int16_t book_idx) -> void { highlight(book_idx % booksPerPage); }
 
 auto MatrixBooksDirViewer::nextPage() -> int16_t {
   int16_t page_nbr = currentPageNbr + 1;

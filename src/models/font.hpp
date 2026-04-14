@@ -25,7 +25,7 @@ public:
   Font();
   virtual ~Font() {};
 
-  inline auto isReady() const -> bool { return ready; }
+ [[nodiscard]] inline auto isReady() const -> bool { return ready; }
 
   /**
    * @brief Get a glyph object
@@ -46,12 +46,12 @@ public:
   virtual auto getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
                           int16_t &kern, bool &ignoreNext) -> Glyph *;
 
-  void clearCache();
+  auto clearCache() -> void;
 
-  void getSize(const char *str, Dim *dim, int16_t glyphSize);
+  auto getSize(const char *str, Dim *dim, int16_t glyphSize) -> void;
 
-  inline void setFontsCacheIndex(int16_t index) { fontsCacheIndex = index; }
-  inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
+ inline auto setFontsCacheIndex(int16_t index) -> void { fontsCacheIndex = index; }
+ [[nodiscard]] inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
   auto bytePoolAlloc(uint16_t size) -> uint8_t *;
 
   /**
@@ -96,7 +96,7 @@ protected:
   BytePools bytePools;
   uint16_t bytePoolIdx;
 
-  void addBuffToBytePool();
+  auto addBuffToBytePool() -> void;
 
   MemoryFontPtr memoryFont; ///< Buffer for memory fonts
 

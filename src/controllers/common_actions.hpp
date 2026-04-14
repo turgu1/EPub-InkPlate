@@ -13,11 +13,11 @@
 
 class CommonActions {
 public:
-  static void returnToLast();
-  static void refreshBooksDir();
-  static void showLastBook();
-  static void about();
-  static void powerItOff();
+  static auto returnToLast() -> void;
+  static auto refreshBooksDir() -> void;
+  static auto showLastBook() -> void;
+  static auto about() -> void;
+  static auto powerItOff() -> void;
 };
 
 #undef PUBLIC

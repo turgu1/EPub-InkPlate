@@ -96,7 +96,7 @@ private:
 
   std::string currentFilename;
 
-  void show();
+  auto show() -> void;
   auto retrieveAsap(int16_t itemrefIndex) -> bool;
   auto checkAndFind(const PageId &pageId) -> PagesMap::iterator;
 
@@ -133,12 +133,12 @@ private:
     #endif
   }
 
-  void setupPagesComputation(EPubPtr &epub);
+  auto setupPagesComputation(EPubPtr &epub) -> void;
 
 public:
   PageLocs() : completed(false), pageCount(0), itemCount(0) {};
 
-  void abortThreads();
+  auto abortThreads() -> void;
 
   auto getNextPageId(const PageId &pageId, int16_t count = 1) -> const PageId *;
   auto getPrevPageId(const PageId &pageId, int count = 1) -> const PageId *;
@@ -148,12 +148,12 @@ public:
   auto getItemInfo() -> const EPub::ItemInfo & { return itemInfo; }
   auto getPagesMap() -> const PagesMap & { return pagesMap; }
 
-  void checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force = false);
-  void computationCompleted();
-  void startNewDocument(EPubPtr &epub, int16_t itemrefIndex);
-  void stopDocument();
+  auto checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force = false) -> void;
+  auto computationCompleted() -> void;
+  auto startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void;
+  auto stopDocument() -> void;
 
-  inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
+ [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
     std::scoped_lock guard(mutex);
     PagesMap::iterator it = checkAndFind(pageId);
     return it == pagesMap.end() ? nullptr : &it->second;
@@ -161,7 +161,7 @@ public:
 
   auto insert(PageId &id, PageInfo &info) -> bool;
 
-  inline void clear() {
+ inline auto clear() -> void {
     std::scoped_lock guard(mutex);
     pagesMap.clear();
     itemsSet.clear();
@@ -170,7 +170,7 @@ public:
 
   auto getPageCount() -> int16_t;
 
-  inline auto getPageNbr(const PageId &id) -> int16_t {
+ [[nodiscard]] inline auto getPageNbr(const PageId &id) -> int16_t {
     std::scoped_lock guard(mutex);
     if (!completed) {
       LOG_W("Page Locs not completed.");

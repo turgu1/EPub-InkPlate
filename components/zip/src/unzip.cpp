@@ -53,7 +53,7 @@ Unzip::Unzip() { zipFileIsOpen = false; }
  *
  * @note A failure to locate the EOCD record will log an error message.
  */
-bool Unzip::seekToCentralDirectory() {
+auto Unzip::seekToCentralDirectory() -> bool {
 
   const int FILE_CENTRAL_SIZE = 22;
 
@@ -127,7 +127,7 @@ bool Unzip::seekToCentralDirectory() {
  *
  * @see FileEntry, getUint16(), getUint32()
  */
-bool Unzip::readFileEntries(uint32_t offset, uint16_t count) {
+auto Unzip::readFileEntries(uint32_t offset, uint16_t count) -> bool {
 
   // Central Directory record structure:
 
@@ -190,11 +190,11 @@ bool Unzip::readFileEntries(uint32_t offset, uint16_t count) {
 
       FileEntry *fe = new FileEntry;
 
-      fe->filename        = fname;
+      fe->filename       = fname;
       fe->startPos       = getUint32((const unsigned char *)&buffer[38]);
       fe->compressedSize = getUint32((const unsigned char *)&buffer[16]);
-      fe->size            = getUint32((const unsigned char *)&buffer[20]);
-      fe->method          = getUint16((const unsigned char *)&buffer[6]);
+      fe->size           = getUint32((const unsigned char *)&buffer[20]);
+      fe->method         = getUint16((const unsigned char *)&buffer[6]);
 
       // LOG_D("File: %s %d %d %d %d", fe.filename, fe.startPos, fe.compressedSize,
       // fe.size, fe.method);
@@ -211,18 +211,18 @@ bool Unzip::readFileEntries(uint32_t offset, uint16_t count) {
   return completed;
 }
 
-bool Unzip::openZipFile(const char *zip_filename) {
+auto Unzip::openZipFile(const char *zipFilename) -> bool {
   // Open zip file
   if (zipFileIsOpen) closeZipFile();
-  if ((file = fopen(zip_filename, "r")) == nullptr) {
-    LOG_E("Unable to open file: %s", zip_filename);
+  if ((file = fopen(zipFilename, "r")) == nullptr) {
+    LOG_E("Unable to open file: %s", zipFilename);
     return false;
   }
   zipFileIsOpen = true;
 
-  bool completed = seekToCentralDirectory() &&
-                   readFileEntries(getUint32((const unsigned char *)&buffer[16]),
-                                     getUint16((const unsigned char *)&buffer[10]));
+  bool completed =
+      seekToCentralDirectory() && readFileEntries(getUint32((const unsigned char *)&buffer[16]),
+                                                  getUint16((const unsigned char *)&buffer[10]));
 
   if (!completed) {
     closeZipFile();
@@ -244,7 +244,7 @@ bool Unzip::openZipFile(const char *zip_filename) {
   return completed;
 }
 
-void Unzip::closeZipFile() {
+auto Unzip::closeZipFile() -> void {
   if (zipFileIsOpen) {
     for (auto *entry : fileEntries) {
       delete[] entry->filename;
@@ -293,22 +293,22 @@ char *cleanFname(const char *filename) {
   return str;
 }
 
-int32_t Unzip::getFileSize(const char *filename) {
+auto Unzip::getFileSize(const char *filename) -> int32_t {
   LOG_D("Mutex lock...");
   mutex.lock();
 
   if (!zipFileIsOpen) return 0;
 
-  char *the_filename = cleanFname(filename);
-  currentFileEntry         = fileEntries.begin();
+  char *theFilename = cleanFname(filename);
+  currentFileEntry  = fileEntries.begin();
 
   while (currentFileEntry != fileEntries.end()) {
-    if (strcmp((*currentFileEntry)->filename, the_filename) == 0) break;
+    if (strcmp((*currentFileEntry)->filename, theFilename) == 0) break;
     currentFileEntry++;
   }
 
   if (currentFileEntry == fileEntries.end()) {
-    LOG_E("Unzip getFileSize: File not found: %s", the_filename);
+    LOG_E("Unzip getFileSize: File not found: %s", theFilename);
     #if DEBUGGING
       std::cout << "---- Files available: ----" << std::endl;
       for (auto *f : fileEntries) {
@@ -324,24 +324,24 @@ int32_t Unzip::getFileSize(const char *filename) {
   }
 }
 
-bool Unzip::fileExists(const char *filename) {
+auto Unzip::fileExists(const char *filename) -> bool {
   if (!zipFileIsOpen) return false;
 
-  char *the_filename = cleanFname(filename);
+  char *theFilename = cleanFname(filename);
 
   Unzip::FileEntries::iterator fe = fileEntries.begin();
 
   while (fe != fileEntries.end()) {
-    if (strcmp((*fe)->filename, the_filename) == 0) break;
+    if (strcmp((*fe)->filename, theFilename) == 0) break;
     fe++;
   }
 
-  delete[] the_filename;
+  delete[] theFilename;
 
   return fe != fileEntries.end();
 }
 
-bool Unzip::openFile(const char *filename) {
+auto Unzip::openFile(const char *filename) -> bool {
   LOG_D("Mutex lock...");
   mutex.lock();
 
@@ -349,16 +349,16 @@ bool Unzip::openFile(const char *filename) {
 
   if (!zipFileIsOpen) return false;
 
-  char *the_filename = cleanFname(filename);
-  currentFileEntry         = fileEntries.begin();
+  char *theFilename = cleanFname(filename);
+  currentFileEntry  = fileEntries.begin();
 
   while (currentFileEntry != fileEntries.end()) {
-    if (strcmp((*currentFileEntry)->filename, the_filename) == 0) break;
+    if (strcmp((*currentFileEntry)->filename, theFilename) == 0) break;
     currentFileEntry++;
   }
 
   if (currentFileEntry == fileEntries.end()) {
-    LOG_E("Unzip Get: File not found: %s", the_filename);
+    LOG_E("Unzip Get: File not found: %s", theFilename);
     #if DEBUGGING
       std::cout << "---- Files available: ----" << std::endl;
       for (auto *f : fileEntries) {
@@ -373,7 +373,7 @@ bool Unzip::openFile(const char *filename) {
   //   LOG_D("File: %s at pos: %d", (*fe)->filename, (*fe)->startPos);
   // }
 
-  delete[] the_filename;
+  delete[] theFilename;
 
   bool completed = false;
 
@@ -396,7 +396,8 @@ bool Unzip::openFile(const char *filename) {
 
   const int LOCAL_HEADER_SIZE = 26;
 
-  if ((fseek(file, (*currentFileEntry)->startPos, SEEK_SET) == 0) && (fread(buffer, 4, 1, file) == 1)) {
+  if ((fseek(file, (*currentFileEntry)->startPos, SEEK_SET) == 0) &&
+      (fread(buffer, 4, 1, file) == 1)) {
 
     if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 3) && (buffer[3] == 4))) {
       err = 15;
@@ -446,14 +447,14 @@ bool Unzip::openFile(const char *filename) {
   }
 }
 
-void Unzip::closeFile() {
+auto Unzip::closeFile() -> void {
   LOG_D("Mutex unlock...");
   mutex.unlock();
 }
 
 #if !STB
 
-  bool Unzip::openStreamFile(const char *filename, uint32_t &fileSize) {
+  auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
     if (!openFile(filename)) return false;
 
     repeat  = ((*currentFileEntry)->compressedSize) / BUFFER_SIZE;
@@ -495,7 +496,7 @@ void Unzip::closeFile() {
     return true;
   }
 
-  void Unzip::closeStreamFile() {
+  auto Unzip::closeStreamFile() -> void {
     if (aborted) return;
 
     mz_inflateEnd(&zstr);
@@ -503,9 +504,9 @@ void Unzip::closeFile() {
     closeFile();
   }
 
-  bool Unzip::streamSkip(uint32_t byte_count) {
-    auto tmp      = makeUniqueHimem<char[]>(byte_count);
-    uint32_t size = byte_count;
+  auto Unzip::streamSkip(uint32_t byteCount) -> bool {
+    auto tmp      = makeUniqueHimem<char[]>(byteCount);
+    uint32_t size = byteCount;
 
     do {
       uint32_t s = size;
@@ -517,12 +518,12 @@ void Unzip::closeFile() {
     return true;
   }
 
-  uint32_t Unzip::getStreamData(char *data, uint32_t data_size) {
+  auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
 
-    if (data_size == 0) return 0;
+    if (dataSize == 0) return 0;
 
     zstr.next_out  = (unsigned char *)data;
-    zstr.avail_out = data_size;
+    zstr.avail_out = dataSize;
 
     if ((*currentFileEntry)->method == 0) {
       while (!aborted && (zstr.avail_out > 0)) {
@@ -552,7 +553,7 @@ void Unzip::closeFile() {
       }
     } else if ((*currentFileEntry)->method == 8) {
 
-      while (!aborted && (zstr.avail_out == data_size)) {
+      while (!aborted && (zstr.avail_out == dataSize)) {
 
         int zret = mz_inflate(&zstr, MZ_NO_FLUSH);
 
@@ -584,7 +585,7 @@ void Unzip::closeFile() {
       }
     }
 
-    return !aborted ? data_size - zstr.avail_out : 0;
+    return !aborted ? dataSize - zstr.avail_out : 0;
   }
 
   // Test version of getFile using stream methods

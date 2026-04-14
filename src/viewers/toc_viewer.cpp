@@ -17,7 +17,7 @@
 
 #include <iomanip>
 
-void TocViewer::setup() {
+auto TocViewer::setup() -> void {
   entriesPerPage = (Screen::getHeight() - firstEntryYPos - 20) / entryHeight;
   pageCount      = (epub->toc->getEntryCount() + entriesPerPage - 1) / entriesPerPage;
 
@@ -28,7 +28,7 @@ void TocViewer::setup() {
   LOG_D("TOC entry count: %d", epub->toc->getEntryCount());
 }
 
-void TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) {
+auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void {
   currentPageNbr   = pageNbr;
   currentScreenIdx = highlightedScreenIdx;
 
@@ -95,7 +95,7 @@ void TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) {
   page->paint();
 }
 
-void TocViewer::highlight(int16_t screenIdx) {
+auto TocViewer::highlight(int16_t screenIdx) -> void {
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
     page->setComputeMode(Page::ComputeMode::DISPLAY);
 
@@ -169,7 +169,7 @@ auto TocViewer::showPageAndHighlight(int16_t entryIdx) -> int16_t {
   return currentEntryIdx;
 }
 
-void TocViewer::highlightEntry(int16_t entryIdx) {
+auto TocViewer::highlightEntry(int16_t entryIdx) -> void {
   highlight(entryIdx % entriesPerPage);
   currentEntryIdx = entryIdx;
 }

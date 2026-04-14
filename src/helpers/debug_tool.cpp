@@ -100,7 +100,7 @@
 
   } // namespace
 
-  void DebugTool::printAllClassSizes() {
+  auto DebugTool::printAllClassSizes() -> void {
     std::cout << "========== Class Size Report (src + components) ==========" << std::endl;
 
     printClassSize<OptionController>("OptionController");
@@ -184,7 +184,7 @@
     #endif
   }
 
-  void DebugTool::printMemoryState() {
+  auto DebugTool::printMemoryState() -> void {
     #if EPUB_INKPLATE_BUILD
       std::cout << "========== Memory State Report ==========" << std::endl;
       std::cout << "Min free heap observed : " << esp_get_minimum_free_heap_size() << " bytes"

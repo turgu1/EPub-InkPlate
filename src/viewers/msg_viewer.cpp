@@ -306,7 +306,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
  * alert is visible, displays a restart instruction, and finally deep-sleeps
  * (embedded) or exits (Linux).
  */
-void MsgViewer::outOfMemory(const char *reason) {
+auto MsgViewer::outOfMemory(const char *reason) -> void {
   #if EPUB_INKPLATE_BUILD
     nvs_handle_t nvsHandle;
     esp_err_t err;

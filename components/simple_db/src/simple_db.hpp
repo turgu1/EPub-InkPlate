@@ -69,7 +69,7 @@ public:
    * @return true The file has been opened.
    * @return false
    */
-  bool open(std::string filename);
+  auto open(std::string filename) -> bool;
 
   /**
    * @brief Create a new database.
@@ -81,16 +81,16 @@ public:
    * @return true File created and database pointing at it.
    * @return false File already exists and not overrided. Nothing done.
    */
-  bool create(std::string filename);
+  auto create(std::string filename) -> bool;
 
-  void close();
+  auto close() -> void;
 
-  inline uint16_t getCurrentIdx() { return currentRecordIdx; }
-  inline void setCurrentIdx(int16_t index) { currentRecordIdx = index; }
-  inline uint16_t getRecordCount() { return recordCount; }
-  inline uint16_t getFileSize() { return fileSize; }
-  inline bool someRecordsWereDeleted() { return someRecordsDeleted; }
-  inline bool isDbOpen() { return dbIsOpen; }
+ [[nodiscard]] inline auto getCurrentIdx() -> uint16_t { return currentRecordIdx; }
+ inline auto setCurrentIdx(int16_t index) -> void { currentRecordIdx = index; }
+ [[nodiscard]] inline auto getRecordCount() -> uint16_t { return recordCount; }
+ [[nodiscard]] inline auto getFileSize() -> uint16_t { return fileSize; }
+ [[nodiscard]] inline auto someRecordsWereDeleted() -> bool { return someRecordsDeleted; }
+ [[nodiscard]] inline auto isDbOpen() -> bool { return dbIsOpen; }
 
   /**
    * @brief Add a record at the end of the file.
@@ -102,38 +102,37 @@ public:
    * @return true Record has been added.
    * @return false Potential file access issue.
    */
-  bool addRecord(void *record, int32_t size);
+  auto addRecord(void *record, int32_t size) -> bool;
 
-  bool getRecord(void *record, int32_t size);
+  auto getRecord(void *record, int32_t size) -> bool;
 
-  bool getPartialRecord(void *record, int32_t size, int32_t offset);
+  auto getPartialRecord(void *record, int32_t size, int32_t offset) -> bool;
 
-  void show();
+  auto show() -> void;
 
   /**
    * @brief Get size of the current record.
    *
    * Returns 0 if at end of the database
    */
-  int32_t getRecordSize() {
+  auto getRecordSize() -> int32_t {
     if ((currentRecordIdx >= recordCount) || isDeleted[currentRecordIdx]) return 0;
     if (currentRecordIdx == (recordCount - 1)) {
       return fileSize - recordOffset[currentRecordIdx] - sizeof(int32_t);
     }
-    return recordOffset[currentRecordIdx + 1] - recordOffset[currentRecordIdx] -
-           sizeof(int32_t);
+    return recordOffset[currentRecordIdx + 1] - recordOffset[currentRecordIdx] - sizeof(int32_t);
   }
 
   /**
    * @brief Set current record as deleted.
    *
    */
-  void setDeleted() {
+  auto setDeleted() -> void {
     isDeleted[currentRecordIdx] = true;
-    someRecordsDeleted           = true;
+    someRecordsDeleted          = true;
   }
 
-  bool gotoFirst() {
+  auto gotoFirst() -> bool {
     uint16_t idx = 0;
     while ((idx < recordCount) && isDeleted[idx]) idx++;
     if ((idx < recordCount) && !isDeleted[idx]) {
@@ -143,7 +142,7 @@ public:
     return false;
   }
 
-  bool gotoNext() {
+  auto gotoNext() -> bool {
     uint16_t idx = currentRecordIdx + 1;
     while ((idx < recordCount) && isDeleted[idx]) idx++;
     if ((idx < recordCount) && !isDeleted[idx]) {

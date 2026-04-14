@@ -41,7 +41,7 @@ private:
 
   PagePtr page{Page::Make()};
 
-  void buildPageAt(const PageId &pageId, EPubPtr &epub);
+  auto buildPageAt(const PageId &pageId, EPubPtr &epub) -> void;
 
   struct PageEnd {
     bool operator()(Page::Format &fmt) const { return false; }
@@ -63,9 +63,9 @@ public:
    *
    * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
    */
-  void showPage(const PageId &pageId, EPubPtr &epub);
+  auto showPage(const PageId &pageId, EPubPtr &epub) -> void;
 
-  void showFakeCover(EPubPtr &epub);
+  auto showFakeCover(EPubPtr &epub) -> void;
 
   static constexpr int16_t TITLE_FONT      = 2;
   static constexpr int16_t TITLE_FONT_SIZE = 8;

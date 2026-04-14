@@ -85,8 +85,8 @@ struct Dim {
   Dim() = default;
   constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
 
-  constexpr uint16_t getWidth() const { return width; }
-  constexpr uint16_t getHeight() const { return height; }
+  constexpr auto getWidth() const -> uint16_t { return width; }
+  constexpr auto getHeight() const -> uint16_t { return height; }
 };
 
 struct Pos {
@@ -127,7 +127,7 @@ struct Glyph {
   int16_t lineHeight{0};
   int16_t ligatureAndKernPgmIndex{255};
   uint8_t *buffer{nullptr};
-  void clear() {
+  auto clear() -> void {
     dim.height = dim.width = 0;
     xoff = yoff = 0;
     advance = pitch = lineHeight = 0;

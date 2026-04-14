@@ -56,21 +56,21 @@
     auto retrieve(uint32_t index, NVSData &nvsData) -> bool;
     auto save(uint32_t id, const NVSData &nvsData) -> bool;
     auto update(uint32_t index, uint32_t id, const NVSData &nvsData) -> bool;
-    void remove(uint32_t index);
+    auto remove(uint32_t index) -> void;
     auto findId(uint32_t id, uint32_t &index) -> bool;
-    void show();
+    auto show() -> void;
 
-    inline auto bldKey(const char *prefix, uint32_t index) -> std::string {
+ [[nodiscard]] inline auto bldKey(const char *prefix, uint32_t index) -> std::string {
       char str[12];
       return std::string(prefix) + int_to_str(index, str, 12);
     }
 
-    inline auto exists(uint32_t index) -> bool {
+ [[nodiscard]] inline auto exists(uint32_t index) -> bool {
       TrackList::iterator it = trackList.find(index);
       return it != trackList.end();
     }
 
-    inline auto size() -> uint32_t { return trackCount; }
+ [[nodiscard]] inline auto size() -> uint32_t { return trackCount; }
   };
 
   #if __NVS_MGR__

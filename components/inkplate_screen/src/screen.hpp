@@ -48,16 +48,16 @@ public:
     WHITE = 0, BLACK = 7
   };
 
-  void drawPicture(PicturePtr &picture, Pos pos);
-  void drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch);
-  void drawRectangle(Dim dim, Pos pos, uint8_t color);
-  void drawRoundRectangle(Dim dim, Pos pos, uint8_t color);
-  void colorizeRegion(Dim dim, Pos pos, uint8_t color);
+  auto drawPicture(PicturePtr &picture, Pos pos) -> void;
+  auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
+  auto drawRectangle(Dim dim, Pos pos, uint8_t color) -> void;
+  auto drawRoundRectangle(Dim dim, Pos pos, uint8_t color) -> void;
+  auto colorizeRegion(Dim dim, Pos pos, uint8_t color) -> void;
 
-  void lowColorize1Bit(Dim dim, Pos pos, uint8_t color);
-  void lowColorize3Bit(Dim dim, Pos pos, uint8_t color);
+  auto lowColorize1Bit(Dim dim, Pos pos, uint8_t color) -> void;
+  auto lowColorize3Bit(Dim dim, Pos pos, uint8_t color) -> void;
 
-  inline void clear() {
+ inline auto clear() -> void {
     if (pixelResolution == PixelResolution::ONE_BIT) {
       frameBuffer1Bit->clear();
     } else {
@@ -65,7 +65,7 @@ public:
     }
   }
 
-  inline void update(bool noFull = false) {
+ inline auto update(bool noFull = false) -> void {
     if (pixelResolution == PixelResolution::ONE_BIT) {
       if (noFull) {
         e_ink.partial_update(*frameBuffer1Bit);
@@ -107,9 +107,9 @@ private:
 
   Screen() = default;
 
-  void drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color);
+  auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color) -> void;
 
-  inline void set_pixel_o_left_1bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
                                        (frameBuffer1Bit->get_line_size() * (col + 1)) + (row >> 3)];
@@ -119,7 +119,7 @@ private:
       *temp = (*temp & ~LUT1BIT_INV[row & 7]);
   }
 
-  inline void set_pixel_o_right_1bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer1Bit
               ->get_data())[(frameBuffer1Bit->get_line_size() * (col + 1)) - (row >> 3) - 1];
@@ -129,7 +129,7 @@ private:
       *temp = (*temp & ~LUT1BIT[row & 7]);
   }
 
-  inline void set_pixel_o_bottom_1bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_line_size() * row + (col >> 3)];
     if (color == 1)
@@ -138,7 +138,7 @@ private:
       *temp = (*temp & ~LUT1BIT_INV[col & 7]);
   }
 
-  inline void set_pixel_o_top_1bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
                                        (frameBuffer1Bit->get_line_size() * row) - (col >> 3)];
@@ -148,7 +148,7 @@ private:
       *temp = (*temp & ~LUT1BIT[col & 7]);
   }
 
-  inline void set_pixel_o_left_3bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_data_size() -
                                        (frameBuffer3Bit->get_line_size() * (col + 1)) + (row >> 1)];
@@ -158,7 +158,7 @@ private:
       *temp = (*temp & 0x0F) | (color << 4);
   }
 
-  inline void set_pixel_o_right_3bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer3Bit
               ->get_data())[(frameBuffer3Bit->get_line_size() * (col + 1)) - (row >> 1) - 1];
@@ -168,7 +168,7 @@ private:
       *temp = (*temp & 0xF0) | color;
   }
 
-  inline void set_pixel_o_bottom_3bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_line_size() * row + (col >> 1)];
     if (col & 1)
@@ -177,7 +177,7 @@ private:
       *temp = (*temp & 0x0F) | (color << 4);
   }
 
-  inline void set_pixel_o_top_3bit(uint32_t col, uint32_t row, uint8_t color) {
+ inline auto setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
     uint8_t *temp =
         &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_data_size() -
                                        (frameBuffer3Bit->get_line_size() * row) - (col >> 1)];
@@ -189,19 +189,19 @@ private:
 
 public:
   static Screen &getSingleton() noexcept { return singleton; }
-  void setup(PixelResolution resolution, Orientation orientation);
-  void setPixelResolution(PixelResolution resolution, bool force = false);
-  void setOrientation(Orientation orient);
-  inline Orientation getOrientation() { return orientation; }
-  inline PixelResolution getPixelResolution() { return pixelResolution; }
-  inline void forceFullUpdate() { partialCount = 0; }
+  auto setup(PixelResolution resolution, Orientation orientation) -> void;
+  auto setPixelResolution(PixelResolution resolution, bool force = false) -> void;
+  auto setOrientation(Orientation orient) -> void;
+ [[nodiscard]] inline auto getOrientation() -> Orientation { return orientation; }
+ [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
+ inline auto forceFullUpdate() -> void { partialCount = 0; }
 
   // #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   //   void to_user_coord(uint16_t &x, uint16_t &y);
   // #endif
 
-  inline static uint16_t getWidth() { return width; }
-  inline static uint16_t getHeight() { return height; }
+ [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
+ [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
 };
 
 #if __SCREEN__

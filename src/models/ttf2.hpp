@@ -78,7 +78,7 @@ public:
 
 private:
   static FT_Library library;
-  void clearFace();
+  auto clearFace() -> void;
 
   /**
    * @brief Set the font face object

@@ -14,10 +14,15 @@
 // static bool waiting_msg_shown;
 // static uint16_t pix_count;
 
-static int32_t get_int_big_endian(uint8_t *a) { return a[0] << 24 | a[1] << 16 | a[2] << 8 | a[3]; }
+static auto getIntBigEndian(uint8_t *a) -> int32_t {
+  return a[0] << 24 | a[1] << 16 | a[2] << 8 | a[3];
+}
 
-static void on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha) {
+static auto onDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha) -> void {
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-variable"
   static constexpr char const *TAG = "PngPictureOnDraw";
+  #pragma GCC diagnostic pop
 
   auto data      = ((PngPicture *)mypngle_get_user_data(pngle))->getPictureData();
   auto scale     = ((PngPicture *)mypngle_get_user_data(pngle))->getScaleFactor();
@@ -47,7 +52,7 @@ PngPicture::PngPicture(std::string filename, Dim max, bool loadBitmap) : Picture
 
     mypngle_set_user_data(pngle, this);
 
-    mypngle_set_draw_callback(pngle, on_draw);
+    mypngle_set_draw_callback(pngle, onDraw);
 
     #if EPUB_INKPLATE_BUILD
       // load_start_time   = ESP::millis();
@@ -64,8 +69,8 @@ PngPicture::PngPicture(std::string filename, Dim max, bool loadBitmap) : Picture
         first = false;
 
         if (size < 24) break;
-        uint32_t width  = get_int_big_endian(&work[16]);
-        uint32_t height = get_int_big_endian(&work[20]);
+        uint32_t width  = getIntBigEndian(&work[16]);
+        uint32_t height = getIntBigEndian(&work[20]);
 
         uint32_t h = height;
         uint32_t w;

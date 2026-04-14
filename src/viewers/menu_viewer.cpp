@@ -15,7 +15,7 @@
 
 static const std::string TOUCH_AND_HOLD_STR = "Touch & hold icon for info. Tap for action.";
 
-void MenuViewer::showCaption(std::string caption, Page::Format &fmt) {
+auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
   fmt.fontIndex = 1;
   fmt.fontSize  = CAPTION_SIZE;
 
@@ -26,7 +26,7 @@ void MenuViewer::showCaption(std::string caption, Page::Format &fmt) {
                  fmt);
 }
 
-void MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) {
+auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) -> void {
   Font *font = fonts.get(1);
 
   menuEntryCount        = 1;
@@ -185,7 +185,7 @@ void MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
   }
 #endif
 
-void MenuViewer::clearHighlight() {
+auto MenuViewer::clearHighlight() -> void {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     Page::Format fmt = {
         .fontSize     = CAPTION_SIZE,

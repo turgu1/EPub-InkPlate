@@ -68,7 +68,7 @@
     #endif
 
     #if TEST_HIMEM
-      if (!himem_run_tests()) {
+      if (!himemRunTests()) {
         LOG_E("Himem tests failed.");
       } else {
         LOG_I("Yeah! Himem tests passed!");

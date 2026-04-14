@@ -75,7 +75,7 @@ public:
 
   // ---- core interface ------------------------------------------------------
 
-  [[nodiscard]] T *allocate(std::size_t n) {
+  [[nodiscard]] auto allocate(std::size_t n) -> T * {
     if (n > std::numeric_limits<std::size_t>::max() / sizeof(T)) throw std::bad_array_new_length{};
 
     void *ptr = HIMEM_MALLOC(n * sizeof(T));
@@ -84,12 +84,12 @@ public:
     return static_cast<T *>(ptr);
   }
 
-  void deallocate(T *ptr, std::size_t /* n */) noexcept { HIMEM_FREE(ptr); }
+  auto deallocate(T *ptr, std::size_t /* n */) noexcept -> void { HIMEM_FREE(ptr); }
 
   // ---- equality ------------------------------------------------------------
   // All instances allocate from the same heap ⟹ always equal.
   template <typename U>
-  [[nodiscard]] constexpr bool operator==(const PsramAllocator<U> &) const noexcept {
+  [[nodiscard]] constexpr auto operator==(const PsramAllocator<U> &) const noexcept -> bool {
     return true;
   }
 };
@@ -108,7 +108,7 @@ struct PsramDeleter {
   template <typename U, typename = std::enable_if_t<std::is_convertible_v<U *, T *>>>
   PsramDeleter(const PsramDeleter<U> &) noexcept {}
 
-  void operator()(T *ptr) const noexcept {
+  auto operator()(T *ptr) const noexcept -> void {
     if (ptr) {
       std::destroy_at(ptr); // calls ptr->~T()
       HIMEM_FREE(ptr);
@@ -123,7 +123,7 @@ template <typename T>
 struct PsramDeleter<T[]> {
   std::size_t count{0};
 
-  void operator()(T *ptr) const noexcept {
+  auto operator()(T *ptr) const noexcept -> void {
     if (ptr) {
       std::destroy_n(ptr, count); // no-op for trivially-destructible T
       HIMEM_FREE(ptr);
@@ -144,14 +144,14 @@ using himemSharedPtr = std::shared_ptr<T>;
 // Single-object overload
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
-[[nodiscard]] himemSharedPtr<T> makeSharedHimem(Args &&...args) {
+[[nodiscard]] auto makeSharedHimem(Args &&...args) -> himemSharedPtr<T> {
   return std::allocate_shared<T>(PsramAllocator<T>{}, std::forward<Args>(args)...);
 }
 
 // Unbounded-array overload  (e.g. makeSharedHimem<int[]>(n))
 template <typename T>
   requires(std::is_unbounded_array_v<T>)
-[[nodiscard]] himemSharedPtr<T> makeSharedHimem(std::size_t n) {
+[[nodiscard]] auto makeSharedHimem(std::size_t n) -> himemSharedPtr<T> {
   using Elem = std::remove_extent_t<T>;
   return std::allocate_shared<T>(PsramAllocator<Elem>{}, n);
 }
@@ -159,7 +159,7 @@ template <typename T>
 // Bounded-array form is deleted, mirroring std::make_shared behaviour.
 template <typename T, typename... Args>
   requires(std::is_bounded_array_v<T>)
-void makeSharedHimem(Args &&...) = delete;
+auto makeSharedHimem(Args &&...) -> void = delete;
 
 // ===========================================================================
 // himemUniquePtr / makeUniqueHimem
@@ -174,13 +174,13 @@ using himemUniquePtr = std::unique_ptr<T, PsramDeleter<T>>;
 struct himemSizedT {
   std::size_t bytes;
 };
-[[nodiscard]] inline himemSizedT himemSized(std::size_t n) noexcept { return {n}; }
+[[nodiscard]] inline auto himemSized(std::size_t n) noexcept -> himemSizedT { return {n}; }
 
 // Sized single-object overload  (e.g. makeUniqueHimem<T>(himemSized(n)))
 // Allocates exactly sz.bytes bytes, default-constructs T in that buffer.
 template <typename T>
   requires(!std::is_array_v<T>)
-[[nodiscard]] himemUniquePtr<T> makeUniqueHimem(himemSizedT sz) {
+[[nodiscard]] auto makeUniqueHimem(himemSizedT sz) -> himemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sz.bytes);
   if (!mem) throw std::bad_alloc{};
 
@@ -198,7 +198,7 @@ template <typename T>
 // Single-object overload
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
-[[nodiscard]] himemUniquePtr<T> makeUniqueHimem(Args &&...args) {
+[[nodiscard]] auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sizeof(T));
   if (!mem) throw std::bad_alloc{};
 
@@ -216,7 +216,7 @@ template <typename T, typename... Args>
 // Unbounded-array overload  (e.g. makeUniqueHimem<int[]>(n))
 template <typename T>
   requires(std::is_unbounded_array_v<T>)
-[[nodiscard]] himemUniquePtr<T> makeUniqueHimem(std::size_t n) {
+[[nodiscard]] auto makeUniqueHimem(std::size_t n) -> himemUniquePtr<T> {
   using Elem = std::remove_extent_t<T>;
 
   void *mem = HIMEM_MALLOC(n * sizeof(Elem));
@@ -237,7 +237,7 @@ template <typename T>
 // Bounded-array form is deleted, mirroring std::make_unique behaviour.
 template <typename T, typename... Args>
   requires(std::is_bounded_array_v<T>)
-void makeUniqueHimem(Args &&...) = delete;
+auto makeUniqueHimem(Args &&...) -> void = delete;
 
 // ===========================================================================
 // himemString
@@ -271,7 +271,7 @@ using himemUniqueString = himemUniquePtr<himemString>;
 // Accepts the same arguments as himemString constructors, forwarded
 // directly (e.g. a const char*, another himemString, or nothing for empty).
 template <typename... Args>
-[[nodiscard]] himemUniqueString makeUniqueHimemString(Args &&...args) {
+[[nodiscard]] auto makeUniqueHimemString(Args &&...args) -> himemUniqueString {
   void *mem = HIMEM_MALLOC(sizeof(himemString));
   if (!mem) throw std::bad_alloc{};
 
@@ -300,7 +300,7 @@ using himemUniqueVector = himemUniquePtr<himemVector<T>>;
 // Accepts the same arguments as himemVector constructors (e.g. an initial
 // size, or nothing for an empty vector).
 template <typename T, typename... Args>
-[[nodiscard]] himemUniqueVector<T> makeUniqueHimemVector(Args &&...args) {
+[[nodiscard]] auto makeUniqueHimemVector(Args &&...args) -> himemUniqueVector<T> {
   using Vec = himemVector<T>;
 
   void *mem = HIMEM_MALLOC(sizeof(Vec));

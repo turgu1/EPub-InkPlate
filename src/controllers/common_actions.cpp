@@ -22,18 +22,18 @@
 
 #endif
 
-void CommonActions::returnToLast() { appController.setController(AppController::Ctrl::LAST); }
+auto CommonActions::returnToLast() -> void { appController.setController(AppController::Ctrl::LAST); }
 
-void CommonActions::showLastBook() { booksDirController.showLastBook(); }
+auto CommonActions::showLastBook() -> void { booksDirController.showLastBook(); }
 
-void CommonActions::refreshBooksDir() {
+auto CommonActions::refreshBooksDir() -> void {
   int16_t temp;
 
   booksDir.refresh(nullptr, temp, true);
   appController.setController(AppController::Ctrl::DIR);
 }
 
-void CommonActions::powerItOff() {
+auto CommonActions::powerItOff() -> void {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "Please press the WakeUp Button to restart the device."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
@@ -79,7 +79,7 @@ void CommonActions::powerItOff() {
   #endif
 }
 
-void CommonActions::about() {
+auto CommonActions::about() -> void {
   #if EPUB_INKPLATE_BUILD
     const esp_app_desc_t *descr = esp_app_get_description();
 

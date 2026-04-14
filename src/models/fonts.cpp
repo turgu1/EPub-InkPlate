@@ -216,7 +216,7 @@ Fonts::~Fonts() {
   fontCache.clear();
 }
 
-void Fonts::clear(bool all) {
+auto Fonts::clear(bool all) -> void {
   std::scoped_lock guard(mutex);
 
   // LOG_D("Fonts Clear!");
@@ -235,7 +235,7 @@ void Fonts::clear(bool all) {
   #endif
 }
 
-void Fonts::clearEverything() {
+auto Fonts::clearEverything() -> void {
   std::scoped_lock guard(mutex);
 
   charPool.reset();
@@ -249,7 +249,7 @@ void Fonts::clearEverything() {
   fontCache.reserve(20);
 }
 
-void Fonts::adjustDefaultFont(uint8_t fontIndex) {
+auto Fonts::adjustDefaultFont(uint8_t fontIndex) -> void {
   if (fontCache.at(3).name.compare(fontNames[fontIndex]) != 0) {
     std::string normal     = std::string(FONTS_FOLDER "/").append(regularFname[fontIndex]);
     std::string bold       = std::string(FONTS_FOLDER "/").append(boldFname[fontIndex]);
@@ -265,7 +265,7 @@ void Fonts::adjustDefaultFont(uint8_t fontIndex) {
   }
 }
 
-void Fonts::clearGlyphCaches() {
+auto Fonts::clearGlyphCaches() -> void {
   for (auto &entry : fontCache) {
     entry.font->clearCache();
   }

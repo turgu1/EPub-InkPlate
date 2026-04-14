@@ -21,7 +21,7 @@
 
 #include <iomanip>
 
-void LinearBooksDirViewer::setup() {
+auto LinearBooksDirViewer::setup() -> void {
   booksPerPage = (Screen::getHeight() - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) /
                  (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES);
   pageCount    = (booksDir.getBookCount() + booksPerPage - 1) / booksPerPage;
@@ -33,7 +33,7 @@ void LinearBooksDirViewer::setup() {
   LOG_D("Books count: %d", booksDir.getBookCount());
 }
 
-void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_idx) {
+auto LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_idx) -> void {
   currentPageNbr = page_nbr;
   currentItemIdx = hightlight_item_idx;
 
@@ -49,11 +49,11 @@ void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
   Page::Format fmt = {
       .lineHeightFactor = 0.9,
-      .fontIndex         = TITLE_FONT,
-      .fontSize           = TITLE_FONT_SIZE,
-      .screenLeft        = xpos,
-      .screenRight       = 10,
-      .screenTop         = ypos,
+      .fontIndex        = TITLE_FONT,
+      .fontSize         = TITLE_FONT_SIZE,
+      .screenLeft       = xpos,
+      .screenRight      = 10,
+      .screenTop        = ypos,
       .screenBottom =
           static_cast<uint16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20)),
   };
@@ -81,7 +81,7 @@ void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
     #endif
 
     fmt.fontIndex    = TITLE_FONT;
-    fmt.fontSize      = TITLE_FONT_SIZE;
+    fmt.fontSize     = TITLE_FONT_SIZE;
     fmt.fontStyle    = Fonts::FaceStyle::NORMAL;
     fmt.screenTop    = ypos;
     fmt.screenBottom = static_cast<int16_t>(
@@ -96,7 +96,7 @@ void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
     page->endParagraph(fmt);
 
     fmt.fontIndex = AUTHOR_FONT;
-    fmt.fontSize   = AUTHOR_FONT_SIZE;
+    fmt.fontSize  = AUTHOR_FONT_SIZE;
     fmt.fontStyle = Fonts::FaceStyle::ITALIC;
 
     page->newParagraph(fmt);
@@ -111,7 +111,7 @@ void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
   page->paint();
 }
 
-void LinearBooksDirViewer::highlight(int16_t item_idx) {
+auto LinearBooksDirViewer::highlight(int16_t item_idx) -> void {
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
     page->setComputeMode(Page::ComputeMode::DISPLAY);
 
@@ -122,8 +122,8 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
       int16_t book_idx = currentPageNbr * booksPerPage + currentItemIdx;
 
       uint16_t xpos = 20 + BooksDir::coverDim.width;
-      uint16_t ypos = FIRST_ENTRY_YPOS +
-                      (currentItemIdx * (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES));
+      uint16_t ypos =
+          FIRST_ENTRY_YPOS + (currentItemIdx * (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES));
 
       auto book = booksDir.getBookData(book_idx);
 
@@ -133,11 +133,11 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
 
       Page::Format fmt = {
           .lineHeightFactor = 0.9,
-          .fontIndex         = TITLE_FONT,
-          .fontSize           = TITLE_FONT_SIZE,
-          .screenLeft        = xpos,
-          .screenRight       = 10,
-          .screenTop         = ypos,
+          .fontIndex        = TITLE_FONT,
+          .fontSize         = TITLE_FONT_SIZE,
+          .screenLeft       = xpos,
+          .screenRight      = 10,
+          .screenTop        = ypos,
           .screenBottom =
               static_cast<uint16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20)),
       };
@@ -157,7 +157,7 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
       page->endParagraph(fmt);
 
       fmt.fontIndex = AUTHOR_FONT;
-      fmt.fontSize   = AUTHOR_FONT_SIZE;
+      fmt.fontSize  = AUTHOR_FONT_SIZE;
       fmt.fontStyle = Fonts::FaceStyle::ITALIC;
 
       page->newParagraph(fmt);
@@ -180,7 +180,7 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
           Pos(xpos - 5, ypos));
 
       fmt.fontIndex = TITLE_FONT;
-      fmt.fontSize   = TITLE_FONT_SIZE;
+      fmt.fontSize  = TITLE_FONT_SIZE;
       fmt.fontStyle = Fonts::FaceStyle::NORMAL;
       fmt.screenTop = ypos;
       fmt.screenBottom =
@@ -202,7 +202,7 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
       page->endParagraph(fmt);
 
       #if EPUB_INKPLATE_BUILD
-        BatteryViewer::show();
+        BatteryViewer::show(page);
       #endif
 
       page->paint(false);
@@ -223,7 +223,7 @@ auto LinearBooksDirViewer::showPageAndHighlight(int16_t book_idx) -> int16_t {
   return currentBookIdx;
 }
 
-void LinearBooksDirViewer::highlightBook(int16_t book_idx) {
+auto LinearBooksDirViewer::highlightBook(int16_t book_idx) -> void {
   highlight(book_idx % booksPerPage);
   currentBookIdx = book_idx;
 }

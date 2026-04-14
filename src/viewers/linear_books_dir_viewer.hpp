@@ -30,8 +30,8 @@ private:
   int16_t booksPerPage{-1};
   int16_t pageCount{-1};
 
-  void showPage(int16_t pageNbr, int16_t hightlight_item_idx);
-  void highlight(int16_t item_idx);
+  auto showPage(int16_t pageNbr, int16_t hightlight_item_idx) -> void;
+  auto highlight(int16_t item_idx) -> void;
 
   PagePtr page{Page::Make()};
 
@@ -46,11 +46,11 @@ public:
 
   static inline auto Make() { return makeUniqueHimem<LinearBooksDirViewer>(); }
 
-  void setup();
+  auto setup() -> void;
 
   auto showPageAndHighlight(int16_t book_idx) -> int16_t;
-  void highlightBook(int16_t book_idx);
-  void clearHighlight() {}
+  auto highlightBook(int16_t book_idx) -> void;
+  auto clearHighlight() -> void {}
 
   auto nextPage() -> int16_t;
   auto prevPage() -> int16_t;

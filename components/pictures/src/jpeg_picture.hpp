@@ -18,7 +18,7 @@ private:
 
   JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fromFile = false);
 
-  void loadFromFile(std::string filename, Dim max, bool loadBitmap);
+  auto loadFromFile(std::string filename, Dim max, bool loadBitmap) -> void;
 
 public:
   template <typename T, typename... Args>

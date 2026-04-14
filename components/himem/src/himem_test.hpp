@@ -13,4 +13,4 @@
 /// can still be executed as a smoke-test on the host.
 ///
 /// @return true if every check passed, false if any check failed.
-bool himem_run_tests();
+auto himemRunTests() -> bool;

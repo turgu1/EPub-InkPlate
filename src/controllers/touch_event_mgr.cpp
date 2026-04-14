@@ -220,7 +220,7 @@
       }
     }
 
-    void EventMgr::setOrientation(Screen::Orientation orient) {}
+    auto EventMgr::setOrientation(Screen::Orientation orient) -> void {}
 
     const EventMgr::Event &EventMgr::getEvent() {
       static Event event;
@@ -230,7 +230,7 @@
       return event;
     }
 
-    void EventMgr::showCalibration() {
+    auto EventMgr::showCalibration() -> void {
       auto page = Page::Make();
 
       switch (screen.getOrientation()) {
@@ -291,7 +291,7 @@
       page->paint();
     }
 
-    void EventMgr::toUserCoord(uint16_t &x, uint16_t &y) {
+    auto EventMgr::toUserCoord(uint16_t &x, uint16_t &y) -> void {
       uint16_t temp;
       Screen::Orientation orientation = screen.getOrientation();
 
@@ -459,7 +459,7 @@
       return false;
     }
 
-    void EventMgr::retrieveCalibrationValues() {
+    auto EventMgr::retrieveCalibrationValues() -> void {
       config.get(Config::Ident::CALIB_A, &a);
       config.get(Config::Ident::CALIB_B, &b);
       config.get(Config::Ident::CALIB_C, &c);
@@ -604,16 +604,16 @@
       return false;
     }
 
-    void EventMgr::loop() {
+    auto EventMgr::loop() -> void {
       gtk_main(); // never return
     }
 
-    void EventMgr::setOrientation(Screen::Orientation orient) {
+    auto EventMgr::setOrientation(Screen::Orientation orient) -> void {
       // Nothing to do...
     }
 
   #else
-    void EventMgr::loop() {
+    auto EventMgr::loop() -> void {
       while (1) {
         const EventMgr::Event &event = getEvent();
 
@@ -660,7 +660,7 @@
   auto EventMgr::setup() -> bool {
     #if EPUB_LINUX_BUILD
 
-      g_signal_connect(G_OBJECT(screen.picture_box), "event", G_CALLBACK(mouseEventCallback),
+      g_signal_connect(G_OBJECT(screen.pictureBox), "event", G_CALLBACK(mouseEventCallback),
                        screen.getPicture());
     #else
 

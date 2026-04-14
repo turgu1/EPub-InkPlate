@@ -47,9 +47,9 @@ class KeyboardViewer
     static constexpr char const * special_line_3  = "\2.,?!'";
     static constexpr char const * special_line_4  = "\4 \r";     ; // \4 == 'ABC', ' ' == 'space', \4 == 'return'
 
-    void showKb(KBType kb_type);
-    void showChar(char           ch, uint16_t & x, uint16_t y);
-    void showLine(const char * line, uint16_t & x, uint16_t y);
+    auto showKb(KBType kb_type) -> void;
+    auto showChar(char           ch, uint16_t & x, uint16_t y) -> void;
+    auto showLine(const char * line, uint16_t & x, uint16_t y) -> void;
   public:
     KeyboardViewer() : current_kb_type(KBType::ALFA) {};
 

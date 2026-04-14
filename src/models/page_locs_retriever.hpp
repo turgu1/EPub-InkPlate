@@ -42,7 +42,7 @@ public:
 
   auto setup(const std::string &epubFilename) -> bool;
 
-  void waitForExit();
+  auto waitForExit() -> void;
 
 private:
   DOMPtr dom{nullptr};
@@ -67,7 +67,7 @@ private:
   }
 
   std::thread retrieverThread;
-  void task();
+  auto task() -> void;
 
   auto buildPageLocs(int16_t itemrefIndex) -> bool;
 };

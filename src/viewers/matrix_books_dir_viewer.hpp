@@ -39,8 +39,8 @@ private:
   uint8_t horizSpaceBetweenEntries;
   uint8_t vertSpaceBetweenEntries;
 
-  void showPage(int16_t page_nbr, int16_t hightlight_item_idx);
-  void highlight(int16_t item_idx);
+  auto showPage(int16_t page_nbr, int16_t hightlight_item_idx) -> void;
+  auto highlight(int16_t item_idx) -> void;
 
   PagePtr page{Page::Make()};
 
@@ -55,11 +55,11 @@ public:
 
   static inline auto Make() { return makeUniqueHimem<MatrixBooksDirViewer>(); }
 
-  void setup();
+  auto setup() -> void;
 
   auto showPageAndHighlight(int16_t book_idx) -> int16_t;
-  void highlightBook(int16_t book_idx);
-  void clearHighlight();
+  auto highlightBook(int16_t book_idx) -> void;
+  auto clearHighlight() -> void;
 
   auto nextPage() -> int16_t;
   auto prevPage() -> int16_t;

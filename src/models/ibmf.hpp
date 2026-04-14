@@ -70,7 +70,7 @@ public:
   }
 
 private:
-  void clearFace();
+  auto clearFace() -> void;
 
   /**
    * @brief Set the font face object
@@ -99,5 +99,5 @@ private:
 
   auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph *;
 
-  inline auto translate(uint32_t charcode) -> uint32_t { return face->translate(charcode); }
+ [[nodiscard]] inline auto translate(uint32_t charcode) -> uint32_t { return face->translate(charcode); }
 };

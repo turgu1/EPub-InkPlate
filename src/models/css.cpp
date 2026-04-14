@@ -144,7 +144,7 @@ auto CSS::matchSelector(DOM::Node *node, Selector &sel) -> bool {
   return true;
 }
 
-void CSS::match(DOM::Node *node, RulesMap &toRules) {
+auto CSS::match(DOM::Node *node, RulesMap &toRules) -> void {
   for (auto &rule : rulesMap) {
     if (matchSelector(node, *rule.first)) {
       toRules.insert(std::pair<Selector *, Properties *>(rule.first, rule.second));
@@ -152,7 +152,7 @@ void CSS::match(DOM::Node *node, RulesMap &toRules) {
   }
 }
 
-void CSS::show(RulesMap &theRulesMap) {
+auto CSS::show(RulesMap &theRulesMap) -> void {
   #if DEBUGGING
     std::cout << "------ Rules Map: -----" << std::endl;
     for (auto &rule : theRulesMap) {

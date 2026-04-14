@@ -108,9 +108,9 @@ private:
   auto getOpf(std::string &filename) -> bool;
   auto checkMimetype() -> bool;
   auto getOpfFilename(std::string &filename) -> bool;
-  void retrieveFontsFromCss(CSSPtr &css);
+  auto retrieveFontsFromCss(CSSPtr &css) -> void;
   auto getEncryptionXml() -> bool;
-  void sha1(const std::string &data);
+  auto sha1(const std::string &data) -> void;
 
   EPub() = default;
 
@@ -123,10 +123,10 @@ public:
 
   static inline auto Make() { return makeUniqueHimem<EPub>(); }
 
-  void retrieveCss(ItemInfo &item);
-  void loadFonts();
-  void clearItemData(ItemInfo &item);
-  void openParams(const std::string &epubFilename);
+  auto retrieveCss(ItemInfo &item) -> void;
+  auto loadFonts() -> void;
+  auto clearItemData(ItemInfo &item) -> void;
+  auto openParams(const std::string &epubFilename) -> void;
   auto open(const std::string &epubFilename) -> bool;
   auto closeFile() -> bool;
   auto getPicture(std::string &fname, bool load) -> PicturePtr;
@@ -138,9 +138,9 @@ public:
   auto getKeys() -> bool;
   auto filenameLocate(const char *fname) -> std::string;
   auto getItemCount() -> int16_t;
-  void updateBookFormatParams();
+  auto updateBookFormatParams() -> void;
   auto getFileObfuscation(const char *filename) -> ObfuscationType;
-  void decrypt(void *buffer, const uint32_t size, ObfuscationType obfType);
+  auto decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void;
   auto loadFont(const std::string filename, const std::string fontFamily,
                 const Fonts::FaceStyle style) -> bool;
   /**
@@ -155,25 +155,25 @@ public:
   auto getCoverFilename() -> const char *;
 
   // clang-format off
-  inline auto getCssCache() const            -> const CSSList &            { return cssCache; }
-  inline auto getCurrentItemCss() const      -> const CSSPtr &             { return currentItemInfo.css; }
-  inline auto getCurrentItemInfo() const     -> const ItemInfo &           { return currentItemInfo; }
-  inline auto getCurrentItemFilePath() const -> const std::string &        { return currentItemInfo.filePath; }
-  inline auto getItemrefIndex() const        -> int16_t                    { return currentItemInfo.itemrefIndex; }
-  inline auto getTitle()                     -> const char *               { return getMeta("dc:title"); }
-  inline auto getAuthor()                    -> const char *               { return getMeta("dc:creator"); }
-  inline auto getDescription()               -> const char *               { return getMeta("dc:description"); }
-  inline auto getCurrentItem() const         -> const pugi::xml_document & { return currentItemInfo.xmlDoc; }
-  inline auto getCurrentFilename()           -> std::string                { return currentFilename; }
-  inline auto filenameIsEmpty()              -> bool                       { return currentFilename.empty(); }
-  inline auto getBookParams()                -> BookParams *               { return bookParams; }
-  inline auto getBookFormatParams()          -> BookFormatParams *         { return &bookFormatParams; }
-  inline auto getOpfBasePath() const         -> const std::string &        { return opfBasePath; }
-  inline auto getOpf()                       -> const pugi::xml_document & { return opf; }
-  inline auto encryptionIsPresent() const    -> bool                       { return encryptionPresent; }
-  inline auto getBinUuid() const             -> const BinUUID &            { return binUuid; }
+ [[nodiscard]] inline auto getCssCache() const            -> const CSSList &            { return cssCache; }
+ [[nodiscard]] inline auto getCurrentItemCss() const      -> const CSSPtr &             { return currentItemInfo.css; }
+ [[nodiscard]] inline auto getCurrentItemInfo() const     -> const ItemInfo &           { return currentItemInfo; }
+ [[nodiscard]] inline auto getCurrentItemFilePath() const -> const std::string &        { return currentItemInfo.filePath; }
+ [[nodiscard]] inline auto getItemrefIndex() const        -> int16_t                    { return currentItemInfo.itemrefIndex; }
+ [[nodiscard]] inline auto getTitle()                     -> const char *               { return getMeta("dc:title"); }
+ [[nodiscard]] inline auto getAuthor()                    -> const char *               { return getMeta("dc:creator"); }
+ [[nodiscard]] inline auto getDescription()               -> const char *               { return getMeta("dc:description"); }
+ [[nodiscard]] inline auto getCurrentItem() const         -> const pugi::xml_document & { return currentItemInfo.xmlDoc; }
+ [[nodiscard]] inline auto getCurrentFilename()           -> std::string                { return currentFilename; }
+ [[nodiscard]] inline auto filenameIsEmpty()              -> bool                       { return currentFilename.empty(); }
+ [[nodiscard]] inline auto getBookParams()                -> BookParams *               { return bookParams; }
+ [[nodiscard]] inline auto getBookFormatParams()          -> BookFormatParams *         { return &bookFormatParams; }
+ [[nodiscard]] inline auto getOpfBasePath() const         -> const std::string &        { return opfBasePath; }
+ [[nodiscard]] inline auto getOpf()                       -> const pugi::xml_document & { return opf; }
+ [[nodiscard]] inline auto encryptionIsPresent() const    -> bool                       { return encryptionPresent; }
+ [[nodiscard]] inline auto getBinUuid() const             -> const BinUUID &            { return binUuid; }
   
-  inline void setPageLocsInstance(bool val)                            { pageLocsInstance = val; }
+ inline auto setPageLocsInstance(bool val) -> void                            { pageLocsInstance = val; }
   // clang-format on
 };
 

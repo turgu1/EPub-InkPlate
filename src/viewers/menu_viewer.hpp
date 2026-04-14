@@ -45,15 +45,15 @@ public:
     const char *caption;
 
     template <typename T>
-    void bind(T *instance, void (T::*method)()) {
+    auto bind(T *instance, void (T::*method)()) -> void {
       func = [instance, method]() -> auto { (instance->*method)(); };
     }
   };
 
-  void showCaption(std::string caption, Page::Format &fmt);
-  void show(MenuEntry *theMenu, uint8_t entryIndex = 0, bool clearScreen = false);
+  auto showCaption(std::string caption, Page::Format &fmt) -> void;
+  auto show(MenuEntry *theMenu, uint8_t entryIndex = 0, bool clearScreen = false) -> void;
   auto event(const EventMgr::Event &event) -> bool;
-  void clearHighlight();
+  auto clearHighlight() -> void;
 
 private:
   static constexpr int16_t ICON_SIZE    = 15;

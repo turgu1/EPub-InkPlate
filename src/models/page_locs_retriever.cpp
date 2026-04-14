@@ -67,12 +67,12 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
   return true;
 }
 
-void PageLocsRetriever::waitForExit() {
+auto PageLocsRetriever::waitForExit() -> void {
   retrieverThread.join();
   retrieverThread.~thread();
 }
 
-void PageLocsRetriever::task() {
+auto PageLocsRetriever::task() -> void {
   for (;;) {
     LOG_D("==> Waiting for request... <==");
     QueueData queueData;

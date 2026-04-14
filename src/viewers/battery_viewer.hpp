@@ -14,6 +14,6 @@
     static constexpr char const *TAG = "BatteryViewer";
 
   public:
-    static void show(PagePtr &page);
+    static auto show(PagePtr &page) -> void;
   };
 #endif

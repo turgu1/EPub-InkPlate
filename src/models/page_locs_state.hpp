@@ -49,12 +49,12 @@ public:
   }
 
   auto setup(const std::string &epubFilename) -> bool;
-  void waitForExit();
+  auto waitForExit() -> void;
 
-  inline auto retrieverIsIdle() -> bool { return retrieverIdle; }
-  inline auto forgettingRetrieval() -> bool { return forgetRetrieval; }
+ [[nodiscard]] inline auto retrieverIsIdle() -> bool { return retrieverIdle; }
+ [[nodiscard]] inline auto forgettingRetrieval() -> bool { return forgetRetrieval; }
 
-  inline auto percentDone() -> int {
+ [[nodiscard]] inline auto percentDone() -> int {
     int16_t percent = (itemsDoneCount * 100) / itemrefCount;
     // ESP_LOGI(TAG, "Percent = %" PRIi16 " itemref count = %" PRIi16 " items done = %" PRIi16,
     // percent, itemrefCount, itemsDoneCount);
@@ -93,10 +93,10 @@ private:
     #endif
   }
 
-  void abort();
+  auto abort() -> void;
 
-  void requestNextItem(int16_t itemref, bool alreadySentToMgr = false);
+  auto requestNextItem(int16_t itemref, bool alreadySentToMgr = false) -> void;
 
   std::thread stateThread;
-  void task();
+  auto task() -> void;
 };

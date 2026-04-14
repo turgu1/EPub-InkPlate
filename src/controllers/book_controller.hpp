@@ -14,17 +14,17 @@ class BookController {
 public:
   BookController() = default;
 
-  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
+ inline auto setOwnershipOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
 
-  void inputEvent(const EventMgr::Event &event);
-  void enter();
-  void leave(bool goingToDeepSleep = false);
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
   bool openBook(const std::string &bookTitle, const std::string &bookFilename,
                 const PageId &pageId);
   // void put_str(const char *str, int xpos, int ypos);
 
   inline const PageId &getCurrentPageId() { return currentPageId; }
-  inline void setCurrentPageId(const PageId &pageId) { currentPageId = pageId; }
+ inline auto setCurrentPageId(const PageId &pageId) -> void { currentPageId = pageId; }
 
 private:
   static constexpr char const *TAG = "BookController";

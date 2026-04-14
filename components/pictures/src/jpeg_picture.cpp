@@ -17,22 +17,22 @@
 
 // static uint32_t load_start_time;
 // static bool waiting_msg_shown;
-FILE *jpeg_file                  = nullptr;
+FILE *jpegFile                   = nullptr;
 static constexpr char const *TAG = "JPegPicture";
-uint32_t file_location           = 0;
+uint32_t fileLocation            = 0;
 
 // static bool first = false;
 
-static size_t in_func(               /* Returns number of bytes read (zero on error) */
-                      JDEC *jd,      /* Decompression object */
-                      uint8_t *buff, /* Pointer to the read buffer (null to remove data) */
-                      size_t nbyte   /* Number of bytes to read/remove */
+static size_t inFunc(               /* Returns number of bytes read (zero on error) */
+                     JDEC *jd,      /* Decompression object */
+                     uint8_t *buff, /* Pointer to the read buffer (null to remove data) */
+                     size_t nbyte   /* Number of bytes to read/remove */
 ) {
   if (buff) { /* Read data from imput stream */
     uint32_t size = nbyte;
     size_t res    = unzip.getStreamData((char *)buff, size); // ? size : 0;
-    LOG_D("Read %zu bytes from input stream at location %xH", res, file_location);
-    file_location += res;
+    LOG_D("Read %zu bytes from input stream at location %xH", res, fileLocation);
+    fileLocation += res;
     // if (first) {
     //   first = false;
     //   std::cout << "----- Unzip content -----" << std::endl;
@@ -44,19 +44,19 @@ static size_t in_func(               /* Returns number of bytes read (zero on er
     // }
     return res;
   } else { /* Remove data from input stream */
-    LOG_D("Skipping %zu bytes from input stream at location %xH", nbyte, file_location);
-    file_location += nbyte;
+    LOG_D("Skipping %zu bytes from input stream at location %xH", nbyte, fileLocation);
+    fileLocation += nbyte;
     return unzip.streamSkip(nbyte) ? nbyte : 0;
   }
 }
 
-static size_t file_in_func(               /* Returns number of bytes read (zero on error) */
-                           JDEC *jd,      /* Decompression object */
-                           uint8_t *buff, /* Pointer to the read buffer (null to remove data) */
-                           size_t nbyte   /* Number of bytes to read/remove */
+static size_t fileInFunc(               /* Returns number of bytes read (zero on error) */
+                         JDEC *jd,      /* Decompression object */
+                         uint8_t *buff, /* Pointer to the read buffer (null to remove data) */
+                         size_t nbyte   /* Number of bytes to read/remove */
 ) {
   if (buff) { /* Read data from imput file */
-    size_t res = fread(buff, 1, nbyte, jpeg_file);
+    size_t res = fread(buff, 1, nbyte, jpegFile);
     // if (first) {
     //   first = false;
     //   std::cout << "----- Unzip content -----" << std::endl;
@@ -68,7 +68,7 @@ static size_t file_in_func(               /* Returns number of bytes read (zero 
     // }
     return res;
   } else { /* Remove data from input file */
-    return fseek(jpeg_file, nbyte, SEEK_CUR) == 0 ? nbyte : 0;
+    return fseek(jpegFile, nbyte, SEEK_CUR) == 0 ? nbyte : 0;
   }
 }
 
@@ -76,10 +76,10 @@ static size_t file_in_func(               /* Returns number of bytes read (zero 
 /* User defined output funciton */
 /*------------------------------*/
 
-static int out_func(              /* Returns 1 to continue, 0 to abort */
-                    JDEC *jd,     /* Decompression object */
-                    void *bitmap, /* Bitmap data to be output */
-                    JRECT *rect   /* Rectangular region of output picture */
+static int outFunc(              /* Returns 1 to continue, 0 to abort */
+                   JDEC *jd,     /* Decompression object */
+                   void *bitmap, /* Bitmap data to be output */
+                   JRECT *rect   /* Rectangular region of output picture */
 ) {
 
   auto data = (JPegPicture::PictureData *)jd->device;
@@ -122,7 +122,7 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
     : Picture() {
 
   LOG_D("Loading picture file %s", filename.c_str());
-  file_location = 0;
+  fileLocation = 0;
 
   if (fromFile) {
     loadFromFile(filename, max, loadBitmap);
@@ -133,7 +133,7 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
       auto work = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
 
       /* Prepare to decompress */
-      res = jdec_prepare(&jdec, in_func, work.get(), WORK_SIZE, &pictureData);
+      res = jdec_prepare(&jdec, inFunc, work.get(), WORK_SIZE, &pictureData);
       if (res == JDR_OK) {
         uint8_t scale  = 0;
         uint16_t width = jdec.width;
@@ -161,7 +161,7 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
             //   waiting_msg_shown = false;
             // #endif
             pictureData = {.dim = dim, .bitmap = bitmap.get()};
-            res         = jdec_decomp(&jdec, out_func, scale);
+            res         = jdec_decomp(&jdec, outFunc, scale);
             LOG_D("Decompression result: %d", res);
           }
         } else {
@@ -176,25 +176,25 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
   }
 }
 
-void JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) {
+auto JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) -> void {
   LOG_D("Loading picture from normal file %s", filename.c_str());
 
-  jpeg_file = fopen(filename.c_str(), "rb");
-  if (jpeg_file == nullptr) {
+  jpegFile = fopen(filename.c_str(), "rb");
+  if (jpegFile == nullptr) {
     LOG_E("Unable to open JPEG file: %s", filename.c_str());
     return;
   }
 
-  fseek(jpeg_file, 0L, SEEK_END);
-  fileSize = ftell(jpeg_file);
-  fseek(jpeg_file, 0L, SEEK_SET);
+  fseek(jpegFile, 0L, SEEK_END);
+  fileSize = ftell(jpegFile);
+  fseek(jpegFile, 0L, SEEK_SET);
 
   JRESULT res; /* Result code of TJpgDec API */
   JDEC jdec;   /* Decompression object */
   auto work = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
 
   /* Prepare to decompress */
-  res = jdec_prepare(&jdec, file_in_func, work.get(), WORK_SIZE, &pictureData);
+  res = jdec_prepare(&jdec, fileInFunc, work.get(), WORK_SIZE, &pictureData);
   if (res == JDR_OK) {
     uint8_t scale  = 0;
     uint16_t width = jdec.width;
@@ -222,12 +222,12 @@ void JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) {
         //   waiting_msg_shown = false;
         // #endif
         pictureData = {.dim = dim, .bitmap = bitmap.get()};
-        res         = jdec_decomp(&jdec, out_func, scale);
+        res         = jdec_decomp(&jdec, outFunc, scale);
       }
     } else {
       dim = Dim(width, height);
     }
 
-    fclose(jpeg_file);
+    fclose(jpegFile);
   }
 }

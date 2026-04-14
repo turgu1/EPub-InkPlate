@@ -25,7 +25,7 @@ AppController::AppController() : currentCtrl(Ctrl::DIR), nextCtrl(Ctrl::NONE) {
   }
 }
 
-void AppController::start() {
+auto AppController::start() -> void {
   currentCtrl = Ctrl::NONE;
   nextCtrl    = Ctrl::DIR;
 
@@ -40,13 +40,13 @@ void AppController::start() {
   #endif
 }
 
-void AppController::setController(Ctrl newCtrl) {
+auto AppController::setController(Ctrl newCtrl) -> void {
   LOG_D("===> setController()...");
 
   nextCtrl = newCtrl;
 }
 
-void AppController::launch() {
+auto AppController::launch() -> void {
   #if EPUB_LINUX_BUILD
     if (nextCtrl == Ctrl::NONE) return;
   #endif
@@ -111,7 +111,7 @@ void AppController::launch() {
   }
 }
 
-void AppController::inputEvent(const EventMgr::Event &event) {
+auto AppController::inputEvent(const EventMgr::Event &event) -> void {
   if (nextCtrl != Ctrl::NONE) launch();
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
@@ -149,7 +149,7 @@ void AppController::inputEvent(const EventMgr::Event &event) {
   }
 }
 
-void AppController::goingToDeepSleep() {
+auto AppController::goingToDeepSleep() -> void {
   if (nextCtrl != Ctrl::NONE) launch();
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK

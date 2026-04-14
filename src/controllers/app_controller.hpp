@@ -53,7 +53,7 @@ public:
    *
    * Start the application, giving control to the DIR controller.
    */
-  void start();
+  auto start() -> void;
 
   /**
    * @brief Set the controller object
@@ -65,7 +65,7 @@ public:
    *
    * @param newCtrl The new controller to take control
    */
-  void setController(Ctrl newCtrl);
+  auto setController(Ctrl newCtrl) -> void;
 
   /**
    * @brief Manage an event
@@ -75,10 +75,10 @@ public:
    *
    * @param event
    */
-  void inputEvent(const EventMgr::Event &event);
+  auto inputEvent(const EventMgr::Event &event) -> void;
 
-  void goingToDeepSleep();
-  void launch();
+  auto goingToDeepSleep() -> void;
+  auto launch() -> void;
 
 private:
   static constexpr char const *TAG = "AppController";

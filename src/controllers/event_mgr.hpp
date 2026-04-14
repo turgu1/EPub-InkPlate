@@ -41,7 +41,7 @@ protected:
     uint16_t distance;
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      void retrieveCalibrationValues();
+      auto retrieveCalibrationValues() -> void;
     #endif
   #endif
 
@@ -62,17 +62,17 @@ public:
       uint16_t x, y, dist;
     };
 
-    void showCalibration();
+    auto showCalibration() -> void;
     auto calibrationEvent(const Event &event) -> bool;
-    void setPosition(uint16_t x, uint16_t y) {
+    auto setPosition(uint16_t x, uint16_t y) -> void {
       xPos = x;
       yPos = y;
     }
-    void getPosition(uint16_t &x, uint16_t &y) {
+    auto getPosition(uint16_t &x, uint16_t &y) -> void {
       x = xPos;
       y = yPos;
     }
-    void toUserCoord(uint16_t &x, uint16_t &y);
+    auto toUserCoord(uint16_t &x, uint16_t &y) -> void;
 
   #else
     enum class EventKind {
@@ -88,7 +88,7 @@ public:
 
   auto setup() -> bool;
 
-  void loop();
+  auto loop() -> void;
 
   auto getEvent() -> const Event &;
 
@@ -96,18 +96,18 @@ public:
     #if TOUCH_TRIAL
       // void low_input_event();
     #else
-      void left();
-      void right();
-      void up();
-      void down();
-      void select();
-      void home();
+      auto left() -> void;
+      auto right() -> void;
+      auto up() -> void;
+      auto down() -> void;
+      auto select() -> void;
+      auto home() -> void;
     #endif
   #endif
 
-  inline void setStayOn(bool value) { stayOn = value; };
-  inline auto stayingOn() -> bool { return stayOn; };
-  void setOrientation(Screen::Orientation orient);
+ inline auto setStayOn(bool value) -> void { stayOn = value; };
+ [[nodiscard]] inline auto stayingOn() -> bool { return stayOn; };
+  auto setOrientation(Screen::Orientation orient) -> void;
 };
 
 #if __EVENT_MGR__

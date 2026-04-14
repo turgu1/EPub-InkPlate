@@ -39,8 +39,8 @@ public:
    *
    * @param all If true, default fonts will also be removed
    */
-  void clear(bool all = false);
-  void clearEverything();
+  auto clear(bool all = false) -> void;
+  auto clearEverything() -> void;
   /**
    * @brief Get font at index
    *
@@ -113,15 +113,15 @@ public:
   auto adjustFontStyle(FaceStyle style, FaceStyle fontStyle, FaceStyle fontWeight) const
       -> FaceStyle;
 
-  void check(int16_t index, FaceStyle style) const {
+  auto check(int16_t index, FaceStyle style) -> void const {
     if (fontCache[index].style != style) {
       LOG_E("Hum... font_check failed");
     }
   };
 
-  void clearGlyphCaches();
+  auto clearGlyphCaches() -> void;
 
-  void adjustDefaultFont(uint8_t fontIndex);
+  auto adjustDefaultFont(uint8_t fontIndex) -> void;
 
   auto replace(int16_t index, const std::string &name, FaceStyle style, const std::string &filename)
       -> bool;

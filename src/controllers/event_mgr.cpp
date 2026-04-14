@@ -94,7 +94,7 @@
         }
       }
 
-      void EventMgr::setOrientation(Screen::Orientation orient) {
+      auto EventMgr::setOrientation(Screen::Orientation orient) -> void {
         if (orient == Screen::Orientation::LEFT) {
           NEXT_PAD   = (1 << static_cast<uint8_t>(PressKeys::Key::U4));
           PREV_PAD   = (1 << static_cast<uint8_t>(PressKeys::Key::U3));
@@ -201,7 +201,7 @@
         }
       }
 
-      void EventMgr::setOrientation(Screen::Orientation orient) {
+      auto EventMgr::setOrientation(Screen::Orientation orient) -> void {
         if (orient == Screen::Orientation::LEFT) {
           NEXT_PAD   = 2;
           PREV_PAD   = 1;
@@ -238,37 +238,37 @@
 
     #include "screen.hpp"
 
-    void EventMgr::left() {
+    auto EventMgr::left() -> void {
       Event event;
       event.kind = EventKind::PREV;
       appController.inputEvent(event);
       appController.launch();
     }
-    void EventMgr::right() {
+    auto EventMgr::right() -> void {
       Event event;
       event.kind = EventKind::NEXT;
       appController.inputEvent(event);
       appController.launch();
     }
-    void EventMgr::up() {
+    auto EventMgr::up() -> void {
       Event event;
       event.kind = EventKind::DBL_PREV;
       appController.inputEvent(event);
       appController.launch();
     }
-    void EventMgr::down() {
+    auto EventMgr::down() -> void {
       Event event;
       event.kind = EventKind::DBL_NEXT;
       appController.inputEvent(event);
       appController.launch();
     }
-    void EventMgr::select() {
+    auto EventMgr::select() -> void {
       Event event;
       event.kind = EventKind::SELECT;
       appController.inputEvent(event);
       appController.launch();
     }
-    void EventMgr::home() {
+    auto EventMgr::home() -> void {
       Event event;
       event.kind = EventKind::DBL_SELECT;
       appController.inputEvent(event);
@@ -287,16 +287,16 @@
     BUTTON_EVENT(select, "Select Clicked")
     BUTTON_EVENT(home, "Home Clicked")
 
-    void EventMgr::loop() {
+    auto EventMgr::loop() -> void {
       gtk_main(); // never return
     }
 
-    void EventMgr::setOrientation(Screen::Orientation orient) {
+    auto EventMgr::setOrientation(Screen::Orientation orient) -> void {
       // Nothing to do...
     }
 
   #else
-    void EventMgr::loop() {
+    auto EventMgr::loop() -> void {
       LOG_D("===> Loop...");
       while (1) {
         const EventMgr::Event &event = getEvent();
@@ -328,7 +328,7 @@
 
               LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
               screen.forceFullUpdate();
-              msg_viewer.show(MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
+              MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
                               "Timeout period exceeded (%d minutes). The device is now "
                               "entering into Deep Sleep mode. Please press a key to restart.",
                               lightSleepDuration);
@@ -350,17 +350,17 @@
 
   auto EventMgr::setup() -> bool {
     #if EPUB_LINUX_BUILD
-      g_signal_connect(G_OBJECT(screen.left_button), "clicked", G_CALLBACK(left_clicked),
+      g_signal_connect(G_OBJECT(screen.leftButton), "clicked", G_CALLBACK(left_clicked),
                        (gpointer)screen.window);
-      g_signal_connect(G_OBJECT(screen.right_button), "clicked", G_CALLBACK(right_clicked),
+      g_signal_connect(G_OBJECT(screen.rightButton), "clicked", G_CALLBACK(right_clicked),
                        (gpointer)screen.window);
-      g_signal_connect(G_OBJECT(screen.up_button), "clicked", G_CALLBACK(up_clicked),
+      g_signal_connect(G_OBJECT(screen.upButton), "clicked", G_CALLBACK(up_clicked),
                        (gpointer)screen.window);
-      g_signal_connect(G_OBJECT(screen.down_button), "clicked", G_CALLBACK(down_clicked),
+      g_signal_connect(G_OBJECT(screen.downButton), "clicked", G_CALLBACK(down_clicked),
                        (gpointer)screen.window);
-      g_signal_connect(G_OBJECT(screen.select_button), "clicked", G_CALLBACK(select_clicked),
+      g_signal_connect(G_OBJECT(screen.selectButton), "clicked", G_CALLBACK(select_clicked),
                        (gpointer)screen.window);
-      g_signal_connect(G_OBJECT(screen.home_button), "clicked", G_CALLBACK(home_clicked),
+      g_signal_connect(G_OBJECT(screen.homeButton), "clicked", G_CALLBACK(home_clicked),
                        (gpointer)screen.window);
 
     #else

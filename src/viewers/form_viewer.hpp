@@ -66,14 +66,14 @@ public:
   virtual ~FormField() { LOG_I("FormField destructor called"); }
 
   virtual auto getFieldDim() -> const Dim { return fieldDim; }
-  inline auto getCaptionDim() -> const Dim & { return captionDim; }
+ [[nodiscard]] inline auto getCaptionDim() -> const Dim & { return captionDim; }
 
-  inline auto getFieldPos() -> const Pos & { return fieldPos; }
-  inline auto getCaptionPos() -> const Pos & { return captionPos; }
+ [[nodiscard]] inline auto getFieldPos() -> const Pos & { return fieldPos; }
+ [[nodiscard]] inline auto getCaptionPos() -> const Pos & { return captionPos; }
 
-  inline auto getType() -> FormEntryType { return formEntry.entryType; }
+ [[nodiscard]] inline auto getType() -> FormEntryType { return formEntry.entryType; }
 
-  void computeCaptionDim() {
+  auto computeCaptionDim() -> void {
     if (formEntry.caption != nullptr) {
       font.getSize(formEntry.caption, &captionDim, FORM_FONT_SIZE);
     } else {
@@ -82,19 +82,19 @@ public:
   }
 
   virtual auto formRefreshRequired() -> bool { return false; }
-  virtual void paint(Page::Format &fmt)     = 0;
-  virtual void computeFieldDim()            = 0;
-  virtual void computeFieldPos(Pos fromPos) = 0;
-  virtual void updateHighlight()            = 0;
-  virtual void saveValue()                  = 0;
+  virtual auto paint(Page::Format &fmt) -> void     = 0;
+  virtual auto computeFieldDim() -> void            = 0;
+  virtual auto computeFieldPos(Pos fromPos) -> void = 0;
+  virtual auto updateHighlight() -> void            = 0;
+  virtual auto saveValue() -> void                  = 0;
 
   virtual auto event(const EventMgr::Event &event) -> bool { return false; }
 
-  inline auto inEventControl() -> bool { return eventControl; }
+ [[nodiscard]] inline auto inEventControl() -> bool { return eventControl; }
 
-  void computeCaptionPos(Pos fromPos) { captionPos = Pos(fromPos.x - captionDim.width, fromPos.y); }
+  auto computeCaptionPos(Pos fromPos) -> void { captionPos = Pos(fromPos.x - captionDim.width, fromPos.y); }
 
-  void showHighlighted(bool showIt) {
+  auto showHighlighted(bool showIt) -> void {
     if (showIt) {
       page.putHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
                         Pos(fieldPos.x - 10, fieldPos.y - 10));
@@ -104,7 +104,7 @@ public:
     }
   }
 
-  void showSelected(bool showIt) {
+  auto showSelected(bool showIt) -> void {
     if (showIt) {
       page.putHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
                         Pos(fieldPos.x - 10, fieldPos.y - 10));
@@ -123,7 +123,7 @@ public:
   }
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    inline auto isPointed(uint16_t x, uint16_t y) -> bool {
+ [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
       return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
              (x <= (fieldPos.x + fieldDim.width + 10)) &&
              (y <= (fieldPos.y + fieldDim.height + 10));
@@ -166,7 +166,7 @@ public:
   static FormChoice fontChoices[8];
   static uint8_t fontChoicesCount;
 
-  void computeFieldDim() {
+  auto computeFieldDim() -> void {
     fieldDim = {0, 0};
     for (int8_t i = 0; i < formEntry.u.ch.choiceCount; i++) {
       Item *item = itemPool.newElement();
@@ -189,14 +189,14 @@ public:
     oldItem = items.end();
   }
 
-  static void adjustFontChoices(char **fontNames, uint8_t size) {
+  static auto adjustFontChoices(char **fontNames, uint8_t size) -> void {
     for (uint8_t i = 0; i < size; i++) fontChoices[i].caption = fontNames[i];
     fontChoicesCount = size;
   }
 
-  void computeFieldPos(Pos fromPos) = 0;
+  auto computeFieldPos(Pos fromPos) -> void = 0;
 
-  void paint(Page::Format &fmt) {
+  auto paint(Page::Format &fmt) -> void {
 
     Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
     uint8_t offset = -glyph->yoff;
@@ -243,7 +243,7 @@ public:
     }
   #endif
 
-  void updateHighlight() {
+  auto updateHighlight() -> void {
     if (oldItem != currentItem) {
       if (oldItem != items.end()) {
         page.clearHighlight(Dim((*oldItem)->dim.width + 10, (*oldItem)->dim.height + 10),
@@ -255,7 +255,7 @@ public:
     oldItem = currentItem;
   }
 
-  void saveValue() { *formEntry.u.ch.value = formEntry.u.ch.choices[(*currentItem)->idx].value; }
+  auto saveValue() -> void { *formEntry.u.ch.value = formEntry.u.ch.choices[(*currentItem)->idx].value; }
 
 protected:
   struct Item {
@@ -296,7 +296,7 @@ public:
     return makeUniqueHimem<VFormChoiceField>(formEntry, font, page);
   }
 
-  void computeFieldPos(Pos fromPos) {
+  auto computeFieldPos(Pos fromPos) -> void {
     fieldPos   = fromPos;
     Pos thePos = fromPos;
 
@@ -308,7 +308,7 @@ public:
     }
   }
 
-  void computeFieldDim() {
+  auto computeFieldDim() -> void {
     FormChoiceField::computeFieldDim();
     uint8_t lineHeight = font.getLineHeight(FORM_FONT_SIZE);
     uint8_t lastHeight = 0;
@@ -338,7 +338,7 @@ public:
     return makeUniqueHimem<HFormChoiceField>(formEntry, font, page);
   }
 
-  void computeFieldPos(Pos fromPos) {
+  auto computeFieldPos(Pos fromPos) -> void {
     fieldPos   = fromPos;
     Pos thePos = fromPos;
 
@@ -351,7 +351,7 @@ public:
 
   static constexpr uint8_t HORIZONTAL_SEPARATOR = 20;
 
-  void computeFieldDim() {
+  auto computeFieldDim() -> void {
     FormChoiceField::computeFieldDim();
     uint16_t separator = 0;
     for (auto *item : items) {
@@ -381,9 +381,9 @@ public:
 
   auto formRefreshRequired() -> bool { return true; }
 
-  void computeFieldPos(Pos fromPos) { fieldPos = fromPos; }
+  auto computeFieldPos(Pos fromPos) -> void { fieldPos = fromPos; }
 
-  void paint(Page::Format &fmt) {
+  auto paint(Page::Format &fmt) -> void {
     char val[8];
     Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
     uint8_t offset = -glyph->yoff;
@@ -422,11 +422,11 @@ public:
     return true; // keep events control
   }
 
-  void updateHighlight() {}
+  auto updateHighlight() -> void {}
 
-  void saveValue() {}
+  auto saveValue() -> void {}
 
-  void computeFieldDim() { font.getSize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
+  auto computeFieldDim() -> void { font.getSize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -445,8 +445,8 @@ public:
     // bool event(const EventMgr::Event &event);
 
     const Dim getFieldDim() { return Dim(fieldDim.width, fieldDim.height + 10); }
-    void saveValue() {}
-    void updateHighlight() {
+    auto saveValue() -> void {}
+    auto updateHighlight() -> void {
       page.putRounded(Dim(fieldDim.width + 16, fieldDim.height + 16),
                       Pos(fieldPos.x - 8, fieldPos.y - 8));
       page.putRounded(Dim(fieldDim.width + 18, fieldDim.height + 18),
@@ -455,14 +455,14 @@ public:
                       Pos(fieldPos.x - 10, fieldPos.y - 10));
     }
 
-    void computeFieldDim() { font.getSize(formEntry.caption, &fieldDim, FORM_FONT_SIZE); }
+    auto computeFieldDim() -> void { font.getSize(formEntry.caption, &fieldDim, FORM_FONT_SIZE); }
 
-    void computeFieldPos(Pos fromPos) {
+    auto computeFieldPos(Pos fromPos) -> void {
       fieldPos.x = (Screen::getWidth() / 2) - (fieldDim.width / 2);
       fieldPos.y = fromPos.y + 10;
     }
 
-    void paint(Page::Format &fmt) {
+    auto paint(Page::Format &fmt) -> void {
       Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
       uint8_t offset = -glyph->yoff;
 
@@ -552,7 +552,7 @@ private:
   #endif
 
 public:
-  void setCompleted(bool value) { completed = value; }
+  auto setCompleted(bool value) -> void { completed = value; }
 
   void show(const char *titleArg, FormEntries formEntriesArg, int8_t sizeArg,
             const char *bottomMsgArg, bool refresh = false);

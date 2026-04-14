@@ -48,18 +48,18 @@ public:
   auto get(IdType id, int8_t *val) -> bool;
   auto get(IdType id, int64_t *val) -> bool;
   auto get(IdType id, std::string &val) -> bool;
-  void put(IdType id, int32_t val);
-  void put(IdType id, int8_t val);
-  void put(IdType id, int64_t val);
-  void put(IdType id, std::string &val);
+  auto put(IdType id, int32_t val) -> void;
+  auto put(IdType id, int8_t val) -> void;
+  auto put(IdType id, int64_t val) -> void;
+  auto put(IdType id, std::string &val) -> void;
 
   auto read() -> bool;
   auto save(bool force = false) -> bool;
 
-  inline auto isModified() -> bool { return modified; }
+ [[nodiscard]] inline auto isModified() -> bool { return modified; }
 
   #if DEBUGGING
-    void show();
+    auto show() -> void;
   #endif
 };
 

@@ -22,15 +22,15 @@
     bool apRunning{false};
     bool mdnsRunning{false};
 
-    void startMdnsService(const std::string &hostname);
-    inline void setIpAddress(esp_ip4_addr_t addr) { ipAddress = addr; }
+    auto startMdnsService(const std::string &hostname) -> void;
+ inline auto setIpAddress(esp_ip4_addr_t addr) -> void { ipAddress = addr; }
 
   public:
     WIFI() {}
 
     auto startSta() -> bool;
     auto startAp() -> bool;
-    void stop();
+    auto stop() -> void;
 
     inline esp_ip4_addr_t getIpAddress() { return ipAddress; }
   };

@@ -266,7 +266,7 @@ IBMF::~IBMF() {
   if (face != nullptr) clearFace();
 }
 
-void IBMF::clearFace() {
+auto IBMF::clearFace() -> void {
   clearCache();
   if (face != nullptr) {
     delete face;

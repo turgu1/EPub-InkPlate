@@ -57,8 +57,8 @@ public:
     auto addClass(std::string theClass) -> Node *;
     auto addClasses(std::string theClasses) -> Node *;
     auto addId(const std::string &theId) -> Node *;
-    void showChildren(NodeList::const_iterator nodeIt, int8_t lev) const;
-    void show(uint8_t level) const;
+    auto showChildren(NodeList::const_iterator nodeIt, int8_t lev) -> void const;
+    auto show(uint8_t level) -> void const;
   };
 
 private:
@@ -80,7 +80,7 @@ public:
     return nodePool.newElement(parentNode, theTag);
   }
 
-  void show() {
+  auto show() -> void {
     #if DEBUGGING
       std::cout << "DOM:" << std::endl;
       if (body != nullptr) body->show(1);

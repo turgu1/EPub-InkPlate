@@ -157,7 +157,7 @@ auto TOC::save(EPubPtr &epub) -> bool {
 
 auto hexToBin(char ch) -> unsigned char;
 
-void TOC::cleanFilename(char *fname) {
+auto TOC::cleanFilename(char *fname) -> void {
   LOG_D("cleanFilename()");
 
   char *s = fname;
@@ -382,7 +382,7 @@ auto TOC::compact() -> bool {
   return true;
 }
 
-void TOC::clean() {
+auto TOC::clean() -> void {
   LOG_D("clean()");
 
   charPool.reset();
@@ -397,7 +397,7 @@ void TOC::clean() {
   someIds   = false;
 }
 
-void TOC::set(std::string &id, int32_t currentOffset) {
+auto TOC::set(std::string &id, int32_t currentOffset) -> void {
   int16_t itemrefIndex    = pageLocs.getCurrentItemrefIndex();
   Infos::iterator infosIt = infos.find(std::make_pair(itemrefIndex, id));
 
@@ -406,7 +406,7 @@ void TOC::set(std::string &id, int32_t currentOffset) {
   }
 }
 
-void TOC::set(int32_t currentOffset) {
+auto TOC::set(int32_t currentOffset) -> void {
   int16_t itemrefIndex = pageLocs.getCurrentItemrefIndex();
   int16_t idx          = -1;
 
@@ -423,7 +423,7 @@ void TOC::set(int32_t currentOffset) {
 
 #if DEBUGGING
 
-  void TOC::show() {
+  auto TOC::show() -> void {
     std::cout << "----- Table of Content: -----" << std::endl;
 
     for (auto &e : entries) {
@@ -434,7 +434,7 @@ void TOC::set(int32_t currentOffset) {
     std::cout << "----- End TOC -----" << std::endl;
   }
 
-  void TOC::showInfo() {
+  auto TOC::showInfo() -> void {
     std::cout << "----- TOC Infos -----" << std::endl;
 
     for (auto &e : infos) {

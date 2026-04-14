@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sys/stat.h>
 
-bool SimpleDB::open(std::string filename) {
+auto SimpleDB::open(std::string filename) -> bool {
   LOG_D("Opening database file: %s", filename.c_str());
 
   if (dbIsOpen) {
@@ -38,7 +38,7 @@ bool SimpleDB::open(std::string filename) {
       if (fseek(dbFile, offset, SEEK_SET)) goto error;
     idx++;
   }
-  done         = true;
+  done        = true;
   recordCount = idx;
 
 error:
@@ -55,7 +55,7 @@ error:
   }
 }
 
-bool SimpleDB::create(std::string filename) {
+auto SimpleDB::create(std::string filename) -> bool {
   LOG_D("Creating database file: %s", filename.c_str());
   if (dbIsOpen) {
     fclose(dbFile);
@@ -67,20 +67,20 @@ bool SimpleDB::create(std::string filename) {
   dbIsOpen           = true;
   someRecordsDeleted = false;
   currentRecordIdx   = 0;
-  recordCount         = 0;
-  fileSize            = 0;
+  recordCount        = 0;
+  fileSize           = 0;
 
   return true;
 }
 
-void SimpleDB::close() {
+auto SimpleDB::close() -> void {
   if (dbIsOpen) {
     dbIsOpen = false;
     fclose(dbFile);
   }
 }
 
-bool SimpleDB::addRecord(void *record, int32_t size) {
+auto SimpleDB::addRecord(void *record, int32_t size) -> bool {
   LOG_D("Adding record of size %" PRIi32, size);
 
   if (recordCount >= MAX_RECORD_COUNT) return false;
@@ -94,7 +94,7 @@ bool SimpleDB::addRecord(void *record, int32_t size) {
   return true;
 }
 
-bool SimpleDB::getRecord(void *record, int32_t size) {
+auto SimpleDB::getRecord(void *record, int32_t size) -> bool {
   // LOG_D("Reading record of size %d", size);
 
   if ((size <= 0) || (currentRecordIdx >= recordCount)) return false;
@@ -103,7 +103,7 @@ bool SimpleDB::getRecord(void *record, int32_t size) {
   return true;
 }
 
-bool SimpleDB::getPartialRecord(void *record, int32_t size, int32_t offset) {
+auto SimpleDB::getPartialRecord(void *record, int32_t size, int32_t offset) -> bool {
   // LOG_D("Reading partial record of size %d at offset %d", size, offset);
 
   if ((size <= 0) || (currentRecordIdx >= recordCount)) return false;
@@ -113,7 +113,7 @@ bool SimpleDB::getPartialRecord(void *record, int32_t size, int32_t offset) {
   return true;
 }
 
-void SimpleDB::show() {
+auto SimpleDB::show() -> void {
   if (dbIsOpen) {
     std::cout << "===== Database content: ====" << std::endl;
     std::cout << "Record count: " << recordCount << std::endl;

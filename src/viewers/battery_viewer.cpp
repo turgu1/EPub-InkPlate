@@ -12,7 +12,7 @@
 
   #include <cstring>
 
-  void BatteryViewer::show(PagePtr &page) {
+  auto BatteryViewer::show(PagePtr &page) -> void {
     int8_t viewMode = 0;
     config.get(Config::Ident::BATTERY, &viewMode);
 

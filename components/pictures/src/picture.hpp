@@ -52,9 +52,9 @@ public:
 
   virtual ~Picture() = default;
 
-  inline auto getOrigDim() const -> const Dim { return origDim; }
-  inline auto getDim() const -> const Dim { return dim; }
-  inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
+ [[nodiscard]] inline auto getOrigDim() const -> const Dim { return origDim; }
+ [[nodiscard]] inline auto getDim() const -> const Dim { return dim; }
+ [[nodiscard]] inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
 
-  void resize(Dim new_dim);
+  auto resize(Dim newDim) -> void;
 };

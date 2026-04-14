@@ -19,7 +19,7 @@ Font::Font() {
   ready           = false;
 }
 
-void Font::addBuffToBytePool() {
+auto Font::addBuffToBytePool() -> void {
   BytePool *pool = (BytePool *)allocate(BYTE_POOL_SIZE);
   if (pool == nullptr) {
     LOG_E("Unable to allocated memory for bytes pool.");
@@ -46,7 +46,7 @@ auto Font::bytePoolAlloc(uint16_t size) -> uint8_t * {
   return buff;
 }
 
-void Font::clearCache() {
+auto Font::clearCache() -> void {
   std::scoped_lock guard(mutex);
 
   LOG_D("Clear cache...");
@@ -135,7 +135,7 @@ auto Font::setFontFaceFromFile(const std::string fontFilename) -> bool {
   }
 }
 
-void Font::getSize(const char *str, Dim *dim, int16_t glyphSize) {
+auto Font::getSize(const char *str, Dim *dim, int16_t glyphSize) -> void {
   {
     std::scoped_lock guard(mutex);
 

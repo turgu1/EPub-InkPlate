@@ -26,13 +26,13 @@ public:
     return makeUniqueHimem<PageLocsInterpreter>(theEpub, thePage, theDom, theCompMode, theItem);
   }
 
-  void docEnd(const Page::Format &fmt) { pageEnd(fmt); }
+  auto docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
 
 private:
   const EPub::ItemInfo &itemInfo;
 
 protected:
-  inline auto pageEnd(const Page::Format &fmt) -> bool {
+ [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
     bool res = true;
 
     PageId pageId = PageId(itemInfo.itemrefIndex, startOffset);

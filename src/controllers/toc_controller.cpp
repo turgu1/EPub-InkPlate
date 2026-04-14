@@ -18,7 +18,7 @@
 
 #include <string>
 
-void TocController::enter() {
+auto TocController::enter() -> void {
   tocViewer = TocViewer::Make(epub);
 
   tocViewer->setup();
@@ -31,10 +31,10 @@ void TocController::enter() {
   currentEntryIndex = tocViewer->showPageAndHighlight(currentEntryIndex);
 }
 
-void TocController::leave(bool goingToDeepSleep) { tocViewer.reset(); }
+auto TocController::leave(bool goingToDeepSleep) -> void { tocViewer.reset(); }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void TocController::inputEvent(const EventMgr::Event &event) {
+  auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:
       currentEntryIndex = tocViewer->prevPage();
@@ -70,7 +70,7 @@ void TocController::leave(bool goingToDeepSleep) { tocViewer.reset(); }
     }
   }
 #else
-  void TocController::inputEvent(const EventMgr::Event &event) {
+  auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
       #if EXTENDED_CASE
       case EventMgr::EventKind::PREV:

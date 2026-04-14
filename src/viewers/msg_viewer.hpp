@@ -86,5 +86,5 @@ public:
    *
    * @param reason Short description of the allocation failure cause.
    */
-  static void outOfMemory(const char *reason);
+  static auto outOfMemory(const char *reason) -> void;
 };

@@ -32,7 +32,7 @@ private:
     char *filename;
     uint32_t startPos;       // in zip file
     uint32_t compressedSize; // in zip file
-    uint32_t size;            // once decompressed
+    uint32_t size;           // once decompressed
     uint32_t currentPos;
     uint16_t method; // compress method (0 = not compressed, 8 = DEFLATE)
   };
@@ -41,11 +41,13 @@ private:
   FileEntries fileEntries;
   FileEntries::iterator currentFileEntry;
 
-  uint32_t getUint32(const unsigned char *b) {
+  auto getUint32(const unsigned char *b) -> uint32_t {
     return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8) | (((uint32_t)b[2]) << 16) |
            (((uint32_t)b[3]) << 24);
   }
-  uint16_t getUint16(const unsigned char *b) { return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8); }
+  auto getUint16(const unsigned char *b) -> uint16_t {
+    return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8);
+  }
 
   uint16_t repeat;
   uint16_t remains;
@@ -59,22 +61,22 @@ private:
 
 public:
   Unzip();
-  bool seekToCentralDirectory();
-  bool readFileEntries(uint32_t offset, uint16_t count);
-  bool openZipFile(const char *zip_filename);
-  void closeZipFile();
+  auto seekToCentralDirectory() -> bool;
+  auto readFileEntries(uint32_t offset, uint16_t count) -> bool;
+  auto openZipFile(const char *zipFilename) -> bool;
+  auto closeZipFile() -> void;
 
-  int32_t getFileSize(const char *filename);
+  auto getFileSize(const char *filename) -> int32_t;
   auto getFile(const char *filename, uint32_t &fileSize) -> FileContentPtr;
-  bool fileExists(const char *filename);
-  bool openFile(const char *filename);
-  void closeFile();
+  auto fileExists(const char *filename) -> bool;
+  auto openFile(const char *filename) -> bool;
+  auto closeFile() -> void;
 
   #if !STB
-    bool openStreamFile(const char *filename, uint32_t &fileSize);
-    uint32_t getStreamData(char *data, uint32_t size);
-    bool streamSkip(uint32_t byte_count);
-    void closeStreamFile();
+    auto openStreamFile(const char *filename, uint32_t &fileSize) -> bool;
+    auto getStreamData(char *data, uint32_t size) -> uint32_t;
+    auto streamSkip(uint32_t byteCount) -> bool;
+    auto closeStreamFile() -> void;
   #endif
 };
 

@@ -144,9 +144,9 @@ private:
   using SortedIndex = std::map<std::string, IndexInfo>; ///< Sorted map of book names and indexes.
   SortedIndex sortedIndex; ///< Books index pointing at the db index of each book
 
-  void clearDb();
-  void setCoverSize();
-  void checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex);
+  auto clearDb() -> void;
+  auto setCoverSize() -> void;
+  auto checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) -> void;
   auto cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool;
   auto loadNewBooksToDb(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex)
       -> std::pair<bool, bool>;
@@ -163,7 +163,7 @@ public:
    *
    * @return int16_t The number of ebooks present in the database
    */
-  inline auto getBookCount() const -> int16_t { return sortedIndex.size(); }
+ [[nodiscard]] inline auto getBookCount() const -> int16_t { return sortedIndex.size(); }
 
   /**
    * @brief Get an ebook meta-data
@@ -180,7 +180,7 @@ public:
   // auto getBookDataFromDbIndex(uint16_t idx) -> EBookRecordPtr;
   auto getBookId(uint16_t idx, uint32_t &id) -> bool;
   auto getBookIndex(uint32_t id, uint16_t &idx) -> bool;
-  void setTrackOrder(uint32_t id, int8_t pos);
+  auto setTrackOrder(uint32_t id, int8_t pos) -> void;
 
   auto getSortedIdx(uint16_t dbIdx) -> int16_t {
     int i = 0;
@@ -245,11 +245,11 @@ public:
    * @brief Close the SimpleDB database
    *
    */
-  void closeDb() {
+  auto closeDb() -> void {
     if (db) db->close();
   }
 
-  void showDb();
+  auto showDb() -> void;
 };
 
 #if __BOOKS_DIR__

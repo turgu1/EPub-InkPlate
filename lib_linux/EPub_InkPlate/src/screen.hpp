@@ -37,14 +37,14 @@ public:
     WHITE = 0xFF, BLACK = 0
   };
 
-  void drawPicture(PicturePtr &picture, Pos pos);
-  void drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch);
-  void drawRectangle(Dim dim, Pos pos, Color color);
-  void drawRoundRectangle(Dim dim, Pos pos, Color color);
-  void colorizeRegion(Dim dim, Pos pos, Color color);
-  void clear();
-  void update(bool noFull = false); // Parameter only used by the InkPlate version
-  void test();
+  auto drawPicture(PicturePtr &picture, Pos pos) -> void;
+  auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
+  auto drawRectangle(Dim dim, Pos pos, Color color) -> void;
+  auto drawRoundRectangle(Dim dim, Pos pos, Color color) -> void;
+  auto colorizeRegion(Dim dim, Pos pos, Color color) -> void;
+  auto clear() -> void;
+  auto update(bool noFull = false) -> void; // Parameter only used by the InkPlate version
+  auto test() -> void;
 
 private:
   static constexpr char const *TAG = "Screen";
@@ -69,26 +69,26 @@ private:
   enum class Corner : uint8_t {
     TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT
   };
-  void drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color);
+  auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color) -> void;
 
 public:
-  static Screen &getSingleton() noexcept { return singleton; }
-  void setup(PixelResolution resolution, Orientation orientation);
-  void setPixelResolution(PixelResolution resolution, bool force = false);
-  void setOrientation(Orientation orient);
-  inline PixelResolution getPixelResolution() { return pixelResolution; }
-  GtkImage *getPicture() { return pictureData.picture; }
-  // void to_user_coord(uint16_t &x, uint16_t &y) {}
-  inline void forceFullUpdate() {}
+  static auto getSingleton() noexcept -> Screen & { return singleton; }
+  auto setup(PixelResolution resolution, Orientation orientation) -> void;
+  auto setPixelResolution(PixelResolution resolution, bool force = false) -> void;
+  auto setOrientation(Orientation orient) -> void;
+ [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
+  auto getPicture() -> GtkImage * { return pictureData.picture; }
+  // auto to_user_coord(uint16_t &x, uint16_t &y) -> void {}
+ inline auto forceFullUpdate() -> void {}
 
-  inline static uint16_t getWidth() { return width; }
-  inline static uint16_t getHeight() { return height; }
+ [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
+ [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
 
   #if TOUCH_TRIAL
-    GtkWidget *window, *picture_box;
+    GtkWidget *window, *pictureBox;
   #else
-    GtkWidget *window, *left_button, *right_button, *up_button, *down_button, *select_button,
-        *home_button;
+    GtkWidget *window, *leftButton, *rightButton, *upButton, *downButton, *selectButton,
+        *homeButton;
   #endif
 };
 

@@ -39,7 +39,7 @@
     return picture_filenames.size() > 0;
   }
 
-  void ScreenSaver::show() {
+  auto ScreenSaver::show() -> void {
     LOG_D("Showing screen saver...");
     if (setup()) {
       if (picture_filenames.size() > 0) {

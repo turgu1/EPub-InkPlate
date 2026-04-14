@@ -33,23 +33,23 @@ private:
 public:
   OptionController() = default;
 
-  void inputEvent(const EventMgr::Event &event);
-  void enter();
-  void leave(bool goingToDeepSleep = false);
-  void setFontCount(uint8_t count);
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
+  auto setFontCount(uint8_t count) -> void;
 
-  inline void setMainFormIsShown() { mainFormIsShown = true; }
-  inline void setFontFormIsShown() { fontFormIsShown = true; }
+ inline auto setMainFormIsShown() -> void { mainFormIsShown = true; }
+ inline auto setFontFormIsShown() -> void { fontFormIsShown = true; }
 
   #if DATE_TIME_RTC
-    inline void setDateTimeFormIsShown() { dateTimeFormIsShown = true; }
+ inline auto setDateTimeFormIsShown() -> void { dateTimeFormIsShown = true; }
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    inline void setCalibrationIsShown() { calibrationIsShown = true; }
+ inline auto setCalibrationIsShown() -> void { calibrationIsShown = true; }
   #endif
 
-  inline void setWaitForKeyAfterWifi(bool webServerStarted = false) {
+ inline auto setWaitForKeyAfterWifi(bool webServerStarted = false) -> void {
     waitForKeyAfterWifi = true;
     webServerWasStarted = webServerStarted;
     mainFormIsShown     = false;
@@ -62,20 +62,20 @@ public:
     #endif
   }
 
-  void mainParameters();
-  void defaultParameters();
-  void wifiMode();
-  void initNvs();
+  auto mainParameters() -> void;
+  auto defaultParameters() -> void;
+  auto wifiMode() -> void;
+  auto initNvs() -> void;
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    void calibrate();
+    auto calibrate() -> void;
   #endif
   #if DATE_TIME_RTC
-    void clockAdjustForm();
-    void setClock();
-    void ntpClockAdjust();
+    auto clockAdjustForm() -> void;
+    auto setClock() -> void;
+    auto ntpClockAdjust() -> void;
   #endif
   #if DEBUGGING
-    void debugging();
+    auto debugging() -> void;
   #endif
 };
 

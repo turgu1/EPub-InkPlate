@@ -17,7 +17,7 @@
     static constexpr char const *TAG = "Clock";
 
   public:
-    static void setDateTime(const time_t &tm) {
+    static auto setDateTime(const time_t &tm) -> void {
       #if EPUB_INKPLATE_BUILD
         if (rtc.is_present()) {
           rtc.set_date_time(&tm);
@@ -30,7 +30,7 @@
       #endif
     }
 
-    static void getDateTime(time_t &t) {
+    static auto getDateTime(time_t &t) -> void {
       #if EPUB_INKPLATE_BUILD
         if (rtc.is_present()) {
           LOG_D("RTC chip is present");

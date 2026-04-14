@@ -26,7 +26,7 @@
     // void    saveLitLevel(uint8_t level) { saved_lit_level = level; }
 
     auto getLitLevel() -> uint8_t { return rtc.get_ram(); }
-    void saveLitLevel(uint8_t level) { rtc.set_ram(level); }
+    auto saveLitLevel(uint8_t level) -> void { rtc.set_ram(level); }
 
   public:
     BackLit() : lit(false), pinchDistance(0) {}
@@ -48,7 +48,7 @@
       return true;
     }
 
-    void adjust(int16_t value) {
+    auto adjust(int16_t value) -> void {
       pinchDistance += value;
       int16_t val = (pinchDistance > 0) ? pinchDistance / 4 : 0;
 
@@ -72,7 +72,7 @@
       LOG_D("Adjust: %d, litLevel: %u", value, litLevel);
     }
 
-    void turnOff() {
+    auto turnOff() -> void {
       lit = false;
       front_light.disable();
     }

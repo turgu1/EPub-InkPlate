@@ -128,7 +128,7 @@ private:
 
   CSS::ValueType valueType;
 
-  void nextCh() {
+  auto nextCh() -> void {
     if (remains > 0) {
       remains--;
       ch = *str++;
@@ -137,11 +137,11 @@ private:
       ch = '\0';
   }
 
-  inline auto isWhiteSpace() -> bool {
+ [[nodiscard]] inline auto isWhiteSpace() -> bool {
     return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n') || (ch == '\f');
   }
 
-  inline auto isNmChar() -> bool {
+ [[nodiscard]] inline auto isNmChar() -> bool {
     return ((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) ||
            ((ch >= '0') && (ch <= '9')) || (ch == '_') || (ch == '-') || (ch == '\\') ||
            (ch >= 160);
@@ -152,7 +152,7 @@ private:
            (c == '\\') || (c >= 160);
   }
 
-  void skipSpaces() {
+  auto skipSpaces() -> void {
     while (isWhiteSpace()) nextCh();
   }
 
@@ -212,7 +212,7 @@ private:
     return res;
   }
 
-  void parseNumber() {
+  auto parseNumber() -> void {
     num      = 0;
     bool neg = ch == '-';
     if (neg)
@@ -255,7 +255,7 @@ private:
     }
   }
 
-  void parseName() {
+  auto parseName() -> void {
     int8_t idx = 0;
     while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
       if (ch == '\\') {
@@ -273,7 +273,7 @@ private:
     if (idx < NAME_SIZE) string[idx] = 0;
   }
 
-  void parseIdent() {
+  auto parseIdent() -> void {
     int8_t idx = 0;
     while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
       if (ch == '\\') {
@@ -307,7 +307,7 @@ private:
     return true;
   }
 
-  void nextToken() {
+  auto nextToken() -> void {
     bool done = false;
     while (!done) {
       if (ch == '\0')
@@ -647,7 +647,7 @@ private:
    * On entry, the current token must point to an already parsed item.
    * On return, the token point at the next valid token passed whitespaces.
    */
-  void skipBlanks() {
+  auto skipBlanks() -> void {
     if (token == Token::END_OF_FILE) return;
     do nextToken();
     while (token == Token::WHITESPACE);

@@ -30,14 +30,14 @@ public:
 
   ~PngPicture() override = default;
 
-  inline int8_t getScaleFactor() { return scale; }
+ [[nodiscard]] inline auto getScaleFactor() -> int8_t { return scale; }
 
   struct PictureData {
     Dim dim{0, 0};
     uint8_t *bitmap{nullptr};
   } pictureData;
 
-  inline const PictureData *getPictureData() {
+ [[nodiscard]] inline auto getPictureData() -> const PictureData * {
     pictureData = {.dim = dim, .bitmap = bitmap.get()};
     return &pictureData;
   }

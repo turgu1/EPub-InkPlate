@@ -17,7 +17,7 @@
   #include "nvs.h"
 #endif
 
-void BookController::enter() {
+auto BookController::enter() -> void {
   LOG_D("===> Enter()...");
 
   // When entering the book viewer, the BookController::openBook() method was already called,
@@ -42,7 +42,7 @@ void BookController::enter() {
   bookViewer->showPage(currentPageId, epub);
 }
 
-void BookController::leave(bool goingToDeepSleep) {
+auto BookController::leave(bool goingToDeepSleep) -> void {
   LOG_D("===> leave()...");
 
   booksDirController.saveLastBook(currentPageId, goingToDeepSleep);
@@ -93,7 +93,7 @@ auto BookController::openBook(const std::string &bookTitle, const std::string &b
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void BookController::inputEvent(const EventMgr::Event &event) {
+  auto BookController::inputEvent(const EventMgr::Event &event) -> void {
     const PageId *pageId;
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:
@@ -163,7 +163,7 @@ auto BookController::openBook(const std::string &bookTitle, const std::string &b
     }
   }
 #else
-  void BookController::inputEvent(const EventMgr::Event &event) {
+  auto BookController::inputEvent(const EventMgr::Event &event) -> void {
     const PageId *pageId;
     switch (event.kind) {
       #if EXTENDED_CASE

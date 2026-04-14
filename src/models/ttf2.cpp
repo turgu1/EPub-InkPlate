@@ -48,7 +48,7 @@ TTF::~TTF() {
   if (face != nullptr) clearFace();
 }
 
-void TTF::clearFace() {
+auto TTF::clearFace() -> void {
   clearCache();
   if (face != nullptr) {
     FT_Done_Face(face);

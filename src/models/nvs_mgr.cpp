@@ -241,7 +241,7 @@
     return save(id, nvsData);
   }
 
-  void NVSMgr::remove(uint32_t index) {
+  auto NVSMgr::remove(uint32_t index) -> void {
     if (exists(index)) {
       std::string key = bldKey("ID_", index);
       uint32_t theId;

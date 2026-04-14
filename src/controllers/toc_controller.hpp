@@ -23,11 +23,11 @@ private:
 public:
   TocController() : currentEntryIndex(-1), currentBookIndex(-1) {}
 
-  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
+ inline auto setOwnershipOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
 
-  void inputEvent(const EventMgr::Event &event);
-  void enter();
-  void leave(bool goingToDeepSleep = false);
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
 };
 
 #if __TOC_CONTROLLER__

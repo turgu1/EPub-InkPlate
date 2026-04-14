@@ -220,7 +220,7 @@ public:
     struct {
       uint8_t tagCount, classCount, idCount, priority;
     } spec;
-    void show() const {
+    auto show() -> void const {
       #if DEBUGGING
         std::cout << "[" << +spec.priority << "," << +spec.idCount << "," << +spec.classCount
                   << "," << +spec.tagCount << "](" << value << ") ";
@@ -243,17 +243,17 @@ public:
       idCount    = 0;
     }
     ~SelectorNode() { classList.clear(); }
-    void addClass(std::string className) {
+    auto addClass(std::string className) -> void {
       classList.push_front(className);
       classCount += 1;
     }
-    void addId(const std::string &theId) {
+    auto addId(const std::string &theId) -> void {
       id = theId;
       idCount += 1;
     }
-    void setTag(DOM::Tag theTag) { tag = theTag; }
-    void setQualifier(Qualifier q) { qualifier = q; }
-    void show() const {
+    auto setTag(DOM::Tag theTag) -> void { tag = theTag; }
+    auto setQualifier(Qualifier q) -> void { qualifier = q; }
+    auto show() -> void const {
       #if DEBUGGING
         if (op == SelOp::CHILD) std::cout << " > ";
         if (op == SelOp::ADJACENT) std::cout << " + ";
@@ -285,8 +285,8 @@ public:
       }
       selectorNodeList.clear();
     }
-    void addSelectorNode(SelectorNode *node) { selectorNodeList.push_front(node); }
-    void computeSpecificity(uint8_t prio) {
+    auto addSelectorNode(SelectorNode *node) -> void { selectorNodeList.push_front(node); }
+    auto computeSpecificity(uint8_t prio) -> void {
       specificity.spec.priority = prio;
       for (auto *node : selectorNodeList) {
         specificity.spec.tagCount +=
@@ -296,7 +296,7 @@ public:
       }
     }
     auto isEmpty() -> bool { return selectorNodeList.empty(); }
-    void showSelector(SelectorNodeList::const_iterator nodeIt, int8_t lev) const {
+    auto showSelector(SelectorNodeList::const_iterator nodeIt, int8_t lev) -> void const {
       #if DEBUGGING
         if (nodeIt != selectorNodeList.end()) {
           SelectorNodeList::const_iterator nextNodeIt = nodeIt;
@@ -305,7 +305,7 @@ public:
         }
       #endif
     }
-    void show() const {
+    auto show() -> void const {
       #if DEBUGGING
         specificity.show();
         showSelector(selectorNodeList.cbegin(), 0);
@@ -328,7 +328,7 @@ public:
       valueType = ValueType::NO_TYPE;
       num        = 0.0;
     }
-    void show() {
+    auto show() -> void {
       #if DEBUGGING
         if (valueType == ValueType::STR) {
           std::cout << str;
@@ -352,9 +352,9 @@ public:
       }
       values.clear();
     }
-    void addValue(Value *v) { values.push_front(v); }
-    void completed() { values.reverse(); }
-    void show() {
+    auto addValue(Value *v) -> void { values.push_front(v); }
+    auto completed() -> void { values.reverse(); }
+    auto show() -> void {
       #if DEBUGGING
         std::cout << "  ";
         for (const auto &[key, value] : propertyMap) {
@@ -401,10 +401,10 @@ public:
   static MemoryPool<SelectorNode> selectorNodePool;
   static MemoryPool<Selector> selectorPool;
 
-  void match(DOM::Node *node, RulesMap &toRules);
-  void show(RulesMap &theRulesMap);
+  auto match(DOM::Node *node, RulesMap &toRules) -> void;
+  auto show(RulesMap &theRulesMap) -> void;
 
-  void addRule(Selector *sel, Properties *props) {
+  auto addRule(Selector *sel, Properties *props) -> void {
     rulesMap.insert(std::pair<Selector *, Properties *>(sel, props));
   }
 
@@ -426,13 +426,13 @@ public:
     return vals;
   }
 
-  void retrieveDataFromCss(CSS &css) {
+  auto retrieveDataFromCss(CSS &css) -> void {
     for (auto &rule : css.rulesMap) {
       rulesMap.insert(rule);
     }
   }
 
-  void show() {
+  auto show() -> void {
     #if DEBUGGING
       show(rulesMap);
     #endif

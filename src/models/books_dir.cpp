@@ -331,7 +331,7 @@ auto BooksDir::getBookIndex(uint32_t id, uint16_t &idx) -> bool {
   return found;
 }
 
-void BooksDir::setTrackOrder(uint32_t id, int8_t pos) {
+auto BooksDir::setTrackOrder(uint32_t id, int8_t pos) -> void {
   static bool noRecurse = false;
   if (noRecurse) return;
 
@@ -384,14 +384,14 @@ auto BooksDir::getBookDataFromDbIndex(uint16_t idx) -> EBookRecordPtr {
 }
 #endif
 
-void BooksDir::clearDb() {
+auto BooksDir::clearDb() -> void {
   db->gotoFirst();
   while (db->gotoNext()) {
     db->setDeleted();
   }
 }
 
-void BooksDir::setCoverSize() {
+auto BooksDir::setCoverSize() -> void {
   int8_t coverSize = 0;
   config.get(Config::Ident::COVER_SIZE, &coverSize);
   switch (coverSize) {
@@ -440,7 +440,7 @@ void BooksDir::setCoverSize() {
  *
  * @see nvsMgr, db, sortedIndex, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
  */
-void BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) {
+auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) -> void {
 
   auto partialRecord = PartialRecord::Make();
 
@@ -894,7 +894,7 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
   return result;
 }
 
-void BooksDir::showDb() {
+auto BooksDir::showDb() -> void {
   #if DEBUGGING
     VersionRecord versionRecord;
     EBookRecordPtr book;

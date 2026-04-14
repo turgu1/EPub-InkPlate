@@ -25,29 +25,29 @@ private:
 public:
   BookParamController() = default;
 
-  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
+ inline auto setOwnershipOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
 
   MenuViewerPtr menuViewer;
   FormViewerPtr formViewer;
 
   MsgViewer::ConfirmDataPtr confirmData;
 
-  void inputEvent(const EventMgr::Event &event);
-  void enter();
-  void leave(bool goingToDeepSleep = false);
-  void setFontCount(uint8_t count);
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
+  auto setFontCount(uint8_t count) -> void;
 
-  inline void setBookParamsFormIsShown() { bookParamsFormIsShown = true; }
-  inline void setWaitForKeyAfterWifi() { waitForKeyAfterWifi = true; }
-  inline void setDeleteCurrentBook() { deleteCurrentBook = true; }
+ inline auto setBookParamsFormIsShown() -> void { bookParamsFormIsShown = true; }
+ inline auto setWaitForKeyAfterWifi() -> void { waitForKeyAfterWifi = true; }
+ inline auto setDeleteCurrentBook() -> void { deleteCurrentBook = true; }
 
-  void bookParameters();
-  void revertToDefaults();
-  void booksList();
-  void deleteBook();
-  void tocCtrl();
-  void wifiMode();
-  void powerOff();
+  auto bookParameters() -> void;
+  auto revertToDefaults() -> void;
+  auto booksList() -> void;
+  auto deleteBook() -> void;
+  auto tocCtrl() -> void;
+  auto wifiMode() -> void;
+  auto powerOff() -> void;
 };
 
 #if __BOOK_PARAM_CONTROLLER__

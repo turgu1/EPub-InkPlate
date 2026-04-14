@@ -60,11 +60,11 @@ public:
   using Entries = std::vector<EntryRecord>;
 
   const Entries &getEntries() { return entries; }
-  inline auto isReady() -> bool { return ready; }
-  inline auto isEmpty() -> bool { return entries.empty(); }
-  inline auto thereIsSomeIds() -> bool { return someIds; }
-  inline auto getEntryCount() -> int16_t { return entries.size(); }
-  inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
+ [[nodiscard]] inline auto isReady() -> bool { return ready; }
+ [[nodiscard]] inline auto isEmpty() -> bool { return entries.empty(); }
+ [[nodiscard]] inline auto thereIsSomeIds() -> bool { return someIds; }
+ [[nodiscard]] inline auto getEntryCount() -> int16_t { return entries.size(); }
+ [[nodiscard]] inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
 
   /**
    * @brief Load table of content from a file.
@@ -121,8 +121,8 @@ public:
    * @param id HTML id attribute that is part of an item.
    * @param currentOffset The location offset of the id in the item
    */
-  void set(std::string &id, int32_t currentOffset);
-  void set(int32_t currentOffset);
+  auto set(std::string &id, int32_t currentOffset) -> void;
+  auto set(int32_t currentOffset) -> void;
 
 private:
   static constexpr char const *TAG      = "TOC";
@@ -145,13 +145,13 @@ private:
   bool saved{false};
   bool someIds{false};
 
-  void clean();
-  void cleanFilename(char *fname);
+  auto clean() -> void;
+  auto cleanFilename(char *fname) -> void;
   auto buildFilename(EPubPtr &epub) -> std::string;
   auto doNavPoints(pugi::xml_node &node, uint8_t level) -> bool;
 
   #if DEBUGGING
-    void show();
-    void showInfo();
+    auto show() -> void;
+    auto showInfo() -> void;
   #endif
 };

@@ -158,7 +158,7 @@
     return connected;
   }
 
-  void WIFI::startMdnsService(const std::string &hostname) {
+  auto WIFI::startMdnsService(const std::string &hostname) -> void {
     // initialize mDNS service
     esp_err_t err = mdns_init();
     if (err) {
@@ -237,7 +237,7 @@
     return true;
   }
 
-  void WIFI::stop() {
+  auto WIFI::stop() -> void {
     vTaskDelay(pdMS_TO_TICKS(500));
 
     if (mdnsRunning) {

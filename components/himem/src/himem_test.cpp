@@ -25,8 +25,8 @@
 
 namespace {
 
-static int s_pass = 0;
-static int s_fail = 0;
+static int sPass = 0;
+static int sFail = 0;
 
 // Log a single check result and update counters.
 // msg must be a string literal so it can be concatenated into the format string.
@@ -34,10 +34,10 @@ static int s_fail = 0;
   do {                                                                                             \
     if (!(cond)) {                                                                                 \
       HT_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                             \
-      ++s_fail;                                                                                    \
+      ++sFail;                                                                                     \
     } else {                                                                                       \
       HT_LOG("PASS " msg);                                                                         \
-      ++s_pass;                                                                                    \
+      ++sPass;                                                                                     \
     }                                                                                              \
   } while (0)
 
@@ -56,7 +56,7 @@ int Tracked::live = 0;
 // ===========================================================================
 // 1. PsramAllocator<T>
 // ===========================================================================
-static void test_allocator() {
+static auto testAllocator() -> void {
   HT_LOG("--- PsramAllocator ---");
 
   PsramAllocator<int> alloc;
@@ -80,7 +80,7 @@ static void test_allocator() {
 // ===========================================================================
 // 2. PsramDeleter<T> — scalar
 // ===========================================================================
-static void test_deleter_scalar() {
+static auto testDeleterScalar() -> void {
   HT_LOG("--- PsramDeleter<T> scalar ---");
 
   Tracked::live = 0;
@@ -97,7 +97,7 @@ static void test_deleter_scalar() {
 // ===========================================================================
 // 3. PsramDeleter<T[]> — array
 // ===========================================================================
-static void test_deleter_array() {
+static auto testDeleterArray() -> void {
   HT_LOG("--- PsramDeleter<T[]> array ---");
 
   constexpr std::size_t N = 5;
@@ -116,7 +116,7 @@ static void test_deleter_array() {
 // ===========================================================================
 // 4. makeSharedHimem<T> — scalar
 // ===========================================================================
-static void test_shared_scalar() {
+static auto testSharedScalar() -> void {
   HT_LOG("--- makeSharedHimem<T> scalar ---");
 
   Tracked::live = 0;
@@ -144,7 +144,7 @@ static void test_shared_scalar() {
 // ===========================================================================
 // 5. makeSharedHimem<T[]> — unbounded array
 // ===========================================================================
-static void test_shared_array() {
+static auto testSharedArray() -> void {
   HT_LOG("--- makeSharedHimem<T[]> unbounded array ---");
 
   constexpr std::size_t N = 10;
@@ -163,7 +163,7 @@ static void test_shared_array() {
 // ===========================================================================
 // 6. makeUniqueHimem<T> — scalar
 // ===========================================================================
-static void test_unique_scalar() {
+static auto testUniqueScalar() -> void {
   HT_LOG("--- makeUniqueHimem<T> scalar ---");
 
   Tracked::live = 0;
@@ -187,7 +187,7 @@ static void test_unique_scalar() {
 // ===========================================================================
 // 7. makeUniqueHimem<T[]> — unbounded array
 // ===========================================================================
-static void test_unique_array() {
+static auto testUniqueArray() -> void {
   HT_LOG("--- makeUniqueHimem<T[]> unbounded array ---");
 
   constexpr std::size_t N = 6;
@@ -210,7 +210,7 @@ static void test_unique_array() {
 // ===========================================================================
 // 8. himemString
 // ===========================================================================
-static void test_himem_string() {
+static auto testHimemString() -> void {
   HT_LOG("--- himemString ---");
 
   himemString s;
@@ -238,7 +238,7 @@ static void test_himem_string() {
 // ===========================================================================
 // 9. himemVector<int>
 // ===========================================================================
-static void test_himem_vector() {
+static auto testHimemVector() -> void {
   HT_LOG("--- himemVector<int> ---");
 
   himemVector<int> v;
@@ -276,7 +276,7 @@ static void test_himem_vector() {
 // ===========================================================================
 // 10. himemUniqueString
 // ===========================================================================
-static void test_unique_string() {
+static auto testUniqueString() -> void {
   HT_LOG("--- himemUniqueString ---");
 
   auto s = makeUniqueHimemString("Hello from PSRAM unique string!!");
@@ -307,7 +307,7 @@ static void test_unique_string() {
 // ===========================================================================
 // 11. himemUniqueVector<T>
 // ===========================================================================
-static void test_unique_vector() {
+static auto testUniqueVector() -> void {
   HT_LOG("--- himemUniqueVector<int> ---");
 
   // Sized construction: 5 elements, each 7.
@@ -357,25 +357,25 @@ static void test_unique_vector() {
 // Public entry point
 // ===========================================================================
 
-bool himem_run_tests() {
-  s_pass = 0;
-  s_fail = 0;
+auto himemRunTests() -> bool {
+  sPass = 0;
+  sFail = 0;
 
   HT_LOG("========== himem test suite start ==========");
 
-  test_allocator();
-  test_deleter_scalar();
-  test_deleter_array();
-  test_shared_scalar();
-  test_shared_array();
-  test_unique_scalar();
-  test_unique_array();
-  test_himem_string();
-  test_himem_vector();
-  test_unique_string();
-  test_unique_vector();
+  testAllocator();
+  testDeleterScalar();
+  testDeleterArray();
+  testSharedScalar();
+  testSharedArray();
+  testUniqueScalar();
+  testUniqueArray();
+  testHimemString();
+  testHimemVector();
+  testUniqueString();
+  testUniqueVector();
 
-  HT_LOG("========== himem test suite end: %d passed, %d failed ==========", s_pass, s_fail);
+  HT_LOG("========== himem test suite end: %d passed, %d failed ==========", sPass, sFail);
 
-  return s_fail == 0;
+  return sFail == 0;
 }

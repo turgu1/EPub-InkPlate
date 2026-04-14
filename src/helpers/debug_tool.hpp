@@ -2,6 +2,6 @@
 
 class DebugTool {
 public:
-  static void printAllClassSizes();
-  static void printMemoryState();
+  static auto printAllClassSizes() -> void;
+  static auto printMemoryState() -> void;
 };

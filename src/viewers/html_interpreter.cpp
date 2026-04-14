@@ -41,7 +41,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
   if (node == nullptr) return false;
   if (atEnd()) return true;
 
-  checkIfStarted();
+  (void)checkIfStarted();
 
   std::string pictureFilename;
   const char *name;

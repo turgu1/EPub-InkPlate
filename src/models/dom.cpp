@@ -47,7 +47,7 @@ auto DOM::Node::addId(const std::string &theId) -> Node * {
   return this;
 }
 
-void DOM::Node::showChildren(NodeList::const_iterator nodeIt, int8_t lev) const {
+auto DOM::Node::showChildren(NodeList::const_iterator nodeIt, int8_t lev) -> void const {
   #if DEBUGGING
     if (nodeIt != children.end()) {
       NodeList::const_iterator nextNodeIt = nodeIt;
@@ -57,7 +57,7 @@ void DOM::Node::showChildren(NodeList::const_iterator nodeIt, int8_t lev) const 
   #endif
 }
 
-void DOM::Node::show(uint8_t level) const {
+auto DOM::Node::show(uint8_t level) -> void const {
   #if DEBUGGING
     std::cout << std::string(level * 2, ' ');
     for (auto &t : tags) {

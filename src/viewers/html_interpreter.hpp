@@ -58,7 +58,7 @@ public:
 
   virtual ~HTMLInterpreter() {}
 
-  void setLimits(int32_t start, int32_t end, bool showImgs) {
+  auto setLimits(int32_t start, int32_t end, bool showImgs) -> void {
     started = false;
     // beginning_of_page  = false;
     currentOffset = 0;
@@ -70,7 +70,7 @@ public:
 
   auto buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::Node *domNode, int16_t level) -> bool;
 
-  void checkForCompletion() {
+  auto checkForCompletion() -> void {
     if (currentOffset != endOffset) {
       LOG_E("Current page offset and end of page offset differ: %" PRIi32 " vs %" PRIi32,
             currentOffset, endOffset);
@@ -121,14 +121,14 @@ public:
     }
   }
 
-  void setPagesToShowState(int16_t from, int16_t to) {
+  auto setPagesToShowState(int16_t from, int16_t to) -> void {
     fromPage = from;
     toPage   = to;
   }
 
-  void checkPageToShow(int16_t page) { showTheState = (fromPage <= page) && (page <= toPage); }
+  auto checkPageToShow(int16_t page) -> void { showTheState = (fromPage <= page) && (page <= toPage); }
 
-  inline auto checkIfStarted() -> bool {
+ [[nodiscard]] inline auto checkIfStarted() -> bool {
     if (!started) {
       if ((started = (currentOffset >= startOffset))) {
         page->setComputeMode(computeMode);
@@ -139,15 +139,15 @@ public:
     return started;
   }
 
-  inline auto atEnd() -> bool { return currentOffset >= endOffset; }
+ [[nodiscard]] inline auto atEnd() -> bool { return currentOffset >= endOffset; }
 
-  inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
+ [[nodiscard]] inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
     Page::Format *newFmt = fmtPool.allocate();
     *newFmt              = fmt;
     return newFmt;
   }
 
-  inline void releaseFmt(Page::Format *fmt) { fmtPool.deallocate(fmt); }
+ inline auto releaseFmt(Page::Format *fmt) -> void { fmtPool.deallocate(fmt); }
 
-  inline void showStat() { LOG_D("Max Level: %d", maxLevel); }
+ inline auto showStat() -> void { LOG_D("Max Level: %d", maxLevel); }
 };

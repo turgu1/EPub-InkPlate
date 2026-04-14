@@ -15,7 +15,7 @@
 #include <sstream>
 #include <utility>
 
-void Page::clean() {
+auto Page::clean() -> void {
   displayList->clear();
   lineList->clear();
   paraIndent = 0;
@@ -137,7 +137,7 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
   return done ? u : ' ';
 }
 
-void Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) {
+auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void {
   Glyph *glyph;
 
   Font *font = fonts.get(fmt.fontIndex);
@@ -237,7 +237,7 @@ void Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) {
   }
 }
 
-void Page::putCharAt(char ch, Pos pos, const Format &fmt) {
+auto Page::putCharAt(char ch, Pos pos, const Format &fmt) -> void {
   Glyph *glyph;
 
   Font *font = fonts.get(fmt.fontIndex);
@@ -265,7 +265,7 @@ void Page::putCharAt(char ch, Pos pos, const Format &fmt) {
   }
 }
 
-void Page::paint(bool clearScreen, bool noFull, bool doIt) {
+auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
   if (!doIt)
     if ((displayList->empty()) || (computeMode != ComputeMode::DISPLAY)) return;
 
@@ -320,7 +320,7 @@ void Page::paint(bool clearScreen, bool noFull, bool doIt) {
   screen.update(noFull);
 }
 
-void Page::start(const Format &fmt) {
+auto Page::start(const Format &fmt) -> void {
   pos.x = fmt.screenLeft;
   pos.y = fmt.screenTop;
 
@@ -341,7 +341,7 @@ void Page::start(const Format &fmt) {
   lineWidth  = 0;
 }
 
-void Page::setLimits(const Format &fmt) {
+auto Page::setLimits(const Format &fmt) -> void {
   pos.x = pos.y = 0;
 
   minY = fmt.screenTop;
@@ -409,7 +409,7 @@ auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
   return true;
 }
 
-void Page::breakParagraph(const Format &fmt) {
+auto Page::breakParagraph(const Format &fmt) -> void {
   if (!lineList->empty()) {
     addLine(fmt, true);
   }
@@ -434,7 +434,7 @@ auto Page::endParagraph(const Format &fmt) -> bool {
   return true;
 }
 
-void Page::addLine(const Format &fmt, bool justifyable) {
+auto Page::addLine(const Format &fmt, bool justifyable) -> void {
   if (pos.y == 0) pos.y = minY;
 
   // lineList->show("LINE");
@@ -536,7 +536,7 @@ void Page::addLine(const Format &fmt, bool justifyable) {
   // std::cout << "End New Line:"; showControls();
 }
 
-inline void Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) {
+inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) -> void {
   if (isSpace && (lineWidth == 0)) return;
 
   DisplayListEntry *entry = lineList->getNewEntry();
@@ -554,7 +554,7 @@ inline void Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bo
   lineList->pushBack(entry);
 }
 
-void Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) {
+auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) -> void {
   DisplayListEntry *entry = lineList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -927,7 +927,7 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
  * @see addWord()
  * @see addChar()
  */
-void Page::addText(const std::string &str, const Format &fmt) {
+auto Page::addText(const std::string &str, const Format &fmt) -> void {
   Format myfmt = fmt;
 
   std::unique_ptr<char[]> buff = std::make_unique<char[]>(100);
@@ -952,7 +952,7 @@ void Page::addText(const std::string &str, const Format &fmt) {
   }
 }
 
-void Page::putPicture(PicturePtr picture, Pos pos) {
+auto Page::putPicture(PicturePtr picture, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -975,7 +975,7 @@ void Page::putPicture(PicturePtr picture, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::putHighlight(Dim dim, Pos pos) {
+auto Page::putHighlight(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -996,7 +996,7 @@ void Page::putHighlight(Dim dim, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::clearHighlight(Dim dim, Pos pos) {
+auto Page::clearHighlight(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -1017,7 +1017,7 @@ void Page::clearHighlight(Dim dim, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::putRounded(Dim dim, Pos pos) {
+auto Page::putRounded(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -1038,7 +1038,7 @@ void Page::putRounded(Dim dim, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::clearRounded(Dim dim, Pos pos) {
+auto Page::clearRounded(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -1059,7 +1059,7 @@ void Page::clearRounded(Dim dim, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::clearRegion(Dim dim, Pos pos) {
+auto Page::clearRegion(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -1080,7 +1080,7 @@ void Page::clearRegion(Dim dim, Pos pos) {
   displayList->pushBack(entry);
 }
 
-void Page::setRegion(Dim dim, Pos pos) {
+auto Page::setRegion(Dim dim, Pos pos) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -1257,7 +1257,7 @@ void Page::adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &el
   }
 }
 
-void Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) {
+auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void {
   const CSS::Values *vals;
 
   // LOG_D("Found!");

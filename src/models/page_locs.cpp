@@ -30,7 +30,7 @@
   mqd_t PageLocs::mgrQueue{-1};
 #endif
 
-void PageLocs::setupPagesComputation(EPubPtr &epub) {
+auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
 
   abortThreads();
 
@@ -54,7 +54,7 @@ void PageLocs::setupPagesComputation(EPubPtr &epub) {
   #endif
 }
 
-void PageLocs::abortThreads() {
+auto PageLocs::abortThreads() -> void {
   if (stateTask) {
     LOG_D("abortThreads: Sending ABORT to State");
     PageLocsState::send({.req = PageLocsState::Req::ABORT});
@@ -81,7 +81,7 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   return true;
 }
 
-void PageLocs::stopDocument() {
+auto PageLocs::stopDocument() -> void {
 
   if (!completed) {
     if (stateTask) {
@@ -115,7 +115,7 @@ auto PageLocs::getPageCount() -> int16_t {
   return queueData.itemrefIndex;
 }
 
-void PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) {
+auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
   if (stateTask && !stateTask->retrieverIsIdle()) stopDocument();
 
   currentFilename = epub->getCurrentFilename();
@@ -244,7 +244,7 @@ auto PageLocs::getPageId(const PageId &pageId) -> const PageId * {
   return (result == pagesMap.end()) ? nullptr : &result->first;
 }
 
-void PageLocs::computationCompleted() {
+auto PageLocs::computationCompleted() -> void {
   std::scoped_lock guard(mutex);
 
   if (!completed) {
@@ -278,7 +278,7 @@ void PageLocs::computationCompleted() {
 }
 
 #if DEBUGGING
-  void PageLocs::show() {
+  auto PageLocs::show() -> void {
     std::cout << "----- Page Locations -----" << std::endl;
     for (auto &entry : pagesMap) {
       std::cout << " idx: " << entry.first.itemrefIndex << " off: " << entry.first.offset
@@ -288,7 +288,7 @@ void PageLocs::computationCompleted() {
   }
 #endif
 
-void PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force) {
+auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force) -> void {
   if (force ||
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
        0) ||

@@ -16,7 +16,7 @@
   #include "models/nvs_mgr.hpp"
 #endif
 
-void BooksDirController::setup() {
+auto BooksDirController::setup() -> void {
   // Retrieve the information related to the last book read by the user.
   // This is stored in the NVS on the ESP32, or in a flat file on Linux.
   // If the user was reading a book at the last entry to deep sleep, it will be
@@ -114,7 +114,7 @@ void BooksDirController::setup() {
   #endif
 }
 
-void BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSleep) {
+auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSleep) -> void {
   // As we leave, we keep the information required to return to the book
   // in the NVS space. If this is called just before going to deep sleep, we
   // set the "WAS_SHOWN" boolean to true, such that when the device will
@@ -150,7 +150,7 @@ void BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
   #endif
 }
 
-void BooksDirController::showLastBook() {
+auto BooksDirController::showLastBook() -> void {
 
   if (lastReadBookIndex == -1) return;
 
@@ -171,7 +171,7 @@ void BooksDirController::showLastBook() {
   }
 }
 
-void BooksDirController::enter() {
+auto BooksDirController::enter() -> void {
 
   LOG_D("===> enter()...");
   config.get(Config::Ident::DIR_VIEW, &viewerId);
@@ -192,7 +192,7 @@ void BooksDirController::enter() {
   }
 }
 
-void BooksDirController::leave(bool goingToDeepSleep) {
+auto BooksDirController::leave(bool goingToDeepSleep) -> void {
   LOG_D("===> leave()...");
 
   saveLastBook(bookPageId, goingToDeepSleep);
@@ -201,7 +201,7 @@ void BooksDirController::leave(bool goingToDeepSleep) {
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void BooksDirController::inputEvent(const EventMgr::Event &event) {
+  auto BooksDirController::inputEvent(const EventMgr::Event &event) -> void {
     static std::string bookFilenameLocal;
     static std::string bookTitleLocal;
 
@@ -278,7 +278,7 @@ void BooksDirController::leave(bool goingToDeepSleep) {
     }
   }
 #else
-  void BooksDirController::inputEvent(const EventMgr::Event &event) {
+  auto BooksDirController::inputEvent(const EventMgr::Event &event) -> void {
     static std::string bookFilenameLocal;
     static std::string bookTitleLocal;
 

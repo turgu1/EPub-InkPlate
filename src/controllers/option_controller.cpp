@@ -201,7 +201,7 @@ static constexpr char const *MAIN_PARAMS_CAPTION   = "Main parameters";
 static constexpr char const *BOOK_DEFAULTS_CAPTION = "Default e-books parameters";
 static constexpr char const *CLOCK_ADJUST_CAPTION  = "Set Date / Time";
 
-void OptionController::mainParameters() {
+auto OptionController::mainParameters() -> void {
   config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
   config.get(Config::Ident::DIR_VIEW, &dirView);
   config.get(Config::Ident::COVER_SIZE, &coverSize);
@@ -233,7 +233,7 @@ void OptionController::mainParameters() {
   optionController.setMainFormIsShown();
 }
 
-void OptionController::defaultParameters() {
+auto OptionController::defaultParameters() -> void {
   config.get(Config::Ident::SHOW_PICTURES, &showPictures);
   config.get(Config::Ident::FONT_SIZE, &fontSize);
   config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBooks);
@@ -251,7 +251,7 @@ void OptionController::defaultParameters() {
   optionController.setFontFormIsShown();
 }
 
-void OptionController::wifiMode() {
+auto OptionController::wifiMode() -> void {
 
   #if EPUB_INKPLATE_BUILD
     fonts.clear(true);
@@ -265,7 +265,7 @@ void OptionController::wifiMode() {
   #endif
 }
 
-void OptionController::initNvs() {
+auto OptionController::initNvs() -> void {
   // menuViewer.clearHighlight();
   #if EPUB_INKPLATE_BUILD
     if (nvsMgr.setup(true)) {
@@ -280,14 +280,14 @@ void OptionController::initNvs() {
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-  void OptionController::calibrate() {
+  auto OptionController::calibrate() -> void {
     eventMgr.showCalibration();
     optionController.setCalibrationIsShown();
   }
 #endif
 
 #if DATE_TIME_RTC
-  void OptionController::clockAdjustForm() {
+  auto OptionController::clockAdjustForm() -> void {
     time_t t;
     tm tim;
     Clock::getDateTime(t);
@@ -306,7 +306,7 @@ void OptionController::initNvs() {
     optionController.setDateTimeFormIsShown();
   }
 
-  void OptionController::setClock() {
+  auto OptionController::setClock() -> void {
     time_t t;
     tm tim;
 
@@ -324,7 +324,7 @@ void OptionController::initNvs() {
     Clock::setDateTime(t);
   }
 
-  void OptionController::ntpClockAdjust() {
+  auto OptionController::ntpClockAdjust() -> void {
 
     // pageLocs.abort_threads();
     // epub.closeFile();
@@ -350,7 +350,7 @@ void OptionController::initNvs() {
 #endif
 
 #if DEBUGGING
-  void OptionController::debugging() {
+  auto OptionController::debugging() -> void {
     auto [page, progressData] = MsgViewer::showProgress(
         "A small test to check the show progress capability. Please wait...");
     for (int i = 0; i <= 10; i++) {
@@ -396,11 +396,11 @@ static MenuViewer::MenuEntry menu[] = {
 
 // clang-format on
 
-void OptionController::setFontCount(uint8_t count) {
+auto OptionController::setFontCount(uint8_t count) -> void {
   fontParamsFormEntries[2].u.ch.choiceCount = count;
 }
 
-void OptionController::enter() {
+auto OptionController::enter() -> void {
   menuViewer = MenuViewer::Make();
   formViewer = FormViewer::Make();
 
@@ -470,12 +470,12 @@ void OptionController::enter() {
   fontFormIsShown = false;
 }
 
-void OptionController::leave(bool goingToDeepSleep) {
+auto OptionController::leave(bool goingToDeepSleep) -> void {
   menuViewer.reset();
   formViewer.reset();
 }
 
-void OptionController::inputEvent(const EventMgr::Event &event) {
+auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
   if (mainFormIsShown) {
     if (formViewer->event(event)) {
       mainFormIsShown = false;

@@ -36,8 +36,8 @@ private:
   int16_t entriesPerPage{-1};
   int16_t pageCount{-1};
 
-  void showPage(int16_t pageNbr, int16_t highlightedScreenIdx);
-  void highlight(int16_t screenIdx);
+  auto showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void;
+  auto highlight(int16_t screenIdx) -> void;
 
   PagePtr page{Page::Make()};
   EPubPtr &epub;
@@ -53,11 +53,11 @@ public:
 
   static inline auto Make(EPubPtr &theEpub) { return makeUniqueHimem<TocViewer>(theEpub); }
 
-  void setup();
+  auto setup() -> void;
 
   auto showPageAndHighlight(int16_t entryIdx) -> int16_t;
-  void highlightEntry(int16_t entryIdx);
-  void clearHighlight() {}
+  auto highlightEntry(int16_t entryIdx) -> void;
+  auto clearHighlight() -> void {}
 
   auto nextPage() -> int16_t;
   auto prevPage() -> int16_t;

@@ -48,12 +48,12 @@ auto PageLocsState::setup(const std::string &epubFilename) -> bool {
   return true;
 }
 
-void PageLocsState::waitForExit() {
+auto PageLocsState::waitForExit() -> void {
   stateThread.join();
   stateThread.~thread();
 }
 
-void PageLocsState::abort() {
+auto PageLocsState::abort() -> void {
   LOG_D("abortThreads: Sending ABORT to Retriever");
   PageLocsRetriever::send({.req = PageLocsRetriever::Req::ABORT});
 
@@ -74,7 +74,7 @@ void PageLocsState::abort() {
  *
  * @param itemref The last itemref index that was processed
  */
-void PageLocsState::requestNextItem(int16_t itemref, bool alreadySentToMgr) {
+auto PageLocsState::requestNextItem(int16_t itemref, bool alreadySentToMgr) -> void {
   if (asapItemref != -1) { // is there an urgent spine to do?
     if (itemref == asapItemref) {
       asapItemref = -1;
@@ -124,7 +124,7 @@ void PageLocsState::requestNextItem(int16_t itemref, bool alreadySentToMgr) {
   }
 }
 
-void PageLocsState::task() {
+auto PageLocsState::task() -> void {
   for (;;) {
     LOG_D("==> Waiting for request... <==");
     QueueData stateQueueData;

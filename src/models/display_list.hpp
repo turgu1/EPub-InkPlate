@@ -119,7 +119,7 @@ public:
   Iterator end() { return Iterator(nullptr); } // The "end" iterator points to nullptr
 
   // Utility function to add elements (for testing)
-  void pushBack(DisplayListEntry *entry) {
+  auto pushBack(DisplayListEntry *entry) -> void {
     // if ((size_t)entry < 0x900000) {
     //   LOG_E("Invalid entry pointer: %p", reinterpret_cast<void *>(entry));
     // }
@@ -143,7 +143,7 @@ public:
   }
 
   // Destructor to free memory (essential for manual memory management)
-  void clear() {
+  auto clear() -> void {
     // NOTE: do NOT use the iterator here — deleteElement() recycles the nodemake
     // back into the pool's free-list, overwriting entry->next before ++it
     // can read it, causing a use-after-free.
@@ -159,7 +159,7 @@ public:
 
   auto getNewEntry() -> DisplayListEntry *;
 
-  void merge(DisplayList &other) {
+  auto merge(DisplayList &other) -> void {
 
     if (other.empty()) return;
 
@@ -173,7 +173,7 @@ public:
     other.head = other.tail = nullptr; // Clear the other list
   }
 
-  void removeLast() {
+  auto removeLast() -> void {
     if (empty()) return;
 
     if (head == tail) {
@@ -197,7 +197,7 @@ public:
 
   #if 0 // DEBUGGING
     #include <iostream>
-    void show(const char *title) {
+    auto show(const char *title) -> void {
       std::cout << "--- " << title << " ---" << std::endl;
       for (auto *entry : *this) {
         switch (entry->command) {
@@ -251,6 +251,6 @@ public:
     }
   #endif
 
-  inline auto empty() const -> bool { return head == nullptr; }
-  inline auto last() const -> DisplayListEntry * { return tail; }
+ [[nodiscard]] inline auto empty() const -> bool { return head == nullptr; }
+ [[nodiscard]] inline auto last() const -> DisplayListEntry * { return tail; }
 };

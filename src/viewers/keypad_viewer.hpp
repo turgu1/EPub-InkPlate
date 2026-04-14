@@ -81,7 +81,7 @@ private:
     }
   #endif
 
-  void updateValue() {
+  auto updateValue() -> void {
     page->clearRegion(Dim(keypadDim.width - 6, keyDim.height - 6),
                       Pos(fieldPos.x + 3, fieldPos.y + 3));
     page->putStrAt(digits,
@@ -90,7 +90,7 @@ private:
                    fmt);
   }
 
-  void addDigit(uint8_t d) {
+  auto addDigit(uint8_t d) -> void {
     if ((digitsCount == 1) && (digits[0] == '0')) {
       digits[0] = '0' + d;
     } else if (digitsCount < MAX_DIGITS) {
@@ -99,13 +99,13 @@ private:
     }
   }
 
-  void clearDigits() {
+  auto clearDigits() -> void {
     digits[0]   = '0';
     digits[1]   = 0;
     digitsCount = 1;
   }
 
-  void removeDigit() {
+  auto removeDigit() -> void {
     if (digitsCount == 1) {
       digits[0] = '0';
     } else {
@@ -114,7 +114,7 @@ private:
   }
 
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-    void updateHighlight() {
+    auto updateHighlight() -> void {
       if (previousKey != currentKey) {
         if (previousKey != nullptr) {
           if (previousKey->value == -1) { // Cancel key
@@ -153,7 +153,7 @@ private:
   #endif
 
 public:
-  void show(uint16_t value, const char *caption) {
+  auto show(uint16_t value, const char *caption) -> void {
 
     clientValue = value;
     if (clientValue > 9999) clientValue = 9999;

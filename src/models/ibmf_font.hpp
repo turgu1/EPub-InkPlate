@@ -910,14 +910,14 @@ public:
     }
   }
 
-  inline auto getFontSize() -> uint8_t { return header->pointSize; }
-  inline auto getLineHeight() -> uint16_t { return header->lineHeight; }
-  inline auto getCharsHeight() -> uint16_t { return header->emSize >> 6; }
-  inline auto getDescenderHeight() -> int16_t { return -static_cast<int16_t>(header->descenderHeight); }
-  inline auto getLigKern(uint8_t idx) -> LigKernStep * { return &ligKernPgm[idx]; }
-  inline auto getKern(uint8_t i) -> FIX16 { return kerns[i]; }
-  inline auto getGlyphInfo(uint8_t glyphCode) -> GlyphInfo * { return glyphInfoTable[glyphCode]; }
-  inline auto getCharSet() -> uint8_t { return preamble->bits.charSet; }
+ [[nodiscard]] inline auto getFontSize() -> uint8_t { return header->pointSize; }
+ [[nodiscard]] inline auto getLineHeight() -> uint16_t { return header->lineHeight; }
+ [[nodiscard]] inline auto getCharsHeight() -> uint16_t { return header->emSize >> 6; }
+ [[nodiscard]] inline auto getDescenderHeight() -> int16_t { return -static_cast<int16_t>(header->descenderHeight); }
+ [[nodiscard]] inline auto getLigKern(uint8_t idx) -> LigKernStep * { return &ligKernPgm[idx]; }
+ [[nodiscard]] inline auto getKern(uint8_t i) -> FIX16 { return kerns[i]; }
+ [[nodiscard]] inline auto getGlyphInfo(uint8_t glyphCode) -> GlyphInfo * { return glyphInfoTable[glyphCode]; }
+ [[nodiscard]] inline auto getCharSet() -> uint8_t { return preamble->bits.charSet; }
 
   /**
    * @brief Translate unicode in an internal char code
@@ -1171,5 +1171,5 @@ public:
     return true;
   }
 
-  inline auto isInitialized() -> bool { return initialized; }
+ [[nodiscard]] inline auto isInitialized() -> bool { return initialized; }
 };

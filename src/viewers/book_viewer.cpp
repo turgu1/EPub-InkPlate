@@ -42,7 +42,7 @@ protected:
   }
 };
 
-void BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) {
+auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
   LOG_D("buildPageAt()");
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
@@ -168,7 +168,7 @@ void BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) {
   #endif
 }
 
-void BookViewer::showFakeCover(EPubPtr &epub) {
+auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   Page::Format fmt = {
       .fontIndex    = 2,
       .fontSize      = 14,
@@ -200,7 +200,7 @@ void BookViewer::showFakeCover(EPubPtr &epub) {
   page->paint();
 }
 
-void BookViewer::showPage(const PageId &pageId, EPubPtr &epub) {
+auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
   std::scoped_lock guard(mutex);
 
   current_page_id = pageId;

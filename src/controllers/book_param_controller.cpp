@@ -71,7 +71,7 @@ static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
 
 static constexpr char const *BOOK_PARAMS_CAPTION = "Current e-book parameters";
 
-void BookParamController::bookParameters() {
+auto BookParamController::bookParameters() -> void {
   BookParams *bookParams = epub->getBookParams();
 
   bookParams->get(BookParams::Ident::SHOW_PICTURES, &showPictures);
@@ -96,7 +96,7 @@ void BookParamController::bookParameters() {
   bookParamController.setBookParamsFormIsShown();
 }
 
-void BookParamController::revertToDefaults() {
+auto BookParamController::revertToDefaults() -> void {
   pageLocs.stopDocument();
 
   EPub::BookFormatParams *bookFormatParams = epub->getBookFormatParams();
@@ -134,21 +134,21 @@ void BookParamController::revertToDefaults() {
   }
 }
 
-void BookParamController::booksList() { appController.setController(AppController::Ctrl::DIR); }
+auto BookParamController::booksList() -> void { appController.setController(AppController::Ctrl::DIR); }
 
-void BookParamController::deleteBook() {
+auto BookParamController::deleteBook() -> void {
   confirmData =
       MsgViewer::show(MsgViewer::MsgType::CONFIRM, true, false, "Delete e-book",
                       "The e-book \"%s\" will be deleted. Are you sure?", epub->getTitle());
   bookParamController.setDeleteCurrentBook();
 }
 
-void BookParamController::tocCtrl() {
+auto BookParamController::tocCtrl() -> void {
   tocController.setOwnershipOfBook(epub);
   appController.setController(AppController::Ctrl::TOC);
 }
 
-void BookParamController::wifiMode() {
+auto BookParamController::wifiMode() -> void {
   #if EPUB_INKPLATE_BUILD
     epub->closeFile();
     fonts.clear(true);
@@ -162,7 +162,7 @@ void BookParamController::wifiMode() {
   #endif
 }
 
-void BookParamController::powerOff() {
+auto BookParamController::powerOff() -> void {
   booksDirController.saveLastBook(bookController.getCurrentPageId(), true);
 
   CommonActions::powerItOff();
@@ -186,11 +186,11 @@ static MenuViewer::MenuEntry menu[10] = {
   {MenuViewer::Icon::END_MENU,    false, true, nullptr, nullptr}};
 // clang-format on
 
-void BookParamController::setFontCount(uint8_t count) {
+auto BookParamController::setFontCount(uint8_t count) -> void {
   bookParamsFormEntries[2].u.ch.choiceCount = count;
 }
 
-void BookParamController::enter() {
+auto BookParamController::enter() -> void {
   menu[1].visible = epub->toc->isReady() && !epub->toc->isEmpty();
   menuViewer      = MenuViewer::Make();
   formViewer      = FormViewer::Make();
@@ -211,12 +211,12 @@ void BookParamController::enter() {
   bookParamsFormIsShown = false;
 }
 
-void BookParamController::leave(bool goingToDeepSleep) {
+auto BookParamController::leave(bool goingToDeepSleep) -> void {
   menuViewer.reset();
   formViewer.reset();
 }
 
-void BookParamController::inputEvent(const EventMgr::Event &event) {
+auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
   if (bookParamsFormIsShown) {
     if (formViewer->event(event)) {
       bookParamsFormIsShown = false;

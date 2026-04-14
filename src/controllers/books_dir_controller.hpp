@@ -32,18 +32,18 @@ private:
 
 public:
   BooksDirController() = default;
-  void setup();
-  void inputEvent(const EventMgr::Event &event);
-  void enter();
-  void leave(bool goingToDeepSleep = false);
-  void saveLastBook(const PageId &pageId, bool goingToDeepSleep);
-  void showLastBook();
-  void newOrientation() {
+  auto setup() -> void;
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
+  auto saveLastBook(const PageId &pageId, bool goingToDeepSleep) -> void;
+  auto showLastBook() -> void;
+  auto newOrientation() -> void {
     if (booksDirViewer != nullptr) booksDirViewer->setup();
   }
 
-  inline auto getCurrentBookIndex() -> int16_t { return currentBookIndex; }
-  inline void setCurrentBookIndex(int16_t idx) { currentBookIndex = idx; }
+ [[nodiscard]] inline auto getCurrentBookIndex() -> int16_t { return currentBookIndex; }
+ inline auto setCurrentBookIndex(int16_t idx) -> void { currentBookIndex = idx; }
 };
 
 #if __BOOKS_DIR_CONTROLLER__

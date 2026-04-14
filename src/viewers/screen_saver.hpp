@@ -30,7 +30,7 @@
 
     static inline auto Make() { return makeUniqueHimem<ScreenSaver>(); }
 
-    void show();
+    auto show() -> void;
   };
 
 #endif

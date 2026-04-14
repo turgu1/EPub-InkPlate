@@ -116,14 +116,14 @@ private:
   float lineHeightFactor;
   int16_t paraIndent, topMargin;
 
-  void addLine(const Format &fmt, bool justifyable);
-  void addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace);
-  void addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt);
+  auto addLine(const Format &fmt, bool justifyable) -> void;
+  auto addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) -> void;
+  auto addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) -> void;
   auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
       -> int32_t;
 
 public:
-  void clean();
+  auto clean() -> void;
 
   /**
    * @brief Start a new page
@@ -134,7 +134,7 @@ public:
    *
    * @param fmt Formatting parameters.
    */
-  void start(const Format &fmt);
+  auto start(const Format &fmt) -> void;
 
   /**
    * @brief Set the writing limits on a page without erasing
@@ -144,7 +144,7 @@ public:
    *
    * @param fmt Formatting parameters.
    */
-  void setLimits(const Format &fmt);
+  auto setLimits(const Format &fmt) -> void;
 
   /**
    * @brief Start a new paragraph.
@@ -164,7 +164,7 @@ public:
    *
    * @param fmt Formatting parameters.
    */
-  void breakParagraph(const Format &fmt);
+  auto breakParagraph(const Format &fmt) -> void;
 
   /**
    * @brief End the current paragraph
@@ -232,7 +232,7 @@ public:
    * @param str Text to show
    * @param fmt Formatting parameters.
    */
-  void addText(const std::string &str, const Format &fmt);
+  auto addText(const std::string &str, const Format &fmt) -> void;
 
   /**
    * @brief Put string to the screen.
@@ -243,7 +243,7 @@ public:
    * @param pos If pos.x == -1, use screen margin positions
    * @param fmt Formatting parameters.
    */
-  void putStrAt(const std::string &str, Pos pos, const Format &fmt);
+  auto putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void;
 
   /**
    * @brief Put character to the screen.
@@ -254,7 +254,7 @@ public:
    * @param pos If pos.x == -1, use screen margin positions
    * @param fmt Formatting parameters.
    */
-  void putCharAt(char ch, Pos pos, const Format &fmt);
+  auto putCharAt(char ch, Pos pos, const Format &fmt) -> void;
 
   /**
    * @brief Paint the display list to the screen.
@@ -266,9 +266,9 @@ public:
    * @param noFull      Bypass partial update count control. Use with great caution!
    * @param doIt        Do the painting irrelevant of the compute mode
    */
-  void paint(bool clearScreen = true, bool noFull = false, bool doIt = false);
+  auto paint(bool clearScreen = true, bool noFull = false, bool doIt = false) -> void;
 
-  void showFmt(const Format &fmt, const char *spaces) const {
+  auto showFmt(const Format &fmt, const char *spaces) -> void const {
     #if DEBUGGING
       std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
                 << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize
@@ -282,15 +282,15 @@ public:
   }
 
   auto showCover(PicturePtr &pict) -> bool;
-  void putPicture(PicturePtr picture, Pos pos);
-  void putHighlight(Dim dim, Pos pos);
-  void clearHighlight(Dim dim, Pos pos);
-  void putRounded(Dim dim, Pos pos);
-  void clearRounded(Dim dim, Pos pos);
-  void clearRegion(Dim dim, Pos pos);
-  void setRegion(Dim dim, Pos pos);
+  auto putPicture(PicturePtr picture, Pos pos) -> void;
+  auto putHighlight(Dim dim, Pos pos) -> void;
+  auto clearHighlight(Dim dim, Pos pos) -> void;
+  auto putRounded(Dim dim, Pos pos) -> void;
+  auto clearRounded(Dim dim, Pos pos) -> void;
+  auto clearRegion(Dim dim, Pos pos) -> void;
+  auto setRegion(Dim dim, Pos pos) -> void;
 
-  void showControls(const char *spaces) const {
+  auto showControls(const char *spaces) -> void const {
     #if DEBUGGING
       std::cout << spaces << " pos.x:" << pos.x << " pos.y:" << pos.y << " minX:" << minX
                 << " maxX:" << maxX << " minY:" << minY << " maxY:" << maxY
@@ -299,16 +299,16 @@ public:
     #endif
   }
 
-  inline void setComputeMode(ComputeMode mode) { computeMode = mode; }
+ inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
 
-  inline auto getComputeMode() const -> ComputeMode { return computeMode; }
-  inline auto paintWidth() const -> int16_t { return maxX - minX; }
-  inline auto isFull() const -> bool { return screenIsFull; }
-  inline auto isEmpty() const -> bool { return displayList->empty(); }
-  inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
-  inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
-  inline auto getLineList() const -> const DisplayList & { return *lineList; }
-  inline auto getPosY() const -> int16_t { return pos.y; }
+ [[nodiscard]] inline auto getComputeMode() const -> ComputeMode { return computeMode; }
+ [[nodiscard]] inline auto paintWidth() const -> int16_t { return maxX - minX; }
+ [[nodiscard]] inline auto isFull() const -> bool { return screenIsFull; }
+ [[nodiscard]] inline auto isEmpty() const -> bool { return displayList->empty(); }
+ [[nodiscard]] inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
+ [[nodiscard]] inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
+ [[nodiscard]] inline auto getLineList() const -> const DisplayList & { return *lineList; }
+ [[nodiscard]] inline auto getPosY() const -> int16_t { return pos.y; }
 
   auto getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical = false)
       -> int16_t;
@@ -316,9 +316,9 @@ public:
   auto getFactorValue(const CSS::Value &value, const Format &fmt, float ref) -> float;
   void adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
                     const CSSPtr &itemCss);
-  void adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules);
+  auto adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void;
 
-  inline void resetFontIndex(Format &fmt, Fonts::FaceStyle style) {
+ inline auto resetFontIndex(Format &fmt, Fonts::FaceStyle style) -> void {
     if (style != fmt.fontStyle) {
       int16_t idx = -1;
       if ((idx = fonts.getIndex(fonts.getName(fmt.fontIndex), style)) == -1) {
