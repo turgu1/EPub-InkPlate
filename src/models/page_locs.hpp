@@ -42,18 +42,18 @@ class PageLocs {
 public:
   struct PageInfo {
     int32_t size;
-    int16_t page_number;
-    PageInfo(int32_t siz, int16_t pg_nbr) {
-      size        = siz;
-      page_number = pg_nbr;
+    int16_t pageNumber;
+    PageInfo(int32_t siz, int16_t pageNbr) {
+      size       = siz;
+      pageNumber = pageNbr;
     }
     PageInfo() {};
   };
 
   struct PageCompare {
-    bool operator()(const PageId &lhs, const PageId &rhs) const {
-      if (lhs.itemref_index < rhs.itemref_index) return true;
-      if (lhs.itemref_index > rhs.itemref_index) return false;
+    auto operator()(const PageId &lhs, const PageId &rhs) const -> bool {
+      if (lhs.itemrefIndex < rhs.itemrefIndex) return true;
+      if (lhs.itemrefIndex > rhs.itemrefIndex) return false;
       return lhs.offset < rhs.offset;
     }
   };
@@ -68,14 +68,14 @@ public:
 
   struct QueueData {
     Req req{Req::NONE};
-    int16_t itemref_index{0};
+    int16_t itemrefIndex{0};
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
-      return mq_send(mgr_queue, (const char *)&data, sizeof(data), 1);
+      return mq_send(mgrQueue, (const char *)&data, sizeof(data), 1);
     #else
-      return xQueueSendToBack(mgr_queue, &data, timeout);
+      return xQueueSendToBack(mgrQueue, &data, timeout);
     #endif
   }
 
@@ -84,104 +84,105 @@ private:
   static constexpr const int8_t LOCS_FILE_VERSION = 3;
 
   bool completed;
-  int16_t page_count;
+  int16_t pageCount;
 
   std::recursive_timed_mutex mutex;
 
-  PageLocsStatePtr state_task;
+  PageLocsStatePtr stateTask;
 
-  PagesMap pages_map;
-  ItemsSet items_set;
-  int16_t item_count;
+  PagesMap pagesMap;
+  ItemsSet itemsSet;
+  int16_t itemCount;
 
-  std::string current_filename;
+  std::string currentFilename;
 
   void show();
-  bool retrieve_asap(int16_t itemref_index);
-  PagesMap::iterator check_and_find(const PageId &page_id);
+  auto retrieveAsap(int16_t itemrefIndex) -> bool;
+  auto checkAndFind(const PageId &pageId) -> PagesMap::iterator;
 
   // ----- Page Locations computation -----
 
-  EPub::ItemInfo item_info;
-  EPub::BookFormatParams current_format_params;
+  EPub::ItemInfo itemInfo;
+  EPub::BookFormatParams currentFormatParams;
 
-  // int32_t           current_offset;          ///< Where we are in current item
+  // int32_t           currentOffset;          ///< Where we are in current item
   // int32_t           start_of_page_offset;
 
   // bool              start_of_paragraph;  ///< Required to manage paragraph indentation at
   // beginning of new page.
 
-  // bool           page_end(Page::Format & fmt);
+  // bool           pageEnd(Page::Format & fmt);
   // bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
 
-  bool load(const std::string &epub_filename); ///< load pages location from .locs file
-  bool save(const std::string &epub_filename); ///< save pages location to .locs file
+  auto loadFromFile(const std::string &epubFilename)
+      -> bool;                                              ///< load pages location from .locs file
+  auto saveToFile(const std::string &epubFilename) -> bool; ///< save pages location to .locs file
 
   #if EPUB_LINUX_BUILD
-    static mqd_t mgr_queue;
-    static constexpr mq_attr mgr_attr = {0, 5, sizeof(QueueData), 0};
+    static mqd_t mgrQueue;
+    static constexpr mq_attr mgrAttr = {0, 5, sizeof(QueueData), 0};
   #else
-    static QueueHandle_t mgr_queue;
+    static QueueHandle_t mgrQueue;
   #endif
 
   auto receive(QueueData &data, int timeout = -1) {
     #if EPUB_LINUX_BUILD
-      return mq_receive(mgr_queue, (char *)&data, sizeof(data), nullptr);
+      return mq_receive(mgrQueue, (char *)&data, sizeof(data), nullptr);
     #else
-      return xQueueReceive(mgr_queue, &data, timeout);
+      return xQueueReceive(mgrQueue, &data, timeout);
     #endif
   }
 
-  void setup_pages_computation(EPubPtr &epub);
+  void setupPagesComputation(EPubPtr &epub);
 
 public:
-  PageLocs() : completed(false), page_count(0), item_count(0) {};
+  PageLocs() : completed(false), pageCount(0), itemCount(0) {};
 
-  void abort_threads();
+  void abortThreads();
 
-  const PageId *get_next_page_id(const PageId &page_id, int16_t count = 1);
-  const PageId *get_prev_page_id(const PageId &page_id, int count = 1);
-  const PageId *get_page_id(const PageId &page_id);
+  auto getNextPageId(const PageId &pageId, int16_t count = 1) -> const PageId *;
+  auto getPrevPageId(const PageId &pageId, int count = 1) -> const PageId *;
+  auto getPageId(const PageId &pageId) -> const PageId *;
 
-  uint16_t get_current_itemref_index() { return item_info.itemref_index; }
-  const EPub::ItemInfo &get_item_info() { return item_info; }
-  const PagesMap &get_pages_map() { return pages_map; }
+  auto getCurrentItemrefIndex() -> uint16_t { return itemInfo.itemrefIndex; }
+  auto getItemInfo() -> const EPub::ItemInfo & { return itemInfo; }
+  auto getPagesMap() -> const PagesMap & { return pagesMap; }
 
-  void check_for_format_changes(EPubPtr &epub, int16_t itemref_index, bool force = false);
-  void computation_completed();
-  void start_new_document(EPubPtr &epub, int16_t itemref_index);
-  void stop_document();
+  void checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force = false);
+  void computationCompleted();
+  void startNewDocument(EPubPtr &epub, int16_t itemrefIndex);
+  void stopDocument();
 
-  inline const PageInfo *get_page_info(const PageId &page_id) {
+  inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
     std::scoped_lock guard(mutex);
-    PagesMap::iterator it = check_and_find(page_id);
-    return it == pages_map.end() ? nullptr : &it->second;
+    PagesMap::iterator it = checkAndFind(pageId);
+    return it == pagesMap.end() ? nullptr : &it->second;
   }
 
-  bool insert(PageId &id, PageInfo &info);
+  auto insert(PageId &id, PageInfo &info) -> bool;
 
   inline void clear() {
     std::scoped_lock guard(mutex);
-    pages_map.clear();
-    items_set.clear();
+    pagesMap.clear();
+    itemsSet.clear();
     completed = false;
   }
 
-  int16_t get_page_count();
+  auto getPageCount() -> int16_t;
 
-  inline int16_t get_page_nbr(const PageId &id) {
+  inline auto getPageNbr(const PageId &id) -> int16_t {
     std::scoped_lock guard(mutex);
     if (!completed) {
       LOG_W("Page Locs not completed.");
       return -1;
     }
-    const PageInfo *info = get_page_info(id);
-    return info == nullptr ? -1 : info->page_number;
+    const PageInfo *info = getPageInfo(id);
+    return info == nullptr ? -1 : info->pageNumber;
   };
 };
 
 #if __PAGE_LOCS__
-  PageLocs page_locs;
+  PageLocs pageLocs;
 #else
-  extern PageLocs page_locs;
+  extern PageLocs pageLocs;
 #endif

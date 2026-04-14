@@ -21,7 +21,7 @@
 #include <map>
 #include <utility>
 
-using TOCPtr = himem_unique_ptr<class TOC>;
+using TOCPtr = himemUniquePtr<class TOC>;
 class TOC {
 private:
   TOC() : db(SimpleDB::Make()) {}
@@ -31,14 +31,14 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make() { return make_unique_himem<TOC>(); }
+  static inline auto Make() { return makeUniqueHimem<TOC>(); }
 
   #pragma pack(push, 1)
   struct EntryRecord {
     char *label;
-    PageId page_id;
+    PageId pageId;
     uint8_t level;
     EntryRecord() {
       label = nullptr;
@@ -48,10 +48,10 @@ public:
 
   struct VersionRecord {
     uint16_t version;
-    char app_name[32];
+    char appName[32];
     VersionRecord() {
       version = 0;
-      memset(app_name, 0, 32);
+      memset(appName, 0, 32);
     }
   };
   #pragma pack(pop)
@@ -59,12 +59,12 @@ public:
   using Infos   = std::map<std::pair<int16_t, std::string>, uint16_t>;
   using Entries = std::vector<EntryRecord>;
 
-  const Entries &get_entries() { return entries; }
-  inline auto is_ready() -> bool { return ready; }
-  inline auto is_empty() -> bool { return entries.empty(); }
-  inline auto there_is_some_ids() -> bool { return some_ids; }
-  inline auto get_entry_count() -> int16_t { return entries.size(); }
-  inline auto get_entry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
+  const Entries &getEntries() { return entries; }
+  inline auto isReady() -> bool { return ready; }
+  inline auto isEmpty() -> bool { return entries.empty(); }
+  inline auto thereIsSomeIds() -> bool { return someIds; }
+  inline auto getEntryCount() -> int16_t { return entries.size(); }
+  inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
 
   /**
    * @brief Load table of content from a file.
@@ -99,7 +99,7 @@ public:
    *
    * @return True if the information has been retrieved successfully.
    */
-  auto load_from_epub(EPubPtr &epub) -> bool;
+  auto loadFromEpub(EPubPtr &epub) -> bool;
 
   /**
    * @brief Compact the char strings to a single buffer.
@@ -116,13 +116,13 @@ public:
    *
    * If the id correspond to an entry of the table
    * of content, its location will be set with the
-   * page_id received.
+   * pageId received.
    *
    * @param id HTML id attribute that is part of an item.
-   * @param current_offset The location offset of the id in the item
+   * @param currentOffset The location offset of the id in the item
    */
-  void set(std::string &id, int32_t current_offset);
-  void set(int32_t current_offset);
+  void set(std::string &id, int32_t currentOffset);
+  void set(int32_t currentOffset);
 
 private:
   static constexpr char const *TAG      = "TOC";
@@ -134,24 +134,24 @@ private:
 
   SimpleDBPtr db; ///< The SimpleDB table
 
-  CharPoolPtr char_pool{nullptr};
-  himem_unique_ptr<char[]> char_buffer{nullptr};
-  uint16_t char_buffer_size{0};
+  CharPoolPtr charPool{nullptr};
+  himemUniquePtr<char[]> charBuffer{nullptr};
+  uint16_t charBufferSize{0};
 
   const pugi::xml_document *opf{nullptr};
 
   volatile bool ready{false}; // true if the table of content has been populated
   bool compacted{false};
   bool saved{false};
-  bool some_ids{false};
+  bool someIds{false};
 
   void clean();
-  void clean_filename(char *fname);
-  auto build_filename(EPubPtr &epub) -> std::string;
-  auto do_nav_points(pugi::xml_node &node, uint8_t level) -> bool;
+  void cleanFilename(char *fname);
+  auto buildFilename(EPubPtr &epub) -> std::string;
+  auto doNavPoints(pugi::xml_node &node, uint8_t level) -> bool;
 
   #if DEBUGGING
     void show();
-    void show_info();
+    void showInfo();
   #endif
 };

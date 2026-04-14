@@ -16,12 +16,12 @@
 #include <utility>
 
 void Page::clean() {
-  display_list->clear();
-  line_list->clear();
-  para_indent = 0;
-  top_margin  = 0;
-  // compute_mode   = ComputeMode::DISPLAY;
-  screen_is_full = false;
+  displayList->clear();
+  lineList->clear();
+  paraIndent = 0;
+  topMargin  = 0;
+  // computeMode   = ComputeMode::DISPLAY;
+  screenIsFull = false;
 }
 
 // 00000000 -- 0000007F: 	0xxxxxxx
@@ -29,8 +29,8 @@ void Page::clean() {
 // 00000800 -- 0000FFFF: 	1110xxxx 10xxxxxx 10xxxxxx
 // 00010000 -- 001FFFFF: 	11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
-int32_t Page::to_unicode(const char *str, CSS::TextTransform transform, bool first,
-                         const char **str2) const {
+auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
+                     const char **str2) const -> int32_t {
   const uint8_t *c = (uint8_t *)str;
   int32_t u        = 0;
   bool done        = false;
@@ -137,20 +137,20 @@ int32_t Page::to_unicode(const char *str, CSS::TextTransform transform, bool fir
   return done ? u : ' ';
 }
 
-void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
+void Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.font_index);
+  Font *font = fonts.get(fmt.fontIndex);
 
   const char *s = str.c_str();
   if (fmt.align == CSS::Align::LEFT) {
     bool first = true;
     while (*s) {
       const char *s1;
-      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
       s     = s1;
       if (glyph != nullptr) {
-        DisplayListEntry *entry = display_list->get_new_entry();
+        DisplayListEntry *entry = displayList->getNewEntry();
         if (entry == nullptr) return;
         entry->command = DisplayListCommand::GLYPH;
         entry->pos     = {static_cast<uint16_t>(pos.x + glyph->xoff),
@@ -162,12 +162,12 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
           //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
           // }
           // else
-          if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+          if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
 
-        display_list->push_back(entry);
+        displayList->pushBack(entry);
 
         pos.x += glyph->advance;
       }
@@ -180,7 +180,7 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
     while (*s) {
       bool first = true;
       const char *s1;
-      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
       s     = s1;
       if (glyph != nullptr) size += glyph->advance;
       first = false;
@@ -190,9 +190,9 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
 
     if (pos.x == HORIZONTAL_CENTER) {
       if (fmt.align == CSS::Align::CENTER) {
-        x = min_x + ((max_x - min_x) >> 1) - (size >> 1);
+        x = minX + ((maxX - minX) >> 1) - (size >> 1);
       } else { // RIGHT
-        x = max_x - size;
+        x = maxX - size;
       }
     } else {
       if (fmt.align == CSS::Align::CENTER) {
@@ -206,11 +206,11 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
     bool first = true;
     while (*s) {
       const char *s1;
-      glyph = font->get_glyph(to_unicode(s, fmt.text_transform, first, &s1), fmt.font_size);
+      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
       s     = s1;
       if (glyph != nullptr) {
 
-        DisplayListEntry *entry = display_list->get_new_entry();
+        DisplayListEntry *entry = displayList->getNewEntry();
         if (entry == nullptr) return;
 
         entry->command = DisplayListCommand::GLYPH;
@@ -223,12 +223,12 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
           //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
           // }
           // else
-          if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+          if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
             LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
           }
         #endif
 
-        display_list->push_back(entry);
+        displayList->pushBack(entry);
 
         x += glyph->advance;
       }
@@ -237,14 +237,14 @@ void Page::put_str_at(const std::string &str, Pos pos, const Format &fmt) {
   }
 }
 
-void Page::put_char_at(char ch, Pos pos, const Format &fmt) {
+void Page::putCharAt(char ch, Pos pos, const Format &fmt) {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.font_index);
+  Font *font = fonts.get(fmt.fontIndex);
 
-  glyph = font->get_glyph(ch, fmt.font_size);
+  glyph = font->getGlyph(ch, fmt.fontSize);
   if (glyph != nullptr) {
-    DisplayListEntry *entry = display_list->get_new_entry();
+    DisplayListEntry *entry = displayList->getNewEntry();
     if (entry == nullptr) return;
     entry->command = DisplayListCommand::GLYPH;
     entry->pos     = {static_cast<uint16_t>(pos.x + glyph->xoff),
@@ -256,59 +256,59 @@ void Page::put_char_at(char ch, Pos pos, const Format &fmt) {
       //   LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
       // }
       // else
-      if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+      if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
         LOG_E("Put_char_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
       }
     #endif
 
-    display_list->push_back(entry);
+    displayList->pushBack(entry);
   }
 }
 
-void Page::paint(bool clear_screen, bool no_full, bool do_it) {
-  if (!do_it)
-    if ((display_list->empty()) || (compute_mode != ComputeMode::DISPLAY)) return;
+void Page::paint(bool clearScreen, bool noFull, bool doIt) {
+  if (!doIt)
+    if ((displayList->empty()) || (computeMode != ComputeMode::DISPLAY)) return;
 
-  // display_list->show("DISPLAY LIST");
+  // displayList->show("DISPLAY LIST");
 
-  if (clear_screen) screen.clear();
+  if (clearScreen) screen.clear();
 
   int count = 0;
 
-  for (auto *entry : *display_list) {
+  for (auto *entry : *displayList) {
     switch (entry->command) {
     case DisplayListCommand::GLYPH:
       if (std::holds_alternative<GlyphEntry>(entry->v) &&
           std::get<GlyphEntry>(entry->v).glyph != nullptr) {
-        screen.draw_glyph(std::get<GlyphEntry>(entry->v).glyph->buffer,
-                          std::get<GlyphEntry>(entry->v).glyph->dim, entry->pos,
-                          std::get<GlyphEntry>(entry->v).glyph->pitch);
+        screen.drawGlyph(std::get<GlyphEntry>(entry->v).glyph->buffer,
+                         std::get<GlyphEntry>(entry->v).glyph->dim, entry->pos,
+                         std::get<GlyphEntry>(entry->v).glyph->pitch);
       } else {
         LOG_E("DISPLAY LIST CORRUPTED!!");
       }
       break;
     case DisplayListCommand::PICTURE:
-      screen.draw_picture(std::get<PictureEntry>(entry->v).picture, entry->pos);
+      screen.drawPicture(std::get<PictureEntry>(entry->v).picture, entry->pos);
       break;
     case DisplayListCommand::HIGHLIGHT:
-      screen.draw_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
+      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
       break;
     case DisplayListCommand::CLEAR_HIGHLIGHT:
-      screen.draw_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
+      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
       break;
     case DisplayListCommand::ROUNDED:
-      screen.draw_round_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
-                                  Screen::Color::BLACK);
+      screen.drawRoundRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
+                                Screen::Color::BLACK);
       break;
     case DisplayListCommand::CLEAR_ROUNDED:
-      screen.draw_round_rectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
-                                  Screen::Color::WHITE);
+      screen.drawRoundRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
+                                Screen::Color::WHITE);
       break;
     case DisplayListCommand::CLEAR_REGION:
-      screen.colorize_region(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
+      screen.colorizeRegion(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
       break;
     case DisplayListCommand::SET_REGION:
-      screen.colorize_region(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
+      screen.colorizeRegion(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
       break;
     }
 
@@ -317,117 +317,116 @@ void Page::paint(bool clear_screen, bool no_full, bool do_it) {
 
   LOG_I("Painted %d entries on screen", count);
 
-  screen.update(no_full);
+  screen.update(noFull);
 }
 
 void Page::start(const Format &fmt) {
-  pos.x = fmt.screen_left;
-  pos.y = fmt.screen_top;
+  pos.x = fmt.screenLeft;
+  pos.y = fmt.screenTop;
 
-  min_y = fmt.screen_top;
-  max_x = Screen::get_width() - fmt.screen_right;
-  max_y = Screen::get_height() - fmt.screen_bottom;
-  min_x = fmt.screen_left;
+  minY = fmt.screenTop;
+  maxX = Screen::getWidth() - fmt.screenRight;
+  maxY = Screen::getHeight() - fmt.screenBottom;
+  minX = fmt.screenLeft;
 
-  para_min_x = min_x;
-  para_max_x = max_x;
+  paraMinX = minX;
+  paraMaxX = maxX;
 
-  screen_is_full = false;
+  screenIsFull = false;
 
-  display_list->clear();
-  line_list->clear();
+  displayList->clear();
+  lineList->clear();
 
-  para_indent = 0;
-  line_width  = 0;
+  paraIndent = 0;
+  lineWidth  = 0;
 }
 
-void Page::set_limits(const Format &fmt) {
+void Page::setLimits(const Format &fmt) {
   pos.x = pos.y = 0;
 
-  min_y = fmt.screen_top;
-  max_x = Screen::get_width() - fmt.screen_right;
-  max_y = Screen::get_height() - fmt.screen_bottom;
-  min_x = fmt.screen_left;
+  minY = fmt.screenTop;
+  maxX = Screen::getWidth() - fmt.screenRight;
+  maxY = Screen::getHeight() - fmt.screenBottom;
+  minX = fmt.screenLeft;
 
-  screen_is_full = false;
+  screenIsFull = false;
 
-  line_list->clear();
+  lineList->clear();
 
-  para_indent = 0;
-  line_width  = 0;
-  top_margin  = 0;
+  paraIndent = 0;
+  lineWidth  = 0;
+  topMargin  = 0;
 }
 
-bool Page::line_break(const Format &fmt, int8_t indent_next_line) {
-  Font *font = fonts.get(fmt.font_index);
+auto Page::lineBreak(const Format &fmt, int8_t indentNextLine) -> bool {
+  Font *font = fonts.get(fmt.fontIndex);
 
-  if (!line_list->empty()) {
-    add_line(fmt, false);
+  if (!lineList->empty()) {
+    addLine(fmt, false);
   } else {
-    pos.y += font->get_line_height(fmt.font_size) * fmt.line_height_factor;
-    pos.x = min_x + indent_next_line;
+    pos.y += font->getLineHeight(fmt.fontSize) * fmt.lineHeightFactor;
+    pos.x = minX + indentNextLine;
   }
 
-  screen_is_full = screen_is_full || ((pos.y - font->get_descender_height(fmt.font_size)) >= max_y);
-  if (screen_is_full) {
+  screenIsFull = screenIsFull || ((pos.y - font->getDescenderHeight(fmt.fontSize)) >= maxY);
+  if (screenIsFull) {
     return false;
   }
   return true;
 }
 
-bool Page::new_paragraph(const Format &fmt, bool recover) {
-  Font *font = fonts.get(fmt.font_index);
+auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
+  Font *font = fonts.get(fmt.fontIndex);
 
   // Check if there is enough room for the first line of the paragraph.
   if (!recover) {
-    screen_is_full =
-        screen_is_full ||
-        ((pos.y + fmt.margin_top + (fmt.line_height_factor * font->get_line_height(fmt.font_size)) -
-          font->get_descender_height(fmt.font_size)) > max_y);
-    if (screen_is_full) {
+    screenIsFull = screenIsFull || ((pos.y + fmt.marginTop +
+                                     (fmt.lineHeightFactor * font->getLineHeight(fmt.fontSize)) -
+                                     font->getDescenderHeight(fmt.fontSize)) > maxY);
+    if (screenIsFull) {
       return false;
     }
   }
 
-  para_min_x = min_x + fmt.margin_left;
-  para_max_x = max_x - fmt.margin_right;
+  paraMinX = minX + fmt.marginLeft;
+  paraMaxX = maxX - fmt.marginRight;
 
   if (fmt.indent < 0) {
-    para_min_x -= fmt.indent;
+    paraMinX -= fmt.indent;
   }
 
   // When recover == true, that means we are recovering the end of a paragraph that appears at the
-  // beginning of a page. top_margin and indent must then be forgot as the have already been used at
+  // beginning of a page. topMargin and indent must then be forgot as the have already been used at
   // the end of the page before...
 
   if (recover) {
-    para_indent = top_margin = 0;
+    paraIndent = topMargin = 0;
   } else {
-    para_indent = fmt.indent;
-    top_margin  = fmt.margin_top;
+    paraIndent = fmt.indent;
+    topMargin  = fmt.marginTop;
   }
 
   return true;
 }
 
-void Page::break_paragraph(const Format &fmt) {
-  if (!line_list->empty()) {
-    add_line(fmt, true);
+void Page::breakParagraph(const Format &fmt) {
+  if (!lineList->empty()) {
+    addLine(fmt, true);
   }
 }
 
-bool Page::end_paragraph(const Format &fmt) {
-  Font *font = fonts.get(fmt.font_index);
+auto Page::endParagraph(const Format &fmt) -> bool {
+  Font *font = fonts.get(fmt.fontIndex);
 
-  if (!line_list->empty()) {
-    add_line(fmt, false);
+  if (!lineList->empty()) {
+    addLine(fmt, false);
 
-    int32_t descender = font->get_descender_height(fmt.font_size);
+    int32_t descender = font->getDescenderHeight(fmt.fontSize);
 
-    pos.y += fmt.margin_bottom; // - descender;
+    pos.y += fmt.marginBottom; // - descender;
 
-    if ((pos.y - descender) >= max_y) {
-      screen_is_full = true;
+    if ((pos.y - descender) >= maxY) {
+      screenIsFull = true;
       return false;
     }
   }
@@ -435,66 +434,65 @@ bool Page::end_paragraph(const Format &fmt) {
   return true;
 }
 
-void Page::add_line(const Format &fmt, bool justifyable) {
-  if (pos.y == 0) pos.y = min_y;
+void Page::addLine(const Format &fmt, bool justifyable) {
+  if (pos.y == 0) pos.y = minY;
 
-  // line_list->show("LINE");
+  // lineList->show("LINE");
 
-  pos.x = para_min_x + para_indent;
-  if (pos.x < min_x) pos.x = min_x;
-  int16_t line_height = glyphs_height * line_height_factor;
-  pos.y += top_margin + line_height; // (line_height >> 1) + (glyphs_height >> 1);
+  pos.x = paraMinX + paraIndent;
+  if (pos.x < minX) pos.x = minX;
+  int16_t lineHeight = glyphsHeight * lineHeightFactor;
+  pos.y += topMargin + lineHeight; // (lineHeight >> 1) + (glyphsHeight >> 1);
 
   // #if DEBUGGING_AID
   //   if (show_location) {
   //     std::cout << "New Line: ";
-  //     show_controls(" ");
-  //     show_fmt(fmt, "   ->  ");
+  //     showControls(" ");
+  //     showFmt(fmt, "   ->  ");
   //   }
   // #endif
 
   // Get rid of space characters that are at the end of the line.
   // This is mainly required for the JUSTIFY alignment algo.
 
-  while (!line_list->empty()) {
-    DisplayListEntry *entry = line_list->last();
-    if ((entry->command == DisplayListCommand::GLYPH) &&
-        (std::get<GlyphEntry>(entry->v).is_space)) {
-      line_list->remove_last(); // This is O(N)...
+  while (!lineList->empty()) {
+    DisplayListEntry *entry = lineList->last();
+    if ((entry->command == DisplayListCommand::GLYPH) && (std::get<GlyphEntry>(entry->v).isSpace)) {
+      lineList->removeLast(); // This is O(N)...
     } else {
       break;
     }
   }
 
-  if (!line_list->empty() && (compute_mode == ComputeMode::DISPLAY)) {
+  if (!lineList->empty() && (computeMode == ComputeMode::DISPLAY)) {
 
     if ((fmt.align == CSS::Align::JUSTIFY) && justifyable) {
-      int16_t target_width = (para_max_x - para_min_x - para_indent);
-      int16_t loop_count   = 0;
-      while ((line_width < target_width) && (++loop_count < 50)) {
-        bool at_least_once = false;
-        for (auto *entry : *line_list) {
+      int16_t targetWidth = (paraMaxX - paraMinX - paraIndent);
+      int16_t loopCount   = 0;
+      while ((lineWidth < targetWidth) && (++loopCount < 50)) {
+        bool atLeastOnce = false;
+        for (auto *entry : *lineList) {
           if (entry->pos.x > 0) { // This means it's a white space
-            at_least_once = true;
+            atLeastOnce = true;
             entry->pos.x++;
-            if (++line_width >= target_width) break;
+            if (++lineWidth >= targetWidth) break;
           }
         }
-        if (!at_least_once) break; // No space available in line to justify the line
+        if (!atLeastOnce) break; // No space available in line to justify the line
       }
-      if (loop_count >= 50) {
-        for (auto *entry : *line_list) entry->pos.x = 0;
+      if (loopCount >= 50) {
+        for (auto *entry : *lineList) entry->pos.x = 0;
       }
     } else {
       if (fmt.align == CSS::Align::RIGHT) {
-        pos.x = para_max_x - line_width;
+        pos.x = paraMaxX - lineWidth;
       } else if (fmt.align == CSS::Align::CENTER) {
-        pos.x = para_min_x + ((para_max_x - para_min_x) >> 1) - (line_width >> 1);
+        pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
       }
     }
   }
 
-  for (auto *entry : *line_list) {
+  for (auto *entry : *lineList) {
     if (entry->command == DisplayListCommand::GLYPH) {
       int16_t x    = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x = pos.x + std::get<GlyphEntry>(entry->v).glyph->xoff;
@@ -502,75 +500,75 @@ void Page::add_line(const Format &fmt, bool justifyable) {
       pos.x += (x == 0) ? std::get<GlyphEntry>(entry->v).kern : x;
     } else if (entry->command == DisplayListCommand::PICTURE) {
       if (fmt.align == CSS::Align::CENTER) {
-        entry->pos.x = para_min_x + ((para_max_x - para_min_x) >> 1) - (line_width >> 1);
+        entry->pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
       } else {
         entry->pos.x = pos.x;
       }
-      entry->pos.y = pos.y - std::get<PictureEntry>(entry->v).picture->get_dim().height;
+      entry->pos.y = pos.y - std::get<PictureEntry>(entry->v).picture->getDim().height;
       pos.x += std::get<PictureEntry>(entry->v).advance;
     } else {
-      LOG_E("Wrong entry type for add_line: %d", (int)entry->command);
+      LOG_E("Wrong entry type for addLine: %d", (int)entry->command);
     }
 
     #if DEBUGGING
       // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      //   LOG_E("add_line entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y,
-      //   (int)entry->command); show_controls("  -> "); show_fmt(fmt, "  -> ");
+      //   LOG_E("addLine entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y,
+      //   (int)entry->command); showControls("  -> "); showFmt(fmt, "  -> ");
       // }
       // else
-      if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
-        LOG_E("add_line with a too large location: %d %d %d", entry->pos.x, entry->pos.y,
+      if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+        LOG_E("addLine with a too large location: %d %d %d", entry->pos.x, entry->pos.y,
               (int)entry->command);
-        show_controls("  -> ");
-        show_fmt(fmt, "  -> ");
+        showControls("  -> ");
+        showFmt(fmt, "  -> ");
       }
     #endif
   }
 
-  line_width = line_height = glyphs_height = 0;
-  line_height_factor                       = 0.0;
+  lineWidth = lineHeight = glyphsHeight = 0;
+  lineHeightFactor                      = 0.0;
 
-  display_list->merge(*line_list);
+  displayList->merge(*lineList);
 
-  para_indent = 0;
-  top_margin  = 0;
+  paraIndent = 0;
+  topMargin  = 0;
 
-  // std::cout << "End New Line:"; show_controls();
+  // std::cout << "End New Line:"; showControls();
 }
 
-inline void Page::add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font, bool is_space) {
-  if (is_space && (line_width == 0)) return;
+inline void Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) {
+  if (isSpace && (lineWidth == 0)) return;
 
-  DisplayListEntry *entry = line_list->get_new_entry();
+  DisplayListEntry *entry = lineList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::GLYPH;
-  entry->v       = GlyphEntry{glyph, glyph->advance, is_space};
-  entry->pos     = {(uint16_t)(is_space ? glyph->advance : 0), 0};
+  entry->v       = GlyphEntry{glyph, glyph->advance, isSpace};
+  entry->pos     = {(uint16_t)(isSpace ? glyph->advance : 0), 0};
 
-  if (glyphs_height < glyph->line_height) glyphs_height = glyph->line_height;
-  if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
+  if (glyphsHeight < glyph->lineHeight) glyphsHeight = glyph->lineHeight;
+  if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
 
-  line_width += (glyph->advance);
+  lineWidth += (glyph->advance);
 
-  line_list->push_back(entry);
+  lineList->pushBack(entry);
 }
 
-void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format &fmt) {
-  DisplayListEntry *entry = line_list->get_new_entry();
+void Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) {
+  DisplayListEntry *entry = lineList->getNewEntry();
   if (entry == nullptr) return;
 
-  auto dim = picture->get_dim();
+  auto dim = picture->getDim();
 
   entry->command = DisplayListCommand::PICTURE;
   entry->v       = PictureEntry{std::move(picture), advance};
 
-  // if (compute_mode == ComputeMode::DISPLAY) {
+  // if (computeMode == ComputeMode::DISPLAY) {
   //   if (copy) {
   //     int32_t size = picture.dim.width * picture.dim.height;
   //     if (picture.bitmap != nullptr) {
   //       if ((entry->kind.picture_entry.picture.bitmap = new unsigned char[size]) == nullptr) {
-  //         msg_viewer.out_of_memory("picture bitmap allocation");
+  //         msg_viewer.outOfMemory("picture bitmap allocation");
   //       }
   //       memcpy((void *) entry->kind.picture_entry.picture.bitmap, picture.bitmap, size);
   //     }
@@ -588,10 +586,10 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
 
   entry->pos = {0, 0};
 
-  if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
-  if (glyphs_height < dim.height) glyphs_height = dim.height / line_height_factor;
+  if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+  if (glyphsHeight < dim.height) glyphsHeight = dim.height / lineHeightFactor;
 
-  line_width += advance;
+  lineWidth += advance;
 
   // LOG_D(
   //   "Picture added to line: w:%d h:%d a:%d",
@@ -599,104 +597,104 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
   //   entry->kind.picture_entry.advance
   // );
 
-  line_list->push_back(entry);
+  lineList->pushBack(entry);
 }
 
 #define NEXT_LINE_REQUIRED_SPACE                                                                   \
-  (pos.y + (fmt.line_height_factor * font->get_line_height(fmt.font_size)) -                       \
-   font->get_descender_height(fmt.font_size))
+  (pos.y + (fmt.lineHeightFactor * font->getLineHeight(fmt.fontSize)) -                            \
+   font->getDescenderHeight(fmt.fontSize))
 
 #if 1
-  bool Page::add_word(const char *word, const Format &fmt) {
-    Font *font = fonts.get(fmt.font_index);
+  auto Page::addWord(const char *word, const Format &fmt) -> bool {
+    Font *font = fonts.get(fmt.fontIndex);
     if (font == nullptr) return false;
 
-    if (line_list->empty()) {
+    if (lineList->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
-      if ((screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y)) return false;
+      if ((screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY)) return false;
     }
 
     Glyph *glyph;
 
-    auto the_list   = DisplayList::Make(display_list_pool);
-    const char *str = word;
-    int16_t height  = font->get_line_height(fmt.font_size);
-    int16_t width   = 0;
-    bool first      = true;
+    auto lineEntries = DisplayList::Make(displayListPool);
+    const char *str  = word;
+    int16_t height   = font->getLineHeight(fmt.fontSize);
+    int16_t width    = 0;
+    bool first       = true;
 
     while (*str) {
-      bool ignore_next;
+      bool ignoreNext;
       const char *str1, *str2;
       uint32_t uc1, uc2;
       int16_t kern;
 
-      uc1 = to_unicode(str, fmt.text_transform, first, &str1);
-      uc2 = to_unicode(str1, fmt.text_transform, false, &str2);
+      uc1 = toUnicode(str, fmt.textTransform, first, &str1);
+      uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
 
-      glyph = font->get_glyph(uc1, uc2, fmt.font_size, kern, ignore_next);
+      glyph = font->getGlyph(uc1, uc2, fmt.fontSize, kern, ignoreNext);
 
-      str = ignore_next ? str2 : str1;
+      str = ignoreNext ? str2 : str1;
 
       if (glyph == nullptr) {
-        glyph = font->get_glyph(' ', fmt.font_size);
+        glyph = font->getGlyph(' ', fmt.fontSize);
       }
 
       if (glyph != nullptr) {
         width += kern;
         first = false;
 
-        DisplayListEntry *entry = the_list->get_new_entry();
+        DisplayListEntry *entry = lineEntries->getNewEntry();
         if (entry == nullptr) return false;
 
         entry->command = DisplayListCommand::GLYPH;
         entry->v       = GlyphEntry{glyph, kern, false};
-        entry->pos     = {0, fmt.vertical_align};
+        entry->pos     = {0, fmt.verticalAlign};
 
-        the_list->push_back(entry);
+        lineEntries->pushBack(entry);
       }
     }
 
-    uint16_t avail_width = para_max_x - para_min_x - para_indent;
+    uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
 
-    if (width >= avail_width) {
+    if (width >= availableWidth) {
       if (strncasecmp(word, "http", 4) == 0) {
-        return add_word("[URL removed]", fmt);
+        return addWord("[URL removed]", fmt);
       } else {
         LOG_E("WORD TOO LARGE!! '%s'", word);
       }
     }
 
-    if ((line_width + width) >= avail_width) {
-      add_line(fmt, true);
-      screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
-      if (screen_is_full) {
+    if ((lineWidth + width) >= availableWidth) {
+      addLine(fmt, true);
+      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+      if (screenIsFull) {
         return false;
       }
     }
 
-    line_list->merge(*the_list.get());
+    lineList->merge(*lineEntries.get());
 
-    if (glyphs_height < height) glyphs_height = height;
-    if (line_height_factor < fmt.line_height_factor) line_height_factor = fmt.line_height_factor;
-    line_width += width;
+    if (glyphsHeight < height) glyphsHeight = height;
+    if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+    lineWidth += width;
 
     return true;
   }
 #else
   // ToDo: Optimize this method...
-  bool Page::add_word(const char *word, const Format &fmt) {
+  auto Page::addWord(const char *word, const Format &fmt) -> bool {
     Glyph *glyph;
     const char *str = word;
     int32_t code;
 
-    Font *font = fonts.get(fmt.font_index, fmt.font_size);
+    Font *font = fonts.get(fmt.fontIndex, fmt.fontSize);
 
     if (font == nullptr) return false;
 
-    if (line_list->empty()) {
+    if (lineList->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
-      screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
-      if (screen_is_full) {
+      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+      if (screenIsFull) {
         return false;
       }
     }
@@ -705,25 +703,24 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
     bool first = true;
     while (*str) {
       const char *s1;
-      glyph =
-          font->get_glyph(code = to_unicode(str, fmt.text_transform, first, &s1), fmt.font_size);
+      glyph = font->getGlyph(code = toUnicode(str, fmt.textTransform, first, &s1), fmt.fontSize);
       str = s1;
       if (glyph != nullptr) width += glyph->advance;
       first = false;
     }
 
-    if (width >= (para_max_x - para_min_x - para_indent)) {
+    if (width >= (paraMaxX - paraMinX - paraIndent)) {
       if (strncasecmp(word, "http", 4) == 0) {
-        return add_word("[URL removed]", fmt);
+        return addWord("[URL removed]", fmt);
       } else {
         LOG_E("WORD TOO LARGE!! '%s'", word);
       }
     }
 
-    if ((line_width + width) >= (para_max_x - para_min_x - para_indent)) {
-      add_line(fmt, true);
-      screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
-      if (screen_is_full) {
+    if ((lineWidth + width) >= (paraMaxX - paraMinX - paraIndent)) {
+      addLine(fmt, true);
+      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+      if (screenIsFull) {
         return false;
       }
     }
@@ -732,13 +729,13 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
     while (*word) {
       if (font) {
         const char *s1;
-        glyph = font->get_glyph(to_unicode(word, fmt.text_transform, first, &s1), fmt.font_size);
+        glyph = font->getGlyph(toUnicode(word, fmt.textTransform, first, &s1), fmt.fontSize);
         word = s1;
         if (glyph == nullptr) {
-          glyph = font->get_glyph(' ', fmt.font_size);
+          glyph = font->getGlyph(' ', fmt.fontSize);
         }
         if (glyph != nullptr) {
-          add_glyph_to_line(glyph, fmt.font_size, *font, false);
+          addGlyphToLine(glyph, fmt.fontSize, *font, false);
           // font->show_glyph(*glyph);
         }
       }
@@ -749,42 +746,42 @@ void Page::add_picture_to_line(PicturePtr picture, int16_t advance, const Format
   }
 #endif
 
-bool Page::add_char(const char *ch, const Format &fmt) {
+auto Page::addChar(const char *ch, const Format &fmt) -> bool {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.font_index);
+  Font *font = fonts.get(fmt.fontIndex);
 
   if (font == nullptr) return false;
 
-  if (screen_is_full) return false;
+  if (screenIsFull) return false;
 
-  if (line_list->empty()) {
+  if (lineList->empty()) {
 
     // We are about to start a new line. Check if it will fit on the page.
 
-    screen_is_full = ((pos.y + (fmt.line_height_factor * font->get_line_height(fmt.font_size)) -
-                       font->get_descender_height(fmt.font_size))) > max_y;
-    if (screen_is_full) {
+    screenIsFull = ((pos.y + (fmt.lineHeightFactor * font->getLineHeight(fmt.fontSize)) -
+                     font->getDescenderHeight(fmt.fontSize))) > maxY;
+    if (screenIsFull) {
       return false;
     }
   }
 
   const char *s1;
-  int32_t code = to_unicode(ch, fmt.text_transform, true, &s1);
+  int32_t code = toUnicode(ch, fmt.textTransform, true, &s1);
 
-  glyph = font->get_glyph(code, fmt.font_size);
+  glyph = font->getGlyph(code, fmt.fontSize);
 
   if (glyph != nullptr) {
     // Verify that there is enough space for the glyph on the line.
-    if ((line_width + (glyph->advance)) >= (para_max_x - para_min_x - para_indent)) {
-      add_line(fmt, true);
-      screen_is_full = NEXT_LINE_REQUIRED_SPACE > max_y;
-      if (screen_is_full) {
+    if ((lineWidth + (glyph->advance)) >= (paraMaxX - paraMinX - paraIndent)) {
+      addLine(fmt, true);
+      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+      if (screenIsFull) {
         return fmt.trim;
       }
     }
 
-    add_glyph_to_line(glyph, fmt, *font, (code == 32) || (code == 160));
+    addGlyphToLine(glyph, fmt, *font, (code == 32) || (code == 160));
   }
 
   return true;
@@ -812,27 +809,27 @@ bool Page::add_char(const char *ch, const Format &fmt) {
  * - Determines target picture dimensions based on available paragraph space and format constraints
  * - Maintains aspect ratio when scaling pictures
  * - Creates a new line if the picture exceeds remaining space on the current line
- * - Only performs actual picture resizing when compute_mode is DISPLAY
- * - Sets screen_is_full flag if adding the picture causes content to exceed max_y
+ * - Only performs actual picture resizing when computeMode is DISPLAY
+ * - Sets screenIsFull flag if adding the picture causes content to exceed maxY
  *
  * @note The picture object may be modified (resized) by this method.
  *       The method respects glyph baseline information from the current font.
  */
-auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
+auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
     -> std::pair<bool, PicturePtr> {
-  if (screen_is_full) {
+  if (screenIsFull) {
     return {false, std::move(picture)};
   }
 
   // Compute the baseline advance for the bitmap, using info from the current font
   Glyph *glyph;
-  Font *font = fonts.get(fmt.font_index);
+  Font *font = fonts.get(fmt.fontIndex);
 
   const char *str = "m";
   const char *s1;
-  int32_t code = to_unicode(str, fmt.text_transform, true, &s1);
+  int32_t code = toUnicode(str, fmt.textTransform, true, &s1);
 
-  glyph = font->get_glyph(code, fmt.font_size);
+  glyph = font->getGlyph(code, fmt.fontSize);
 
   // Compute available space to put the picture.
 
@@ -847,29 +844,29 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
 
   // compute target w, h and advance for the picture
 
-  int16_t target_width  = para_max_x - para_min_x;
-  int16_t target_height = max_y - min_y;
-  auto dim              = picture->get_dim();
+  int16_t targetWidth  = paraMaxX - paraMinX;
+  int16_t targetHeight = maxY - minY;
+  auto dim             = picture->getDim();
 
   if (fmt.width || fmt.height) {
-    if (fmt.width && (fmt.width < target_width)) target_width = fmt.width;
-    if (fmt.height && (fmt.height < target_height)) target_height = fmt.height;
+    if (fmt.width && (fmt.width < targetWidth)) targetWidth = fmt.width;
+    if (fmt.height && (fmt.height < targetHeight)) targetHeight = fmt.height;
 
-    w = target_width;
+    w = targetWidth;
     h = dim.height * w / dim.width;
-    if (h > target_height) {
-      h = target_height;
+    if (h > targetHeight) {
+      h = targetHeight;
       w = dim.width * h / dim.height;
     }
   } else {
-    if ((dim.width < target_width) && (dim.height < target_height)) {
+    if ((dim.width < targetWidth) && (dim.height < targetHeight)) {
       w = dim.width;
       h = dim.height;
     } else {
-      w = target_width;
+      w = targetWidth;
       h = dim.height * w / dim.width;
-      if (h > target_height) {
-        h = target_height;
+      if (h > targetHeight) {
+        h = targetHeight;
         w = dim.width * h / dim.height;
       }
     }
@@ -878,26 +875,26 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
 
   // Verify that there is enough room for the bitmap on the line
 
-  if ((line_width + advance) >= (para_max_x - para_min_x - para_indent)) {
-    //    if (!(line_list->empty() && at_start_of_page)) {
-    add_line(fmt, true);
+  if ((lineWidth + advance) >= (paraMaxX - paraMinX - paraIndent)) {
+    //    if (!(lineList->empty() && at_start_of_page)) {
+    addLine(fmt, true);
     // }
     // else {
-    //   para_indent = 0;
-    //   top_margin = 0;
+    //   paraIndent = 0;
+    //   topMargin = 0;
     // }
 
-    // int16_t the_height = (fmt.line_height_factor * font->get_line_height()) -
-    // font->get_descender_height(); if (the_height < h) the_height = h;
+    // int16_t the_height = (fmt.lineHeightFactor * font->getLineHeight()) -
+    // font->getDescenderHeight(); if (the_height < h) the_height = h;
   }
 
-  if ((screen_is_full = ((pos.y + h) > max_y))) return {false, std::move(picture)};
+  if ((screenIsFull = ((pos.y + h) > maxY))) return {false, std::move(picture)};
 
   if ((w != dim.width) || (h != dim.height)) {
 
     // unsigned char * resized_bitmap = nullptr;
 
-    if (compute_mode == ComputeMode::DISPLAY) {
+    if (computeMode == ComputeMode::DISPLAY) {
       if ((dim.width > 2) || (dim.height > 2)) {
 
         if ((w == 0) || (h == 0)) return {false, std::move(picture)};
@@ -907,7 +904,7 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
     }
   }
 
-  add_picture_to_line(std::move(picture), advance, fmt);
+  addPictureToLine(std::move(picture), advance, fmt);
 
   return {true, nullptr};
 }
@@ -916,7 +913,7 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
  * @brief Adds text to the page with the specified formatting.
  *
  * Processes the input string character by character, separating it into words
- * and whitespace. Words are added via add_word(), while individual spaces are
+ * and whitespace. Words are added via addWord(), while individual spaces are
  * added as characters. The method respects Format settings and handles trimming.
  *
  * @param str The text string to add to the page.
@@ -924,24 +921,24 @@ auto Page::add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_o
  *            (font, size, color, trim behavior, etc.).
  *
  * @note The method allocates a temporary 100-byte buffer for word processing.
- *       If allocation fails, a message is sent via msg_viewer.out_of_memory().
- *       Processing stops if add_char() or add_word() returns false.
+ *       If allocation fails, a message is sent via msg_viewer.outOfMemory().
+ *       Processing stops if addChar() or addWord() returns false.
  *
- * @see add_word()
- * @see add_char()
+ * @see addWord()
+ * @see addChar()
  */
-void Page::add_text(const std::string &str, const Format &fmt) {
+void Page::addText(const std::string &str, const Format &fmt) {
   Format myfmt = fmt;
 
   std::unique_ptr<char[]> buff = std::make_unique<char[]>(100);
 
-  if (buff == nullptr) MsgViewer::out_of_memory("temp buffer allocation");
+  if (buff == nullptr) MsgViewer::outOfMemory("temp buffer allocation");
   const char *s = str.c_str();
   while (*s) {
     if (uint8_t(*s) <= ' ') {
       if (*s == ' ') {
         myfmt.trim = *s == ' ';
-        if (!add_char(s, myfmt)) break;
+        if (!addChar(s, myfmt)) break;
       }
       s++;
     } else {
@@ -950,16 +947,16 @@ void Page::add_text(const std::string &str, const Format &fmt) {
         buff[count++] = *s++;
       }
       buff[count] = 0;
-      if (!add_word(buff.get(), myfmt)) break;
+      if (!addWord(buff.get(), myfmt)) break;
     }
   }
 }
 
-void Page::put_picture(PicturePtr picture, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::putPicture(PicturePtr picture, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
-  if (compute_mode == ComputeMode::DISPLAY) {
+  if (computeMode == ComputeMode::DISPLAY) {
     entry->v = PictureEntry{std::move(picture), 0};
   }
   entry->command = DisplayListCommand::PICTURE;
@@ -970,16 +967,16 @@ void Page::put_picture(PicturePtr picture, Pos pos) {
     //   LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
       LOG_E("draw_bitmap with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::put_highlight(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::putHighlight(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::HIGHLIGHT;
@@ -988,19 +985,19 @@ void Page::put_highlight(Dim dim, Pos pos) {
 
   #if DEBUGGING
     // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
-      LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+      LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::clear_highlight(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::clearHighlight(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_HIGHLIGHT;
@@ -1012,16 +1009,16 @@ void Page::clear_highlight(Dim dim, Pos pos) {
     //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::put_rounded(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::putRounded(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::ROUNDED;
@@ -1030,19 +1027,19 @@ void Page::put_rounded(Dim dim, Pos pos) {
 
   #if DEBUGGING
     // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("put_highlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
-      LOG_E("put_highlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+      LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::clear_rounded(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::clearRounded(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_ROUNDED;
@@ -1054,16 +1051,16 @@ void Page::clear_rounded(Dim dim, Pos pos) {
     //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::clear_region(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::clearRegion(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::CLEAR_REGION;
@@ -1075,16 +1072,16 @@ void Page::clear_region(Dim dim, Pos pos) {
     //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-void Page::set_region(Dim dim, Pos pos) {
-  DisplayListEntry *entry = display_list->get_new_entry();
+void Page::setRegion(Dim dim, Pos pos) {
+  DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) return;
 
   entry->command = DisplayListCommand::SET_REGION;
@@ -1096,41 +1093,41 @@ void Page::set_region(Dim dim, Pos pos) {
     //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
     // }
     // else
-    if ((entry->pos.x >= Screen::get_width()) || (entry->pos.y >= Screen::get_height())) {
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
       LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
     }
   #endif
 
-  display_list->push_back(entry);
+  displayList->pushBack(entry);
 }
 
-bool Page::show_cover(PicturePtr &pict) {
-  if (compute_mode == ComputeMode::DISPLAY) {
-    int32_t picture_width  = pict->get_dim().width;
-    int32_t picture_height = pict->get_dim().height;
+auto Page::showCover(PicturePtr &pict) -> bool {
+  if (computeMode == ComputeMode::DISPLAY) {
+    int32_t picture_width  = pict->getDim().width;
+    int32_t picture_height = pict->getDim().height;
 
-    if (pict->get_bitmap() != nullptr) {
+    if (pict->getBitmap() != nullptr) {
       // LOG_D("Picture: width: %d height: %d channel_count: %d", picture_width, picture_height,
       // channel_count);
 
       Dim dim;
       Pos pos;
 
-      dim.width  = Screen::get_width();
-      dim.height = picture_height * Screen::get_width() / picture_width;
+      dim.width  = Screen::getWidth();
+      dim.height = picture_height * Screen::getWidth() / picture_width;
 
-      if (dim.height > Screen::get_height()) {
-        dim.height = Screen::get_height();
-        dim.width  = picture_width * Screen::get_height() / picture_height;
+      if (dim.height > Screen::getHeight()) {
+        dim.height = Screen::getHeight();
+        dim.width  = picture_width * Screen::getHeight() / picture_height;
       }
 
-      pos = {(uint16_t)((Screen::get_width() - dim.width) >> 1),
-             (uint16_t)((Screen::get_height() - dim.height) >> 1)};
+      pos = {(uint16_t)((Screen::getWidth() - dim.width) >> 1),
+             (uint16_t)((Screen::getHeight() - dim.height) >> 1)};
 
       pict->resize(dim);
 
       screen.clear();
-      screen.draw_picture(pict, pos);
+      screen.drawPicture(pict, pos);
       screen.update();
     } else {
       LOG_D("Unable to load cover file");
@@ -1143,16 +1140,16 @@ bool Page::show_cover(PicturePtr &pict) {
   return false;
 }
 
-int16_t Page::get_pixel_value(const CSS::Value &value, const Format &fmt, int16_t ref,
-                              bool vertical) {
-  switch (value.value_type) {
+auto Page::getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical)
+    -> int16_t {
+  switch (value.valueType) {
   case CSS::ValueType::PX:
     return value.num;
   case CSS::ValueType::PT:
     return (value.num * Screen::RESOLUTION) / 72;
   case CSS::ValueType::EM:
   case CSS::ValueType::REM:
-    return value.num * ((fmt.font_size * Screen::RESOLUTION) / 72);
+    return value.num * ((fmt.fontSize * Screen::RESOLUTION) / 72);
   case CSS::ValueType::PERCENT:
     return (value.num * ref) / 100;
   case CSS::ValueType::NO_TYPE:
@@ -1160,25 +1157,25 @@ int16_t Page::get_pixel_value(const CSS::Value &value, const Format &fmt, int16_
   case CSS::ValueType::CM:
     return (value.num * Screen::RESOLUTION) / 2.54;
   case CSS::ValueType::VH:
-    return (value.num * (fmt.screen_bottom - fmt.screen_top)) / 100;
+    return (value.num * (fmt.screenBottom - fmt.screenTop)) / 100;
   case CSS::ValueType::VW:
-    return (value.num * (fmt.screen_right - fmt.screen_left)) / 100;
+    return (value.num * (fmt.screenRight - fmt.screenLeft)) / 100;
     ;
   case CSS::ValueType::STR:
-    // LOG_D("get_pixel_value(): Str value: %s", value.str.c_str());
+    // LOG_D("getPixelValue(): Str value: %s", value.str.c_str());
     return 0;
   default:
-    // LOG_D("get_pixel_value: Wrong data type!: %d", value.value_type);
+    // LOG_D("getPixelValue: Wrong data type!: %d", value.valueType);
     return value.num;
   }
   return 0;
 }
 
-int16_t Page::get_point_value(const CSS::Value &value, const Format &fmt, int16_t ref) {
-  // int8_t normal_size = epub.get_book_format_params()->font_size;
+auto Page::getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref) -> int16_t {
+  // int8_t normal_size = epub.getBookFormatParams()->fontSize;
   int16_t normal_size = ref;
 
-  switch (value.value_type) {
+  switch (value.valueType) {
   case CSS::ValueType::PX:
     //  pixels -> Screen HResolution per inch
     //    x    ->    72 pixels per inch
@@ -1195,24 +1192,24 @@ int16_t Page::get_point_value(const CSS::Value &value, const Format &fmt, int16_
   case CSS::ValueType::NO_TYPE:
     return normal_size * value.num;
   case CSS::ValueType::STR:
-    LOG_D("get_point_value(): Str value: %s.", value.str.c_str());
+    LOG_D("getPointValue(): Str value: %s.", value.str.c_str());
     return 0;
     break;
   case CSS::ValueType::VH:
-    return ((value.num * (fmt.screen_bottom - fmt.screen_top)) / 100) * 72 / Screen::RESOLUTION;
+    return ((value.num * (fmt.screenBottom - fmt.screenTop)) / 100) * 72 / Screen::RESOLUTION;
   case CSS::ValueType::VW:
-    return ((value.num * (fmt.screen_right - fmt.screen_left)) / 100) * 72 / Screen::RESOLUTION;
+    return ((value.num * (fmt.screenRight - fmt.screenLeft)) / 100) * 72 / Screen::RESOLUTION;
   case CSS::ValueType::INHERIT:
     return ref;
   default:
-    LOG_E("get_point_value(): Wrong data type!");
+    LOG_E("getPointValue(): Wrong data type!");
     return value.num;
   }
   return 0;
 }
 
-float Page::get_factor_value(const CSS::Value &value, const Format &fmt, float ref) {
-  switch (value.value_type) {
+auto Page::getFactorValue(const CSS::Value &value, const Format &fmt, float ref) -> float {
+  switch (value.valueType) {
   case CSS::ValueType::PX:
   case CSS::ValueType::PT:
   case CSS::ValueType::STR:
@@ -1227,177 +1224,175 @@ float Page::get_factor_value(const CSS::Value &value, const Format &fmt, float r
   case CSS::ValueType::INHERIT:
     return ref;
   default:
-    // LOG_E("get_factor_value: Wrong data type!");
+    // LOG_E("getFactorValue: Wrong data type!");
     return 1.0;
   }
   return 0;
 }
 
-void Page::adjust_format(DOM::Node *dom_current_node, Format &fmt, const CSSPtr &element_css,
-                         const CSSPtr &item_css) {
+void Page::adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
+                        const CSSPtr &itemCss) {
   CSS::RulesMap rules;
 
-  // item_css->show();
+  // itemCss->show();
   // std::cout << "======" << std::endl;
-  // if (element_css != nullptr) element_css->show();
+  // if (elementCss != nullptr) elementCss->show();
   // std::cout << "------" << std::endl;
-  // dom_current_node->show(1);
+  // domCurrentNode->show(1);
 
-  if (item_css != nullptr) {
-    item_css->match(dom_current_node, rules);
+  if (itemCss != nullptr) {
+    itemCss->match(domCurrentNode, rules);
     if (!rules.empty()) {
-      // item_css->show(rules);
-      adjust_format_from_rules(fmt, rules);
+      // itemCss->show(rules);
+      adjustFormatFromRules(fmt, rules);
     } else {
       #if DEBUGGING1
         LOG_D("No match");
-        dom_current_node->show(1);
+        domCurrentNode->show(1);
       #endif
     }
   }
-  if (element_css != nullptr) {
-    if (!element_css->rules_map.empty()) adjust_format_from_rules(fmt, element_css->rules_map);
+  if (elementCss != nullptr) {
+    if (!elementCss->rulesMap.empty()) adjustFormatFromRules(fmt, elementCss->rulesMap);
   }
 }
 
-void Page::adjust_format_from_rules(Format &fmt, const CSS::RulesMap &rules) {
+void Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) {
   const CSS::Values *vals;
 
   // LOG_D("Found!");
 
-  Fonts::FaceStyle font_weight = ((fmt.font_style == Fonts::FaceStyle::BOLD) ||
-                                  (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC))
-                                     ? Fonts::FaceStyle::BOLD
-                                     : Fonts::FaceStyle::NORMAL;
-  Fonts::FaceStyle font_style  = ((fmt.font_style == Fonts::FaceStyle::ITALIC) ||
-                                  (fmt.font_style == Fonts::FaceStyle::BOLD_ITALIC))
-                                     ? Fonts::FaceStyle::ITALIC
-                                     : Fonts::FaceStyle::NORMAL;
+  Fonts::FaceStyle fontWeight = ((fmt.fontStyle == Fonts::FaceStyle::BOLD) ||
+                                 (fmt.fontStyle == Fonts::FaceStyle::BOLD_ITALIC))
+                                    ? Fonts::FaceStyle::BOLD
+                                    : Fonts::FaceStyle::NORMAL;
+  Fonts::FaceStyle fontStyle  = ((fmt.fontStyle == Fonts::FaceStyle::ITALIC) ||
+                                 (fmt.fontStyle == Fonts::FaceStyle::BOLD_ITALIC))
+                                    ? Fonts::FaceStyle::ITALIC
+                                    : Fonts::FaceStyle::NORMAL;
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_STYLE))) {
-    font_style = (Fonts::FaceStyle)vals->front()->choice.face_style;
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_STYLE))) {
+    fontStyle = (Fonts::FaceStyle)vals->front()->choice.faceStyle;
   }
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_WEIGHT))) {
-    font_weight = (Fonts::FaceStyle)vals->front()->choice.face_style;
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_WEIGHT))) {
+    fontWeight = (Fonts::FaceStyle)vals->front()->choice.faceStyle;
   }
-  Fonts::FaceStyle new_style = fonts.adjust_font_style(fmt.font_style, font_style, font_weight);
+  Fonts::FaceStyle newStyle = fonts.adjustFontStyle(fmt.fontStyle, fontStyle, fontWeight);
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_FAMILY))) {
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
-    for (auto &font_name : *vals) {
-      if ((idx = fonts.get_index(font_name->str, new_style)) != -1) break;
+    for (auto &fontName : *vals) {
+      if ((idx = fonts.getIndex(fontName->str, newStyle)) != -1) break;
     }
     if (idx == -1) {
-      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), (int)new_style);
-      idx = fonts.get_index("Default", new_style);
+      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), (int)newStyle);
+      idx = fonts.getIndex("Default", newStyle);
     }
     if (idx == -1) {
-      fmt.font_style = Fonts::FaceStyle::NORMAL;
-      fmt.font_index = 3;
+      fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+      fmt.fontIndex = 3;
     } else {
       // LOG_D("Font index: %d", idx);
-      fmt.font_index = idx;
-      fmt.font_style = new_style;
+      fmt.fontIndex = idx;
+      fmt.fontStyle = newStyle;
     }
-  } else if (new_style != fmt.font_style) {
-    reset_font_index(fmt, new_style);
+  } else if (newStyle != fmt.fontStyle) {
+    resetFontIndex(fmt, newStyle);
   }
 
-  fonts.check(fmt.font_index, fmt.font_style);
+  fonts.check(fmt.fontIndex, fmt.fontStyle);
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_ALIGN))) {
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_ALIGN))) {
     fmt.align = (CSS::Align)vals->front()->choice.align;
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_INDENT))) {
-    fmt.indent = get_pixel_value(*(vals->front()), fmt, paint_width());
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_INDENT))) {
+    fmt.indent = getPixelValue(*(vals->front()), fmt, paintWidth());
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::FONT_SIZE))) {
-    fmt.font_size = get_point_value(*(vals->front()), fmt, fmt.font_size);
-    if (fmt.font_size == 0) {
-      LOG_E("adjust_format_from_suite: setting fmt.font_size to 0!!!");
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_SIZE))) {
+    fmt.fontSize = getPointValue(*(vals->front()), fmt, fmt.fontSize);
+    if (fmt.fontSize == 0) {
+      LOG_E("adjustFormatFromSuite: setting fmt.fontSize to 0!!!");
     }
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::LINE_HEIGHT))) {
-    fmt.line_height_factor = get_factor_value(*(vals->front()), fmt, fmt.line_height_factor);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::LINE_HEIGHT))) {
+    fmt.lineHeightFactor = getFactorValue(*(vals->front()), fmt, fmt.lineHeightFactor);
   }
 
-  int16_t width_ref  = Screen::get_width() - fmt.screen_left - fmt.screen_right;
-  int16_t height_ref = Screen::get_height() - fmt.screen_top - fmt.screen_bottom;
+  int16_t widthRef  = Screen::getWidth() - fmt.screenLeft - fmt.screenRight;
+  int16_t heightRef = Screen::getHeight() - fmt.screenTop - fmt.screenBottom;
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN))) {
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN))) {
 
     int16_t size = 0;
     for (auto val __attribute__((unused)) : *vals) size++;
     CSS::Values::const_iterator it = vals->begin();
 
     if (size == 1) {
-      fmt.margin_top = fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref, true);
-      fmt.margin_right = fmt.margin_left = get_pixel_value(*(vals->front()), fmt, width_ref);
+      fmt.marginTop = fmt.marginBottom = getPixelValue(*(vals->front()), fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(*(vals->front()), fmt, widthRef);
     } else if (size == 2) {
-      fmt.margin_top = fmt.margin_bottom = get_pixel_value(**it++, fmt, height_ref, true);
-      fmt.margin_right = fmt.margin_left = get_pixel_value(**it, fmt, width_ref);
+      fmt.marginTop = fmt.marginBottom = getPixelValue(**it++, fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(**it, fmt, widthRef);
     } else if (size == 3) {
-      fmt.margin_top   = get_pixel_value(**it++, fmt, height_ref, true);
-      fmt.margin_right = fmt.margin_left = get_pixel_value(**it++, fmt, width_ref);
-      fmt.margin_bottom                  = get_pixel_value(**it, fmt, height_ref, true);
+      fmt.marginTop   = getPixelValue(**it++, fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(**it++, fmt, widthRef);
+      fmt.marginBottom                 = getPixelValue(**it, fmt, heightRef, true);
     } else if (size == 4) {
-      fmt.margin_top    = get_pixel_value(**it++, fmt, height_ref, true);
-      fmt.margin_right  = get_pixel_value(**it++, fmt, width_ref);
-      fmt.margin_bottom = get_pixel_value(**it++, fmt, height_ref, true);
-      fmt.margin_left   = get_pixel_value(**it, fmt, width_ref);
+      fmt.marginTop    = getPixelValue(**it++, fmt, heightRef, true);
+      fmt.marginRight  = getPixelValue(**it++, fmt, widthRef);
+      fmt.marginBottom = getPixelValue(**it++, fmt, heightRef, true);
+      fmt.marginLeft   = getPixelValue(**it, fmt, widthRef);
     }
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::DISPLAY))) {
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::DISPLAY))) {
     fmt.display = vals->front()->choice.display;
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_LEFT))) {
-    fmt.margin_left = get_pixel_value(*(vals->front()), fmt, width_ref);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_LEFT))) {
+    fmt.marginLeft = getPixelValue(*(vals->front()), fmt, widthRef);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_RIGHT))) {
-    fmt.margin_right = get_pixel_value(*(vals->front()), fmt, width_ref);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_RIGHT))) {
+    fmt.marginRight = getPixelValue(*(vals->front()), fmt, widthRef);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_TOP))) {
-    fmt.margin_top = get_pixel_value(*(vals->front()), fmt, height_ref, true);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_TOP))) {
+    fmt.marginTop = getPixelValue(*(vals->front()), fmt, heightRef, true);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
-    fmt.margin_bottom = get_pixel_value(*(vals->front()), fmt, height_ref, true);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
+    fmt.marginBottom = getPixelValue(*(vals->front()), fmt, heightRef, true);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::WIDTH))) {
-    fmt.width =
-        get_pixel_value(*(vals->front()), fmt,
-                        fmt.width /*Screen::get_width() - fmt.screen_left - fmt.screen_right */);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::WIDTH))) {
+    fmt.width = getPixelValue(*(vals->front()), fmt,
+                              fmt.width /*Screen::getWidth() - fmt.screenLeft - fmt.screenRight */);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::HEIGHT))) {
-    fmt.height = get_pixel_value(*(vals->front()), fmt,
-                                 Screen::get_height() - fmt.screen_top - fmt.screen_bottom);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::HEIGHT))) {
+    fmt.height = getPixelValue(*(vals->front()), fmt,
+                               Screen::getHeight() - fmt.screenTop - fmt.screenBottom);
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {
-    fmt.text_transform = vals->front()->choice.text_transform;
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {
+    fmt.textTransform = vals->front()->choice.textTransform;
   }
 
-  if ((vals = CSS::get_values_from_rules(rules, CSS::PropertyId::VERTICAL_ALIGN))) {
-    if (vals->front()->choice.vertical_align == CSS::VerticalAlign::NORMAL) {
-      fmt.vertical_align = 0;
-    } else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::SUB) {
-      fmt.vertical_align = 5;
-    } else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::SUPER) {
-      fmt.vertical_align = -5;
-    } else if (vals->front()->choice.vertical_align == CSS::VerticalAlign::VALUE) {
-      Font *font = fonts.get(fmt.font_index);
+  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::VERTICAL_ALIGN))) {
+    if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::NORMAL) {
+      fmt.verticalAlign = 0;
+    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::SUB) {
+      fmt.verticalAlign = 5;
+    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::SUPER) {
+      fmt.verticalAlign = -5;
+    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::VALUE) {
+      Font *font = fonts.get(fmt.fontIndex);
 
-      fmt.vertical_align =
-          -get_pixel_value(*(vals->front()), fmt, font->get_line_height(fmt.font_size));
+      fmt.verticalAlign = -getPixelValue(*(vals->front()), fmt, font->getLineHeight(fmt.fontSize));
     }
   }
 }

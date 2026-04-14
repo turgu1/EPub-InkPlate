@@ -17,19 +17,19 @@
     #pragma pack(push, 1)
     struct NVSData {
       int32_t offset;
-      int16_t itemref_index;
-      uint8_t was_shown;
-      uint8_t filler1;
+      int16_t itemrefIndex;
+      uint8_t wasShown;
+      uint8_t filler;
     };
     #pragma pack(pop)
 
-    bool setup(bool force_erase = false);
-    bool save_location(uint32_t id, const NVSData &nvs_data);
-    bool get_last(uint32_t &id, NVSData &nvs_data);
-    bool get_location(uint32_t id, NVSData &nvs_data);
-    bool id_exists(uint32_t id);
-    int8_t get_pos(uint32_t id);
-    bool erase(uint32_t id);
+    auto setup(bool forceErase = false) -> bool;
+    auto saveLocation(uint32_t id, const NVSData &nvsData) -> bool;
+    auto getLast(uint32_t &id, NVSData &nvsData) -> bool;
+    auto getLocation(uint32_t id, NVSData &nvsData) -> bool;
+    auto idExists(uint32_t id) -> bool;
+    auto getPos(uint32_t id) -> int8_t;
+    auto erase(uint32_t id) -> bool;
 
   private:
     static constexpr char const *TAG            = "NVSMgr";
@@ -37,46 +37,46 @@
     static constexpr char const *PARTITION_NAME = "nvs";
     const uint8_t MAX_ENTRIES                   = 10;
 
-    typedef std::map<uint32_t, uint32_t> TrackList;
+    using TrackList = std::map<uint32_t, uint32_t>;
 
-    uint8_t track_count;
-    TrackList track_list;
-    uint32_t next_idx;
+    uint8_t trackCount;
+    TrackList trackList;
+    uint32_t nextIdx;
 
     #pragma pack(push, 1)
     union SavedData {
-      NVSData nvs_data;
+      NVSData nvsData;
       uint64_t data;
     };
     #pragma pack(pop)
 
-    nvs_handle_t nvs_handle;
+    nvs_handle_t nvsHandle;
     bool initialized;
 
-    bool retrieve(uint32_t index, NVSData &nvs_data);
-    bool save(uint32_t id, const NVSData &nvs_data);
-    bool update(uint32_t index, uint32_t id, const NVSData &nvs_data);
+    auto retrieve(uint32_t index, NVSData &nvsData) -> bool;
+    auto save(uint32_t id, const NVSData &nvsData) -> bool;
+    auto update(uint32_t index, uint32_t id, const NVSData &nvsData) -> bool;
     void remove(uint32_t index);
-    bool find_id(uint32_t id, uint32_t &index);
+    auto findId(uint32_t id, uint32_t &index) -> bool;
     void show();
 
-    inline std::string bld_key(const char *prefix, uint32_t index) {
+    inline auto bldKey(const char *prefix, uint32_t index) -> std::string {
       char str[12];
       return std::string(prefix) + int_to_str(index, str, 12);
     }
 
-    inline bool exists(uint32_t index) {
-      TrackList::iterator it = track_list.find(index);
-      return it != track_list.end();
+    inline auto exists(uint32_t index) -> bool {
+      TrackList::iterator it = trackList.find(index);
+      return it != trackList.end();
     }
 
-    inline uint32_t size() { return track_count; }
+    inline auto size() -> uint32_t { return trackCount; }
   };
 
   #if __NVS_MGR__
-    NVSMgr nvs_mgr;
+    NVSMgr nvsMgr;
   #else
-    extern NVSMgr nvs_mgr;
+    extern NVSMgr nvsMgr;
   #endif
 
 #endif

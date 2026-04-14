@@ -15,44 +15,44 @@ DOM::Tags DOM::tags =
   };
 // clang-format on
 
-DOM::Node::Node(Node *the_father, Tag the_tag) {
-  father = the_father;
-  tag    = the_tag;
+DOM::Node::Node(Node *theFather, Tag theTag) {
+  father = theFather;
+  tag    = theTag;
   if (father != nullptr) {
-    first_child = father->children.empty();
-    predecessor = first_child ? nullptr : father->children.front();
+    firstChild  = father->children.empty();
+    predecessor = firstChild ? nullptr : father->children.front();
     father->children.push_front(this);
   } else
-    first_child = true;
+    firstChild = true;
 };
 
 DOM::Node::~Node() { children.clear(); }
 
-auto DOM::Node::add_class(std::string the_class) -> Node * {
-  class_list.push_front(the_class);
+auto DOM::Node::addClass(std::string theClass) -> Node * {
+  classList.push_front(theClass);
   return this;
 }
 
-auto DOM::Node::add_classes(std::string the_classes) -> Node * {
-  std::istringstream iss(the_classes);
+auto DOM::Node::addClasses(std::string theClasses) -> Node * {
+  std::istringstream iss(theClasses);
   std::string item;
   while (std::getline(iss, item, ' ')) {
-    if (!item.empty()) class_list.push_front(item);
+    if (!item.empty()) classList.push_front(item);
   }
   return this;
 }
 
-auto DOM::Node::add_id(const std::string &the_id) -> Node * {
-  id = the_id;
+auto DOM::Node::addId(const std::string &theId) -> Node * {
+  id = theId;
   return this;
 }
 
-void DOM::Node::show_children(NodeList::const_iterator node_it, int8_t lev) const {
+void DOM::Node::showChildren(NodeList::const_iterator nodeIt, int8_t lev) const {
   #if DEBUGGING
-    if (node_it != children.end()) {
-      NodeList::const_iterator next_node_it = node_it;
-      show_children(++next_node_it, lev);
-      (*node_it)->show(lev);
+    if (nodeIt != children.end()) {
+      NodeList::const_iterator nextNodeIt = nodeIt;
+      showChildren(++nextNodeIt, lev);
+      (*nodeIt)->show(lev);
     }
   #endif
 }
@@ -68,10 +68,10 @@ void DOM::Node::show(uint8_t level) const {
     }
     std::cout << " ";
     if (!id.empty()) std::cout << "#" << id;
-    for (auto &c : class_list) std::cout << '.' << c;
-    if (first_child) std::cout << ":first_child";
+    for (auto &c : classList) std::cout << '.' << c;
+    if (firstChild) std::cout << ":first_child";
     std::cout << std::endl;
 
-    show_children(children.cbegin(), level + 1);
+    showChildren(children.cbegin(), level + 1);
   #endif
 }

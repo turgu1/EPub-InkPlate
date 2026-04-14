@@ -13,4 +13,4 @@
 /// builds and via ESP_LOGI on EPUB_INKPLATE_BUILD targets.
 ///
 /// @return true if every check passed, false if any check failed.
-bool dom_run_tests();
+auto domRunTests() -> bool;

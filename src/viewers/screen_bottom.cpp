@@ -11,78 +11,78 @@
 
 const std::string ScreenBottom::dw[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-void ScreenBottom::show(PagePtr &page, int16_t page_nbr, int16_t page_count) {
+void ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) {
   Font *font = fonts.get(FONT);
 
   Page::Format fmt = {
-      .font_index = FONT,
-      .font_size  = FONT_SIZE,
-      .align      = CSS::Align::CENTER,
+      .fontIndex = FONT,
+      .fontSize  = FONT_SIZE,
+      .align     = CSS::Align::CENTER,
   };
 
-  page->set_limits(fmt);
+  page->setLimits(fmt);
 
   std::ostringstream ostr;
 
-  int8_t show_heap = 0;
+  int8_t showHeap = 0;
 
   #if EPUB_INKPLATE_BUILD
-    config.get(Config::Ident::SHOW_HEAP, &show_heap);
+    config.get(Config::Ident::SHOW_HEAP, &showHeap);
   #endif
 
-  uint16_t h = font->get_chars_height(FONT_SIZE) + 10;
+  uint16_t h = font->getCharsHeight(FONT_SIZE) + 10;
 
-  LOG_D("Dim [%u, %u], Pos[%u, %u]", Screen::get_width(), h, 0, Screen::get_height() - h);
+  LOG_D("Dim [%u, %u], Pos[%u, %u]", Screen::getWidth(), h, 0, Screen::getHeight() - h);
 
-  page->clear_region(Dim(Screen::get_width(), h), Pos(0, Screen::get_height() - h));
+  page->clearRegion(Dim(Screen::getWidth(), h), Pos(0, Screen::getHeight() - h));
 
-  // page->put_highlight(Dim(Screen::get_width(), h ),
-  //                    Pos(0, Screen::get_height() - h));
+  // page->putHighlight(Dim(Screen::getWidth(), h ),
+  //                    Pos(0, Screen::getHeight() - h));
 
-  if (show_heap == 0) {
-    if (page_nbr != -1) {
-      ostr << page_nbr + 1 << " / " << page_count;
+  if (showHeap == 0) {
+    if (pageNbr != -1) {
+      ostr << pageNbr + 1 << " / " << pageCount;
 
-      page->put_str_at(ostr.str(),
-                       Pos(Page::HORIZONTAL_CENTER,
-                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                       fmt);
-    } else if (page_count != -1) {
-      ostr << "PgCalc... " << page_count << "%";
+      page->putStrAt(ostr.str(),
+                     Pos(Page::HORIZONTAL_CENTER,
+                         Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
+                     fmt);
+    } else if (pageCount != -1) {
+      ostr << "PgCalc... " << pageCount << "%";
 
-      page->put_str_at(ostr.str(),
-                       Pos(Page::HORIZONTAL_CENTER,
-                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                       fmt);
+      page->putStrAt(ostr.str(),
+                     Pos(Page::HORIZONTAL_CENTER,
+                         Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
+                     fmt);
     }
   }
 
   #if EPUB_INKPLATE_BUILD
 
-    if (show_heap != 0) {
+    if (showHeap != 0) {
       ostr.str(std::string());
       ostr << uxTaskGetStackHighWaterMark(nullptr) << " / "
            << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) << " / "
            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
       fmt.align = CSS::Align::RIGHT;
-      page->put_str_at(ostr.str(),
-                       Pos(Page::HORIZONTAL_CENTER,
-                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                       fmt);
+      page->putStrAt(ostr.str(),
+                     Pos(Page::HORIZONTAL_CENTER,
+                         Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
+                     fmt);
     }
 
     BatteryViewer::show(page);
   #endif
 
   #if DATE_TIME_RTC
-    int8_t show_rtc = 0;
-    config.get(Config::Ident::SHOW_RTC, &show_rtc);
+    int8_t showRtc = 0;
+    config.get(Config::Ident::SHOW_RTC, &showRtc);
 
-    if (show_rtc != 0) {
+    if (showRtc != 0) {
       struct tm time;
 
       time_t epoch;
-      Clock::get_date_time(epoch);
+      Clock::getDateTime(epoch);
       localtime_r(&epoch, &time);
 
       ostr.str(std::string());
@@ -91,10 +91,10 @@ void ScreenBottom::show(PagePtr &page, int16_t page_nbr, int16_t page_count) {
            << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
 
       fmt.align = CSS::Align::RIGHT;
-      page->put_str_at(ostr.str(),
-                       Pos(Page::HORIZONTAL_CENTER,
-                           Screen::get_height() + font->get_descender_height(FONT_SIZE) - 2),
-                       fmt);
+      page->putStrAt(ostr.str(),
+                     Pos(Page::HORIZONTAL_CENTER,
+                         Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
+                     fmt);
     }
   #endif
 }

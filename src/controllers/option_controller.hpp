@@ -13,66 +13,66 @@ class OptionController {
 private:
   static constexpr char const *TAG = "OptionController";
 
-  bool main_form_is_shown{false};
-  bool font_form_is_shown{false};
-  bool books_refresh_needed{false};
+  bool mainFormIsShown{false};
+  bool fontFormIsShown{false};
+  bool booksRefreshNeeded{false};
 
   #if DATE_TIME_RTC
-    bool date_time_form_is_shown{false};
+    bool dateTimeFormIsShown{false};
   #endif
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    bool calibration_is_shown{false};
+    bool calibrationIsShown{false};
   #endif
 
-  bool wait_for_key_after_wifi{false};
-  bool web_server_was_started{false};
+  bool waitForKeyAfterWifi{false};
+  bool webServerWasStarted{false};
 
-  MenuViewerPtr menu_viewer;
-  FormViewerPtr form_viewer;
+  MenuViewerPtr menuViewer;
+  FormViewerPtr formViewer;
 
 public:
   OptionController() = default;
 
-  void input_event(const EventMgr::Event &event);
+  void inputEvent(const EventMgr::Event &event);
   void enter();
-  void leave(bool going_to_deep_sleep = false);
-  void set_font_count(uint8_t count);
+  void leave(bool goingToDeepSleep = false);
+  void setFontCount(uint8_t count);
 
-  inline void set_main_form_is_shown() { main_form_is_shown = true; }
-  inline void set_font_form_is_shown() { font_form_is_shown = true; }
+  inline void setMainFormIsShown() { mainFormIsShown = true; }
+  inline void setFontFormIsShown() { fontFormIsShown = true; }
 
   #if DATE_TIME_RTC
-    inline void set_date_time_form_is_shown() { date_time_form_is_shown = true; }
+    inline void setDateTimeFormIsShown() { dateTimeFormIsShown = true; }
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    inline void set_calibration_is_shown() { calibration_is_shown = true; }
+    inline void setCalibrationIsShown() { calibrationIsShown = true; }
   #endif
 
-  inline void set_wait_for_key_after_wifi(bool web_server_started = false) {
-    wait_for_key_after_wifi = true;
-    web_server_was_started  = web_server_started;
-    main_form_is_shown      = false;
-    font_form_is_shown      = false;
+  inline void setWaitForKeyAfterWifi(bool webServerStarted = false) {
+    waitForKeyAfterWifi = true;
+    webServerWasStarted = webServerStarted;
+    mainFormIsShown     = false;
+    fontFormIsShown     = false;
     #if DATE_TIME_RTC
-      date_time_form_is_shown = false;
+      dateTimeFormIsShown = false;
     #endif
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      calibration_is_shown = false;
+      calibrationIsShown = false;
     #endif
   }
 
-  void main_parameters();
-  void default_parameters();
-  void wifi_mode();
-  void init_nvs();
+  void mainParameters();
+  void defaultParameters();
+  void wifiMode();
+  void initNvs();
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     void calibrate();
   #endif
   #if DATE_TIME_RTC
-    void clock_adjust_form();
-    void set_clock();
-    void ntp_clock_adjust();
+    void clockAdjustForm();
+    void setClock();
+    void ntpClockAdjust();
   #endif
   #if DEBUGGING
     void debugging();
@@ -80,7 +80,7 @@ public:
 };
 
 #if __OPTION_CONTROLLER__
-  OptionController option_controller;
+  OptionController optionController;
 #else
-  extern OptionController option_controller;
+  extern OptionController optionController;
 #endif

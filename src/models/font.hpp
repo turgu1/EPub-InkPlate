@@ -12,7 +12,7 @@
 #include <mutex>
 #include <unordered_map>
 
-using MemoryFontPtr = himem_unique_ptr<uint8_t[]>;
+using MemoryFontPtr = himemUniquePtr<uint8_t[]>;
 
 class Font {
 
@@ -25,7 +25,7 @@ public:
   Font();
   virtual ~Font() {};
 
-  inline bool is_ready() const { return ready; }
+  inline auto isReady() const -> bool { return ready; }
 
   /**
    * @brief Get a glyph object
@@ -38,21 +38,21 @@ public:
    * @return Glyph The glyph associated to the unicode character.
    */
   // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  //   virtual Glyph * get_glyph(uint32_t charcode, int16_t glyph_size, bool debugging = false);
+  //   virtual Glyph * getGlyph(uint32_t charcode, int16_t glyph_size, bool debugging = false);
   // #else
-  virtual Glyph *get_glyph(uint32_t charcode, int16_t glyph_size);
+  virtual auto getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph *;
   // #endif
 
-  virtual Glyph *get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size,
-                           int16_t &kern, bool &ignore_next);
+  virtual auto getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
+                          int16_t &kern, bool &ignoreNext) -> Glyph *;
 
-  void clear_cache();
+  void clearCache();
 
-  void get_size(const char *str, Dim *dim, int16_t glyph_size);
+  void getSize(const char *str, Dim *dim, int16_t glyphSize);
 
-  inline void set_fonts_cache_index(int16_t index) { fonts_cache_index = index; }
-  inline int16_t get_fonts_cache_index() { return fonts_cache_index; }
-  uint8_t *byte_pool_alloc(uint16_t size);
+  inline void setFontsCacheIndex(int16_t index) { fontsCacheIndex = index; }
+  inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
+  auto bytePoolAlloc(uint16_t size) -> uint8_t *;
 
   /**
    * @brief Face normal line height
@@ -60,15 +60,15 @@ public:
    *
    * @return int32_t Normal line height of the face in pixels related to the glyph size
    */
-  virtual int32_t get_line_height(int16_t glyph_size) = 0;
+  virtual auto getLineHeight(int16_t glyphSize) -> int32_t = 0;
 
   /**
    * @brief Get Face characters height related to the glyph size
    *
    */
-  virtual int32_t get_chars_height(int16_t glyph_size) {
-    const Glyph *g = get_glyph_internal('E', glyph_size);
-    return (g == nullptr) ? 0 : (g->dim.height - get_descender_height(glyph_size));
+  virtual auto getCharsHeight(int16_t glyphSize) -> int32_t {
+    const Glyph *g = getGlyphInternal('E', glyphSize);
+    return (g == nullptr) ? 0 : (g->dim.height - getDescenderHeight(glyphSize));
   };
 
   /**
@@ -76,40 +76,40 @@ public:
    *
    * @return int32_t The face descender height in pixels related to the glyph size.
    */
-  virtual int32_t get_descender_height(int16_t glyph_size) = 0;
+  virtual auto getDescenderHeight(int16_t glyphSize) -> int32_t = 0;
 
 protected:
   static constexpr uint16_t BYTE_POOL_SIZE = 16384 * 2;
 
-  typedef std::unordered_map<uint32_t, Glyph *> Glyphs; ///< Cache for the glyphs' bitmap
-  typedef std::unordered_map<int16_t, Glyphs> GlyphsCache;
-  typedef uint8_t BytePool[BYTE_POOL_SIZE];
-  typedef std::forward_list<BytePool *> BytePools;
+  using Glyphs      = std::unordered_map<uint32_t, Glyph *>; ///< Cache for the glyphs' bitmap
+  using GlyphsCache = std::unordered_map<int16_t, Glyphs>;
+  using BytePool    = uint8_t[BYTE_POOL_SIZE];
+  using BytePools   = std::forward_list<BytePool *>;
 
   GlyphsCache cache;
-  int16_t fonts_cache_index;
-  int8_t current_font_size;
+  int16_t fontsCacheIndex;
+  int8_t currentFontSize;
   bool ready;
 
-  MemoryPool<Glyph> bitmap_glyph_pool;
+  MemoryPool<Glyph> bitmapGlyphPool;
 
-  BytePools byte_pools;
-  uint16_t byte_pool_idx;
+  BytePools bytePools;
+  uint16_t bytePoolIdx;
 
-  void add_buff_to_byte_pool();
+  void addBuffToBytePool();
 
-  MemoryFontPtr memory_font; ///< Buffer for memory fonts
+  MemoryFontPtr memoryFont; ///< Buffer for memory fonts
 
   /**
    * @brief Set the font face object
    *
    * Get a font file loaded and ready to supply glyphs.
    *
-   * @param font_filename The filename of the font.
+   * @param fontFilename The filename of the font.
    * @return true The font was found and retrieved
    * @return false Some error (file not found, unsupported format)
    */
-  bool set_font_face_from_file(const std::string font_filename);
+  auto setFontFaceFromFile(const std::string fontFilename) -> bool;
 
   /**
    * @brief Set the font size
@@ -121,7 +121,7 @@ protected:
    * @return true The font was resized.
    * @return false Not able to resize the font.
    */
-  bool set_font_size(int16_t size);
+  auto setFontSize(int16_t size) -> bool;
 
   /**
    * @brief Set the font face object
@@ -134,8 +134,8 @@ protected:
    * @return true The font was found and retrieved.
    * @return false Some error (file not found, unsupported format).
    */
-  virtual bool set_font_face_from_memory(MemoryFontPtr buffer, int32_t size) = 0;
-  virtual Glyph *get_glyph_internal(uint32_t charcode, int16_t glyph_size)   = 0;
-  virtual Glyph *adjust_ligature_and_kern(Glyph *glyph, uint16_t glyph_size, uint32_t next_charcode,
-                                          int16_t &kern, bool &ignore_next)  = 0;
+  virtual auto setFontFaceFromMemory(MemoryFontPtr buffer, int32_t size) -> bool = 0;
+  virtual auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph *  = 0;
+  virtual auto adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t nextCharcode,
+                                       int16_t &kern, bool &ignoreNext) -> Glyph *  = 0;
 };

@@ -12,7 +12,7 @@
 
 #include <functional>
 
-using MenuViewerPtr = himem_unique_ptr<class MenuViewer>;
+using MenuViewerPtr = himemUniquePtr<class MenuViewer>;
 
 class MenuViewer {
 private:
@@ -27,16 +27,16 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make() { return make_unique_himem<MenuViewer>(); }
+  static inline auto Make() { return makeUniqueHimem<MenuViewer>(); }
 
   enum class Icon {
     RETURN, CLR_HISTORY, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO,
         TOC, DEBUG, DELETE, CLOCK, NTP_CLOCK, CALIB, REVERT, END_MENU
   };
-  static constexpr char icon_char[17] = {'@', 'T', 'R', 'E', 'F', 'C', 'A', 'Z', 'S',
-                                         'I', 'L', 'H', 'K', 'N', 'Y', 'M', 'U'};
+  static constexpr char iconChar[17] = {'@', 'T', 'R', 'E', 'F', 'C', 'A', 'Z', 'S',
+                                        'I', 'L', 'H', 'K', 'N', 'Y', 'M', 'U'};
   struct MenuEntry {
     Icon icon;
     bool visible;
@@ -46,14 +46,14 @@ public:
 
     template <typename T>
     void bind(T *instance, void (T::*method)()) {
-      func = [instance, method]() { (instance->*method)(); };
+      func = [instance, method]() -> auto { (instance->*method)(); };
     }
   };
 
-  void show_caption(std::string caption, Page::Format &fmt);
-  void show(MenuEntry *the_menu, uint8_t entry_index = 0, bool clear_screen = false);
-  bool event(const EventMgr::Event &event);
-  void clear_highlight();
+  void showCaption(std::string caption, Page::Format &fmt);
+  void show(MenuEntry *theMenu, uint8_t entryIndex = 0, bool clearScreen = false);
+  auto event(const EventMgr::Event &event) -> bool;
+  void clearHighlight();
 
 private:
   static constexpr int16_t ICON_SIZE    = 15;
@@ -65,14 +65,14 @@ private:
     static constexpr int16_t SPACE_BETWEEN_ICONS = 50;
   #endif
 
-  uint8_t current_entry_index;
-  uint8_t menu_entry_count;
-  uint16_t icon_height, text_height, line_height, region_height;
-  uint16_t icon_ypos, text_ypos;
+  uint8_t currentEntryIndex;
+  uint8_t menuEntryCount;
+  uint16_t iconHeight, textHeight, lineHeight, regionHeight;
+  uint16_t iconYPos, textYPos;
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    bool hint_shown;
-    uint8_t find_index(uint16_t x, uint16_t y);
+    bool hintShown;
+    auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
   #endif
 
   struct EntryLoc {
@@ -82,7 +82,7 @@ private:
 
   using EntryLocPtr = std::unique_ptr<EntryLoc[]>;
 
-  EntryLocPtr entry_locs;
+  EntryLocPtr entryLocs;
 
   MenuEntry *menu;
 };

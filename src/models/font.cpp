@@ -14,145 +14,149 @@
 #include <sys/stat.h>
 
 Font::Font() {
-  memory_font       = nullptr;
-  current_font_size = -1;
-  ready             = false;
+  memoryFont      = nullptr;
+  currentFontSize = -1;
+  ready           = false;
 }
 
-void Font::add_buff_to_byte_pool() {
+void Font::addBuffToBytePool() {
   BytePool *pool = (BytePool *)allocate(BYTE_POOL_SIZE);
   if (pool == nullptr) {
     LOG_E("Unable to allocated memory for bytes pool.");
-    MsgViewer::out_of_memory("ttf pool allocation");
+    MsgViewer::outOfMemory("ttf pool allocation");
   }
-  byte_pools.push_front(pool);
+  bytePools.push_front(pool);
 
-  byte_pool_idx = 0;
+  bytePoolIdx = 0;
 }
 
-uint8_t *Font::byte_pool_alloc(uint16_t size) {
+auto Font::bytePoolAlloc(uint16_t size) -> uint8_t * {
   if (size > BYTE_POOL_SIZE) {
     LOG_E("Byte Pool Size NOT BIG ENOUGH!!!");
     std::abort();
   }
-  if (byte_pools.empty() || (byte_pool_idx + size) > BYTE_POOL_SIZE) {
+  if (bytePools.empty() || (bytePoolIdx + size) > BYTE_POOL_SIZE) {
     LOG_D("Adding new Byte Pool buffer.");
-    add_buff_to_byte_pool();
+    addBuffToBytePool();
   }
 
-  uint8_t *buff = &(*byte_pools.front())[byte_pool_idx];
-  byte_pool_idx += size;
+  uint8_t *buff = &(*bytePools.front())[bytePoolIdx];
+  bytePoolIdx += size;
 
   return buff;
 }
 
-void Font::clear_cache() {
+void Font::clearCache() {
   std::scoped_lock guard(mutex);
 
   LOG_D("Clear cache...");
   for (auto const &entry : cache) {
     for (auto const &glyph : entry.second) {
-      bitmap_glyph_pool.deleteElement(glyph.second);
+      bitmapGlyphPool.deleteElement(glyph.second);
     }
   }
 
-  for (auto *buff : byte_pools) {
+  for (auto *buff : bytePools) {
     free(buff);
   }
-  byte_pools.clear();
+  bytePools.clear();
 
   cache.clear();
   cache.reserve(50);
 }
 
-Glyph *Font::get_glyph(uint32_t charcode, int16_t glyph_size) {
-  std::scoped_lock guard(mutex);
-
-  return ready ? get_glyph_internal(charcode, glyph_size) : nullptr;
-}
-
-Glyph *Font::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, int16_t &kern,
-                       bool &ignore_next) {
-  std::scoped_lock guard(mutex);
-
-  ignore_next  = false;
-  Glyph *glyph = get_glyph_internal(charcode, glyph_size);
-
-  if (glyph != nullptr) {
-    if (glyph->ligature_and_kern_pgm_index >= 0) {
-      int16_t k; // This is a FIX16...
-      glyph = adjust_ligature_and_kern(glyph, glyph_size, next_charcode, k, ignore_next);
-      kern  = glyph->advance + k;
-    } else {
-      kern = glyph->advance;
-    }
-  }
-
-  return (glyph == nullptr) ? nullptr : glyph;
-}
-
-bool Font::set_font_face_from_file(const std::string font_filename) {
-  LOG_D("set_font_face_from_file() ...");
-
-  FILE *font_file;
-  if ((font_file = fopen(font_filename.c_str(), "r")) == nullptr) {
-    LOG_E("set_font_face_from_file: Unable to open font file '%s'", font_filename.c_str());
-    return false;
-  } else {
-    struct stat stat_buf;
-    fstat(fileno(font_file), &stat_buf);
-    int32_t length = stat_buf.st_size;
-
-    LOG_D("Font File Length: %" PRIi32, length);
-
-    auto buffer = make_unique_himem<uint8_t[]>(length + 1);
-
-    if (buffer == nullptr) {
-      LOG_E("Unable to allocate font buffer: %" PRIi32, (int32_t)(length + 1));
-      MsgViewer::out_of_memory("font buffer allocation");
-    }
-
-    if (fread(buffer.get(), length, 1, font_file) != 1) {
-      LOG_E("set_font_face_from_file: Unable to read file content");
-      fclose(font_file);
-      return false;
-    }
-
-    fclose(font_file);
-
-    buffer[length] = 0;
-
-    if (set_font_face_from_memory(std::move(buffer), length)) {
-      return true;
-    } else {
-      LOG_E("Font Filename in trouble: '%s'", font_filename.c_str());
-      return false;
-    }
-  }
-}
-
-void Font::get_size(const char *str, Dim *dim, int16_t glyph_size) {
-  int16_t max_up   = 0;
-  int16_t max_down = 0;
-
-  dim->width = 0;
-
+auto Font::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
   {
     std::scoped_lock guard(mutex);
 
+    return ready ? getGlyphInternal(charcode, glyphSize) : nullptr;
+  }
+}
+
+auto Font::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
+                    bool &ignoreNext) -> Glyph * {
+  {
+    std::scoped_lock guard(mutex);
+
+    ignoreNext   = false;
+    Glyph *glyph = getGlyphInternal(charcode, glyphSize);
+
+    if (glyph != nullptr) {
+      if (glyph->ligatureAndKernPgmIndex >= 0) {
+        int16_t k; // This is a FIX16...
+        glyph = adjustLigatureAndKern(glyph, glyphSize, nextCharcode, k, ignoreNext);
+        kern  = glyph->advance + k;
+      } else {
+        kern = glyph->advance;
+      }
+    }
+
+    return (glyph == nullptr) ? nullptr : glyph;
+  }
+}
+
+auto Font::setFontFaceFromFile(const std::string fontFilename) -> bool {
+  LOG_D("setFontFaceFromFile() ...");
+
+  FILE *fontFile;
+  if ((fontFile = fopen(fontFilename.c_str(), "r")) == nullptr) {
+    LOG_E("setFontFaceFromFile: Unable to open font file '%s'", fontFilename.c_str());
+    return false;
+  } else {
+    struct stat statBuf;
+    fstat(fileno(fontFile), &statBuf);
+    int32_t length = statBuf.st_size;
+
+    LOG_D("Font File Length: %" PRIi32, length);
+
+    auto buffer = makeUniqueHimem<uint8_t[]>(length + 1);
+
+    if (buffer == nullptr) {
+      LOG_E("Unable to allocate font buffer: %" PRIi32, (int32_t)(length + 1));
+      MsgViewer::outOfMemory("font buffer allocation");
+    }
+
+    if (fread(buffer.get(), length, 1, fontFile) != 1) {
+      LOG_E("setFontFaceFromFile: Unable to read file content");
+      fclose(fontFile);
+      return false;
+    }
+
+    fclose(fontFile);
+
+    buffer[length] = 0;
+
+    if (setFontFaceFromMemory(std::move(buffer), length)) {
+      return true;
+    } else {
+      LOG_E("Font Filename in trouble: '%s'", fontFilename.c_str());
+      return false;
+    }
+  }
+}
+
+void Font::getSize(const char *str, Dim *dim, int16_t glyphSize) {
+  {
+    std::scoped_lock guard(mutex);
+
+    int16_t maxUp   = 0;
+    int16_t maxDown = 0;
+
+    dim->width = 0;
+
     while (*str) {
-      Glyph *glyph = get_glyph_internal(*str++, glyph_size);
+      Glyph *glyph = getGlyphInternal(*str++, glyphSize);
       if (glyph != nullptr) {
         dim->width += glyph->advance;
 
         int16_t up   = -glyph->yoff;
         int16_t down = glyph->dim.height + glyph->yoff;
 
-        if (up > max_up) max_up = up;
-        if (down > max_down) max_down = down;
+        if (up > maxUp) maxUp = up;
+        if (down > maxDown) maxDown = down;
       }
     }
 
-    dim->height = max_up + max_down;
+    dim->height = maxUp + maxDown;
   }
 }

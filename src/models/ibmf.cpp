@@ -13,7 +13,7 @@
 #include <ostream>
 #include <sys/stat.h>
 
-static constexpr uint16_t translation_latin_1[] = {
+static constexpr uint16_t translationLatin1[] = {
     /* 0xA1 */ 0x3C,   // ¡
     /* 0xA2 */ 0x20,   // ¢
     /* 0xA3 */ 0x20,   // £
@@ -111,7 +111,7 @@ static constexpr uint16_t translation_latin_1[] = {
     /* 0xFF */ 0x7F79  // ÿ
 };
 
-static constexpr uint16_t translation_latin_A[] = {
+static constexpr uint16_t translationLatinA[] = {
     /* 0x100 */ 0x1641, // Ā
     /* 0x101 */ 0x1661, // ā
     /* 0x102 */ 0x1541, // Ă
@@ -252,34 +252,34 @@ static constexpr uint16_t translation_latin_A[] = {
 IBMF::IBMF(const std::string &filename) : Font() {
   face = nullptr;
 
-  set_font_face_from_file(filename);
+  setFontFaceFromFile(filename);
 }
 
-IBMF::IBMF(MemoryFontPtr buffer, int32_t buffer_size) : Font() {
+IBMF::IBMF(MemoryFontPtr buffer, int32_t bufferSize) : Font() {
   face = nullptr;
 
-  set_font_face_from_memory(std::move(buffer), buffer_size);
+  setFontFaceFromMemory(std::move(buffer), bufferSize);
 }
 
 IBMF::~IBMF() {
   ready = false;
-  if (face != nullptr) clear_face();
+  if (face != nullptr) clearFace();
 }
 
-void IBMF::clear_face() {
-  clear_cache();
+void IBMF::clearFace() {
+  clearCache();
   if (face != nullptr) {
     delete face;
     face = nullptr;
   }
 
-  ready             = false;
-  current_font_size = -1;
+  ready           = false;
+  currentFontSize = -1;
 }
 
 // uint32_t IBMF::translate(uint32_t charcode)
 // {
-//   uint32_t glyph_code = charcode;
+//   uint32_t glyphCode = charcode;
 
 //   if (face->get_char_set() == 0) {
 //     if ((charcode >= 0x20) && (charcode <= 0x7E)) {
@@ -291,101 +291,101 @@ void IBMF::clear_face() {
 //         case '{':
 //         case '|':
 //         case '}':
-//           glyph_code = ' '; break;
+//           glyphCode = ' '; break;
 //         case '`':
-//           glyph_code = 0x12; break;
+//           glyphCode = 0x12; break;
 //         default:
-//           glyph_code = charcode;
+//           glyphCode = charcode;
 //       }
 //     }
 //     else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
-//       glyph_code = translation_latin_1[charcode - 0xA1];
+//       glyphCode = translationLatin1[charcode - 0xA1];
 //     }
 //     else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
-//       glyph_code = translation_latin_A[charcode - 0x100];
+//       glyphCode = translationLatinA[charcode - 0x100];
 //     }
 //     else {
 //       switch (charcode) {
 //         case 0x2013: // endash
-//           glyph_code = 0x7B; break;
+//           glyphCode = 0x7B; break;
 //         case 0x2014: // emdash
-//           glyph_code = 0x7C; break;
+//           glyphCode = 0x7C; break;
 //         case 0x2018: // quote left
 //         case 0x02BB: // reverse apostrophe
-//           glyph_code = 0x60; break;
+//           glyphCode = 0x60; break;
 //         case 0x2019: // quote right
 //         case 0x02BC: // apostrophe
-//           glyph_code = 0x27; break;
-//         case 0x201C: glyph_code = 0x5C; break; // quoted left "
-//         case 0x201D: glyph_code = 0x22; break; // quoted right
-//         case 0x02C6: glyph_code = 0x5E; break; // circumflex
-//         case 0x02DA: glyph_code = 0x17; break; // ring
-//         case 0x02DC: glyph_code = 0x7E; break; // tilde ~
-//         case 0x201A: glyph_code = 0x2C; break; // comma like ,
-//         case 0x2032: glyph_code = 0x0C; break; // minute '
-//         case 0x2033: glyph_code = 0x22; break; // second "
-//         case 0x2044: glyph_code = 0x2F; break; // fraction /
+//           glyphCode = 0x27; break;
+//         case 0x201C: glyphCode = 0x5C; break; // quoted left "
+//         case 0x201D: glyphCode = 0x22; break; // quoted right
+//         case 0x02C6: glyphCode = 0x5E; break; // circumflex
+//         case 0x02DA: glyphCode = 0x17; break; // ring
+//         case 0x02DC: glyphCode = 0x7E; break; // tilde ~
+//         case 0x201A: glyphCode = 0x2C; break; // comma like ,
+//         case 0x2032: glyphCode = 0x0C; break; // minute '
+//         case 0x2033: glyphCode = 0x22; break; // second "
+//         case 0x2044: glyphCode = 0x2F; break; // fraction /
 //         default:
-//           glyph_code = ' ';
+//           glyphCode = ' ';
 //       }
 //     }
 //   }
-//   else {  // char_set == 1 : Typewriter
+//   else {  // charSet == 1 : Typewriter
 //     if ((charcode >= ' ') && (charcode <= '~')) {
 //       if (charcode == '\\') {
-//         glyph_code = 0x22;
+//         glyphCode = 0x22;
 //       }
-//       else glyph_code = charcode;
+//       else glyphCode = charcode;
 //     } else if ((charcode >= 0xA1) && (charcode <= 0xFF)) {
-//       if       (charcode == 0xA1) glyph_code = 0x0E; // ¡
-//       else if  (charcode == 0xBF) glyph_code = 0x0F; // ¿
-//       else glyph_code = translation_latin_1[charcode - 0xA1];
+//       if       (charcode == 0xA1) glyphCode = 0x0E; // ¡
+//       else if  (charcode == 0xBF) glyphCode = 0x0F; // ¿
+//       else glyphCode = translationLatin1[charcode - 0xA1];
 //     }
 //     else if ((charcode >= 0x100) && (charcode <= 0x17F)) {
-//       glyph_code = translation_latin_A[charcode - 0x100];
+//       glyphCode = translationLatinA[charcode - 0x100];
 //     }
 //     else {
 //       switch (charcode) {
 //         case 0x2018: // quote left
 //         case 0x02BB: // reverse apostrophe
-//           glyph_code = 0x60; break;
+//           glyphCode = 0x60; break;
 //         case 0x2019: // quote right
 //         case 0x02BC: // apostrophe
-//           glyph_code = 0x27; break;
+//           glyphCode = 0x27; break;
 //         case 0x201C: // quoted left "
 //         case 0x201D: // quoted right
-//           glyph_code = 0x22; break;
-//         case 0x02C6: glyph_code = 0x5E; break; // circumflex
-//         case 0x02DA: glyph_code = 0x17; break; // ring
-//         case 0x02DC: glyph_code = 0x7E; break; // tilde ~
-//         case 0x201A: glyph_code = 0x2C; break; // comma like ,
-//         case 0x2032: glyph_code = 0x0C; break; // minute '
-//         case 0x2033: glyph_code = 0x22; break; // second "
-//         case 0x2044: glyph_code = 0x2F; break; // fraction /
+//           glyphCode = 0x22; break;
+//         case 0x02C6: glyphCode = 0x5E; break; // circumflex
+//         case 0x02DA: glyphCode = 0x17; break; // ring
+//         case 0x02DC: glyphCode = 0x7E; break; // tilde ~
+//         case 0x201A: glyphCode = 0x2C; break; // comma like ,
+//         case 0x2032: glyphCode = 0x0C; break; // minute '
+//         case 0x2033: glyphCode = 0x22; break; // second "
+//         case 0x2044: glyphCode = 0x2F; break; // fraction /
 //         default:
-//           glyph_code = ' ';
+//           glyphCode = ' ';
 //       }
 //     }
 //   }
 
-//   return glyph_code;
+//   return glyphCode;
 // }
 
-Glyph *IBMF::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_size, int16_t &kern,
-                       bool &ignore_next) {
+auto IBMF::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
+                      bool &ignoreNext) -> Glyph * {
   std::scoped_lock guard(mutex);
 
-  uint32_t glyph_code = translate(charcode);
+  uint32_t glyphCode = translate(charcode);
 
-  ignore_next  = false;
-  Glyph *glyph = get_glyph_internal(glyph_code, glyph_size);
+  ignoreNext   = false;
+  Glyph *glyph = getGlyphInternal(glyphCode, glyphSize);
 
   if (glyph != nullptr) {
-    if (glyph->ligature_and_kern_pgm_index >= 0) {
+    if (glyph->ligatureAndKernPgmIndex >= 0) {
       IBMFFont::FIX16 k;
-      glyph = adjust_ligature_and_kern(glyph, glyph_size, next_charcode, k, ignore_next);
+      glyph = adjustLigatureAndKern(glyph, glyphSize, nextCharcode, k, ignoreNext);
       if (glyph == nullptr) return nullptr;
-      kern = (k == 0) ? glyph->advance : ((glyph_data->advance + k) >> 6);
+      kern = (k == 0) ? glyph->advance : ((glyphData->advance + k) >> 6);
     } else {
       kern = glyph->advance;
     }
@@ -394,51 +394,51 @@ Glyph *IBMF::get_glyph(uint32_t charcode, uint32_t next_charcode, int16_t glyph_
   return glyph;
 }
 
-Glyph *IBMF::get_glyph(uint32_t charcode, int16_t glyph_size) {
+auto IBMF::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
   std::scoped_lock guard(mutex);
 
-  uint32_t glyph_code = translate(charcode);
+  uint32_t glyphCode = translate(charcode);
 
-  return get_glyph_internal(glyph_code, glyph_size);
+  return getGlyphInternal(glyphCode, glyphSize);
 }
 
-Glyph *IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size) {
+auto IBMF::getGlyphInternal(uint32_t glyphCode, int16_t glyphSize) -> Glyph * {
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
 
-  if (current_font_size != glyph_size) set_font_size(glyph_size);
+  if (currentFontSize != glyphSize) setFontSize(glyphSize);
 
-  GlyphsCache::iterator cache_it = cache.find(glyph_size);
+  GlyphsCache::iterator cacheIt = cache.find(glyphSize);
 
-  bool found = (cache_it != cache.end()) &&
-               ((git = cache_it->second.find(glyph_code)) != cache_it->second.end());
+  bool found = (cacheIt != cache.end()) &&
+               ((git = cacheIt->second.find(glyphCode)) != cacheIt->second.end());
 
   if (found) {
-    glyph_data = face->get_glyph_info(glyph_code & 0x000000FF);
+    glyphData = face->getGlyphInfo(glyphCode & 0x000000FF);
     return git->second;
   } else {
-    Glyph *glyph = bitmap_glyph_pool.newElement();
+    Glyph *glyph = bitmapGlyphPool.newElement();
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
-      MsgViewer::out_of_memory("glyph allocation");
+      MsgViewer::outOfMemory("glyph allocation");
     }
 
-    glyph_data = nullptr;
+    glyphData = nullptr;
 
-    if ((glyph_code == ' ') || (glyph_code == 160)) {
-      glyph->dim.width                   = 0;
-      glyph->dim.height                  = 0;
-      glyph->line_height                 = face->get_line_height();
-      glyph->pitch                       = 0;
-      glyph->xoff                        = 0;
-      glyph->yoff                        = 0;
-      glyph->advance                     = 8;
-      glyph->ligature_and_kern_pgm_index = -1;
-    } else if (!face->get_glyph(glyph_code, *glyph, &glyph_data, true)) {
-      bitmap_glyph_pool.deallocate(glyph);
-      LOG_E("Unable to render glyph for glyph_code: %" PRIu32, glyph_code);
+    if ((glyphCode == ' ') || (glyphCode == 160)) {
+      glyph->dim.width               = 0;
+      glyph->dim.height              = 0;
+      glyph->lineHeight              = face->getLineHeight();
+      glyph->pitch                   = 0;
+      glyph->xoff                    = 0;
+      glyph->yoff                    = 0;
+      glyph->advance                 = 8;
+      glyph->ligatureAndKernPgmIndex = -1;
+    } else if (!face->getGlyph(glyphCode, *glyph, &glyphData, true)) {
+      bitmapGlyphPool.deallocate(glyph);
+      LOG_E("Unable to render glyph for glyphCode: %" PRIu32, glyphCode);
       return nullptr;
     }
 
@@ -452,56 +452,56 @@ Glyph *IBMF::get_glyph_internal(uint32_t glyph_code, int16_t glyph_size) {
     //   " y:"  << glyph->yoff <<
     //   " a:"  << glyph->advance << std::endl;
 
-    cache[current_font_size][glyph_code] = glyph;
+    cache[currentFontSize][glyphCode] = glyph;
     return glyph;
   }
 }
 
-bool IBMF::set_font_size(int16_t size) {
-  if (face->set_font_size(size)) {
-    current_font_size = size;
+auto IBMF::setFontSize(int16_t size) -> bool {
+  if (face->setFontSize(size)) {
+    currentFontSize = size;
     return true;
   } else {
-    current_font_size = -1;
+    currentFontSize = -1;
     return false;
   }
 }
 
-bool IBMF::set_font_face_from_memory(MemoryFontPtr buffer, int32_t buffer_size) {
-  if (face != nullptr) clear_face();
+auto IBMF::setFontFaceFromMemory(MemoryFontPtr buffer, int32_t bufferSize) -> bool {
+  if (face != nullptr) clearFace();
 
-  face = new IBMFFont(buffer.get(), buffer_size, *this);
+  face = new IBMFFont(buffer.get(), bufferSize, *this);
 
   if (face == nullptr) {
     LOG_E("The memory font format is unsupported or is broken.");
     return false;
   }
 
-  ready       = true;
-  memory_font = std::move(buffer);
+  ready      = true;
+  memoryFont = std::move(buffer);
   return true;
 }
 
-Glyph *IBMF::adjust_ligature_and_kern(Glyph *glyph, uint16_t glyph_size, uint32_t next_charcode,
-                                      int16_t &kern, bool &ignore_next) {
-  ignore_next = false;
-  kern        = 0;
+auto IBMF::adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t nextCharcode,
+                                   int16_t &kern, bool &ignoreNext) -> Glyph * {
+  ignoreNext = false;
+  kern       = 0;
 
-  if ((next_charcode != 0) && (glyph->ligature_and_kern_pgm_index != 255)) {
-    const IBMFFont::LigKernStep *step = face->get_lig_kern(glyph->ligature_and_kern_pgm_index);
+  if ((nextCharcode != 0) && (glyph->ligatureAndKernPgmIndex != 255)) {
+    const IBMFFont::LigKernStep *step = face->getLigKern(glyph->ligatureAndKernPgmIndex);
     while (true) {
       if (step->tag == 1) {
-        if (step->next_char_code == next_charcode) {
-          kern = face->get_kern(step->u.kern_idx);
-          LOG_D("Kerning between %c and %c: %d", (char)glyph_data->char_code, (char)next_charcode,
+        if (step->nextCharCode == nextCharcode) {
+          kern = face->getKern(step->u.kernIdx);
+          LOG_D("Kerning between %c and %c: %d", (char)glyphData->charCode, (char)nextCharcode,
                 kern);
           break;
         }
       } else {
-        if (step->next_char_code == next_charcode) {
-          LOG_D("Ligature between %c and %c", (char)glyph_data->char_code, (char)next_charcode);
-          glyph       = get_glyph_internal(step->u.char_code | 0xFF00, glyph_size);
-          ignore_next = true;
+        if (step->nextCharCode == nextCharcode) {
+          LOG_D("Ligature between %c and %c", (char)glyphData->charCode, (char)nextCharcode);
+          glyph      = getGlyphInternal(step->u.charCode | 0xFF00, glyphSize);
+          ignoreNext = true;
           break;
         }
       }

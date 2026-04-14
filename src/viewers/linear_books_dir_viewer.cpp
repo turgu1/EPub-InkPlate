@@ -22,40 +22,40 @@
 #include <iomanip>
 
 void LinearBooksDirViewer::setup() {
-  books_per_page = (Screen::get_height() - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) /
-                   (BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES);
-  page_count     = (books_dir.get_book_count() + books_per_page - 1) / books_per_page;
+  booksPerPage = (Screen::getHeight() - FIRST_ENTRY_YPOS - 20 + SPACE_BETWEEN_ENTRIES) /
+                 (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES);
+  pageCount    = (booksDir.getBookCount() + booksPerPage - 1) / booksPerPage;
 
-  current_page_nbr = -1;
-  current_book_idx = -1;
-  current_item_idx = -1;
+  currentPageNbr = -1;
+  currentBookIdx = -1;
+  currentItemIdx = -1;
 
-  LOG_D("Books count: %d", books_dir.get_book_count());
+  LOG_D("Books count: %d", booksDir.getBookCount());
 }
 
-void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_idx) {
-  current_page_nbr = page_nbr;
-  current_item_idx = hightlight_item_idx;
+void LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_idx) {
+  currentPageNbr = page_nbr;
+  currentItemIdx = hightlight_item_idx;
 
-  int16_t book_idx = page_nbr * books_per_page;
-  int16_t last     = book_idx + books_per_page;
+  int16_t book_idx = page_nbr * booksPerPage;
+  int16_t last     = book_idx + booksPerPage;
 
-  page->set_compute_mode(Page::ComputeMode::DISPLAY);
+  page->setComputeMode(Page::ComputeMode::DISPLAY);
 
-  if (last > books_dir.get_book_count()) last = books_dir.get_book_count();
+  if (last > booksDir.getBookCount()) last = booksDir.getBookCount();
 
-  uint16_t xpos = 20 + BooksDir::cover_dim.width;
+  uint16_t xpos = 20 + BooksDir::coverDim.width;
   uint16_t ypos = FIRST_ENTRY_YPOS;
 
   Page::Format fmt = {
-      .line_height_factor = 0.9,
-      .font_index         = TITLE_FONT,
-      .font_size          = TITLE_FONT_SIZE,
-      .screen_left        = xpos,
-      .screen_right       = 10,
-      .screen_top         = ypos,
-      .screen_bottom =
-          static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20)),
+      .lineHeightFactor = 0.9,
+      .fontIndex         = TITLE_FONT,
+      .fontSize           = TITLE_FONT_SIZE,
+      .screenLeft        = xpos,
+      .screenRight       = 10,
+      .screenTop         = ypos,
+      .screenBottom =
+          static_cast<uint16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20)),
   };
 
   page->start(fmt);
@@ -64,142 +64,142 @@ void LinearBooksDirViewer::show_page(int16_t page_nbr, int16_t hightlight_item_i
 
     int16_t top_pos = ypos;
 
-    auto book = books_dir.get_book_data(book_idx);
+    auto book = booksDir.getBookData(book_idx);
 
     if (!book) break;
     PicturePtr picture =
-        Picture::Make(book->cover_dim, (uint8_t *)book->cover_bitmap, book->cover_size());
-    page->put_picture(std::move(picture),
-                      Pos(10 + BooksDir::cover_dim.width - book->cover_dim.width, ypos));
+        Picture::Make(book->coverDim, (uint8_t *)book->coverBitmap, book->coverSize());
+    page->putPicture(std::move(picture),
+                     Pos(10 + BooksDir::coverDim.width - book->coverDim.width, ypos));
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      if (item_idx == current_item_idx) {
-        page->put_highlight(
-            Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
+      if (item_idx == currentItemIdx) {
+        page->putHighlight(
+            Dim(Screen::getWidth() - (25 + BooksDir::coverDim.width), BooksDir::coverDim.height),
             Pos(xpos - 5, ypos));
       }
     #endif
 
-    fmt.font_index    = TITLE_FONT;
-    fmt.font_size     = TITLE_FONT_SIZE;
-    fmt.font_style    = Fonts::FaceStyle::NORMAL;
-    fmt.screen_top    = ypos;
-    fmt.screen_bottom = static_cast<int16_t>(
-        Screen::get_height() - (ypos + BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES));
+    fmt.fontIndex    = TITLE_FONT;
+    fmt.fontSize      = TITLE_FONT_SIZE;
+    fmt.fontStyle    = Fonts::FaceStyle::NORMAL;
+    fmt.screenTop    = ypos;
+    fmt.screenBottom = static_cast<int16_t>(
+        Screen::getHeight() - (ypos + BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES));
 
-    page->set_limits(fmt);
-    page->new_paragraph(fmt);
+    page->setLimits(fmt);
+    page->newParagraph(fmt);
     #if EPUB_INKPLATE_BUILD
-      if (nvs_mgr.id_exists(book->id)) page->add_text("[Reading] ", fmt);
+      if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
     #endif
-    page->add_text(book->title, fmt);
-    page->end_paragraph(fmt);
+    page->addText(book->title, fmt);
+    page->endParagraph(fmt);
 
-    fmt.font_index = AUTHOR_FONT;
-    fmt.font_size  = AUTHOR_FONT_SIZE;
-    fmt.font_style = Fonts::FaceStyle::ITALIC;
+    fmt.fontIndex = AUTHOR_FONT;
+    fmt.fontSize   = AUTHOR_FONT_SIZE;
+    fmt.fontStyle = Fonts::FaceStyle::ITALIC;
 
-    page->new_paragraph(fmt);
-    page->add_text(book->author, fmt);
-    page->end_paragraph(fmt);
+    page->newParagraph(fmt);
+    page->addText(book->author, fmt);
+    page->endParagraph(fmt);
 
-    ypos = top_pos + BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES;
+    ypos = top_pos + BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES;
   }
 
-  ScreenBottom::show(page, page_nbr, page_count);
+  ScreenBottom::show(page, page_nbr, pageCount);
 
   page->paint();
 }
 
 void LinearBooksDirViewer::highlight(int16_t item_idx) {
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-    page->set_compute_mode(Page::ComputeMode::DISPLAY);
+    page->setComputeMode(Page::ComputeMode::DISPLAY);
 
-    if (current_item_idx != item_idx) {
+    if (currentItemIdx != item_idx) {
 
       // Clear the highlighting of the current item
 
-      int16_t book_idx = current_page_nbr * books_per_page + current_item_idx;
+      int16_t book_idx = currentPageNbr * booksPerPage + currentItemIdx;
 
-      uint16_t xpos = 20 + BooksDir::cover_dim.width;
+      uint16_t xpos = 20 + BooksDir::coverDim.width;
       uint16_t ypos = FIRST_ENTRY_YPOS +
-                      (current_item_idx * (BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES));
+                      (currentItemIdx * (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES));
 
-      auto book = books_dir.get_book_data(book_idx);
+      auto book = booksDir.getBookData(book_idx);
 
       if (!book) return;
 
       // TTF * font = fonts.get(1, 9);
 
       Page::Format fmt = {
-          .line_height_factor = 0.9,
-          .font_index         = TITLE_FONT,
-          .font_size          = TITLE_FONT_SIZE,
-          .screen_left        = xpos,
-          .screen_right       = 10,
-          .screen_top         = ypos,
-          .screen_bottom =
-              static_cast<uint16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20)),
+          .lineHeightFactor = 0.9,
+          .fontIndex         = TITLE_FONT,
+          .fontSize           = TITLE_FONT_SIZE,
+          .screenLeft        = xpos,
+          .screenRight       = 10,
+          .screenTop         = ypos,
+          .screenBottom =
+              static_cast<uint16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20)),
       };
 
       page->start(fmt);
 
-      page->clear_highlight(
-          Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
+      page->clearHighlight(
+          Dim(Screen::getWidth() - (25 + BooksDir::coverDim.width), BooksDir::coverDim.height),
           Pos(xpos - 5, ypos));
 
-      page->set_limits(fmt);
-      page->new_paragraph(fmt);
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
       #if EPUB_INKPLATE_BUILD
-        if (nvs_mgr.id_exists(book->id)) page->add_text("[Reading] ", fmt);
+        if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
       #endif
-      page->add_text(book->title, fmt);
-      page->end_paragraph(fmt);
+      page->addText(book->title, fmt);
+      page->endParagraph(fmt);
 
-      fmt.font_index = AUTHOR_FONT;
-      fmt.font_size  = AUTHOR_FONT_SIZE;
-      fmt.font_style = Fonts::FaceStyle::ITALIC;
+      fmt.fontIndex = AUTHOR_FONT;
+      fmt.fontSize   = AUTHOR_FONT_SIZE;
+      fmt.fontStyle = Fonts::FaceStyle::ITALIC;
 
-      page->new_paragraph(fmt);
-      page->add_text(book->author, fmt);
-      page->end_paragraph(fmt);
+      page->newParagraph(fmt);
+      page->addText(book->author, fmt);
+      page->endParagraph(fmt);
 
       // Highlight the new current item
 
-      current_item_idx = item_idx;
+      currentItemIdx = item_idx;
 
-      book_idx = current_page_nbr * books_per_page + current_item_idx;
-      ypos     = FIRST_ENTRY_YPOS + (current_item_idx * (BooksDir::cover_dim.height + 6));
+      book_idx = currentPageNbr * booksPerPage + currentItemIdx;
+      ypos     = FIRST_ENTRY_YPOS + (currentItemIdx * (BooksDir::coverDim.height + 6));
 
-      book = books_dir.get_book_data(book_idx);
+      book = booksDir.getBookData(book_idx);
 
       if (!book) return;
 
-      page->put_highlight(
-          Dim(Screen::get_width() - (25 + BooksDir::cover_dim.width), BooksDir::cover_dim.height),
+      page->putHighlight(
+          Dim(Screen::getWidth() - (25 + BooksDir::coverDim.width), BooksDir::coverDim.height),
           Pos(xpos - 5, ypos));
 
-      fmt.font_index = TITLE_FONT;
-      fmt.font_size  = TITLE_FONT_SIZE;
-      fmt.font_style = Fonts::FaceStyle::NORMAL;
-      fmt.screen_top = ypos;
-      fmt.screen_bottom =
-          static_cast<int16_t>(Screen::get_height() - (ypos + BooksDir::cover_dim.width + 20));
+      fmt.fontIndex = TITLE_FONT;
+      fmt.fontSize   = TITLE_FONT_SIZE;
+      fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+      fmt.screenTop = ypos;
+      fmt.screenBottom =
+          static_cast<int16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20));
 
-      page->set_limits(fmt);
-      page->new_paragraph(fmt);
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
       #if EPUB_INKPLATE_BUILD
-        if (nvs_mgr.id_exists(book->id)) page->add_text("[Reading] ", fmt);
+        if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
       #endif
-      page->add_text(book->title, fmt);
-      page->end_paragraph(fmt);
+      page->addText(book->title, fmt);
+      page->endParagraph(fmt);
 
-      fmt.font_index = AUTHOR_FONT, fmt.font_size = AUTHOR_FONT_SIZE,
-      fmt.font_style = Fonts::FaceStyle::ITALIC,
+      fmt.fontIndex = AUTHOR_FONT, fmt.fontSize = AUTHOR_FONT_SIZE,
+      fmt.fontStyle = Fonts::FaceStyle::ITALIC,
 
-      page->new_paragraph(fmt);
-      page->add_text(book->author, fmt);
-      page->end_paragraph(fmt);
+      page->newParagraph(fmt);
+      page->addText(book->author, fmt);
+      page->endParagraph(fmt);
 
       #if EPUB_INKPLATE_BUILD
         BatteryViewer::show();
@@ -210,57 +210,57 @@ void LinearBooksDirViewer::highlight(int16_t item_idx) {
   #endif
 }
 
-int16_t LinearBooksDirViewer::show_page_and_highlight(int16_t book_idx) {
-  int16_t page_nbr = book_idx / books_per_page;
-  int16_t item_idx = book_idx % books_per_page;
+auto LinearBooksDirViewer::showPageAndHighlight(int16_t book_idx) -> int16_t {
+  int16_t page_nbr = book_idx / booksPerPage;
+  int16_t item_idx = book_idx % booksPerPage;
 
-  if (current_page_nbr != page_nbr) {
-    show_page(page_nbr, item_idx);
+  if (currentPageNbr != page_nbr) {
+    showPage(page_nbr, item_idx);
   } else {
-    if (item_idx != current_item_idx) highlight(item_idx);
+    if (item_idx != currentItemIdx) highlight(item_idx);
   }
-  current_book_idx = book_idx;
-  return current_book_idx;
+  currentBookIdx = book_idx;
+  return currentBookIdx;
 }
 
-void LinearBooksDirViewer::highlight_book(int16_t book_idx) {
-  highlight(book_idx % books_per_page);
-  current_book_idx = book_idx;
+void LinearBooksDirViewer::highlightBook(int16_t book_idx) {
+  highlight(book_idx % booksPerPage);
+  currentBookIdx = book_idx;
 }
 
-int16_t LinearBooksDirViewer::next_page() { return next_column(); }
+auto LinearBooksDirViewer::nextPage() -> int16_t { return nextColumn(); }
 
-int16_t LinearBooksDirViewer::prev_page() { return prev_column(); }
+auto LinearBooksDirViewer::prevPage() -> int16_t { return prevColumn(); }
 
-int16_t LinearBooksDirViewer::next_item() {
-  int16_t book_idx = current_book_idx + 1;
-  if (book_idx >= books_dir.get_book_count()) {
-    book_idx = books_dir.get_book_count() - 1;
+auto LinearBooksDirViewer::nextItem() -> int16_t {
+  int16_t book_idx = currentBookIdx + 1;
+  if (book_idx >= booksDir.getBookCount()) {
+    book_idx = booksDir.getBookCount() - 1;
   }
-  return show_page_and_highlight(book_idx);
+  return showPageAndHighlight(book_idx);
 }
 
-int16_t LinearBooksDirViewer::prev_item() {
-  int16_t book_idx = current_book_idx - 1;
+auto LinearBooksDirViewer::prevItem() -> int16_t {
+  int16_t book_idx = currentBookIdx - 1;
   if (book_idx < 0) book_idx = 0;
-  return show_page_and_highlight(book_idx);
+  return showPageAndHighlight(book_idx);
 }
 
-int16_t LinearBooksDirViewer::next_column() {
-  int16_t book_idx = current_book_idx + books_per_page;
-  if (book_idx >= books_dir.get_book_count()) {
-    book_idx = books_dir.get_book_count() - 1;
+auto LinearBooksDirViewer::nextColumn() -> int16_t {
+  int16_t book_idx = currentBookIdx + booksPerPage;
+  if (book_idx >= booksDir.getBookCount()) {
+    book_idx = booksDir.getBookCount() - 1;
   } else {
-    book_idx = (book_idx / books_per_page) * books_per_page;
+    book_idx = (book_idx / booksPerPage) * booksPerPage;
   }
-  return show_page_and_highlight(book_idx);
+  return showPageAndHighlight(book_idx);
 }
 
-int16_t LinearBooksDirViewer::prev_column() {
-  int16_t book_idx = current_book_idx - books_per_page;
+auto LinearBooksDirViewer::prevColumn() -> int16_t {
+  int16_t book_idx = currentBookIdx - booksPerPage;
   if (book_idx < 0)
     book_idx = 0;
   else
-    book_idx = (book_idx / books_per_page) * books_per_page;
-  return show_page_and_highlight(book_idx);
+    book_idx = (book_idx / booksPerPage) * booksPerPage;
+  return showPageAndHighlight(book_idx);
 }

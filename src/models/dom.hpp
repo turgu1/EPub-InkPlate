@@ -16,7 +16,7 @@
 
 #include "memory_pool.hpp"
 
-using DOMPtr = himem_unique_ptr<class DOM>;
+using DOMPtr = himemUniquePtr<class DOM>;
 class DOM {
 public:
   /**
@@ -46,38 +46,38 @@ public:
     Node *father;
     Node *predecessor;
     NodeList children;
-    ClassList class_list;
+    ClassList classList;
     std::string id;
     Tag tag;
-    bool first_child;
+    bool firstChild;
 
-    Node(Node *the_father, Tag the_tag);
+    Node(Node *theFather, Tag theTag);
     ~Node();
 
-    auto add_class(std::string the_class) -> Node *;
-    auto add_classes(std::string the_classes) -> Node *;
-    auto add_id(const std::string &the_id) -> Node *;
-    void show_children(NodeList::const_iterator node_it, int8_t lev) const;
+    auto addClass(std::string theClass) -> Node *;
+    auto addClasses(std::string theClasses) -> Node *;
+    auto addId(const std::string &theId) -> Node *;
+    void showChildren(NodeList::const_iterator nodeIt, int8_t lev) const;
     void show(uint8_t level) const;
   };
 
 private:
-  MemoryPool<Node> node_pool;
+  MemoryPool<Node> nodePool;
   DOM() = default;
 
 public:
-  ~DOM() = default; // { node_pool.deleteElement(body); }
+  ~DOM() = default; // { nodePool.deleteElement(body); }
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make() { return make_unique_himem<DOM>(); }
+  static inline auto Make() { return makeUniqueHimem<DOM>(); }
 
-  Node *body{node_pool.newElement(nullptr, Tag::BODY)};
+  Node *body{nodePool.newElement(nullptr, Tag::BODY)};
 
-  auto add_child(Node *parent_node, Tag the_tag) -> Node * {
-    return node_pool.newElement(parent_node, the_tag);
+  auto addChild(Node *parentNode, Tag theTag) -> Node * {
+    return nodePool.newElement(parentNode, theTag);
   }
 
   void show() {

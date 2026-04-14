@@ -129,47 +129,47 @@
  *      z-index
  */
 
-using CSSPtr = himem_unique_ptr<class CSS>;
+using CSSPtr = himemUniquePtr<class CSS>;
 class CSS {
 private:
   std::string id;          // Unique identifier (filename) for this CSS instance
-  std::string folder_path; // Path used for all other files access (relative)
+  std::string folderPath; // Path used for all other files access (relative)
   bool ghost;              // True if this instance rules content came from other instances
   uint8_t priority;
 
-  CSS(const char *css_id, const char *file_folder_path, const char *buffer, int32_t size,
+  CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size,
       uint8_t prio);
 
-  CSS(const char *css_id) {
-    id          = css_id;
-    folder_path = "";
+  CSS(const char *cssId) {
+    id          = cssId;
+    folderPath = "";
     ghost       = true;
     priority    = 0;
   }
 
-  CSS(const char *css_id, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio);
+  CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio);
 
 public:
   ~CSS();
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make(const char *css_id, const char *file_folder_path, const char *buffer,
+  static inline auto Make(const char *cssId, const char *fileFolderPath, const char *buffer,
                           int32_t size, uint8_t prio) {
-    return make_unique_himem<CSS>(css_id, file_folder_path, buffer, size, prio);
+    return makeUniqueHimem<CSS>(cssId, fileFolderPath, buffer, size, prio);
   }
-  static inline auto Make(const char *css_id) { return make_unique_himem<CSS>(css_id); }
+  static inline auto Make(const char *cssId) { return makeUniqueHimem<CSS>(cssId); }
 
-  static inline auto Make(const char *css_id, DOM::Tag tag, const char *buffer, int32_t size,
+  static inline auto Make(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size,
                           uint8_t prio) {
-    return make_unique_himem<CSS>(css_id, tag, buffer, size, prio);
+    return makeUniqueHimem<CSS>(cssId, tag, buffer, size, prio);
   }
 
-  const std::string &get_id() const { return id; }
-  const std::string &get_folder_path() const { return folder_path; }
-  uint8_t get_priority() const { return priority; }
+  auto getId() const -> const std::string & { return id; }
+  auto getFolderPath() const -> const std::string & { return folderPath; }
+  auto getPriority() const -> uint8_t { return priority; }
 
   enum class ValueType : uint8_t {
     NO_TYPE, EM, EX, PERCENT, STR, PX, CM, MM, IN, PT, PC, VH, VW, REM, CH, VMIN, VMAX, DEG, RAD,
@@ -194,13 +194,13 @@ public:
         MARGIN_BOTTOM, WIDTH, HEIGHT, DISPLAY, BORDER, VERTICAL_ALIGN
   };
 
-  static const char *value_type_str[25];
+  static const char *valueTypeStr[25];
 
-  typedef std::map<std::string, PropertyId> PropertyMap;
-  typedef std::map<std::string, int16_t> FontSizeMap;
+  using PropertyMap = std::map<std::string, PropertyId>;
+  using FontSizeMap = std::map<std::string, int16_t>;
 
-  static PropertyMap property_map;
-  static FontSizeMap font_size_map;
+  static PropertyMap propertyMap;
+  static FontSizeMap fontSizeMap;
 
   // ---- Selector definition ----
 
@@ -211,48 +211,48 @@ public:
     NONE, FIRST_CHILD
   };
 
-  typedef std::forward_list<std::string> ClassList;
+  using ClassList = std::forward_list<std::string>;
 
   #pragma pack(push, 1)
   // The following is OK in a little endian context.
   union Specificity {
     uint32_t value;
     struct {
-      uint8_t tag_count, class_count, id_count, priority;
+      uint8_t tagCount, classCount, idCount, priority;
     } spec;
     void show() const {
       #if DEBUGGING
-        std::cout << "[" << +spec.priority << "," << +spec.id_count << "," << +spec.class_count
-                  << "," << +spec.tag_count << "](" << value << ") ";
+        std::cout << "[" << +spec.priority << "," << +spec.idCount << "," << +spec.classCount
+                  << "," << +spec.tagCount << "](" << value << ") ";
       #endif
     }
   };
 
   struct SelectorNode {
     std::string id;
-    ClassList class_list;
+    ClassList classList;
     Qualifier qualifier;
-    uint8_t class_count, id_count;
+    uint8_t classCount, idCount;
     SelOp op;
     DOM::Tag tag;
     SelectorNode() {
       op          = SelOp::NONE;
       tag         = DOM::Tag::NONE;
       qualifier   = Qualifier::NONE;
-      class_count = 0;
-      id_count    = 0;
+      classCount = 0;
+      idCount    = 0;
     }
-    ~SelectorNode() { class_list.clear(); }
-    void add_class(std::string class_name) {
-      class_list.push_front(class_name);
-      class_count += 1;
+    ~SelectorNode() { classList.clear(); }
+    void addClass(std::string className) {
+      classList.push_front(className);
+      classCount += 1;
     }
-    void add_id(const std::string &the_id) {
-      id = the_id;
-      id_count += 1;
+    void addId(const std::string &theId) {
+      id = theId;
+      idCount += 1;
     }
-    void set_tag(DOM::Tag the_tag) { tag = the_tag; }
-    void set_qualifier(Qualifier q) { qualifier = q; }
+    void setTag(DOM::Tag theTag) { tag = theTag; }
+    void setQualifier(Qualifier q) { qualifier = q; }
     void show() const {
       #if DEBUGGING
         if (op == SelOp::CHILD) std::cout << " > ";
@@ -266,49 +266,49 @@ public:
             }
           }
         }
-        if (id_count > 0) std::cout << "#" << id;
-        for (auto &cl : class_list) std::cout << "." << cl;
+        if (idCount > 0) std::cout << "#" << id;
+        for (auto &cl : classList) std::cout << "." << cl;
         if (qualifier == Qualifier::FIRST_CHILD) std::cout << ":first_child";
       #endif
     }
   };
 
-  typedef std::forward_list<SelectorNode *> SelectorNodeList;
+  using SelectorNodeList = std::forward_list<SelectorNode *>;
 
   struct Selector {
     Specificity specificity;
-    SelectorNodeList selector_node_list;
+    SelectorNodeList selectorNodeList;
     Selector() { specificity.value = 0; }
     ~Selector() {
-      for (auto *selector_node : selector_node_list) {
-        selector_node_pool.deleteElement(selector_node);
+      for (auto *selectorNode : selectorNodeList) {
+        selectorNodePool.deleteElement(selectorNode);
       }
-      selector_node_list.clear();
+      selectorNodeList.clear();
     }
-    void add_selector_node(SelectorNode *node) { selector_node_list.push_front(node); }
-    void compute_specificity(uint8_t prio) {
+    void addSelectorNode(SelectorNode *node) { selectorNodeList.push_front(node); }
+    void computeSpecificity(uint8_t prio) {
       specificity.spec.priority = prio;
-      for (auto *node : selector_node_list) {
-        specificity.spec.tag_count +=
+      for (auto *node : selectorNodeList) {
+        specificity.spec.tagCount +=
             (((node->tag == DOM::Tag::NONE) || (node->tag == DOM::Tag::ANY)) ? 0 : 1);
-        specificity.spec.class_count += node->class_count;
-        specificity.spec.id_count += node->id_count;
+        specificity.spec.classCount += node->classCount;
+        specificity.spec.idCount += node->idCount;
       }
     }
-    bool is_empty() { return selector_node_list.empty(); }
-    void show_selector(SelectorNodeList::const_iterator node_it, int8_t lev) const {
+    auto isEmpty() -> bool { return selectorNodeList.empty(); }
+    void showSelector(SelectorNodeList::const_iterator nodeIt, int8_t lev) const {
       #if DEBUGGING
-        if (node_it != selector_node_list.end()) {
-          SelectorNodeList::const_iterator next_node_it = node_it;
-          show_selector(++next_node_it, lev + 1);
-          (*node_it)->show();
+        if (nodeIt != selectorNodeList.end()) {
+          SelectorNodeList::const_iterator nextNodeIt = nodeIt;
+          showSelector(++nextNodeIt, lev + 1);
+          (*nodeIt)->show();
         }
       #endif
     }
     void show() const {
       #if DEBUGGING
         specificity.show();
-        show_selector(selector_node_list.cbegin(), 0);
+        showSelector(selectorNodeList.cbegin(), 0);
       #endif
     }
   };
@@ -316,48 +316,48 @@ public:
   struct Value {
     float num;
     std::string str;
-    ValueType value_type;
+    ValueType valueType;
     union {
       Display display;
       Align align;
-      TextTransform text_transform;
-      Fonts::FaceStyle face_style;
-      VerticalAlign vertical_align;
+      TextTransform textTransform;
+      Fonts::FaceStyle faceStyle;
+      VerticalAlign verticalAlign;
     } choice;
     Value() {
-      value_type = ValueType::NO_TYPE;
+      valueType = ValueType::NO_TYPE;
       num        = 0.0;
     }
     void show() {
       #if DEBUGGING
-        if (value_type == ValueType::STR) {
+        if (valueType == ValueType::STR) {
           std::cout << str;
-        } else if (value_type == ValueType::URL) {
+        } else if (valueType == ValueType::URL) {
           std::cout << "url(" << str << ')';
         } else {
-          std::cout << num << value_type_str[static_cast<uint8_t>(value_type)];
+          std::cout << num << valueTypeStr[static_cast<uint8_t>(valueType)];
         }
       #endif
     }
   };
 
-  typedef std::forward_list<Value *> Values;
+  using Values = std::forward_list<Value *>;
 
   struct Property {
     PropertyId id;
     Values values;
     ~Property() {
       for (auto *value : values) {
-        value_pool.deleteElement(value);
+        valuePool.deleteElement(value);
       }
       values.clear();
     }
-    void add_value(Value *v) { values.push_front(v); }
+    void addValue(Value *v) { values.push_front(v); }
     void completed() { values.reverse(); }
     void show() {
       #if DEBUGGING
         std::cout << "  ";
-        for (const auto &[key, value] : property_map) {
+        for (const auto &[key, value] : propertyMap) {
           if (value == id) {
             std::cout << key;
             break;
@@ -377,38 +377,38 @@ public:
   #pragma pack(pop)
 
   // Sorted from the less specific to the most specific
-  struct rule_compare {
-    bool operator()(const Selector *s1, const Selector *s2) const {
+  struct ruleCompare {
+    auto operator()(const Selector *s1, const Selector *s2) const -> bool {
       return s1->specificity.value < s2->specificity.value;
     }
   };
 
-  typedef std::list<Selector *> Selectors;
-  typedef std::forward_list<Property *> Properties;
+  using Selectors  = std::list<Selector *>;
+  using Properties = std::forward_list<Property *>;
 
-  // typedef std::list<Properties *>            PropertySuite;
-  typedef std::forward_list<Properties *> PropertySuiteList;
+  // using PropertySuite = std::list<Properties *>;
+  using PropertySuiteList = std::forward_list<Properties *>;
 
-  typedef std::multimap<Selector *, Properties *, rule_compare> RulesMap;
+  using RulesMap = std::multimap<Selector *, Properties *, ruleCompare>;
 
-  RulesMap rules_map;
+  RulesMap rulesMap;
   PropertySuiteList
       suites; // Linear list of suites to be deleted when the instance will be destroyed.
 
-  static MemoryPool<Value> value_pool;
-  static MemoryPool<Property> property_pool;
-  static MemoryPool<Properties> properties_pool;
-  static MemoryPool<SelectorNode> selector_node_pool;
-  static MemoryPool<Selector> selector_pool;
+  static MemoryPool<Value> valuePool;
+  static MemoryPool<Property> propertyPool;
+  static MemoryPool<Properties> propertiesPool;
+  static MemoryPool<SelectorNode> selectorNodePool;
+  static MemoryPool<Selector> selectorPool;
 
-  void match(DOM::Node *node, RulesMap &to_rules);
-  void show(RulesMap &the_rules_map);
+  void match(DOM::Node *node, RulesMap &toRules);
+  void show(RulesMap &theRulesMap);
 
-  void add_rule(Selector *sel, Properties *props) {
-    rules_map.insert(std::pair<Selector *, Properties *>(sel, props));
+  void addRule(Selector *sel, Properties *props) {
+    rulesMap.insert(std::pair<Selector *, Properties *>(sel, props));
   }
 
-  static const Values *get_values_from_rules(const RulesMap &rules, PropertyId id) {
+  static auto getValuesFromRules(const RulesMap &rules, PropertyId id) -> const Values * {
     Values *vals = nullptr;
     for (auto &rule : rules) {
       for (auto *prop : *(rule.second)) {
@@ -418,7 +418,7 @@ public:
     return vals;
   }
 
-  const Values *get_values_from_props(const Properties &props, PropertyId id) const {
+  auto getValuesFromProps(const Properties &props, PropertyId id) const -> const Values * {
     const Values *vals = nullptr;
     for (auto &prop : props) {
       if (id == prop->id) vals = &prop->values;
@@ -426,19 +426,19 @@ public:
     return vals;
   }
 
-  void retrieve_data_from_css(CSS &css) {
-    for (auto &rule : css.rules_map) {
-      rules_map.insert(rule);
+  void retrieveDataFromCss(CSS &css) {
+    for (auto &rule : css.rulesMap) {
+      rulesMap.insert(rule);
     }
   }
 
   void show() {
     #if DEBUGGING
-      show(rules_map);
+      show(rulesMap);
     #endif
   }
 
 private:
-  bool match_simple_selector(DOM::Node &node, SelectorNode &simple_sel);
-  bool match_selector(DOM::Node *node, Selector &sel);
+  auto matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool;
+  auto matchSelector(DOM::Node *node, Selector &sel) -> bool;
 };

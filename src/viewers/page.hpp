@@ -29,7 +29,7 @@
  *
  */
 
-using PagePtr = himem_unique_ptr<class Page>;
+using PagePtr = himemUniquePtr<class Page>;
 
 class Page {
 private:
@@ -40,34 +40,34 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make() { return make_unique_himem<Page>(); }
+  static inline auto Make() { return makeUniqueHimem<Page>(); }
 
   static const uint16_t HORIZONTAL_CENTER = 9999;
 
   // clang-format off
   struct Format {
-    float              line_height_factor = 1.0; ///< In EMs
-    int16_t            font_index         =   1;
-    int16_t            font_size          =  10; ///< In pixels
+    float              lineHeightFactor = 1.0; ///< In EMs
+    int16_t            fontIndex         =   1;
+    int16_t            fontSize          =  10; ///< In pixels
     int16_t            indent             =   0; ///< In pixels
-    uint16_t           margin_left        =   0; ///< In pixels
-    uint16_t           margin_right       =   0; ///< In pixels
-    uint16_t           margin_top         =   0; ///< In pixels
-    uint16_t           margin_bottom      =   0; ///< In pixels
-    uint16_t           screen_left        =  10; ///< In pixels
-    uint16_t           screen_right       =  10; ///< In pixels
-    uint16_t           screen_top         =  10; ///< In pixels
-    uint16_t           screen_bottom      =  10; ///< In pixels
+    uint16_t           marginLeft        =   0; ///< In pixels
+    uint16_t           marginRight       =   0; ///< In pixels
+    uint16_t           marginTop         =   0; ///< In pixels
+    uint16_t           marginBottom      =   0; ///< In pixels
+    uint16_t           screenLeft        =  10; ///< In pixels
+    uint16_t           screenRight       =  10; ///< In pixels
+    uint16_t           screenTop         =  10; ///< In pixels
+    uint16_t           screenBottom      =  10; ///< In pixels
     uint16_t           width              =   0; ///< In pixels
     uint16_t           height             =   0; ///< In pixels
-    uint16_t           vertical_align     =   0; ///< In pixels
+    uint16_t           verticalAlign     =   0; ///< In pixels
     bool               trim               = true;
     bool               pre                = false;
-    Fonts::FaceStyle   font_style         = Fonts::FaceStyle::NORMAL;
+    Fonts::FaceStyle   fontStyle         = Fonts::FaceStyle::NORMAL;
     CSS::Align         align              = CSS::Align::LEFT;
-    CSS::TextTransform text_transform     = CSS::TextTransform::NONE;
+    CSS::TextTransform textTransform     = CSS::TextTransform::NONE;
     CSS::Display       display            = CSS::Display::INLINE;
   };
   // clang-format on
@@ -99,29 +99,28 @@ private:
    * used by the book_view and page classes to optimize the speed of
    * computations.
    */
-  ComputeMode compute_mode{ComputeMode::DISPLAY};
-  bool screen_is_full{false}; ///< True if screen no more space to add characters
+  ComputeMode computeMode{ComputeMode::DISPLAY};
+  bool screenIsFull{false}; ///< True if screen no more space to add characters
 
-  DisplayListPool display_list_pool; ///< Memory pool for DisplayListEntry objects, shared across
-                                     ///< all DisplayList instances used by this Page instance
+  DisplayListPool displayListPool; ///< Memory pool for DisplayListEntry objects, shared across
+                                   ///< all DisplayList instances used by this Page instance
 
-  DisplayListPtr display_list = DisplayList::Make(display_list_pool);
-  DisplayListPtr line_list =
-      DisplayList::Make(display_list_pool); ///< Line preparation for paragraphs
+  DisplayListPtr displayList = DisplayList::Make(displayListPool);
+  DisplayListPtr lineList = DisplayList::Make(displayListPool); ///< Line preparation for paragraphs
 
-  Pos pos;                            ///< Current drawing Screen position
-  int16_t min_y, max_x, max_y, min_x; ///< Screen limits for page content
-  int16_t para_max_x, para_min_x;
+  Pos pos;                        ///< Current drawing Screen position
+  int16_t minY, maxX, maxY, minX; ///< Screen limits for page content
+  int16_t paraMaxX, paraMinX;
 
-  int16_t line_width, glyphs_height;
-  float line_height_factor;
-  int16_t para_indent, top_margin;
+  int16_t lineWidth, glyphsHeight;
+  float lineHeightFactor;
+  int16_t paraIndent, topMargin;
 
-  void add_line(const Format &fmt, bool justifyable);
-  void add_glyph_to_line(Glyph *glyph, const Format &fmt, Font &font, bool is_space);
-  void add_picture_to_line(PicturePtr picture, int16_t advance, const Format &fmt);
-  int32_t to_unicode(const char *str, CSS::TextTransform transform, bool first,
-                     const char **str2) const;
+  void addLine(const Format &fmt, bool justifyable);
+  void addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace);
+  void addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt);
+  auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
+      -> int32_t;
 
 public:
   void clean();
@@ -145,7 +144,7 @@ public:
    *
    * @param fmt Formatting parameters.
    */
-  void set_limits(const Format &fmt);
+  void setLimits(const Format &fmt);
 
   /**
    * @brief Start a new paragraph.
@@ -155,7 +154,7 @@ public:
    * @return true There is room for the beginning of a new paragraph.
    * @return false There is **no** room available for a new paragraph.
    */
-  bool new_paragraph(const Format &fmt, bool recover = false);
+  auto newParagraph(const Format &fmt, bool recover = false) -> bool;
 
   /**
    * @brief Signal a paragraph break
@@ -165,7 +164,7 @@ public:
    *
    * @param fmt Formatting parameters.
    */
-  void break_paragraph(const Format &fmt);
+  void breakParagraph(const Format &fmt);
 
   /**
    * @brief End the current paragraph
@@ -174,7 +173,7 @@ public:
    * @return true There is room for the end of paragraph.
    * @return false There is **no** room available the end of paragraph.
    */
-  bool end_paragraph(const Format &fmt);
+  auto endParagraph(const Format &fmt) -> bool;
 
   /**
    * @brief Line Break
@@ -183,11 +182,11 @@ public:
    * additional space will be ignored.
    *
    * @param fmt Formatting parameters.
-   * @param indent_next_line How many pixels to indent next line.
+   * @param indentNextLine How many pixels to indent next line.
    * @return true The line break has been added to the paragraph.
    * @return false There is not enough space for a line break on page
    */
-  bool line_break(const Format &fmt, int8_t indent_next_line = 0);
+  auto lineBreak(const Format &fmt, int8_t indentNextLine = 0) -> bool;
 
   /**
    * @brief Add a UTF-8 word to the paragraph.
@@ -198,7 +197,7 @@ public:
    * @return false There is not enough space to add the word on page.
    */
 
-  bool add_word(const char *word, const Format &fmt);
+  auto addWord(const char *word, const Format &fmt) -> bool;
 
   /**
    * @brief Add a UTF-8 character to the paragraph.
@@ -208,7 +207,7 @@ public:
    * @return true The character has been added to the paragraph
    * @return false There is not enough room to add the character.
    */
-  bool add_char(const char *ch, const Format &fmt);
+  auto addChar(const char *ch, const Format &fmt) -> bool;
 
   /**
    * @brief Add an picture to the paragraph.
@@ -220,7 +219,7 @@ public:
    * @return {false, picture} There is not enough room to add the picture. The picture is returned
    * to the caller.
    */
-  auto add_picture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
+  auto addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
       -> std::pair<bool, PicturePtr>;
 
   /**
@@ -233,7 +232,7 @@ public:
    * @param str Text to show
    * @param fmt Formatting parameters.
    */
-  void add_text(const std::string &str, const Format &fmt);
+  void addText(const std::string &str, const Format &fmt);
 
   /**
    * @brief Put string to the screen.
@@ -244,7 +243,7 @@ public:
    * @param pos If pos.x == -1, use screen margin positions
    * @param fmt Formatting parameters.
    */
-  void put_str_at(const std::string &str, Pos pos, const Format &fmt);
+  void putStrAt(const std::string &str, Pos pos, const Format &fmt);
 
   /**
    * @brief Put character to the screen.
@@ -255,7 +254,7 @@ public:
    * @param pos If pos.x == -1, use screen margin positions
    * @param fmt Formatting parameters.
    */
-  void put_char_at(char ch, Pos pos, const Format &fmt);
+  void putCharAt(char ch, Pos pos, const Format &fmt);
 
   /**
    * @brief Paint the display list to the screen.
@@ -263,75 +262,75 @@ public:
    * The screen is first erased and the painting process is done using
    * the content of the display list.
    *
-   * @param clear_screen Screen contain is erased before painting.
-   * @param no_full      Bypass partial update count control. Use with great caution!
-   * @param do_it        Do the painting irrelevant of the compute mode
+   * @param clearScreen Screen contain is erased before painting.
+   * @param noFull      Bypass partial update count control. Use with great caution!
+   * @param doIt        Do the painting irrelevant of the compute mode
    */
-  void paint(bool clear_screen = true, bool no_full = false, bool do_it = false);
+  void paint(bool clearScreen = true, bool noFull = false, bool doIt = false);
 
-  void show_fmt(const Format &fmt, const char *spaces) const {
+  void showFmt(const Format &fmt, const char *spaces) const {
     #if DEBUGGING
-      std::cout << spaces << "Fmt: align:" << (int)fmt.align
-                << " valign:" << (int)fmt.vertical_align << " Idx:" << fmt.font_index
-                << " Sz:" << fmt.font_size << " St:" << (int)fmt.font_style << " ind:" << fmt.indent
-                << " lhf:" << fmt.line_height_factor << " m:" << fmt.margin_bottom << ","
-                << fmt.margin_left << "," << fmt.margin_right << "," << fmt.margin_top
-                << " s:" << fmt.screen_bottom << "," << fmt.screen_left << "," << fmt.screen_right
-                << "," << fmt.screen_top << " tr:" << fmt.trim << " pr:" << fmt.pre
-                << " tt:" << (int)fmt.text_transform << " di:" << (int)fmt.display << std::endl;
+      std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
+                << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize
+                << " St:" << (int)fmt.fontStyle << " ind:" << fmt.indent
+                << " lhf:" << fmt.lineHeightFactor << " m:" << fmt.marginBottom << ","
+                << fmt.marginLeft << "," << fmt.marginRight << "," << fmt.marginTop
+                << " s:" << fmt.screenBottom << "," << fmt.screenLeft << "," << fmt.screenRight
+                << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
+                << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
     #endif
   }
 
-  bool show_cover(PicturePtr &pict);
-  void put_picture(PicturePtr picture, Pos pos);
-  void put_highlight(Dim dim, Pos pos);
-  void clear_highlight(Dim dim, Pos pos);
-  void put_rounded(Dim dim, Pos pos);
-  void clear_rounded(Dim dim, Pos pos);
-  void clear_region(Dim dim, Pos pos);
-  void set_region(Dim dim, Pos pos);
+  auto showCover(PicturePtr &pict) -> bool;
+  void putPicture(PicturePtr picture, Pos pos);
+  void putHighlight(Dim dim, Pos pos);
+  void clearHighlight(Dim dim, Pos pos);
+  void putRounded(Dim dim, Pos pos);
+  void clearRounded(Dim dim, Pos pos);
+  void clearRegion(Dim dim, Pos pos);
+  void setRegion(Dim dim, Pos pos);
 
-  void show_controls(const char *spaces) const {
+  void showControls(const char *spaces) const {
     #if DEBUGGING
-      std::cout << spaces << " pos.x:" << pos.x << " pos.y:" << pos.y << " min_x:" << min_x
-                << " max_x:" << max_x << " min_y:" << min_y << " max_y:" << max_y
-                << " para_min_x:" << para_min_x << " para_max_x:" << para_max_x
-                << " indent:" << para_indent << " width:" << line_width << std::endl;
+      std::cout << spaces << " pos.x:" << pos.x << " pos.y:" << pos.y << " minX:" << minX
+                << " maxX:" << maxX << " minY:" << minY << " maxY:" << maxY
+                << " paraMinX:" << paraMinX << " paraMaxX:" << paraMaxX << " indent:" << paraIndent
+                << " width:" << lineWidth << std::endl;
     #endif
   }
 
-  inline void set_compute_mode(ComputeMode mode) { compute_mode = mode; }
+  inline void setComputeMode(ComputeMode mode) { computeMode = mode; }
 
-  inline ComputeMode get_compute_mode() const { return compute_mode; }
-  inline int16_t paint_width() const { return max_x - min_x; }
-  inline bool is_full() const { return screen_is_full; }
-  inline bool is_empty() const { return display_list->empty(); }
-  inline bool some_data_waiting() const { return !line_list->empty(); }
-  inline const DisplayList &get_display_list() const { return *display_list; }
-  inline const DisplayList &get_line_list() const { return *line_list; }
-  inline int16_t get_pos_y() const { return pos.y; }
+  inline auto getComputeMode() const -> ComputeMode { return computeMode; }
+  inline auto paintWidth() const -> int16_t { return maxX - minX; }
+  inline auto isFull() const -> bool { return screenIsFull; }
+  inline auto isEmpty() const -> bool { return displayList->empty(); }
+  inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
+  inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
+  inline auto getLineList() const -> const DisplayList & { return *lineList; }
+  inline auto getPosY() const -> int16_t { return pos.y; }
 
-  int16_t get_pixel_value(const CSS::Value &value, const Format &fmt, int16_t ref,
-                          bool vertical = false);
-  int16_t get_point_value(const CSS::Value &value, const Format &fmt, int16_t ref);
-  float get_factor_value(const CSS::Value &value, const Format &fmt, float ref);
-  void adjust_format(DOM::Node *dom_current_node, Format &fmt, const CSSPtr &element_css,
-                     const CSSPtr &item_css);
-  void adjust_format_from_rules(Format &fmt, const CSS::RulesMap &rules);
+  auto getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical = false)
+      -> int16_t;
+  auto getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref) -> int16_t;
+  auto getFactorValue(const CSS::Value &value, const Format &fmt, float ref) -> float;
+  void adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
+                    const CSSPtr &itemCss);
+  void adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules);
 
-  inline void reset_font_index(Format &fmt, Fonts::FaceStyle style) {
-    if (style != fmt.font_style) {
+  inline void resetFontIndex(Format &fmt, Fonts::FaceStyle style) {
+    if (style != fmt.fontStyle) {
       int16_t idx = -1;
-      if ((idx = fonts.get_index(fonts.get_name(fmt.font_index), style)) == -1) {
-        // LOG_E("Font not found 2: %s %d", fonts.get_name(fmt.font_index), style);
-        idx = fonts.get_index("Default", style);
+      if ((idx = fonts.getIndex(fonts.getName(fmt.fontIndex), style)) == -1) {
+        // LOG_E("Font not found 2: %s %d", fonts.getName(fmt.fontIndex), style);
+        idx = fonts.getIndex("Default", style);
       }
       if (idx == -1) {
-        fmt.font_style = Fonts::FaceStyle::NORMAL;
-        fmt.font_index = 3;
+        fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+        fmt.fontIndex = 3;
       } else {
-        fmt.font_style = style;
-        fmt.font_index = idx;
+        fmt.fontStyle = style;
+        fmt.fontIndex = idx;
       }
     }
   }

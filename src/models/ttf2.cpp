@@ -26,10 +26,10 @@ TTF::TTF(const std::string &filename) : Font() {
     }
   }
 
-  set_font_face_from_file(filename);
+  setFontFaceFromFile(filename);
 }
 
-TTF::TTF(MemoryFontPtr buffer, int32_t buffer_size) : Font() {
+TTF::TTF(MemoryFontPtr buffer, int32_t bufferSize) : Font() {
   face = nullptr;
 
   if (library == nullptr) {
@@ -40,49 +40,49 @@ TTF::TTF(MemoryFontPtr buffer, int32_t buffer_size) : Font() {
     }
   }
 
-  set_font_face_from_memory(std::move(buffer), buffer_size);
+  setFontFaceFromMemory(std::move(buffer), bufferSize);
 }
 
 TTF::~TTF() {
   ready = false;
-  if (face != nullptr) clear_face();
+  if (face != nullptr) clearFace();
 }
 
-void TTF::clear_face() {
-  clear_cache();
+void TTF::clearFace() {
+  clearCache();
   if (face != nullptr) {
     FT_Done_Face(face);
     face = nullptr;
   }
 
-  ready             = false;
-  current_font_size = -1;
+  ready           = false;
+  currentFontSize = -1;
 }
 
-Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
+auto TTF::getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph * {
   int error;
   Glyphs::iterator git;
 
   if (face == nullptr) return nullptr;
 
-  GlyphsCache::iterator cache_it = cache.find(glyph_size);
+  GlyphsCache::iterator cacheIt = cache.find(glyphSize);
 
-  bool found = (cache_it != cache.end()) &&
-               ((git = cache_it->second.find(charcode)) != cache_it->second.end());
+  bool found =
+      (cacheIt != cache.end()) && ((git = cacheIt->second.find(charcode)) != cacheIt->second.end());
 
   if (found) {
     return git->second;
   } else {
-    if (current_font_size != glyph_size) set_font_size(glyph_size);
+    if (currentFontSize != glyphSize) setFontSize(glyphSize);
 
-    int glyph_index = FT_Get_Char_Index(face, charcode);
-    if (glyph_index == 0) {
+    int glyphIndex = FT_Get_Char_Index(face, charcode);
+    if (glyphIndex == 0) {
       LOG_D("Charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, charcode,
-            fonts_cache_index);
+            fontsCacheIndex);
       return nullptr;
     } else {
       error = FT_Load_Glyph(face,             /* handle to face object */
-                            glyph_index,      /* glyph index           */
+                            glyphIndex,       /* glyph index           */
                             FT_LOAD_DEFAULT); /* load flags            */
       if (error) {
         LOG_E("Unable to load glyph for charcode: %" PRIu32, charcode);
@@ -90,22 +90,22 @@ Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
       }
     }
 
-    Glyph *glyph = bitmap_glyph_pool.newElement();
+    Glyph *glyph = bitmapGlyphPool.newElement();
 
     if (glyph == nullptr) {
       LOG_E("Unable to allocate memory for glyph.");
-      MsgViewer::out_of_memory("glyph allocation");
+      MsgViewer::outOfMemory("glyph allocation");
     }
 
     FT_GlyphSlot slot = face->glyph;
 
-    glyph->dim.width                   = slot->metrics.width >> 6;
-    glyph->dim.height                  = slot->metrics.height >> 6;
-    glyph->line_height                 = face->size->metrics.height >> 6;
-    glyph->ligature_and_kern_pgm_index = -1;
+    glyph->dim.width               = slot->metrics.width >> 6;
+    glyph->dim.height              = slot->metrics.height >> 6;
+    glyph->lineHeight              = face->size->metrics.height >> 6;
+    glyph->ligatureAndKernPgmIndex = -1;
 
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-      if (screen.get_pixel_resolution() == Screen::PixelResolution::ONE_BIT) {
+      if (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) {
         error = FT_Render_Glyph(face->glyph,          // glyph slot
                                 FT_RENDER_MODE_MONO); // render mode
       } else {
@@ -119,19 +119,19 @@ Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
       }
     }
 
-    glyph->pitch       = slot->bitmap.pitch;
-    glyph->dim.height  = slot->bitmap.rows;
-    glyph->dim.width   = slot->bitmap.width;
-    glyph->line_height = face->size->metrics.height >> 6;
+    glyph->pitch      = slot->bitmap.pitch;
+    glyph->dim.height = slot->bitmap.rows;
+    glyph->dim.width  = slot->bitmap.width;
+    glyph->lineHeight = face->size->metrics.height >> 6;
 
     int32_t size = glyph->pitch * glyph->dim.height;
 
     if (size > 0) {
-      glyph->buffer = byte_pool_alloc(size);
+      glyph->buffer = bytePoolAlloc(size);
 
       if (glyph->buffer == nullptr) {
         LOG_E("Unable to allocate memory for glyph.");
-        MsgViewer::out_of_memory("glyph allocation");
+        MsgViewer::outOfMemory("glyph allocation");
       }
       // else {
       //   LOG_D("Allocated %d bytes for glyph.", size)
@@ -156,13 +156,13 @@ Glyph *TTF::get_glyph_internal(uint32_t charcode, int16_t glyph_size) {
     //   " y:"  << glyph->yoff <<
     //   " a:"  << glyph->advance << std::endl;
 
-    cache[current_font_size][charcode] = glyph;
+    cache[currentFontSize][charcode] = glyph;
 
     return glyph;
   }
 }
 
-bool TTF::set_font_size(int16_t size) {
+auto TTF::setFontSize(int16_t size) -> bool {
   int error = FT_Set_Char_Size(face,                // handle to face object
                                0,                   // char_width in 1/64th of points
                                size * 64,           // char_height in 1/64th of points
@@ -174,20 +174,20 @@ bool TTF::set_font_size(int16_t size) {
     return false;
   }
 
-  current_font_size = size;
+  currentFontSize = size;
   return true;
 }
 
-bool TTF::set_font_face_from_memory(MemoryFontPtr buffer, int32_t buffer_size) {
-  if (face != nullptr) clear_face();
+auto TTF::setFontFaceFromMemory(MemoryFontPtr buffer, int32_t bufferSize) -> bool {
+  if (face != nullptr) clearFace();
 
-  int error = FT_New_Memory_Face(library, (const FT_Byte *)buffer.get(), buffer_size, 0, &face);
+  int error = FT_New_Memory_Face(library, (const FT_Byte *)buffer.get(), bufferSize, 0, &face);
   if (error) {
     LOG_E("The memory font format is unsupported or is broken (%d).", error);
     return false;
   }
 
-  ready       = true;
-  memory_font = std::move(buffer);
+  ready      = true;
+  memoryFont = std::move(buffer);
   return true;
 }

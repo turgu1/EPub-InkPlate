@@ -24,8 +24,8 @@
  * Each Controller must implements the following methods (No use of abstract class):
  *
  *   - enter()                            The controller is now receiving control
- *   - leave(bool going_to_deep_sleep)    The controller is loosing control
- *   - input_event(EventMgr::Event event) An input has been received from the user
+ *   - leave(bool goingToDeepSleep)      The controller is loosing control
+ *   - inputEvent(EventMgr::Event event) An input has been received from the user
  *
  * All controllers are expected to be instanciated at boot time and always available.
  * Any new controller would require to modify the AppController methods to integrate it
@@ -63,34 +63,34 @@ public:
    * the other controllers to direct the next controller that will take
    * control.
    *
-   * @param new_ctrl The new controller to take control
+   * @param newCtrl The new controller to take control
    */
-  void set_controller(Ctrl new_ctrl);
+  void setController(Ctrl newCtrl);
 
   /**
    * @brief Manage an event
    *
    * Called when a key or the touch screen is pressed by the user. The method is transfering
-   * control to the current controller *input_event()* method.
+   * control to the current controller *inputEvent()* method.
    *
    * @param event
    */
-  void input_event(const EventMgr::Event &event);
+  void inputEvent(const EventMgr::Event &event);
 
-  void going_to_deep_sleep();
+  void goingToDeepSleep();
   void launch();
 
 private:
   static constexpr char const *TAG = "AppController";
 
   static const int LAST_COUNT = 4;
-  Ctrl current_ctrl;
-  Ctrl next_ctrl;
-  Ctrl last_ctrl[LAST_COUNT]; ///< LIFO of last controllers in use
+  Ctrl currentCtrl;
+  Ctrl nextCtrl;
+  Ctrl lastCtrl[LAST_COUNT]; ///< LIFO of last controllers in use
 };
 
 #if __APP_CONTROLLER__
-  AppController app_controller;
+  AppController appController;
 #else
-  extern AppController app_controller;
+  extern AppController appController;
 #endif

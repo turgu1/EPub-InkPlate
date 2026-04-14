@@ -18,7 +18,7 @@
 // The PictureFactory class will instanciate the proper class (PngPicture or JPegPicture)
 // depending on the filename extension.
 
-using PicturePtr = himem_unique_ptr<class Picture>;
+using PicturePtr = himemUniquePtr<class Picture>;
 
 class Picture {
 
@@ -26,35 +26,35 @@ public:
   Picture() = default;
   Picture(Dim d, FileContentPtr b) : dim(d), bitmap(std::move(b)) {}
   Picture(Dim d, const uint8_t *b, uint32_t size) : dim(d) {
-    bitmap = make_unique_himem<uint8_t[]>(size);
+    bitmap = makeUniqueHimem<uint8_t[]>(size);
     memcpy(bitmap.get(), b, size);
-    file_size = size;
+    fileSize = size;
   }
 
 protected:
   Dim dim{0, 0};
   FileContentPtr bitmap{nullptr};
-  bool size_retrieved{false};
-  Dim orig_dim{0, 0};
-  uint32_t file_size{0};
+  bool sizeRetrieved{false};
+  Dim origDim{0, 0};
+  uint32_t fileSize{0};
 
 private:
   static constexpr char const *TAG = "Picture";
 
 public:
-  static inline auto Make() { return make_unique_himem<Picture>(); }
+  static inline auto Make() { return makeUniqueHimem<Picture>(); }
   static inline auto Make(Dim d, FileContentPtr b) {
-    return make_unique_himem<Picture>(d, std::move(b));
+    return makeUniqueHimem<Picture>(d, std::move(b));
   }
   static inline auto Make(Dim d, const uint8_t *b, uint32_t size) {
-    return make_unique_himem<Picture>(d, b, size);
+    return makeUniqueHimem<Picture>(d, b, size);
   }
 
   virtual ~Picture() = default;
 
-  inline const auto get_orig_dim() const -> Dim { return orig_dim; }
-  inline const auto get_dim() const -> Dim { return dim; }
-  inline const auto get_bitmap() const -> uint8_t * { return bitmap.get(); }
+  inline auto getOrigDim() const -> const Dim { return origDim; }
+  inline auto getDim() const -> const Dim { return dim; }
+  inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
 
   void resize(Dim new_dim);
 };

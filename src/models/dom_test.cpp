@@ -37,37 +37,40 @@ static int s_fail = 0;
 // ===========================================================================
 // DOM::Make() — instantiation and basic structure
 // ===========================================================================
-static void test_dom_make() {
+static void testDomMake() {
   DT_LOG("--- DOM::Make() ---");
 
   auto dom = DOM::Make();
 
-  DT_CHECK(dom != nullptr,          "DOM::Make() returns a non-null pointer");
-  DT_CHECK(dom->body != nullptr,    "body node is initialised after Make()");
+  DT_CHECK(dom != nullptr, "DOM::Make() returns a non-null pointer");
+  DT_CHECK(dom->body != nullptr, "body node is initialised after Make()");
   DT_CHECK(dom->body->tag == DOM::Tag::BODY, "body node carries the BODY tag");
-  DT_CHECK(dom->body->father == nullptr,    "body node has no parent");
+  DT_CHECK(dom->body->father == nullptr, "body node has no parent");
 }
 
 // ===========================================================================
-// DOM::add_child() — child-node creation
+// DOM::addChild() — child-node creation
 // ===========================================================================
-static void test_dom_add_child() {
-  DT_LOG("--- DOM::add_child() ---");
+static void testDomAddChild() {
+  DT_LOG("--- DOM::addChild() ---");
 
   auto dom = DOM::Make();
-  if (!dom) { DT_LOG("SKIP add_child tests — Make() returned null"); return; }
+  if (!dom) {
+    DT_LOG("SKIP addChild tests — Make() returned null");
+    return;
+  }
 
-  DOM::Node *p = dom->add_child(dom->body, DOM::Tag::P);
+  DOM::Node *p = dom->addChild(dom->body, DOM::Tag::P);
 
-  DT_CHECK(p != nullptr,               "add_child returns a non-null node");
-  DT_CHECK(p->tag == DOM::Tag::P,      "child node carries the requested tag");
-  DT_CHECK(p->father == dom->body,     "child's father points to the parent node");
+  DT_CHECK(p != nullptr, "addChild returns a non-null node");
+  DT_CHECK(p->tag == DOM::Tag::P, "child node carries the requested tag");
+  DT_CHECK(p->father == dom->body, "child's father points to the parent node");
 
-  DOM::Node *span = dom->add_child(p, DOM::Tag::SPAN);
+  DOM::Node *span = dom->addChild(p, DOM::Tag::SPAN);
 
-  DT_CHECK(span != nullptr,            "nested add_child returns a non-null node");
+  DT_CHECK(span != nullptr, "nested addChild returns a non-null node");
   DT_CHECK(span->tag == DOM::Tag::SPAN, "nested child carries the requested tag");
-  DT_CHECK(span->father == p,          "nested child's father points to correct parent");
+  DT_CHECK(span->father == p, "nested child's father points to correct parent");
 }
 
 } // namespace
@@ -75,12 +78,12 @@ static void test_dom_add_child() {
 // ===========================================================================
 // Public entry point
 // ===========================================================================
-bool dom_run_tests() {
+auto domRunTests() -> bool {
   s_pass = 0;
   s_fail = 0;
 
-  test_dom_make();
-  test_dom_add_child();
+  testDomMake();
+  testDomAddChild();
 
   DT_LOG("--- DOM tests complete: %d passed, %d failed ---", s_pass, s_fail);
   return s_fail == 0;

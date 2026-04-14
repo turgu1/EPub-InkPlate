@@ -12,7 +12,7 @@
     #include <lwip/netdb.h>
   #endif
 
-  bool NTP::error(const char *msg) {
+  auto NTP::error(const char *msg) -> bool {
     LOG_E("%s", msg);
 
     #if EPUB_INKPLATE_BUILD
@@ -22,7 +22,7 @@
     return false;
   }
 
-  bool NTP::get_and_set_time() {
+  auto NTP::getAndSetTime() -> bool {
     #if EPUB_INKPLATE_BUILD
 
       int sockfd;
@@ -32,57 +32,57 @@
 
       NTPPacket packet;
 
-      std::string host_name;
+      std::string hostName;
 
-      config.get(Config::Ident::NTP_SERVER, host_name);
+      config.get(Config::Ident::NTP_SERVER, hostName);
 
       memset(&packet, 0, sizeof(NTPPacket));
       packet.li_vn_mode = 0b00011011; // li = 0, vn = 3, mode = 3
 
-      if (wifi.start_sta()) {
+      if (wifi.startSta()) {
 
         // Create a UDP socket, convert the host-name to an IP address, set the port number,
         // connect to the server, send the packet, and then read in the return packet.
 
-        struct sockaddr_in serv_addr; // Server address data structure.
-        struct hostent *server;       // Server data structure.
+        struct sockaddr_in serverAddr; // Server address data structure.
+        struct hostent *server;        // Server data structure.
 
         sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); // Create a UDP socket.
 
         if (sockfd < 0) return error("ERROR opening socket");
 
-        server = gethostbyname(host_name.c_str()); // Convert URL to IP.
+        server = gethostbyname(hostName.c_str()); // Convert URL to IP.
 
         if (server == NULL) return error("ERROR, no such host");
 
         // Zero out the server address structure.
 
-        bzero((char *)&serv_addr, sizeof(serv_addr));
+        bzero((char *)&serverAddr, sizeof(serverAddr));
 
-        serv_addr.sin_family = AF_INET;
+        serverAddr.sin_family = AF_INET;
 
         // Copy the server's IP address to the server address structure.
 
-        bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+        bcopy((char *)server->h_addr, (char *)&serverAddr.sin_addr.s_addr, server->h_length);
 
         // Convert the port number integer to network big-endian style and save it to the server
         // address structure.
 
-        serv_addr.sin_port = htons(NTP_PORT);
+        serverAddr.sin_port = htons(NTP_PORT);
 
         // Call up the server using its IP address and port number.
 
-        if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+        if (connect(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
           return error("ERROR connecting");
 
         // Send it the NTP packet it wants. If n == -1, it failed.
 
-        if (write(sockfd, (char *)&packet, sizeof(ntp_packet)) < 0)
+        if (write(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0)
           return error("ERROR writing to socket");
 
         // Wait and receive the packet back from the server. If n == -1, it failed.
 
-        if (read(sockfd, (char *)&packet, sizeof(ntp_packet)) < 0)
+        if (read(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0)
           return error("ERROR reading from socket");
 
         wifi.stop();
@@ -107,7 +107,7 @@
 
         LOG_I("Time: %s", ctime((const time_t *)&time));
 
-        Clock::set_date_time(time);
+        Clock::setDateTime(time);
       } else {
         return false;
       }

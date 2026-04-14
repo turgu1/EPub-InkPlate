@@ -37,13 +37,13 @@ public:
     WHITE = 0xFF, BLACK = 0
   };
 
-  void draw_picture(PicturePtr &picture, Pos pos);
-  void draw_glyph(const unsigned char *bitmap_data, Dim dim, Pos pos, uint16_t pitch);
-  void draw_rectangle(Dim dim, Pos pos, Color color);
-  void draw_round_rectangle(Dim dim, Pos pos, Color color);
-  void colorize_region(Dim dim, Pos pos, Color color);
+  void drawPicture(PicturePtr &picture, Pos pos);
+  void drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch);
+  void drawRectangle(Dim dim, Pos pos, Color color);
+  void drawRoundRectangle(Dim dim, Pos pos, Color color);
+  void colorizeRegion(Dim dim, Pos pos, Color color);
   void clear();
-  void update(bool no_full = false); // Parameter only used by the InkPlate version
+  void update(bool noFull = false); // Parameter only used by the InkPlate version
   void test();
 
 private:
@@ -62,27 +62,27 @@ private:
     int rows, cols, stride;
   };
 
-  PictureData picture_data;
-  PixelResolution pixel_resolution;
+  PictureData pictureData;
+  PixelResolution pixelResolution;
   Orientation orientation;
 
   enum class Corner : uint8_t {
     TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT
   };
-  void draw_arc(uint16_t x_mid, uint16_t y_mid, uint8_t radius, Corner corner, Color color);
+  void drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color);
 
 public:
-  static Screen &get_singleton() noexcept { return singleton; }
+  static Screen &getSingleton() noexcept { return singleton; }
   void setup(PixelResolution resolution, Orientation orientation);
-  void set_pixel_resolution(PixelResolution resolution, bool force = false);
-  void set_orientation(Orientation orient);
-  inline PixelResolution get_pixel_resolution() { return pixel_resolution; }
-  GtkImage *get_picture() { return picture_data.picture; }
+  void setPixelResolution(PixelResolution resolution, bool force = false);
+  void setOrientation(Orientation orient);
+  inline PixelResolution getPixelResolution() { return pixelResolution; }
+  GtkImage *getPicture() { return pictureData.picture; }
   // void to_user_coord(uint16_t &x, uint16_t &y) {}
-  inline void force_full_update() {}
+  inline void forceFullUpdate() {}
 
-  inline static uint16_t get_width() { return width; }
-  inline static uint16_t get_height() { return height; }
+  inline static uint16_t getWidth() { return width; }
+  inline static uint16_t getHeight() { return height; }
 
   #if TOUCH_TRIAL
     GtkWidget *window, *picture_box;
@@ -93,7 +93,7 @@ public:
 };
 
 #if __SCREEN__
-  Screen &screen = Screen::get_singleton();
+  Screen &screen = Screen::getSingleton();
 #else
   extern Screen &screen;
 #endif

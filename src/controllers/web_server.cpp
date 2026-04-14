@@ -45,11 +45,11 @@
     char scratch[SCRATCH_BUFSIZE];
   };
 
-  static FileServerData *server_data = nullptr;
+  static FileServerData *serverData = nullptr;
 
   // Redirects incoming GET request for /index.html
 
-  static esp_err_t index_html_get_handler(httpd_req_t *req) {
+  static auto indexHtmlGetHandler(httpd_req_t *req) -> esp_err_t {
     httpd_resp_set_status(req, "307 Temporary Redirect");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_send(req, NULL, 0); // Response body can be empty
@@ -58,7 +58,7 @@
 
   // Respond with an icon file embedded in flash.
 
-  static esp_err_t favicon_get_handler(httpd_req_t *req) {
+  static auto faviconGetHandler(httpd_req_t *req) -> esp_err_t {
     extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
     extern const unsigned char favicon_ico_end[] asm("_binary_favicon_ico_end");
     const size_t favicon_ico_size = (favicon_ico_end - favicon_ico_start);
@@ -71,7 +71,7 @@
    * a list of all files and folders under the requested path.
    * In case of SPIFFS this returns empty list when path is any
    * string other than '/', since SPIFFS doesn't support directories */
-  static esp_err_t http_resp_dir_html(httpd_req_t *req, const char *dirpath) {
+  static auto httpRespDirHtml(httpd_req_t *req, const char *dirpath) -> esp_err_t {
     char entrysize[16];
     const char *entrytype;
 
@@ -176,15 +176,15 @@
       itoa(entry_stat.st_size, entrysize, 10);
       LOG_I("Found %s : %s (%ld bytes)", entrytype, entry->d_name, entry_stat.st_size);
 
-      std::string the_size;
-      uint8_t length       = strlen(entrysize);
-      uint8_t comma_offset = length % 3;
+      std::string theSize;
+      uint8_t length      = strlen(entrysize);
+      uint8_t commaOffset = length % 3;
 
       for (uint8_t i = 0; i < length; i++) {
-        if (((i % 3) == comma_offset) && (i != 0)) {
-          the_size += ',';
+        if (((i % 3) == commaOffset) && (i != 0)) {
+          theSize += ',';
         }
-        the_size += entrysize[i];
+        theSize += entrysize[i];
       }
 
       httpd_resp_sendstr_chunk(req, "<tr><td><a href=\"");
@@ -198,7 +198,7 @@
       httpd_resp_sendstr_chunk(req, "</a></td><td>");
       httpd_resp_sendstr_chunk(req, entrytype);
       httpd_resp_sendstr_chunk(req, "</td><td>");
-      httpd_resp_sendstr_chunk(req, the_size.c_str());
+      httpd_resp_sendstr_chunk(req, theSize.c_str());
       httpd_resp_sendstr_chunk(req, "</td><td>");
       httpd_resp_sendstr_chunk(req, "<form method=\"post\" action=\"/delete");
       httpd_resp_sendstr_chunk(req, req->uri);
@@ -218,25 +218,27 @@
     return ESP_OK;
   }
 
-  inline bool is_file_ext(const std::string &filename, const char *ext) {
+  inline auto isFileExt(const std::string &filename, const char *ext) -> bool {
     return (filename.substr(filename.size() - sizeof(ext), sizeof(ext)).compare(ext) == 0);
   }
 
-  static esp_err_t set_content_type_from_file(httpd_req_t *req, const std::string &filename) {
-    if (is_file_ext(filename, ".epub")) {
+  static auto setContentTypeFromFile(httpd_req_t *req, const std::string &filename)
+      -> esp_err_t {
+    if (isFileExt(filename, ".epub")) {
       return httpd_resp_set_type(req, "application/epub+zip");
     }
 
     return httpd_resp_set_type(req, "text/plain");
   }
 
-  extern unsigned char hex_to_bin(char ch);
+  extern unsigned char hexToBin(char ch);
 
-  static std::string get_path_from_uri(std::string &dest, const char *base_path, const char *uri) {
-    LOG_D("get_path_from_uri, base_path: %s, uri: %s", base_path, uri);
+  static auto getPathFromUri(std::string &dest, const char *base_path, const char *uri)
+      -> std::string {
+    LOG_D("getPathFromUri, base_path: %s, uri: %s", base_path, uri);
 
-    const size_t base_pathlen = strlen(base_path);
-    size_t pathlen            = strlen(uri);
+    const size_t basePathLen = strlen(base_path);
+    size_t pathlen           = strlen(uri);
 
     const char *quest = strchr(uri, '?');
     if (quest) {
@@ -247,50 +249,50 @@
       pathlen = MIN(pathlen, hash - uri);
     }
 
-    dest               = base_path;
-    const char *str_in = uri;
-    int count          = pathlen;
+    dest              = base_path;
+    const char *strIn = uri;
+    int count         = pathlen;
 
     while (count > 0) {
-      if (str_in[0] == '%') {
-        dest.push_back((char)((hex_to_bin(str_in[1]) << 4) + hex_to_bin(str_in[2])));
+      if (strIn[0] == '%') {
+        dest.push_back((char)((hexToBin(strIn[1]) << 4) + hexToBin(strIn[2])));
         count -= 3;
-        str_in += 3;
+        strIn += 3;
       } else {
-        dest.push_back(*str_in++);
+        dest.push_back(*strIn++);
         count--;
       }
     }
 
-    return dest.substr(base_pathlen);
+    return dest.substr(basePathLen);
   }
 
-  // ----- download_handler() -----
+  // ----- downloadHandler() -----
 
-  static esp_err_t download_handler(httpd_req_t *req) {
-    LOG_D("download_handler(%s) %d", req->uri, (int)req->user_ctx);
+  static auto downloadHandler(httpd_req_t *req) -> esp_err_t {
+    LOG_D("downloadHandler(%s) %d", req->uri, (int)req->user_ctx);
 
     FILE *fd = nullptr;
-    struct stat file_stat;
+    struct stat fileStat;
 
     std::string filepath;
     std::string filename =
-        get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path, req->uri);
+        getPathFromUri(filepath, ((FileServerData *)req->user_ctx)->base_path, req->uri);
 
     LOG_D("filepath = %s, filename = %s", filepath.c_str(), filename.c_str());
 
     if (filename.back() == '/') {
-      return http_resp_dir_html(req, filepath.c_str());
+      return httpRespDirHtml(req, filepath.c_str());
     }
 
-    if (stat(filepath.c_str(), &file_stat) == -1) {
+    if (stat(filepath.c_str(), &fileStat) == -1) {
       LOG_D("Filename: %s", filename.c_str());
       /* If file not present check if URL
        * corresponds to one of the hardcoded paths */
       if (filename.compare("/index.html") == 0) {
-        return index_html_get_handler(req);
+        return indexHtmlGetHandler(req);
       } else if (filename.compare("/favicon.ico") == 0) {
-        return favicon_get_handler(req);
+        return faviconGetHandler(req);
       }
       LOG_E("Failed to stat file : %s", filepath.c_str());
       httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
@@ -304,8 +306,8 @@
       return ESP_FAIL;
     }
 
-    LOG_I("Sending file : %s (%ld bytes)...", filename.c_str(), file_stat.st_size);
-    set_content_type_from_file(req, filename);
+    LOG_I("Sending file : %s (%ld bytes)...", filename.c_str(), fileStat.st_size);
+    setContentTypeFromFile(req, filename);
 
     // Retrieve the pointer to scratch buffer for temporary storage
     char *chunk = ((FileServerData *)req->user_ctx)->scratch;
@@ -332,18 +334,18 @@
     return ESP_OK;
   }
 
-  // ----- upload_handler() -----
+  // ----- uploadHandler() -----
 
-  static esp_err_t upload_handler(httpd_req_t *req) {
-    LOG_D("upload_handler(%s)", req->uri);
+  static auto uploadHandler(httpd_req_t *req) -> esp_err_t {
+    LOG_D("uploadHandler(%s)", req->uri);
 
     FILE *fd = NULL;
-    struct stat file_stat;
+    struct stat fileStat;
 
     std::string filepath;
     /* Skip leading "/upload" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
-    std::string filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
+    std::string filename = getPathFromUri(filepath, ((FileServerData *)req->user_ctx)->base_path,
                                              req->uri + sizeof("/upload") - 1);
     if (filename[filename.size() - 1] == '/') {
       LOG_E("Invalid filename : %s", filename.c_str());
@@ -351,7 +353,7 @@
       return ESP_FAIL;
     }
 
-    if (stat(filepath.c_str(), &file_stat) == 0) {
+    if (stat(filepath.c_str(), &fileStat) == 0) {
       LOG_E("File already exists : %s", filepath.c_str());
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
       return ESP_FAIL;
@@ -422,17 +424,17 @@
     return ESP_OK;
   }
 
-  // ----- delete_handler() -----
+  // ----- deleteHandler() -----
 
-  static esp_err_t delete_handler(httpd_req_t *req) {
-    LOG_D("delete_handler(%s)", req->uri);
+  static auto deleteHandler(httpd_req_t *req) -> esp_err_t {
+    LOG_D("deleteHandler(%s)", req->uri);
 
-    struct stat file_stat;
+    struct stat fileStat;
 
     std::string filepath;
     /* Skip leading "/delete" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
-    std::string filename = get_path_from_uri(filepath, ((FileServerData *)req->user_ctx)->base_path,
+    std::string filename = getPathFromUri(filepath, ((FileServerData *)req->user_ctx)->base_path,
                                              req->uri + sizeof("/delete") - 1);
     if (filename[filename.size() - 1] == '/') {
       LOG_E("Invalid filename : %s", filename.c_str());
@@ -440,7 +442,7 @@
       return ESP_FAIL;
     }
 
-    if (stat(filepath.c_str(), &file_stat) == -1) {
+    if (stat(filepath.c_str(), &fileStat) == -1) {
       LOG_E("File does not exist : %s", filepath.c_str());
       httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
       return ESP_FAIL;
@@ -449,25 +451,25 @@
     LOG_I("Deleting file : %s", filepath.c_str());
     unlink(filepath.c_str());
 
-    int pos = filepath.size() - 5;
-    if (filepath.substr(pos).compare(".epub") == 0) {
-      filepath.replace(pos, 5, ".pars");
+    int dotPos = filepath.size() - 5;
+    if (filepath.substr(dotPos).compare(".epub") == 0) {
+      filepath.replace(dotPos, 5, ".pars");
 
-      if (stat(filepath.c_str(), &file_stat) != -1) {
+      if (stat(filepath.c_str(), &fileStat) != -1) {
         LOG_I("Deleting file : %s", filepath.c_str());
         unlink(filepath.c_str());
       }
 
-      filepath.replace(pos, 5, ".locs");
+      filepath.replace(dotPos, 5, ".locs");
 
-      if (stat(filepath.c_str(), &file_stat) != -1) {
+      if (stat(filepath.c_str(), &fileStat) != -1) {
         LOG_I("Deleting file : %s", filepath.c_str());
         unlink(filepath.c_str());
       }
 
-      filepath.replace(pos, 5, ".toc");
+      filepath.replace(dotPos, 5, ".toc");
 
-      if (stat(filepath.c_str(), &file_stat) != -1) {
+      if (stat(filepath.c_str(), &fileStat) != -1) {
         LOG_I("Deleting file : %s", filepath.c_str());
         unlink(filepath.c_str());
       }
@@ -480,21 +482,21 @@
     return ESP_OK;
   }
 
-  // ----- http_server_start() -----
+  // ----- httpServerStart() -----
 
-  static esp_err_t http_server_start() {
-    if (server_data != nullptr) {
+  static auto httpServerStart() -> esp_err_t {
+    if (serverData != nullptr) {
       LOG_E("File server already started");
       return ESP_ERR_INVALID_STATE;
     }
 
     /* Allocate memory for server data */
-    server_data = (FileServerData *)calloc(1, sizeof(FileServerData));
-    if (server_data == nullptr) {
+    serverData = (FileServerData *)calloc(1, sizeof(FileServerData));
+    if (serverData == nullptr) {
       LOG_E("Failed to allocate memory for server data");
       return ESP_ERR_NO_MEM;
     }
-    strcpy(server_data->base_path, "/sdcard/books");
+    strcpy(serverData->base_path, "/sdcard/books");
 
     httpd_config_t httpd_config = HTTPD_DEFAULT_CONFIG();
 
@@ -514,41 +516,40 @@
 
     httpd_uri_t file_download = {.uri      = "/*", // Match all URIs of type /path/to/file
                                  .method   = HTTP_GET,
-                                 .handler  = download_handler,
-                                 .user_ctx = server_data};
+                                 .handler  = downloadHandler,
+                                 .user_ctx = serverData};
 
     httpd_register_uri_handler(server, &file_download);
 
     httpd_uri_t file_upload = {.uri    = "/upload/*", // Match all URIs of type /upload/path/to/file
                                .method = HTTP_POST,
-                               .handler  = upload_handler,
-                               .user_ctx = server_data};
+                               .handler  = uploadHandler,
+                               .user_ctx = serverData};
 
     httpd_register_uri_handler(server, &file_upload);
 
     httpd_uri_t file_delete = {.uri    = "/delete/*", // Match all URIs of type /delete/path/to/file
                                .method = HTTP_POST,
-                               .handler  = delete_handler,
-                               .user_ctx = server_data};
+                               .handler  = deleteHandler,
+                               .user_ctx = serverData};
 
     httpd_register_uri_handler(server, &file_delete);
 
     return ESP_OK;
   }
 
-  // ----- http_server_stop() -----
+  // ----- httpServerStop() -----
 
-  static void http_server_stop() {
-    if (server_data != nullptr) {
+  static void httpServerStop() {
+    if (serverData != nullptr) {
       httpd_stop(server);
-      free(server_data);
-      server_data = nullptr;
+      free(serverData);
+      serverData = nullptr;
     }
   }
 
-  bool start_web_server(WebServerMode server_mode) {
-    page_locs.abort_threads();
-    epub.close_file();
+  auto startWebServer(WebServerMode serverMode) -> bool {
+    pageLocs.abortThreads();
 
     MsgViewer::show(
         MsgViewer::MsgType::WIFI, false, true, "Web Server Starting",
@@ -560,10 +561,10 @@
       #define MSG "Press a key"
     #endif
 
-    if (((server_mode == WebServerMode::STA) && wifi.start_sta()) ||
-        ((server_mode == WebServerMode::AP) && wifi.start_ap())) {
-      if (http_server_start() == ESP_OK) {
-        esp_ip4_addr_t ip = wifi.get_ip_address();
+    if (((serverMode == WebServerMode::STA) && wifi.startSta()) ||
+        ((serverMode == WebServerMode::AP) && wifi.startAp())) {
+      if (httpServerStart() == ESP_OK) {
+        esp_ip4_addr_t ip = wifi.getIpAddress();
         MsgViewer::show(MsgViewer::MsgType::WIFI, true, true, "Web Server",
                         "The Web server is now running at ip " IPSTR ". To stop it, please " MSG
                         ".",
@@ -584,8 +585,8 @@
     return true;
   }
 
-  void stop_web_server() {
-    http_server_stop();
+  void stopWebServer() {
+    httpServerStop();
     wifi.stop();
   }
 

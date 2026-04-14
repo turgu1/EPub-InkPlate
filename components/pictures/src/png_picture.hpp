@@ -8,7 +8,7 @@
 #include "himem.hpp"
 #include "picture.hpp"
 
-using PngPicturePtr = himem_unique_ptr<class PngPicture>;
+using PngPicturePtr = himemUniquePtr<class PngPicture>;
 
 class PngPicture : public Picture {
 
@@ -17,28 +17,28 @@ private:
   const uint16_t WORK_SIZE         = 10 * 1024;
   int8_t scale;
 
-  PngPicture(std::string filename, Dim max, bool load_bitmap);
+  PngPicture(std::string filename, Dim max, bool loadBitmap);
 
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(std::string filename, Dim max, bool load_bitmap) {
-    return make_unique_himem<PngPicture>(filename, max, load_bitmap);
+  static inline auto Make(std::string filename, Dim max, bool loadBitmap) {
+    return makeUniqueHimem<PngPicture>(filename, max, loadBitmap);
   }
 
   ~PngPicture() override = default;
 
-  inline int8_t get_scale_factor() { return scale; }
+  inline int8_t getScaleFactor() { return scale; }
 
   struct PictureData {
     Dim dim{0, 0};
     uint8_t *bitmap{nullptr};
-  } picture_data;
+  } pictureData;
 
-  inline const PictureData *get_picture_data() {
-    picture_data = {.dim = dim, .bitmap = bitmap.get()};
-    return &picture_data;
+  inline const PictureData *getPictureData() {
+    pictureData = {.dim = dim, .bitmap = bitmap.get()};
+    return &pictureData;
   }
 };

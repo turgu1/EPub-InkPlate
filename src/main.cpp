@@ -55,7 +55,7 @@
 
     LOG_D("EPub-Inkplate Startup. (%" PRIi64 ")", esp_timer_get_time());
 
-    bool nvs_mgr_res = nvs_mgr.setup();
+    bool nvsMgrRes = nvsMgr.setup();
 
     #if DEBUGGING
       for (int i = 10; i > 0; i--) {
@@ -76,7 +76,7 @@
     #endif
 
     #if TEST_DOM
-      if (!dom_run_tests()) {
+      if (!domRunTests()) {
         LOG_E("DOM tests failed.");
       } else {
         LOG_I("Yeah! DOM tests passed!");
@@ -106,20 +106,20 @@
         #define LEVEL 1
       #endif
 
-      bool inkplate_err = !inkplate_platform.setup(true);
-      if (inkplate_err) {
+      bool inkplateErr = !inkplate_platform.setup(true);
+      if (inkplateErr) {
         LOG_E("Inkplate Platform Setup Error. Restarting!");
         inkplate_platform.restart();
       }
 
-      bool config_err = !config.read();
-      if (config_err) LOG_E("Config Error.");
+      bool configErr = !config.read();
+      if (configErr) LOG_E("Config Error.");
       #if DATE_TIME_RTC
         else {
-          std::string time_zone;
+          std::string timeZone;
 
-          config.get(Config::Ident::TIME_ZONE, time_zone);
-          setenv("TZ", time_zone.c_str(), 1);
+          config.get(Config::Ident::TIME_ZONE, timeZone);
+          setenv("TZ", timeZone.c_str(), 1);
         }
       #endif
 
@@ -139,14 +139,14 @@
 
         screen.setup(resolution, orientation);
 
-        event_mgr.setup();
-        event_mgr.set_orientation(orientation);
+        eventMgr.setup();
+        eventMgr.setOrientation(orientation);
 
         #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-          back_lit.setup();
+          backLit.setup();
         #endif
 
-        if (!nvs_mgr_res) {
+        if (!nvsMgrRes) {
           MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
                           "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG);
 
@@ -154,7 +154,7 @@
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
-        if (config_err) {
+        if (configErr) {
           MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
                           "Unable to read/save configuration file. Entering Deep Sleep. " MSG);
           ESP::delay(500);
@@ -163,9 +163,9 @@
 
         MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 
-        books_dir_controller.setup();
+        booksDirController.setup();
         LOG_D("Initialization completed");
-        app_controller.start();
+        appController.start();
       } else {
         LOG_E("Font loading error.");
         MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
@@ -199,10 +199,10 @@
 
     printf("silicon revision %d, ", chip_info.revision);
 
-    uint32_t size_flash_chip;
-    esp_flash_get_size(NULL, &size_flash_chip);
+    uint32_t flashChipSize;
+    esp_flash_get_size(NULL, &flashChipSize);
 
-    printf("%" PRIu32 "MB %s flash\n", size_flash_chip / (1024 * 1024),
+    printf("%" PRIu32 "MB %s flash\n", flashChipSize / (1024 * 1024),
            (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
     printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
@@ -244,23 +244,23 @@
 
   static const char *TAG = "Main";
 
-  void exit_app() {
-    fonts.clear_glyph_caches();
+  void exitApp() {
+    fonts.clearGlyphCaches();
     fonts.clear(true);
   }
 
-  int main(int argc, char **argv) {
-    bool config_err = !config.read();
-    if (config_err) LOG_E("Config Error.");
+  auto main(int argc, char **argv) -> int {
+    bool configErr = !config.read();
+    if (configErr) LOG_E("Config Error.");
 
     #if DEBUGGING
       config.show();
     #endif
 
-    // DebugTool::print_all_class_sizes();
+    // DebugTool::printAllClassSizes();
 
     #if TEST_DOM
-      if (!dom_run_tests()) {
+      if (!domRunTests()) {
         LOG_E("DOM tests failed.");
       } else {
         LOG_I("Yeah! DOM tests passed!");
@@ -275,8 +275,8 @@
       config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
       screen.setup(resolution, orientation);
 
-      event_mgr.setup();
-      books_dir_controller.setup();
+      eventMgr.setup();
+      booksDirController.setup();
 
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "the WakeUp button"
@@ -284,7 +284,7 @@
     #define MSG "a key"
       #endif
 
-      if (config_err) {
+      if (configErr) {
         MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
                         "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG
                         " to restart.");
@@ -297,7 +297,7 @@
         testing::InitGoogleTest();
         return RUN_ALL_TESTS();
       #else
-        app_controller.start();
+        appController.start();
       #endif
     } else {
       MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",

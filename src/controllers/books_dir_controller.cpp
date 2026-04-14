@@ -22,66 +22,66 @@ void BooksDirController::setup() {
   // If the user was reading a book at the last entry to deep sleep, it will be
   // shown on screen instead of the books directory list.
 
-  current_book_index         = -1;
-  last_read_book_index       = -1;
-  book_page_id.itemref_index = -1;
-  book_page_id.offset        = -1;
-  book_was_shown             = false;
+  currentBookIndex        = -1;
+  lastReadBookIndex       = -1;
+  bookPageId.itemrefIndex = -1;
+  bookPageId.offset       = -1;
+  bookWasShown            = false;
 
   #if EPUB_INKPLATE_BUILD
 
     int16_t dummy;
-    if (!books_dir.read_books_directory(nullptr, dummy)) {
+    if (!booksDir.readBooksDirectory(nullptr, dummy)) {
       LOG_E("There was issues reading books directory.");
     } else {
 
-      NVSMgr::NVSData nvs_data;
+      NVSMgr::NVSData nvsData;
       uint32_t id;
 
-      if (nvs_mgr.get_last(id, nvs_data)) {
-        book_page_id.itemref_index = nvs_data.itemref_index;
-        book_page_id.offset        = nvs_data.offset;
-        book_was_shown             = nvs_data.was_shown;
+      if (nvsMgr.getLast(id, nvsData)) {
+        bookPageId.itemrefIndex = nvsData.itemrefIndex;
+        bookPageId.offset       = nvsData.offset;
+        bookWasShown            = nvsData.wasShown;
 
         int16_t idx;
-        if ((idx = books_dir.get_sorted_idx_from_id(id)) != -1) {
+        if ((idx = booksDir.getSortedIdxFromId(id)) != -1) {
 
-          last_read_book_index = current_book_index = idx;
+          lastReadBookIndex = currentBookIndex = idx;
 
-          // LOG_D("Last book filename: %s",  book_fname);
-          LOG_D("Last book ref index: %" PRIi16, book_page_id.itemref_index);
-          LOG_D("Last book offset: %" PRIi32, book_page_id.offset);
-          LOG_D("Show it now: %s", book_was_shown ? "yes" : "no");
+          // LOG_D("Last book filename: %s",  bookFilenameBuffer);
+          LOG_D("Last book ref index: %" PRIi16, bookPageId.itemrefIndex);
+          LOG_D("Last book offset: %" PRIi32, bookPageId.offset);
+          LOG_D("Show it now: %s", bookWasShown ? "yes" : "no");
         }
       }
     }
 
   #else
 
-    char *book_fname = new char[256];
-    char *filename   = nullptr;
+    char *bookFilenameBuffer = new char[256];
+    char *filename           = nullptr;
 
-    book_fname[0] = 0;
+    bookFilenameBuffer[0] = 0;
 
     FILE *f  = fopen(MAIN_FOLDER "/last_book.txt", "r");
     filename = nullptr;
     if (f != nullptr) {
 
-      if (fgets(book_fname, 256, f)) {
-        int16_t size = strlen(book_fname) - 1;
-        if (book_fname[size] == '\n') book_fname[size] = 0;
+      if (fgets(bookFilenameBuffer, 256, f)) {
+        int16_t size = strlen(bookFilenameBuffer) - 1;
+        if (bookFilenameBuffer[size] == '\n') bookFilenameBuffer[size] = 0;
 
         char buffer[20];
         if (fgets(buffer, 20, f)) {
-          book_page_id.itemref_index = atoi(buffer);
+          bookPageId.itemrefIndex = atoi(buffer);
 
           if (fgets(buffer, 20, f)) {
-            book_page_id.offset = atoi(buffer);
+            bookPageId.offset = atoi(buffer);
 
             if (fgets(buffer, 20, f)) {
-              int8_t was_shown = atoi(buffer);
-              filename         = book_fname;
-              book_was_shown   = (bool)was_shown;
+              int8_t wasShown = atoi(buffer);
+              filename        = bookFilenameBuffer;
+              bookWasShown    = (bool)wasShown;
             }
           }
         }
@@ -90,83 +90,83 @@ void BooksDirController::setup() {
       fclose(f);
     }
 
-    int16_t db_idx = -1;
-    // Read the directory, returning the book index (db_idx).
-    if (!books_dir.read_books_directory(filename, db_idx)) {
+    int16_t dbIdx = -1;
+    // Read the directory, returning the book index (dbIdx).
+    if (!booksDir.readBooksDirectory(filename, dbIdx)) {
       LOG_E("There was issues reading books directory.");
     }
 
-    // The retrieved db_idx is the index in the database of the last book
+    // The retrieved dbIdx is the index in the database of the last book
     // read by the user. We need the
     // index in the sorted list of books as this is what the
     // BookController expect.
 
-    if (db_idx != -1) {
-      last_read_book_index = books_dir.get_sorted_idx(db_idx);
-      current_book_index   = last_read_book_index;
-      book_filename        = book_fname;
+    if (dbIdx != -1) {
+      lastReadBookIndex = booksDir.getSortedIdx(dbIdx);
+      currentBookIndex  = lastReadBookIndex;
+      bookFilename      = bookFilenameBuffer;
     }
 
-    LOG_D("Book to show: idx:%d page:(%d, %d) was_shown:%s", last_read_book_index,
-          book_page_id.itemref_index, book_page_id.offset, book_was_shown ? "yes" : "no");
+    LOG_D("Book to show: idx:%d page:(%d, %d) wasShown:%s", lastReadBookIndex,
+          bookPageId.itemrefIndex, bookPageId.offset, bookWasShown ? "yes" : "no");
 
-    delete[] book_fname;
+    delete[] bookFilenameBuffer;
   #endif
 }
 
-void BooksDirController::save_last_book(const PageId &page_id, bool going_to_deep_sleep) {
+void BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSleep) {
   // As we leave, we keep the information required to return to the book
   // in the NVS space. If this is called just before going to deep sleep, we
   // set the "WAS_SHOWN" boolean to true, such that when the device will
   // be booting, it will display the last book at the last page shown.
 
-  book_page_id = page_id;
+  bookPageId = pageId;
 
   #if EPUB_INKPLATE_BUILD
 
-    uint32_t book_id;
+    uint32_t bookId;
 
-    if ((current_book_index != -1) && books_dir.get_book_id(current_book_index, book_id)) {
+    if ((currentBookIndex != -1) && booksDir.getBookId(currentBookIndex, bookId)) {
 
-      NVSMgr::NVSData nvs_data = {.offset        = page_id.offset,
-                                  .itemref_index = page_id.itemref_index,
-                                  .was_shown = static_cast<uint8_t>(going_to_deep_sleep ? 1 : 0),
-                                  .filler1   = 0};
+      NVSMgr::NVSData nvsData = {.offset       = pageId.offset,
+                                 .itemrefIndex = pageId.itemrefIndex,
+                                 .wasShown     = static_cast<uint8_t>(goingToDeepSleep ? 1 : 0),
+                                 .filler       = 0};
 
-      if (!nvs_mgr.save_location(book_id, nvs_data)) {
+      if (!nvsMgr.saveLocation(bookId, nvsData)) {
         LOG_E("Unable to save current ebook location");
       }
-      last_read_book_index = current_book_index = books_dir.get_sorted_idx_from_id(book_id);
+      lastReadBookIndex = currentBookIndex = booksDir.getSortedIdxFromId(bookId);
     }
 
   #else
 
     FILE *f = fopen(MAIN_FOLDER "/last_book.txt", "w");
     if (f != nullptr) {
-      fprintf(f, "%s\n%d\n%d\n%d\n", book_filename.c_str(), page_id.itemref_index, page_id.offset,
-              going_to_deep_sleep ? 1 : 0);
+      fprintf(f, "%s\n%d\n%d\n%d\n", bookFilename.c_str(), pageId.itemrefIndex, pageId.offset,
+              goingToDeepSleep ? 1 : 0);
       fclose(f);
     }
   #endif
 }
 
-void BooksDirController::show_last_book() {
+void BooksDirController::showLastBook() {
 
-  if (last_read_book_index == -1) return;
+  if (lastReadBookIndex == -1) return;
 
-  LOG_D("===> show_last_book()...");
-  static std::string book_fname;
-  static std::string book_title;
+  LOG_D("===> showLastBook()...");
+  static std::string bookFilenameLocal;
+  static std::string bookTitleLocal;
 
-  book_was_shown = false;
-  auto book      = books_dir.get_book_data(last_read_book_index);
+  bookWasShown = false;
+  auto book    = booksDir.getBookData(lastReadBookIndex);
 
   if (book) {
-    book_fname = BOOKS_FOLDER "/";
-    book_fname += book->filename;
-    book_title = book->title;
-    if (book_controller.open_book(book_title, book_fname, book_page_id)) {
-      app_controller.set_controller(AppController::Ctrl::BOOK);
+    bookFilenameLocal = BOOKS_FOLDER "/";
+    bookFilenameLocal += book->filename;
+    bookTitleLocal = book->title;
+    if (bookController.openBook(bookTitleLocal, bookFilenameLocal, bookPageId)) {
+      appController.setController(AppController::Ctrl::BOOK);
     }
   }
 }
@@ -174,93 +174,93 @@ void BooksDirController::show_last_book() {
 void BooksDirController::enter() {
 
   LOG_D("===> enter()...");
-  config.get(Config::Ident::DIR_VIEW, &viewer_id);
-  if (viewer_id == LINEAR_VIEWER) {
-    books_dir_viewer = LinearBooksDirViewer::Make();
+  config.get(Config::Ident::DIR_VIEW, &viewerId);
+  if (viewerId == LINEAR_VIEWER) {
+    booksDirViewer = LinearBooksDirViewer::Make();
   } else {
-    books_dir_viewer = MatrixBooksDirViewer::Make();
+    booksDirViewer = MatrixBooksDirViewer::Make();
   }
 
-  books_dir_viewer->setup();
-  screen.force_full_update();
+  booksDirViewer->setup();
+  screen.forceFullUpdate();
 
-  if (book_was_shown && (last_read_book_index != -1)) {
-    show_last_book();
+  if (bookWasShown && (lastReadBookIndex != -1)) {
+    showLastBook();
   } else {
-    if (current_book_index == -1) current_book_index = 0;
-    current_book_index = books_dir_viewer->show_page_and_highlight(current_book_index);
+    if (currentBookIndex == -1) currentBookIndex = 0;
+    currentBookIndex = booksDirViewer->showPageAndHighlight(currentBookIndex);
   }
 }
 
-void BooksDirController::leave(bool going_to_deep_sleep) {
+void BooksDirController::leave(bool goingToDeepSleep) {
   LOG_D("===> leave()...");
 
-  save_last_book(book_page_id, going_to_deep_sleep);
+  saveLastBook(bookPageId, goingToDeepSleep);
 
-  books_dir_viewer.reset();
+  booksDirViewer.reset();
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void BooksDirController::input_event(const EventMgr::Event &event) {
-    static std::string book_fname;
-    static std::string book_title;
+  void BooksDirController::inputEvent(const EventMgr::Event &event) {
+    static std::string bookFilenameLocal;
+    static std::string bookTitleLocal;
 
-    // auto book = books_dir.get_book_data(last_read_book_index);
+    // auto book = booksDir.getBookData(lastReadBookIndex);
 
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:
       LOG_D("[SWIPE_RIGHT]");
-      current_book_index = books_dir_viewer->prev_page();
+      currentBookIndex = booksDirViewer->prevPage();
       break;
 
     case EventMgr::EventKind::SWIPE_LEFT:
       LOG_D("[SWIPE_LEFT]");
-      current_book_index = books_dir_viewer->next_page();
+      currentBookIndex = booksDirViewer->nextPage();
       break;
 
     case EventMgr::EventKind::TAP:
-      if ((viewer_id == MATRIX_VIEWER) || (event.x < (Screen::get_width() / 3))) {
-        current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
-        if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
-          LOG_D("[TAP] Book Index: %d", current_book_index);
-          auto book = books_dir.get_book_data(current_book_index);
+      if ((viewerId == MATRIX_VIEWER) || (event.x < (Screen::getWidth() / 3))) {
+        currentBookIndex = booksDirViewer->getIndexAt(event.x, event.y);
+        if ((currentBookIndex >= 0) && (currentBookIndex < booksDir.getBookCount())) {
+          LOG_D("[TAP] Book Index: %d", currentBookIndex);
+          auto book = booksDir.getBookData(currentBookIndex);
           if (book) {
-            last_read_book_index = current_book_index;
-            book_fname           = BOOKS_FOLDER "/";
-            book_fname += book->filename;
-            book_title    = book->title;
-            book_filename = book->filename;
+            lastReadBookIndex = currentBookIndex;
+            bookFilenameLocal = BOOKS_FOLDER "/";
+            bookFilenameLocal += book->filename;
+            bookTitleLocal = book->title;
+            bookFilename   = book->filename;
 
-            PageId page_id = {0, 0};
+            PageId pageId = {0, 0};
 
             #if EPUB_INKPLATE_BUILD
-              NVSMgr::NVSData nvs_data;
-              if (nvs_mgr.get_location(book->id, nvs_data)) {
-                page_id = {nvs_data.itemref_index, nvs_data.offset};
+              NVSMgr::NVSData nvsData;
+              if (nvsMgr.getLocation(book->id, nvsData)) {
+                pageId = {nvsData.itemrefIndex, nvsData.offset};
               }
             #endif
 
-            if (book_controller.open_book(book_title, book_fname, page_id)) {
-              app_controller.set_controller(AppController::Ctrl::BOOK);
+            if (bookController.openBook(bookTitleLocal, bookFilenameLocal, pageId)) {
+              appController.setController(AppController::Ctrl::BOOK);
             }
           }
         } else {
           LOG_D("[OPTIONS MENU]");
-          current_book_index = -1;
-          app_controller.set_controller(AppController::Ctrl::OPTION);
+          currentBookIndex = -1;
+          appController.setController(AppController::Ctrl::OPTION);
         }
       } else {
         LOG_D("[OPTIONS MENU]");
-        current_book_index = -1;
-        app_controller.set_controller(AppController::Ctrl::OPTION);
+        currentBookIndex = -1;
+        appController.setController(AppController::Ctrl::OPTION);
       }
       break;
 
     case EventMgr::EventKind::HOLD:
-      current_book_index = books_dir_viewer->get_index_at(event.x, event.y);
-      if ((current_book_index >= 0) && (current_book_index < books_dir.get_book_count())) {
-        LOG_D("[HOLD] Book Index: %d", current_book_index);
-        books_dir_viewer->highlight_book(current_book_index);
+      currentBookIndex = booksDirViewer->getIndexAt(event.x, event.y);
+      if ((currentBookIndex >= 0) && (currentBookIndex < booksDir.getBookCount())) {
+        LOG_D("[HOLD] Book Index: %d", currentBookIndex);
+        booksDirViewer->highlightBook(currentBookIndex);
       }
       break;
 
@@ -270,7 +270,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
         ESP::delay(1000);
       #endif
 
-      books_dir_viewer->clear_highlight();
+      booksDirViewer->clearHighlight();
       break;
 
     default:
@@ -278,9 +278,9 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
     }
   }
 #else
-  void BooksDirController::input_event(const EventMgr::Event &event) {
-    static std::string book_fname;
-    static std::string book_title;
+  void BooksDirController::inputEvent(const EventMgr::Event &event) {
+    static std::string bookFilenameLocal;
+    static std::string bookTitleLocal;
 
     switch (event.kind) {
       #if EXTENDED_CASE
@@ -288,7 +288,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
       #else
       case EventMgr::EventKind::DBL_PREV:
       #endif
-      current_book_index = books_dir_viewer->prev_column();
+      currentBookIndex = booksDirViewer->prevColumn();
       break;
 
       #if EXTENDED_CASE
@@ -296,7 +296,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
       #else
       case EventMgr::EventKind::DBL_NEXT:
       #endif
-      current_book_index = books_dir_viewer->next_column();
+      currentBookIndex = booksDirViewer->nextColumn();
       break;
 
       #if EXTENDED_CASE
@@ -304,7 +304,7 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
       #else
       case EventMgr::EventKind::PREV:
       #endif
-      current_book_index = books_dir_viewer->prev_item();
+      currentBookIndex = booksDirViewer->prevItem();
       break;
 
       #if EXTENDED_CASE
@@ -312,38 +312,38 @@ void BooksDirController::leave(bool going_to_deep_sleep) {
       #else
       case EventMgr::EventKind::NEXT:
       #endif
-      current_book_index = books_dir_viewer->next_item();
+      currentBookIndex = booksDirViewer->nextItem();
       break;
 
     case EventMgr::EventKind::SELECT:
-      if (current_book_index < books_dir.get_book_count()) {
-        auto book = books_dir.get_book_data(current_book_index);
+      if (currentBookIndex < booksDir.getBookCount()) {
+        auto book = booksDir.getBookData(currentBookIndex);
         if (book) {
-          last_read_book_index = current_book_index;
-          book_fname           = BOOKS_FOLDER "/";
-          book_fname += book->filename;
-          book_title    = book->title;
-          book_filename = book->filename;
+          lastReadBookIndex = currentBookIndex;
+          bookFilenameLocal = BOOKS_FOLDER "/";
+          bookFilenameLocal += book->filename;
+          bookTitleLocal = book->title;
+          bookFilename   = book->filename;
 
-          PageId page_id = {0, 0};
+          PageId pageId = {0, 0};
 
           #if EPUB_INKPLATE_BUILD
-            NVSMgr::NVSData nvs_data;
-            if (nvs_mgr.get_location(book->id, nvs_data)) {
-              page_id.itemref_index = nvs_data.itemref_index;
-              page_id.offset        = nvs_data.offset;
+            NVSMgr::NVSData nvsData;
+            if (nvsMgr.getLocation(book->id, nvsData)) {
+              pageId.itemrefIndex = nvsData.itemrefIndex;
+              pageId.offset       = nvsData.offset;
             }
           #endif
 
-          if (book_controller.open_book(book_title, book_fname, page_id)) {
-            app_controller.set_controller(AppController::Ctrl::BOOK);
+          if (bookController.openBook(bookTitleLocal, bookFilenameLocal, pageId)) {
+            appController.setController(AppController::Ctrl::BOOK);
           }
         }
       }
       break;
 
     case EventMgr::EventKind::DBL_SELECT:
-      app_controller.set_controller(AppController::Ctrl::OPTION);
+      appController.setController(AppController::Ctrl::OPTION);
       break;
 
     case EventMgr::EventKind::NONE:

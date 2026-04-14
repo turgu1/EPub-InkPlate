@@ -19,8 +19,8 @@ static int32_t get_int_big_endian(uint8_t *a) { return a[0] << 24 | a[1] << 16 |
 static void on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha) {
   static constexpr char const *TAG = "PngPictureOnDraw";
 
-  auto data      = ((PngPicture *)mypngle_get_user_data(pngle))->get_picture_data();
-  auto scale     = ((PngPicture *)mypngle_get_user_data(pngle))->get_scale_factor();
+  auto data      = ((PngPicture *)mypngle_get_user_data(pngle))->getPictureData();
+  auto scale     = ((PngPicture *)mypngle_get_user_data(pngle))->getScaleFactor();
   uint16_t trans = alpha; // 0: fully transparent, 255: fully opaque
 
   if (scale) {
@@ -35,13 +35,13 @@ static void on_draw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t
   }
 }
 
-PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Picture() {
+PngPicture::PngPicture(std::string filename, Dim max, bool loadBitmap) : Picture() {
   LOG_D("Loading PNG picture file %s", filename.c_str());
 
-  if (unzip.open_stream_file(filename.c_str(), file_size)) {
+  if (unzip.openStreamFile(filename.c_str(), fileSize)) {
 
     pngle_t *pngle = mypngle_new();
-    auto work      = make_unique_himem<uint8_t[]>(WORK_SIZE);
+    auto work      = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
     bool first     = true;
     uint32_t total = 0;
 
@@ -58,7 +58,7 @@ PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Pictur
     /* Prepare to decompress */
 
     auto size = WORK_SIZE;
-    while ((size = unzip.get_stream_data((char *)work.get(), size))) {
+    while ((size = unzip.getStreamData((char *)work.get(), size))) {
 
       if (first) {
         first = false;
@@ -101,8 +101,8 @@ PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Pictur
 
         LOG_D("Picture size: [%" PRIu32 ", %" PRIu32 "] %" PRIu32 " bytes.", w, h, w * h);
 
-        if (load_bitmap) {
-          if ((bitmap = make_unique_himem<uint8_t[]>(w * h)) == nullptr) break;
+        if (loadBitmap) {
+          if ((bitmap = makeUniqueHimem<uint8_t[]>(w * h)) == nullptr) break;
           dim = Dim(w, h);
         } else {
           dim = Dim(w, h);
@@ -118,13 +118,13 @@ PngPicture::PngPicture(std::string filename, Dim max, bool load_bitmap) : Pictur
       }
 
       total += size;
-      if (total >= file_size) break;
+      if (total >= fileSize) break;
 
       size = WORK_SIZE;
     }
 
     mypngle_destroy(pngle);
-    unzip.close_stream_file();
+    unzip.closeStreamFile();
 
     LOG_D("PNG Picture load complete");
   }

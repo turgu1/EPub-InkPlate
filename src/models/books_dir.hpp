@@ -54,7 +54,7 @@ public:
    */
   #pragma pack(push, 1)
   class EBookRecord;
-  using EBookRecordPtr = himem_unique_ptr<EBookRecord>;
+  using EBookRecordPtr = himemUniquePtr<EBookRecord>;
 
   class EBookRecord {
   private:
@@ -65,39 +65,39 @@ public:
 
     template <typename T>
       requires(!std::is_array_v<T>)
-    friend himem_unique_ptr<T> make_unique_himem(himem_sized_t sz);
+    friend auto makeUniqueHimem(himemSizedT sz) -> himemUniquePtr<T>;
 
-    static inline auto Make(int32_t size) -> himem_unique_ptr<EBookRecord> {
+    static inline auto Make(int32_t size) -> himemUniquePtr<EBookRecord> {
       if (size >= static_cast<int32_t>(sizeof(EBookRecord))) {
-        return make_unique_himem<EBookRecord>(himem_sized(size));
+        return makeUniqueHimem<EBookRecord>(himemSized(size));
       }
       return nullptr;
     }
 
     char filename[FILENAME_SIZE];       ///< Ebook filename, no folder
                                         ///  MUST STAY AS FIRST ITEM IN EBookRecord
-    int32_t file_size;                  ///< File size in bytes
+    int32_t fileSize;                   ///< File size in bytes
     uint32_t id;                        ///< (Almost) Unique id computed from the filename
     char title[TITLE_SIZE];             ///< Title from epub meta-data
     char author[AUTHOR_SIZE];           ///< Author from epub meta-data
     char description[DESCRIPTION_SIZE]; ///< Description from epub meta-data
-    Dim cover_dim;                      ///< Dimensions of the cover bitmap
-    uint8_t cover_bitmap[];             ///< Cover bitmap shrinked for books list presentation
+    Dim coverDim;                      ///< Dimensions of the cover bitmap
+    uint8_t coverBitmap[];             ///< Cover bitmap shrinked for books list presentation
 
-    uint32_t cover_size() const { return cover_dim.width * cover_dim.height; }
+    auto coverSize() const -> uint32_t { return coverDim.width * coverDim.height; }
   };
 
   class PartialRecord {
   public:
     char filename[FILENAME_SIZE];
-    int32_t file_size;
+    int32_t fileSize;
     uint32_t id;
     char title[TITLE_SIZE];
     PartialRecord()  = default;
     ~PartialRecord() = default;
-    static inline auto Make() { return make_unique_himem<PartialRecord>(); }
+    static inline auto Make() { return makeUniqueHimem<PartialRecord>(); }
   };
-  using PartialRecordPtr = himem_unique_ptr<PartialRecord>;
+  using PartialRecordPtr = himemUniquePtr<PartialRecord>;
 
   // The version record is used to identify the version of the database. In case of structure
   // update, the version will be changed in the application and will trigger the reconstruction of
@@ -107,18 +107,18 @@ public:
   class VersionRecord {
   public:
     uint16_t version;
-    char app_name[32];
+    char appName[32];
     VersionRecord()  = default;
     ~VersionRecord() = default;
-    static inline auto Make() { return make_unique_himem<VersionRecord>(); }
+    static inline auto Make() { return makeUniqueHimem<VersionRecord>(); }
   };
-  using VersionRecordPtr = himem_unique_ptr<VersionRecord>;
+  using VersionRecordPtr = himemUniquePtr<VersionRecord>;
 
   #pragma pack(pop)
 
 private:
   static constexpr char const *TAG            = "BooksDir";
-  static constexpr char const *BOOKS_DIR_FILE = MAIN_FOLDER "/books_dir.db";
+  static constexpr char const *BOOKS_DIR_FILE = MAIN_FOLDER "/booksDir.db";
   static constexpr char const *NEW_DIR_FILE   = MAIN_FOLDER "/new_dir.db";
   static constexpr char const *APP_NAME       = "EPUB-INKPLATE";
 
@@ -134,28 +134,28 @@ private:
   /// @var IndexInfo::id
   ///   The unique identifier for the book entry.
   ///
-  /// @var IndexInfo::db_index
+  /// @var IndexInfo::dbIndex
   ///   The index position of this entry in the database.
   struct IndexInfo {
     uint32_t id;
-    uint16_t db_index;
+    uint16_t dbIndex;
   };
 
   using SortedIndex = std::map<std::string, IndexInfo>; ///< Sorted map of book names and indexes.
-  SortedIndex sorted_index; ///< Books index pointing at the db index of each book
+  SortedIndex sortedIndex; ///< Books index pointing at the db index of each book
 
-  void clear_db();
-  void set_cover_size();
-  void check_db_content(char *book_filename, int16_t &book_index, SortedIndex &temp_index);
-  auto cleanup_db(char *book_filename, int16_t &book_index) -> bool;
-  auto load_new_books_to_db(char *book_filename, int16_t &book_index, SortedIndex &temp_index)
+  void clearDb();
+  void setCoverSize();
+  void checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex);
+  auto cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool;
+  auto loadNewBooksToDb(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex)
       -> std::pair<bool, bool>;
 
 public:
   BooksDir() : db(SimpleDB::Make()) {}
   ~BooksDir() {
-    sorted_index.clear();
-    close_db();
+    sortedIndex.clear();
+    closeDb();
   }
 
   /**
@@ -163,7 +163,7 @@ public:
    *
    * @return int16_t The number of ebooks present in the database
    */
-  inline int16_t get_book_count() const { return sorted_index.size(); }
+  inline auto getBookCount() const -> int16_t { return sortedIndex.size(); }
 
   /**
    * @brief Get an ebook meta-data
@@ -171,21 +171,21 @@ public:
    * This method retrieve the meta-data related to an ebook index.
    *
    * @param idx The index is a sequential number in the sorted list of ebooks, ranging 0 ..
-   * get_book_count()-1.
+   * getBookCount()-1.
    *
    * @return const EBookRecordPtr Pointer to an EBookRecord structure, or nullptr if not able to
    * retrieve the data.
    */
-  auto get_book_data(uint16_t idx) -> EBookRecordPtr;
-  // auto get_book_data_from_db_index(uint16_t idx) -> EBookRecordPtr;
-  bool get_book_id(uint16_t idx, uint32_t &id);
-  bool get_book_index(uint32_t id, uint16_t &idx);
-  void set_track_order(uint32_t id, int8_t pos);
+  auto getBookData(uint16_t idx) -> EBookRecordPtr;
+  // auto getBookDataFromDbIndex(uint16_t idx) -> EBookRecordPtr;
+  auto getBookId(uint16_t idx, uint32_t &id) -> bool;
+  auto getBookIndex(uint32_t id, uint16_t &idx) -> bool;
+  void setTrackOrder(uint32_t id, int8_t pos);
 
-  int16_t get_sorted_idx(uint16_t db_idx) {
+  auto getSortedIdx(uint16_t dbIdx) -> int16_t {
     int i = 0;
-    for (auto entry : sorted_index) {
-      if (entry.second.db_index == db_idx) {
+    for (auto entry : sortedIndex) {
+      if (entry.second.dbIndex == dbIdx) {
         return i;
       }
       i++;
@@ -193,9 +193,9 @@ public:
     return -1;
   }
 
-  int16_t get_sorted_idx_from_id(uint32_t id) {
+  auto getSortedIdxFromId(uint32_t id) -> int16_t {
     int i = 0;
-    for (auto entry : sorted_index) {
+    for (auto entry : sortedIndex) {
       if (entry.second.id == id) {
         return i;
       }
@@ -204,7 +204,7 @@ public:
     return -1;
   }
 
-  static Dim cover_dim;
+  static Dim coverDim;
 
   /**
    * @brief Read and refresh the ebooks list database
@@ -220,40 +220,40 @@ public:
    *
    * Each book is identified using the file name and the file size.
    *
-   * @param book_filename Filename for wich the calling method needs the index for
-   * @param book_index    The index corresponding to the book filename
+   * @param bookFilename Filename for wich the calling method needs the index for
+   * @param bookIndex    The index corresponding to the book filename
    * @return true  The database has been updated and ready.
    * @return false Some error happened.
    */
-  bool read_books_directory(char *book_filename, int16_t &book_index);
+  auto readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> bool;
 
   /**
    * @brief Refresh the database
    *
-   * This method is called by the *read_books_directory()* method to refresh the database. It can
+   * This method is called by the *readBooksDirectory()* method to refresh the database. It can
    * also be called by the user through some option menu entry to request a database refresh.
    *
-   * @param book_filename Filename for wich the calling method needs the index for
-   * @param book_index    The index corresponding to the book filename
-   * @param force_init    Remove all entries and reindex all books
+   * @param bookFilename Filename for wich the calling method needs the index for
+   * @param bookIndex    The index corresponding to the book filename
+   * @param forceInit    Remove all entries and reindex all books
    * @return true  The refresh process completed successfully.
    * @return false Some error happened.
    */
-  bool refresh(char *book_filename, int16_t &book_index, bool force_init = false);
+  auto refresh(char *bookFilename, int16_t &bookIndex, bool forceInit = false) -> bool;
 
   /**
    * @brief Close the SimpleDB database
    *
    */
-  void close_db() {
+  void closeDb() {
     if (db) db->close();
   }
 
-  void show_db();
+  void showDb();
 };
 
 #if __BOOKS_DIR__
-  BooksDir books_dir;
+  BooksDir booksDir;
 #else
-  extern BooksDir books_dir;
+  extern BooksDir booksDir;
 #endif

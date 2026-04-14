@@ -10,7 +10,7 @@ public:
   static constexpr int16_t FONT      = 1;
   static constexpr int16_t FONT_SIZE = 9;
 
-  static void show(PagePtr &page, int16_t page_nbr = -1, int16_t page_count = -1);
+  static void show(PagePtr &page, int16_t pageNbr = -1, int16_t pageCount = -1);
 
 private:
   static constexpr char const *TAG = "ScreenBottom";

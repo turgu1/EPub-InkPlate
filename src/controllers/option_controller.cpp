@@ -30,33 +30,33 @@
 static Screen::Orientation orientation;
 static Screen::PixelResolution resolution;
 
-static int8_t show_battery;
+static int8_t showBattery;
 static int8_t timeout;
-static int8_t show_pictures;
-static int8_t font_size;
-static int8_t use_fonts_in_books;
-static int8_t default_font;
-static int8_t show_title;
-static int8_t dir_view;
-static int8_t cover_size;
+static int8_t showPictures;
+static int8_t fontSize;
+static int8_t useFontsInBooks;
+static int8_t defaultFont;
+static int8_t showTitle;
+static int8_t dirView;
+static int8_t coverSize;
 static int8_t done;
 
-static Screen::Orientation old_orientation;
-static Screen::PixelResolution old_resolution;
-static int8_t old_show_pictures;
-static int8_t old_font_size;
-static int8_t old_use_fonts_in_books;
-static int8_t old_default_font;
-static int8_t old_show_title;
-static int8_t old_dir_view;
-static int8_t old_cover_size;
+static Screen::Orientation oldOrientation;
+static Screen::PixelResolution oldResolution;
+static int8_t oldShowPictures;
+static int8_t oldFontSize;
+static int8_t oldUseFontsInBooks;
+static int8_t oldDefaultFont;
+static int8_t oldShowTitle;
+static int8_t oldDirView;
+static int8_t oldCoverSize;
 
 #if DATE_TIME_RTC
-  static int8_t show_heap_or_rtc;
+  static int8_t showHeapOrRtc;
   static uint16_t year;
   static uint16_t month, day, hour, minute, second;
 #else
-  static int8_t show_heap;
+  static int8_t showHeap;
 #endif
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -65,67 +65,67 @@ static int8_t old_cover_size;
   static constexpr int8_t MAIN_FORM_SIZE = 8;
 #endif
 
-static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
+static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
     {.caption    = "Minutes Before Sleeping :",
      .u          = {.ch = {.value        = &timeout,
-                           .choice_count = 3,
-                           .choices      = FormChoiceField::timeout_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+                           .choiceCount = 3,
+                           .choices      = FormChoiceField::timeoutChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
     {.caption    = "Books Directory View :",
-     .u          = {.ch = {.value        = &dir_view,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::dir_view_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &dirView,
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::dirViewChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
     {.caption    = "Books Cover Size :",
-     .u          = {.ch = {.value        = &cover_size,
-                           .choice_count = 3,
-                           .choices      = FormChoiceField::cover_size_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &coverSize,
+                           .choiceCount = 3,
+                           .choices      = FormChoiceField::coverSizeChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     {.caption    = "uSDCard Position (*):",
      .u          = {.ch = {.value        = (int8_t *)&orientation,
-                           .choice_count = 4,
-                           .choices      = FormChoiceField::orientation_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+                           .choiceCount = 4,
+                           .choices      = FormChoiceField::orientationChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #else
     {.caption    = "Buttons Position (*):",
      .u          = {.ch = {.value        = (int8_t *)&orientation,
-                           .choice_count = 3,
-                           .choices      = FormChoiceField::orientation_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+                           .choiceCount = 3,
+                           .choices      = FormChoiceField::orientationChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #endif
     {.caption    = "Pixel Resolution :",
      .u          = {.ch = {.value        = (int8_t *)&resolution,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::resolution_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::resolutionChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
     {.caption    = "Show Battery Level :",
-     .u          = {.ch = {.value        = &show_battery,
-                           .choice_count = 4,
-                           .choices      = FormChoiceField::battery_visual_choices}},
-     .entry_type = FormEntryType::VERTICAL},
+     .u          = {.ch = {.value        = &showBattery,
+                           .choiceCount = 4,
+                           .choices      = FormChoiceField::batteryVisualChoices}},
+     .entryType = FormEntryType::VERTICAL},
     {.caption    = "Show Title (*):",
-     .u          = {.ch = {.value        = &show_title,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::yes_no_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &showTitle,
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #if DATE_TIME_RTC
     {.caption    = "Right Bottom Corner :",
-     .u          = {.ch = {.value        = &show_heap_or_rtc,
-                           .choice_count = 3,
-                           .choices      = FormChoiceField::right_corner_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &showHeapOrRtc,
+                           .choiceCount = 3,
+                           .choices      = FormChoiceField::rightCornerChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #else
     {.caption    = "Show Heap Sizes :",
-     .u          = {.ch = {.value        = &show_heap,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::yes_no_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &showHeap,
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #endif
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     {.caption    = " DONE ",
-     .u          = {.ch = {.value = &done, .choice_count = 0, .choices = nullptr}},
-     .entry_type = FormEntryType::DONE}
+     .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+     .entryType = FormEntryType::DONE}
 #endif
 };
 
@@ -134,31 +134,31 @@ static FormEntry main_params_form_entries[MAIN_FORM_SIZE] = {
 #else
   static constexpr int8_t FONT_FORM_SIZE = 4;
 #endif
-static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
+static FormEntry fontParamsFormEntries[FONT_FORM_SIZE] = {
     {.caption    = "Default Font Size (*):",
-     .u          = {.ch = {.value        = &font_size,
-                           .choice_count = 4,
-                           .choices      = FormChoiceField::font_size_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &fontSize,
+                           .choiceCount = 4,
+                           .choices      = FormChoiceField::fontSizeChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
     {.caption    = "Use Fonts in E-books (*):",
-     .u          = {.ch = {.value        = &use_fonts_in_books,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::yes_no_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &useFontsInBooks,
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
     {.caption    = "Default Font (*):",
-     .u          = {.ch = {.value        = &default_font,
-                           .choice_count = 8,
-                           .choices      = FormChoiceField::font_choices}},
-     .entry_type = FormEntryType::VERTICAL},
+     .u          = {.ch = {.value        = &defaultFont,
+                           .choiceCount = 8,
+                           .choices      = FormChoiceField::fontChoices}},
+     .entryType = FormEntryType::VERTICAL},
     {.caption    = "Show Images in E-books (*):",
-     .u          = {.ch = {.value        = &show_pictures,
-                           .choice_count = 2,
-                           .choices      = FormChoiceField::yes_no_choices}},
-     .entry_type = FormEntryType::HORIZONTAL},
+     .u          = {.ch = {.value        = &showPictures,
+                           .choiceCount = 2,
+                           .choices      = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     {.caption    = " DONE ",
-     .u          = {.ch = {.value = &done, .choice_count = 0, .choices = nullptr}},
-     .entry_type = FormEntryType::DONE}
+     .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+     .entryType = FormEntryType::DONE}
 #endif
 };
 
@@ -169,30 +169,30 @@ static FormEntry font_params_form_entries[FONT_FORM_SIZE] = {
     static constexpr int8_t DATE_TIME_FORM_SIZE = 6;
   #endif
 
-  static FormEntry date_time_form_entries[DATE_TIME_FORM_SIZE] = {
+  static FormEntry dateTimeFormEntries[DATE_TIME_FORM_SIZE] = {
       {.caption    = "Year :",
        .u          = {.val = {.value = &year, .min = 2022, .max = 2099}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
       {.caption    = "Month :",
        .u          = {.val = {.value = &month, .min = 1, .max = 12}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
       {.caption    = "Day :",
        .u          = {.val = {.value = &day, .min = 1, .max = 31}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
       {.caption    = "Hour :",
        .u          = {.val = {.value = &hour, .min = 0, .max = 23}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
       {.caption    = "Minute :",
        .u          = {.val = {.value = &minute, .min = 0, .max = 59}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
       {.caption    = "Second :",
        .u          = {.val = {.value = &second, .min = 0, .max = 59}},
-       .entry_type = FormEntryType::UINT16},
+       .entryType = FormEntryType::UINT16},
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       {.caption    = "DONE",
-       .u          = {.ch = {.value = &done, .choice_count = 0, .choices = nullptr}},
-       .entry_type = FormEntryType::DONE}
+       .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+       .entryType = FormEntryType::DONE}
   #endif
   };
 #endif
@@ -201,75 +201,74 @@ static constexpr char const *MAIN_PARAMS_CAPTION   = "Main parameters";
 static constexpr char const *BOOK_DEFAULTS_CAPTION = "Default e-books parameters";
 static constexpr char const *CLOCK_ADJUST_CAPTION  = "Set Date / Time";
 
-void OptionController::main_parameters() {
+void OptionController::mainParameters() {
   config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
-  config.get(Config::Ident::DIR_VIEW, &dir_view);
-  config.get(Config::Ident::COVER_SIZE, &cover_size);
+  config.get(Config::Ident::DIR_VIEW, &dirView);
+  config.get(Config::Ident::COVER_SIZE, &coverSize);
   config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
-  config.get(Config::Ident::BATTERY, &show_battery);
-  config.get(Config::Ident::SHOW_TITLE, &show_title);
+  config.get(Config::Ident::BATTERY, &showBattery);
+  config.get(Config::Ident::SHOW_TITLE, &showTitle);
   config.get(Config::Ident::TIMEOUT, &timeout);
 
   #if DATE_TIME_RTC
-    int8_t show_heap{0}, show_rtc{0};
-    config.get(Config::Ident::SHOW_RTC, &show_rtc);
-    config.get(Config::Ident::SHOW_HEAP, &show_heap);
+    int8_t showHeap{0}, showRtc{0};
+    config.get(Config::Ident::SHOW_RTC, &showRtc);
+    config.get(Config::Ident::SHOW_HEAP, &showHeap);
 
-    show_heap_or_rtc = (show_rtc != 0) ? 1 : ((show_heap != 0) ? 2 : 0);
+    showHeapOrRtc = (showRtc != 0) ? 1 : ((showHeap != 0) ? 2 : 0);
   #else
-    config.get(Config::Ident::SHOW_HEAP, &show_heap);
+    config.get(Config::Ident::SHOW_HEAP, &showHeap);
   #endif
 
-  old_orientation = orientation;
-  old_dir_view    = dir_view;
-  old_cover_size  = cover_size;
-  old_resolution  = resolution;
-  old_show_title  = show_title;
-  done            = 1;
+  oldOrientation = orientation;
+  oldDirView     = dirView;
+  oldCoverSize   = coverSize;
+  oldResolution  = resolution;
+  oldShowTitle   = showTitle;
+  done           = 1;
 
-  form_viewer->show(MAIN_PARAMS_CAPTION, main_params_form_entries, MAIN_FORM_SIZE,
-                    "(*) Will trigger e-book pages location recalc.");
+  formViewer->show(MAIN_PARAMS_CAPTION, mainParamsFormEntries, MAIN_FORM_SIZE,
+                   "(*) Will trigger e-book pages location recalc.");
 
-  option_controller.set_main_form_is_shown();
+  optionController.setMainFormIsShown();
 }
 
-void OptionController::default_parameters() {
-  config.get(Config::Ident::SHOW_PICTURES, &show_pictures);
-  config.get(Config::Ident::FONT_SIZE, &font_size);
-  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_books);
-  config.get(Config::Ident::DEFAULT_FONT, &default_font);
+void OptionController::defaultParameters() {
+  config.get(Config::Ident::SHOW_PICTURES, &showPictures);
+  config.get(Config::Ident::FONT_SIZE, &fontSize);
+  config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBooks);
+  config.get(Config::Ident::DEFAULT_FONT, &defaultFont);
 
-  old_show_pictures      = show_pictures;
-  old_use_fonts_in_books = use_fonts_in_books;
-  old_default_font       = default_font;
-  old_font_size          = font_size;
-  done                   = 1;
+  oldShowPictures    = showPictures;
+  oldUseFontsInBooks = useFontsInBooks;
+  oldDefaultFont     = defaultFont;
+  oldFontSize        = fontSize;
+  done               = 1;
 
-  form_viewer->show(BOOK_DEFAULTS_CAPTION, font_params_form_entries, FONT_FORM_SIZE,
-                    "(*) Used as e-book default values.");
+  formViewer->show(BOOK_DEFAULTS_CAPTION, fontParamsFormEntries, FONT_FORM_SIZE,
+                   "(*) Used as e-book default values.");
 
-  option_controller.set_font_form_is_shown();
+  optionController.setFontFormIsShown();
 }
 
-void OptionController::wifi_mode() {
+void OptionController::wifiMode() {
 
   #if EPUB_INKPLATE_BUILD
-    epub.close_file();
     fonts.clear(true);
-    fonts.clear_glyph_caches();
+    fonts.clearGlyphCaches();
 
-    event_mgr.set_stay_on(true); // DO NOT sleep
+    eventMgr.setStayOn(true); // DO NOT sleep
 
-    if (start_web_server(WebServerMode::STA)) {
-      option_controller.set_wait_for_key_after_wifi(true);
+    if (startWebServer(WebServerMode::STA)) {
+      optionController.setWaitForKeyAfterWifi(true);
     }
   #endif
 }
 
-void OptionController::init_nvs() {
-  // menu_viewer.clear_highlight();
+void OptionController::initNvs() {
+  // menuViewer.clearHighlight();
   #if EPUB_INKPLATE_BUILD
-    if (nvs_mgr.setup(true)) {
+    if (nvsMgr.setup(true)) {
       MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "E-Books History Cleared",
                       "The E-Books History has been initialized with success.");
     } else {
@@ -282,16 +281,16 @@ void OptionController::init_nvs() {
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   void OptionController::calibrate() {
-    event_mgr.show_calibration();
-    option_controller.set_calibration_is_shown();
+    eventMgr.showCalibration();
+    optionController.setCalibrationIsShown();
   }
 #endif
 
 #if DATE_TIME_RTC
-  void OptionController::clock_adjust_form() {
+  void OptionController::clockAdjustForm() {
     time_t t;
     tm tim;
-    Clock::get_date_time(t);
+    Clock::getDateTime(t);
 
     localtime_r(&t, &tim);
 
@@ -302,12 +301,12 @@ void OptionController::init_nvs() {
     minute = tim.tm_min;
     second = tim.tm_sec;
 
-    form_viewer->show(CLOCK_ADJUST_CAPTION, date_time_form_entries, DATE_TIME_FORM_SIZE,
-                      "Hour is in 24 hours format.");
-    option_controller.set_date_time_form_is_shown();
+    formViewer->show(CLOCK_ADJUST_CAPTION, dateTimeFormEntries, DATE_TIME_FORM_SIZE,
+                     "Hour is in 24 hours format.");
+    optionController.setDateTimeFormIsShown();
   }
 
-  void OptionController::set_clock() {
+  void OptionController::setClock() {
     time_t t;
     tm tim;
 
@@ -322,24 +321,23 @@ void OptionController::init_nvs() {
            .tm_isdst = -1};
 
     t = mktime(&tim);
-    Clock::set_date_time(t);
+    Clock::setDateTime(t);
   }
 
-  void OptionController::ntp_clock_adjust() {
+  void OptionController::ntpClockAdjust() {
 
-    // page_locs.abort_threads();
-    // epub.close_file();
+    // pageLocs.abort_threads();
+    // epub.closeFile();
 
-    std::string ntp_server;
-    config.get(Config::Ident::NTP_SERVER, ntp_server);
+    std::string ntpServer;
+    config.get(Config::Ident::NTP_SERVER, ntpServer);
 
     MsgViewer::show(MsgViewer::MsgType::NTP_CLOCK, false, true, "Date/Time Retrival",
-                    "Retrieving Date and Time from NTP Server %s. Please wait.",
-                    ntp_server.c_str());
+                    "Retrieving Date and Time from NTP Server %s. Please wait.", ntpServer.c_str());
 
-    if (ntp.get_and_set_time()) {
+    if (ntp.getAndSetTime()) {
       time_t time;
-      Clock::get_date_time(time);
+      Clock::getDateTime(time);
       MsgViewer::show(MsgViewer::MsgType::NTP_CLOCK, true, true, "Date/Time Retrival Completed",
                       "Local Time is %s. The device will now restart.", ctime(&time));
     } else {
@@ -347,17 +345,17 @@ void OptionController::init_nvs() {
                       "Unable to get Date/Time from NTP Server! The device will now restart.");
     }
 
-    option_controller.set_wait_for_key_after_wifi(false);
+    optionController.setWaitForKeyAfterWifi(false);
   }
 #endif
 
 #if DEBUGGING
   void OptionController::debugging() {
-    auto [page, progress_data] = MsgViewer::show_progress(
+    auto [page, progressData] = MsgViewer::showProgress(
         "A small test to check the show progress capability. Please wait...");
     for (int i = 0; i <= 10; i++) {
-      std::tie(page, progress_data) =
-          MsgViewer::update_progress(std::move(page), std::move(progress_data), i * 10);
+      std::tie(page, progressData) =
+          MsgViewer::updateProgress(std::move(page), std::move(progressData), i * 10);
       sleep(1);
     }
   }
@@ -398,44 +396,44 @@ static MenuViewer::MenuEntry menu[] = {
 
 // clang-format on
 
-void OptionController::set_font_count(uint8_t count) {
-  font_params_form_entries[2].u.ch.choice_count = count;
+void OptionController::setFontCount(uint8_t count) {
+  fontParamsFormEntries[2].u.ch.choiceCount = count;
 }
 
 void OptionController::enter() {
-  menu_viewer = MenuViewer::Make();
-  form_viewer = FormViewer::Make();
+  menuViewer = MenuViewer::Make();
+  formViewer = FormViewer::Make();
 
   int idx = 0;
   while (menu[idx].icon != MenuViewer::Icon::END_MENU) {
     switch (menu[idx].icon) {
     case MenuViewer::Icon::RETURN:
-      menu[idx].func = CommonActions::return_to_last;
+      menu[idx].func = CommonActions::returnToLast;
       break;
     case MenuViewer::Icon::BOOK:
-      menu[idx].func = CommonActions::show_last_book;
+      menu[idx].func = CommonActions::showLastBook;
       break;
     case MenuViewer::Icon::MAIN_PARAMS:
-      menu[idx].func = [this]() { this->main_parameters(); };
+      menu[idx].func = [this]() { this->mainParameters(); };
       break;
     case MenuViewer::Icon::FONT_PARAMS:
-      menu[idx].func = [this]() { this->default_parameters(); };
+      menu[idx].func = [this]() { this->defaultParameters(); };
       break;
     case MenuViewer::Icon::WIFI:
-      menu[idx].func = [this]() { this->wifi_mode(); };
+      menu[idx].func = [this]() { this->wifiMode(); };
       break;
     case MenuViewer::Icon::REFRESH:
-      menu[idx].func = CommonActions::refresh_books_dir;
+      menu[idx].func = CommonActions::refreshBooksDir;
       break;
     case MenuViewer::Icon::CLR_HISTORY:
-      menu[idx].func = [this]() { this->init_nvs(); };
+      menu[idx].func = [this]() { this->initNvs(); };
       break;
       #if DATE_TIME_RTC
       case MenuViewer::Icon::CLOCK:
-        menu[idx].func = [this]() { this->clock_adjust_form(); };
+        menu[idx].func = [this]() { this->clockAdjustForm(); };
         break;
       case MenuViewer::Icon::NTP_CLOCK:
-        menu[idx].func = [this]() { this->ntp_clock_adjust(); };
+        menu[idx].func = [this]() { this->ntpClockAdjust(); };
         break;
       #endif
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
@@ -456,7 +454,7 @@ void OptionController::enter() {
       menu[idx].func = CommonActions::about;
       break;
     case MenuViewer::Icon::POWEROFF:
-      menu[idx].func = CommonActions::power_it_off;
+      menu[idx].func = CommonActions::powerItOff;
       break;
     default:
       break;
@@ -465,149 +463,149 @@ void OptionController::enter() {
     idx++;
   }
 
-  if (menu_viewer) {
-    menu_viewer->show(menu);
+  if (menuViewer) {
+    menuViewer->show(menu);
   }
-  main_form_is_shown = false;
-  font_form_is_shown = false;
+  mainFormIsShown = false;
+  fontFormIsShown = false;
 }
 
-void OptionController::leave(bool going_to_deep_sleep) {
-  menu_viewer.reset();
-  form_viewer.reset();
+void OptionController::leave(bool goingToDeepSleep) {
+  menuViewer.reset();
+  formViewer.reset();
 }
 
-void OptionController::input_event(const EventMgr::Event &event) {
-  if (main_form_is_shown) {
-    if (form_viewer->event(event)) {
-      main_form_is_shown = false;
+void OptionController::inputEvent(const EventMgr::Event &event) {
+  if (mainFormIsShown) {
+    if (formViewer->event(event)) {
+      mainFormIsShown = false;
       // if (ok) {
       config.put(Config::Ident::ORIENTATION, static_cast<int8_t>(orientation));
-      config.put(Config::Ident::DIR_VIEW, dir_view);
-      config.put(Config::Ident::COVER_SIZE, cover_size);
+      config.put(Config::Ident::DIR_VIEW, dirView);
+      config.put(Config::Ident::COVER_SIZE, coverSize);
       config.put(Config::Ident::PIXEL_RESOLUTION, static_cast<int8_t>(resolution));
-      config.put(Config::Ident::BATTERY, show_battery);
-      config.put(Config::Ident::SHOW_TITLE, show_title);
+      config.put(Config::Ident::BATTERY, showBattery);
+      config.put(Config::Ident::SHOW_TITLE, showTitle);
       config.put(Config::Ident::TIMEOUT, timeout);
 
       #if DATE_TIME_RTC
-        config.put(Config::Ident::SHOW_HEAP, static_cast<int8_t>(show_heap_or_rtc == 2 ? 1 : 0));
-        config.put(Config::Ident::SHOW_RTC, static_cast<int8_t>(show_heap_or_rtc == 1 ? 1 : 0));
+        config.put(Config::Ident::SHOW_HEAP, static_cast<int8_t>(showHeapOrRtc == 2 ? 1 : 0));
+        config.put(Config::Ident::SHOW_RTC, static_cast<int8_t>(showHeapOrRtc == 1 ? 1 : 0));
       #else
-        config.put(Config::Ident::SHOW_HEAP, show_heap);
+        config.put(Config::Ident::SHOW_HEAP, showHeap);
       #endif
 
       config.save();
 
-      if (old_orientation != orientation) {
-        screen.set_orientation(orientation);
-        event_mgr.set_orientation(orientation);
-        books_dir_controller.new_orientation();
+      if (oldOrientation != orientation) {
+        screen.setOrientation(orientation);
+        eventMgr.setOrientation(orientation);
+        booksDirController.newOrientation();
       }
 
-      if (old_dir_view != dir_view) {
-        books_dir_controller.set_current_book_index(-1);
+      if (oldDirView != dirView) {
+        booksDirController.setCurrentBookIndex(-1);
       }
 
-      if (old_cover_size != cover_size) {
+      if (oldCoverSize != coverSize) {
         int16_t dummy;
-        books_dir.refresh(nullptr, dummy, true);
-        menu_viewer->show(menu, 2, true);
+        booksDir.refresh(nullptr, dummy, true);
+        menuViewer->show(menu, 2, true);
       }
 
-      if (old_resolution != resolution) {
-        fonts.clear_glyph_caches();
-        screen.set_pixel_resolution(resolution);
+      if (oldResolution != resolution) {
+        fonts.clearGlyphCaches();
+        screen.setPixelResolution(resolution);
       }
 
-      // if ((old_orientation != orientation) || (old_show_title != show_title)) {
+      // if ((oldOrientation != orientation) || (oldShowTitle != showTitle)) {
       //   epub.update_book_format_params();
       // }
 
-      if ((old_orientation != orientation) || (old_resolution != resolution)) {
-        menu_viewer->show(menu, 2, true);
+      if ((oldOrientation != orientation) || (oldResolution != resolution)) {
+        menuViewer->show(menu, 2, true);
       } else {
-        menu_viewer->clear_highlight();
+        menuViewer->clearHighlight();
       }
       // }
-      menu_viewer->show(menu, 2, true);
+      menuViewer->show(menu, 2, true);
     }
-  } else if (font_form_is_shown) {
-    if (form_viewer->event(event)) {
-      font_form_is_shown = false;
+  } else if (fontFormIsShown) {
+    if (formViewer->event(event)) {
+      fontFormIsShown = false;
       // if (ok) {
-      config.put(Config::Ident::SHOW_PICTURES, show_pictures);
-      config.put(Config::Ident::FONT_SIZE, font_size);
-      config.put(Config::Ident::DEFAULT_FONT, default_font);
-      config.put(Config::Ident::USE_FONTS_IN_BOOKS, use_fonts_in_books);
+      config.put(Config::Ident::SHOW_PICTURES, showPictures);
+      config.put(Config::Ident::FONT_SIZE, fontSize);
+      config.put(Config::Ident::DEFAULT_FONT, defaultFont);
+      config.put(Config::Ident::USE_FONTS_IN_BOOKS, useFontsInBooks);
       config.save();
 
-      // if ((old_show_pictures != show_pictures) || (old_font_size != font_size) ||
-      //     (old_default_font != default_font) || (old_use_fonts_in_books != use_fonts_in_books)) {
+      // if ((oldShowPictures != showPictures) || (oldFontSize != fontSize) ||
+      //     (oldDefaultFont != defaultFont) || (oldUseFontsInBooks != useFontsInBooks)) {
       //   epub.update_book_format_params();
       // }
 
-      if (old_default_font != default_font) {
-        fonts.adjust_default_font(default_font);
+      if (oldDefaultFont != defaultFont) {
+        fonts.adjustDefaultFont(defaultFont);
       }
 
-      if (old_use_fonts_in_books != use_fonts_in_books) {
-        if (use_fonts_in_books == 0) {
+      if (oldUseFontsInBooks != useFontsInBooks) {
+        if (useFontsInBooks == 0) {
           fonts.clear();
-          fonts.clear_glyph_caches();
+          fonts.clearGlyphCaches();
         }
       }
       // }
-      // menu_viewer.clear_highlight();
-      menu_viewer->show(menu, 3, true);
+      // menuViewer.clearHighlight();
+      menuViewer->show(menu, 3, true);
     }
   }
 
   #if DATE_TIME_RTC
-  else if (date_time_form_is_shown) {
-      if (form_viewer->event(event)) {
-        date_time_form_is_shown = false;
-        menu_viewer->clear_highlight();
-        set_clock();
-        menu_viewer->show(menu, 7, true);
+  else if (dateTimeFormIsShown) {
+      if (formViewer->event(event)) {
+        dateTimeFormIsShown = false;
+        menuViewer->clearHighlight();
+        setClock();
+        menuViewer->show(menu, 7, true);
       }
     }
   #endif
 
   #if EPUB_INKPLATE_BUILD
-    else if (wait_for_key_after_wifi) {
+    else if (waitForKeyAfterWifi) {
       MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
                       "The device is now restarting. Please wait.");
-      wait_for_key_after_wifi = false;
-      if (web_server_was_started) {
-        stop_web_server();
+      waitForKeyAfterWifi = false;
+      if (webServerWasStarted) {
+        stopWebServer();
       }
-      if (books_refresh_needed) {
-        books_refresh_needed = false;
+      if (booksRefreshNeeded) {
+        booksRefreshNeeded = false;
         int16_t dummy;
-        books_dir.refresh(nullptr, dummy, true);
+        booksDir.refresh(nullptr, dummy, true);
       }
       inkplate_platform.restart();
     }
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    else if (calibration_is_shown) {
-      if (event_mgr.calibration_event(event)) {
-        calibration_is_shown = false;
-        menu_viewer->show(menu, 0, true);
+    else if (calibrationIsShown) {
+      if (eventMgr.calibrationEvent(event)) {
+        calibrationIsShown = false;
+        menuViewer->show(menu, 0, true);
       }
     }
   #endif
 
     else {
-    if (menu_viewer->event(event)) {
-      if (books_refresh_needed) {
-        books_refresh_needed = false;
+    if (menuViewer->event(event)) {
+      if (booksRefreshNeeded) {
+        booksRefreshNeeded = false;
         int16_t dummy;
-        books_dir.refresh(nullptr, dummy, true);
+        booksDir.refresh(nullptr, dummy, true);
       }
-      app_controller.set_controller(AppController::Ctrl::LAST);
+      appController.setController(AppController::Ctrl::LAST);
     }
   }
 }

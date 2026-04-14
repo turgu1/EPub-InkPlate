@@ -13,7 +13,7 @@
 #include "himem.hpp"
 #include "miniz.h"
 
-using FileContentPtr = himem_unique_ptr<uint8_t[]>;
+using FileContentPtr = himemUniquePtr<uint8_t[]>;
 
 class Unzip {
 private:
@@ -30,22 +30,22 @@ private:
    */
   struct FileEntry {
     char *filename;
-    uint32_t start_pos;       // in zip file
-    uint32_t compressed_size; // in zip file
+    uint32_t startPos;       // in zip file
+    uint32_t compressedSize; // in zip file
     uint32_t size;            // once decompressed
-    uint32_t current_pos;
+    uint32_t currentPos;
     uint16_t method; // compress method (0 = not compressed, 8 = DEFLATE)
   };
 
   typedef std::forward_list<FileEntry *> FileEntries;
-  FileEntries file_entries;
-  FileEntries::iterator current_fe;
+  FileEntries fileEntries;
+  FileEntries::iterator currentFileEntry;
 
-  uint32_t getuint32(const unsigned char *b) {
+  uint32_t getUint32(const unsigned char *b) {
     return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8) | (((uint32_t)b[2]) << 16) |
            (((uint32_t)b[3]) << 24);
   }
-  uint16_t getuint16(const unsigned char *b) { return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8); }
+  uint16_t getUint16(const unsigned char *b) { return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8); }
 
   uint16_t repeat;
   uint16_t remains;
@@ -53,28 +53,28 @@ private:
   bool aborted;
 
   FILE *file; // Current File Descriptor
-  bool zip_file_is_open;
+  bool zipFileIsOpen;
 
   mz_stream zstr;
 
 public:
   Unzip();
-  bool seek_to_central_directory();
-  bool read_file_entries(uint32_t offset, uint16_t count);
-  bool open_zip_file(const char *zip_filename);
-  void close_zip_file();
+  bool seekToCentralDirectory();
+  bool readFileEntries(uint32_t offset, uint16_t count);
+  bool openZipFile(const char *zip_filename);
+  void closeZipFile();
 
-  int32_t get_file_size(const char *filename);
-  auto get_file(const char *filename, uint32_t &file_size) -> FileContentPtr;
-  bool file_exists(const char *filename);
-  bool open_file(const char *filename);
-  void close_file();
+  int32_t getFileSize(const char *filename);
+  auto getFile(const char *filename, uint32_t &fileSize) -> FileContentPtr;
+  bool fileExists(const char *filename);
+  bool openFile(const char *filename);
+  void closeFile();
 
   #if !STB
-    bool open_stream_file(const char *filename, uint32_t &file_size);
-    uint32_t get_stream_data(char *data, uint32_t size);
-    bool stream_skip(uint32_t byte_count);
-    void close_stream_file();
+    bool openStreamFile(const char *filename, uint32_t &fileSize);
+    uint32_t getStreamData(char *data, uint32_t size);
+    bool streamSkip(uint32_t byte_count);
+    void closeStreamFile();
   #endif
 };
 

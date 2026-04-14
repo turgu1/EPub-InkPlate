@@ -14,7 +14,7 @@ void Picture::resize(Dim new_dim) {
         new_dim.width * new_dim.height);
 
   if (bitmap != nullptr) {
-    auto resized_bitmap = make_unique_himem<uint8_t[]>(new_dim.width * new_dim.height);
+    auto resized_bitmap = makeUniqueHimem<uint8_t[]>(new_dim.width * new_dim.height);
 
     stbir_resize_uint8_linear(bitmap.get(), dim.width, dim.height, 0, resized_bitmap.get(),
                               new_dim.width, new_dim.height, 0, (stbir_pixel_layout)1);

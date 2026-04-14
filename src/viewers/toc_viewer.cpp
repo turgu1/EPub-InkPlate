@@ -18,195 +18,195 @@
 #include <iomanip>
 
 void TocViewer::setup() {
-  entries_per_page = (Screen::get_height() - FIRST_ENTRY_YPOS - 20) / ENTRY_HEIGHT;
-  page_count       = (epub->toc->get_entry_count() + entries_per_page - 1) / entries_per_page;
+  entriesPerPage = (Screen::getHeight() - firstEntryYPos - 20) / entryHeight;
+  pageCount      = (epub->toc->getEntryCount() + entriesPerPage - 1) / entriesPerPage;
 
-  current_page_nbr   = -1;
-  current_screen_idx = -1;
-  current_entry_idx  = -1;
+  currentPageNbr   = -1;
+  currentScreenIdx = -1;
+  currentEntryIdx  = -1;
 
-  LOG_D("TOC entry count: %d", epub->toc->get_entry_count());
+  LOG_D("TOC entry count: %d", epub->toc->getEntryCount());
 }
 
-void TocViewer::show_page(int16_t page_nbr, int16_t hightlight_screen_idx) {
-  current_page_nbr   = page_nbr;
-  current_screen_idx = hightlight_screen_idx;
+void TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) {
+  currentPageNbr   = pageNbr;
+  currentScreenIdx = highlightedScreenIdx;
 
-  int16_t entry_idx = page_nbr * entries_per_page;  // entry idx in the current page
-  int16_t last_idx  = entry_idx + entries_per_page; // last entry idx in the current page
+  int16_t entryIdx = pageNbr * entriesPerPage;  // entry idx in the current page
+  int16_t lastIdx  = entryIdx + entriesPerPage; // last entry idx in the current page
 
-  if (last_idx > epub->toc->get_entry_count()) last_idx = epub->toc->get_entry_count();
+  if (lastIdx > epub->toc->getEntryCount()) lastIdx = epub->toc->getEntryCount();
 
   uint16_t xpos = 20;
-  uint16_t ypos = TITLE_YPOS;
+  uint16_t ypos = titleYPos;
 
-  page->set_compute_mode(Page::ComputeMode::DISPLAY);
+  page->setComputeMode(Page::ComputeMode::DISPLAY);
 
   Page::Format fmt = {
-      .line_height_factor = 0.8,
-      .font_index         = TITLE_FONT,
-      .font_size          = TITLE_FONT_SIZE,
-      .screen_left        = xpos,
-      .screen_right       = 10,
-      .screen_top         = ypos,
-      .screen_bottom = static_cast<uint16_t>(Screen::get_height() - (ypos + MAX_TITLE_SIZE + 20)),
-      .font_style    = Fonts::FaceStyle::BOLD,
-      .align         = CSS::Align::CENTER,
+      .lineHeightFactor = 0.8,
+      .fontIndex        = titleFont,
+      .fontSize         = titleFontSize,
+      .screenLeft       = xpos,
+      .screenRight      = 10,
+      .screenTop        = ypos,
+      .screenBottom     = static_cast<uint16_t>(Screen::getHeight() - (ypos + maxTitleSize + 20)),
+      .fontStyle        = Fonts::FaceStyle::BOLD,
+      .align            = CSS::Align::CENTER,
   };
 
   page->start(fmt);
 
-  page->set_limits(fmt);
-  page->new_paragraph(fmt);
-  page->add_text(epub->get_title(), fmt);
-  page->end_paragraph(fmt);
+  page->setLimits(fmt);
+  page->newParagraph(fmt);
+  page->addText(epub->getTitle(), fmt);
+  page->endParagraph(fmt);
 
-  ypos = FIRST_ENTRY_YPOS;
+  ypos = firstEntryYPos;
 
-  fmt.font_index = ENTRY_FONT;
-  fmt.font_size  = ENTRY_FONT_SIZE;
-  fmt.font_style = Fonts::FaceStyle::NORMAL;
-  fmt.align      = CSS::Align::LEFT;
+  fmt.fontIndex = entryFont;
+  fmt.fontSize  = entryFontSize;
+  fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+  fmt.align     = CSS::Align::LEFT;
 
-  for (int16_t screen_idx = 0; entry_idx < last_idx; screen_idx++, entry_idx++) {
+  for (int16_t screenIdx = 0; entryIdx < lastIdx; screenIdx++, entryIdx++) {
 
-    const TOC::EntryRecord &entry = epub->toc->get_entry(entry_idx);
+    const TOC::EntryRecord &entry = epub->toc->getEntry(entryIdx);
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      if (screen_idx == current_screen_idx) {
-        page->put_highlight(Dim(Screen::get_width() - 30, ENTRY_HEIGHT + 5), Pos(15, ypos));
+      if (screenIdx == currentScreenIdx) {
+        page->putHighlight(Dim(Screen::getWidth() - 30, entryHeight + 5), Pos(15, ypos));
       }
     #endif
 
-    fmt.screen_left   = 20 + (entry.level * 20);
-    fmt.screen_top    = ypos,
-    fmt.screen_bottom = static_cast<int16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT)),
+    fmt.screenLeft   = 20 + (entry.level * 20);
+    fmt.screenTop    = ypos,
+    fmt.screenBottom = static_cast<int16_t>(Screen::getHeight() - (ypos + entryHeight)),
 
-    page->set_limits(fmt);
-    page->new_paragraph(fmt);
-    page->add_text(entry.label, fmt);
-    page->end_paragraph(fmt);
+    page->setLimits(fmt);
+    page->newParagraph(fmt);
+    page->addText(entry.label, fmt);
+    page->endParagraph(fmt);
 
-    ypos += ENTRY_HEIGHT;
+    ypos += entryHeight;
   }
 
-  ScreenBottom::show(page, current_page_nbr, page_count);
+  ScreenBottom::show(page, currentPageNbr, pageCount);
 
   page->paint();
 }
 
-void TocViewer::highlight(int16_t screen_idx) {
+void TocViewer::highlight(int16_t screenIdx) {
   #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-    page->set_compute_mode(Page::ComputeMode::DISPLAY);
+    page->setComputeMode(Page::ComputeMode::DISPLAY);
 
-    if (current_screen_idx != screen_idx) {
+    if (currentScreenIdx != screenIdx) {
 
       // Clear the highlighting of the current item
 
-      int16_t entry_idx = current_page_nbr * entries_per_page + current_screen_idx;
+      int16_t entryIdx = currentPageNbr * entriesPerPage + currentScreenIdx;
 
-      const TOC::EntryRecord &entry = epub->toc->get_entry(entry_idx);
+      const TOC::EntryRecord &entry = epub->toc->getEntry(entryIdx);
 
       uint16_t xpos = 20 + (entry.level * 20);
-      uint16_t ypos = FIRST_ENTRY_YPOS + (current_screen_idx * ENTRY_HEIGHT);
+      uint16_t ypos = firstEntryYPos + (currentScreenIdx * entryHeight);
 
       Page::Format fmt = {
-          .line_height_factor = 0.8,
-          .font_index         = ENTRY_FONT,
-          .font_size          = ENTRY_FONT_SIZE,
-          .screen_left        = xpos,
-          .screen_right       = 10,
-          .screen_top         = ypos,
-          .screen_bottom = static_cast<uint16_t>(Screen::get_height() - (ypos + ENTRY_HEIGHT + 20)),
+          .lineHeightFactor = 0.8,
+          .fontIndex        = entryFont,
+          .fontSize         = entryFontSize,
+          .screenLeft       = xpos,
+          .screenRight      = 10,
+          .screenTop        = ypos,
+          .screenBottom = static_cast<uint16_t>(Screen::getHeight() - (ypos + entryHeight + 20)),
       };
 
       page->start(fmt);
 
-      page->clear_highlight(Dim(Screen::get_width() - 30, ENTRY_HEIGHT + 5), Pos(15, ypos));
+      page->clearHighlight(Dim(Screen::getWidth() - 30, entryHeight + 5), Pos(15, ypos));
 
-      page->set_limits(fmt);
-      page->new_paragraph(fmt);
-      page->add_text(entry.label, fmt);
-      page->end_paragraph(fmt);
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
+      page->addText(entry.label, fmt);
+      page->endParagraph(fmt);
 
       // Highlight the new current entry
 
-      current_screen_idx = screen_idx;
+      currentScreenIdx = screenIdx;
 
-      entry_idx = current_page_nbr * entries_per_page + current_screen_idx;
-      ypos      = FIRST_ENTRY_YPOS + (current_screen_idx * ENTRY_HEIGHT);
+      entryIdx = currentPageNbr * entriesPerPage + currentScreenIdx;
+      ypos     = firstEntryYPos + (currentScreenIdx * entryHeight);
 
-      const TOC::EntryRecord &entry2 = epub->toc->get_entry(entry_idx);
+      const TOC::EntryRecord &selectedEntry = epub->toc->getEntry(entryIdx);
 
-      page->put_highlight(Dim(Screen::get_width() - 30, ENTRY_HEIGHT + 5), Pos(15, ypos));
+      page->putHighlight(Dim(Screen::getWidth() - 30, entryHeight + 5), Pos(15, ypos));
 
-      fmt.screen_left = 20 + (entry2.level * 20);
-      fmt.screen_top  = ypos;
+      fmt.screenLeft = 20 + (selectedEntry.level * 20);
+      fmt.screenTop  = ypos;
 
-      page->set_limits(fmt);
-      page->new_paragraph(fmt);
-      page->add_text(entry2.label, fmt);
-      page->end_paragraph(fmt);
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
+      page->addText(selectedEntry.label, fmt);
+      page->endParagraph(fmt);
 
-      ScreenBottom::show(page, current_page_nbr, page_count);
+      ScreenBottom::show(page, currentPageNbr, pageCount);
 
       page->paint(false);
     }
   #endif
 }
 
-int16_t TocViewer::show_page_and_highlight(int16_t entry_idx) {
-  int16_t page_nbr   = entry_idx / entries_per_page;
-  int16_t screen_idx = entry_idx % entries_per_page;
+auto TocViewer::showPageAndHighlight(int16_t entryIdx) -> int16_t {
+  int16_t pageNbr   = entryIdx / entriesPerPage;
+  int16_t screenIdx = entryIdx % entriesPerPage;
 
-  if (current_page_nbr != page_nbr) {
-    show_page(page_nbr, screen_idx);
+  if (currentPageNbr != pageNbr) {
+    showPage(pageNbr, screenIdx);
   } else {
-    if (screen_idx != current_screen_idx) highlight(screen_idx);
+    if (screenIdx != currentScreenIdx) highlight(screenIdx);
   }
 
-  current_entry_idx = entry_idx;
-  return current_entry_idx;
+  currentEntryIdx = entryIdx;
+  return currentEntryIdx;
 }
 
-void TocViewer::highlight_entry(int16_t entry_idx) {
-  highlight(entry_idx % entries_per_page);
-  current_entry_idx = entry_idx;
+void TocViewer::highlightEntry(int16_t entryIdx) {
+  highlight(entryIdx % entriesPerPage);
+  currentEntryIdx = entryIdx;
 }
 
-int16_t TocViewer::next_page() { return next_column(); }
+auto TocViewer::nextPage() -> int16_t { return nextColumn(); }
 
-int16_t TocViewer::prev_page() { return prev_column(); }
+auto TocViewer::prevPage() -> int16_t { return prevColumn(); }
 
-int16_t TocViewer::next_item() {
-  int16_t entry_idx = current_entry_idx + 1;
-  if (entry_idx >= epub->toc->get_entry_count()) {
-    entry_idx = epub->toc->get_entry_count() - 1;
+auto TocViewer::nextItem() -> int16_t {
+  int16_t entryIdx = currentEntryIdx + 1;
+  if (entryIdx >= epub->toc->getEntryCount()) {
+    entryIdx = epub->toc->getEntryCount() - 1;
   }
-  return show_page_and_highlight(entry_idx);
+  return showPageAndHighlight(entryIdx);
 }
 
-int16_t TocViewer::prev_item() {
-  int16_t entry_idx = current_entry_idx - 1;
-  if (entry_idx < 0) entry_idx = 0;
-  return show_page_and_highlight(entry_idx);
+auto TocViewer::prevItem() -> int16_t {
+  int16_t entryIdx = currentEntryIdx - 1;
+  if (entryIdx < 0) entryIdx = 0;
+  return showPageAndHighlight(entryIdx);
 }
 
-int16_t TocViewer::next_column() {
-  int16_t entry_idx = current_entry_idx + entries_per_page;
-  if (entry_idx >= epub->toc->get_entry_count()) {
-    entry_idx = epub->toc->get_entry_count() - 1;
+auto TocViewer::nextColumn() -> int16_t {
+  int16_t entryIdx = currentEntryIdx + entriesPerPage;
+  if (entryIdx >= epub->toc->getEntryCount()) {
+    entryIdx = epub->toc->getEntryCount() - 1;
   } else {
-    entry_idx = (entry_idx / entries_per_page) * entries_per_page;
+    entryIdx = (entryIdx / entriesPerPage) * entriesPerPage;
   }
-  return show_page_and_highlight(entry_idx);
+  return showPageAndHighlight(entryIdx);
 }
 
-int16_t TocViewer::prev_column() {
-  int16_t entry_idx = current_entry_idx - entries_per_page;
-  if (entry_idx < 0)
-    entry_idx = 0;
+auto TocViewer::prevColumn() -> int16_t {
+  int16_t entryIdx = currentEntryIdx - entriesPerPage;
+  if (entryIdx < 0)
+    entryIdx = 0;
   else
-    entry_idx = (entry_idx / entries_per_page) * entries_per_page;
-  return show_page_and_highlight(entry_idx);
+    entryIdx = (entryIdx / entriesPerPage) * entriesPerPage;
+  return showPageAndHighlight(entryIdx);
 }

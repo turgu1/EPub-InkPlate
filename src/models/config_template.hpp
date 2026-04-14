@@ -12,7 +12,7 @@
 template <class IdType, int cfg_size>
 class ConfigBase {
 public:
-  typedef IdType Ident;
+  using Ident = IdType;
   enum class EntryType {
     STRING, INT, INT64, BYTE
   };
@@ -24,7 +24,7 @@ public:
     const void *default_value;
     uint8_t max_size;
   };
-  typedef std::array<ConfigDescr, cfg_size> CfgType;
+  using CfgType = std::array<ConfigDescr, cfg_size>;
 
 private:
   static constexpr char const *TAG = "Config";
@@ -36,7 +36,7 @@ private:
   bool modified;
   bool comment;
 
-  bool parse_line(char *buff, char **caption, char **value);
+  auto parseLine(char *buff, char **caption, char **value) -> bool;
 
 public:
   ConfigBase(const std::string &conf_filename, bool show_comment)
@@ -44,19 +44,19 @@ public:
   // ConfigBase(const CfgType & conf, const std::string & conf_filename)
   //   : cfg(conf), config_filename(conf_filename), f(nullptr), modified(false) { };
 
-  bool get(IdType id, int32_t *val);
-  bool get(IdType id, int8_t *val);
-  bool get(IdType id, int64_t *val);
-  bool get(IdType id, std::string &val);
+  auto get(IdType id, int32_t *val) -> bool;
+  auto get(IdType id, int8_t *val) -> bool;
+  auto get(IdType id, int64_t *val) -> bool;
+  auto get(IdType id, std::string &val) -> bool;
   void put(IdType id, int32_t val);
   void put(IdType id, int8_t val);
   void put(IdType id, int64_t val);
   void put(IdType id, std::string &val);
 
-  bool read();
-  bool save(bool force = false);
+  auto read() -> bool;
+  auto save(bool force = false) -> bool;
 
-  inline bool is_modified() { return modified; }
+  inline auto isModified() -> bool { return modified; }
 
   #if DEBUGGING
     void show();
@@ -66,7 +66,7 @@ public:
 // ----- get(int32_t) -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::get(IdType id, int32_t *val) {
+auto ConfigBase<IdType, cfg_size>::get(IdType id, int32_t *val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT)) {
       *val = *((int32_t *)entry.value);
@@ -79,7 +79,7 @@ bool ConfigBase<IdType, cfg_size>::get(IdType id, int32_t *val) {
 // ----- get(int64_t) -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::get(IdType id, int64_t *val) {
+auto ConfigBase<IdType, cfg_size>::get(IdType id, int64_t *val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT64)) {
       *val = *((int64_t *)entry.value);
@@ -92,7 +92,7 @@ bool ConfigBase<IdType, cfg_size>::get(IdType id, int64_t *val) {
 // ----- get(int8_t) -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::get(IdType id, int8_t *val) {
+auto ConfigBase<IdType, cfg_size>::get(IdType id, int8_t *val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::BYTE)) {
       *val = *((int8_t *)entry.value);
@@ -105,7 +105,7 @@ bool ConfigBase<IdType, cfg_size>::get(IdType id, int8_t *val) {
 // ----- get(std::string) -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::get(IdType id, std::string &val) {
+auto ConfigBase<IdType, cfg_size>::get(IdType id, std::string &val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       val.assign(((char *)entry.value));
@@ -167,10 +167,10 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, std::string &val) {
   }
 }
 
-// ----- parse_line() -----
+// ----- parseLine() -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::parse_line(char *buff, char **caption, char **value) {
+auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **value) -> bool {
   bool done = false;
 
   for (;;) {
@@ -225,7 +225,7 @@ bool ConfigBase<IdType, cfg_size>::parse_line(char *buff, char **caption, char *
 // ----- read() -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::read() {
+auto ConfigBase<IdType, cfg_size>::read() -> bool {
   // First, initialize all configs to default values
   for (auto &entry : cfg) {
     if (entry.type == EntryType::STRING) {
@@ -252,7 +252,7 @@ bool ConfigBase<IdType, cfg_size>::read() {
 
   while (!file->eof()) {
     file->getline(buff, 128);
-    if (parse_line(buff, &caption, &value)) {
+    if (parseLine(buff, &caption, &value)) {
       LOG_D("Caption: %s, value: %s", caption, value);
       for (auto &entry : cfg) {
         if (strcmp(caption, entry.caption) == 0) {
@@ -282,7 +282,7 @@ bool ConfigBase<IdType, cfg_size>::read() {
 // ----- save() -----
 
 template <class IdType, int cfg_size>
-bool ConfigBase<IdType, cfg_size>::save(bool force) {
+auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
   if (force || modified) {
     std::ofstream *file = new std::ofstream(config_filename);
     if (!file->is_open()) return false;

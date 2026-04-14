@@ -11,7 +11,7 @@
 #include "viewers/books_dir_viewer.hpp"
 #include "viewers/page.hpp"
 
-using LinearBooksDirViewerPtr = himem_unique_ptr<class LinearBooksDirViewer>;
+using LinearBooksDirViewerPtr = himemUniquePtr<class LinearBooksDirViewer>;
 class LinearBooksDirViewer : public BooksDirViewer {
 private:
   static constexpr char const *TAG = "LinearBooksDirView";
@@ -24,13 +24,13 @@ private:
   static const int16_t SPACE_BETWEEN_ENTRIES = 6;
   static const int16_t MAX_TITLE_SIZE        = 85;
 
-  int16_t current_item_idx{-1};
-  int16_t current_book_idx{-1};
-  int16_t current_page_nbr{-1};
-  int16_t books_per_page{-1};
-  int16_t page_count{-1};
+  int16_t currentItemIdx{-1};
+  int16_t currentBookIdx{-1};
+  int16_t currentPageNbr{-1};
+  int16_t booksPerPage{-1};
+  int16_t pageCount{-1};
 
-  void show_page(int16_t page_nbr, int16_t hightlight_item_idx);
+  void showPage(int16_t pageNbr, int16_t hightlight_item_idx);
   void highlight(int16_t item_idx);
 
   PagePtr page{Page::Make()};
@@ -42,25 +42,25 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make() { return make_unique_himem<LinearBooksDirViewer>(); }
+  static inline auto Make() { return makeUniqueHimem<LinearBooksDirViewer>(); }
 
   void setup();
 
-  int16_t show_page_and_highlight(int16_t book_idx);
-  void highlight_book(int16_t book_idx);
-  void clear_highlight() {}
+  auto showPageAndHighlight(int16_t book_idx) -> int16_t;
+  void highlightBook(int16_t book_idx);
+  void clearHighlight() {}
 
-  int16_t next_page();
-  int16_t prev_page();
-  int16_t next_item();
-  int16_t prev_item();
-  int16_t next_column();
-  int16_t prev_column();
+  auto nextPage() -> int16_t;
+  auto prevPage() -> int16_t;
+  auto nextItem() -> int16_t;
+  auto prevItem() -> int16_t;
+  auto nextColumn() -> int16_t;
+  auto prevColumn() -> int16_t;
 
-  int16_t get_index_at(uint16_t x, uint16_t y) {
-    int16_t idx = (y - FIRST_ENTRY_YPOS) / (BooksDir::cover_dim.height + SPACE_BETWEEN_ENTRIES);
-    return (idx >= books_per_page) ? -1 : (current_page_nbr * books_per_page) + idx;
+  auto getIndexAt(uint16_t x, uint16_t y) -> int16_t {
+    int16_t idx = (y - FIRST_ENTRY_YPOS) / (BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES);
+    return (idx >= booksPerPage) ? -1 : (currentPageNbr * booksPerPage) + idx;
   }
 };

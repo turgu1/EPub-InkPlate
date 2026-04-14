@@ -17,7 +17,7 @@ enum class DisplayListCommand {
 struct GlyphEntry {      ///< Used for GLYPH
   Glyph *glyph{nullptr}; ///< Glyph
   int16_t kern{0};
-  bool is_space{false};
+  bool isSpace{false};
 };
 
 struct PictureEntry { ///< Used for PICTURE
@@ -51,7 +51,7 @@ public:
 };
 
 using DisplayListPool = MemoryPool<DisplayListEntry>;
-using DisplayListPtr  = himem_unique_ptr<class DisplayList>;
+using DisplayListPtr  = himemUniquePtr<class DisplayList>;
 
 class DisplayList {
 private:
@@ -60,22 +60,22 @@ private:
   DisplayListEntry *head{nullptr};
   DisplayListEntry *tail{nullptr};
 
-  // For memory management of DisplayListEntry objects, the entry_pool must be made
+  // For memory management of DisplayListEntry objects, the entryPool must be made
   // available by the Page class instance  to ensure that all DisplayList instances used
   // by the Page class share the same pool, allowing for efficient reuse and moving of
   // DisplayListEntry objects across different DisplayList instances.
-  DisplayListPool &entry_pool;
+  DisplayListPool &entryPool;
 
-  DisplayList(DisplayListPool &pool) : entry_pool(pool) {}
+  DisplayList(DisplayListPool &pool) : entryPool(pool) {}
 
 public:
   friend class Page;
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(DisplayListPool &pool) { return make_unique_himem<DisplayList>(pool); }
+  static inline auto Make(DisplayListPool &pool) { return makeUniqueHimem<DisplayList>(pool); }
   ~DisplayList() { clear(); }
 
   // Iterator class (nested)
@@ -119,7 +119,7 @@ public:
   Iterator end() { return Iterator(nullptr); } // The "end" iterator points to nullptr
 
   // Utility function to add elements (for testing)
-  void push_back(DisplayListEntry *entry) {
+  void pushBack(DisplayListEntry *entry) {
     // if ((size_t)entry < 0x900000) {
     //   LOG_E("Invalid entry pointer: %p", reinterpret_cast<void *>(entry));
     // }
@@ -151,13 +151,13 @@ public:
     DisplayListEntry *current = head;
     while (current) {
       DisplayListEntry *next = current->next; // save before freeing
-      entry_pool.deleteElement(current);
+      entryPool.deleteElement(current);
       current = next;
     }
     head = tail = nullptr;
   }
 
-  auto get_new_entry() -> DisplayListEntry *;
+  auto getNewEntry() -> DisplayListEntry *;
 
   void merge(DisplayList &other) {
 
@@ -173,11 +173,11 @@ public:
     other.head = other.tail = nullptr; // Clear the other list
   }
 
-  void remove_last() {
+  void removeLast() {
     if (empty()) return;
 
     if (head == tail) {
-      entry_pool.deleteElement(head);
+      entryPool.deleteElement(head);
       head = tail = nullptr;
     } else {
       DisplayListEntry *current = head;
@@ -186,9 +186,9 @@ public:
         current = current->next;
       }
       if (!current) {
-        LOG_E("Error in remove_last: tail (%p) not found in list", reinterpret_cast<void *>(tail));
+        LOG_E("Error in removeLast: tail (%p) not found in list", reinterpret_cast<void *>(tail));
       } else {
-        entry_pool.deleteElement(tail);
+        entryPool.deleteElement(tail);
         tail       = current;
         tail->next = nullptr;
       }
@@ -205,12 +205,12 @@ public:
           auto &e = std::get<GlyphEntry>(entry->v);
           std::cout << "GLYPH" << " x:" << entry->pos.x << " y:" << entry->pos.y
                     << " w:" << e.glyph->dim.width << " k:" << e.kern
-                    << " h:" << e.glyph->dim.height << " is_space:" << e.is_space << std::endl;
+                    << " h:" << e.glyph->dim.height << " isSpace:" << e.isSpace << std::endl;
         } break;
         case DisplayListCommand::PICTURE: {
           auto &e = std::get<PictureEntry>(entry->v);
           std::cout << "PICTURE" << " x:" << entry->pos.x << " y:" << entry->pos.y
-                    << " w:" << e.picture->get_dim().width << " h:" << e.picture->get_dim().height
+                    << " w:" << e.picture->getDim().width << " h:" << e.picture->getDim().height
                     << " advance:" << e.advance << std::endl;
         } break;
         case DisplayListCommand::HIGHLIGHT: {

@@ -22,18 +22,18 @@
 
 #endif
 
-void CommonActions::return_to_last() { app_controller.set_controller(AppController::Ctrl::LAST); }
+void CommonActions::returnToLast() { appController.setController(AppController::Ctrl::LAST); }
 
-void CommonActions::show_last_book() { books_dir_controller.show_last_book(); }
+void CommonActions::showLastBook() { booksDirController.showLastBook(); }
 
-void CommonActions::refresh_books_dir() {
+void CommonActions::refreshBooksDir() {
   int16_t temp;
 
-  books_dir.refresh(nullptr, temp, true);
-  app_controller.set_controller(AppController::Ctrl::DIR);
+  booksDir.refresh(nullptr, temp, true);
+  appController.setController(AppController::Ctrl::DIR);
 }
 
-void CommonActions::power_it_off() {
+void CommonActions::powerItOff() {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     #define MSG "Please press the WakeUp Button to restart the device."
     #define INT_PIN TouchScreen::INTERRUPT_PIN
@@ -48,11 +48,11 @@ void CommonActions::power_it_off() {
     #endif
   #endif
 
-  if (event_mgr.staying_on()) {
-    screen.force_full_update();
+  if (eventMgr.stayingOn()) {
+    screen.forceFullUpdate();
     MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Waiting for Power OFF",
                     "Waiting for background tasks to complete before going to Deep Sleep mode.");
-    while (event_mgr.staying_on()) {
+    while (eventMgr.stayingOn()) {
       #if EPUB_INKPLATE_BUILD
         ESP::delay(5000);
       #endif
@@ -60,7 +60,7 @@ void CommonActions::power_it_off() {
   }
 
   #if EPUB_INKPLATE_BUILD
-    screen.force_full_update();
+    screen.forceFullUpdate();
     MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Power OFF",
                     "Entering Deep Sleep mode. " MSG);
 
@@ -69,12 +69,12 @@ void CommonActions::power_it_off() {
 
     ESP::delay(5000);
 
-    app_controller.going_to_deep_sleep();
+    appController.goingToDeepSleep();
 
     inkplate_platform.deep_sleep(INT_PIN, LEVEL);
   #else
-    extern void exit_app();
-    exit_app();
+    extern void exitApp();
+    exitApp();
     exit(0);
   #endif
 }
@@ -83,7 +83,7 @@ void CommonActions::about() {
   #if EPUB_INKPLATE_BUILD
     const esp_app_desc_t *descr = esp_app_get_description();
 
-    // menu_viewer.clear_highlight();
+    // menu_viewer.clearHighlight();
     MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
                     "EPub EBook Reader Version [%s] for the InkPlate e-paper display devices. "
                     "This application was made by Guy Turcotte, Quebec, QC, Canada, "

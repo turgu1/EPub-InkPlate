@@ -62,7 +62,7 @@
 // and going to the selected page, some similar information will be sent to
 // the terminal. You can then compare the results and find the differences.
 //
-// To be used, only one book must be in the books folder and the books_dir.db
+// To be used, only one book must be in the books folder and the booksDir.db
 // file must be deleted before any trial.
 
 #define DEBUGGING_AID 0 ///< 1: Allow for specific page debugging output
@@ -85,8 +85,8 @@ struct Dim {
   Dim() = default;
   constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
 
-  constexpr uint16_t get_width() const { return width; }
-  constexpr uint16_t get_height() const { return height; }
+  constexpr uint16_t getWidth() const { return width; }
+  constexpr uint16_t getHeight() const { return height; }
 };
 
 struct Pos {
@@ -124,25 +124,25 @@ struct Glyph {
   int16_t xoff{0}, yoff{0};
   int16_t advance{0};
   int16_t pitch{0};
-  int16_t line_height{0};
-  int16_t ligature_and_kern_pgm_index{255};
+  int16_t lineHeight{0};
+  int16_t ligatureAndKernPgmIndex{255};
   uint8_t *buffer{nullptr};
   void clear() {
     dim.height = dim.width = 0;
     xoff = yoff = 0;
-    advance = pitch = line_height = 0;
-    ligature_and_kern_pgm_index   = 255;
-    buffer                        = nullptr;
+    advance = pitch = lineHeight = 0;
+    ligatureAndKernPgmIndex      = 255;
+    buffer                       = nullptr;
   }
   Glyph() = default;
 };
 
 struct PageId {
-  int16_t itemref_index{0};
+  int16_t itemrefIndex{0};
   int32_t offset{0};
   PageId(int16_t idx, int32_t off) {
-    itemref_index = idx;
-    offset        = off;
+    itemrefIndex = idx;
+    offset       = off;
   }
   PageId() = default;
 };

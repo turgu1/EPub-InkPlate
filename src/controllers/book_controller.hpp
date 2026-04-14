@@ -14,30 +14,30 @@ class BookController {
 public:
   BookController() = default;
 
-  inline void set_ownership_of_book(EPubPtr &epub_ptr) { epub = std::move(epub_ptr); }
+  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
 
-  void input_event(const EventMgr::Event &event);
+  void inputEvent(const EventMgr::Event &event);
   void enter();
-  void leave(bool going_to_deep_sleep = false);
-  bool open_book(const std::string &book_title, const std::string &book_filename,
-                 const PageId &page_id);
+  void leave(bool goingToDeepSleep = false);
+  bool openBook(const std::string &bookTitle, const std::string &bookFilename,
+                const PageId &pageId);
   // void put_str(const char *str, int xpos, int ypos);
 
-  inline const PageId &get_current_page_id() { return current_page_id; }
-  inline void set_current_page_id(const PageId &page_id) { current_page_id = page_id; }
+  inline const PageId &getCurrentPageId() { return currentPageId; }
+  inline void setCurrentPageId(const PageId &pageId) { currentPageId = pageId; }
 
 private:
   static constexpr char const *TAG = "BookController";
 
   EPubPtr epub{nullptr};
 
-  PageId current_page_id{0, 0};
+  PageId currentPageId{0, 0};
 
-  BookViewerPtr book_viewer{nullptr};
+  BookViewerPtr bookViewer{nullptr};
 };
 
 #if __BOOK_CONTROLLER__
-  BookController book_controller;
+  BookController bookController;
 #else
-  extern BookController book_controller;
+  extern BookController bookController;
 #endif

@@ -19,90 +19,90 @@
 
 #include "screen.hpp"
 
-AppController::AppController() : current_ctrl(Ctrl::DIR), next_ctrl(Ctrl::NONE) {
+AppController::AppController() : currentCtrl(Ctrl::DIR), nextCtrl(Ctrl::NONE) {
   for (int i = 0; i < LAST_COUNT; i++) {
-    last_ctrl[i] = Ctrl::DIR;
+    lastCtrl[i] = Ctrl::DIR;
   }
 }
 
 void AppController::start() {
-  current_ctrl = Ctrl::NONE;
-  next_ctrl    = Ctrl::DIR;
+  currentCtrl = Ctrl::NONE;
+  nextCtrl    = Ctrl::DIR;
 
   #if EPUB_LINUX_BUILD
     launch();
-    event_mgr.loop(); // Will start gtk. Will not return.
+    eventMgr.loop(); // Will start gtk. Will not return.
   #else
     while (true) {
-      while (next_ctrl != Ctrl::NONE) launch();
-      event_mgr.loop();
+      while (nextCtrl != Ctrl::NONE) launch();
+      eventMgr.loop();
     }
   #endif
 }
 
-void AppController::set_controller(Ctrl new_ctrl) {
-  LOG_D("===> set_controller()...");
+void AppController::setController(Ctrl newCtrl) {
+  LOG_D("===> setController()...");
 
-  next_ctrl = new_ctrl;
+  nextCtrl = newCtrl;
 }
 
 void AppController::launch() {
   #if EPUB_LINUX_BUILD
-    if (next_ctrl == Ctrl::NONE) return;
+    if (nextCtrl == Ctrl::NONE) return;
   #endif
 
-  Ctrl the_ctrl = next_ctrl;
-  next_ctrl     = Ctrl::NONE;
+  Ctrl theCtrl = nextCtrl;
+  nextCtrl     = Ctrl::NONE;
 
-  if (((the_ctrl == Ctrl::LAST) && (last_ctrl[0] != current_ctrl)) || (the_ctrl != current_ctrl)) {
+  if (((theCtrl == Ctrl::LAST) && (lastCtrl[0] != currentCtrl)) || (theCtrl != currentCtrl)) {
 
-    switch (current_ctrl) {
+    switch (currentCtrl) {
     case Ctrl::DIR:
-      books_dir_controller.leave();
+      booksDirController.leave();
       break;
     case Ctrl::BOOK:
-      book_controller.leave();
+      bookController.leave();
       break;
     case Ctrl::PARAM:
-      book_param_controller.leave();
+      bookParamController.leave();
       break;
     case Ctrl::OPTION:
-      option_controller.leave();
+      optionController.leave();
       break;
     case Ctrl::TOC:
-      toc_controller.leave();
+      tocController.leave();
       break;
     case Ctrl::NONE:
     case Ctrl::LAST:
       break;
     }
 
-    Ctrl tmp     = current_ctrl;
-    current_ctrl = (the_ctrl == Ctrl::LAST) ? last_ctrl[0] : the_ctrl;
+    Ctrl tmp    = currentCtrl;
+    currentCtrl = (theCtrl == Ctrl::LAST) ? lastCtrl[0] : theCtrl;
 
-    if (the_ctrl == Ctrl::LAST) {
-      for (int i = 1; i < LAST_COUNT; i++) last_ctrl[i - 1] = last_ctrl[i];
-      last_ctrl[LAST_COUNT - 1] = Ctrl::DIR;
+    if (theCtrl == Ctrl::LAST) {
+      for (int i = 1; i < LAST_COUNT; i++) lastCtrl[i - 1] = lastCtrl[i];
+      lastCtrl[LAST_COUNT - 1] = Ctrl::DIR;
     } else {
-      for (int i = 1; i < LAST_COUNT; i++) last_ctrl[i] = last_ctrl[i - 1];
-      last_ctrl[0] = tmp;
+      for (int i = 1; i < LAST_COUNT; i++) lastCtrl[i] = lastCtrl[i - 1];
+      lastCtrl[0] = tmp;
     }
 
-    switch (current_ctrl) {
+    switch (currentCtrl) {
     case Ctrl::DIR:
-      books_dir_controller.enter();
+      booksDirController.enter();
       break;
     case Ctrl::BOOK:
-      book_controller.enter();
+      bookController.enter();
       break;
     case Ctrl::PARAM:
-      book_param_controller.enter();
+      bookParamController.enter();
       break;
     case Ctrl::OPTION:
-      option_controller.enter();
+      optionController.enter();
       break;
     case Ctrl::TOC:
-      toc_controller.enter();
+      tocController.enter();
       break;
     case Ctrl::NONE:
     case Ctrl::LAST:
@@ -111,37 +111,37 @@ void AppController::launch() {
   }
 }
 
-void AppController::input_event(const EventMgr::Event &event) {
-  if (next_ctrl != Ctrl::NONE) launch();
+void AppController::inputEvent(const EventMgr::Event &event) {
+  if (nextCtrl != Ctrl::NONE) launch();
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     if (event.kind == EventMgr::EventKind::PINCH_ENLARGE) {
-      back_lit.adjust(event.dist);
+      backLit.adjust(event.dist);
       return;
     } else if (event.kind == EventMgr::EventKind::PINCH_REDUCE) {
-      back_lit.adjust(-event.dist);
+      backLit.adjust(-event.dist);
       return;
     } else if (event.kind == EventMgr::EventKind::WAKEUP_BUTTON) {
-      CommonActions::power_it_off();
+      CommonActions::powerItOff();
       return;
     }
   #endif
 
-  switch (current_ctrl) {
+  switch (currentCtrl) {
   case Ctrl::DIR:
-    books_dir_controller.input_event(event);
+    booksDirController.inputEvent(event);
     break;
   case Ctrl::BOOK:
-    book_controller.input_event(event);
+    bookController.inputEvent(event);
     break;
   case Ctrl::PARAM:
-    book_param_controller.input_event(event);
+    bookParamController.inputEvent(event);
     break;
   case Ctrl::OPTION:
-    option_controller.input_event(event);
+    optionController.inputEvent(event);
     break;
   case Ctrl::TOC:
-    toc_controller.input_event(event);
+    tocController.inputEvent(event);
     break;
   case Ctrl::NONE:
   case Ctrl::LAST:
@@ -149,29 +149,29 @@ void AppController::input_event(const EventMgr::Event &event) {
   }
 }
 
-void AppController::going_to_deep_sleep() {
-  if (next_ctrl != Ctrl::NONE) launch();
+void AppController::goingToDeepSleep() {
+  if (nextCtrl != Ctrl::NONE) launch();
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    back_lit.turn_off();
+    backLit.turnOff();
     touch_screen.shutdown();
   #endif
 
-  switch (current_ctrl) {
+  switch (currentCtrl) {
   case Ctrl::DIR:
-    books_dir_controller.leave(true);
+    booksDirController.leave(true);
     break;
   case Ctrl::BOOK:
-    book_controller.leave(true);
+    bookController.leave(true);
     break;
   case Ctrl::PARAM:
-    book_param_controller.leave(true);
+    bookParamController.leave(true);
     break;
   case Ctrl::OPTION:
-    option_controller.leave(true);
+    optionController.leave(true);
     break;
   case Ctrl::TOC:
-    toc_controller.leave(true);
+    tocController.leave(true);
     break;
   case Ctrl::NONE:
   case Ctrl::LAST:

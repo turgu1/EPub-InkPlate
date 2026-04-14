@@ -28,20 +28,20 @@ public:
   #endif
 
 protected:
-  volatile bool stay_on{false};
+  volatile bool stayOn{false};
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 
     int64_t a, b, c, d, e, f, divider;
 
-    CalibPoint calib_point;
-    TouchPoint touch_point;
-    uint8_t calib_count;
+    CalibPoint calibPoint;
+    TouchPoint touchPoint;
+    uint8_t calibCount;
 
-    uint16_t x_pos, y_pos;
+    uint16_t xPos, yPos;
     uint16_t distance;
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      void retrieve_calibration_values();
+      void retrieveCalibrationValues();
     #endif
   #endif
 
@@ -55,24 +55,24 @@ public:
                            WAKEUP_BUTTON};
     // clang-format on
 
-    static const char *event_str[9];
+    static const char *eventStr[9];
 
     struct Event {
       EventKind kind;
       uint16_t x, y, dist;
     };
 
-    void show_calibration();
-    bool calibration_event(const Event &event);
-    void set_position(uint16_t x, uint16_t y) {
-      x_pos = x;
-      y_pos = y;
+    void showCalibration();
+    auto calibrationEvent(const Event &event) -> bool;
+    void setPosition(uint16_t x, uint16_t y) {
+      xPos = x;
+      yPos = y;
     }
-    void get_position(uint16_t &x, uint16_t &y) {
-      x = x_pos;
-      y = y_pos;
+    void getPosition(uint16_t &x, uint16_t &y) {
+      x = xPos;
+      y = yPos;
     }
-    void to_user_coord(uint16_t &x, uint16_t &y);
+    void toUserCoord(uint16_t &x, uint16_t &y);
 
   #else
     enum class EventKind {
@@ -86,11 +86,11 @@ public:
 
   EventMgr() = default;
 
-  bool setup();
+  auto setup() -> bool;
 
   void loop();
 
-  const Event &get_event();
+  auto getEvent() -> const Event &;
 
   #if EPUB_LINUX_BUILD
     #if TOUCH_TRIAL
@@ -105,13 +105,13 @@ public:
     #endif
   #endif
 
-  inline void set_stay_on(bool value) { stay_on = value; };
-  inline bool staying_on() { return stay_on; };
-  void set_orientation(Screen::Orientation orient);
+  inline void setStayOn(bool value) { stayOn = value; };
+  inline auto stayingOn() -> bool { return stayOn; };
+  void setOrientation(Screen::Orientation orient);
 };
 
 #if __EVENT_MGR__
-  EventMgr event_mgr;
+  EventMgr eventMgr;
 #else
-  extern EventMgr event_mgr;
+  extern EventMgr eventMgr;
 #endif

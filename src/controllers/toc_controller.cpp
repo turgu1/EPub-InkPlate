@@ -19,43 +19,42 @@
 #include <string>
 
 void TocController::enter() {
-  toc_viewer = TocViewer::Make(epub);
+  tocViewer = TocViewer::Make(epub);
 
-  toc_viewer->setup();
+  tocViewer->setup();
 
-  if ((current_entry_index == -1) ||
-      (current_book_index != books_dir_controller.get_current_book_index())) {
-    current_entry_index = 0;
+  if ((currentEntryIndex == -1) || (currentBookIndex != booksDirController.getCurrentBookIndex())) {
+    currentEntryIndex = 0;
   }
 
-  current_book_index  = books_dir_controller.get_current_book_index();
-  current_entry_index = toc_viewer->show_page_and_highlight(current_entry_index);
+  currentBookIndex  = booksDirController.getCurrentBookIndex();
+  currentEntryIndex = tocViewer->showPageAndHighlight(currentEntryIndex);
 }
 
-void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
+void TocController::leave(bool goingToDeepSleep) { tocViewer.reset(); }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void TocController::input_event(const EventMgr::Event &event) {
+  void TocController::inputEvent(const EventMgr::Event &event) {
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:
-      current_entry_index = toc_viewer->prev_page();
+      currentEntryIndex = tocViewer->prevPage();
       break;
 
     case EventMgr::EventKind::SWIPE_LEFT:
-      current_entry_index = toc_viewer->next_page();
+      currentEntryIndex = tocViewer->nextPage();
       break;
 
     case EventMgr::EventKind::TAP:
-      current_entry_index = toc_viewer->get_index_at(event.x, event.y);
-      if ((current_entry_index >= 0) && (current_entry_index < epub->toc->get_entry_count())) {
-        if (epub->toc->get_entry(current_entry_index).page_id.offset >= 0) {
-          book_controller.set_current_page_id(epub->toc->get_entry(current_entry_index).page_id);
-          book_controller.set_ownership_of_book(epub);
-          app_controller.set_controller(AppController::Ctrl::BOOK);
+      currentEntryIndex = tocViewer->getIndexAt(event.x, event.y);
+      if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
+        if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
+          bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+          bookController.setOwnershipOfBook(epub);
+          appController.setController(AppController::Ctrl::BOOK);
         }
       } else {
-        book_controller.set_ownership_of_book(epub);
-        app_controller.set_controller(AppController::Ctrl::BOOK);
+        bookController.setOwnershipOfBook(epub);
+        appController.setController(AppController::Ctrl::BOOK);
       }
       break;
 
@@ -63,7 +62,7 @@ void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
       break;
 
     case EventMgr::EventKind::RELEASE:
-      toc_viewer->clear_highlight();
+      tocViewer->clearHighlight();
       break;
 
     default:
@@ -71,14 +70,14 @@ void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
     }
   }
 #else
-  void TocController::input_event(const EventMgr::Event &event) {
+  void TocController::inputEvent(const EventMgr::Event &event) {
     switch (event.kind) {
       #if EXTENDED_CASE
       case EventMgr::EventKind::PREV:
       #else
       case EventMgr::EventKind::DBL_PREV:
       #endif
-      current_entry_index = toc_viewer->prev_column();
+      currentEntryIndex = tocViewer->prevColumn();
       break;
 
       #if EXTENDED_CASE
@@ -86,7 +85,7 @@ void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
       #else
       case EventMgr::EventKind::DBL_NEXT:
       #endif
-      current_entry_index = toc_viewer->next_column();
+      currentEntryIndex = tocViewer->nextColumn();
       break;
 
       #if EXTENDED_CASE
@@ -94,7 +93,7 @@ void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
       #else
       case EventMgr::EventKind::PREV:
       #endif
-      current_entry_index = toc_viewer->prev_item();
+      currentEntryIndex = tocViewer->prevItem();
       break;
 
       #if EXTENDED_CASE
@@ -102,20 +101,20 @@ void TocController::leave(bool going_to_deep_sleep) { toc_viewer.reset(); }
       #else
       case EventMgr::EventKind::NEXT:
       #endif
-      current_entry_index = toc_viewer->next_item();
+      currentEntryIndex = tocViewer->nextItem();
       break;
 
     case EventMgr::EventKind::SELECT:
-      if ((current_entry_index >= 0) && (current_entry_index < epub->toc->get_entry_count())) {
-        if (epub->toc->get_entry(current_entry_index).page_id.offset >= 0) {
-          book_controller.set_current_page_id(epub->toc->get_entry(current_entry_index).page_id);
-          app_controller.set_controller(AppController::Ctrl::BOOK);
+      if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
+        if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
+          bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+          appController.setController(AppController::Ctrl::BOOK);
         }
       }
       break;
 
     case EventMgr::EventKind::DBL_SELECT:
-      app_controller.set_controller(AppController::Ctrl::BOOK);
+      appController.setController(AppController::Ctrl::BOOK);
       break;
 
     case EventMgr::EventKind::NONE:

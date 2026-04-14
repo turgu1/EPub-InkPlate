@@ -114,18 +114,18 @@ static void test_deleter_array() {
 }
 
 // ===========================================================================
-// 4. make_shared_himem<T> — scalar
+// 4. makeSharedHimem<T> — scalar
 // ===========================================================================
 static void test_shared_scalar() {
-  HT_LOG("--- make_shared_himem<T> scalar ---");
+  HT_LOG("--- makeSharedHimem<T> scalar ---");
 
   Tracked::live = 0;
-  auto p        = make_shared_himem<Tracked>(7);
+  auto p        = makeSharedHimem<Tracked>(7);
 
-  HT_CHECK(p != nullptr, "make_shared_himem returns non-null");
+  HT_CHECK(p != nullptr, "makeSharedHimem returns non-null");
   HT_CHECK(IS_PSRAM(p.get()), "managed object is in PSRAM");
   HT_CHECK(p->value == 7, "object constructed with correct value");
-  HT_CHECK(Tracked::live == 1, "one live instance after make_shared_himem");
+  HT_CHECK(Tracked::live == 1, "one live instance after makeSharedHimem");
   HT_CHECK(p.use_count() == 1, "use_count starts at 1");
 
   {
@@ -142,15 +142,15 @@ static void test_shared_scalar() {
 }
 
 // ===========================================================================
-// 5. make_shared_himem<T[]> — unbounded array
+// 5. makeSharedHimem<T[]> — unbounded array
 // ===========================================================================
 static void test_shared_array() {
-  HT_LOG("--- make_shared_himem<T[]> unbounded array ---");
+  HT_LOG("--- makeSharedHimem<T[]> unbounded array ---");
 
   constexpr std::size_t N = 10;
-  auto arr                = make_shared_himem<int[]>(N);
+  auto arr                = makeSharedHimem<int[]>(N);
 
-  HT_CHECK(arr != nullptr, "make_shared_himem array returns non-null");
+  HT_CHECK(arr != nullptr, "makeSharedHimem array returns non-null");
   HT_CHECK(IS_PSRAM(arr.get()), "array storage is in PSRAM");
 
   for (std::size_t i = 0; i < N; ++i) arr[i] = static_cast<int>(i * i);
@@ -161,15 +161,15 @@ static void test_shared_array() {
 }
 
 // ===========================================================================
-// 6. make_unique_himem<T> — scalar
+// 6. makeUniqueHimem<T> — scalar
 // ===========================================================================
 static void test_unique_scalar() {
-  HT_LOG("--- make_unique_himem<T> scalar ---");
+  HT_LOG("--- makeUniqueHimem<T> scalar ---");
 
   Tracked::live = 0;
-  auto u        = make_unique_himem<Tracked>(99);
+  auto u        = makeUniqueHimem<Tracked>(99);
 
-  HT_CHECK(u != nullptr, "make_unique_himem returns non-null");
+  HT_CHECK(u != nullptr, "makeUniqueHimem returns non-null");
   HT_CHECK(IS_PSRAM(u.get()), "managed object is in PSRAM");
   HT_CHECK(u->value == 99, "object constructed with correct value");
   HT_CHECK(Tracked::live == 1, "one live instance");
@@ -185,15 +185,15 @@ static void test_unique_scalar() {
 }
 
 // ===========================================================================
-// 7. make_unique_himem<T[]> — unbounded array
+// 7. makeUniqueHimem<T[]> — unbounded array
 // ===========================================================================
 static void test_unique_array() {
-  HT_LOG("--- make_unique_himem<T[]> unbounded array ---");
+  HT_LOG("--- makeUniqueHimem<T[]> unbounded array ---");
 
   constexpr std::size_t N = 6;
-  auto arr                = make_unique_himem<int[]>(N);
+  auto arr                = makeUniqueHimem<int[]>(N);
 
-  HT_CHECK(arr != nullptr, "make_unique_himem array returns non-null");
+  HT_CHECK(arr != nullptr, "makeUniqueHimem array returns non-null");
   HT_CHECK(IS_PSRAM(arr.get()), "array storage is in PSRAM");
 
   // Elements must be value-initialised (zero for int).
@@ -208,13 +208,13 @@ static void test_unique_array() {
 }
 
 // ===========================================================================
-// 8. himem_string
+// 8. himemString
 // ===========================================================================
 static void test_himem_string() {
-  HT_LOG("--- himem_string ---");
+  HT_LOG("--- himemString ---");
 
-  himem_string s;
-  HT_CHECK(s.empty(), "default-constructed himem_string is empty");
+  himemString s;
+  HT_CHECK(s.empty(), "default-constructed himemString is empty");
 
   // Use a string >= 32 chars to guarantee the custom allocator is invoked
   // (bypass potential small-string-optimisation in the platform's libstdc++).
@@ -224,9 +224,9 @@ static void test_himem_string() {
   HT_CHECK(IS_PSRAM(s.data()), "character buffer is in PSRAM");
 
   s += " Extended.";
-  HT_CHECK(s.find("Extended") != himem_string::npos, "append and find work correctly");
+  HT_CHECK(s.find("Extended") != himemString::npos, "append and find work correctly");
 
-  himem_string s2{s}; // copy
+  himemString s2{s}; // copy
   HT_CHECK(s2 == s, "copy-constructed string equals original");
   HT_CHECK(IS_PSRAM(s2.data()), "copy's character buffer is in PSRAM");
 
@@ -236,13 +236,13 @@ static void test_himem_string() {
 }
 
 // ===========================================================================
-// 9. himem_vector<int>
+// 9. himemVector<int>
 // ===========================================================================
 static void test_himem_vector() {
-  HT_LOG("--- himem_vector<int> ---");
+  HT_LOG("--- himemVector<int> ---");
 
-  himem_vector<int> v;
-  HT_CHECK(v.empty(), "default-constructed himem_vector is empty");
+  himemVector<int> v;
+  HT_CHECK(v.empty(), "default-constructed himemVector is empty");
 
   for (int i = 0; i < 8; ++i) v.push_back(i * 3);
   HT_CHECK(v.size() == 8, "size() correct after push_back");
@@ -263,26 +263,26 @@ static void test_himem_vector() {
   // Verify destructor pairing with a non-trivial element type.
   Tracked::live = 0;
   {
-    himem_vector<Tracked> tv;
+    himemVector<Tracked> tv;
     tv.emplace_back(1);
     tv.emplace_back(2);
     tv.emplace_back(3);
-    HT_CHECK(Tracked::live == 3, "3 Tracked objects live in himem_vector");
+    HT_CHECK(Tracked::live == 3, "3 Tracked objects live in himemVector");
     HT_CHECK(IS_PSRAM(tv.data()), "Tracked element storage is in PSRAM");
   }
-  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himem_vector leaves scope");
+  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himemVector leaves scope");
 }
 
 // ===========================================================================
-// 10. himem_unique_string
+// 10. himemUniqueString
 // ===========================================================================
 static void test_unique_string() {
-  HT_LOG("--- himem_unique_string ---");
+  HT_LOG("--- himemUniqueString ---");
 
-  auto s = make_unique_himem_string("Hello from PSRAM unique string!!");
+  auto s = makeUniqueHimemString("Hello from PSRAM unique string!!");
 
-  HT_CHECK(s != nullptr, "make_unique_himem_string returns non-null");
-  HT_CHECK(IS_PSRAM(s.get()), "himem_string object itself is in PSRAM");
+  HT_CHECK(s != nullptr, "makeUniqueHimemString returns non-null");
+  HT_CHECK(IS_PSRAM(s.get()), "himemString object itself is in PSRAM");
   HT_CHECK(*s == "Hello from PSRAM unique string!!", "content is correct");
   HT_CHECK(IS_PSRAM(s->data()), "character buffer is in PSRAM");
 
@@ -294,8 +294,8 @@ static void test_unique_string() {
   HT_CHECK(IS_PSRAM(s2.get()), "moved-to object still in PSRAM");
 
   // Empty / default construction then mutate.
-  auto empty = make_unique_himem_string();
-  HT_CHECK(empty != nullptr, "empty make_unique_himem_string returns non-null");
+  auto empty = makeUniqueHimemString();
+  HT_CHECK(empty != nullptr, "empty makeUniqueHimemString returns non-null");
   HT_CHECK(empty->empty(), "default-constructed string is empty");
   HT_CHECK(IS_PSRAM(empty.get()), "empty string object is in PSRAM");
 
@@ -305,16 +305,16 @@ static void test_unique_string() {
 }
 
 // ===========================================================================
-// 11. himem_unique_vector<T>
+// 11. himemUniqueVector<T>
 // ===========================================================================
 static void test_unique_vector() {
-  HT_LOG("--- himem_unique_vector<int> ---");
+  HT_LOG("--- himemUniqueVector<int> ---");
 
   // Sized construction: 5 elements, each 7.
-  auto v = make_unique_himem_vector<int>(5u, 7);
+  auto v = makeUniqueHimemVector<int>(5u, 7);
 
-  HT_CHECK(v != nullptr, "make_unique_himem_vector returns non-null");
-  HT_CHECK(IS_PSRAM(v.get()), "himem_vector<int> object itself is in PSRAM");
+  HT_CHECK(v != nullptr, "makeUniqueHimemVector returns non-null");
+  HT_CHECK(IS_PSRAM(v.get()), "himemVector<int> object itself is in PSRAM");
   HT_CHECK(v->size() == 5, "vector has correct initial size");
   HT_CHECK(IS_PSRAM(v->data()), "element storage is in PSRAM");
 
@@ -333,22 +333,22 @@ static void test_unique_vector() {
   HT_CHECK(IS_PSRAM(v2.get()), "moved-to object still in PSRAM");
 
   // Empty / default construction.
-  auto ev = make_unique_himem_vector<float>();
-  HT_CHECK(ev != nullptr, "empty make_unique_himem_vector returns non-null");
+  auto ev = makeUniqueHimemVector<float>();
+  HT_CHECK(ev != nullptr, "empty makeUniqueHimemVector returns non-null");
   HT_CHECK(ev->empty(), "default-constructed vector is empty");
   HT_CHECK(IS_PSRAM(ev.get()), "empty vector object itself is in PSRAM");
 
   // Verify destructor pairing.
   Tracked::live = 0;
   {
-    auto tv = make_unique_himem_vector<Tracked>();
+    auto tv = makeUniqueHimemVector<Tracked>();
     tv->emplace_back(1);
     tv->emplace_back(2);
-    HT_CHECK(Tracked::live == 2, "2 Tracked objects in himem_unique_vector");
+    HT_CHECK(Tracked::live == 2, "2 Tracked objects in himemUniqueVector");
     HT_CHECK(IS_PSRAM(tv.get()), "Tracked vector object itself is in PSRAM");
     HT_CHECK(IS_PSRAM(tv->data()), "Tracked element storage is in PSRAM");
   }
-  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himem_unique_vector resets");
+  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himemUniqueVector resets");
 }
 
 } // anonymous namespace

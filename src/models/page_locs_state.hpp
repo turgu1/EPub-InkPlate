@@ -15,7 +15,7 @@
 
 class PageLocsState;
 
-using PageLocsStatePtr = himem_unique_ptr<PageLocsState>;
+using PageLocsStatePtr = himemUniquePtr<PageLocsState>;
 class PageLocsState {
 private:
   PageLocsState() = default;
@@ -25,9 +25,9 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make() { return make_unique_himem<PageLocsState>(); }
+  static inline auto Make() { return makeUniqueHimem<PageLocsState>(); }
 
   enum class Req : int8_t {
     NONE, ABORT, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT
@@ -35,67 +35,67 @@ public:
 
   struct QueueData {
     Req req{Req::NONE};
-    int16_t itemref_index{0};
-    int16_t itemref_count{0};
+    int16_t itemrefIndex{0};
+    int16_t itemrefCount{0};
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
-      return mq_send(state_queue, (const char *)&data, sizeof(data), 1);
+      return mq_send(stateQueue, (const char *)&data, sizeof(data), 1);
     #else
-      return xQueueSendToBack(state_queue, &data, timeout);
+      return xQueueSendToBack(stateQueue, &data, timeout);
     #endif
   }
 
-  auto setup(const std::string &epub_filename) -> bool;
-  void wait_for_exit();
+  auto setup(const std::string &epubFilename) -> bool;
+  void waitForExit();
 
-  inline bool retriever_is_iddle() { return retriever_iddle; }
-  inline bool forgetting_retrieval() { return forget_retrieval; }
+  inline auto retrieverIsIdle() -> bool { return retrieverIdle; }
+  inline auto forgettingRetrieval() -> bool { return forgetRetrieval; }
 
-  inline int percent_done() {
-    int16_t percent = (items_done_count * 100) / itemref_count;
+  inline auto percentDone() -> int {
+    int16_t percent = (itemsDoneCount * 100) / itemrefCount;
     // ESP_LOGI(TAG, "Percent = %" PRIi16 " itemref count = %" PRIi16 " items done = %" PRIi16,
-    // percent, itemref_count, items_done_count);
+    // percent, itemrefCount, itemsDoneCount);
     return percent;
   }
 
 private:
   static constexpr const char *TAG = "PageLocsState";
 
-  bool retriever_iddle{true};
+  bool retrieverIdle{true};
 
-  int16_t itemref_count{-1};       // Number of items in the document
-  int16_t items_done_count{-1};    // Number of items done
-  int16_t waiting_for_itemref{-1}; // Current item being processed by retrieval task
-  int16_t next_itemref_to_get{-1}; // Non prioritize item to get next
-  int16_t asap_itemref{-1};        // Prioritize item to get next
-  uint8_t *bitset{nullptr};        // Set of all items processed so far
-  uint8_t bitset_size{0};          // bitset byte length
+  int16_t itemrefCount{-1};      // Number of items in the document
+  int16_t itemsDoneCount{-1};    // Number of items done
+  int16_t waitingForItemref{-1}; // Current item being processed by retrieval task
+  int16_t nextItemrefToGet{-1};  // Non prioritize item to get next
+  int16_t asapItemref{-1};       // Prioritize item to get next
+  uint8_t *bitset{nullptr};      // Set of all items processed so far
+  uint8_t bitsetSize{0};         // bitset byte length
   bool stopping{false};
-  bool forget_retrieval{false}; // Forget current item begin processed by retrieval task
+  bool forgetRetrieval{false}; // Forget current item begin processed by retrieval task
 
-  PageLocsRetriever retriever_task;
+  PageLocsRetriever retrieverTask;
 
   #if EPUB_LINUX_BUILD
-    static mqd_t state_queue;
-    static constexpr mq_attr state_attr = {0, 5, sizeof(QueueData), 0};
+    static mqd_t stateQueue;
+    static constexpr mq_attr stateAttr = {0, 5, sizeof(QueueData), 0};
   #else
-    static QueueHandle_t state_queue;
+    static QueueHandle_t stateQueue;
   #endif
 
   auto receive(QueueData &data, int timeout = -1) {
     #if EPUB_LINUX_BUILD
-      return mq_receive(state_queue, (char *)&data, sizeof(data), nullptr);
+      return mq_receive(stateQueue, (char *)&data, sizeof(data), nullptr);
     #else
-      return xQueueReceive(state_queue, &data, timeout);
+      return xQueueReceive(stateQueue, &data, timeout);
     #endif
   }
 
   void abort();
 
-  void request_next_item(int16_t itemref, bool already_sent_to_mgr);
+  void requestNextItem(int16_t itemref, bool alreadySentToMgr = false);
 
-  std::thread state_thread;
+  std::thread stateThread;
   void task();
 };

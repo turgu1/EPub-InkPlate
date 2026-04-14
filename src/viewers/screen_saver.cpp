@@ -48,10 +48,10 @@
         if (index >= picture_filenames.size()) index = picture_filenames.size() - 1;
         LOG_D("Showing picture at index %d: %s", index, picture_filenames[index].c_str());
         auto pict = PictureFactory::create(
-            picture_filenames[index], Dim(Screen::get_width(), Screen::get_height()), true, true);
+            picture_filenames[index], Dim(Screen::getWidth(), Screen::getHeight()), true, true);
         if (pict) {
           // pict->show();
-          page->show_cover(pict);
+          page->showCover(pict);
         } else {
           LOG_E("Unable to load picture file %s", picture_filenames[index].c_str());
         }

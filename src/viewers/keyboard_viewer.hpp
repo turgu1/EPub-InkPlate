@@ -47,15 +47,15 @@ class KeyboardViewer
     static constexpr char const * special_line_3  = "\2.,?!'";
     static constexpr char const * special_line_4  = "\4 \r";     ; // \4 == 'ABC', ' ' == 'space', \4 == 'return'
 
-    void show_kb(KBType kb_type);
-    void show_char(char           ch, uint16_t & x, uint16_t y);
-    void show_line(const char * line, uint16_t & x, uint16_t y);
+    void showKb(KBType kb_type);
+    void showChar(char           ch, uint16_t & x, uint16_t y);
+    void showLine(const char * line, uint16_t & x, uint16_t y);
   public:
     KeyboardViewer() : current_kb_type(KBType::ALFA) {};
 
-    typedef void (* UpdateHandler)(char ch);
-    bool get_alfanum(char * str, uint16_t len, UpdateHandler handler);
-    bool get_num(int32_t & val);
+    using UpdateHandler = void (*)(char ch);
+    auto getAlfanum(char * str, uint16_t len, UpdateHandler handler) -> bool;
+    auto getNum(int32_t & val) -> bool;
 };
 
 #if __KEYBOARD_VIEWER__

@@ -16,42 +16,42 @@ class BookParamController {
 private:
   static constexpr char const *TAG = "BookParamController";
 
-  bool book_params_form_is_shown{false};
-  bool wait_for_key_after_wifi{false};
-  bool delete_current_book{false};
+  bool bookParamsFormIsShown{false};
+  bool waitForKeyAfterWifi{false};
+  bool deleteCurrentBook{false};
 
   EPubPtr epub{nullptr};
 
 public:
   BookParamController() = default;
 
-  inline void set_ownership_of_book(EPubPtr &epub_ptr) { epub = std::move(epub_ptr); }
+  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
 
-  MenuViewerPtr menu_viewer;
-  FormViewerPtr form_viewer;
+  MenuViewerPtr menuViewer;
+  FormViewerPtr formViewer;
 
-  MsgViewer::ConfirmDataPtr confirm_data;
+  MsgViewer::ConfirmDataPtr confirmData;
 
-  void input_event(const EventMgr::Event &event);
+  void inputEvent(const EventMgr::Event &event);
   void enter();
-  void leave(bool going_to_deep_sleep = false);
-  void set_font_count(uint8_t count);
+  void leave(bool goingToDeepSleep = false);
+  void setFontCount(uint8_t count);
 
-  inline void set_book_params_form_is_shown() { book_params_form_is_shown = true; }
-  inline void set_wait_for_key_after_wifi() { wait_for_key_after_wifi = true; }
-  inline void set_delete_current_book() { delete_current_book = true; }
+  inline void setBookParamsFormIsShown() { bookParamsFormIsShown = true; }
+  inline void setWaitForKeyAfterWifi() { waitForKeyAfterWifi = true; }
+  inline void setDeleteCurrentBook() { deleteCurrentBook = true; }
 
-  void book_parameters();
-  void revert_to_defaults();
-  void books_list();
-  void delete_book();
-  void toc_ctrl();
-  void wifi_mode();
-  void power_off();
+  void bookParameters();
+  void revertToDefaults();
+  void booksList();
+  void deleteBook();
+  void tocCtrl();
+  void wifiMode();
+  void powerOff();
 };
 
 #if __BOOK_PARAM_CONTROLLER__
-  BookParamController book_param_controller;
+  BookParamController bookParamController;
 #else
-  extern BookParamController book_param_controller;
+  extern BookParamController bookParamController;
 #endif

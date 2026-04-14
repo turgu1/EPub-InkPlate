@@ -8,7 +8,7 @@ public:
 
   void reset() { start_time = std::chrono::steady_clock::now(); }
 
-  double elapsed_seconds() const {
+  auto elapsedSeconds() const -> double {
     auto end_time                         = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed = end_time - start_time;
     return elapsed.count();

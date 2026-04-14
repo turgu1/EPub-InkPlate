@@ -13,17 +13,17 @@
   #include <cstring>
 
   void BatteryViewer::show(PagePtr &page) {
-    int8_t view_mode = 0;
-    config.get(Config::Ident::BATTERY, &view_mode);
+    int8_t viewMode = 0;
+    config.get(Config::Ident::BATTERY, &viewMode);
 
-    if (view_mode == 0) return;
+    if (viewMode == 0) return;
 
     float voltage = battery.read_level();
 
     LOG_D("Battery voltage: %5.3f", voltage);
 
     Page::Format fmt = {
-        .font_size = 9,
+        .fontSize = 9,
     };
 
     // Show battery icon
@@ -35,47 +35,47 @@
       return;
     }
 
-    float value        = ((voltage - 2.5) * 4.0) / 1.2;
-    int16_t icon_index = value; // max is 3.7
-    if (icon_index > 4) icon_index = 4;
+    float value       = ((voltage - 2.5) * 4.0) / 1.2;
+    int16_t iconIndex = value; // max is 3.7
+    if (iconIndex > 4) iconIndex = 4;
 
     static constexpr char icons[5] = {'0', '1', '2', '3', '4'};
 
-    Glyph *glyph = font->get_glyph(icons[icon_index], 9);
+    Glyph *glyph = font->getGlyph(icons[iconIndex], 9);
 
     Dim dim;
     dim.width  = 100;
-    dim.height = -font->get_descender_height(9);
+    dim.height = -font->getDescenderHeight(9);
 
     Pos pos;
     // pos.x = 4;
-    pos.y = Screen::get_height() + font->get_descender_height(9) - 2;
+    pos.y = Screen::getHeight() + font->getDescenderHeight(9) - 2;
 
-    // page->clear_region(dim, pos);
+    // page->clearRegion(dim, pos);
 
-    fmt.font_index = 0;
+    fmt.fontIndex = 0;
     pos.x          = 5;
-    page->put_char_at(icons[icon_index], pos, fmt);
+    page->putCharAt(icons[iconIndex], pos, fmt);
 
-    // LOG_E("Battery icon index: %d (%c)", icon_index, icons[icon_index]);
+    // LOG_E("Battery icon index: %d (%c)", iconIndex, icons[iconIndex]);
 
     // Show text
 
-    if ((view_mode == 1) || (view_mode == 2)) {
+    if ((viewMode == 1) || (viewMode == 2)) {
       char str[15];
 
-      if (view_mode == 1) {
+      if (viewMode == 1) {
         int percentage = ((voltage - 2.5) * 100.0) / 1.2;
         if (percentage > 100) percentage = 100;
         sprintf(str, "%d%c", percentage, '%');
-      } else if (view_mode == 2) {
+      } else if (viewMode == 2) {
         sprintf(str, "%5.2fv", voltage);
       }
 
       font           = fonts.get(1);
-      fmt.font_index = 1;
+      fmt.fontIndex = 1;
       pos.x          = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
-      page->put_str_at(str, pos, fmt);
+      page->putStrAt(str, pos, fmt);
     }
   }
 #endif

@@ -9,13 +9,13 @@
 #include <forward_list>
 #include <string>
 
-using CharPoolPtr = himem_unique_ptr<class CharPool>;
+using CharPoolPtr = himemUniquePtr<class CharPool>;
 class CharPool {
 private:
   static constexpr char const *TAG = "CharPool";
   static const uint16_t POOL_SIZE  = 4096;
 
-  using PoolPtr = himem_unique_ptr<char[]>;
+  using PoolPtr = himemUniquePtr<char[]>;
 
   std::forward_list<PoolPtr> pool_list;
 
@@ -30,16 +30,16 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make() { return make_unique_himem<CharPool>(); }
+  static inline auto Make() { return makeUniqueHimem<CharPool>(); }
 
   uint32_t get_total_allocated() { return total_allocated; }
 
   char *allocate(uint16_t size) {
     if ((current == nullptr) || ((current_idx + size) >= POOL_SIZE)) {
       LOG_D("New pool allocation.");
-      auto pool = make_unique_himem<char[]>(POOL_SIZE);
+      auto pool = makeUniqueHimem<char[]>(POOL_SIZE);
       if (pool) {
         pool_list.push_front(std::move(pool));
         current     = pool_list.front().get();

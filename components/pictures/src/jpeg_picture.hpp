@@ -8,7 +8,7 @@
 #include "himem.hpp"
 #include "picture.hpp"
 
-using JPegPicturePtr = himem_unique_ptr<class JPegPicture>;
+using JPegPicturePtr = himemUniquePtr<class JPegPicture>;
 
 class JPegPicture : public Picture {
 
@@ -16,17 +16,17 @@ private:
   static constexpr char const *TAG  = "JPegPicture";
   static constexpr size_t WORK_SIZE = 20 * 1024;
 
-  JPegPicture(std::string filename, Dim max, bool load_bitmap, bool from_file = false);
+  JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fromFile = false);
 
-  void LoadFromFile(std::string filename, Dim max, bool load_bitmap);
+  void loadFromFile(std::string filename, Dim max, bool loadBitmap);
 
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(std::string filename, Dim max, bool load_bitmap, bool from_file = false) {
-    return make_unique_himem<JPegPicture>(filename, max, load_bitmap, from_file);
+  static inline auto Make(std::string filename, Dim max, bool loadBitmap, bool fromFile = false) {
+    return makeUniqueHimem<JPegPicture>(filename, max, loadBitmap, fromFile);
   }
 
   ~JPegPicture() override = default;
@@ -34,5 +34,5 @@ public:
   struct PictureData {
     Dim dim{0, 0};
     uint8_t *bitmap{nullptr};
-  } picture_data;
+  } pictureData;
 };

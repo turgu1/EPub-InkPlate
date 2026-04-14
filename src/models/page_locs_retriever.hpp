@@ -29,45 +29,45 @@ public:
 
   struct QueueData {
     Req req{Req::NONE};
-    int16_t itemref_index{0};
+    int16_t itemrefIndex{0};
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
-      return mq_send(retriever_queue, (const char *)&data, sizeof(data), 1);
+      return mq_send(retrieverQueue, (const char *)&data, sizeof(data), 1);
     #else
-      return xQueueSendToBack(retriever_queue, &data, timeout);
+      return xQueueSendToBack(retrieverQueue, &data, timeout);
     #endif
   }
 
-  auto setup(const std::string &epub_filename) -> bool;
+  auto setup(const std::string &epubFilename) -> bool;
 
-  void wait_for_exit();
+  void waitForExit();
 
 private:
   DOMPtr dom{nullptr};
   EPubPtr epub{nullptr};
-  uint16_t page_bottom;
+  uint16_t pageBottom;
 
-  EPub::BookFormatParams current_format_params;
+  EPub::BookFormatParams currentFormatParams;
 
   #if EPUB_LINUX_BUILD
-    static mqd_t retriever_queue;
-    static constexpr mq_attr retriever_attr = {0, 5, sizeof(QueueData), 0};
+    static mqd_t retrieverQueue;
+    static constexpr mq_attr retrieverAttr = {0, 5, sizeof(QueueData), 0};
   #else
-    static QueueHandle_t retriever_queue;
+    static QueueHandle_t retrieverQueue;
   #endif
 
   auto receive(QueueData &data, int timeout = -1) {
     #if EPUB_LINUX_BUILD
-      return mq_receive(retriever_queue, (char *)&data, sizeof(data), nullptr);
+      return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
     #else
-      return xQueueReceive(retriever_queue, &data, timeout);
+      return xQueueReceive(retrieverQueue, &data, timeout);
     #endif
   }
 
-  std::thread retriever_thread;
+  std::thread retrieverThread;
   void task();
 
-  bool build_page_locs(int16_t itemref_index);
+  auto buildPageLocs(int16_t itemrefIndex) -> bool;
 };

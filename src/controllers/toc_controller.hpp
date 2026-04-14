@@ -13,25 +13,25 @@ class TocController {
 private:
   static constexpr char const *TAG = "TocController";
 
-  int16_t current_entry_index;
-  int16_t current_book_index;
+  int16_t currentEntryIndex;
+  int16_t currentBookIndex;
 
-  TocViewerPtr toc_viewer{nullptr};
+  TocViewerPtr tocViewer{nullptr};
 
   EPubPtr epub{nullptr};
 
 public:
-  TocController() : current_entry_index(-1), current_book_index(-1) {}
+  TocController() : currentEntryIndex(-1), currentBookIndex(-1) {}
 
-  inline void set_ownership_of_book(EPubPtr &epub_ptr) { epub = std::move(epub_ptr); }
+  inline void setOwnershipOfBook(EPubPtr &epubPtr) { epub = std::move(epubPtr); }
 
-  void input_event(const EventMgr::Event &event);
+  void inputEvent(const EventMgr::Event &event);
   void enter();
-  void leave(bool going_to_deep_sleep = false);
+  void leave(bool goingToDeepSleep = false);
 };
 
 #if __TOC_CONTROLLER__
-  TocController toc_controller;
+  TocController tocController;
 #else
-  extern TocController toc_controller;
+  extern TocController tocController;
 #endif

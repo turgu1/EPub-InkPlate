@@ -20,7 +20,7 @@ public:
   Fonts();
   ~Fonts();
 
-  bool setup();
+  auto setup() -> bool;
 
   enum class FaceStyle : uint8_t {
     NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC
@@ -40,7 +40,7 @@ public:
    * @param all If true, default fonts will also be removed
    */
   void clear(bool all = false);
-  void clear_everything();
+  void clearEverything();
   /**
    * @brief Get font at index
    *
@@ -48,13 +48,13 @@ public:
    * @return Pointer to the font at index. If there is no font at index,
    *         it returns the pointer to the first font in the list.
    */
-  Font *get(int16_t index) {
+  auto get(int16_t index) -> Font * {
     Font *f;
-    if (index >= (int16_t)font_cache.size()) {
-      LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
-      f = font_cache.at(1).font;
+    if (index >= (int16_t)fontCache.size()) {
+      LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, fontCache.size());
+      f = fontCache.at(1).font;
     } else {
-      f = font_cache.at(index).font;
+      f = fontCache.at(index).font;
     }
     return f;
   };
@@ -67,7 +67,7 @@ public:
    * @return Index number related to a font name and a face style.
    *         If not found, returns -1.
    */
-  int16_t get_index(const std::string &name, FaceStyle style);
+  auto getIndex(const std::string &name, FaceStyle style) -> int16_t;
 
   /**
    * @brief Get Font name
@@ -77,12 +77,12 @@ public:
    * @return Pointer to the name of the font at index. If there is no font
    *         at index, returns the name of the first in the list.
    */
-  const char *get_name(int16_t index) const {
-    if (index >= (int16_t)font_cache.size()) {
-      LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, font_cache.size());
-      return font_cache[1].name.c_str();
+  auto getName(int16_t index) const -> const char * {
+    if (index >= (int16_t)fontCache.size()) {
+      LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, fontCache.size());
+      return fontCache[1].name.c_str();
     } else {
-      return font_cache[index].name.c_str();
+      return fontCache[index].name.c_str();
     }
   };
 
@@ -95,7 +95,7 @@ public:
    * @return true The font was loaded
    * @return false Some error (file does not exists, etc.)
    */
-  bool add(const std::string &name, FaceStyle style, const std::string &filename);
+  auto add(const std::string &name, FaceStyle style, const std::string &filename) -> bool;
 
   /**
    * @brief Add a font from memory buffer
@@ -107,40 +107,41 @@ public:
    * @return true The font was added
    * @return false Some error occured
    */
-  bool add(const std::string &name, FaceStyle style, MemoryFontPtr buffer, int32_t size,
-           const std::string &filename);
+  auto add(const std::string &name, FaceStyle style, MemoryFontPtr buffer, int32_t size,
+           const std::string &filename) -> bool;
 
-  FaceStyle adjust_font_style(FaceStyle style, FaceStyle font_style, FaceStyle font_weight) const;
+  auto adjustFontStyle(FaceStyle style, FaceStyle fontStyle, FaceStyle fontWeight) const
+      -> FaceStyle;
 
   void check(int16_t index, FaceStyle style) const {
-    if (font_cache[index].style != style) {
+    if (fontCache[index].style != style) {
       LOG_E("Hum... font_check failed");
     }
   };
 
-  void clear_glyph_caches();
+  void clearGlyphCaches();
 
-  void adjust_default_font(uint8_t font_index);
+  void adjustDefaultFont(uint8_t fontIndex);
 
-  bool replace(int16_t index, const std::string &name, FaceStyle style,
-               const std::string &filename);
+  auto replace(int16_t index, const std::string &name, FaceStyle style, const std::string &filename)
+      -> bool;
 
 private:
-  typedef std::vector<FontEntry> FontCache;
-  FontCache font_cache;
+  using FontCache = std::vector<FontEntry>;
+  FontCache fontCache;
   std::mutex mutex;
 
-  uint8_t font_count;
-  char *font_names[8];
-  char *regular_fname[8];
-  char *bold_fname[8];
-  char *italic_fname[8];
-  char *bold_italic_fname[8];
+  uint8_t fontCount;
+  char *fontNames[8];
+  char *regularFname[8];
+  char *boldFname[8];
+  char *italicFname[8];
+  char *boldItalicFname[8];
 
-  CharPoolPtr char_pool{nullptr};
+  CharPoolPtr charPool{nullptr};
 
-  char *get_file(const char *filename, uint32_t size);
-  std::string &filter_filename(std::string &fname);
+  auto getFile(const char *filename, uint32_t size) -> char *;
+  auto filterFilename(std::string &fname) -> std::string &;
 };
 
 #if __FONTS__

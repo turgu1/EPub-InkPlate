@@ -72,7 +72,7 @@
   namespace {
 
   template <typename T>
-  void print_class_size(const char *name) {
+  void printClassSize(const char *name) {
     std::cout << std::left << std::setw(32) << name << " : " << std::setw(6) << sizeof(T)
               << " bytes" << std::endl;
   }
@@ -83,7 +83,7 @@
       uint32_t caps;
     };
 
-    void print_heap_cap_info(const HeapCap &entry) {
+    void printHeapCapInfo(const HeapCap &entry) {
       multi_heap_info_t info;
       heap_caps_get_info(&info, entry.caps);
 
@@ -100,110 +100,110 @@
 
   } // namespace
 
-  void DebugTool::print_all_class_sizes() {
+  void DebugTool::printAllClassSizes() {
     std::cout << "========== Class Size Report (src + components) ==========" << std::endl;
 
-    print_class_size<OptionController>("OptionController");
-    print_class_size<BookController>("BookController");
-    print_class_size<BookParamController>("BookParamController");
-    print_class_size<AppController>("AppController");
-    print_class_size<CommonActions>("CommonActions");
-    print_class_size<TocController>("TocController");
-    print_class_size<BooksDirController>("BooksDirController");
-    print_class_size<EventMgr>("EventMgr");
-    print_class_size<Duration>("Duration");
-    print_class_size<BooksDir>("BooksDir");
-    print_class_size<TOC>("TOC");
-    print_class_size<IBMF>("IBMF");
-    print_class_size<Fonts>("Fonts");
-    print_class_size<TTF>("TTF");
-    print_class_size<IBMFFont>("IBMFFont");
+    printClassSize<OptionController>("OptionController");
+    printClassSize<BookController>("BookController");
+    printClassSize<BookParamController>("BookParamController");
+    printClassSize<AppController>("AppController");
+    printClassSize<CommonActions>("CommonActions");
+    printClassSize<TocController>("TocController");
+    printClassSize<BooksDirController>("BooksDirController");
+    printClassSize<EventMgr>("EventMgr");
+    printClassSize<Duration>("Duration");
+    printClassSize<BooksDir>("BooksDir");
+    printClassSize<TOC>("TOC");
+    printClassSize<IBMF>("IBMF");
+    printClassSize<Fonts>("Fonts");
+    printClassSize<TTF>("TTF");
+    printClassSize<IBMFFont>("IBMFFont");
 
     #if EPUB_INKPLATE_BUILD
-      print_class_size<NVSMgr>("NVSMgr");
+      printClassSize<NVSMgr>("NVSMgr");
     #endif
 
-    print_class_size<DisplayListEntry>("DisplayListEntry");
-    print_class_size<DisplayList>("DisplayList");
-    print_class_size<FontFactory>("FontFactory");
-    print_class_size<CSS>("CSS");
-    print_class_size<EPub>("EPub");
-    print_class_size<CSSParser>("CSSParser");
-    print_class_size<PageLocs>("PageLocs");
-    print_class_size<Font>("Font");
-    print_class_size<DOM>("DOM");
-    print_class_size<MenuViewer>("MenuViewer");
-    print_class_size<LinearBooksDirViewer>("LinearBooksDirViewer");
-    print_class_size<ScreenBottom>("ScreenBottom");
-    print_class_size<BooksDirViewer>("BooksDirViewer");
-    print_class_size<TocViewer>("TocViewer");
-    print_class_size<FormField>("FormField");
-    print_class_size<FormChoiceField>("FormChoiceField");
-    print_class_size<VFormChoiceField>("VFormChoiceField");
-    print_class_size<HFormChoiceField>("HFormChoiceField");
-    print_class_size<FormUInt16>("FormUInt16");
-    print_class_size<FieldFactory>("FieldFactory");
-    print_class_size<FormViewer>("FormViewer");
-    print_class_size<MsgViewer>("MsgViewer");
-    print_class_size<Page>("Page");
-    print_class_size<HTMLInterpreter>("HTMLInterpreter");
-    print_class_size<MatrixBooksDirViewer>("MatrixBooksDirViewer");
+    printClassSize<DisplayListEntry>("DisplayListEntry");
+    printClassSize<DisplayList>("DisplayList");
+    printClassSize<FontFactory>("FontFactory");
+    printClassSize<CSS>("CSS");
+    printClassSize<EPub>("EPub");
+    printClassSize<CSSParser>("CSSParser");
+    printClassSize<PageLocs>("PageLocs");
+    printClassSize<Font>("Font");
+    printClassSize<DOM>("DOM");
+    printClassSize<MenuViewer>("MenuViewer");
+    printClassSize<LinearBooksDirViewer>("LinearBooksDirViewer");
+    printClassSize<ScreenBottom>("ScreenBottom");
+    printClassSize<BooksDirViewer>("BooksDirViewer");
+    printClassSize<TocViewer>("TocViewer");
+    printClassSize<FormField>("FormField");
+    printClassSize<FormChoiceField>("FormChoiceField");
+    printClassSize<VFormChoiceField>("VFormChoiceField");
+    printClassSize<HFormChoiceField>("HFormChoiceField");
+    printClassSize<FormUInt16>("FormUInt16");
+    printClassSize<FieldFactory>("FieldFactory");
+    printClassSize<FormViewer>("FormViewer");
+    printClassSize<MsgViewer>("MsgViewer");
+    printClassSize<Page>("Page");
+    printClassSize<HTMLInterpreter>("HTMLInterpreter");
+    printClassSize<MatrixBooksDirViewer>("MatrixBooksDirViewer");
 
     #if 0
-    print_class_size<KeyboardViewer>("KeyboardViewer");
+    printClassSize<KeyboardViewer>("KeyboardViewer");
     #endif
 
-    print_class_size<BookViewer>("BookViewer");
-    print_class_size<KeypadViewer>("KeypadViewer");
-    print_class_size<Screen>("Screen");
-    print_class_size<Unzip>("Unzip");
+    printClassSize<BookViewer>("BookViewer");
+    printClassSize<KeypadViewer>("KeypadViewer");
+    printClassSize<Screen>("Screen");
+    printClassSize<Unzip>("Unzip");
 
     // #if EPUB_INKPLATE_BUILD
-    //   print_class_size<PsramAllocator>("PsramAllocator");
+    //   printClassSize<PsramAllocator>("PsramAllocator");
     // #endif
 
-    print_class_size<JPegPicture>("JPegPicture");
-    print_class_size<BitmapPicture>("BitmapPicture");
-    print_class_size<PngPicture>("PngPicture");
-    print_class_size<Picture>("Picture");
-    print_class_size<PictureFactory>("PictureFactory");
-    print_class_size<SimpleDB>("SimpleDB");
-    print_class_size<CharPool>("CharPool");
+    printClassSize<JPegPicture>("JPegPicture");
+    printClassSize<BitmapPicture>("BitmapPicture");
+    printClassSize<PngPicture>("PngPicture");
+    printClassSize<Picture>("Picture");
+    printClassSize<PictureFactory>("PictureFactory");
+    printClassSize<SimpleDB>("SimpleDB");
+    printClassSize<CharPool>("CharPool");
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      print_class_size<BackLit>("BackLit");
+      printClassSize<BackLit>("BackLit");
     #endif
 
     #if DATE_TIME_RTC
-      print_class_size<Clock>("Clock");
-      print_class_size<NTP>("NTP");
+      printClassSize<Clock>("Clock");
+      printClassSize<NTP>("NTP");
     #endif
 
     #if EPUB_INKPLATE_BUILD
-      print_class_size<WIFI>("WIFI");
+      printClassSize<WIFI>("WIFI");
     #endif
   }
 
-  void DebugTool::print_memory_state() {
+  void DebugTool::printMemoryState() {
     #if EPUB_INKPLATE_BUILD
       std::cout << "========== Memory State Report ==========" << std::endl;
       std::cout << "Min free heap observed : " << esp_get_minimum_free_heap_size() << " bytes"
                 << std::endl;
 
-      TaskStatus_t task_info{};
-      TaskHandle_t current_task = xTaskGetCurrentTaskHandle();
-      vTaskGetInfo(current_task, &task_info, pdTRUE, eInvalid);
+      TaskStatus_t taskInfo{};
+      TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
+      vTaskGetInfo(currentTask, &taskInfo, pdTRUE, eInvalid);
 
-      size_t stack_size_bytes = 0;
-      if (task_info.pxStackBase != nullptr) {
-        stack_size_bytes = heap_caps_get_allocated_size(task_info.pxStackBase);
+      size_t stackSizeBytes = 0;
+      if (taskInfo.pxStackBase != nullptr) {
+        stackSizeBytes = heap_caps_get_allocated_size(taskInfo.pxStackBase);
       }
 
-      const size_t stack_unused_bytes =
-          static_cast<size_t>(task_info.usStackHighWaterMark) * sizeof(StackType_t);
+      const size_t stackUnusedBytes =
+          static_cast<size_t>(taskInfo.usStackHighWaterMark) * sizeof(StackType_t);
 
-      std::cout << "Current task stack size: " << stack_size_bytes << " bytes" << std::endl;
-      std::cout << "Current task unused stack (high-water mark): " << stack_unused_bytes << " bytes"
+      std::cout << "Current task stack size: " << stackSizeBytes << " bytes" << std::endl;
+      std::cout << "Current task unused stack (high-water mark): " << stackUnusedBytes << " bytes"
                 << std::endl;
 
       const HeapCap caps[] = {
@@ -216,7 +216,7 @@
       };
 
       for (const auto &entry : caps) {
-        print_heap_cap_info(entry);
+        printHeapCapInfo(entry);
       }
     #else
       std::cout << "Memory state report is available only with EPUB_INKPLATE_BUILD." << std::endl;

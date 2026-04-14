@@ -17,8 +17,8 @@
   #include "mdns.h"
   #include "wifi.hpp"
 
-  static EventGroupHandle_t wifi_event_group = nullptr;
-  static bool wifi_first_start               = true;
+  static EventGroupHandle_t wifiEventGroup = nullptr;
+  static bool wifiFirstStart               = true;
 
   // ----- wifi_sta_event_handler() -----
 
@@ -50,20 +50,20 @@
     static constexpr char const *TAG = "WiFi STA Event Handler";
     LOG_I("STA Event, Base: %p, Event: %" PRIi32 ".", (void *)event_base, event_id);
 
-    static int s_retry_num = 0;
+    static int retryCount = 0;
 
     if (event_base == WIFI_EVENT) {
       if (event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
       } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (wifi_first_start) {
-          if (s_retry_num < ESP_MAXIMUM_RETRY) {
+        if (wifiFirstStart) {
+          if (retryCount < ESP_MAXIMUM_RETRY) {
             vTaskDelay(pdMS_TO_TICKS(10E3));
             LOG_I("retry to connect to the AP");
             esp_wifi_connect();
-            s_retry_num++;
+            retryCount++;
           } else {
-            xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
+            xEventGroupSetBits(wifiEventGroup, WIFI_FAIL_BIT);
             LOG_I("connect to the AP fail");
           }
         } else {
@@ -77,22 +77,22 @@
       if (event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         LOG_I("got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-        wifi.set_ip_address(event->ip_info.ip);
-        s_retry_num = 0;
-        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
-        wifi_first_start = false;
+        wifi.setIpAddress(event->ip_info.ip);
+        retryCount = 0;
+        xEventGroupSetBits(wifiEventGroup, WIFI_CONNECTED_BIT);
+        wifiFirstStart = false;
       }
     }
   }
 
-  bool WIFI::start_sta(void) {
-    if (sta_running) return true;
-    if (ap_running) return false;
+  auto WIFI::startSta(void) -> bool {
+    if (staRunning) return true;
+    if (apRunning) return false;
 
-    bool connected   = false;
-    wifi_first_start = true;
+    bool connected = false;
+    wifiFirstStart = true;
 
-    if (wifi_event_group == nullptr) wifi_event_group = xEventGroupCreate();
+    if (wifiEventGroup == nullptr) wifiEventGroup = xEventGroupCreate();
 
     ESP_ERROR_CHECK(esp_netif_init());
 
@@ -107,13 +107,13 @@
     ESP_ERROR_CHECK(
         esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_event_handler, NULL));
 
-    std::string wifi_ssid;
-    std::string wifi_pwd;
-    std::string dns_name;
+    std::string wifiSsid;
+    std::string wifiPassword;
+    std::string dnsName;
 
-    config.get(Config::Ident::SSID, wifi_ssid);
-    config.get(Config::Ident::PWD, wifi_pwd);
-    config.get(Config::Ident::DNS_NAME, dns_name);
+    config.get(Config::Ident::SSID, wifiSsid);
+    config.get(Config::Ident::PWD, wifiPassword);
+    config.get(Config::Ident::DNS_NAME, dnsName);
 
     wifi_config_t wifi_config;
 
@@ -124,28 +124,28 @@
     wifi_config.sta.pmf_cfg.required   = false;
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
-    strcpy((char *)wifi_config.sta.ssid, wifi_ssid.c_str());
-    strcpy((char *)wifi_config.sta.password, wifi_pwd.c_str());
+    strcpy((char *)wifi_config.sta.ssid, wifiSsid.c_str());
+    strcpy((char *)wifi_config.sta.password, wifiPassword.c_str());
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGD(TAG, "start_sta() finished.");
+    ESP_LOGD(TAG, "startSta() finished.");
 
     // Waiting until either the connection is established (WIFI_CONNECTED_BIT)
     // or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT).
     // The bits are set by event_handler() (see above)
 
-    EventBits_t bits = xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+    EventBits_t bits = xEventGroupWaitBits(wifiEventGroup, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
                                            pdFALSE, pdFALSE, portMAX_DELAY);
 
     if (bits & WIFI_CONNECTED_BIT) {
-      LOG_I("connected to ap SSID:%s password:%s", wifi_ssid.c_str(), wifi_pwd.c_str());
-      start_mdns_service(dns_name);
+      LOG_I("connected to ap SSID:%s password:%s", wifiSsid.c_str(), wifiPassword.c_str());
+      startMdnsService(dnsName);
       connected = true;
     } else if (bits & WIFI_FAIL_BIT) {
-      LOG_E("Failed to connect to SSID:%s, password:%s", wifi_ssid.c_str(), wifi_pwd.c_str());
+      LOG_E("Failed to connect to SSID:%s, password:%s", wifiSsid.c_str(), wifiPassword.c_str());
     } else {
       LOG_E("UNEXPECTED EVENT");
     }
@@ -154,11 +154,11 @@
       ESP_ERROR_CHECK(esp_event_loop_delete_default());
     }
 
-    sta_running = true;
+    staRunning = true;
     return connected;
   }
 
-  void WIFI::start_mdns_service(const std::string &dns_name) {
+  void WIFI::startMdnsService(const std::string &hostname) {
     // initialize mDNS service
     esp_err_t err = mdns_init();
     if (err) {
@@ -167,7 +167,7 @@
     }
 
     // set hostname
-    if (mdns_hostname_set(dns_name.c_str()) != ESP_OK) {
+    if (mdns_hostname_set(hostname.c_str()) != ESP_OK) {
       ESP_LOGE(TAG, "Unable to set mDNS hostname.");
       return;
     }
@@ -179,12 +179,12 @@
     }
 
     ESP_LOGD(TAG, "mDNS started.");
-    mdns_running = true;
+    mdnsRunning = true;
   }
 
-  bool WIFI::start_ap(void) {
-    if (ap_running) return true;
-    if (sta_running) return false;
+  auto WIFI::startAp(void) -> bool {
+    if (apRunning) return true;
+    if (staRunning) return false;
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -196,25 +196,25 @@
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
                                                         &wifi_ap_event_handler, NULL, NULL));
 
-    std::string ap_ssid;
-    std::string ap_pwd;
-    std::string dns_name;
+    std::string apSsid;
+    std::string apPassword;
+    std::string dnsName;
 
-    uint8_t my_ap_ssid[32];
-    uint8_t my_ap_pwd[64];
+    uint8_t apSsidRaw[32];
+    uint8_t apPasswordRaw[64];
 
-    config.get(Config::Ident::SSID, ap_ssid);
-    config.get(Config::Ident::PWD, ap_pwd);
-    config.get(Config::Ident::DNS_NAME, dns_name);
+    config.get(Config::Ident::SSID, apSsid);
+    config.get(Config::Ident::PWD, apPassword);
+    config.get(Config::Ident::DNS_NAME, dnsName);
 
     wifi_config_t wifi_config;
 
-    // wifi_config.ap.ssid = my_ap_ssid;
-    // wifi_config.ap.password = my_ap_pwd;
-    strncpy((char *)wifi_config.ap.ssid, ap_ssid.c_str(), 32);
-    strncpy((char *)wifi_config.ap.password, ap_pwd.c_str(), 32);
+    // wifi_config.ap.ssid = apSsidRaw;
+    // wifi_config.ap.password = apPasswordRaw;
+    strncpy((char *)wifi_config.ap.ssid, apSsid.c_str(), 32);
+    strncpy((char *)wifi_config.ap.password, apPassword.c_str(), 32);
 
-    wifi_config.ap.ssid_len = ap_ssid.length();
+    wifi_config.ap.ssid_len = apSsid.length();
     wifi_config.ap.channel  = 11;
     wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK, wifi_config.ap.max_connection = 5;
     wifi_config.ap.pmf_cfg.required = false;
@@ -230,26 +230,26 @@
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGD(TAG, "start_ap() finished. SSID:%s password:%s channel:%d", (char *)my_ap_ssid,
-             (char *)my_ap_pwd, 11);
+    ESP_LOGD(TAG, "startAp() finished. SSID:%s password:%s channel:%d", (char *)apSsidRaw,
+             (char *)apPasswordRaw, 11);
 
-    ap_running = true;
+    apRunning = true;
     return true;
   }
 
   void WIFI::stop() {
     vTaskDelay(pdMS_TO_TICKS(500));
 
-    if (mdns_running) {
+    if (mdnsRunning) {
       mdns_free();
     }
 
-    if (sta_running || ap_running) {
+    if (staRunning || apRunning) {
 
       esp_wifi_disconnect();
       esp_wifi_stop();
 
-      // if (sta_running) {
+      // if (staRunning) {
       //   ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT,   ESP_EVENT_ANY_ID,
       //   &wifi_sta_event_handler)); ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT,
       //   WIFI_EVENT_STA_START, &wifi_sta_event_handler));
@@ -261,10 +261,10 @@
       esp_wifi_deinit();
       esp_event_loop_delete_default();
 
-      vEventGroupDelete(wifi_event_group);
-      wifi_event_group = nullptr;
+      vEventGroupDelete(wifiEventGroup);
+      wifiEventGroup = nullptr;
 
-      sta_running = ap_running = false;
+      staRunning = apRunning = false;
     }
   }
 

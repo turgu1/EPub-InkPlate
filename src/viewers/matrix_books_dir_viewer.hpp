@@ -11,7 +11,7 @@
 #include "viewers/books_dir_viewer.hpp"
 #include "viewers/page.hpp"
 
-using MatrixBooksDirViewerPtr = himem_unique_ptr<class MatrixBooksDirViewer>;
+using MatrixBooksDirViewerPtr = himemUniquePtr<class MatrixBooksDirViewer>;
 class MatrixBooksDirViewer : public BooksDirViewer {
 private:
   static constexpr char const *TAG = "MatrixBooksDirView";
@@ -25,21 +25,21 @@ private:
   static const int16_t SPACE_ABOVE_PAGENBR       = 5;
   static const int16_t MAX_TITLE_SIZE            = 85;
 
-  int16_t current_item_idx{-1}; // Relative to the beginning of the page
-  int16_t current_book_idx{-1}; // Relative to the beginning of the complete boolk list
-  int16_t current_page_nbr{-1};
-  int16_t books_per_page;
-  int16_t column_count;
-  int16_t line_count;
-  int16_t page_count;
-  int16_t first_entry_ypos;
-  uint16_t title_font_height;
-  uint16_t author_font_height;
-  uint16_t pagenbr_font_height;
-  uint8_t horiz_space_between_entries;
-  uint8_t vert_space_between_entries;
+  int16_t currentItemIdx{-1}; // Relative to the beginning of the page
+  int16_t currentBookIdx{-1}; // Relative to the beginning of the complete boolk list
+  int16_t currentPageNbr{-1};
+  int16_t booksPerPage;
+  int16_t columnCount;
+  int16_t lineCount;
+  int16_t pageCount;
+  int16_t firstEntryYpos;
+  uint16_t titleFontHeight;
+  uint16_t authorFontHeight;
+  uint16_t pagenbrFontHeight;
+  uint8_t horizSpaceBetweenEntries;
+  uint8_t vertSpaceBetweenEntries;
 
-  void show_page(int16_t page_nbr, int16_t hightlight_item_idx);
+  void showPage(int16_t page_nbr, int16_t hightlight_item_idx);
   void highlight(int16_t item_idx);
 
   PagePtr page{Page::Make()};
@@ -51,29 +51,29 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
 
-  static inline auto Make() { return make_unique_himem<MatrixBooksDirViewer>(); }
+  static inline auto Make() { return makeUniqueHimem<MatrixBooksDirViewer>(); }
 
   void setup();
 
-  int16_t show_page_and_highlight(int16_t book_idx);
-  void highlight_book(int16_t book_idx);
-  void clear_highlight();
+  auto showPageAndHighlight(int16_t book_idx) -> int16_t;
+  void highlightBook(int16_t book_idx);
+  void clearHighlight();
 
-  int16_t next_page();
-  int16_t prev_page();
-  int16_t next_item();
-  int16_t prev_item();
-  int16_t next_column();
-  int16_t prev_column();
+  auto nextPage() -> int16_t;
+  auto prevPage() -> int16_t;
+  auto nextItem() -> int16_t;
+  auto prevItem() -> int16_t;
+  auto nextColumn() -> int16_t;
+  auto prevColumn() -> int16_t;
 
-  int16_t get_index_at(uint16_t x, uint16_t y) {
-    if ((x < 5) || (y < first_entry_ypos)) return -1;
+  auto getIndexAt(uint16_t x, uint16_t y) -> int16_t {
+    if ((x < 5) || (y < firstEntryYpos)) return -1;
     int16_t line_idx =
-        (y - first_entry_ypos) / (BooksDir::cover_dim.height + vert_space_between_entries);
-    int16_t column_idx = (x - 5) / (BooksDir::cover_dim.width + horiz_space_between_entries);
-    if ((line_idx >= line_count) || (column_idx >= column_count)) return -1;
-    return (current_page_nbr * books_per_page) + (column_idx * line_count) + line_idx;
+        (y - firstEntryYpos) / (BooksDir::coverDim.height + vertSpaceBetweenEntries);
+    int16_t column_idx = (x - 5) / (BooksDir::coverDim.width + horizSpaceBetweenEntries);
+    if ((line_idx >= lineCount) || (column_idx >= columnCount)) return -1;
+    return (currentPageNbr * booksPerPage) + (column_idx * lineCount) + line_idx;
   }
 };

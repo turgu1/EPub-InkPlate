@@ -27,36 +27,36 @@ public:
   enum MsgType {
     INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM
   };
-  static constexpr char icon_char[7] = {'I', '!', 'H', 'E', 'S', 'Y', '!'};
+  static constexpr char iconChar[7] = {'I', '!', 'H', 'E', 'S', 'Y', '!'};
 
   class ConfirmData {
   public:
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      Pos ok_pos, cancel_pos;
-      Dim buttons_dim;
+      Pos okPos, cancelPos;
+      Dim buttonsDim;
     #endif
     bool ok{false};
 
     ConfirmData()  = default;
     ~ConfirmData() = default;
 
-    static inline auto Make() { return make_unique_himem<ConfirmData>(); }
+    static inline auto Make() { return makeUniqueHimem<ConfirmData>(); }
   };
-  using ConfirmDataPtr = himem_unique_ptr<class ConfirmData>;
+  using ConfirmDataPtr = himemUniquePtr<class ConfirmData>;
 
   class ProgressData {
   public:
     Dim dim{0, 0};
     Pos pos{0, 0};
-    uint16_t previous_width{0};
+    uint16_t previousWidth{0};
     ProgressData()  = default;
     ~ProgressData() = default;
-    static inline auto Make() { return make_unique_himem<ProgressData>(); }
+    static inline auto Make() { return makeUniqueHimem<ProgressData>(); }
   };
-  using ProgressDataPtr = himem_unique_ptr<class ProgressData>;
+  using ProgressDataPtr = himemUniquePtr<class ProgressData>;
 
-  static auto show(MsgType msg_type, bool press_a_key, bool clear_screen, const char *title,
-                   const char *fmt_str, ...) -> ConfirmDataPtr;
+  static auto show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
+                   const char *fmtStr, ...) -> ConfirmDataPtr;
 
   /**
    * @brief Process a user input event for a confirmation dialog.
@@ -65,16 +65,16 @@ public:
    * CANCEL button rectangles. For key-based targets, SELECT is treated as OK.
    *
    * @param event Input event to evaluate.
-   * @param confirm_data Dialog state returned by show().
+   * @param confirmData Dialog state returned by show().
    * @return Pair containing:
    * - first: true when the dialog decision is complete, false otherwise.
    * - second: updated confirmation state (including the selected OK/CANCEL value).
    */
-  static auto confirm(const EventMgr::Event &event, const ConfirmDataPtr confirm_data)
+  static auto confirm(const EventMgr::Event &event, const ConfirmDataPtr confirmData)
       -> std::pair<bool, ConfirmDataPtr>;
 
-  static auto show_progress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr>;
-  static auto update_progress(PagePtr page, ProgressDataPtr progress_data, uint16_t percent)
+  static auto showProgress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr>;
+  static auto updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent)
       -> std::pair<PagePtr, ProgressDataPtr>;
 
   /**
@@ -84,7 +84,7 @@ public:
    * cleanup, and then powers down (device build) or terminates (Linux build).
    * This call does not return.
    *
-   * @param raison Short description of the allocation failure cause.
+   * @param reason Short description of the allocation failure cause.
    */
-  static void out_of_memory(const char *raison);
+  static void outOfMemory(const char *reason);
 };

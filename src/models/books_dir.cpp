@@ -29,14 +29,14 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/stat.h>
 
-Dim BooksDir::cover_dim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT};
+Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT};
 
 #if 0
   const uint32_t CRC32_INITIAL    = 0xFFFFFFFFUL;
   const uint32_t CRC32_POLYNOMIAL = 0x1EDC6F41UL;
 
   static uint32_t 
-  generate_id(const uint8_t * buffer, uint32_t bufferLength)
+  generateId(const uint8_t * buffer, uint32_t bufferLength)
   {
     uint32_t i;
     int8_t   j;
@@ -88,7 +88,7 @@ Dim BooksDir::cover_dim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGH
       c = c ^ (b >> 15);                                                                           \
     }
 
-  uint32_t generate_id(const uint8_t *k, uint32_t bufferLength) {
+  auto generateId(const uint8_t *k, uint32_t bufferLength) -> uint32_t {
     uint32_t a, b, c;
     uint32_t len;
 
@@ -154,7 +154,7 @@ Dim BooksDir::cover_dim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGH
 
 #endif
 
-bool BooksDir::read_books_directory(char *book_filename, int16_t &book_index) {
+auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> bool {
   LOG_D("Reading books directory: %s.", BOOKS_DIR_FILE);
 
   if (!db->open(BOOKS_DIR_FILE)) {
@@ -163,37 +163,37 @@ bool BooksDir::read_books_directory(char *book_filename, int16_t &book_index) {
   }
 
   #if DEBUGGING
-    show_db();
+    showDb();
   #endif
 
   // We first verify if the database content is of the current version
 
-  bool version_ok = false;
-  VersionRecord version_record;
+  bool versionOk = false;
+  VersionRecord versionRecord;
 
-  if (db->get_record_count() == 0) {
-    memset(&version_record, 0, sizeof(version_record));
+  if (db->getRecordCount() == 0) {
+    memset(&versionRecord, 0, sizeof(versionRecord));
 
-    version_record.version = BOOKS_DIR_DB_VERSION;
-    strcpy(version_record.app_name, APP_NAME);
+    versionRecord.version = BOOKS_DIR_DB_VERSION;
+    strcpy(versionRecord.appName, APP_NAME);
 
-    if (!db->add_record(&version_record, sizeof(version_record))) {
+    if (!db->addRecord(&versionRecord, sizeof(versionRecord))) {
       LOG_E("Not able to set DB Version.");
       return false;
     }
-    version_ok = true;
+    versionOk = true;
   } else {
-    db->goto_first();
-    if (db->get_record_size() == sizeof(version_record)) {
-      db->get_record(&version_record, sizeof(version_record));
-      if ((version_record.version == BOOKS_DIR_DB_VERSION) &&
-          (strcmp(version_record.app_name, APP_NAME) == 0)) {
-        version_ok = true;
+    db->gotoFirst();
+    if (db->getRecordSize() == sizeof(versionRecord)) {
+      db->getRecord(&versionRecord, sizeof(versionRecord));
+      if ((versionRecord.version == BOOKS_DIR_DB_VERSION) &&
+          (strcmp(versionRecord.appName, APP_NAME) == 0)) {
+        versionOk = true;
       }
     }
   }
 
-  if (!version_ok) {
+  if (!versionOk) {
 
     LOG_I("Database is of a wrong version or doesn't exists. Initializing...");
 
@@ -202,22 +202,22 @@ bool BooksDir::read_books_directory(char *book_filename, int16_t &book_index) {
       return false;
     }
 
-    memset(&version_record, 0, sizeof(version_record));
-    version_record.version = BOOKS_DIR_DB_VERSION;
-    strcpy(version_record.app_name, APP_NAME);
+    memset(&versionRecord, 0, sizeof(versionRecord));
+    versionRecord.version = BOOKS_DIR_DB_VERSION;
+    strcpy(versionRecord.appName, APP_NAME);
 
-    if (!db->add_record(&version_record, sizeof(version_record))) {
+    if (!db->addRecord(&versionRecord, sizeof(versionRecord))) {
       LOG_E("Not able to set DB Version.");
       return false;
     }
   }
 
-  if (!refresh(book_filename, book_index)) {
+  if (!refresh(bookFilename, bookIndex)) {
     LOG_E("Unable to complete DB refresh");
     return false;
   }
 
-  // show_db();
+  // showDb();
 
   LOG_D("Reading directory completed.");
   return true;
@@ -252,8 +252,8 @@ std::istream & deserialize(std::istream & is, std::vector<POD> & v)
 }
 #endif
 
-auto BooksDir::get_book_data(uint16_t idx) -> EBookRecordPtr {
-  if (idx >= sorted_index.size()) {
+auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
+  if (idx >= sortedIndex.size()) {
     LOG_E("Idx too large: %d", idx);
     return nullptr;
   }
@@ -261,9 +261,9 @@ auto BooksDir::get_book_data(uint16_t idx) -> EBookRecordPtr {
   int i         = 0;
   int16_t index = -1;
 
-  for (auto &entry : sorted_index) {
+  for (auto &entry : sortedIndex) {
     if (idx == i) {
-      index = entry.second.db_index;
+      index = entry.second.dbIndex;
       break;
     }
     i++;
@@ -273,27 +273,27 @@ auto BooksDir::get_book_data(uint16_t idx) -> EBookRecordPtr {
     return nullptr;
   }
 
-  db->set_current_idx(index);
+  db->setCurrentIdx(index);
 
-  size_t record_size = db->get_record_size();
+  size_t recordSize = db->getRecordSize();
 
   BooksDir::EBookRecordPtr book{nullptr};
 
-  if (record_size >= sizeof(EBookRecord)) {
-    book = EBookRecord::Make(record_size);
-    if (book && !db->get_record(book.get(), record_size)) {
+  if (recordSize >= sizeof(EBookRecord)) {
+    book = EBookRecord::Make(recordSize);
+    if (book && !db->getRecord(book.get(), recordSize)) {
       LOG_E("Unable to get record at index %d", index);
       book.reset();
     }
   } else {
-    LOG_E("Record size too small: %d", record_size);
+    LOG_E("Record size too small: %d", recordSize);
   }
 
   return book;
 }
 
-bool BooksDir::get_book_id(uint16_t idx, uint32_t &id) {
-  if (idx >= sorted_index.size()) {
+auto BooksDir::getBookId(uint16_t idx, uint32_t &id) -> bool {
+  if (idx >= sortedIndex.size()) {
     LOG_E("Idx too large: %d", idx);
     return false;
   }
@@ -301,7 +301,7 @@ bool BooksDir::get_book_id(uint16_t idx, uint32_t &id) {
   int i      = 0;
   bool found = false;
 
-  for (auto &entry : sorted_index) {
+  for (auto &entry : sortedIndex) {
     if (idx == i) {
       id    = entry.second.id;
       found = true;
@@ -314,11 +314,11 @@ bool BooksDir::get_book_id(uint16_t idx, uint32_t &id) {
   return found;
 }
 
-bool BooksDir::get_book_index(uint32_t id, uint16_t &idx) {
+auto BooksDir::getBookIndex(uint32_t id, uint16_t &idx) -> bool {
   int i      = 0;
   bool found = false;
 
-  for (auto &entry : sorted_index) {
+  for (auto &entry : sortedIndex) {
     if (entry.second.id == id) {
       idx   = i;
       found = true;
@@ -331,22 +331,22 @@ bool BooksDir::get_book_index(uint32_t id, uint16_t &idx) {
   return found;
 }
 
-void BooksDir::set_track_order(uint32_t id, int8_t pos) {
-  static bool no_recurse = false;
-  if (no_recurse) return;
+void BooksDir::setTrackOrder(uint32_t id, int8_t pos) {
+  static bool noRecurse = false;
+  if (noRecurse) return;
 
-  LOG_D("-------------------------> set_track_order(%" PRIu32 ", %" PRIi8 ")", id, pos);
+  LOG_D("-------------------------> setTrackOrder(%" PRIu32 ", %" PRIi8 ")", id, pos);
   bool found = false;
 
-  for (auto &entry : sorted_index) {
+  for (auto &entry : sortedIndex) {
     if (entry.second.id == id) {
       char ch = (pos >= 0) ? 'a' + pos : 'z';
       LOG_D("Old key: %s", entry.first.c_str());
       if (entry.first.front() != ch) {
-        auto e          = sorted_index.extract(entry.first);
+        auto e          = sortedIndex.extract(entry.first);
         e.key().front() = ch;
         LOG_D("New key: %s", e.key().c_str());
-        sorted_index.insert(std::move(e));
+        sortedIndex.insert(std::move(e));
       }
       found = true;
       break;
@@ -355,61 +355,61 @@ void BooksDir::set_track_order(uint32_t id, int8_t pos) {
 
   if (!found) {
     #if EPUB_INKPLATE_BUILD
-      no_recurse = true;
-      nvs_mgr.erase(id);
-      no_recurse = false;
+      noRecurse = true;
+      nvsMgr.erase(id);
+      noRecurse = false;
 
     #endif
   }
 }
 
 #if 0
-auto BooksDir::get_book_data_from_db_index(uint16_t idx) -> EBookRecordPtr {
-  db->set_current_idx(idx);
+auto BooksDir::getBookDataFromDbIndex(uint16_t idx) -> EBookRecordPtr {
+  db->setCurrentIdx(idx);
 
   EBookRecordPtr book{nullptr};
 
-  size_t record_size = db->get_record_size();
-  if (record_size >= sizeof(EBookRecord)) {
-    book = EBookRecord::Make(record_size);
-    if (book && !db->get_record(book.get(), record_size)) {
+  size_t recordSize = db->getRecordSize();
+  if (recordSize >= sizeof(EBookRecord)) {
+    book = EBookRecord::Make(recordSize);
+    if (book && !db->getRecord(book.get(), recordSize)) {
       LOG_E("Unable to get record for db index %d", idx);
       book.reset();
     }
   } else {
-    LOG_E("Record size too small: %d", record_size);
+    LOG_E("Record size too small: %d", recordSize);
   }
 
   return book;
 }
 #endif
 
-void BooksDir::clear_db() {
-  db->goto_first();
-  while (db->goto_next()) {
-    db->set_deleted();
+void BooksDir::clearDb() {
+  db->gotoFirst();
+  while (db->gotoNext()) {
+    db->setDeleted();
   }
 }
 
-void BooksDir::set_cover_size() {
-  int8_t cover_size = 0;
-  config.get(Config::Ident::COVER_SIZE, &cover_size);
-  switch (cover_size) {
+void BooksDir::setCoverSize() {
+  int8_t coverSize = 0;
+  config.get(Config::Ident::COVER_SIZE, &coverSize);
+  switch (coverSize) {
   case 0:
-    cover_dim.width  = SMALL_COVER_WIDTH;
-    cover_dim.height = SMALL_COVER_HEIGHT;
+    coverDim.width  = SMALL_COVER_WIDTH;
+    coverDim.height = SMALL_COVER_HEIGHT;
     break;
   case 1:
-    cover_dim.width  = MEDIUM_COVER_WIDTH;
-    cover_dim.height = MEDIUM_COVER_HEIGHT;
+    coverDim.width  = MEDIUM_COVER_WIDTH;
+    coverDim.height = MEDIUM_COVER_HEIGHT;
     break;
   case 2:
-    cover_dim.width  = LARGE_COVER_WIDTH;
-    cover_dim.height = LARGE_COVER_HEIGHT;
+    coverDim.width  = LARGE_COVER_WIDTH;
+    coverDim.height = LARGE_COVER_HEIGHT;
     break;
   default:
-    cover_dim.width  = MEDIUM_COVER_WIDTH;
-    cover_dim.height = MEDIUM_COVER_HEIGHT;
+    coverDim.width  = MEDIUM_COVER_WIDTH;
+    coverDim.height = MEDIUM_COVER_HEIGHT;
   }
 }
 
@@ -421,12 +421,12 @@ void BooksDir::set_cover_size() {
  * files exist in the file system with matching sizes, and removes outdated entries. For valid
  * books, it builds a sorted index for quick lookup and retrieval.
  *
- * @param[in] book_filename Optional filename to search for and retrieve its database index.
+ * @param[in] bookFilename Optional filename to search for and retrieve its database index.
  *                          If nullptr, no specific book search is performed.
- * @param[out] book_index   The database index of the book matching book_filename.
- *                          Only set if book_filename is provided and a match is found.
- * @param[out] temp_index   A temporary index mapping filenames to their IndexInfo (id and
- * db_index). Used for intermediate storage during the validation process.
+ * @param[out] bookIndex   The database index of the book matching bookFilename.
+ *                          Only set if bookFilename is provided and a match is found.
+ * @param[out] tempIndex   A temporary index mapping filenames to their IndexInfo (id and
+ * dbIndex). Used for intermediate storage during the validation process.
  *
  * @details
  * - Allocates a temporary PartialRecord structure to read database entries
@@ -436,53 +436,52 @@ void BooksDir::set_cover_size() {
  *   - Otherwise: prefix is 'z'
  * - Logs book availability and title information
  *
- * @note If memory allocation fails, calls msg_viewer.out_of_memory() and does not return.
+ * @note If memory allocation fails, calls msg_viewer.outOfMemory() and does not return.
  *
- * @see nvs_mgr, db, sorted_index, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
+ * @see nvsMgr, db, sortedIndex, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
  */
-void BooksDir::check_db_content(char *book_filename, int16_t &book_index, SortedIndex &temp_index) {
+void BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) {
 
-  auto partial_record = PartialRecord::Make();
+  auto partialRecord = PartialRecord::Make();
 
-  if (!partial_record) {
-    MsgViewer::out_of_memory("partial record allocation");
+  if (!partialRecord) {
+    MsgViewer::outOfMemory("partial record allocation");
     // Will not return...
   }
 
-  db->goto_first();
+  db->gotoFirst();
 
-  while (db->goto_next()) { // Go pass the DB version record
-    db->get_record(partial_record.get(), sizeof(PartialRecord));
+  while (db->gotoNext()) { // Go pass the DB version record
+    db->getRecord(partialRecord.get(), sizeof(PartialRecord));
 
     std::string fname = BOOKS_FOLDER "/";
-    fname.append(partial_record->filename);
+    fname.append(partialRecord->filename);
 
-    struct stat stat_buffer;
+    struct stat statBuffer;
 
     // if file with filename not found or the file size is not the same,
     // remove the database entry
-    if ((stat(fname.c_str(), &stat_buffer) != 0) ||
-        (stat_buffer.st_size != partial_record->file_size)) {
-      LOG_D("Book no longer available: %s", partial_record->filename);
-      db->set_deleted();
+    if ((stat(fname.c_str(), &statBuffer) != 0) ||
+        (statBuffer.st_size != partialRecord->fileSize)) {
+      LOG_D("Book no longer available: %s", partialRecord->filename);
+      db->setDeleted();
     } else {
-      LOG_D("Title: %s", partial_record->title);
-      temp_index[partial_record->filename] = IndexInfo{.id = 0, .db_index = 0};
+      LOG_D("Title: %s", partialRecord->title);
+      tempIndex[partialRecord->filename] = IndexInfo{.id = 0, .dbIndex = 0};
 
       #if EPUB_INKPLATE_BUILD
-        int8_t pos        = nvs_mgr.get_pos(partial_record->id);
+        int8_t pos        = nvsMgr.getPos(partialRecord->id);
         std::string title = " ";
-        title += partial_record->title;
+        title += partialRecord->title;
         title.front() = (pos >= 0) ? 'a' + pos : 'z';
       #else
         std::string title = "z";
-        title += partial_record->title;
+        title += partialRecord->title;
       #endif
 
-      sorted_index[title] = IndexInfo{.id = partial_record->id, .db_index = db->get_current_idx()};
-      if (book_filename) {
-        if (strcmp(book_filename, partial_record->filename) == 0)
-          book_index = db->get_current_idx();
+      sortedIndex[title] = IndexInfo{.id = partialRecord->id, .dbIndex = db->getCurrentIdx()};
+      if (bookFilename) {
+        if (strcmp(bookFilename, partialRecord->filename) == 0) bookIndex = db->getCurrentIdx();
       }
     }
   }
@@ -495,10 +494,10 @@ void BooksDir::check_db_content(char *book_filename, int16_t &book_index, Sorted
  * copying all records from the old database, and rebuilding the sorted index.
  * The sorted index uses book titles with position prefixes for ordering.
  *
- * @param book_filename Optional filename to search for in the database. If provided and found,
- *                       its corresponding database index will be stored in book_index.
- * @param book_index Output parameter that receives the database index of the book matching
- *                   book_filename, if found. Only modified if book_filename is provided and
+ * @param bookFilename Optional filename to search for in the database. If provided and found,
+ *                       its corresponding database index will be stored in bookIndex.
+ * @param bookIndex Output parameter that receives the database index of the book matching
+ *                   bookFilename, if found. Only modified if bookFilename is provided and
  *                   a matching record is found.
  *
  * @return true if the cleanup operation completed successfully, false otherwise.
@@ -517,19 +516,19 @@ void BooksDir::check_db_content(char *book_filename, int16_t &book_index, Sorted
  *       On other builds, titles are simply prefixed with 'z'.
  * @note This operation closes and recreates the database file on disk.
  */
-auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
-  SimpleDBPtr new_db = SimpleDB::Make();
-  sorted_index.clear();
+auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
+  SimpleDBPtr newDb = SimpleDB::Make();
+  sortedIndex.clear();
 
-  if (new_db->create(NEW_DIR_FILE)) {
-    if (!db->goto_first()) {
-      LOG_E("db->goto_first() failed");
+  if (newDb->create(NEW_DIR_FILE)) {
+    if (!db->gotoFirst()) {
+      LOG_E("db->gotoFirst() failed");
       return false;
     }
     bool first = true; // First record is the version record, we want to keep it as is and not put
                        // it in the sorted index
     do {
-      size_t size = db->get_record_size();
+      size_t size = db->getRecordSize();
       if (first) {
 
         if (size < sizeof(VersionRecord)) {
@@ -541,11 +540,11 @@ auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
           LOG_E("Unable to allocate %zu bytes for version record", size);
           return false;
         }
-        if (!db->get_record(data.get(), size)) {
+        if (!db->getRecord(data.get(), size)) {
           LOG_E("Unable to get version record of size %zu from db", size);
           return false;
         }
-        if (!new_db->add_record(data.get(), size)) {
+        if (!newDb->addRecord(data.get(), size)) {
           LOG_E("Unable to add version record to db");
           return false;
         }
@@ -561,18 +560,18 @@ auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
           LOG_E("Unable to allocate %zu bytes for ebook record", size);
           return false;
         }
-        if (!db->get_record(data.get(), size)) {
+        if (!db->getRecord(data.get(), size)) {
           LOG_E("Unable to get record of size %zu from db", size);
           return false;
         }
-        if (!new_db->add_record(data.get(), size)) {
+        if (!newDb->addRecord(data.get(), size)) {
           LOG_E("Unable to add record to db");
           return false;
         }
 
-        uint16_t idx = new_db->get_record_count() - 1;
+        uint16_t idx = newDb->getRecordCount() - 1;
         #if EPUB_INKPLATE_BUILD
-          int8_t pos        = nvs_mgr.get_pos(data->id);
+          int8_t pos        = nvsMgr.getPos(data->id);
           std::string title = " ";
           title += data->title;
           title.front() = (pos >= 0) ? 'a' + pos : 'z';
@@ -580,16 +579,15 @@ auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
           std::string title = "z";
           title += data->title;
         #endif
-        sorted_index[title] = IndexInfo{.id = data->id, .db_index = idx};
-        if (book_filename) {
-          if (strcmp(book_filename, data->filename) == 0)
-            book_index = new_db->get_record_count() - 1;
+        sortedIndex[title] = IndexInfo{.id = data->id, .dbIndex = idx};
+        if (bookFilename) {
+          if (strcmp(bookFilename, data->filename) == 0) bookIndex = newDb->getRecordCount() - 1;
         }
       }
-    } while (db->goto_next());
+    } while (db->gotoNext());
 
     db->close();
-    new_db->close();
+    newDb->close();
 
     if (remove(BOOKS_DIR_FILE)) {
       LOG_E("Unable to remove directory DB file.");
@@ -616,13 +614,13 @@ auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
  * retrieves and resizes the cover image, and adds a new record to the database.
  * Updates the sorted index with the newly added books.
  *
- * @param book_filename Optional filename to search for and return its database index.
- *                       If provided and found, book_index will be set to its position.
+ * @param bookFilename Optional filename to search for and return its database index.
+ *                       If provided and found, bookIndex will be set to its position.
  *                       Can be nullptr if not needed.
- * @param book_index    Output parameter. Set to the database index if book_filename
- *                      matches a newly added book. Only modified if book_filename is provided
+ * @param bookIndex    Output parameter. Set to the database index if bookFilename
+ *                      matches a newly added book. Only modified if bookFilename is provided
  *                      and a matching book is added.
- * @param temp_index    Reference to a sorted index (map) containing existing books in the database.
+ * @param tempIndex    Reference to a sorted index (map) containing existing books in the database.
  *                      Used to identify which EPUB files are new.
  *
  * @return std::pair<bool, bool>
@@ -633,10 +631,10 @@ auto BooksDir::cleanup_db(char *book_filename, int16_t &book_index) -> bool {
  * @note Displays user messages through msg_viewer during the metadata retrieval process.
  *       Closes and reopens the database file after adding records to ensure data is
  *       properly written to storage.
- *       Resizes book covers to match cover_dim dimensions while maintaining aspect ratio.
+ *       Resizes book covers to match coverDim dimensions while maintaining aspect ratio.
  */
-auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
-                                    BooksDir::SortedIndex &temp_index) -> std::pair<bool, bool> {
+auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
+                                BooksDir::SortedIndex &tempIndex) -> std::pair<bool, bool> {
 
   struct dirent *de = nullptr;
   DIR *dp           = nullptr;
@@ -647,23 +645,23 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
     ESP::show_heaps_info();
   #endif
 
-  bool some_added_record = false;
+  bool someAddedRecord = false;
   bool result            = true;
 
-  int file_count = 0;
+  int fileCount = 0;
   dp             = opendir(BOOKS_FOLDER);
   while ((de = readdir(dp))) {
     int16_t size = strlen(de->d_name);
     if ((size > 5) && (strcasecmp(&de->d_name[size - 5], ".epub") == 0) &&
-        (temp_index.find(de->d_name) == temp_index.end())) {
-      file_count++;
+        (tempIndex.find(de->d_name) == tempIndex.end())) {
+      fileCount++;
     }
   }
   closedir(dp);
 
-  LOG_D("Found %d new book files in the folder.", file_count);
+  LOG_D("Found %d new book files in the folder.", fileCount);
 
-  if (file_count == 0) {
+  if (fileCount == 0) {
     return {true, false};
   }
 
@@ -682,14 +680,14 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
 
         // check if ebook file named fname is in the database
 
-        if (temp_index.find(fname) == temp_index.end()) {
+        if (tempIndex.find(fname) == tempIndex.end()) {
 
           // The book is not in the database, we add it now
 
           if (first) {
             first = false;
-            // MsgViewer::show_progress("Computing new books pages location...");
-            if (db->get_record_count() == 1) {
+            // MsgViewer::showProgress("Computing new books pages location...");
+            if (db->getRecordCount() == 1) {
               MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "E-books metadata retrieval",
                               "System parameters changed requiring metadata retrieval. "
                               "It will take between 5 and 10 seconds for each book.");
@@ -701,21 +699,21 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
                   de->d_name);
             }
           }
-          some_added_record = true;
+          someAddedRecord = true;
 
           LOG_D("New book found: %s", de->d_name);
 
           fname = BOOKS_FOLDER "/";
           fname.append(de->d_name);
 
-          int32_t file_size = 0;
-          struct stat stat_buffer;
-          if (stat(fname.c_str(), &stat_buffer) != 0) {
+          int32_t fileSize = 0;
+          struct stat statBuffer;
+          if (stat(fname.c_str(), &statBuffer) != 0) {
             LOG_E("Unable to get stats for file: %s", fname.c_str());
             result = false;
             break;
           } else {
-            file_size = stat_buffer.st_size;
+            fileSize = statBuffer.st_size;
           }
 
           LOG_D("Opening file through the EPub class: %s", fname.c_str());
@@ -723,84 +721,84 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
           auto epub = EPub::Make();
 
           if (epub->open(fname)) {
-            std::string filename = epub->get_cover_filename();
+            std::string filename = epub->getCoverFilename();
 
             PicturePtr pict;
             if (!filename.empty()) {
 
               // LOG_D("Cover filename: %s", filename);
-              pict = epub->get_picture(filename, true);
+              pict = epub->getPicture(filename, true);
               if (!pict) {
                 LOG_D("Unable to retrieve cover file: %s", filename.c_str());
-                pict = PictureFactory::create(default_cover_dim, default_cover,
-                                              default_cover_dim.width * default_cover_dim.height);
+                pict = PictureFactory::create(defaultCoverDim, defaultCover,
+                                              defaultCoverDim.width * defaultCoverDim.height);
               }
             } else {
-              pict = PictureFactory::create(default_cover_dim, default_cover,
-                                            default_cover_dim.width * default_cover_dim.height);
+              pict = PictureFactory::create(defaultCoverDim, defaultCover,
+                                            defaultCoverDim.width * defaultCoverDim.height);
             }
-            LOG_D("Picture: width: %d height: %d", pict->get_dim().width, pict->get_dim().height);
+            LOG_D("Picture: width: %d height: %d", pict->getDim().width, pict->getDim().height);
 
-            int32_t w = cover_dim.width;
-            int32_t h = pict->get_dim().height * cover_dim.width / pict->get_dim().width;
+            int32_t w = coverDim.width;
+            int32_t h = pict->getDim().height * coverDim.width / pict->getDim().width;
 
-            if (h > cover_dim.height) {
-              h = cover_dim.height;
-              w = pict->get_dim().width * cover_dim.height / pict->get_dim().height;
+            if (h > coverDim.height) {
+              h = coverDim.height;
+              w = pict->getDim().width * coverDim.height / pict->getDim().height;
             }
 
             pict->resize(Dim(w, h));
 
-            auto book_record_size   = sizeof(EBookRecord) + w * h;
-            EBookRecordPtr the_book = EBookRecord::Make(book_record_size);
+            auto bookRecordSize   = sizeof(EBookRecord) + w * h;
+            EBookRecordPtr theBook = EBookRecord::Make(bookRecordSize);
 
-            if (!the_book) {
-              LOG_E("Not enough memory for new book: %d bytes required.", book_record_size);
+            if (!theBook) {
+              LOG_E("Not enough memory for new book: %d bytes required.", bookRecordSize);
               result = false;
               break;
             }
 
-            memset((void *)the_book.get(), 0, sizeof(EBookRecord));
-            memcpy(the_book->cover_bitmap, pict->get_bitmap(), w * h);
+            memset((void *)theBook.get(), 0, sizeof(EBookRecord));
+            memcpy(theBook->coverBitmap, pict->getBitmap(), w * h);
 
-            the_book->cover_dim = Dim(w, h);
+            theBook->coverDim = Dim(w, h);
 
             LOG_D("Retrieving metadata");
-            strlcpy(the_book->filename, de->d_name, FILENAME_SIZE);
-            the_book->file_size = file_size;
-            the_book->id = generate_id((uint8_t *)the_book->filename, strlen(the_book->filename));
+            strlcpy(theBook->filename, de->d_name, FILENAME_SIZE);
+            theBook->fileSize = fileSize;
+            theBook->id = generateId((uint8_t *)theBook->filename, strlen(theBook->filename));
 
             const char *str;
 
-            if ((str = epub->get_title())) strlcpy(the_book->title, str, TITLE_SIZE);
-            if ((str = epub->get_author())) strlcpy(the_book->author, str, AUTHOR_SIZE);
-            if ((str = epub->get_description()))
-              strlcpy(the_book->description, str, DESCRIPTION_SIZE);
+            if ((str = epub->getTitle())) strlcpy(theBook->title, str, TITLE_SIZE);
+            if ((str = epub->getAuthor())) strlcpy(theBook->author, str, AUTHOR_SIZE);
+            if ((str = epub->getDescription()))
+              strlcpy(theBook->description, str, DESCRIPTION_SIZE);
 
-            if (!db->add_record(the_book.get(), book_record_size)) {
+            if (!db->addRecord(theBook.get(), bookRecordSize)) {
               LOG_E("Unable to add a new record to DB file.");
               result = false;
               break;
             }
 
-            uint16_t idx = db->get_record_count() - 1;
+            uint16_t idx = db->getRecordCount() - 1;
             #if EPUB_INKPLATE_BUILD
-              int8_t pos        = nvs_mgr.get_pos(the_book->id);
+              int8_t pos        = nvsMgr.getPos(theBook->id);
               std::string title = " ";
-              title += the_book->title;
+              title += theBook->title;
               title.front() = (pos >= 0) ? 'a' + pos : 'z';
             #else
               std::string title = "z";
-              title += the_book->title;
+              title += theBook->title;
             #endif
-            sorted_index[title] = {.id = the_book->id, .db_index = idx};
+            sortedIndex[title] = {.id = theBook->id, .dbIndex = idx};
 
-            if (book_filename) {
-              if (strcmp(book_filename, the_book->filename) == 0)
-                book_index = db->get_record_count() - 1;
+            if (bookFilename) {
+              if (strcmp(bookFilename, theBook->filename) == 0)
+                bookIndex = db->getRecordCount() - 1;
             }
 
-            epub->close_file();
+            epub->closeFile();
 
             #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               ESP::show_heaps_info();
@@ -813,7 +811,7 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
     closedir(dp);
   }
 
-  if (some_added_record) {
+  if (someAddedRecord) {
     db->close(); // To ensure that data is well written on SD Card
     if (!db->open(BOOKS_DIR_FILE)) {
       LOG_E("Unable to open db file");
@@ -821,7 +819,7 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
     }
   }
 
-  return {result, some_added_record};
+  return {result, someAddedRecord};
 }
 
 /**
@@ -834,13 +832,13 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
  * - Scans the books folder for new EPUB files
  * - Extracts metadata (title, author, description) and cover images from new e-books
  * - Maintains a sorted index of books with configurable cover sizes
- * - Supports selective initialization with force_init parameter
+ * - Supports selective initialization with forceInit parameter
  *
- * @param book_filename Optional pointer to a specific book filename to locate its index.
- *                      If provided and found, book_index will be set to its database index.
- * @param book_index Reference to store the database index of the book matching book_filename.
- *                   Only modified if book_filename is provided and the book is found.
- * @param force_init If true, removes all existing database records before refresh, forcing complete
+ * @param bookFilename Optional pointer to a specific book filename to locate its index.
+ *                      If provided and found, bookIndex will be set to its database index.
+ * @param bookIndex Reference to store the database index of the book matching bookFilename.
+ *                   Only modified if bookFilename is provided and the book is found.
+ * @param forceInit If true, removes all existing database records before refresh, forcing complete
  *                   re-initialization. If false, performs incremental update.
  *
  * @return true if the refresh completed successfully; false if an error occurred during the
@@ -853,75 +851,75 @@ auto BooksDir::load_new_books_to_db(char *book_filename, int16_t &book_index,
  *       - Displays progress messages to the user via msg_viewer
  *
  * @warning May temporarily allocate significant memory for cover images and records.
- *          Calls out_of_memory() via msg_viewer if allocation fails.
+ *          Calls outOfMemory() via msg_viewer if allocation fails.
  */
-bool BooksDir::refresh(char *book_filename, int16_t &book_index, bool force_init) {
+auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -> bool {
   //  First look if existing entries in the database exists as ebook.
   //  Build a list of filenames for next step.
 
   LOG_D("Refreshing database content");
 
-  SortedIndex temp_index;
+  SortedIndex tempIndex;
 
-  sorted_index.clear();
+  sortedIndex.clear();
 
-  set_cover_size();
+  setCoverSize();
 
-  if (force_init) {
+  if (forceInit) {
 
-    clear_db();
+    clearDb();
 
   } else {
 
-    check_db_content(book_filename, book_index, temp_index);
+    checkDbContent(bookFilename, bookIndex, tempIndex);
   }
 
-  if (db->some_records_were_deleted()) {
+  if (db->someRecordsWereDeleted()) {
 
     // Some record have been deleted. We have to recreate a database
     // with the cleaned records
 
-    if (!cleanup_db(book_filename, book_index)) {
-      temp_index.clear();
+    if (!cleanupDb(bookFilename, bookIndex)) {
+      tempIndex.clear();
       return false;
     }
   }
 
   // Find ebooks that are new since last database refresh
 
-  auto [result, some_added_record] = load_new_books_to_db(book_filename, book_index, temp_index);
+  auto [result, someAddedRecord] = loadNewBooksToDb(bookFilename, bookIndex, tempIndex);
 
-  temp_index.clear();
+  tempIndex.clear();
 
   return result;
 }
 
-void BooksDir::show_db() {
+void BooksDir::showDb() {
   #if DEBUGGING
-    VersionRecord version_record;
+    VersionRecord versionRecord;
     EBookRecordPtr book;
 
-    if (!db->goto_first()) return;
+    if (!db->gotoFirst()) return;
 
-    if (!db->get_record(&version_record, sizeof(VersionRecord))) return;
+    if (!db->getRecord(&versionRecord, sizeof(VersionRecord))) return;
 
-    std::cout << "DB Version: " << version_record.version << " app: " << version_record.app_name
-              << " record count: " << db->get_record_count() - 1 << std::endl;
+    std::cout << "DB Version: " << versionRecord.version << " app: " << versionRecord.appName
+              << " record count: " << db->getRecordCount() - 1 << std::endl;
 
-    while (db->goto_next()) {
-      size_t record_size = db->get_record_size();
-      if (record_size >= sizeof(EBookRecord)) {
-        book = EBookRecord::Make(record_size);
-        if (!db->get_record(book.get(), record_size)) return;
+    while (db->gotoNext()) {
+      size_t recordSize = db->getRecordSize();
+      if (recordSize >= sizeof(EBookRecord)) {
+        book = EBookRecord::Make(recordSize);
+        if (!db->getRecord(book.get(), recordSize)) return;
         std::cout << "Book: " << book->filename << std::endl
                   << "  id: " << book->id << std::endl
                   << "  title: " << book->title << std::endl
                   << "  author: " << book->author << std::endl
                   << "  description: " << book->description << std::endl
-                  << "  bitmap size: " << +book->cover_dim.width << " " << +book->cover_dim.height
+                  << "  bitmap size: " << +book->coverDim.width << " " << +book->coverDim.height
                   << std::endl;
       } else {
-        std::cout << "Record size too small: " << record_size << std::endl;
+        std::cout << "Record size too small: " << recordSize << std::endl;
         continue;
       }
     }

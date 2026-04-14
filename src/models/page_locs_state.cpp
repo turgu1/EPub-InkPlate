@@ -3,13 +3,13 @@
 #include "models/page_locs.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  QueueHandle_t PageLocsState::state_queue{nullptr};
+  QueueHandle_t PageLocsState::stateQueue{nullptr};
 #else
-  mqd_t PageLocsState::state_queue{-1};
+  mqd_t PageLocsState::stateQueue{-1};
 #endif
 
-auto PageLocsState::setup(const std::string &epub_filename) -> bool {
-  if (!retriever_task.setup(epub_filename)) {
+auto PageLocsState::setup(const std::string &epubFilename) -> bool {
+  if (!retrieverTask.setup(epubFilename)) {
     LOG_E("Unable to setup retriever task");
     return false;
   }
@@ -17,19 +17,19 @@ auto PageLocsState::setup(const std::string &epub_filename) -> bool {
   #if EPUB_LINUX_BUILD
     mq_unlink("/state");
 
-    state_queue = mq_open("/state", O_RDWR | O_CREAT, S_IRWXU, &state_attr);
-    if (state_queue == -1) {
-      LOG_E("Unable to open state_queue: %d", errno);
+    stateQueue = mq_open("/state", O_RDWR | O_CREAT, S_IRWXU, &stateAttr);
+    if (stateQueue == -1) {
+      LOG_E("Unable to open stateQueue: %d", errno);
       return false;
     }
 
-    state_thread = std::thread(&PageLocsState::task, this);
+    stateThread = std::thread(&PageLocsState::task, this);
   #else
     esp_pthread_init();
 
-    if (state_queue == nullptr) state_queue = xQueueCreate(5, sizeof(PageLocsState::QueueData));
-    if (state_queue == nullptr) {
-      LOG_E("Unable to create state_queue");
+    if (stateQueue == nullptr) stateQueue = xQueueCreate(5, sizeof(PageLocsState::QueueData));
+    if (stateQueue == nullptr) {
+      LOG_E("Unable to create stateQueue");
       return false;
     }
 
@@ -41,23 +41,23 @@ auto PageLocsState::setup(const std::string &epub_filename) -> bool {
     cfg.inherit_cfg = true;
 
     esp_pthread_set_cfg(&cfg);
-    state_thread = std::thread(&PageLocsState::task, this);
+    stateThread = std::thread(&PageLocsState::task, this);
 
   #endif
 
   return true;
 }
 
-void PageLocsState::wait_for_exit() {
-  state_thread.join();
-  state_thread.~thread();
+void PageLocsState::waitForExit() {
+  stateThread.join();
+  stateThread.~thread();
 }
 
 void PageLocsState::abort() {
-  LOG_D("abort_threads: Sending ABORT to Retriever");
+  LOG_D("abortThreads: Sending ABORT to Retriever");
   PageLocsRetriever::send({.req = PageLocsRetriever::Req::ABORT});
 
-  retriever_task.wait_for_exit();
+  retrieverTask.waitForExit();
 }
 
 /**
@@ -74,52 +74,52 @@ void PageLocsState::abort() {
  *
  * @param itemref The last itemref index that was processed
  */
-void PageLocsState::request_next_item(int16_t itemref, bool already_sent_to_mgr = false) {
-  if (asap_itemref != -1) { // is there an urgent spine to do?
-    if (itemref == asap_itemref) {
-      asap_itemref = -1;
-      if (!already_sent_to_mgr) {
-        PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemref_index = itemref});
+void PageLocsState::requestNextItem(int16_t itemref, bool alreadySentToMgr) {
+  if (asapItemref != -1) { // is there an urgent spine to do?
+    if (itemref == asapItemref) {
+      asapItemref = -1;
+      if (!alreadySentToMgr) {
+        PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
         LOG_D("Sent ASAP_READY to Mgr");
       }
     } else {
-      waiting_for_itemref = asap_itemref;
-      asap_itemref        = -1;
+      waitingForItemref = asapItemref;
+      asapItemref       = -1;
       PageLocsRetriever::send(
-          {.req = PageLocsRetriever::Req::GET_ASAP, .itemref_index = waiting_for_itemref});
-      retriever_iddle = false;
+          {.req = PageLocsRetriever::Req::GET_ASAP, .itemrefIndex = waitingForItemref});
+      retrieverIdle = false;
       LOG_D("Sent GET_ASAP to Retriever");
       return;
     }
   }
-  if (next_itemref_to_get != -1) {
-    waiting_for_itemref = next_itemref_to_get;
-    next_itemref_to_get = -1;
+  if (nextItemrefToGet != -1) {
+    waitingForItemref = nextItemrefToGet;
+    nextItemrefToGet  = -1;
     PageLocsRetriever::send(
-        {.req = PageLocsRetriever::Req::RETRIEVE_ITEM, .itemref_index = waiting_for_itemref});
-    retriever_iddle = false;
+        {.req = PageLocsRetriever::Req::RETRIEVE_ITEM, .itemrefIndex = waitingForItemref});
+    retrieverIdle = false;
     LOG_D("Sent RETRIEVE_ITEM to Retriever");
   } else {
     int16_t newref;
     if (itemref != -1) {
-      newref = (itemref + 1) % itemref_count;
+      newref = (itemref + 1) % itemrefCount;
     } else {
       itemref = 0;
       newref  = 0;
     }
     while ((bitset[newref >> 3] & (1 << (newref & 7))) != 0) {
-      newref = (newref + 1) % itemref_count;
+      newref = (newref + 1) % itemrefCount;
       if (newref == itemref) break;
     }
     if (newref != itemref) {
-      waiting_for_itemref = newref;
+      waitingForItemref = newref;
       PageLocsRetriever::send(
-          {.req = PageLocsRetriever::Req::RETRIEVE_ITEM, .itemref_index = waiting_for_itemref});
-      retriever_iddle = false;
+          {.req = PageLocsRetriever::Req::RETRIEVE_ITEM, .itemrefIndex = waitingForItemref});
+      retrieverIdle = false;
       LOG_D("Sent RETRIEVE_ITEM to Retriever");
     } else {
-      page_locs.computation_completed();
-      retriever_iddle = true;
+      pageLocs.computationCompleted();
+      retrieverIdle = true;
     }
   }
 }
@@ -127,12 +127,12 @@ void PageLocsState::request_next_item(int16_t itemref, bool already_sent_to_mgr 
 void PageLocsState::task() {
   for (;;) {
     LOG_D("==> Waiting for request... <==");
-    QueueData state_queue_data;
+    QueueData stateQueueData;
 
-    if (receive(state_queue_data) == -1) {
+    if (receive(stateQueueData) == -1) {
       LOG_E("Receive error: %d: %s", errno, strerror(errno));
     } else
-      switch (state_queue_data.req) {
+      switch (stateQueueData.req) {
       case Req::NONE:
         break;
       case Req::ABORT:
@@ -141,14 +141,14 @@ void PageLocsState::task() {
 
       case Req::STOP:
         LOG_D("-> STOP <-");
-        itemref_count    = -1;
-        forget_retrieval = true;
+        itemrefCount    = -1;
+        forgetRetrieval = true;
         if (bitset != nullptr) {
           delete[] bitset;
           bitset = nullptr;
         }
-        if (retriever_iddle) {
-          PageLocs::send({.req = PageLocs::Req::STOPPED, .itemref_index = 0});
+        if (retrieverIdle) {
+          PageLocs::send({.req = PageLocs::Req::STOPPED, .itemrefIndex = 0});
         } else {
           stopping = true;
         }
@@ -157,29 +157,29 @@ void PageLocsState::task() {
       case Req::START_DOCUMENT:
         LOG_D("-> START_DOCUMENT <-");
         if (bitset) delete[] bitset;
-        itemref_count    = state_queue_data.itemref_count;
-        items_done_count = 0;
-        // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count,
-        // itemref_count);
-        bitset_size = (itemref_count + 7) >> 3;
-        bitset      = new uint8_t[bitset_size];
+        itemrefCount   = stateQueueData.itemrefCount;
+        itemsDoneCount = 0;
+        // ESP_LOGI(TAG,"itemsDoneCount = %" PRIi16 " of %" PRIi16, itemsDoneCount,
+        // itemrefCount);
+        bitsetSize = (itemrefCount + 7) >> 3;
+        bitset     = new uint8_t[bitsetSize];
         if (bitset) {
-          memset(bitset, 0, bitset_size);
-          if (waiting_for_itemref == -1) {
-            waiting_for_itemref = state_queue_data.itemref_index;
-            forget_retrieval    = false;
-            PageLocsRetriever::send({.req           = PageLocsRetriever::Req::RETRIEVE_ITEM,
-                                     .itemref_index = waiting_for_itemref});
+          memset(bitset, 0, bitsetSize);
+          if (waitingForItemref == -1) {
+            waitingForItemref = stateQueueData.itemrefIndex;
+            forgetRetrieval   = false;
+            PageLocsRetriever::send(
+                {.req = PageLocsRetriever::Req::RETRIEVE_ITEM, .itemrefIndex = waitingForItemref});
             LOG_D("Sent RETRIEVE_ITEM to retriever");
           } else {
-            forget_retrieval    = true;
-            next_itemref_to_get = state_queue_data.itemref_index;
+            forgetRetrieval  = true;
+            nextItemrefToGet = stateQueueData.itemrefIndex;
           }
-          retriever_iddle = false;
+          retrieverIdle = false;
         } else {
-          itemref_count    = -1;
-          retriever_iddle  = true;
-          forget_retrieval = true;
+          itemrefCount    = -1;
+          retrieverIdle   = true;
+          forgetRetrieval = true;
         }
         break;
 
@@ -189,24 +189,24 @@ void PageLocsState::task() {
         // return a negative value.
         // If already done, let it know it a.s.a.p. If currently being processed,
         // keep a mark when it will be back. If not, queue the request.
-        if (itemref_count == -1) {
+        if (itemrefCount == -1) {
           PageLocs::send(
-              {.req           = PageLocs::Req::ASAP_READY,
-               .itemref_index = static_cast<int16_t>(-(state_queue_data.itemref_index + 1))});
+              {.req          = PageLocs::Req::ASAP_READY,
+               .itemrefIndex = static_cast<int16_t>(-(stateQueueData.itemrefIndex + 1))});
           LOG_D("Sent ASAP_READY to Mgr");
         } else {
-          int16_t itemref = state_queue_data.itemref_index;
+          int16_t itemref = stateQueueData.itemrefIndex;
           if ((bitset[itemref >> 3] & (1 << (itemref & 7))) != 0) {
-            PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemref_index = itemref});
+            PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
             LOG_D("Sent ASAP_READY to Mgr");
-          } else if (waiting_for_itemref != -1) {
-            asap_itemref = itemref;
+          } else if (waitingForItemref != -1) {
+            asapItemref = itemref;
           } else {
-            asap_itemref        = -1;
-            waiting_for_itemref = itemref;
-            retriever_iddle     = false;
+            asapItemref       = -1;
+            waitingForItemref = itemref;
+            retrieverIdle     = false;
             PageLocsRetriever::send(
-                {.req = PageLocsRetriever::Req::GET_ASAP, .itemref_index = itemref});
+                {.req = PageLocsRetriever::Req::GET_ASAP, .itemrefIndex = itemref});
             LOG_D("Sent GET_ASAP to Retriever");
           }
         }
@@ -216,35 +216,35 @@ void PageLocsState::task() {
       // processed.
       case Req::ITEM_READY:
         LOG_D("-> ITEM_READY <-");
-        waiting_for_itemref = -1;
-        if (itemref_count != -1) {
+        waitingForItemref = -1;
+        if (itemrefCount != -1) {
           int16_t itemref = -1;
-          if (forget_retrieval) {
-            forget_retrieval = false;
+          if (forgetRetrieval) {
+            forgetRetrieval = false;
           } else {
-            itemref = state_queue_data.itemref_index;
+            itemref = stateQueueData.itemrefIndex;
             if (itemref < 0) {
               itemref = -(itemref + 1);
               LOG_E("Unable to retrieve pages location for item %d", itemref);
             }
             if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
               bitset[itemref >> 3] |= (1 << (itemref & 7));
-              items_done_count += 1;
-              // ESP_LOGI(TAG,"items_done_count = %" PRIi16 " of %" PRIi16, items_done_count,
-              // itemref_count);
+              itemsDoneCount += 1;
+              // ESP_LOGI(TAG,"itemsDoneCount = %" PRIi16 " of %" PRIi16, itemsDoneCount,
+              // itemrefCount);
             }
           }
           if (stopping) {
-            stopping        = false;
-            retriever_iddle = true;
+            stopping      = false;
+            retrieverIdle = true;
             PageLocs::send({.req = PageLocs::Req::STOPPED});
           } else {
-            request_next_item(itemref);
+            requestNextItem(itemref);
           }
         } else {
           if (stopping) {
-            stopping        = false;
-            retriever_iddle = true;
+            stopping      = false;
+            retrieverIdle = true;
             PageLocs::send({.req = PageLocs::Req::STOPPED});
           }
         }
@@ -254,10 +254,10 @@ void PageLocsState::task() {
       // processed.
       case Req::ASAP_READY:
         LOG_D("-> ASAP_READY <-");
-        waiting_for_itemref = -1;
-        if (itemref_count != -1) {
-          int16_t itemref = state_queue_data.itemref_index;
-          PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemref_index = itemref});
+        waitingForItemref = -1;
+        if (itemrefCount != -1) {
+          int16_t itemref = stateQueueData.itemrefIndex;
+          PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
           LOG_D("Sent ASAP_READY to Mgr");
           if (itemref < 0) {
             itemref = -(itemref + 1);
@@ -265,28 +265,28 @@ void PageLocsState::task() {
           }
           if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
             bitset[itemref >> 3] |= (1 << (itemref & 7));
-            items_done_count += 1;
-            // ESP_LOGI(TAG,"items_done_count = %" PRIi16" of %" PRIi16, items_done_count,
-            // itemref_count);
+            itemsDoneCount += 1;
+            // ESP_LOGI(TAG,"itemsDoneCount = %" PRIi16" of %" PRIi16, itemsDoneCount,
+            // itemrefCount);
           }
           if (stopping) {
-            stopping        = false;
-            retriever_iddle = true;
-            PageLocs::send({.req = PageLocs::Req::STOPPED, .itemref_index = 0});
+            stopping      = false;
+            retrieverIdle = true;
+            PageLocs::send({.req = PageLocs::Req::STOPPED, .itemrefIndex = 0});
           } else {
-            request_next_item(itemref, true);
+            requestNextItem(itemref, true);
           }
         } else {
           if (stopping) {
-            stopping        = false;
-            retriever_iddle = true;
-            PageLocs::send({.req = PageLocs::Req::STOPPED, .itemref_index = 0});
+            stopping      = false;
+            retrieverIdle = true;
+            PageLocs::send({.req = PageLocs::Req::STOPPED, .itemrefIndex = 0});
           }
         }
         break;
       case Req::PERCENT:
         PageLocs::send(
-            {.req = PageLocs::Req::PERCENT, .itemref_index = static_cast<int16_t>(percent_done())});
+            {.req = PageLocs::Req::PERCENT, .itemrefIndex = static_cast<int16_t>(percentDone())});
       }
   }
 }

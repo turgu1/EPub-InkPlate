@@ -27,7 +27,7 @@
 
 using namespace pugi;
 
-using BookViewerPtr = himem_unique_ptr<class BookViewer>;
+using BookViewerPtr = himemUniquePtr<class BookViewer>;
 
 class BookViewer {
 private:
@@ -36,12 +36,12 @@ private:
   BookViewer() = default;
 
   std::mutex mutex;
-  uint16_t page_bottom;
+  uint16_t pageBottom;
   PageId current_page_id{-1, -1};
 
   PagePtr page{Page::Make()};
 
-  void build_page_at(const PageId &page_id, EPubPtr &epub);
+  void buildPageAt(const PageId &pageId, EPubPtr &epub);
 
   struct PageEnd {
     bool operator()(Page::Format &fmt) const { return false; }
@@ -50,22 +50,22 @@ private:
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himem_unique_ptr<T> make_unique_himem(Args &&...args);
+  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make() { return make_unique_himem<BookViewer>(); }
+  static inline auto Make() { return makeUniqueHimem<BookViewer>(); }
 
   ~BookViewer() = default;
 
-  inline std::mutex &get_mutex() { return mutex; }
+  inline std::mutex &getMutex() { return mutex; }
 
   /**
    * @brief Show a page on the display.
    *
    * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
    */
-  void show_page(const PageId &page_id, EPubPtr &epub);
+  void showPage(const PageId &pageId, EPubPtr &epub);
 
-  void show_fake_cover(EPubPtr &epub);
+  void showFakeCover(EPubPtr &epub);
 
   static constexpr int16_t TITLE_FONT      = 2;
   static constexpr int16_t TITLE_FONT_SIZE = 8;
