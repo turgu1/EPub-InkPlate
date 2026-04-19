@@ -7,6 +7,7 @@
 
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/book_param_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
@@ -19,7 +20,33 @@
 #include <string>
 
 auto TocController::enter() -> void {
+  if (!epub) {
+    MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                    "No book is loaded. Cannot display the table of content.");
+    bookParamController.becomeOwnerOfBook(epub);
+    appController.setController(AppController::Ctrl::PARAM);
+    return;
+  }
+
+  if (epub->toc == nullptr) {
+    epub->toc = TOC::Make();
+    if (epub->toc && !(epub->toc->load(epub) && epub->toc->isReady())) {
+      MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                      "The table of content for the current book is not available yet.");
+      bookParamController.becomeOwnerOfBook(epub);
+      appController.setController(AppController::Ctrl::PARAM);
+      return;
+    }
+  }
+
   tocViewer = TocViewer::Make(epub);
+  if (!tocViewer) {
+    MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                    "Unable to display the table of content for the current book.");
+    bookParamController.becomeOwnerOfBook(epub);
+    appController.setController(AppController::Ctrl::PARAM);
+    return;
+  }
 
   tocViewer->setup();
 
@@ -31,7 +58,9 @@ auto TocController::enter() -> void {
   currentEntryIndex = tocViewer->showPageAndHighlight(currentEntryIndex);
 }
 
-auto TocController::leave(bool goingToDeepSleep) -> void { tocViewer.reset(); }
+auto TocController::leave(bool goingToDeepSleep) -> void {
+  if (tocViewer) tocViewer.reset();
+}
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   auto TocController::inputEvent(const EventMgr::Event &event) -> void {
@@ -49,11 +78,11 @@ auto TocController::leave(bool goingToDeepSleep) -> void { tocViewer.reset(); }
       if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
         if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
           bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
-          bookController.setOwnershipOfBook(epub);
+          bookController.becomeOwnerOfBook(epub);
           appController.setController(AppController::Ctrl::BOOK);
         }
       } else {
-        bookController.setOwnershipOfBook(epub);
+        bookController.becomeOwnerOfBook(epub);
         appController.setController(AppController::Ctrl::BOOK);
       }
       break;
@@ -108,12 +137,14 @@ auto TocController::leave(bool goingToDeepSleep) -> void { tocViewer.reset(); }
       if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
         if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
           bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+          bookController.becomeOwnerOfBook(epub);
           appController.setController(AppController::Ctrl::BOOK);
         }
       }
       break;
 
     case EventMgr::EventKind::DBL_SELECT:
+      bookController.becomeOwnerOfBook(epub);
       appController.setController(AppController::Ctrl::BOOK);
       break;
 

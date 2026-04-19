@@ -31,109 +31,114 @@ auto Page::clean() -> void {
 
 auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
                      const char **str2) const -> int32_t {
-  const uint8_t *c = (uint8_t *)str;
-  int32_t u        = 0;
+  const uint8_t *c = reinterpret_cast<const uint8_t *>(str);
+  int32_t u        = ' ';
   bool done        = false;
 
   if (*c == '&') {
-    const uint8_t *s = ++c;
-    uint8_t len      = 0;
+    const uint8_t *name = c + 1;
+    const uint8_t *s    = name;
+    uint8_t len         = 0;
     while ((len < 7) && (*s != 0) && (*s != ';')) {
-      s++;
-      len++;
+      ++s;
+      ++len;
     }
+
     if (*s == ';') {
-      if (strncmp("nbsp;", (const char *)c, 5) == 0)
-        u = 160;
-      else if (strncmp("lt;", (const char *)c, 3) == 0)
-        u = 60;
-      else if (strncmp("gt;", (const char *)c, 3) == 0)
-        u = 62;
-      else if (strncmp("amp;", (const char *)c, 4) == 0)
-        u = 38;
-      else if (strncmp("quot;", (const char *)c, 5) == 0)
-        u = 34;
-      else if (strncmp("apos;", (const char *)c, 5) == 0)
-        u = 39;
-      else if (strncmp("mdash;", (const char *)c, 6) == 0)
-        u = 0x2014;
-      else if (strncmp("ndash;", (const char *)c, 6) == 0)
-        u = 0x2013;
-      else if (strncmp("lsquo;", (const char *)c, 6) == 0)
-        u = 0x2018;
-      else if (strncmp("rsquo;", (const char *)c, 6) == 0)
-        u = 0x2019;
-      else if (strncmp("ldquo;", (const char *)c, 6) == 0)
-        u = 0x201C;
-      else if (strncmp("rdquo;", (const char *)c, 6) == 0)
-        u = 0x201D;
-      else if (strncmp("euro;", (const char *)c, 5) == 0)
-        u = 0x20AC;
-      else if (strncmp("dagger;", (const char *)c, 7) == 0)
-        u = 0x2020;
-      else if (strncmp("Dagger;", (const char *)c, 7) == 0)
-        u = 0x2021;
-      else if (strncmp("copy;", (const char *)c, 5) == 0)
-        u = 0xa9;
-      if (u == 0) {
-        u = '&';
-      } else {
-        c = ++s;
+      switch (len) {
+      case 2:
+        if (strncmp("lt;", reinterpret_cast<const char *>(name), 3) == 0)
+          u = 60;
+        else if (strncmp("gt;", reinterpret_cast<const char *>(name), 3) == 0)
+          u = 62;
+        break;
+      case 3:
+        if (strncmp("amp;", reinterpret_cast<const char *>(name), 4) == 0) u = 38;
+        break;
+      case 4:
+        if (strncmp("nbsp;", reinterpret_cast<const char *>(name), 5) == 0)
+          u = 160;
+        else if (strncmp("quot;", reinterpret_cast<const char *>(name), 5) == 0)
+          u = 34;
+        else if (strncmp("apos;", reinterpret_cast<const char *>(name), 5) == 0)
+          u = 39;
+        else if (strncmp("euro;", reinterpret_cast<const char *>(name), 5) == 0)
+          u = 0x20AC;
+        else if (strncmp("copy;", reinterpret_cast<const char *>(name), 5) == 0)
+          u = 0x00A9;
+        break;
+      case 5:
+        if (strncmp("mdash;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x2014;
+        else if (strncmp("ndash;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x2013;
+        else if (strncmp("lsquo;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x2018;
+        else if (strncmp("rsquo;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x2019;
+        else if (strncmp("ldquo;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x201C;
+        else if (strncmp("rdquo;", reinterpret_cast<const char *>(name), 6) == 0)
+          u = 0x201D;
+        break;
+      case 6:
+        if (strncmp("dagger;", reinterpret_cast<const char *>(name), 7) == 0)
+          u = 0x2020;
+        else if (strncmp("Dagger;", reinterpret_cast<const char *>(name), 7) == 0)
+          u = 0x2021;
+        break;
+      default:
+        break;
       }
-    } else {
+    }
+
+    if (u == ' ') {
+      // Unknown or malformed entity: consume '&' and return it as-is.
       u = '&';
+      ++c;
+    } else {
+      c = s + 1;
     }
     done = true;
-  } else
-    while (true) {
-      if ((*c & 0x80) == 0x00) {
-        u    = *c++;
-        done = true;
-      } else if ((*str & 0xF1) == 0xF0) {
-        u = *c++ & 0x07;
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        done = true;
-      } else if ((*str & 0xF0) == 0xE0) {
-        u = *c++ & 0x0F;
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        done = true;
-      } else if ((*str & 0xE0) == 0xC0) {
-        u = *c++ & 0x1F;
-        if (*c == 0)
-          break;
-        else
-          u = (u << 6) + (*c++ & 0x3F);
-        done = true;
-      }
-      break;
-    }
-  *str2 = (char *)c;
-  if (transform != CSS::TextTransform::NONE) {
-    if (transform == CSS::TextTransform::UPPERCASE)
-      u = toupper(u);
-    else if (transform == CSS::TextTransform::LOWERCASE)
-      u = tolower(u);
-    else if (first && (transform == CSS::TextTransform::CAPITALIZE))
-      u = toupper(u);
+  } else if ((*c & 0x80) == 0x00) {
+    u    = *c++;
+    done = true;
+  } else if (((*c & 0xF8) == 0xF0) && (c[1] != 0) && (c[2] != 0) && (c[3] != 0) &&
+             ((c[1] & 0xC0) == 0x80) && ((c[2] & 0xC0) == 0x80) && ((c[3] & 0xC0) == 0x80)) {
+    u = (c[0] & 0x07);
+    u = (u << 6) + (c[1] & 0x3F);
+    u = (u << 6) + (c[2] & 0x3F);
+    u = (u << 6) + (c[3] & 0x3F);
+    c += 4;
+    done = true;
+  } else if (((*c & 0xF0) == 0xE0) && (c[1] != 0) && (c[2] != 0) && ((c[1] & 0xC0) == 0x80) &&
+             ((c[2] & 0xC0) == 0x80)) {
+    u = (c[0] & 0x0F);
+    u = (u << 6) + (c[1] & 0x3F);
+    u = (u << 6) + (c[2] & 0x3F);
+    c += 3;
+    done = true;
+  } else if (((*c & 0xE0) == 0xC0) && (c[1] != 0) && ((c[1] & 0xC0) == 0x80)) {
+    u = (c[0] & 0x1F);
+    u = (u << 6) + (c[1] & 0x3F);
+    c += 2;
+    done = true;
+  } else {
+    // Invalid leading byte or malformed UTF-8 sequence; consume one byte to avoid stalling.
+    ++c;
   }
+
+  *str2 = reinterpret_cast<const char *>(c);
+
+  if (done && (u >= 0) && (u <= 0x7F) && (transform != CSS::TextTransform::NONE)) {
+    if (transform == CSS::TextTransform::UPPERCASE)
+      u = toupper(static_cast<unsigned char>(u));
+    else if (transform == CSS::TextTransform::LOWERCASE)
+      u = tolower(static_cast<unsigned char>(u));
+    else if (first && (transform == CSS::TextTransform::CAPITALIZE))
+      u = toupper(static_cast<unsigned char>(u));
+  }
+
   return done ? u : ' ';
 }
 
@@ -273,7 +278,7 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
 
   if (clearScreen) screen.clear();
 
-  int count = 0;
+  // int count = 0;
 
   for (auto *entry : *displayList) {
     switch (entry->command) {
@@ -312,10 +317,10 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
       break;
     }
 
-    count++;
+    // count++;
   }
 
-  LOG_I("Painted %d entries on screen", count);
+  // LOG_I("Painted %d entries on screen", count);
 
   screen.update(noFull);
 }
@@ -536,7 +541,8 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
   // std::cout << "End New Line:"; showControls();
 }
 
-inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) -> void {
+inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace)
+    -> void {
   if (isSpace && (lineWidth == 0)) return;
 
   DisplayListEntry *entry = lineList->getNewEntry();

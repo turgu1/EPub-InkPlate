@@ -26,13 +26,13 @@ public:
     return makeUniqueHimem<PageLocsInterpreter>(theEpub, thePage, theDom, theCompMode, theItem);
   }
 
-  auto docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
+  auto inline docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
 
 private:
   const EPub::ItemInfo &itemInfo;
 
 protected:
- [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
+  [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
     bool res = true;
 
     PageId pageId = PageId(itemInfo.itemrefIndex, startOffset);
@@ -47,6 +47,8 @@ protected:
       if ((itemInfo.itemrefIndex > 0) && (page->isEmpty())) {
         pageInfo.size = -pageInfo.size; // The page will not be counted nor displayed
       }
+
+      // sleep(1);
 
       pageLocs.insert(pageId, pageInfo);
 

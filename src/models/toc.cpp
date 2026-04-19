@@ -19,7 +19,7 @@ auto itemrefPred(xml_node node) -> bool;
 auto xmlnsPred(xml_attribute attr) -> bool;
 
 extern auto oneByAttr(xml_node n, const char *name1, const char *name2, const char *attr,
-                            const char *value) -> xml_node;
+                      const char *value) -> xml_node;
 
 auto TOC::buildFilename(EPubPtr &epub) -> std::string {
   std::string epubFilename = epub->getCurrentFilename();
@@ -112,11 +112,12 @@ auto TOC::load(EPubPtr &epub) -> bool {
   return ready;
 }
 
-auto TOC::save(EPubPtr &epub) -> bool {
+auto TOC::save(std::string epubFilename) -> bool {
   LOG_D("save()");
   if (saved) return true;
 
-  std::string filename = buildFilename(epub);
+  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
+
   if (!compact()) return false;
 
   if (db->create(filename)) {
@@ -290,14 +291,14 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
   return true;
 }
 
-auto TOC::loadFromEpub(EPubPtr &epub) -> bool {
+auto TOC::loadFromEpub(EPub &epub) -> bool {
   LOG_D("loadFromEpub()");
 
   xml_node node, node2;
   xml_attribute attr;
   const char *filename = nullptr;
 
-  opf = &epub->getOpf();
+  opf = &epub.getOpf();
 
   clean();
 
@@ -321,7 +322,7 @@ auto TOC::loadFromEpub(EPubPtr &epub) -> bool {
   uint32_t ncxSize;
   bool result = false;
 
-  auto ncxData = epub->retrieveFile(filename, ncxSize);
+  auto ncxData = epub.retrieveFile(filename, ncxSize);
   if (ncxData == nullptr) return false;
 
   auto ncxOpf = std::make_unique<pugi::xml_document>();

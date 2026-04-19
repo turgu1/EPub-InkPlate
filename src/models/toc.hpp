@@ -60,11 +60,10 @@ public:
   using Entries = std::vector<EntryRecord>;
 
   const Entries &getEntries() { return entries; }
- [[nodiscard]] inline auto isReady() -> bool { return ready; }
- [[nodiscard]] inline auto isEmpty() -> bool { return entries.empty(); }
- [[nodiscard]] inline auto thereIsSomeIds() -> bool { return someIds; }
- [[nodiscard]] inline auto getEntryCount() -> int16_t { return entries.size(); }
- [[nodiscard]] inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
+  [[nodiscard]] inline auto isReady() -> bool { return ready && !entries.empty(); }
+  [[nodiscard]] inline auto thereIsSomeIds() -> bool { return someIds; }
+  [[nodiscard]] inline auto getEntryCount() -> int16_t { return entries.size(); }
+  [[nodiscard]] inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
 
   /**
    * @brief Load table of content from a file.
@@ -86,7 +85,7 @@ public:
    *
    * @return True if saving was successfull.
    */
-  auto save(EPubPtr &epub) -> bool;
+  auto save(std::string epubFilename) -> bool;
 
   /**
    * @brief Load table of content from ePub file.
@@ -99,7 +98,7 @@ public:
    *
    * @return True if the information has been retrieved successfully.
    */
-  auto loadFromEpub(EPubPtr &epub) -> bool;
+  auto loadFromEpub(EPub &epub) -> bool;
 
   /**
    * @brief Compact the char strings to a single buffer.

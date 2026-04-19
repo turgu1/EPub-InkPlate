@@ -79,10 +79,10 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
     Page::Format fmt = {
         .lineHeightFactor = 0.95,
-        .fontIndex         = idx,
-        .fontSize           = fontSize,
-        .screenTop         = page_top,
-        .screenBottom      = pageBottom,
+        .fontIndex        = idx,
+        .fontSize         = fontSize,
+        .screenTop        = page_top,
+        .screenBottom     = pageBottom,
     };
 
     mutex.unlock();
@@ -126,10 +126,10 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         // TTF * font = fonts.get(0, 7);
 
         fmt.lineHeightFactor = 1.0;
-        fmt.fontIndex         = TITLE_FONT;
-        fmt.fontSize           = TITLE_FONT_SIZE;
-        fmt.fontStyle         = Fonts::FaceStyle::ITALIC;
-        fmt.align              = CSS::Align::CENTER;
+        fmt.fontIndex        = TITLE_FONT;
+        fmt.fontSize         = TITLE_FONT_SIZE;
+        fmt.fontStyle        = Fonts::FaceStyle::ITALIC;
+        fmt.align            = CSS::Align::CENTER;
 
         std::ostringstream ostr;
 
@@ -149,7 +149,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
           page->putStrAt(ostr.str(), Pos(Page::HORIZONTAL_CENTER, title_baseline_offset), fmt);
         }
 
-        ScreenBottom::show(page, pageLocs.getPageNbr(pageId), pageLocs.getPageCount());
+        ScreenBottom::show(page, pageLocs.getPageNbr(pageId), pageLocs.getPageCountOrPercent());
 
         page->paint();
       }
@@ -171,11 +171,11 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   Page::Format fmt = {
       .fontIndex    = 2,
-      .fontSize      = 14,
+      .fontSize     = 14,
       .screenTop    = 100,
       .screenBottom = 30,
       .fontStyle    = Fonts::FaceStyle::ITALIC,
-      .align         = CSS::Align::CENTER,
+      .align        = CSS::Align::CENTER,
   };
 
   std::string title  = epub->getTitle();
@@ -188,7 +188,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   page->endParagraph(fmt);
 
   fmt.fontIndex = 1;
-  fmt.fontSize   = 18;
+  fmt.fontSize  = 18;
   fmt.screenTop = 200;
   fmt.fontStyle = Fonts::FaceStyle::NORMAL;
 

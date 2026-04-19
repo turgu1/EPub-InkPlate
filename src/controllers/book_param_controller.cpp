@@ -44,27 +44,27 @@ static int8_t oldFont;
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
 #endif
 static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
-    {.caption    = "Font Size:",
-     .u          = {.ch = {.value        = &fontSize,
-                           .choiceCount = 4,
-                           .choices      = FormChoiceField::fontSizeChoices}},
+    {.caption   = "Font Size:",
+     .u         = {.ch = {.value       = &fontSize,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::fontSizeChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Use fonts in book:",
-     .u          = {.ch = {.value        = &useFontsInBook,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption   = "Use fonts in book:",
+     .u         = {.ch = {.value       = &useFontsInBook,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
     {.caption = "Font:",
-     .u = {.ch = {.value = &font, .choiceCount = 8, .choices = FormChoiceField::fontChoices}},
+     .u       = {.ch = {.value = &font, .choiceCount = 8, .choices = FormChoiceField::fontChoices}},
      .entryType = FormEntryType::VERTICAL},
-    {.caption    = "Show Images in book:",
-     .u          = {.ch = {.value        = &showPictures,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption   = "Show Images in book:",
+     .u         = {.ch = {.value       = &showPictures,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    {.caption    = " DONE ",
-     .u          = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
+    {.caption   = " DONE ",
+     .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
      .entryType = FormEntryType::DONE}
 #endif
 };
@@ -97,7 +97,7 @@ auto BookParamController::bookParameters() -> void {
 }
 
 auto BookParamController::revertToDefaults() -> void {
-  pageLocs.stopDocument();
+  pageLocs.stopControlTask();
 
   EPub::BookFormatParams *bookFormatParams = epub->getBookFormatParams();
 
@@ -134,7 +134,9 @@ auto BookParamController::revertToDefaults() -> void {
   }
 }
 
-auto BookParamController::booksList() -> void { appController.setController(AppController::Ctrl::DIR); }
+auto BookParamController::booksList() -> void {
+  appController.setController(AppController::Ctrl::DIR);
+}
 
 auto BookParamController::deleteBook() -> void {
   confirmData =
@@ -144,7 +146,7 @@ auto BookParamController::deleteBook() -> void {
 }
 
 auto BookParamController::tocCtrl() -> void {
-  tocController.setOwnershipOfBook(epub);
+  tocController.becomeOwnerOfBook(epub);
   appController.setController(AppController::Ctrl::TOC);
 }
 
@@ -191,9 +193,16 @@ auto BookParamController::setFontCount(uint8_t count) -> void {
 }
 
 auto BookParamController::enter() -> void {
-  menu[1].visible = epub->toc->isReady() && !epub->toc->isEmpty();
-  menuViewer      = MenuViewer::Make();
-  formViewer      = FormViewer::Make();
+  // Check if the TOC file exists for the current book.
+  // If it doesn't, the TOC menu entry will not be shown.
+  auto filePath = epub->getCurrentFilename();
+  struct stat fileStat;
+  auto dotPos = filePath.find_last_of('.');
+  filePath.replace(dotPos, 5, ".toc");
+  menu[1].visible = stat(filePath.c_str(), &fileStat) != -1;
+
+  menuViewer = MenuViewer::Make();
+  formViewer = FormViewer::Make();
 
   if (menuViewer) {
     menu[0].func = CommonActions::returnToLast;
@@ -313,7 +322,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
   #endif
     else {
     if (menuViewer->event(event)) {
-      bookController.setOwnershipOfBook(epub);
+      bookController.becomeOwnerOfBook(epub);
       appController.setController(AppController::Ctrl::BOOK);
     }
   }

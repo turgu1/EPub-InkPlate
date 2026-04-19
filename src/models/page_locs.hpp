@@ -23,11 +23,15 @@
 #endif
 
 #include "models/epub.hpp"
-#include "models/page_locs_state.hpp"
+#include "models/page_locs_control.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/page.hpp"
 
 #include "pugixml.hpp"
+
+#if 1
+  #define SHOW_IT(msg, ...) LOG_I(msg, ##__VA_ARGS__)
+#endif
 
 /**
  * class PageLocs - Compute pages locations
@@ -63,7 +67,7 @@ public:
   using ItemsSet = std::set<int16_t>;
 
   enum class Req : int8_t {
-    NONE, ASAP_READY, STOPPED, PERCENT
+    NONE, ASAP_READY, STOPPED, PERCENT, COMPLETED
   };
 
   struct QueueData {
@@ -83,16 +87,19 @@ private:
   static constexpr const char *TAG                = "PageLocs";
   static constexpr const int8_t LOCS_FILE_VERSION = 3;
 
-  bool completed;
-  int16_t pageCount;
+  bool completed{false};
+  bool aborted{false};
+  bool controlTaskReadyToBeStopped{false};
+
+  int16_t pageCount{0};
 
   std::recursive_timed_mutex mutex;
 
-  PageLocsStatePtr stateTask;
+  PageLocsControlPtr controlTask;
 
   PagesMap pagesMap;
   ItemsSet itemsSet;
-  int16_t itemCount;
+  int16_t itemCount{0};
 
   std::string currentFilename;
 
@@ -114,9 +121,8 @@ private:
   // bool           pageEnd(Page::Format & fmt);
   // bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
 
-  auto loadFromFile(const std::string &epubFilename)
-      -> bool;                                              ///< load pages location from .locs file
-  auto saveToFile(const std::string &epubFilename) -> bool; ///< save pages location to .locs file
+  auto load(const std::string &epubFilename) -> bool; ///< load pages location from .locs file
+  auto save(const std::string &epubFilename) -> bool; ///< save pages location to .locs file
 
   #if EPUB_LINUX_BUILD
     static mqd_t mgrQueue;
@@ -136,9 +142,9 @@ private:
   auto setupPagesComputation(EPubPtr &epub) -> void;
 
 public:
-  PageLocs() : completed(false), pageCount(0), itemCount(0) {};
+  PageLocs() = default;
 
-  auto abortThreads() -> void;
+  auto stopControlTask() -> void;
 
   auto getNextPageId(const PageId &pageId, int16_t count = 1) -> const PageId *;
   auto getPrevPageId(const PageId &pageId, int count = 1) -> const PageId *;
@@ -150,10 +156,12 @@ public:
 
   auto checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force = false) -> void;
   auto computationCompleted() -> void;
+  auto computationAborted(std::string reason) -> void;
   auto startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void;
-  auto stopDocument() -> void;
 
- [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
+  [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
+    if (controlTaskReadyToBeStopped) stopControlTask();
+
     std::scoped_lock guard(mutex);
     PagesMap::iterator it = checkAndFind(pageId);
     return it == pagesMap.end() ? nullptr : &it->second;
@@ -161,23 +169,33 @@ public:
 
   auto insert(PageId &id, PageInfo &info) -> bool;
 
- inline auto clear() -> void {
-    std::scoped_lock guard(mutex);
-    pagesMap.clear();
-    itemsSet.clear();
-    completed = false;
+  inline auto clear() -> void {
+    if (controlTaskReadyToBeStopped) stopControlTask();
+
+    {
+      std::scoped_lock guard(mutex);
+      pagesMap.clear();
+      itemsSet.clear();
+      completed                   = false;
+      aborted                     = false;
+      controlTaskReadyToBeStopped = false;
+    }
   }
 
-  auto getPageCount() -> int16_t;
+  auto getPageCountOrPercent() -> int16_t;
 
- [[nodiscard]] inline auto getPageNbr(const PageId &id) -> int16_t {
-    std::scoped_lock guard(mutex);
-    if (!completed) {
-      LOG_W("Page Locs not completed.");
-      return -1;
+  [[nodiscard]] inline auto getPageNbr(const PageId &id) -> int16_t {
+    if (controlTaskReadyToBeStopped) stopControlTask();
+
+    {
+      std::scoped_lock guard(mutex);
+      if (!completed) {
+        // LOG_W("Page Locs not completed.");
+        return -1;
+      }
+      const PageInfo *info = getPageInfo(id);
+      return info == nullptr ? -1 : info->pageNumber;
     }
-    const PageInfo *info = getPageInfo(id);
-    return info == nullptr ? -1 : info->pageNumber;
   };
 };
 

@@ -68,7 +68,8 @@ public:
     page->setComputeMode(Page::ComputeMode::MOVE);
   }
 
-  auto buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::Node *domNode, int16_t level) -> bool;
+  auto buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::Node *domNode, int16_t level)
+      -> bool;
 
   auto checkForCompletion() -> void {
     if (currentOffset != endOffset) {
@@ -77,8 +78,8 @@ public:
     }
   }
 
-  void showState(const char *caption, const Page::Format &fmt,
-                 DOM::Node *domCurrentNode = nullptr /*, CSSPtr elementCss = nullptr*/) {
+  auto showState(const char *caption, const Page::Format &fmt,
+                 DOM::Node *domCurrentNode = nullptr /*, CSSPtr elementCss = nullptr*/) -> void {
     if (showTheState) {
       std::cout << caption << " Offset:" << currentOffset << " ";
       page->showControls("  ");
@@ -126,9 +127,11 @@ public:
     toPage   = to;
   }
 
-  auto checkPageToShow(int16_t page) -> void { showTheState = (fromPage <= page) && (page <= toPage); }
+  auto checkPageToShow(int16_t page) -> void {
+    showTheState = (fromPage <= page) && (page <= toPage);
+  }
 
- [[nodiscard]] inline auto checkIfStarted() -> bool {
+  [[nodiscard]] inline auto checkIfStarted() -> bool {
     if (!started) {
       if ((started = (currentOffset >= startOffset))) {
         page->setComputeMode(computeMode);
@@ -139,15 +142,15 @@ public:
     return started;
   }
 
- [[nodiscard]] inline auto atEnd() -> bool { return currentOffset >= endOffset; }
+  [[nodiscard]] inline auto atEnd() -> bool { return currentOffset >= endOffset; }
 
- [[nodiscard]] inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
+  [[nodiscard]] inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
     Page::Format *newFmt = fmtPool.allocate();
     *newFmt              = fmt;
     return newFmt;
   }
 
- inline auto releaseFmt(Page::Format *fmt) -> void { fmtPool.deallocate(fmt); }
+  inline auto releaseFmt(Page::Format *fmt) -> void { fmtPool.deallocate(fmt); }
 
- inline auto showStat() -> void { LOG_D("Max Level: %d", maxLevel); }
+  inline auto showStat() -> void { LOG_D("Max Level: %d", maxLevel); }
 };

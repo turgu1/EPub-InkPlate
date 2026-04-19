@@ -222,8 +222,7 @@
     return (filename.substr(filename.size() - sizeof(ext), sizeof(ext)).compare(ext) == 0);
   }
 
-  static auto setContentTypeFromFile(httpd_req_t *req, const std::string &filename)
-      -> esp_err_t {
+  static auto setContentTypeFromFile(httpd_req_t *req, const std::string &filename) -> esp_err_t {
     if (isFileExt(filename, ".epub")) {
       return httpd_resp_set_type(req, "application/epub+zip");
     }
@@ -346,7 +345,7 @@
     /* Skip leading "/upload" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
     std::string filename = getPathFromUri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                             req->uri + sizeof("/upload") - 1);
+                                          req->uri + sizeof("/upload") - 1);
     if (filename[filename.size() - 1] == '/') {
       LOG_E("Invalid filename : %s", filename.c_str());
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
@@ -435,7 +434,7 @@
     /* Skip leading "/delete" from URI to get filename */
     /* Note sizeof() counts NULL termination hence the -1 */
     std::string filename = getPathFromUri(filepath, ((FileServerData *)req->user_ctx)->base_path,
-                                             req->uri + sizeof("/delete") - 1);
+                                          req->uri + sizeof("/delete") - 1);
     if (filename[filename.size() - 1] == '/') {
       LOG_E("Invalid filename : %s", filename.c_str());
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
@@ -549,7 +548,7 @@
   }
 
   auto startWebServer(WebServerMode serverMode) -> bool {
-    pageLocs.abortThreads();
+    pageLocs.abortControlTask();
 
     MsgViewer::show(
         MsgViewer::MsgType::WIFI, false, true, "Web Server Starting",

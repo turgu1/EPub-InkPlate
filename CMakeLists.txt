@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(DEVICE "INKPLATE_6")
+set(DEVICE "INKPLATE_6PLUS")
 # set(DEBUGGING 1)
 
 set(APP_VERSION "3.0.0")
@@ -8,6 +8,8 @@ set(APP_VERSION "3.0.0")
 set(IDF_TARGET esp32)
 
 set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-ignored-qualifiers")
 
 add_compile_definitions(
     EPUB_LOG_LEVEL=ESP_LOG_DEBUG

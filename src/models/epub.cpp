@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <sys/stat.h>
 
 using namespace pugi;
 
@@ -825,10 +826,29 @@ auto EPub::open(const std::string &epubFilename) -> bool {
 
   clearItemData(currentItemInfo);
 
-  toc = TOC::Make();
-  if (toc == nullptr) {
-    LOG_E("Unable to allocate memory for the book table of content.");
-    return false;
+  if (pageLocsInstance) {
+    // PageLocs will regenerate the table of content. Remove the existing TOC file and
+    // prepare the TOC object for that.
+    toc = TOC::Make();
+    if (toc == nullptr) {
+      LOG_E("Unable to allocate memory for the book table of content.");
+      return false;
+    }
+
+    toc->loadFromEpub(*this);
+
+    auto filePath = epubFilename;
+    auto dotPos   = filePath.find_last_of('.');
+
+    if (dotPos != std::string::npos) {
+      filePath.replace(dotPos, 5, ".toc");
+
+      struct stat fileStat;
+      if (stat(filePath.c_str(), &fileStat) != -1) {
+        LOG_I("Deleting file : %s", filePath.c_str());
+        unlink(filePath.c_str());
+      }
+    }
   }
 
   currentFilename   = epubFilename;

@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.16.0)
 
 set(CMAKE_CXX_STANDARD 23)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)
 list(FILTER app_sources EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/src/embed/*.*")

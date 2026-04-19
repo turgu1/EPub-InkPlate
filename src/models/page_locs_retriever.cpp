@@ -12,6 +12,7 @@
   QueueHandle_t PageLocsRetriever::retrieverQueue{nullptr};
 #else
   #include <mqueue.h>
+
   mqd_t PageLocsRetriever::retrieverQueue{-1};
 #endif
 
@@ -23,7 +24,8 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
     return false;
   }
 
-  // The following will restricts cleaning fonts and unzip classes from EPub destructor.
+  // The following will restricts cleaning fonts and unzip classes from EPub destructor
+  // and prepare the Table of content to be repopulated.
   // This is required to not interfere with main epub instance.
   epub->setPageLocsInstance(true);
 
@@ -32,6 +34,8 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
     return false;
   }
 
+  // In preparation to rebuild the pages location, we need to get the current
+  // format parameters of the book.
   currentFormatParams = *epub->getBookFormatParams();
 
   #if EPUB_LINUX_BUILD
@@ -79,39 +83,57 @@ auto PageLocsRetriever::task() -> void {
     if (receive(queueData) == -1) {
       LOG_E("Receive error: %d: %s", errno, strerror(errno));
     } else {
-      if (queueData.req == Req::ABORT) return;
-      if (queueData.req == Req::SHOW_HEAP) {
+      switch (queueData.req) {
+      case Req::NONE:
+        break;
+
+      case Req::STOP:
+        SHOW_IT("Received STOP request. Exiting retriever task...");
+        return;
+
+      case Req::RETRIEVE_ITEM:
+      case Req::GET_ASAP: {
+        SHOW_IT("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
+
+        retrieve_item(queueData.req, queueData.itemrefIndex);
+
+      } break;
+
+      case Req::SHOW_HEAP:
         #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
           ESP::show_heaps_info();
         #endif
-        continue;
+        break;
+
+      case Req::COMPLETED:
+        SHOW_IT("Received COMPLETED request. Saving the TOC...");
+        epub->toc->save(epub->getCurrentFilename());
+        break;
       }
+    }
+  }
+}
 
-      LOG_D("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
+auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
 
-      LOG_D("Retrieving itemref --> %d <--", queueData.itemrefIndex);
+  SHOW_IT("Retrieving itemref --> %d <--", itemrefIndex);
 
-      int16_t itemrefIndex;
-      if (!buildPageLocs(queueData.itemrefIndex)) {
-        // Unable to retrieve pages location for the requested index. Send back
-        // a negative value to indicate the issue to the state task
-        itemrefIndex = -(queueData.itemrefIndex + 1);
-      } else {
-        itemrefIndex = queueData.itemrefIndex;
-      }
+  if (!buildPageLocs(itemrefIndex)) {
+    // Unable to retrieve pages location for the requested index. Send back
+    // a negative value to indicate the issue to the control task
+    itemrefIndex = -itemrefIndex;
+  }
 
-      // std::this_thread::sleep_for(std::chrono::seconds(5));
-      PageLocsState::QueueData stateQueueData = {.req = (queueData.req == Req::GET_ASAP)
-                                                            ? PageLocsState::Req::ASAP_READY
-                                                            : PageLocsState::Req::ITEM_READY,
+  // std::this_thread::sleep_for(std::chrono::seconds(5));
+  PageLocsControl::QueueData controlQueueData = {.req = (req == Req::GET_ASAP)
+                                                            ? PageLocsControl::Req::ASAP_READY
+                                                            : PageLocsControl::Req::ITEM_READY,
                                                  .itemrefIndex = itemrefIndex,
                                                  .itemrefCount = 0};
 
-      PageLocsState::send(stateQueueData);
-      LOG_D("Sent %s to State",
-            (stateQueueData.req == PageLocsState::Req::ASAP_READY) ? "ASAP_READY" : "ITEM_READY");
-    }
-  }
+  SHOW_IT("Sending %s to ControlTask",
+          (controlQueueData.req == PageLocsControl::Req::ASAP_READY) ? "ASAP_READY" : "ITEM_READY");
+  PageLocsControl::send(controlQueueData);
 }
 
 auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
@@ -125,7 +147,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
   // showPictures = current_format_params.showPictures == 1;
 
-  bool done = false;
+  bool resultOk = false;
 
   EPub::ItemInfo itemInfo;
 
@@ -170,37 +192,38 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
     interp->setLimits(0, 9999999, currentFormatParams.showPictures == 1);
 
-    while (!done) {
+    // currentOffset       = 0;
+    // start_of_page_offset = 0;
+    xml_node node;
 
-      // currentOffset       = 0;
-      // start_of_page_offset = 0;
-      xml_node node;
+    if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
 
-      if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
+      pageOut->start(fmt);
 
-        pageOut->start(fmt);
+      // #if EPUB_INKPLATE_BUILD
+      //   esp_task_wdt_reset();
+      // #endif
 
-        // #if EPUB_INKPLATE_BUILD
-        //   esp_task_wdt_reset();
-        // #endif
+      // newFmt is required to be able to modify the format in the recursive calls without
+      // interfering with the original one used for page start
+      Page::Format *newFmt = interp->duplicateFmt(fmt);
 
-        Page::Format *newFmt = interp->duplicateFmt(fmt);
-        if (!interp->buildPagesRecurse(node, *newFmt, dom->body, 1)) {
-          interp->releaseFmt(newFmt);
-          LOG_D("html parsing issue or aborted by Mgr");
-          break;
-        }
+      if (!interp->buildPagesRecurse(node, *newFmt, dom->body, 1)) {
+        interp->releaseFmt(newFmt);
+        LOG_D("html parsing issue or aborted");
+      } else {
         interp->releaseFmt(newFmt);
 
         if (pageOut->someDataWaiting()) pageOut->endParagraph(fmt);
-      } else {
-        LOG_D("No <body>");
-        break;
+
+        // Remaining processing at the end of the document to be sure to
+        // include the last page if not already done
+        interp->docEnd(fmt);
+
+        resultOk = true;
       }
-
-      interp->docEnd(fmt);
-
-      done = true;
+    } else {
+      LOG_D("No <body>");
     }
 
     // dom->show();
@@ -208,7 +231,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
   // pageOut->setComputeMode(Page::ComputeMode::DISPLAY);
 
-  itemInfo.css.reset();
+  // itemInfo.css.reset();
 
-  return done;
+  return resultOk;
 }

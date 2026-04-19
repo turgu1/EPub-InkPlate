@@ -25,7 +25,7 @@ private:
 public:
   BookParamController() = default;
 
- inline auto setOwnershipOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
+  inline auto becomeOwnerOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
 
   MenuViewerPtr menuViewer;
   FormViewerPtr formViewer;
@@ -37,9 +37,9 @@ public:
   auto leave(bool goingToDeepSleep = false) -> void;
   auto setFontCount(uint8_t count) -> void;
 
- inline auto setBookParamsFormIsShown() -> void { bookParamsFormIsShown = true; }
- inline auto setWaitForKeyAfterWifi() -> void { waitForKeyAfterWifi = true; }
- inline auto setDeleteCurrentBook() -> void { deleteCurrentBook = true; }
+  inline auto setBookParamsFormIsShown() -> void { bookParamsFormIsShown = true; }
+  inline auto setWaitForKeyAfterWifi() -> void { waitForKeyAfterWifi = true; }
+  inline auto setDeleteCurrentBook() -> void { deleteCurrentBook = true; }
 
   auto bookParameters() -> void;
   auto revertToDefaults() -> void;

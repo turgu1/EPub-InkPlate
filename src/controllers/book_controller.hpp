@@ -14,7 +14,7 @@ class BookController {
 public:
   BookController() = default;
 
- inline auto setOwnershipOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
+  inline auto becomeOwnerOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
 
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
@@ -24,7 +24,7 @@ public:
   // void put_str(const char *str, int xpos, int ypos);
 
   inline const PageId &getCurrentPageId() { return currentPageId; }
- inline auto setCurrentPageId(const PageId &pageId) -> void { currentPageId = pageId; }
+  inline auto setCurrentPageId(const PageId &pageId) -> void { currentPageId = pageId; }
 
 private:
   static constexpr char const *TAG = "BookController";

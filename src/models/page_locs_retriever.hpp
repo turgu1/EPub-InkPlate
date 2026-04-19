@@ -20,11 +20,11 @@ private:
   static constexpr const char *TAG = "PageLocsRetriever";
 
 public:
-  PageLocsRetriever()  = default;
-  ~PageLocsRetriever() = default;
+  PageLocsRetriever() = default;
+  ~PageLocsRetriever() { LOG_I(TAG, "PageLocsRetriever destructor called"); }
 
   enum class Req : int8_t {
-    NONE, ABORT, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP
+    NONE, STOP, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP, COMPLETED
   };
 
   struct QueueData {
@@ -68,6 +68,8 @@ private:
 
   std::thread retrieverThread;
   auto task() -> void;
+
+  auto retrieve_item(Req req, int16_t itemrefIndex) -> void;
 
   auto buildPageLocs(int16_t itemrefIndex) -> bool;
 };
