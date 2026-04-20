@@ -20,7 +20,7 @@
   #include "models/books_dir.hpp"
   #include "models/css.hpp"
   #include "models/css_parser.hpp"
-  #include "models/display_list.hpp"
+  #include "display_list.hpp"
   #include "models/dom.hpp"
   #include "models/epub.hpp"
   #include "models/font.hpp"

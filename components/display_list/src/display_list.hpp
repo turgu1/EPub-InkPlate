@@ -8,8 +8,6 @@
 #include "memory_pool.hpp"
 #include "picture.hpp"
 
-#include "models/fonts.hpp"
-
 enum class DisplayListCommand {
   GLYPH = 1, PICTURE, HIGHLIGHT, CLEAR_HIGHLIGHT, CLEAR_REGION, SET_REGION, ROUNDED, CLEAR_ROUNDED
 };

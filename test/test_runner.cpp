@@ -29,6 +29,7 @@ auto testCss()         -> bool;
 auto testDisplayList() -> bool;
 auto testAppConfig()   -> bool;
 auto testEPub()        -> bool;
+auto testSimpleList()  -> bool;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -52,6 +53,7 @@ int main() {
     { "display_list", testDisplayList },
     { "app_config",   testAppConfig   },
     { "epub",         testEPub        },
+    { "simple_list",  testSimpleList  },
   };
 
   int totalFail = 0;

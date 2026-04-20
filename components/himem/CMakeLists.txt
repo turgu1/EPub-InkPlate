@@ -4,6 +4,7 @@ idf_component_register(
   SRCS         ${sources}
   INCLUDE_DIRS "src"
   REQUIRES     esp_hw_support   # provides esp_memory_utils.h for esp_ptr_external_ram()
+            simple_list
 )
 
 project(himem)

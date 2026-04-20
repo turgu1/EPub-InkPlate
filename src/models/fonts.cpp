@@ -9,13 +9,8 @@
 #include "pugixml.hpp"
 #include "unzip.hpp"
 
-#include "controllers/book_param_controller.hpp"
-#include "controllers/option_controller.hpp"
 #include "models/config.hpp"
 #include "models/font_factory.hpp"
-
-#include "viewers/form_viewer.hpp"
-#include "viewers/msg_viewer.hpp"
 
 #include <algorithm>
 #include <sys/stat.h>
@@ -181,10 +176,7 @@ auto Fonts::setup() -> bool {
       return false;
     }
 
-    FormChoiceField::adjustFontChoices(fontNames, fontCount);
-
-    bookParamController.setFontCount(fontCount);
-    optionController.setFontCount(fontCount);
+    standardFontCount = fontCount;
 
     int8_t fontIndex = 0;
     config.get(Config::Ident::DEFAULT_FONT, &fontIndex);

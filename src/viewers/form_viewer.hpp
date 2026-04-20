@@ -189,9 +189,13 @@ public:
     oldItem = items.end();
   }
 
-  static auto adjustFontChoices(char **fontNames, uint8_t size) -> void {
-    for (uint8_t i = 0; i < size; i++) fontChoices[i].caption = fontNames[i];
-    fontChoicesCount = size;
+  static auto adjustFontChoices() -> void {
+    auto fontCount = fonts.getStandardFontCount();
+    if (fontCount > 8) fontCount = 8;
+    for (uint8_t i = 0; i < fontCount; i++) {
+      fontChoices[i].caption = fonts.getStandardName(i);
+    }
+    fontChoicesCount = fontCount;
   }
 
   auto computeFieldPos(Pos fromPos) -> void = 0;

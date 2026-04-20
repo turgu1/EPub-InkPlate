@@ -66,6 +66,8 @@ INCLUDES := \
   -I components/memory_pool/src \
   -I components/himem/src \
   -I components/simple_db/src \
+  -I components/display_list/src \
+  -I components/simple_list/src \
   $(FREETYPE_CFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -104,6 +106,7 @@ SRC_CPP += \
   components/pictures/src/jpeg_picture.cpp \
   components/pictures/src/png_picture.cpp \
   components/simple_db/src/simple_db.cpp \
+  components/display_list/src/display_list.cpp \
   components/zip/src/unzip.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp \
   lib_linux/EPub_InkPlate/src/screen.cpp \
@@ -185,7 +188,9 @@ TEST_INCLUDES := \
   -I components/memory_pool/src \
   -I components/pictures/src \
   -I components/zip/src \
-  -I components/pugixml/src
+  -I components/pugixml/src \
+  -I components/display_list/src \
+  -I components/simple_list/src
 
 TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) \
                  -Wall -Wno-psabi -MMD -MP
@@ -203,6 +208,7 @@ TEST_SRC_CPP := \
   test/test_display_list.cpp \
   test/test_app_config.cpp \
   test/test_epub.cpp \
+  test/test_simple_list.cpp \
   test/stubs.cpp \
   src/models/dom.cpp \
   src/models/css.cpp \

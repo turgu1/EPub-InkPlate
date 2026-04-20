@@ -241,7 +241,7 @@ static auto testHimemVector() -> void {
   HT_CHECK(v.empty(), "default-constructed HimemVector is empty");
 
   for (int i = 0; i < 8; ++i) v.push_back(i * 3);
-  HT_CHECK(v.size() == 8, "size() correct after push_back");
+  HT_CHECK(v.size() == 8, "size() correct after pushBack");
   HT_CHECK(IS_PSRAM(v.data()), "element storage is in PSRAM");
 
   bool ok = true;
@@ -319,7 +319,7 @@ static auto testUniqueVector() -> void {
   HT_CHECK(ok, "all elements have correct initial value");
 
   v->push_back(42);
-  HT_CHECK(v->size() == 6 && v->back() == 42, "push_back through unique_ptr works");
+  HT_CHECK(v->size() == 6 && v->back() == 42, "pushBack through unique_ptr works");
 
   // Move: ownership must transfer cleanly.
   auto v2 = std::move(v);
@@ -428,6 +428,82 @@ static auto testHimemUnorderedMap() -> void {
   HT_CHECK(m.empty(), "clear() empties HimemUnorderedMap");
 }
 
+// ===========================================================================
+// 14. HimemSimpleList<T>
+// ===========================================================================
+static auto testHimemSimpleList() -> void {
+  HT_LOG("--- HimemSimpleList<int> ---");
+
+  HimemSimpleList<int> l;
+  HT_CHECK(l.empty(), "default-constructed HimemSimpleList is empty");
+  HT_CHECK(l.size() == 0, "size() == 0 on empty list");
+
+  l.pushBack(10);
+  l.pushBack(20);
+  l.pushBack(30);
+  HT_CHECK(l.size()  == 3, "size() correct after 3 pushBack calls");
+  HT_CHECK(l.front() == 10, "front() correct after pushBack");
+  HT_CHECK(l.back()  == 30, "back() correct after pushBack");
+
+  l.pushFront(0);
+  HT_CHECK(l.front() == 0,  "pushFront prepends correctly");
+  HT_CHECK(l.size()  == 4,  "size() correct after pushFront");
+
+  // emplaceBack with non-trivial type
+  HT_LOG("--- HimemSimpleList<std::string> ---");
+  HimemSimpleList<std::string> sl;
+  sl.emplaceBack("hello");
+  sl.emplaceBack("world");
+  HT_CHECK(sl.size()  == 2,       "string list size correct");
+  HT_CHECK(sl.front() == "hello", "string list front correct");
+  HT_CHECK(sl.back()  == "world", "string list back correct");
+
+  // Iteration
+  int sum = 0;
+  for (int v : l) sum += v;
+  HT_CHECK(sum == 60, "range-for sums all elements correctly");
+
+  // merge
+  HimemSimpleList<int> a, b;
+  a.pushBack(1); a.pushBack(2);
+  b.pushBack(3); b.pushBack(4);
+  a.merge(b);
+  HT_CHECK(a.size() == 4, "merge() produces correct size");
+  HT_CHECK(b.empty(),     "merge() empties source list");
+  HT_CHECK(a.back() == 4, "merge() appends to tail correctly");
+
+  // copy semantics
+  HimemSimpleList<int> copy(a);
+  HT_CHECK(copy.size()  == 4,  "copy constructor preserves size");
+  HT_CHECK(copy.front() == 1,  "copy constructor preserves front");
+  copy.pushBack(99);
+  HT_CHECK(a.size() == 4, "original unaffected by copy mutation");
+
+  // move semantics
+  HimemSimpleList<int> moved(std::move(copy));
+  HT_CHECK(moved.size() == 5,   "move constructor transfers elements");
+  HT_CHECK(copy.empty(),        "move source is empty after move");
+
+  // clear
+  l.clear();
+  HT_CHECK(l.empty(), "clear() empties the list");
+
+  // himemUniqueSimpleList
+  HT_LOG("--- himemUniqueSimpleList<int> ---");
+  auto ul = makeUniqueHimemSimpleList<int>();
+  HT_CHECK(ul != nullptr,  "makeUniqueHimemSimpleList returns non-null");
+  HT_CHECK(ul->empty(),    "freshly-made unique simple list is empty");
+  ul->pushBack(7);
+  ul->pushBack(8);
+  HT_CHECK(ul->size()  == 2, "unique simple list size correct after pushBack");
+  HT_CHECK(ul->front() == 7, "unique simple list front correct");
+  HT_CHECK(ul->back()  == 8, "unique simple list back correct");
+
+  auto ul2 = std::move(ul);
+  HT_CHECK(!ul,             "source null after unique_ptr move");
+  HT_CHECK(ul2->size() == 2, "destination valid after unique_ptr move");
+}
+
 } // anonymous namespace
 
 // ===========================================================================
@@ -453,6 +529,7 @@ auto testHimem() -> bool {
   testUniqueVector();
   testHimemMap();
   testHimemUnorderedMap();
+  testHimemSimpleList();
 
   HT_LOG("========== himem test suite end: %d passed, %d failed ==========", sPass, sFail);
 

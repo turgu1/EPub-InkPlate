@@ -8,9 +8,13 @@
 MemoryPool<FormChoiceField::Item> FormChoiceField::itemPool;
 uint8_t FormChoiceField::fontChoicesCount = 0;
 
-FormChoice FormChoiceField::fontChoices[8] = {{nullptr, 0}, {nullptr, 1}, {nullptr, 2},
-                                               {nullptr, 3}, {nullptr, 4}, {nullptr, 5},
-                                               {nullptr, 6}, {nullptr, 7}};
+// clang-format off
+
+FormChoice FormChoiceField::fontChoices[8] = {
+  {nullptr, 0}, {nullptr, 1}, {nullptr, 2}, {nullptr, 3}, 
+  {nullptr, 4}, {nullptr, 5}, {nullptr, 6}, {nullptr, 7}};
+
+// clang-format on
 
 // #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 //   bool FormDone::event(const EventMgr::Event &event) {
@@ -47,6 +51,8 @@ FormChoice FormChoiceField::fontChoices[8] = {{nullptr, 0}, {nullptr, 1}, {nullp
  */
 void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t sizeArg,
                       const char *bottomMsgArg, bool refresh) {
+
+  if (FormChoiceField::fontChoicesCount == 0) FormChoiceField::adjustFontChoices();
 
   Font *font = fonts.get(1);
 

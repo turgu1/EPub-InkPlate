@@ -86,6 +86,15 @@ public:
     }
   };
 
+  auto getStandardName(int16_t index) const -> const char * {
+    if (index >= (int16_t)standardFontCount) {
+      LOG_E("Fonts.get(): Wrong index: %d vs size: %u", index, standardFontCount);
+      return fontNames[1];
+    } else {
+      return fontNames[index];
+    }
+  };
+
   /**
    * @brief Add a font from a file.
    *
@@ -126,12 +135,17 @@ public:
   auto replace(int16_t index, const std::string &name, FaceStyle style, const std::string &filename)
       -> bool;
 
+  auto getFontCount() const -> uint8_t { return fontCount; }
+  auto getStandardFontCount() const -> uint8_t { return standardFontCount; }
+
 private:
   using FontCache = std::vector<FontEntry>;
   FontCache fontCache;
   std::mutex mutex;
 
   uint8_t fontCount;
+  uint8_t standardFontCount;
+  
   char *fontNames[8];
   char *regularFname[8];
   char *boldFname[8];

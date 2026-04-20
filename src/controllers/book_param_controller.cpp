@@ -14,6 +14,7 @@
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/epub.hpp"
+#include "models/fonts.hpp"
 #include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
@@ -205,6 +206,8 @@ auto BookParamController::enter() -> void {
   auto dotPos = filePath.find_last_of('.');
   filePath.replace(dotPos, 5, ".toc");
   menu[1].visible = stat(filePath.c_str(), &fileStat) != -1;
+
+  setFontCount(fonts.getStandardFontCount());
 
   menuViewer = MenuViewer::Make();
   formViewer = FormViewer::Make();

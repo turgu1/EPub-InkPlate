@@ -24,6 +24,8 @@ set(components
     spi_flash
     himem
     simple_db
+    display_list
+    simple_list
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

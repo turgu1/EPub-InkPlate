@@ -350,6 +350,49 @@ template <typename T, typename... Args>
   return himemUniqueVector<T>{obj};
 }
 
+// ===========================================================================
+// HimemSimpleList<T>
+//
+// Drop-in for SimpleList<T> whose node storage lives in PSRAM.
+// On ESP32 targets every node allocation hits SPIRAM; on Linux/host builds
+// it falls back to the normal heap so that unit-tests run unmodified.
+//
+// Usage:
+//   HimemSimpleList<int> list;
+//   list.push_back(42);          // node in PSRAM
+//   list.push_front(0);
+//   list.emplace_back(99);
+//
+// himemUniqueSimpleList<T> / makeUniqueHimemSimpleList<T>(...) puts the
+// *list object itself* in PSRAM as well (nodes are always in PSRAM).
+// ===========================================================================
+
+#include "simple_list.hpp"
+
+template <typename T>
+using HimemSimpleList = SimpleList<T, PsramAllocator<T>>;
+
+template <typename T>
+using himemUniqueSimpleList = HimemUniquePtr<HimemSimpleList<T>>;
+
+// Factory: constructs a HimemSimpleList<T> in PSRAM and returns a unique owner.
+template <typename T, typename... Args>
+[[nodiscard]] auto makeUniqueHimemSimpleList(Args &&...args) -> himemUniqueSimpleList<T> {
+  using List = HimemSimpleList<T>;
+
+  // Re-define HIMEM_MALLOC/FREE locally since they've been #undef'd above
+  // when this template is instantiated — use PsramAllocator directly instead.
+  PsramAllocator<List> listAlloc;
+  List *obj = listAlloc.allocate(1);
+  try {
+    ::new (obj) List(std::forward<Args>(args)...);
+  } catch (...) {
+    listAlloc.deallocate(obj, 1);
+    throw;
+  }
+  return himemUniqueSimpleList<T>{obj};
+}
+
 // Clean up internal macros so they don't leak into translation units.
 #undef HIMEM_MALLOC
 #undef HIMEM_FREE

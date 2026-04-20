@@ -14,6 +14,7 @@
 #include "models/books_dir.hpp"
 #include "models/config.hpp"
 #include "models/epub.hpp"
+#include "models/fonts.hpp"
 #include "models/nvs_mgr.hpp"
 #include "viewers/msg_viewer.hpp"
 
@@ -401,6 +402,8 @@ auto OptionController::setFontCount(uint8_t count) -> void {
 }
 
 auto OptionController::enter() -> void {
+  setFontCount(fonts.getStandardFontCount());
+
   menuViewer = MenuViewer::Make();
   formViewer = FormViewer::Make();
 
