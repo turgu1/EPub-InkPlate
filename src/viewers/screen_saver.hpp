@@ -9,7 +9,7 @@
 
   #include <vector>
 
-  using ScreenSaverPtr = himemUniquePtr<class ScreenSaver>;
+  using ScreenSaverPtr = HimemUniquePtr<class ScreenSaver>;
   class ScreenSaver {
   private:
     static constexpr char const *TAG = "ScreenSaver";
@@ -26,7 +26,7 @@
 
     template <typename T, typename... Args>
       requires(!std::is_array_v<T>)
-    friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+    friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
     static inline auto Make() { return makeUniqueHimem<ScreenSaver>(); }
 

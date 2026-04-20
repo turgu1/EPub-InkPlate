@@ -56,62 +56,25 @@ private:
   static const int8_t NAME_SIZE    = 60;
   static const int16_t STRING_SIZE = 128;
 
+  // clang-format off
   enum class Token : uint8_t {
-    ERROR, WHITESPACE, CDO, CDC, INCLUDES, DASHMATCH, STRING, BAD_STRING, IDENT, HASH, IMPORT_SYM,
-        PAGE_SYM, MEDIA_SYM, CHARSET_SYM, FONT_FACE_SYM, IMPORTANT_SYM, NAMESPACE_SYM, LENGTH,
-        ANGLE, TIME, FREQ, DIMENSION, PERCENTAGE, NUMBER, URI, BAD_URI, FUNCTION, SEMICOLON, COLON,
-        COMMA, GT, LT, GE, LE, MINUS, PLUS, DOT, STAR, SLASH, EQUAL, LBRACK, RBRACK, LBRACE, RBRACE,
-        LPARENT, RPARENT, TILDE, END_OF_FILE
+    ERROR,  COMMA,   CDO,        CDC,       INCLUDES,  DASHMATCH,   STRING, BAD_STRING, 
+    IDENT,  HASH,    IMPORT_SYM, PAGE_SYM,  MEDIA_SYM, CHARSET_SYM, EQUAL,  IMPORTANT_SYM, 
+    LENGTH, ANGLE,   TIME,       FREQ,      DIMENSION, PERCENTAGE,  NUMBER, NAMESPACE_SYM, 
+    URI,    BAD_URI, FUNCTION,   SEMICOLON, COLON,     WHITESPACE,  GT,     LT,
+    GE,     LE,      MINUS,      PLUS,      DOT,       STAR,        SLASH,  FONT_FACE_SYM,
+    LBRACK, RBRACK,  LBRACE,     RBRACE,    LPARENT,   RPARENT,     TILDE,  END_OF_FILE
   };
 
-  const char *tokenNames[48] = {"ERROR",
-                                 "WHITESPACE",
-                                 "CDO",
-                                 "CDC",
-                                 "INCLUDES",
-                                 "DASHMATCH",
-                                 "STRING",
-                                 "BAD_STRING",
-                                 "IDENT",
-                                 "HASH",
-                                 "IMPORT_SYM",
-                                 "PAGE_SYM",
-                                 "MEDIA_SYM",
-                                 "CHARSET_SYM",
-                                 "FONT_FACE_SYM",
-                                 "IMPORTANT_SYM",
-                                 "NAMESPACE_SYM",
-                                 "LENGTH",
-                                 "ANGLE",
-                                 "TIME",
-                                 "FREQ",
-                                 "DIMENSION",
-                                 "PERCENTAGE",
-                                 "NUMBER",
-                                 "URI",
-                                 "BAD_URI",
-                                 "FUNCTION",
-                                 "SEMICOLON",
-                                 "COLON",
-                                 "COMMA",
-                                 "GT",
-                                 "LT",
-                                 "GE",
-                                 "LE",
-                                 "MINUS",
-                                 "PLUS",
-                                 "DOT",
-                                 "STAR",
-                                 "SLASH",
-                                 "EQUAL",
-                                 "LBRACK",
-                                 "RBRACK",
-                                 "LBRACE",
-                                 "RBRACE",
-                                 "LPARENT",
-                                 "RPARENT",
-                                 "TILDE",
-                                 "END_OF_FILE"};
+  const char *tokenNames[48] = {
+    "ERROR",  "COMMA",   "CDO",        "CDC",       "INCLUDES",  "DASHMATCH",   "STRING", "BAD_STRING",
+    "IDENT",  "HASH",    "IMPORT_SYM", "PAGE_SYM",  "MEDIA_SYM", "CHARSET_SYM", "EQUAL",  "IMPORTANT_SYM",
+    "LENGTH", "ANGLE",   "TIME",       "FREQ",      "DIMENSION", "PERCENTAGE",  "NUMBER", "NAMESPACE_SYM",
+    "URI",    "BAD_URI", "FUNCTION",   "SEMICOLON", "COLON",     "WHITESPACE",  "GT",     "LT",
+    "GE",     "LE",      "MINUS",      "PLUS",      "DOT",       "STAR",        "SLASH",  "FONT_FACE_SYM",
+    "LBRACK", "RBRACK",  "LBRACE",     "RBRACE",    "LPARENT",   "RPARENT",     "TILDE",  "END_OF_FILE"};
+
+  // clang-format on
 
   int32_t remains; // number of bytes remaining in the css buffer
   const char *str; // pointer in the css buffer
@@ -250,7 +213,7 @@ private:
       }
       if (exp > 0) {
         if (neg) exp = -exp;
-        num = pow(num, exp);
+        num = num * pow(10.0f, exp);
       }
     }
   }
@@ -270,7 +233,7 @@ private:
         nextCh();
       }
     }
-    if (idx < NAME_SIZE) string[idx] = 0;
+    if (idx < NAME_SIZE) name[idx] = 0;
   }
 
   auto parseIdent() -> void {
@@ -600,9 +563,6 @@ private:
       } else if (ch == '/') {
         nextCh();
         token = Token::SLASH;
-      } else if (ch == '+') {
-        nextCh();
-        token = Token::PLUS;
       } else if (ch == '!') {
         nextCh();
         for (;;) {
@@ -625,6 +585,9 @@ private:
           str += 8;
           nextCh();
           token = Token::IMPORTANT_SYM;
+        } else if (!done) {
+          LOG_E("%s[%d]: '!' not followed by 'important'", css.getId().c_str(), lineNbr);
+          token = Token::ERROR;
         }
       } else {
         LOG_E("%s[%d]: Unknown usage: %c", css.getId().c_str(), lineNbr, ch);
@@ -770,6 +733,8 @@ private:
             v->choice.textTransform = CSS::TextTransform::UPPERCASE;
           else if (v->str.compare("capitalize") == 0)
             v->choice.textTransform = CSS::TextTransform::CAPITALIZE;
+          else if (v->str.compare("none") == 0)
+            v->choice.textTransform = CSS::TextTransform::NONE;
           else {
             // LOG_E("text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str
             // - buffer_start));
@@ -822,8 +787,8 @@ private:
             break;
           }
         } else if ((id == CSS::PropertyId::FONT_SIZE) && (v->valueType == CSS::ValueType::STR)) {
-          v->valueType                 = CSS::ValueType::PT;
-          CSS::FontSizeMap::iterator it = css.fontSizeMap.find(v->str);
+          v->valueType                  = CSS::ValueType::PT;
+          CSS::FontSizeMap::iterator it = css.fontSizeMap.find(static_cast<HimemString>(v->str));
           if (it != css.fontSizeMap.end()) {
             v->num = it->second;
           } else {
@@ -998,7 +963,7 @@ private:
 
   auto pseudo(CSS::SelectorNode &node) -> bool {
     if (token == Token::IDENT) {
-      if (strcmp(ident, "first_child") == 0) {
+      if (strcmp(ident, "first-child") == 0) {
         node.qualifier = CSS::Qualifier::FIRST_CHILD;
       } else
         return false; // other ident not supported

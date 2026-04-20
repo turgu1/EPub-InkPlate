@@ -7,7 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-using BooksDirViewerPtr = himemUniquePtr<class BooksDirViewer>;
+using BooksDirViewerPtr = HimemUniquePtr<class BooksDirViewer>;
 class BooksDirViewer {
 public:
   virtual auto setup() -> void = 0;

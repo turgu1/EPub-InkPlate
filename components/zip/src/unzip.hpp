@@ -13,7 +13,7 @@
 #include "himem.hpp"
 #include "miniz.h"
 
-using FileContentPtr = himemUniquePtr<uint8_t[]>;
+using FileContentPtr = HimemUniquePtr<uint8_t[]>;
 
 class Unzip {
 private:

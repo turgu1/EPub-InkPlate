@@ -16,14 +16,16 @@
 // ------------------
 //   PsramAllocator<T>            — C++23 named-allocator requirement
 //
-//   himemSharedPtr<T>          — alias for std::shared_ptr<T>
+//   HimemSharedPtr<T>          — alias for std::shared_ptr<T>
 //   makeSharedHimem<T>(...)    — allocates T (or T[], unbounded) in PSRAM
 //
-//   himemUniquePtr<T>          — std::unique_ptr<T, PsramDeleter<T>>
+//   HimemUniquePtr<T>          — std::unique_ptr<T, PsramDeleter<T>>
 //   makeUniqueHimem<T>(...)    — allocates T (or T[], unbounded) in PSRAM
 //
-//   himemString                 — std::basic_string with PsramAllocator
-//   himemVector<T>              — std::vector<T>  with PsramAllocator
+//   HimemString                 — std::basic_string with PsramAllocator
+//   HimemVector<T>              — std::vector<T>  with PsramAllocator
+//   HimemMap<K, V>              — std::map<K, V>  with PsramAllocator
+//   HimemUnorderedMap<K, V>     — std::unordered_map<K, V> with PsramAllocator
 // ---------------------------------------------------------------------------
 
 #include <cstddef>
@@ -31,8 +33,10 @@
 #include <limits>
 #include <memory>
 #include <new>
+#include <map>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -97,7 +101,7 @@ public:
 // ===========================================================================
 // PsramDeleter<T> / PsramDeleter<T[]>
 //
-// Custom deleters used by himemUniquePtr.  They call the appropriate
+// Custom deleters used by HimemUniquePtr.  They call the appropriate
 // destructors before releasing memory back to the PSRAM heap.
 // ===========================================================================
 
@@ -116,7 +120,7 @@ struct PsramDeleter {
   }
 };
 
-// Partial specialisation — arrays (used by himemUniquePtr<T[]>).
+// Partial specialisation — arrays (used by HimemUniquePtr<T[]>).
 // The element count must be stored so that non-trivially destructible
 // element types receive proper destruction.
 template <typename T>
@@ -132,26 +136,26 @@ struct PsramDeleter<T[]> {
 };
 
 // ===========================================================================
-// himemSharedPtr / makeSharedHimem
+// HimemSharedPtr / makeSharedHimem
 //
 // std::allocate_shared places the control-block and the managed object in
 // a single allocation, so the entire shared_ptr machinery lives in PSRAM.
 // ===========================================================================
 
 template <typename T>
-using himemSharedPtr = std::shared_ptr<T>;
+using HimemSharedPtr = std::shared_ptr<T>;
 
 // Single-object overload
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
-[[nodiscard]] auto makeSharedHimem(Args &&...args) -> himemSharedPtr<T> {
+[[nodiscard]] auto makeSharedHimem(Args &&...args) -> HimemSharedPtr<T> {
   return std::allocate_shared<T>(PsramAllocator<T>{}, std::forward<Args>(args)...);
 }
 
 // Unbounded-array overload  (e.g. makeSharedHimem<int[]>(n))
 template <typename T>
   requires(std::is_unbounded_array_v<T>)
-[[nodiscard]] auto makeSharedHimem(std::size_t n) -> himemSharedPtr<T> {
+[[nodiscard]] auto makeSharedHimem(std::size_t n) -> HimemSharedPtr<T> {
   using Elem = std::remove_extent_t<T>;
   return std::allocate_shared<T>(PsramAllocator<Elem>{}, n);
 }
@@ -162,11 +166,11 @@ template <typename T, typename... Args>
 auto makeSharedHimem(Args &&...) -> void = delete;
 
 // ===========================================================================
-// himemUniquePtr / makeUniqueHimem
+// HimemUniquePtr / makeUniqueHimem
 // ===========================================================================
 
 template <typename T>
-using himemUniquePtr = std::unique_ptr<T, PsramDeleter<T>>;
+using HimemUniquePtr = std::unique_ptr<T, PsramDeleter<T>>;
 
 // Tag type for the sized single-object overload.
 // Pass himemSized(n) to makeUniqueHimem<T> to allocate n bytes instead of sizeof(T).
@@ -180,7 +184,7 @@ struct himemSizedT {
 // Allocates exactly sz.bytes bytes, default-constructs T in that buffer.
 template <typename T>
   requires(!std::is_array_v<T>)
-[[nodiscard]] auto makeUniqueHimem(himemSizedT sz) -> himemUniquePtr<T> {
+[[nodiscard]] auto makeUniqueHimem(himemSizedT sz) -> HimemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sz.bytes);
   if (!mem) throw std::bad_alloc{};
 
@@ -192,13 +196,13 @@ template <typename T>
     throw;
   }
 
-  return himemUniquePtr<T>{obj};
+  return HimemUniquePtr<T>{obj};
 }
 
 // Single-object overload
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
-[[nodiscard]] auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T> {
+[[nodiscard]] auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sizeof(T));
   if (!mem) throw std::bad_alloc{};
 
@@ -210,13 +214,13 @@ template <typename T, typename... Args>
     throw;
   }
 
-  return himemUniquePtr<T>{obj};
+  return HimemUniquePtr<T>{obj};
 }
 
 // Unbounded-array overload  (e.g. makeUniqueHimem<int[]>(n))
 template <typename T>
   requires(std::is_unbounded_array_v<T>)
-[[nodiscard]] auto makeUniqueHimem(std::size_t n) -> himemUniquePtr<T> {
+[[nodiscard]] auto makeUniqueHimem(std::size_t n) -> HimemUniquePtr<T> {
   using Elem = std::remove_extent_t<T>;
 
   void *mem = HIMEM_MALLOC(n * sizeof(Elem));
@@ -231,7 +235,7 @@ template <typename T>
   }
 
   PsramDeleter<T> del{n};
-  return himemUniquePtr<T>{arr, del};
+  return HimemUniquePtr<T>{arr, del};
 }
 
 // Bounded-array form is deleted, mirroring std::make_unique behaviour.
@@ -240,44 +244,73 @@ template <typename T, typename... Args>
 auto makeUniqueHimem(Args &&...) -> void = delete;
 
 // ===========================================================================
-// himemString
+// HimemString
 //
 // Drop-in for std::string whose internal character buffer lives in PSRAM.
 // Note: iterators and data() pointers point into SPIRAM — avoid caching them
 // across modifications on multi-core targets without proper synchronisation.
 // ===========================================================================
 
-using himemString = std::basic_string<char, std::char_traits<char>, PsramAllocator<char>>;
+using HimemString = std::basic_string<char, std::char_traits<char>, PsramAllocator<char>>;
 
 // ===========================================================================
-// himemVector<T>
+// HimemVector<T>
 //
 // Drop-in for std::vector<T> whose backing storage lives in PSRAM.
 // ===========================================================================
 
 template <typename T>
-using himemVector = std::vector<T, PsramAllocator<T>>;
+using HimemVector = std::vector<T, PsramAllocator<T>>;
+
+// ===========================================================================
+// HimemUnorderedMap<K, V>
+//
+// Drop-in for std::unordered_map<K, V> whose backing storage lives in PSRAM.
+// ===========================================================================
+
+template <
+  typename Key,
+  typename T,
+  typename Hash    = std::hash<Key>,
+  typename KeyEqual = std::equal_to<Key>>
+using HimemUnorderedMap = std::unordered_map<
+  Key, T, Hash, KeyEqual,
+  PsramAllocator<std::pair<const Key, T>>>;
+
+// ===========================================================================
+// HimemMap<K, V>
+//
+// Drop-in for std::map<K, V> whose backing storage lives in PSRAM.
+// ===========================================================================
+
+template <
+  typename Key,
+  typename T,
+  typename Compare = std::less<Key>>
+using HimemMap = std::map<
+  Key, T, Compare,
+  PsramAllocator<std::pair<const Key, T>>>;
 
 // ===========================================================================
 // himemUniqueString
 //
-// A himemString object whose own storage (in addition to its character
+// A HimemString object whose own storage (in addition to its character
 // buffer) also lives in PSRAM.  Ownership is expressed via unique_ptr.
 // ===========================================================================
 
-using himemUniqueString = himemUniquePtr<himemString>;
+using himemUniqueString = HimemUniquePtr<HimemString>;
 
-// Factory: constructs a himemString in PSRAM and returns a unique owner.
-// Accepts the same arguments as himemString constructors, forwarded
-// directly (e.g. a const char*, another himemString, or nothing for empty).
+// Factory: constructs a HimemString in PSRAM and returns a unique owner.
+// Accepts the same arguments as HimemString constructors, forwarded
+// directly (e.g. a const char*, another HimemString, or nothing for empty).
 template <typename... Args>
 [[nodiscard]] auto makeUniqueHimemString(Args &&...args) -> himemUniqueString {
-  void *mem = HIMEM_MALLOC(sizeof(himemString));
+  void *mem = HIMEM_MALLOC(sizeof(HimemString));
   if (!mem) throw std::bad_alloc{};
 
-  himemString *obj = nullptr;
+  HimemString *obj = nullptr;
   try {
-    obj = ::new (mem) himemString(std::forward<Args>(args)...);
+    obj = ::new (mem) HimemString(std::forward<Args>(args)...);
   } catch (...) {
     HIMEM_FREE(mem);
     throw;
@@ -289,19 +322,19 @@ template <typename... Args>
 // ===========================================================================
 // himemUniqueVector<T>
 //
-// A himemVector<T> object whose own storage (in addition to its element
+// A HimemVector<T> object whose own storage (in addition to its element
 // buffer) also lives in PSRAM.  Ownership is expressed via unique_ptr.
 // ===========================================================================
 
 template <typename T>
-using himemUniqueVector = himemUniquePtr<himemVector<T>>;
+using himemUniqueVector = HimemUniquePtr<HimemVector<T>>;
 
-// Factory: constructs a himemVector<T> in PSRAM and returns a unique owner.
-// Accepts the same arguments as himemVector constructors (e.g. an initial
+// Factory: constructs a HimemVector<T> in PSRAM and returns a unique owner.
+// Accepts the same arguments as HimemVector constructors (e.g. an initial
 // size, or nothing for an empty vector).
 template <typename T, typename... Args>
 [[nodiscard]] auto makeUniqueHimemVector(Args &&...args) -> himemUniqueVector<T> {
-  using Vec = himemVector<T>;
+  using Vec = HimemVector<T>;
 
   void *mem = HIMEM_MALLOC(sizeof(Vec));
   if (!mem) throw std::bad_alloc{};

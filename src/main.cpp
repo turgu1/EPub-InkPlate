@@ -31,14 +31,6 @@
     #include "controllers/back_lit.hpp"
   #endif
 
-  #if TEST_HIMEM
-    #include "himem_test.hpp"
-  #endif
-
-  #if TEST_DOM
-    #include "models/dom_test.hpp"
-  #endif
-
   #include <stdio.h>
 
   #if TESTING
@@ -65,22 +57,6 @@
       }
       printf("\n");
       fflush(stdout);
-    #endif
-
-    #if TEST_HIMEM
-      if (!himemRunTests()) {
-        LOG_E("Himem tests failed.");
-      } else {
-        LOG_I("Yeah! Himem tests passed!");
-      }
-    #endif
-
-    #if TEST_DOM
-      if (!domRunTests()) {
-        LOG_E("DOM tests failed.");
-      } else {
-        LOG_I("Yeah! DOM tests passed!");
-      }
     #endif
 
     #if TESTING
@@ -236,10 +212,6 @@
 
   #if TESTING
     #include "gtest/gtest.h"
-  #endif
-
-  #if TEST_DOM
-    #include "models/dom_test.hpp"
   #endif
 
   static const char *TAG = "Main";

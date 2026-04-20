@@ -47,7 +47,7 @@ struct FormEntry {
   FormEntryType entryType;
 };
 
-using FormFieldPtr = himemUniquePtr<class FormField>;
+using FormFieldPtr = HimemUniquePtr<class FormField>;
 class FormField {
 private:
   static constexpr char const *TAG = "FormField";
@@ -63,7 +63,7 @@ protected:
 public:
   FormField(FormEntry &formEntry, Font &font, Page &page)
       : formEntry(formEntry), font(font), page(page), eventControl(false) {};
-  virtual ~FormField() { LOG_I("FormField destructor called"); }
+  virtual ~FormField() = default; // { LOG_I("FormField destructor called"); }
 
   virtual auto getFieldDim() -> const Dim { return fieldDim; }
  [[nodiscard]] inline auto getCaptionDim() -> const Dim & { return captionDim; }
@@ -322,7 +322,7 @@ public:
   }
 };
 
-using HFormChoiceFieldPtr = himemUniquePtr<class HFormChoiceField>;
+using HFormChoiceFieldPtr = HimemUniquePtr<class HFormChoiceField>;
 
 class HFormChoiceField : public FormChoiceField {
 private:
@@ -363,7 +363,7 @@ public:
   }
 };
 
-using FormUInt16Ptr = himemUniquePtr<class FormUInt16>;
+using FormUInt16Ptr = HimemUniquePtr<class FormUInt16>;
 
 class FormUInt16 : public FormField {
 private:
@@ -494,7 +494,7 @@ public:
   }
 };
 
-using FormViewerPtr = himemUniquePtr<class FormViewer>;
+using FormViewerPtr = HimemUniquePtr<class FormViewer>;
 class FormViewer {
 private:
   FormViewer() = default;
@@ -506,12 +506,12 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<FormViewer>(); }
 
   ~FormViewer() {
-    LOG_I("FormViewer destructor called");
+    // LOG_I("FormViewer destructor called");
     fields.clear();
   }
 

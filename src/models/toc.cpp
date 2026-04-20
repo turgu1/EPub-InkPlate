@@ -399,7 +399,9 @@ auto TOC::clean() -> void {
 }
 
 auto TOC::set(std::string &id, int32_t currentOffset) -> void {
-  int16_t itemrefIndex    = pageLocs.getCurrentItemrefIndex();
+  auto itemrefIndex    = pageLocs.getCurrentItemrefIndex();
+  if (itemrefIndex < 0) return;
+
   Infos::iterator infosIt = infos.find(std::make_pair(itemrefIndex, id));
 
   if (infosIt != infos.end()) {
@@ -408,7 +410,8 @@ auto TOC::set(std::string &id, int32_t currentOffset) -> void {
 }
 
 auto TOC::set(int32_t currentOffset) -> void {
-  int16_t itemrefIndex = pageLocs.getCurrentItemrefIndex();
+  auto itemrefIndex = pageLocs.getCurrentItemrefIndex();
+  if (itemrefIndex < 0) return;
   int16_t idx          = -1;
 
   for (auto &e : entries) {
@@ -420,6 +423,26 @@ auto TOC::set(int32_t currentOffset) -> void {
   if ((idx >= 0) && (idx < (int16_t)entries.size())) {
     entries[idx].pageId.offset = currentOffset;
   }
+}
+
+auto TOC::exists(const std::string &epubFilename) -> bool {
+  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
+  auto db = SimpleDB::Make();
+  if (!db->open(filename)) return false;
+
+  VersionRecord versionRecord;
+  bool ok = false;
+
+  if ((db->getRecordCount() > 0) && db->gotoFirst() &&
+      (db->getRecordSize() == sizeof(versionRecord)) &&
+      db->getRecord(&versionRecord, sizeof(versionRecord)) &&
+      (versionRecord.version == TOC_DB_VERSION) &&
+      (strcmp(versionRecord.appName, TOC_NAME) == 0)) {
+    ok = true;
+  }
+
+  db->close();
+  return ok;
 }
 
 #if DEBUGGING

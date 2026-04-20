@@ -29,18 +29,18 @@
  *
  */
 
-using PagePtr = himemUniquePtr<class Page>;
+using PagePtr = HimemUniquePtr<class Page>;
 
 class Page {
 private:
   Page() = default;
 
 public:
-  ~Page() { LOG_D("Page destructor called"); };
+  ~Page() = default; // { LOG_D("Page destructor called"); };
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<Page>(); }
 
@@ -49,26 +49,26 @@ public:
   // clang-format off
   struct Format {
     float              lineHeightFactor = 1.0; ///< In EMs
-    int16_t            fontIndex         =   1;
-    int16_t            fontSize          =  10; ///< In pixels
-    int16_t            indent             =   0; ///< In pixels
-    uint16_t           marginLeft        =   0; ///< In pixels
-    uint16_t           marginRight       =   0; ///< In pixels
-    uint16_t           marginTop         =   0; ///< In pixels
-    uint16_t           marginBottom      =   0; ///< In pixels
-    uint16_t           screenLeft        =  10; ///< In pixels
-    uint16_t           screenRight       =  10; ///< In pixels
-    uint16_t           screenTop         =  10; ///< In pixels
-    uint16_t           screenBottom      =  10; ///< In pixels
-    uint16_t           width              =   0; ///< In pixels
-    uint16_t           height             =   0; ///< In pixels
-    uint16_t           verticalAlign     =   0; ///< In pixels
-    bool               trim               = true;
-    bool               pre                = false;
-    Fonts::FaceStyle   fontStyle         = Fonts::FaceStyle::NORMAL;
-    CSS::Align         align              = CSS::Align::LEFT;
-    CSS::TextTransform textTransform     = CSS::TextTransform::NONE;
-    CSS::Display       display            = CSS::Display::INLINE;
+    int16_t            fontIndex        =   1;
+    int16_t            fontSize         =  10; ///< In pixels
+    int16_t            indent           =   0; ///< In pixels
+    uint16_t           marginLeft       =   0; ///< In pixels
+    uint16_t           marginRight      =   0; ///< In pixels
+    uint16_t           marginTop        =   0; ///< In pixels
+    uint16_t           marginBottom     =   0; ///< In pixels
+    uint16_t           screenLeft       =  10; ///< In pixels
+    uint16_t           screenRight      =  10; ///< In pixels
+    uint16_t           screenTop        =  10; ///< In pixels
+    uint16_t           screenBottom     =  10; ///< In pixels
+    uint16_t           width            =   0; ///< In pixels
+    uint16_t           height           =   0; ///< In pixels
+    uint16_t           verticalAlign    =   0; ///< In pixels
+    bool               trim             = true;
+    bool               pre              = false;
+    Fonts::FaceStyle   fontStyle        = Fonts::FaceStyle::NORMAL;
+    CSS::Align         align            = CSS::Align::LEFT;
+    CSS::TextTransform textTransform    = CSS::TextTransform::NONE;
+    CSS::Display       display          = CSS::Display::INLINE;
   };
   // clang-format on
 
@@ -89,6 +89,9 @@ public:
 
 private:
   static constexpr char const *TAG = "Page";
+
+  using Entities = HimemUnorderedMap<HimemString, int32_t>;
+  static Entities entities;
 
   /**
    * @brief Book Compute Mode

@@ -24,7 +24,7 @@
 class TOC;
 class EPub;
 
-using EPubPtr = himemUniquePtr<class EPub>;
+using EPubPtr = HimemUniquePtr<class EPub>;
 class EPub {
 
 public:
@@ -73,7 +73,7 @@ public:
   using BinUUID = uint8_t[16];
   using ShaUUID = uint8_t[20];
 
-  himemUniquePtr<TOC> toc;
+  HimemUniquePtr<TOC> toc;
 
 private:
   static constexpr char const *TAG = "EPub";
@@ -119,7 +119,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make() { return makeUniqueHimem<EPub>(); }
 
@@ -130,7 +130,7 @@ public:
   auto open(const std::string &epubFilename) -> bool;
   auto closeFile() -> bool;
   auto getPicture(std::string &fname, bool load) -> PicturePtr;
-  auto retrieveFile(const char *fname, uint32_t &size) -> himemUniquePtr<uint8_t[]>;
+  auto retrieveFile(const char *fname, uint32_t &size) -> HimemUniquePtr<uint8_t[]>;
   auto getItem(pugi::xml_node itemref, ItemInfo &item) -> bool;
   auto getItemAtIndex(int16_t itemrefIndex) -> bool;
   auto getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool;
@@ -173,7 +173,7 @@ public:
  [[nodiscard]] inline auto encryptionIsPresent() const    -> bool                       { return encryptionPresent; }
  [[nodiscard]] inline auto getBinUuid() const             -> const BinUUID &            { return binUuid; }
   
- inline auto setPageLocsInstance(bool val) -> void                            { pageLocsInstance = val; }
+ inline auto setPageLocsInstance(bool val) -> void { pageLocsInstance = val; }
   // clang-format on
 };
 

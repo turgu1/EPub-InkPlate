@@ -21,7 +21,7 @@
 
 auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
                      const char *fmtStr, ...) -> ConfirmDataPtr {
-  himemUniquePtr<char[]> buff = makeUniqueHimem<char[]>(BUFFER_SIZE);
+  HimemUniquePtr<char[]> buff = makeUniqueHimem<char[]>(BUFFER_SIZE);
   auto page                   = Page::Make();
   auto confirmData            = ConfirmData::Make();
 

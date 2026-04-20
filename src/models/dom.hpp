@@ -16,7 +16,7 @@
 
 #include "memory_pool.hpp"
 
-using DOMPtr = himemUniquePtr<class DOM>;
+using DOMPtr = HimemUniquePtr<class DOM>;
 class DOM {
 public:
   /**
@@ -70,7 +70,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make() { return makeUniqueHimem<DOM>(); }
 

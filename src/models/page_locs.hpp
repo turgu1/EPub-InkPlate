@@ -150,7 +150,6 @@ public:
   auto getPrevPageId(const PageId &pageId, int count = 1) -> const PageId *;
   auto getPageId(const PageId &pageId) -> const PageId *;
 
-  auto getCurrentItemrefIndex() -> uint16_t { return itemInfo.itemrefIndex; }
   auto getItemInfo() -> const EPub::ItemInfo & { return itemInfo; }
   auto getPagesMap() -> const PagesMap & { return pagesMap; }
 
@@ -166,6 +165,11 @@ public:
     PagesMap::iterator it = checkAndFind(pageId);
     return it == pagesMap.end() ? nullptr : &it->second;
   }
+
+  [[nodiscard]] inline auto getCurrentItemrefIndex() const { 
+    return (controlTask) ? controlTask->getCurrentItemrefIndex() : -1; 
+  }
+
 
   auto insert(PageId &id, PageInfo &info) -> bool;
 

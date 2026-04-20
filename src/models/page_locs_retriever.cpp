@@ -153,6 +153,8 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
   if (epub->getItemAtIndex(itemrefIndex, itemInfo)) {
 
+    currentItemrefIndex = itemrefIndex;
+    
     int16_t idx;
 
     if ((idx = fonts.getIndex("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {

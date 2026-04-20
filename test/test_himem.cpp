@@ -2,22 +2,20 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#include "himem_test.hpp"
+// ---------------------------------------------------------------------------
+// himem test suite
+//
+// Full implementation lives here (Linux test build).  The ESP32 build uses
+// the copy in components/himem/src/himem_test.cpp which is kept in sync.
+// ---------------------------------------------------------------------------
+
 #include "himem.hpp"
 
-#include <cstring>
+#include <cstdio>
+#include <limits>
 
-#if EPUB_INKPLATE_BUILD
-  #include "esp_log.h"
-  #include "esp_memory_utils.h"
-  static const char *const TAG = "himem_test";
-  #define HT_LOG(fmt, ...) ESP_LOGI(TAG, fmt, ##__VA_ARGS__)
-  #define IS_PSRAM(ptr) esp_ptr_external_ram(static_cast<const void *>(ptr))
-#else
-  #include <cstdio>
-  #define HT_LOG(fmt, ...) std::printf("[himem_test] " fmt "\n", ##__VA_ARGS__)
-  #define IS_PSRAM(ptr) true // no SPIRAM on host — skip address checks
-#endif
+#define HT_LOG(fmt, ...) std::printf("[himem_test] " fmt "\n", ##__VA_ARGS__)
+#define IS_PSRAM(ptr) true // no SPIRAM on host — skip address checks
 
 // ===========================================================================
 // Internal helpers
@@ -28,8 +26,6 @@ namespace {
 static int sPass = 0;
 static int sFail = 0;
 
-// Log a single check result and update counters.
-// msg must be a string literal so it can be concatenated into the format string.
 #define HT_CHECK(cond, msg)                                                                        \
   do {                                                                                             \
     if (!(cond)) {                                                                                 \
@@ -188,7 +184,7 @@ static auto testUniqueScalar() -> void {
 // 7. makeUniqueHimem<T[]> — unbounded array
 // ===========================================================================
 static auto testUniqueArray() -> void {
-  HT_LOG("--- makeUniqueHimem<T[]> unbounded array ---");
+  HT_LOG("--- makeUniqueHimem<T[]] unbounded array ---");
 
   constexpr std::size_t N = 6;
   auto arr                = makeUniqueHimem<int[]>(N);
@@ -208,13 +204,13 @@ static auto testUniqueArray() -> void {
 }
 
 // ===========================================================================
-// 8. himemString
+// 8. HimemString
 // ===========================================================================
 static auto testHimemString() -> void {
-  HT_LOG("--- himemString ---");
+  HT_LOG("--- HimemString ---");
 
-  himemString s;
-  HT_CHECK(s.empty(), "default-constructed himemString is empty");
+  HimemString s;
+  HT_CHECK(s.empty(), "default-constructed HimemString is empty");
 
   // Use a string >= 32 chars to guarantee the custom allocator is invoked
   // (bypass potential small-string-optimisation in the platform's libstdc++).
@@ -224,9 +220,9 @@ static auto testHimemString() -> void {
   HT_CHECK(IS_PSRAM(s.data()), "character buffer is in PSRAM");
 
   s += " Extended.";
-  HT_CHECK(s.find("Extended") != himemString::npos, "append and find work correctly");
+  HT_CHECK(s.find("Extended") != HimemString::npos, "append and find work correctly");
 
-  himemString s2{s}; // copy
+  HimemString s2{s}; // copy
   HT_CHECK(s2 == s, "copy-constructed string equals original");
   HT_CHECK(IS_PSRAM(s2.data()), "copy's character buffer is in PSRAM");
 
@@ -236,13 +232,13 @@ static auto testHimemString() -> void {
 }
 
 // ===========================================================================
-// 9. himemVector<int>
+// 9. HimemVector<int>
 // ===========================================================================
 static auto testHimemVector() -> void {
-  HT_LOG("--- himemVector<int> ---");
+  HT_LOG("--- HimemVector<int> ---");
 
-  himemVector<int> v;
-  HT_CHECK(v.empty(), "default-constructed himemVector is empty");
+  HimemVector<int> v;
+  HT_CHECK(v.empty(), "default-constructed HimemVector is empty");
 
   for (int i = 0; i < 8; ++i) v.push_back(i * 3);
   HT_CHECK(v.size() == 8, "size() correct after push_back");
@@ -263,14 +259,14 @@ static auto testHimemVector() -> void {
   // Verify destructor pairing with a non-trivial element type.
   Tracked::live = 0;
   {
-    himemVector<Tracked> tv;
+    HimemVector<Tracked> tv;
     tv.emplace_back(1);
     tv.emplace_back(2);
     tv.emplace_back(3);
-    HT_CHECK(Tracked::live == 3, "3 Tracked objects live in himemVector");
+    HT_CHECK(Tracked::live == 3, "3 Tracked objects live in HimemVector");
     HT_CHECK(IS_PSRAM(tv.data()), "Tracked element storage is in PSRAM");
   }
-  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himemVector leaves scope");
+  HT_CHECK(Tracked::live == 0, "all Tracked destructors called when HimemVector leaves scope");
 }
 
 // ===========================================================================
@@ -282,7 +278,7 @@ static auto testUniqueString() -> void {
   auto s = makeUniqueHimemString("Hello from PSRAM unique string!!");
 
   HT_CHECK(s != nullptr, "makeUniqueHimemString returns non-null");
-  HT_CHECK(IS_PSRAM(s.get()), "himemString object itself is in PSRAM");
+  HT_CHECK(IS_PSRAM(s.get()), "HimemString object itself is in PSRAM");
   HT_CHECK(*s == "Hello from PSRAM unique string!!", "content is correct");
   HT_CHECK(IS_PSRAM(s->data()), "character buffer is in PSRAM");
 
@@ -314,7 +310,7 @@ static auto testUniqueVector() -> void {
   auto v = makeUniqueHimemVector<int>(5u, 7);
 
   HT_CHECK(v != nullptr, "makeUniqueHimemVector returns non-null");
-  HT_CHECK(IS_PSRAM(v.get()), "himemVector<int> object itself is in PSRAM");
+  HT_CHECK(IS_PSRAM(v.get()), "HimemVector<int> object itself is in PSRAM");
   HT_CHECK(v->size() == 5, "vector has correct initial size");
   HT_CHECK(IS_PSRAM(v->data()), "element storage is in PSRAM");
 
@@ -351,13 +347,94 @@ static auto testUniqueVector() -> void {
   HT_CHECK(Tracked::live == 0, "all Tracked destructors called when himemUniqueVector resets");
 }
 
+// ===========================================================================
+// 12. HimemMap<K, V>
+// ===========================================================================
+static auto testHimemMap() -> void {
+  HT_LOG("--- HimemMap<int,int> ---");
+
+  HimemMap<int, int> m;
+  HT_CHECK(m.empty(), "default-constructed HimemMap is empty");
+
+  m[1] = 10;
+  m[2] = 20;
+  m[3] = 30;
+  HT_CHECK(m.size() == 3, "size() correct after 3 insertions");
+
+  HT_CHECK(m.count(2) == 1, "count() finds existing key");
+  HT_CHECK(m.count(99) == 0, "count() returns 0 for missing key");
+  HT_CHECK(m.at(3) == 30, "at() returns correct value");
+
+  // Keys must be stored in sorted order.
+  bool sorted = true;
+  int prev = std::numeric_limits<int>::min();
+  for (auto const &[k, v] : m) {
+    if (k <= prev) { sorted = false; break; }
+    prev = k;
+  }
+  HT_CHECK(sorted, "HimemMap iterates keys in sorted order");
+
+  m.erase(2);
+  HT_CHECK(m.size() == 2 && m.count(2) == 0, "erase() removes key correctly");
+
+  // String keys.
+  HimemMap<HimemString, int> sm;
+  sm[HimemString("alpha")] = 1;
+  sm[HimemString("beta")]  = 2;
+  HT_CHECK(sm.size() == 2, "HimemMap<HimemString,int> size correct");
+  HT_CHECK(sm[HimemString("alpha")] == 1, "HimemMap<HimemString,int> lookup correct");
+
+  m.clear();
+  HT_CHECK(m.empty(), "clear() empties HimemMap");
+}
+
+// ===========================================================================
+// 13. HimemUnorderedMap<K, V>
+// ===========================================================================
+static auto testHimemUnorderedMap() -> void {
+  HT_LOG("--- HimemUnorderedMap<int,int> ---");
+
+  HimemUnorderedMap<int, int> m;
+  HT_CHECK(m.empty(), "default-constructed HimemUnorderedMap is empty");
+
+  m[10] = 100;
+  m[20] = 200;
+  m[30] = 300;
+  HT_CHECK(m.size() == 3, "size() correct after 3 insertions");
+
+  HT_CHECK(m.count(20) == 1, "count() finds existing key");
+  HT_CHECK(m.count(99) == 0, "count() returns 0 for missing key");
+  HT_CHECK(m.at(30) == 300, "at() returns correct value");
+
+  m[10] = 999;
+  HT_CHECK(m.at(10) == 999, "operator[] overwrites existing key");
+
+  m.erase(20);
+  HT_CHECK(m.size() == 2 && m.count(20) == 0, "erase() removes key correctly");
+
+  // Verify all remaining entries are accessible.
+  bool ok = (m.count(10) == 1) && (m.count(30) == 1);
+  HT_CHECK(ok, "remaining keys accessible after erase");
+
+  // String keys.
+  HimemUnorderedMap<HimemString, int> sm;
+  sm[HimemString("one")]   = 1;
+  sm[HimemString("two")]   = 2;
+  sm[HimemString("three")] = 3;
+  HT_CHECK(sm.size() == 3, "HimemUnorderedMap<HimemString,int> size correct");
+  HT_CHECK(sm[HimemString("two")] == 2, "HimemUnorderedMap<HimemString,int> lookup correct");
+
+  m.clear();
+  HT_CHECK(m.empty(), "clear() empties HimemUnorderedMap");
+}
+
 } // anonymous namespace
 
 // ===========================================================================
 // Public entry point
 // ===========================================================================
 
-auto himemRunTests() -> bool {
+auto testHimem() -> bool {
   sPass = 0;
   sFail = 0;
 
@@ -374,6 +451,8 @@ auto himemRunTests() -> bool {
   testHimemVector();
   testUniqueString();
   testUniqueVector();
+  testHimemMap();
+  testHimemUnorderedMap();
 
   HT_LOG("========== himem test suite end: %d passed, %d failed ==========", sPass, sFail);
 

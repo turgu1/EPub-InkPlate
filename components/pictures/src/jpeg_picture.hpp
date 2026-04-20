@@ -8,7 +8,7 @@
 #include "himem.hpp"
 #include "picture.hpp"
 
-using JPegPicturePtr = himemUniquePtr<class JPegPicture>;
+using JPegPicturePtr = HimemUniquePtr<class JPegPicture>;
 
 class JPegPicture : public Picture {
 
@@ -23,7 +23,7 @@ private:
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make(std::string filename, Dim max, bool loadBitmap, bool fromFile = false) {
     return makeUniqueHimem<JPegPicture>(filename, max, loadBitmap, fromFile);

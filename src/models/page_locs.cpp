@@ -62,6 +62,9 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
 std::atomic<bool> relax{false};
 
 auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
+  
+  if (!controlTask) return false;
+
   SHOW_IT("retrieveAsap: Sending GET_ASAP");
   PageLocsControl::send(
       {.req = PageLocsControl::Req::GET_ASAP, .itemrefIndex = itemrefIndex, .itemrefCount = 0});
@@ -122,7 +125,7 @@ auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
   if (controlTask) stopControlTask();
 
   currentFilename = epub->getCurrentFilename();
-  // checkForFormatChanges(epub, itemrefIndex, !load(currentFilename));
+  checkForFormatChanges(epub, itemrefIndex, !load(currentFilename));
 }
 
 auto PageLocs::insert(PageId &id, PageInfo &info) -> bool {
@@ -145,9 +148,11 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> bool {
         }
       }
     }
-    return true;
+  } else {
+    pagesMap.insert(std::make_pair(id, info));
+    itemsSet.insert(id.itemrefIndex);
   }
-  return false;
+  return true;
 }
 
 auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterator {
@@ -159,6 +164,7 @@ auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterato
 }
 
 auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageId * {
+
   if (controlTaskReadyToBeStopped) stopControlTask();
 
   {
@@ -196,6 +202,7 @@ auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageI
 }
 
 auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * {
+
   if (controlTaskReadyToBeStopped) stopControlTask();
 
   {
@@ -219,7 +226,7 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
             } else
               id.itemrefIndex--;
 
-            if (itemsSet.find(id.itemrefIndex) == itemsSet.end()) {
+            if ((itemsSet.find(id.itemrefIndex) == itemsSet.end()) && !completed) {
               retrieveAsap(id.itemrefIndex);
             }
           }
@@ -238,6 +245,7 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
 }
 
 auto PageLocs::getPageId(const PageId &pageId) -> const PageId * {
+
   if (controlTaskReadyToBeStopped) stopControlTask();
 
   {
@@ -300,6 +308,9 @@ auto PageLocs::computationAborted(std::string reason) -> void {
                   reason.c_str());
   controlTaskReadyToBeStopped = true;
   aborted                     = true;
+  completed                   = true;
+
+  eventMgr.setStayOn(false);
 }
 
 #if DEBUGGING
@@ -313,11 +324,26 @@ auto PageLocs::computationAborted(std::string reason) -> void {
   }
 #endif
 
+/**
+ * @brief Checks if page locations need to be recalculated due to format changes or missing TOC
+ * 
+ * This method determines whether page locations should be recomputed by comparing the current
+ * format parameters with those stored in the epub, or if forced recalculation is requested.
+ * If recalculation is needed, it stops any existing control task, clears current page locations,
+ * sets up new page computation, and initiates a new document processing task.
+ * 
+ * @param epub Reference to the EPub object containing the document and format parameters
+ * @param itemrefIndex Index of the current item reference in the epub manifest
+ * @param force If true, forces recalculation regardless of format parameter changes
+ * 
+ * @note This method will also trigger recalculation if no control task is running and
+ *       no table of contents exists for the current filename
+ * @note Sets the event manager to stay on during the recalculation process
+ */
 auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force) -> void {
   if (force ||
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
-       0) ||
-      !epub->toc->load(epub)) {
+       0) || (!controlTask && !TOC::exists(epub->getCurrentFilename()))) {
 
     LOG_D("==> Page locations recalc. <==");
 

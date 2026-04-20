@@ -27,7 +27,7 @@
 
 using namespace pugi;
 
-using BookViewerPtr = himemUniquePtr<class BookViewer>;
+using BookViewerPtr = HimemUniquePtr<class BookViewer>;
 
 class BookViewer {
 private:
@@ -50,7 +50,7 @@ private:
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make() { return makeUniqueHimem<BookViewer>(); }
 

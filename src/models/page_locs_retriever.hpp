@@ -21,7 +21,7 @@ private:
 
 public:
   PageLocsRetriever() = default;
-  ~PageLocsRetriever() { LOG_I(TAG, "PageLocsRetriever destructor called"); }
+  ~PageLocsRetriever() = default; // { LOG_I("PageLocsRetriever destructor called"); }
 
   enum class Req : int8_t {
     NONE, STOP, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP, COMPLETED
@@ -41,13 +41,15 @@ public:
   }
 
   auto setup(const std::string &epubFilename) -> bool;
-
   auto waitForExit() -> void;
+
+  [[nodiscard]] inline auto getCurrentItemrefIndex() const { return currentItemrefIndex; }
 
 private:
   DOMPtr dom{nullptr};
   EPubPtr epub{nullptr};
   uint16_t pageBottom;
+  int16_t currentItemrefIndex{-1};
 
   EPub::BookFormatParams currentFormatParams;
 

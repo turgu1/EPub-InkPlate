@@ -42,7 +42,7 @@ public:
 
     static inline auto Make() { return makeUniqueHimem<ConfirmData>(); }
   };
-  using ConfirmDataPtr = himemUniquePtr<class ConfirmData>;
+  using ConfirmDataPtr = HimemUniquePtr<class ConfirmData>;
 
   class ProgressData {
   public:
@@ -53,7 +53,7 @@ public:
     ~ProgressData() = default;
     static inline auto Make() { return makeUniqueHimem<ProgressData>(); }
   };
-  using ProgressDataPtr = himemUniquePtr<class ProgressData>;
+  using ProgressDataPtr = HimemUniquePtr<class ProgressData>;
 
   static auto show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
                    const char *fmtStr, ...) -> ConfirmDataPtr;

@@ -18,7 +18,7 @@
 // The PictureFactory class will instanciate the proper class (PngPicture or JPegPicture)
 // depending on the filename extension.
 
-using PicturePtr = himemUniquePtr<class Picture>;
+using PicturePtr = HimemUniquePtr<class Picture>;
 
 class Picture {
 

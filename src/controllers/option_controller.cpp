@@ -392,7 +392,7 @@ static MenuViewer::MenuEntry menu[] = {
   {MenuViewer::Icon::INFO,        true,  true,  nullptr,  "About the EPub-InkPlate application"},
   // This entry must be the last one before END_MENU and MUST ALWAYS BE VISIBLE!!
   {MenuViewer::Icon::POWEROFF,    true,  true,  nullptr,  "Power OFF (Deep Sleep)"},
-  {MenuViewer::Icon::END_MENU,    false, false, nullptr, nullptr}};
+  {MenuViewer::Icon::END_MENU,    false, false, nullptr,  nullptr}};
 
 // clang-format on
 

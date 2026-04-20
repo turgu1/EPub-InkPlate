@@ -51,7 +51,7 @@ public:
 };
 
 using DisplayListPool = MemoryPool<DisplayListEntry>;
-using DisplayListPtr  = himemUniquePtr<class DisplayList>;
+using DisplayListPtr  = HimemUniquePtr<class DisplayList>;
 
 class DisplayList {
 private:
@@ -73,7 +73,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make(DisplayListPool &pool) { return makeUniqueHimem<DisplayList>(pool); }
   ~DisplayList() { clear(); }

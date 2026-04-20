@@ -11,7 +11,7 @@
 #include "viewers/books_dir_viewer.hpp"
 #include "viewers/page.hpp"
 
-using LinearBooksDirViewerPtr = himemUniquePtr<class LinearBooksDirViewer>;
+using LinearBooksDirViewerPtr = HimemUniquePtr<class LinearBooksDirViewer>;
 class LinearBooksDirViewer : public BooksDirViewer {
 private:
   static constexpr char const *TAG = "LinearBooksDirView";
@@ -42,7 +42,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<LinearBooksDirViewer>(); }
 

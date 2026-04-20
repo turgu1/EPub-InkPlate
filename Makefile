@@ -8,6 +8,7 @@
 #   make          # build (release)
 #   make DEBUG=1  # build with debug symbols
 #   make clean    # remove build artefacts
+#   make test     # build and run test suite (see below)
 
 CXX := g++
 CC  := gcc
@@ -144,5 +145,106 @@ $(BUILD)/%.o: %.c
 clean:
 	rm -rf $(BUILD)
 
+# ---------------------------------------------------------------------------
+# Test suite
+#
+# Builds a standalone binary (build_test/epub_test) that exercises the
+# components that can run without hardware or GTK:
+#   • himem allocator / smart-pointer helpers
+#   • DOM tree construction
+#   • SimpleDB CRUD operations
+#   • ConfigBase template (read / write / defaults)
+#
+# Usage:
+#   make test          # build test binary and run it
+#   make build_test    # build test binary only
+#   make clean_test    # remove test build artefacts
+# ---------------------------------------------------------------------------
+
+TEST_BUILD   := build_test
+TEST_TARGET  := epub_test
+
+TEST_DEFINES := \
+  -DEPUB_LINUX_BUILD=1 \
+  -DAPP_VERSION=\"$(APP_VERSION)\" \
+  -DDATE_TIME_RTC=1
+
+TEST_INCLUDES := \
+  -I test/stubs \
+  -I test \
+  -I src \
+  -I src/controllers \
+  -I src/helpers \
+  -I src/models \
+  -I src/viewers \
+  -I lib_linux/EPub_InkPlate/src \
+  -I components/global/src \
+  -I components/sys_functions/include \
+  -I components/himem/src \
+  -I components/simple_db/src \
+  -I components/memory_pool/src \
+  -I components/pictures/src \
+  -I components/zip/src \
+  -I components/pugixml/src
+
+TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) \
+                 -Wall -Wno-psabi -MMD -MP
+
+TEST_SRC_C := \
+  components/zip/src/miniz.c
+
+TEST_SRC_CPP := \
+  test/test_runner.cpp \
+  test/test_himem.cpp \
+  test/test_dom.cpp \
+  test/test_simple_db.cpp \
+  test/test_config.cpp \
+  test/test_css.cpp \
+  test/test_display_list.cpp \
+  test/test_app_config.cpp \
+  test/test_epub.cpp \
+  test/stubs.cpp \
+  src/models/dom.cpp \
+  src/models/css.cpp \
+  src/models/epub.cpp \
+  src/models/book_params.cpp \
+  components/zip/src/unzip.cpp \
+  components/pugixml/src/pugixml.cpp \
+  components/simple_db/src/simple_db.cpp \
+  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/strlcpy.cpp \
+  lib_linux/EPub_InkPlate/src/logging.cpp
+
+TEST_OBJS_C   := $(patsubst %.c,$(TEST_BUILD)/%.o,$(TEST_SRC_C))
+TEST_OBJS     := $(patsubst %.cpp,$(TEST_BUILD)/%.o,$(TEST_SRC_CPP)) $(TEST_OBJS_C)
+TEST_DEPS     := $(TEST_OBJS:.o=.d)
+
+.PHONY: test build_test clean_test
+
+build_test: $(TEST_BUILD)/$(TEST_TARGET)
+
+test: $(TEST_BUILD)/$(TEST_TARGET)
+	@echo "Running test suite..."
+	@$(TEST_BUILD)/$(TEST_TARGET)
+
+$(TEST_BUILD)/$(TEST_TARGET): $(TEST_OBJS)
+	@echo "Linking $@"
+	@$(CXX) $(TEST_OBJS) -lpthread -lssl -lcrypto -o $@
+	@echo "Built: $@"
+
+$(TEST_BUILD)/%.o: %.cpp
+	@echo "Compiling (test) $<"
+	@mkdir -p $(dir $@)
+	@$(CXX) $(TEST_CXXFLAGS) -c $< -o $@
+
+$(TEST_BUILD)/%.o: %.c
+	@echo "Compiling (test-C) $<"
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) -MMD -MP -c $< -o $@
+
+clean_test:
+	rm -rf $(TEST_BUILD)
+
 # Auto-generated header dependencies
+-include $(TEST_DEPS)
 -include $(DEPS)

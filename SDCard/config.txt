@@ -19,14 +19,14 @@
 #      http_port
 #      battery
 #      timeout
-#      font_size
+#      fontSize
 #      default_font
 #      use_fonts_in_books
 #      show_images
 #      orientation
 #      resolution
 #      show_heap
-#      show_title
+#      showTitle
 #      front_light
 #      dir_view
 #      cover_size
@@ -44,17 +44,17 @@ ap_wifi_pwd = "qwerty1234"
 http_port = 80
 battery = 2
 timeout = 5
-font_size = 12
+fontSize = 12
 default_font = 0
 use_fonts_in_books = 1
 show_images = 1
 orientation = 1
 resolution = 0
 show_heap = 0
-show_title = 1
+showTitle = 1
 front_light = 15
 dir_view = 1
-cover_size = 1
+cover_size = 2
 show_rtc = 1
 ntp_server = "pool.ntp.org"
 tz = "EST5EDT,M3.2.0,M11.1.0"

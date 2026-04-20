@@ -12,7 +12,7 @@
 
 #include <functional>
 
-using MenuViewerPtr = himemUniquePtr<class MenuViewer>;
+using MenuViewerPtr = HimemUniquePtr<class MenuViewer>;
 
 class MenuViewer {
 private:
@@ -23,11 +23,11 @@ private:
   PagePtr page = Page::Make();
 
 public:
-  ~MenuViewer() { LOG_I("MenuViewer destructor called"); }
+  ~MenuViewer() = default; // { LOG_I("MenuViewer destructor called"); }
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<MenuViewer>(); }
 

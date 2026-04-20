@@ -54,7 +54,7 @@ public:
    */
   #pragma pack(push, 1)
   class EBookRecord;
-  using EBookRecordPtr = himemUniquePtr<EBookRecord>;
+  using EBookRecordPtr = HimemUniquePtr<EBookRecord>;
 
   class EBookRecord {
   private:
@@ -65,9 +65,9 @@ public:
 
     template <typename T>
       requires(!std::is_array_v<T>)
-    friend auto makeUniqueHimem(himemSizedT sz) -> himemUniquePtr<T>;
+    friend auto makeUniqueHimem(himemSizedT sz) -> HimemUniquePtr<T>;
 
-    static inline auto Make(int32_t size) -> himemUniquePtr<EBookRecord> {
+    static inline auto Make(int32_t size) -> HimemUniquePtr<EBookRecord> {
       if (size >= static_cast<int32_t>(sizeof(EBookRecord))) {
         return makeUniqueHimem<EBookRecord>(himemSized(size));
       }
@@ -97,7 +97,7 @@ public:
     ~PartialRecord() = default;
     static inline auto Make() { return makeUniqueHimem<PartialRecord>(); }
   };
-  using PartialRecordPtr = himemUniquePtr<PartialRecord>;
+  using PartialRecordPtr = HimemUniquePtr<PartialRecord>;
 
   // The version record is used to identify the version of the database. In case of structure
   // update, the version will be changed in the application and will trigger the reconstruction of
@@ -112,7 +112,7 @@ public:
     ~VersionRecord() = default;
     static inline auto Make() { return makeUniqueHimem<VersionRecord>(); }
   };
-  using VersionRecordPtr = himemUniquePtr<VersionRecord>;
+  using VersionRecordPtr = HimemUniquePtr<VersionRecord>;
 
   #pragma pack(pop)
 

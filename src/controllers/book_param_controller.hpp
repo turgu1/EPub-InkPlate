@@ -45,6 +45,7 @@ public:
   auto revertToDefaults() -> void;
   auto booksList() -> void;
   auto deleteBook() -> void;
+  auto returnToBook() -> void;
   auto tocCtrl() -> void;
   auto wifiMode() -> void;
   auto powerOff() -> void;

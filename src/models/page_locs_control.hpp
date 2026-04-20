@@ -16,17 +16,18 @@
 
 class PageLocsControl;
 
-using PageLocsControlPtr = himemUniquePtr<PageLocsControl>;
+using PageLocsControlPtr = HimemUniquePtr<PageLocsControl>;
 class PageLocsControl {
 private:
+  static constexpr const char *TAG = "PageLocsControl";
   PageLocsControl() = default;
 
 public:
-  ~PageLocsControl() { LOG_I(TAG, "PageLocsControl destructor called"); };
+  ~PageLocsControl() = default; // { LOG_I("PageLocsControl destructor called"); };
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<PageLocsControl>(); }
 
@@ -58,8 +59,9 @@ public:
     return percent;
   }
 
-private:
-  static constexpr const char *TAG = "PageLocsControl";
+  [[nodiscard]] inline auto getCurrentItemrefIndex() const { return retrieverTask.getCurrentItemrefIndex(); }
+
+private:  
 
   std::atomic<bool> runningDown{false};
 
@@ -68,7 +70,7 @@ private:
   int16_t waitingForItemref{-1};             // Current item being processed by retrieval task
   int16_t nextItemrefToGet{-1};              // Non prioritize item to get next
   int16_t asapItemref{-1};                   // Prioritize item to get next
-  himemUniquePtr<uint8_t[]> bitset{nullptr}; // Set of all items processed so far
+  HimemUniquePtr<uint8_t[]> bitset{nullptr}; // Set of all items processed so far
   uint8_t bitsetSize{0};                     // bitset byte length
 
   PageLocsRetriever retrieverTask;

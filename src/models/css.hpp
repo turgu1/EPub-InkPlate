@@ -129,7 +129,7 @@
  *      z-index
  */
 
-using CSSPtr = himemUniquePtr<class CSS>;
+using CSSPtr = HimemUniquePtr<class CSS>;
 class CSS {
 private:
   std::string id;          // Unique identifier (filename) for this CSS instance
@@ -154,7 +154,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make(const char *cssId, const char *fileFolderPath, const char *buffer,
                           int32_t size, uint8_t prio) {
@@ -196,8 +196,8 @@ public:
 
   static const char *valueTypeStr[25];
 
-  using PropertyMap = std::map<std::string, PropertyId>;
-  using FontSizeMap = std::map<std::string, int16_t>;
+  using PropertyMap = HimemMap<HimemString, PropertyId>;
+  using FontSizeMap = HimemMap<HimemString, int16_t>;
 
   static PropertyMap propertyMap;
   static FontSizeMap fontSizeMap;

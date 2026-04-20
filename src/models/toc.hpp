@@ -21,7 +21,7 @@
 #include <map>
 #include <utility>
 
-using TOCPtr = himemUniquePtr<class TOC>;
+using TOCPtr = HimemUniquePtr<class TOC>;
 class TOC {
 private:
   TOC() : db(SimpleDB::Make()) {}
@@ -31,7 +31,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make() { return makeUniqueHimem<TOC>(); }
 
@@ -123,6 +123,8 @@ public:
   auto set(std::string &id, int32_t currentOffset) -> void;
   auto set(int32_t currentOffset) -> void;
 
+  static auto exists(const std::string &epubFilename) -> bool;
+
 private:
   static constexpr char const *TAG      = "TOC";
   static constexpr char const *TOC_NAME = "EPUB_INKPLATE_TOC";
@@ -134,7 +136,7 @@ private:
   SimpleDBPtr db; ///< The SimpleDB table
 
   CharPoolPtr charPool{nullptr};
-  himemUniquePtr<char[]> charBuffer{nullptr};
+  HimemUniquePtr<char[]> charBuffer{nullptr};
   uint16_t charBufferSize{0};
 
   const pugi::xml_document *opf{nullptr};

@@ -8,7 +8,7 @@
 #include "himem.hpp"
 #include "picture.hpp"
 
-using PngPicturePtr = himemUniquePtr<class PngPicture>;
+using PngPicturePtr = HimemUniquePtr<class PngPicture>;
 
 class PngPicture : public Picture {
 
@@ -22,7 +22,7 @@ private:
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make(std::string filename, Dim max, bool loadBitmap) {
     return makeUniqueHimem<PngPicture>(filename, max, loadBitmap);

@@ -7,7 +7,7 @@
 #include "models/page_locs.hpp"
 #include "viewers/html_interpreter.hpp"
 
-using PageLocsInterpreterPtr = himemUniquePtr<class PageLocsInterpreter>;
+using PageLocsInterpreterPtr = HimemUniquePtr<class PageLocsInterpreter>;
 class PageLocsInterpreter : public HTMLInterpreter {
 private:
   PageLocsInterpreter(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
@@ -19,7 +19,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
                           Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem) {

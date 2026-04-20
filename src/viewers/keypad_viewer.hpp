@@ -12,7 +12,7 @@
 #include "models/fonts.hpp"
 #include "viewers/page.hpp"
 
-using KeypadViewerPtr = himemUniquePtr<class KeypadViewer>;
+using KeypadViewerPtr = HimemUniquePtr<class KeypadViewer>;
 
 class KeypadViewer {
 private:
@@ -24,7 +24,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() { return makeUniqueHimem<KeypadViewer>(); }
   ~KeypadViewer() = default;

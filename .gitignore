@@ -8,7 +8,7 @@ dependencies.lock
 example
 build
 build_linux
-test/*
+build_test
 test-books
 release*
 SDCard/epub-test

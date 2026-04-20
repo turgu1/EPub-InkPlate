@@ -10,7 +10,7 @@
 #include "models/epub.hpp"
 #include "viewers/page.hpp"
 
-using TocViewerPtr = himemUniquePtr<class TocViewer>;
+using TocViewerPtr = HimemUniquePtr<class TocViewer>;
 class TocViewer {
 private:
   static constexpr char const *TAG = "TocView";
@@ -49,7 +49,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeUniqueHimem(Args &&...args) -> himemUniquePtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make(EPubPtr &theEpub) { return makeUniqueHimem<TocViewer>(theEpub); }
 

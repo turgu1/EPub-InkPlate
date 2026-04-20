@@ -9,13 +9,13 @@
 #include <forward_list>
 #include <string>
 
-using CharPoolPtr = himemUniquePtr<class CharPool>;
+using CharPoolPtr = HimemUniquePtr<class CharPool>;
 class CharPool {
 private:
   static constexpr char const *TAG = "CharPool";
   static const uint16_t POOL_SIZE  = 4096;
 
-  using PoolPtr = himemUniquePtr<char[]>;
+  using PoolPtr = HimemUniquePtr<char[]>;
 
   std::forward_list<PoolPtr> pool_list;
 
@@ -30,7 +30,7 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend himemUniquePtr<T> makeUniqueHimem(Args &&...args);
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
   static inline auto Make() { return makeUniqueHimem<CharPool>(); }
 

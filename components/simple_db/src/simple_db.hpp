@@ -32,7 +32,7 @@
  * (c) 2020, Guy Turcotte
  */
 
-using SimpleDBPtr = himemUniquePtr<class SimpleDB>;
+using SimpleDBPtr = HimemUniquePtr<class SimpleDB>;
 
 class SimpleDB {
 private:

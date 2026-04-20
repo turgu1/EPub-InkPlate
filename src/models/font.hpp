@@ -12,7 +12,7 @@
 #include <mutex>
 #include <unordered_map>
 
-using MemoryFontPtr = himemUniquePtr<uint8_t[]>;
+using MemoryFontPtr = HimemUniquePtr<uint8_t[]>;
 
 class Font {
 

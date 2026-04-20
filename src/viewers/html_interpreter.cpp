@@ -301,7 +301,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           }
           showState("After IMG", fmt);
         } else {
-          str = "[An picture is not compatible or not found]";
+          str = "(An image is not compatible or not found)";
         }
       }
       currentOffset++;

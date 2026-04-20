@@ -145,6 +145,11 @@ auto BookParamController::deleteBook() -> void {
   bookParamController.setDeleteCurrentBook();
 }
 
+auto BookParamController::returnToBook() -> void {
+  bookController.becomeOwnerOfBook(epub);
+  appController.setController(AppController::Ctrl::BOOK);
+} 
+
 auto BookParamController::tocCtrl() -> void {
   tocController.becomeOwnerOfBook(epub);
   appController.setController(AppController::Ctrl::TOC);
@@ -205,7 +210,7 @@ auto BookParamController::enter() -> void {
   formViewer = FormViewer::Make();
 
   if (menuViewer) {
-    menu[0].func = CommonActions::returnToLast;
+    menu[0].func = [this]() { this->returnToBook(); };
     menu[1].func = [this]() { this->tocCtrl(); };
     menu[2].func = [this]() { this->booksList(); };
     menu[3].func = [this]() { this->bookParameters(); };
