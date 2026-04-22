@@ -31,9 +31,9 @@
 #include <cstddef>
 #include <cstdlib>
 #include <limits>
+#include <map>
 #include <memory>
 #include <new>
-#include <map>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -80,10 +80,11 @@ public:
   // ---- core interface ------------------------------------------------------
 
   [[nodiscard]] auto allocate(std::size_t n) -> T * {
-    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T)) throw std::bad_array_new_length{};
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
+      return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
     void *ptr = HIMEM_MALLOC(n * sizeof(T));
-    if (!ptr) throw std::bad_alloc{};
+    if (!ptr) return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
     return static_cast<T *>(ptr);
   }
@@ -186,15 +187,10 @@ template <typename T>
   requires(!std::is_array_v<T>)
 [[nodiscard]] auto makeUniqueHimem(himemSizedT sz) -> HimemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sz.bytes);
-  if (!mem) throw std::bad_alloc{};
+  if (!mem) return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
   T *obj = nullptr;
-  try {
-    obj = ::new (mem) T();
-  } catch (...) {
-    HIMEM_FREE(mem);
-    throw;
-  }
+  obj    = ::new (mem) T();
 
   return HimemUniquePtr<T>{obj};
 }
@@ -204,15 +200,10 @@ template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
 [[nodiscard]] auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T> {
   void *mem = HIMEM_MALLOC(sizeof(T));
-  if (!mem) throw std::bad_alloc{};
+  if (!mem) return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
   T *obj = nullptr;
-  try {
-    obj = ::new (mem) T(std::forward<Args>(args)...);
-  } catch (...) {
-    HIMEM_FREE(mem);
-    throw;
-  }
+  obj    = ::new (mem) T(std::forward<Args>(args)...);
 
   return HimemUniquePtr<T>{obj};
 }
@@ -224,15 +215,10 @@ template <typename T>
   using Elem = std::remove_extent_t<T>;
 
   void *mem = HIMEM_MALLOC(n * sizeof(Elem));
-  if (!mem) throw std::bad_alloc{};
+  if (!mem) return nullptr; // match std::make_unique<T[]>(n) behaviour on allocation failure
 
   Elem *arr = static_cast<Elem *>(mem);
-  try {
-    std::uninitialized_value_construct_n(arr, n);
-  } catch (...) {
-    HIMEM_FREE(mem);
-    throw;
-  }
+  std::uninitialized_value_construct_n(arr, n);
 
   PsramDeleter<T> del{n};
   return HimemUniquePtr<T>{arr, del};
@@ -268,14 +254,10 @@ using HimemVector = std::vector<T, PsramAllocator<T>>;
 // Drop-in for std::unordered_map<K, V> whose backing storage lives in PSRAM.
 // ===========================================================================
 
-template <
-  typename Key,
-  typename T,
-  typename Hash    = std::hash<Key>,
-  typename KeyEqual = std::equal_to<Key>>
-using HimemUnorderedMap = std::unordered_map<
-  Key, T, Hash, KeyEqual,
-  PsramAllocator<std::pair<const Key, T>>>;
+template <typename Key, typename T, typename Hash = std::hash<Key>,
+          typename KeyEqual = std::equal_to<Key>>
+using HimemUnorderedMap =
+    std::unordered_map<Key, T, Hash, KeyEqual, PsramAllocator<std::pair<const Key, T>>>;
 
 // ===========================================================================
 // HimemMap<K, V>
@@ -283,13 +265,8 @@ using HimemUnorderedMap = std::unordered_map<
 // Drop-in for std::map<K, V> whose backing storage lives in PSRAM.
 // ===========================================================================
 
-template <
-  typename Key,
-  typename T,
-  typename Compare = std::less<Key>>
-using HimemMap = std::map<
-  Key, T, Compare,
-  PsramAllocator<std::pair<const Key, T>>>;
+template <typename Key, typename T, typename Compare = std::less<Key>>
+using HimemMap = std::map<Key, T, Compare, PsramAllocator<std::pair<const Key, T>>>;
 
 // ===========================================================================
 // himemUniqueString
@@ -306,15 +283,10 @@ using himemUniqueString = HimemUniquePtr<HimemString>;
 template <typename... Args>
 [[nodiscard]] auto makeUniqueHimemString(Args &&...args) -> himemUniqueString {
   void *mem = HIMEM_MALLOC(sizeof(HimemString));
-  if (!mem) throw std::bad_alloc{};
+  if (!mem) return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
   HimemString *obj = nullptr;
-  try {
-    obj = ::new (mem) HimemString(std::forward<Args>(args)...);
-  } catch (...) {
-    HIMEM_FREE(mem);
-    throw;
-  }
+  obj              = ::new (mem) HimemString(std::forward<Args>(args)...);
 
   return himemUniqueString{obj};
 }
@@ -337,15 +309,10 @@ template <typename T, typename... Args>
   using Vec = HimemVector<T>;
 
   void *mem = HIMEM_MALLOC(sizeof(Vec));
-  if (!mem) throw std::bad_alloc{};
+  if (!mem) return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 
   Vec *obj = nullptr;
-  try {
-    obj = ::new (mem) Vec(std::forward<Args>(args)...);
-  } catch (...) {
-    HIMEM_FREE(mem);
-    throw;
-  }
+  obj      = ::new (mem) Vec(std::forward<Args>(args)...);
 
   return himemUniqueVector<T>{obj};
 }
@@ -384,12 +351,8 @@ template <typename T, typename... Args>
   // when this template is instantiated — use PsramAllocator directly instead.
   PsramAllocator<List> listAlloc;
   List *obj = listAlloc.allocate(1);
-  try {
-    ::new (obj) List(std::forward<Args>(args)...);
-  } catch (...) {
-    listAlloc.deallocate(obj, 1);
-    throw;
-  }
+  ::new (obj) List(std::forward<Args>(args)...);
+
   return himemUniqueSimpleList<T>{obj};
 }
 

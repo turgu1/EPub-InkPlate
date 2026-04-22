@@ -43,7 +43,7 @@ protected:
   int16_t fromPage{-1}, toPage{-1};
   int16_t maxLevel{0};
 
-  static MemoryPool<Page::Format> fmtPool;
+  MemoryPool<Page::Format> fmtPool;
 
   // The pageEnd method is responsible of doing post-processing once
   // the end of a page has been detected (the page.isFull() method returns true or

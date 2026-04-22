@@ -7,6 +7,11 @@
 #include "models/page_locs.hpp"
 #include "viewers/html_interpreter.hpp"
 
+#if EPUB_LINUX_BUILD
+  #include <chrono>
+  #include <thread>
+#endif
+
 using PageLocsInterpreterPtr = HimemUniquePtr<class PageLocsInterpreter>;
 class PageLocsInterpreter : public HTMLInterpreter {
 private:
@@ -48,7 +53,9 @@ protected:
         pageInfo.size = -pageInfo.size; // The page will not be counted nor displayed
       }
 
-      // sleep(1);
+      #if EPUB_LINUX_BUILD
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      #endif
 
       pageLocs.insert(pageId, pageInfo);
 

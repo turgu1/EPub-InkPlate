@@ -122,10 +122,12 @@ public:
   auto adjustFontStyle(FaceStyle style, FaceStyle fontStyle, FaceStyle fontWeight) const
       -> FaceStyle;
 
-  auto check(int16_t index, FaceStyle style) -> void const {
-    if (fontCache[index].style != style) {
+  auto check(int16_t index, FaceStyle style) -> bool const {
+    if ((index >= (int16_t)fontCache.size()) || (fontCache[index].style != style)) {
       LOG_E("Hum... font_check failed");
+      return false;
     }
+    return true;
   };
 
   auto clearGlyphCaches() -> void;
@@ -145,7 +147,7 @@ private:
 
   uint8_t fontCount;
   uint8_t standardFontCount;
-  
+
   char *fontNames[8];
   char *regularFname[8];
   char *boldFname[8];

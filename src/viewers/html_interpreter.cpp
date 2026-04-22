@@ -6,7 +6,7 @@
 
 #include "models/config.hpp"
 
-MemoryPool<Page::Format> HTMLInterpreter::fmtPool;
+// MemoryPool<Page::Format> HTMLInterpreter::fmtPool;
 
 // This method process a single xml node and recurse for the associated children.
 // The method calls the pageEnd() method when it reachs the end of the page as

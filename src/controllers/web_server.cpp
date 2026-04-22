@@ -548,7 +548,7 @@
   }
 
   auto startWebServer(WebServerMode serverMode) -> bool {
-    pageLocs.abortControlTask();
+    pageLocs.stopControlTask();
 
     MsgViewer::show(
         MsgViewer::MsgType::WIFI, false, true, "Web Server Starting",

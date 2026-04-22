@@ -25,7 +25,7 @@ private:
 public:
   BookParamController() = default;
 
-  inline auto becomeOwnerOfBook(EPubPtr &epubPtr) -> void { epub = std::move(epubPtr); }
+  inline auto becomeOwnerOfBook(EPubPtr epubPtr) -> void { epub = std::move(epubPtr); }
 
   MenuViewerPtr menuViewer;
   FormViewerPtr formViewer;

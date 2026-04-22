@@ -59,8 +59,15 @@ auto BookController::openBook(const std::string &bookTitle, const std::string &b
   bool newDocument = !epub || (bookFilename != epub->getCurrentFilename());
 
   if (newDocument) {
+
     // In case we are already in the middle of processing another book, we need to
-    // stop it before starting a new one.
+    // stop it before starting a new one. If PageLocs is still processing the previous
+    // book, we need to stop it before starting a new one. Also, the BookParamController
+    // may be still owning the previous book, so we need to reset it as well.
+
+    pageLocs.stopControlTask();
+    bookParamController.becomeOwnerOfBook(nullptr);
+
     epub = EPub::Make();
 
     if (epub->open(bookFilename)) {
@@ -147,11 +154,11 @@ auto BookController::openBook(const std::string &bookTitle, const std::string &b
             bookViewer->showPage(currentPageId, epub);
           }
         } else {
-          bookParamController.becomeOwnerOfBook(epub);
+          bookParamController.becomeOwnerOfBook(std::move(epub));
           appController.setController(AppController::Ctrl::PARAM);
         }
       } else {
-        bookParamController.becomeOwnerOfBook(epub);
+        bookParamController.becomeOwnerOfBook(std::move(epub));
         appController.setController(AppController::Ctrl::PARAM);
       }
       break;
@@ -218,7 +225,7 @@ auto BookController::openBook(const std::string &bookTitle, const std::string &b
 
     case EventMgr::EventKind::SELECT:
     case EventMgr::EventKind::DBL_SELECT:
-      bookParamController.becomeOwnerOfBook(epub);
+      bookParamController.becomeOwnerOfBook(std::move(epub));
       appController.setController(AppController::Ctrl::PARAM);
       break;
 

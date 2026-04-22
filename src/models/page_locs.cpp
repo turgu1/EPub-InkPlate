@@ -62,7 +62,7 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
 std::atomic<bool> relax{false};
 
 auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
-  
+
   if (!controlTask) return false;
 
   SHOW_IT("retrieveAsap: Sending GET_ASAP");
@@ -128,18 +128,17 @@ auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
   checkForFormatChanges(epub, itemrefIndex, !load(currentFilename));
 }
 
-auto PageLocs::insert(PageId &id, PageInfo &info) -> bool {
+auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
   if (controlTask) {
-    while (true) {
-      if (relax) {
-        // The pageLocs class is still in control of the mutex, but is waiting
-        // for the completion of an GET_ASAP item. As such, it is safe to insert
-        // a new page info in the list.
-        LOG_D("Relaxed page info insert...");
-        pagesMap.insert(std::make_pair(id, info));
-        itemsSet.insert(id.itemrefIndex);
-        break;
-      } else {
+    if (relax) {
+      // The pageLocs class is still in control of the mutex, but is waiting
+      // for the completion of an GET_ASAP item. As such, it is safe to insert
+      // a new page info in the list.
+      LOG_D("Relaxed page info insert...");
+      pagesMap.insert(std::make_pair(id, info));
+      itemsSet.insert(id.itemrefIndex);
+    } else {
+      while (true) {
         if (mutex.try_lock_for(std::chrono::milliseconds(10))) {
           pagesMap.insert(std::make_pair(id, info));
           itemsSet.insert(id.itemrefIndex);
@@ -152,7 +151,6 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> bool {
     pagesMap.insert(std::make_pair(id, info));
     itemsSet.insert(id.itemrefIndex);
   }
-  return true;
 }
 
 auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterator {
@@ -326,16 +324,16 @@ auto PageLocs::computationAborted(std::string reason) -> void {
 
 /**
  * @brief Checks if page locations need to be recalculated due to format changes or missing TOC
- * 
+ *
  * This method determines whether page locations should be recomputed by comparing the current
  * format parameters with those stored in the epub, or if forced recalculation is requested.
  * If recalculation is needed, it stops any existing control task, clears current page locations,
  * sets up new page computation, and initiates a new document processing task.
- * 
+ *
  * @param epub Reference to the EPub object containing the document and format parameters
  * @param itemrefIndex Index of the current item reference in the epub manifest
  * @param force If true, forces recalculation regardless of format parameter changes
- * 
+ *
  * @note This method will also trigger recalculation if no control task is running and
  *       no table of contents exists for the current filename
  * @note Sets the event manager to stay on during the recalculation process
@@ -343,7 +341,8 @@ auto PageLocs::computationAborted(std::string reason) -> void {
 auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force) -> void {
   if (force ||
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
-       0) || (!controlTask && !TOC::exists(epub->getCurrentFilename()))) {
+       0) ||
+      (!controlTask && !TOC::exists(epub->getCurrentFilename()))) {
 
     LOG_D("==> Page locations recalc. <==");
 

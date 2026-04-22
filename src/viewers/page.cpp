@@ -13,8 +13,8 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <utility>
 #include <string>
+#include <utility>
 
 // clang-format off
 Page::Entities Page::entities 
@@ -173,7 +173,7 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
 
   if (*c == '&') {
     const uint8_t *name = c + 1;
-    const uint8_t *end    = name;
+    const uint8_t *end  = name;
     uint8_t len         = 0;
     while ((len < 7) && (*end != 0) && (*end != ';')) {
       ++end;
@@ -1380,6 +1380,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_WEIGHT))) {
     fontWeight = (Fonts::FaceStyle)vals->front()->choice.faceStyle;
   }
+
   Fonts::FaceStyle newStyle = fonts.adjustFontStyle(fmt.fontStyle, fontStyle, fontWeight);
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_FAMILY))) {
@@ -1403,7 +1404,10 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
     resetFontIndex(fmt, newStyle);
   }
 
-  fonts.check(fmt.fontIndex, fmt.fontStyle);
+  if (!fonts.check(fmt.fontIndex, fmt.fontStyle)) {
+    fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+    fmt.fontIndex = 3;
+  }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_ALIGN))) {
     fmt.align = (CSS::Align)vals->front()->choice.align;

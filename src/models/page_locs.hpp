@@ -166,12 +166,11 @@ public:
     return it == pagesMap.end() ? nullptr : &it->second;
   }
 
-  [[nodiscard]] inline auto getCurrentItemrefIndex() const { 
-    return (controlTask) ? controlTask->getCurrentItemrefIndex() : -1; 
+  [[nodiscard]] inline auto getCurrentItemrefIndex() const {
+    return (controlTask) ? controlTask->getCurrentItemrefIndex() : -1;
   }
 
-
-  auto insert(PageId &id, PageInfo &info) -> bool;
+  auto insert(PageId &id, PageInfo &info) -> void;
 
   inline auto clear() -> void {
     if (controlTaskReadyToBeStopped) stopControlTask();

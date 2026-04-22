@@ -147,12 +147,12 @@ auto BookParamController::deleteBook() -> void {
 }
 
 auto BookParamController::returnToBook() -> void {
-  bookController.becomeOwnerOfBook(epub);
+  bookController.becomeOwnerOfBook(std::move(epub));
   appController.setController(AppController::Ctrl::BOOK);
-} 
+}
 
 auto BookParamController::tocCtrl() -> void {
-  tocController.becomeOwnerOfBook(epub);
+  tocController.becomeOwnerOfBook(std::move(epub));
   appController.setController(AppController::Ctrl::TOC);
 }
 
@@ -330,7 +330,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
   #endif
     else {
     if (menuViewer->event(event)) {
-      bookController.becomeOwnerOfBook(epub);
+      bookController.becomeOwnerOfBook(std::move(epub));
       appController.setController(AppController::Ctrl::BOOK);
     }
   }
