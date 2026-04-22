@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 
 #include "dom.hpp"
+#include "test_stats.hpp"
 
 #include <cstdio>
 
@@ -80,11 +81,15 @@ static void testDomAddChild() {
 static void testDomTags() {
   DT_LOG("--- DOM::tags map ---");
 
-  DT_CHECK(DOM::tags.count("p")     && DOM::tags.at("p")     == DOM::Tag::P,     "\"p\" maps to Tag::P");
-  DT_CHECK(DOM::tags.count("div")   && DOM::tags.at("div")   == DOM::Tag::DIV,   "\"div\" maps to Tag::DIV");
-  DT_CHECK(DOM::tags.count("span")  && DOM::tags.at("span")  == DOM::Tag::SPAN,  "\"span\" maps to Tag::SPAN");
-  DT_CHECK(DOM::tags.count("body")  && DOM::tags.at("body")  == DOM::Tag::BODY,  "\"body\" maps to Tag::BODY");
-  DT_CHECK(DOM::tags.count("img")   && DOM::tags.at("img")   == DOM::Tag::IMG,   "\"img\" maps to Tag::IMG");
+  DT_CHECK(DOM::tags.count("p") && DOM::tags.at("p") == DOM::Tag::P, "\"p\" maps to Tag::P");
+  DT_CHECK(DOM::tags.count("div") && DOM::tags.at("div") == DOM::Tag::DIV,
+           "\"div\" maps to Tag::DIV");
+  DT_CHECK(DOM::tags.count("span") && DOM::tags.at("span") == DOM::Tag::SPAN,
+           "\"span\" maps to Tag::SPAN");
+  DT_CHECK(DOM::tags.count("body") && DOM::tags.at("body") == DOM::Tag::BODY,
+           "\"body\" maps to Tag::BODY");
+  DT_CHECK(DOM::tags.count("img") && DOM::tags.at("img") == DOM::Tag::IMG,
+           "\"img\" maps to Tag::IMG");
   DT_CHECK(!DOM::tags.count("unknown"), "unknown tag not present in map");
 }
 
@@ -101,19 +106,25 @@ static void testDomTree() {
   DOM::Node *p2   = dom->addChild(div, DOM::Tag::P);
   DOM::Node *span = dom->addChild(p1, DOM::Tag::SPAN);
 
-  DT_CHECK(div->father  == dom->body, "div parent is body");
-  DT_CHECK(p1->father   == div,       "p1 parent is div");
-  DT_CHECK(p2->father   == div,       "p2 parent is div");
-  DT_CHECK(span->father == p1,        "span parent is p1");
+  DT_CHECK(div->father == dom->body, "div parent is body");
+  DT_CHECK(p1->father == div, "p1 parent is div");
+  DT_CHECK(p2->father == div, "p2 parent is div");
+  DT_CHECK(span->father == p1, "span parent is p1");
 
   // div's children list contains both p1 and p2.
   int childCount = 0;
-  for (auto *c : div->children) { (void)c; ++childCount; }
+  for (auto *c : div->children) {
+    (void)c;
+    ++childCount;
+  }
   DT_CHECK(childCount == 2, "div has exactly 2 children");
 
   // p1 has one child (span).
   childCount = 0;
-  for (auto *c : p1->children) { (void)c; ++childCount; }
+  for (auto *c : p1->children) {
+    (void)c;
+    ++childCount;
+  }
   DT_CHECK(childCount == 1, "p1 has exactly 1 child");
 }
 
@@ -123,8 +134,8 @@ static void testDomTree() {
 static void testDomClasses() {
   DT_LOG("--- Node::addClass / classList ---");
 
-  auto dom  = DOM::Make();
-  auto *p   = dom->addChild(dom->body, DOM::Tag::P);
+  auto dom = DOM::Make();
+  auto *p  = dom->addChild(dom->body, DOM::Tag::P);
 
   p->addClass("intro");
   p->addClass("highlight");
@@ -132,10 +143,10 @@ static void testDomClasses() {
   bool hasIntro     = false;
   bool hasHighlight = false;
   for (const auto &cls : p->classList) {
-    if (cls == "intro")     hasIntro     = true;
+    if (cls == "intro") hasIntro = true;
     if (cls == "highlight") hasHighlight = true;
   }
-  DT_CHECK(hasIntro,     "classList contains \"intro\"");
+  DT_CHECK(hasIntro, "classList contains \"intro\"");
   DT_CHECK(hasHighlight, "classList contains \"highlight\"");
 }
 
@@ -157,7 +168,7 @@ static void testDomId() {
 // ===========================================================================
 // Public entry point
 // ===========================================================================
-auto testDom() -> bool {
+auto testDom() -> TestStats {
   s_pass = 0;
   s_fail = 0;
 
@@ -169,5 +180,5 @@ auto testDom() -> bool {
   testDomId();
 
   DT_LOG("--- DOM tests complete: %d passed, %d failed ---", s_pass, s_fail);
-  return s_fail == 0;
+  return TestStats{s_pass, s_fail};
 }

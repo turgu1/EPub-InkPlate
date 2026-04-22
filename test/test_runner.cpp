@@ -14,22 +14,26 @@
 
 #define __GLOBAL__ 1
 #include "global.hpp"
+#include "test_stats.hpp"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstring>
 
 // ---------------------------------------------------------------------------
 // Forward declarations — one per test translation unit.
 // ---------------------------------------------------------------------------
-auto testHimem()       -> bool;
-auto testDom()         -> bool;
-auto testSimpleDb()    -> bool;
-auto testConfig()      -> bool;
-auto testCss()         -> bool;
-auto testDisplayList() -> bool;
-auto testAppConfig()   -> bool;
-auto testEPub()        -> bool;
-auto testSimpleList()  -> bool;
+auto testHimem() -> TestStats;
+auto testHimemPoolTest() -> TestStats;
+auto testDom() -> TestStats;
+auto testSimpleDb() -> TestStats;
+auto testConfig() -> TestStats;
+auto testCss() -> TestStats;
+auto testDisplayList() -> TestStats;
+auto testAppConfig() -> TestStats;
+auto testEPub() -> TestStats;
+auto testSimpleList() -> TestStats;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -41,35 +45,67 @@ int main() {
 
   struct Suite {
     const char *name;
-    bool (*run)();
+    TestStats (*run)();
+  };
+
+  struct SuiteResult {
+    const char *name;
+    TestStats stats;
   };
 
   static const Suite suites[] = {
-    { "himem",     testHimem    },
-    { "dom",       testDom      },
-    { "simple_db", testSimpleDb },
-    { "config",       testConfig      },
-    { "css",          testCss         },
-    { "display_list", testDisplayList },
-    { "app_config",   testAppConfig   },
-    { "epub",         testEPub        },
-    { "simple_list",  testSimpleList  },
+      {"himem", testHimem},
+      {"himem_pool_test", testHimemPoolTest},
+      {"dom", testDom},
+      {"simple_db", testSimpleDb},
+      {"config", testConfig},
+      {"css", testCss},
+      {"display_list", testDisplayList},
+      {"app_config", testAppConfig},
+      {"epub", testEPub},
+      {"simple_list", testSimpleList},
   };
 
-  int totalFail = 0;
+  std::array<SuiteResult, std::size(suites)> results{};
 
-  for (const auto &s : suites) {
+  int failedSuites = 0;
+  int totalPassed  = 0;
+  int totalFailed  = 0;
+
+  for (std::size_t i = 0; i < std::size(suites); ++i) {
+    const auto &s = suites[i];
     std::printf("\n===== SUITE: %-12s =====\n", s.name);
-    bool ok = s.run();
-    std::printf("===== %-12s %s =====\n", s.name, ok ? "PASSED" : "FAILED");
-    if (!ok) ++totalFail;
+    const TestStats stats = s.run();
+    results[i]            = SuiteResult{s.name, stats};
+
+    const bool ok = stats.ok();
+    std::printf("===== %-12s %s (pass=%d fail=%d) =====\n", s.name, ok ? "PASSED" : "FAILED",
+                stats.passed, stats.failed);
+
+    if (!ok) ++failedSuites;
+    totalPassed += stats.passed;
+    totalFailed += stats.failed;
   }
+
+  std::sort(results.begin(), results.end(), [](const SuiteResult &a, const SuiteResult &b) {
+    if (a.stats.failed != b.stats.failed) return a.stats.failed > b.stats.failed;
+    if (a.stats.passed != b.stats.passed) return a.stats.passed < b.stats.passed;
+    return std::strcmp(a.name, b.name) < 0;
+  });
+
+  std::printf("\n=============== PER-SUITE STATS ===============\n");
+  for (const auto &r : results) {
+    std::printf("  %-16s pass=%4d  fail=%3d  total=%4d\n", r.name, r.stats.passed, r.stats.failed,
+                r.stats.total());
+  }
+  std::printf("===============================================\n");
+  std::printf("  GRAND TOTAL: pass=%d  fail=%d  total=%d\n", totalPassed, totalFailed,
+              totalPassed + totalFailed);
 
   std::printf("\n========================================\n");
   std::printf("  %s  (%d suite(s) failed)\n",
-              totalFail == 0 ? "ALL SUITES PASSED" : "FAILURES DETECTED",
-              totalFail);
+              failedSuites == 0 ? "ALL SUITES PASSED" : "FAILURES DETECTED", failedSuites);
   std::printf("========================================\n");
 
-  return totalFail == 0 ? 0 : 1;
+  return failedSuites == 0 ? 0 : 1;
 }

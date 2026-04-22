@@ -36,6 +36,7 @@
 // msg_viewer.hpp include is in epub.cpp (not epub.hpp) and is shadowed by
 // test/stubs/viewers/msg_viewer.hpp via -I test/stubs.
 #include "models/epub.hpp"
+#include "test_stats.hpp"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,15 +47,15 @@
 static int sPass = 0;
 static int sFail = 0;
 
-#define EPUB_CHECK(cond, msg)                                        \
-  do {                                                               \
-    if (!(cond)) {                                                   \
-      EPUB_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);            \
-      ++sFail;                                                       \
-    } else {                                                         \
-      EPUB_LOG("PASS " msg);                                        \
-      ++sPass;                                                       \
-    }                                                                \
+#define EPUB_CHECK(cond, msg)                                                                      \
+  do {                                                                                             \
+    if (!(cond)) {                                                                                 \
+      EPUB_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                           \
+      ++sFail;                                                                                     \
+    } else {                                                                                       \
+      EPUB_LOG("PASS " msg);                                                                       \
+      ++sPass;                                                                                     \
+    }                                                                                              \
   } while (0)
 
 static constexpr const char *MINIMAL      = "test/fixtures/minimal.epub";
@@ -109,13 +110,13 @@ static auto testMetadata() -> bool {
   const char *author = epub->getAuthor();
   const char *desc   = epub->getDescription();
 
-  EPUB_CHECK(title  != nullptr, "getTitle() not null");
+  EPUB_CHECK(title != nullptr, "getTitle() not null");
   EPUB_CHECK(author != nullptr, "getAuthor() not null");
-  EPUB_CHECK(desc   != nullptr, "getDescription() not null");
+  EPUB_CHECK(desc != nullptr, "getDescription() not null");
 
-  EPUB_CHECK(std::strcmp(title,  "Test Book Title")                    == 0, "title matches");
-  EPUB_CHECK(std::strcmp(author, "Test Author")                        == 0, "author matches");
-  EPUB_CHECK(std::strcmp(desc,   "A minimal test epub for unit tests.") == 0, "description matches");
+  EPUB_CHECK(std::strcmp(title, "Test Book Title") == 0, "title matches");
+  EPUB_CHECK(std::strcmp(author, "Test Author") == 0, "author matches");
+  EPUB_CHECK(std::strcmp(desc, "A minimal test epub for unit tests.") == 0, "description matches");
 
   return sFail == 0;
 }
@@ -136,9 +137,12 @@ static auto testUniqueId() -> bool {
 
   // binUuid should be zero-initialised (no encryption.xml → getKeys() not called).
   const auto &uuid = epub->getBinUuid();
-  bool allZero = true;
+  bool allZero     = true;
   for (size_t i = 0; i < sizeof(EPub::BinUUID); ++i) {
-    if (uuid[i] != 0) { allZero = false; break; }
+    if (uuid[i] != 0) {
+      allZero = false;
+      break;
+    }
   }
   EPUB_CHECK(allZero, "binUuid all-zero for non-encrypted epub");
 
@@ -233,7 +237,7 @@ static auto testCoverFilename() -> bool {
 static auto testBadMimetype() -> bool {
   EPUB_LOG("--- bad mimetype ---");
 
-  auto epub = EPub::Make();
+  auto epub   = EPub::Make();
   bool opened = epub->open(std::string(BAD_MIME));
   EPUB_CHECK(!opened, "open(bad_mimetype.epub) returns false");
   EPUB_CHECK(epub->filenameIsEmpty(), "filename empty after failed open");
@@ -247,7 +251,7 @@ static auto testBadMimetype() -> bool {
 static auto testNoContainer() -> bool {
   EPUB_LOG("--- no META-INF/container.xml ---");
 
-  auto epub = EPub::Make();
+  auto epub   = EPub::Make();
   bool opened = epub->open(std::string(NO_CONTAINER));
   EPUB_CHECK(!opened, "open(no_container.epub) returns false");
 
@@ -260,7 +264,7 @@ static auto testNoContainer() -> bool {
 static auto testNoMetadata() -> bool {
   EPUB_LOG("--- no dc:title / dc:creator metadata ---");
 
-  auto epub = EPub::Make();
+  auto epub   = EPub::Make();
   bool opened = epub->open(std::string(NO_METADATA));
   EPUB_CHECK(opened, "open(no_metadata.epub) returns true (structural epub is valid)");
 
@@ -268,7 +272,7 @@ static auto testNoMetadata() -> bool {
   const char *title  = epub->getTitle();
   const char *author = epub->getAuthor();
 
-  EPUB_CHECK(title  == nullptr || title[0]  == '\0', "getTitle()  empty for no-metadata epub");
+  EPUB_CHECK(title == nullptr || title[0] == '\0', "getTitle()  empty for no-metadata epub");
   EPUB_CHECK(author == nullptr || author[0] == '\0', "getAuthor() empty for no-metadata epub");
 
   int16_t count = epub->getItemCount();
@@ -283,8 +287,8 @@ static auto testNoMetadata() -> bool {
 static auto testReopenSameFile() -> bool {
   EPUB_LOG("--- reopen same file ---");
 
-  auto epub = EPub::Make();
-  bool first  = epub->open(std::string(MINIMAL));
+  auto epub  = EPub::Make();
+  bool first = epub->open(std::string(MINIMAL));
   EPUB_CHECK(first, "first open(minimal.epub) succeeds");
 
   bool second = epub->open(std::string(MINIMAL));
@@ -322,7 +326,7 @@ static auto testReopenOtherFile() -> bool {
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
-auto testEPub() -> bool {
+auto testEPub() -> TestStats {
   int failsBefore;
 
   EPUB_LOG("========== EPub test suite start ==========");
@@ -337,21 +341,20 @@ auto testEPub() -> bool {
       EPUB_LOG("  >>> %s: FAILED (%d new failures)", name, sFail - failsBefore);
   };
 
-  run("open/close",         testOpenClose);
-  run("metadata",           testMetadata);
-  run("unique-id",          testUniqueId);
-  run("item-count",         testItemCount);
-  run("opf-base-path",      testOpfBasePath);
-  run("get-item-at-index",  testGetItemAtIndex);
-  run("cover-filename",     testCoverFilename);
-  run("bad-mimetype",       testBadMimetype);
-  run("no-container",       testNoContainer);
-  run("no-metadata",        testNoMetadata);
-  run("reopen-same",        testReopenSameFile);
-  run("reopen-other",       testReopenOtherFile);
+  run("open/close", testOpenClose);
+  run("metadata", testMetadata);
+  run("unique-id", testUniqueId);
+  run("item-count", testItemCount);
+  run("opf-base-path", testOpfBasePath);
+  run("get-item-at-index", testGetItemAtIndex);
+  run("cover-filename", testCoverFilename);
+  run("bad-mimetype", testBadMimetype);
+  run("no-container", testNoContainer);
+  run("no-metadata", testNoMetadata);
+  run("reopen-same", testReopenSameFile);
+  run("reopen-other", testReopenOtherFile);
 
-  EPUB_LOG("========== EPub test suite end: %d passed, %d failed ==========",
-           sPass, sFail);
+  EPUB_LOG("========== EPub test suite end: %d passed, %d failed ==========", sPass, sFail);
 
-  return sFail == 0;
+  return TestStats{sPass, sFail};
 }

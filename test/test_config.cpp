@@ -13,6 +13,7 @@
 // ---------------------------------------------------------------------------
 
 #include "config_template.hpp"
+#include "test_stats.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -25,15 +26,15 @@
 static int sPass = 0;
 static int sFail = 0;
 
-#define CFG_CHECK(cond, msg)                                                                      \
-  do {                                                                                            \
-    if (!(cond)) {                                                                                \
-      CFG_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                           \
-      ++sFail;                                                                                    \
-    } else {                                                                                      \
-      CFG_LOG("PASS " msg);                                                                       \
-      ++sPass;                                                                                    \
-    }                                                                                             \
+#define CFG_CHECK(cond, msg)                                                                       \
+  do {                                                                                             \
+    if (!(cond)) {                                                                                 \
+      CFG_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                            \
+      ++sFail;                                                                                     \
+    } else {                                                                                       \
+      CFG_LOG("PASS " msg);                                                                        \
+      ++sPass;                                                                                     \
+    }                                                                                              \
   } while (0)
 
 // ---------------------------------------------------------------------------
@@ -41,34 +42,34 @@ static int sFail = 0;
 // ---------------------------------------------------------------------------
 
 enum class TstId {
-  LABEL,    ///< STRING
-  COUNT,    ///< INT (int32_t)
-  RATIO,    ///< INT64 (int64_t)
-  FLAG,     ///< BYTE  (int8_t)
+  LABEL,     ///< STRING
+      COUNT, ///< INT (int32_t)
+      RATIO, ///< INT64 (int64_t)
+      FLAG,  ///< BYTE  (int8_t)
 };
 
 // Storage for live values.
-static char    tstLabel[64];
+static char tstLabel[64];
 static int32_t tstCount;
 static int64_t tstRatio;
-static int8_t  tstFlag;
+static int8_t tstFlag;
 
 // Storage for default values.
-static const char    defaultLabel[]  = "default-label";
-static const int32_t defaultCount    = 7;
-static const int64_t defaultRatio    = 123456789LL;
-static const int8_t  defaultFlag     = 1;
+static const char defaultLabel[]  = "default-label";
+static const int32_t defaultCount = 7;
+static const int64_t defaultRatio = 123456789LL;
+static const int8_t defaultFlag   = 1;
 
 using TstConfig = ConfigBase<TstId, 4>;
 
 // Static config descriptor array — must be defined exactly once.
 // The explicit template specialisation avoids ODR issues.
-template<>
+template <>
 TstConfig::CfgType TstConfig::cfg = {{
-  { TstId::LABEL, TstConfig::EntryType::STRING, "label",  tstLabel,  defaultLabel,  sizeof(tstLabel) },
-  { TstId::COUNT, TstConfig::EntryType::INT,    "count",  &tstCount, &defaultCount, 0                },
-  { TstId::RATIO, TstConfig::EntryType::INT64,  "ratio",  &tstRatio, &defaultRatio, 0                },
-  { TstId::FLAG,  TstConfig::EntryType::BYTE,   "flag",   &tstFlag,  &defaultFlag,  0                },
+    {TstId::LABEL, TstConfig::EntryType::STRING, "label", tstLabel, defaultLabel, sizeof(tstLabel)},
+    {TstId::COUNT, TstConfig::EntryType::INT, "count", &tstCount, &defaultCount, 0},
+    {TstId::RATIO, TstConfig::EntryType::INT64, "ratio", &tstRatio, &defaultRatio, 0},
+    {TstId::FLAG, TstConfig::EntryType::BYTE, "flag", &tstFlag, &defaultFlag, 0},
 }};
 
 static const char *const TMP_CFG = "/tmp/epub_test_config.txt";
@@ -90,16 +91,12 @@ static void testDefaults() {
   std::string label;
   int32_t count = 0;
   int64_t ratio = 0;
-  int8_t  flag  = 0;
+  int8_t flag   = 0;
 
-  CFG_CHECK(cfg.get(TstId::LABEL, label) && label == defaultLabel,
-            "default label is correct");
-  CFG_CHECK(cfg.get(TstId::COUNT, &count) && count == defaultCount,
-            "default count is correct");
-  CFG_CHECK(cfg.get(TstId::RATIO, &ratio) && ratio == defaultRatio,
-            "default ratio is correct");
-  CFG_CHECK(cfg.get(TstId::FLAG,  &flag)  && flag  == defaultFlag,
-            "default flag is correct");
+  CFG_CHECK(cfg.get(TstId::LABEL, label) && label == defaultLabel, "default label is correct");
+  CFG_CHECK(cfg.get(TstId::COUNT, &count) && count == defaultCount, "default count is correct");
+  CFG_CHECK(cfg.get(TstId::RATIO, &ratio) && ratio == defaultRatio, "default ratio is correct");
+  CFG_CHECK(cfg.get(TstId::FLAG, &flag) && flag == defaultFlag, "default flag is correct");
 }
 
 // ---------------------------------------------------------------------------
@@ -116,21 +113,17 @@ static void testPutGet() {
   cfg.put(TstId::LABEL, newLabel);
   cfg.put(TstId::COUNT, (int32_t)42);
   cfg.put(TstId::RATIO, (int64_t)987654321LL);
-  cfg.put(TstId::FLAG,  (int8_t)0);
+  cfg.put(TstId::FLAG, (int8_t)0);
 
   std::string label;
   int32_t count = 0;
   int64_t ratio = 0;
-  int8_t  flag  = 99; // sentinel
+  int8_t flag   = 99; // sentinel
 
-  CFG_CHECK(cfg.get(TstId::LABEL, label) && label == "hello-world",
-            "put/get label round-trip");
-  CFG_CHECK(cfg.get(TstId::COUNT, &count) && count == 42,
-            "put/get count round-trip");
-  CFG_CHECK(cfg.get(TstId::RATIO, &ratio) && ratio == 987654321LL,
-            "put/get ratio round-trip");
-  CFG_CHECK(cfg.get(TstId::FLAG,  &flag)  && flag  == 0,
-            "put/get flag round-trip");
+  CFG_CHECK(cfg.get(TstId::LABEL, label) && label == "hello-world", "put/get label round-trip");
+  CFG_CHECK(cfg.get(TstId::COUNT, &count) && count == 42, "put/get count round-trip");
+  CFG_CHECK(cfg.get(TstId::RATIO, &ratio) && ratio == 987654321LL, "put/get ratio round-trip");
+  CFG_CHECK(cfg.get(TstId::FLAG, &flag) && flag == 0, "put/get flag round-trip");
   CFG_CHECK(cfg.isModified(), "isModified() true after put");
 }
 
@@ -151,7 +144,7 @@ static void testPersistence() {
     cfg.put(TstId::LABEL, lbl);
     cfg.put(TstId::COUNT, (int32_t)99);
     cfg.put(TstId::RATIO, (int64_t)-42LL);
-    cfg.put(TstId::FLAG,  (int8_t)3);
+    cfg.put(TstId::FLAG, (int8_t)3);
     CFG_CHECK(cfg.save(), "save() succeeds");
   }
 
@@ -163,16 +156,13 @@ static void testPersistence() {
   std::string label;
   int32_t count = 0;
   int64_t ratio = 0;
-  int8_t  flag  = 0;
+  int8_t flag   = 0;
 
   CFG_CHECK(cfg2.get(TstId::LABEL, label) && label == "persisted",
             "reloaded label matches saved value");
-  CFG_CHECK(cfg2.get(TstId::COUNT, &count) && count == 99,
-            "reloaded count matches saved value");
-  CFG_CHECK(cfg2.get(TstId::RATIO, &ratio) && ratio == -42LL,
-            "reloaded ratio matches saved value");
-  CFG_CHECK(cfg2.get(TstId::FLAG,  &flag)  && flag  == 3,
-            "reloaded flag matches saved value");
+  CFG_CHECK(cfg2.get(TstId::COUNT, &count) && count == 99, "reloaded count matches saved value");
+  CFG_CHECK(cfg2.get(TstId::RATIO, &ratio) && ratio == -42LL, "reloaded ratio matches saved value");
+  CFG_CHECK(cfg2.get(TstId::FLAG, &flag) && flag == 3, "reloaded flag matches saved value");
 
   remove(TMP_CFG);
 }
@@ -219,7 +209,10 @@ static void testCommentHandling() {
   // Write a hand-crafted config file with comments and blank lines.
   {
     FILE *f = fopen(TMP_CFG, "w");
-    if (!f) { CFG_LOG("SKIP — cannot write temp file"); return; }
+    if (!f) {
+      CFG_LOG("SKIP — cannot write temp file");
+      return;
+    }
     std::fprintf(f, "# This is a comment\n");
     std::fprintf(f, "\n");
     std::fprintf(f, "label = \"commented-label\"\n");
@@ -247,7 +240,7 @@ static void testCommentHandling() {
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
-auto testConfig() -> bool {
+auto testConfig() -> TestStats {
   sPass = 0;
   sFail = 0;
 
@@ -260,5 +253,5 @@ auto testConfig() -> bool {
   testCommentHandling();
 
   CFG_LOG("========== Config test suite end: %d passed, %d failed ==========", sPass, sFail);
-  return sFail == 0;
+  return TestStats{sPass, sFail};
 }

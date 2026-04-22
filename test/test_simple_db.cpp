@@ -11,6 +11,7 @@
 // ---------------------------------------------------------------------------
 
 #include "simple_db.hpp"
+#include "test_stats.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -26,24 +27,24 @@ static const char *const TAG = "simple_db_test";
 static int sPass = 0;
 static int sFail = 0;
 
-#define SDB_CHECK(cond, msg)                                                                      \
-  do {                                                                                            \
-    if (!(cond)) {                                                                                \
-      SDB_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                           \
-      ++sFail;                                                                                    \
-    } else {                                                                                      \
-      SDB_LOG("PASS " msg);                                                                       \
-      ++sPass;                                                                                    \
-    }                                                                                             \
+#define SDB_CHECK(cond, msg)                                                                       \
+  do {                                                                                             \
+    if (!(cond)) {                                                                                 \
+      SDB_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                            \
+      ++sFail;                                                                                     \
+    } else {                                                                                       \
+      SDB_LOG("PASS " msg);                                                                        \
+      ++sPass;                                                                                     \
+    }                                                                                              \
   } while (0)
 
 // ---------------------------------------------------------------------------
 // A trivial plain-old-data record used as test payload.
 // ---------------------------------------------------------------------------
 struct TestRecord {
-  int32_t  id;
-  char     name[32];
-  int32_t  value;
+  int32_t id;
+  char name[32];
+  int32_t value;
 };
 
 static const char *const TMP_DB = "/tmp/epub_test_simpledb.db";
@@ -60,8 +61,8 @@ static void testLifecycle() {
   SDB_CHECK(db != nullptr, "Make() returns non-null");
 
   // create() via open() when file does not exist
-  SDB_CHECK(db->open(TMP_DB),   "open() on non-existing file creates it");
-  SDB_CHECK(db->isDbOpen(),     "isDbOpen() true after open");
+  SDB_CHECK(db->open(TMP_DB), "open() on non-existing file creates it");
+  SDB_CHECK(db->isDbOpen(), "isDbOpen() true after open");
   SDB_CHECK(db->getRecordCount() == 0, "new database has zero records");
 
   db->close();
@@ -69,7 +70,7 @@ static void testLifecycle() {
 
   // Re-open the now-existing (empty) file
   SDB_CHECK(db->open(TMP_DB), "re-open existing file succeeds");
-  SDB_CHECK(db->isDbOpen(),   "isDbOpen() true after re-open");
+  SDB_CHECK(db->isDbOpen(), "isDbOpen() true after re-open");
   SDB_CHECK(db->getRecordCount() == 0, "empty database still has zero records");
 
   db->close();
@@ -87,30 +88,30 @@ static void testAddGet() {
   db->open(TMP_DB);
 
   // Write three distinct records.
-  TestRecord w1 = {1, "Alice",   100};
-  TestRecord w2 = {2, "Bob",     200};
+  TestRecord w1 = {1, "Alice", 100};
+  TestRecord w2 = {2, "Bob", 200};
   TestRecord w3 = {3, "Charlie", 300};
 
   SDB_CHECK(db->addRecord(&w1, sizeof(w1)), "addRecord record 1 succeeds");
   SDB_CHECK(db->addRecord(&w2, sizeof(w2)), "addRecord record 2 succeeds");
   SDB_CHECK(db->addRecord(&w3, sizeof(w3)), "addRecord record 3 succeeds");
-  SDB_CHECK(db->getRecordCount() == 3,      "getRecordCount() == 3 after 3 adds");
+  SDB_CHECK(db->getRecordCount() == 3, "getRecordCount() == 3 after 3 adds");
 
   // Read them back in order.
   db->setCurrentIdx(0);
   TestRecord r{};
 
-  SDB_CHECK(db->getRecord(&r, sizeof(r)),            "getRecord at index 0 succeeds");
+  SDB_CHECK(db->getRecord(&r, sizeof(r)), "getRecord at index 0 succeeds");
   SDB_CHECK(r.id == 1 && strcmp(r.name, "Alice") == 0 && r.value == 100,
             "record 0 content matches w1");
 
   db->setCurrentIdx(1);
-  SDB_CHECK(db->getRecord(&r, sizeof(r)),            "getRecord at index 1 succeeds");
+  SDB_CHECK(db->getRecord(&r, sizeof(r)), "getRecord at index 1 succeeds");
   SDB_CHECK(r.id == 2 && strcmp(r.name, "Bob") == 0 && r.value == 200,
             "record 1 content matches w2");
 
   db->setCurrentIdx(2);
-  SDB_CHECK(db->getRecord(&r, sizeof(r)),            "getRecord at index 2 succeeds");
+  SDB_CHECK(db->getRecord(&r, sizeof(r)), "getRecord at index 2 succeeds");
   SDB_CHECK(r.id == 3 && strcmp(r.name, "Charlie") == 0 && r.value == 300,
             "record 2 content matches w3");
 
@@ -282,7 +283,7 @@ static void testPersistence() {
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
-auto testSimpleDb() -> bool {
+auto testSimpleDb() -> TestStats {
   sPass = 0;
   sFail = 0;
 
@@ -297,5 +298,5 @@ auto testSimpleDb() -> bool {
   testPersistence();
 
   SDB_LOG("========== SimpleDB test suite end: %d passed, %d failed ==========", sPass, sFail);
-  return sFail == 0;
+  return TestStats{sPass, sFail};
 }

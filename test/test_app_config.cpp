@@ -22,14 +22,16 @@
 // specialisation and the 'config' global that live inside config.hpp.
 // ---------------------------------------------------------------------------
 
-#define __GLOBAL__ 0          // inhibit global.hpp's own extern-storage block
-#define __CONFIG__ 1          // trigger the config.hpp storage / specialisation block
+#define __GLOBAL__ 0 // inhibit global.hpp's own extern-storage block
+#define __CONFIG__ 1 // trigger the config.hpp storage / specialisation block
 #include "models/config.hpp"
-#undef  __CONFIG__
+#undef __CONFIG__
+
+#include "test_stats.hpp"
 
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 
 // ---------------------------------------------------------------------------
 // Logging / check helpers
@@ -39,15 +41,15 @@
 static int sPass = 0;
 static int sFail = 0;
 
-#define ACFG_CHECK(cond, msg)                                                        \
-  do {                                                                               \
-    if (!(cond)) {                                                                   \
-      ACFG_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                            \
-      ++sFail;                                                                       \
-    } else {                                                                         \
-      ACFG_LOG("PASS " msg);                                                         \
-      ++sPass;                                                                       \
-    }                                                                                \
+#define ACFG_CHECK(cond, msg)                                                                      \
+  do {                                                                                             \
+    if (!(cond)) {                                                                                 \
+      ACFG_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                           \
+      ++sFail;                                                                                     \
+    } else {                                                                                       \
+      ACFG_LOG("PASS " msg);                                                                       \
+      ++sPass;                                                                                     \
+    }                                                                                              \
   } while (0)
 
 // ---------------------------------------------------------------------------
@@ -63,22 +65,19 @@ static void testAppDefaults() {
   ACFG_CHECK(c.read(), "read() on missing file returns true");
 
   // Verify a representative set of defaults from config.hpp
-  int8_t  battery     = 0;
-  int8_t  orientation = 99;
-  int8_t  fontSize    = 0;
-  int32_t port        = 0;
+  int8_t battery     = 0;
+  int8_t orientation = 99;
+  int8_t fontSize    = 0;
+  int32_t port       = 0;
   std::string ssid;
 
-  ACFG_CHECK(c.get(ConfigIdent::BATTERY,     &battery)     && battery     == 2,
+  ACFG_CHECK(c.get(ConfigIdent::BATTERY, &battery) && battery == 2,
              "default battery == 2 (VOLTAGE)");
   ACFG_CHECK(c.get(ConfigIdent::ORIENTATION, &orientation) && orientation == 1,
              "default orientation == 1 (RIGHT)");
-  ACFG_CHECK(c.get(ConfigIdent::FONT_SIZE,   &fontSize)    && fontSize    == 12,
-             "default font_size == 12");
-  ACFG_CHECK(c.get(ConfigIdent::PORT,        &port)        && port        == 80,
-             "default http_port == 80");
-  ACFG_CHECK(c.get(ConfigIdent::SSID,        ssid)         && ssid        == "NONE",
-             "default wifi_ssid == NONE");
+  ACFG_CHECK(c.get(ConfigIdent::FONT_SIZE, &fontSize) && fontSize == 12, "default font_size == 12");
+  ACFG_CHECK(c.get(ConfigIdent::PORT, &port) && port == 80, "default http_port == 80");
+  ACFG_CHECK(c.get(ConfigIdent::SSID, ssid) && ssid == "NONE", "default wifi_ssid == NONE");
 
   remove(tmp);
 }
@@ -144,15 +143,13 @@ static void testAppPersistence() {
   ACFG_CHECK(!c2.isModified(), "isModified() false after clean read");
 
   std::string ssid;
-  int32_t port    = 0;
-  int8_t  timeout = 0;
+  int32_t port   = 0;
+  int8_t timeout = 0;
 
-  ACFG_CHECK(c2.get(ConfigIdent::SSID,    ssid)     && ssid    == "persisted-ssid",
+  ACFG_CHECK(c2.get(ConfigIdent::SSID, ssid) && ssid == "persisted-ssid",
              "ssid persisted correctly");
-  ACFG_CHECK(c2.get(ConfigIdent::PORT,    &port)    && port    == 7777,
-             "http_port persisted correctly");
-  ACFG_CHECK(c2.get(ConfigIdent::TIMEOUT, &timeout) && timeout == 5,
-             "timeout persisted correctly");
+  ACFG_CHECK(c2.get(ConfigIdent::PORT, &port) && port == 7777, "http_port persisted correctly");
+  ACFG_CHECK(c2.get(ConfigIdent::TIMEOUT, &timeout) && timeout == 5, "timeout persisted correctly");
 
   remove(tmp);
 }
@@ -202,34 +199,38 @@ static void testFixtureParsing() {
 
   // STRING fields
   std::string ssid, pwd, dnsName, apSsid, apPwd;
-  ACFG_CHECK(c.get(ConfigIdent::SSID,     ssid)    && ssid    == "TestSSID",    "ssid == TestSSID");
-  ACFG_CHECK(c.get(ConfigIdent::PWD,      pwd)     && pwd     == "TestPWD",     "pwd == TestPWD");
-  ACFG_CHECK(c.get(ConfigIdent::DNS_NAME, dnsName) && dnsName == "testplate",   "dns_name == testplate");
-  ACFG_CHECK(c.get(ConfigIdent::AP_SSID,  apSsid)  && apSsid  == "testplate-ap","ap_ssid == testplate-ap");
-  ACFG_CHECK(c.get(ConfigIdent::AP_PWD,   apPwd)   && apPwd   == "ap-secret",   "ap_pwd == ap-secret");
+  ACFG_CHECK(c.get(ConfigIdent::SSID, ssid) && ssid == "TestSSID", "ssid == TestSSID");
+  ACFG_CHECK(c.get(ConfigIdent::PWD, pwd) && pwd == "TestPWD", "pwd == TestPWD");
+  ACFG_CHECK(c.get(ConfigIdent::DNS_NAME, dnsName) && dnsName == "testplate",
+             "dns_name == testplate");
+  ACFG_CHECK(c.get(ConfigIdent::AP_SSID, apSsid) && apSsid == "testplate-ap",
+             "ap_ssid == testplate-ap");
+  ACFG_CHECK(c.get(ConfigIdent::AP_PWD, apPwd) && apPwd == "ap-secret", "ap_pwd == ap-secret");
 
   // INT (int32_t)
   int32_t port = 0;
   ACFG_CHECK(c.get(ConfigIdent::PORT, &port) && port == 8080, "http_port == 8080");
 
   // BYTE (int8_t) fields
-  int8_t battery=0, timeout=0, fontSize=0, defaultFont=0, useFonts=0,
-         showPic=0, orient=0, res=0, showHeap=0, showTitle=0, frontLight=0,
-         dirView=0, coverSize=0;
+  int8_t battery = 0, timeout = 0, fontSize = 0, defaultFont = 0, useFonts = 0, showPic = 0,
+         orient = 0, res = 0, showHeap = 0, showTitle = 0, frontLight = 0, dirView = 0,
+         coverSize = 0;
 
-  ACFG_CHECK(c.get(ConfigIdent::BATTERY,            &battery)    && battery    == 1,  "battery == 1");
-  ACFG_CHECK(c.get(ConfigIdent::TIMEOUT,            &timeout)    && timeout    == 30, "timeout == 30");
-  ACFG_CHECK(c.get(ConfigIdent::FONT_SIZE,          &fontSize)   && fontSize   == 10, "font_size == 10");
-  ACFG_CHECK(c.get(ConfigIdent::DEFAULT_FONT,       &defaultFont)&& defaultFont== 0,  "default_font == 0");
-  ACFG_CHECK(c.get(ConfigIdent::USE_FONTS_IN_BOOKS, &useFonts)   && useFonts   == 0,  "use_fonts_in_books == 0");
-  ACFG_CHECK(c.get(ConfigIdent::SHOW_PICTURES,      &showPic)    && showPic    == 1,  "show_images == 1");
-  ACFG_CHECK(c.get(ConfigIdent::ORIENTATION,        &orient)     && orient     == 0,  "orientation == 0");
-  ACFG_CHECK(c.get(ConfigIdent::PIXEL_RESOLUTION,   &res)        && res        == 1,  "resolution == 1");
-  ACFG_CHECK(c.get(ConfigIdent::SHOW_HEAP,          &showHeap)   && showHeap   == 1,  "show_heap == 1");
-  ACFG_CHECK(c.get(ConfigIdent::SHOW_TITLE,         &showTitle)  && showTitle  == 0,  "show_title == 0");
-  ACFG_CHECK(c.get(ConfigIdent::FRONT_LIGHT,        &frontLight) && frontLight == 32, "front_light == 32");
-  ACFG_CHECK(c.get(ConfigIdent::DIR_VIEW,           &dirView)    && dirView    == 1,  "dir_view == 1");
-  ACFG_CHECK(c.get(ConfigIdent::COVER_SIZE,         &coverSize)  && coverSize  == 1,  "cover_size == 1");
+  ACFG_CHECK(c.get(ConfigIdent::BATTERY, &battery) && battery == 1, "battery == 1");
+  ACFG_CHECK(c.get(ConfigIdent::TIMEOUT, &timeout) && timeout == 30, "timeout == 30");
+  ACFG_CHECK(c.get(ConfigIdent::FONT_SIZE, &fontSize) && fontSize == 10, "font_size == 10");
+  ACFG_CHECK(c.get(ConfigIdent::DEFAULT_FONT, &defaultFont) && defaultFont == 0,
+             "default_font == 0");
+  ACFG_CHECK(c.get(ConfigIdent::USE_FONTS_IN_BOOKS, &useFonts) && useFonts == 0,
+             "use_fonts_in_books == 0");
+  ACFG_CHECK(c.get(ConfigIdent::SHOW_PICTURES, &showPic) && showPic == 1, "show_images == 1");
+  ACFG_CHECK(c.get(ConfigIdent::ORIENTATION, &orient) && orient == 0, "orientation == 0");
+  ACFG_CHECK(c.get(ConfigIdent::PIXEL_RESOLUTION, &res) && res == 1, "resolution == 1");
+  ACFG_CHECK(c.get(ConfigIdent::SHOW_HEAP, &showHeap) && showHeap == 1, "show_heap == 1");
+  ACFG_CHECK(c.get(ConfigIdent::SHOW_TITLE, &showTitle) && showTitle == 0, "show_title == 0");
+  ACFG_CHECK(c.get(ConfigIdent::FRONT_LIGHT, &frontLight) && frontLight == 32, "front_light == 32");
+  ACFG_CHECK(c.get(ConfigIdent::DIR_VIEW, &dirView) && dirView == 1, "dir_view == 1");
+  ACFG_CHECK(c.get(ConfigIdent::COVER_SIZE, &coverSize) && coverSize == 1, "cover_size == 1");
 }
 
 // ---------------------------------------------------------------------------
@@ -242,8 +243,8 @@ static void testCommentHeader() {
   remove(tmp);
 
   {
-    Config c(tmp, true);    // comment=true → writes the # header block
-    c.read();               // missing file → save(true) → written with comments
+    Config c(tmp, true); // comment=true → writes the # header block
+    c.read();            // missing file → save(true) → written with comments
   }
 
   // Verify the file exists and can be re-read.
@@ -261,7 +262,7 @@ static void testCommentHeader() {
 // ---------------------------------------------------------------------------
 // Public entry point
 // ---------------------------------------------------------------------------
-auto testAppConfig() -> bool {
+auto testAppConfig() -> TestStats {
   sPass = 0;
   sFail = 0;
 
@@ -274,7 +275,6 @@ auto testAppConfig() -> bool {
   testFixtureParsing();
   testCommentHeader();
 
-  ACFG_LOG("========== App Config test suite end: %d passed, %d failed ==========",
-           sPass, sFail);
-  return sFail == 0;
+  ACFG_LOG("========== App Config test suite end: %d passed, %d failed ==========", sPass, sFail);
+  return TestStats{sPass, sFail};
 }

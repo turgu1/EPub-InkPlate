@@ -201,6 +201,7 @@ TEST_SRC_C := \
 TEST_SRC_CPP := \
   test/test_runner.cpp \
   test/test_himem.cpp \
+  test/test_himem_pool.cpp \
   test/test_dom.cpp \
   test/test_simple_db.cpp \
   test/test_config.cpp \

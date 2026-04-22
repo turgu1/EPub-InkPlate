@@ -23,6 +23,7 @@
 // ---------------------------------------------------------------------------
 
 #include "simple_list.hpp"
+#include "test_stats.hpp"
 
 #include <cstdio>
 #include <string>
@@ -30,16 +31,16 @@
 // ---------------------------------------------------------------------------
 // Minimal check helpers (same style as the other test suites)
 // ---------------------------------------------------------------------------
-static int  checks  = 0;
-static int  failures = 0;
+static int checks   = 0;
+static int failures = 0;
 
-#define CHECK(cond) \
-  do { \
-    ++checks; \
-    if (!(cond)) { \
-      ++failures; \
-      std::printf("  FAIL [%s:%d]: %s\n", __FILE__, __LINE__, #cond); \
-    } \
+#define CHECK(cond)                                                                                \
+  do {                                                                                             \
+    ++checks;                                                                                      \
+    if (!(cond)) {                                                                                 \
+      ++failures;                                                                                  \
+      std::printf("  FAIL [%s:%d]: %s\n", __FILE__, __LINE__, #cond);                              \
+    }                                                                                              \
   } while (0)
 
 // ============================================================
@@ -57,7 +58,7 @@ static void testConstruction() {
   CHECK(!b.empty());
   CHECK(b.size() == 3);
   CHECK(b.front() == 1);
-  CHECK(b.back()  == 3);
+  CHECK(b.back() == 3);
 }
 
 static void testPushBack() {
@@ -65,19 +66,19 @@ static void testPushBack() {
 
   SimpleList<int> l;
   l.pushBack(10);
-  CHECK(l.size()  == 1);
+  CHECK(l.size() == 1);
   CHECK(l.front() == 10);
-  CHECK(l.back()  == 10);
+  CHECK(l.back() == 10);
 
   l.pushBack(20);
-  CHECK(l.size()  == 2);
+  CHECK(l.size() == 2);
   CHECK(l.front() == 10);
-  CHECK(l.back()  == 20);
+  CHECK(l.back() == 20);
 
   int v = 30;
   l.pushBack(v);
-  CHECK(l.size()  == 3);
-  CHECK(l.back()  == 30);
+  CHECK(l.size() == 3);
+  CHECK(l.back() == 30);
 }
 
 static void testPushFront() {
@@ -87,9 +88,9 @@ static void testPushFront() {
   l.pushFront(1);
   l.pushFront(2);
   l.pushFront(3);
-  CHECK(l.size()  == 3);
+  CHECK(l.size() == 3);
   CHECK(l.front() == 3);
-  CHECK(l.back()  == 1);
+  CHECK(l.back() == 1);
 }
 
 static void testEmplace() {
@@ -98,13 +99,13 @@ static void testEmplace() {
   SimpleList<std::string> l;
   l.emplaceBack("hello");
   l.emplaceBack("world");
-  CHECK(l.size()  == 2);
+  CHECK(l.size() == 2);
   CHECK(l.front() == "hello");
-  CHECK(l.back()  == "world");
+  CHECK(l.back() == "world");
 
   l.emplaceFront("first");
   CHECK(l.front() == "first");
-  CHECK(l.size()  == 3);
+  CHECK(l.size() == 3);
 }
 
 static void testAccessors() {
@@ -112,12 +113,12 @@ static void testAccessors() {
 
   SimpleList<int> l{5, 10, 15};
   CHECK(l.front() == 5);
-  CHECK(l.back()  == 15);
+  CHECK(l.back() == 15);
 
   auto *node = l.last();
   CHECK(node != nullptr);
   CHECK(node->value == 15);
-  CHECK(node->next  == nullptr);
+  CHECK(node->next == nullptr);
 }
 
 static void testPopFront() {
@@ -125,7 +126,7 @@ static void testPopFront() {
 
   SimpleList<int> l{1, 2, 3};
   l.popFront();
-  CHECK(l.size()  == 2);
+  CHECK(l.size() == 2);
   CHECK(l.front() == 2);
 
   l.popFront();
@@ -139,14 +140,14 @@ static void testRemoveLast() {
 
   SimpleList<int> l{1, 2, 3};
   l.removeLast();
-  CHECK(l.size()  == 2);
-  CHECK(l.back()  == 2);
+  CHECK(l.size() == 2);
+  CHECK(l.back() == 2);
   CHECK(l.front() == 1);
 
   l.removeLast();
-  CHECK(l.size()  == 1);
+  CHECK(l.size() == 1);
   CHECK(l.front() == 1);
-  CHECK(l.back()  == 1);
+  CHECK(l.back() == 1);
 
   l.removeLast();
   CHECK(l.empty());
@@ -191,9 +192,9 @@ static void testClear() {
 
   // Re-use after clear
   l.pushBack(99);
-  CHECK(l.size()  == 1);
+  CHECK(l.size() == 1);
   CHECK(l.front() == 99);
-  CHECK(l.back()  == 99);
+  CHECK(l.back() == 99);
 }
 
 static void testMerge() {
@@ -206,17 +207,17 @@ static void testMerge() {
   CHECK(a.size() == 6);
   CHECK(b.empty());
   CHECK(a.front() == 1);
-  CHECK(a.back()  == 6);
+  CHECK(a.back() == 6);
 
   // Verify full sequence
   int expected[] = {1, 2, 3, 4, 5, 6};
-  int idx = 0;
+  int idx        = 0;
   for (int v : a) CHECK(v == expected[idx++]);
   CHECK(idx == 6);
 
   // Merge empty list into non-empty — source stays empty, dest unchanged
   SimpleList<int> c{7};
-  SimpleList<int> d;   // empty
+  SimpleList<int> d; // empty
   c.merge(d);
   CHECK(c.size() == 1);
   CHECK(c.back() == 7);
@@ -227,7 +228,7 @@ static void testMerge() {
   e.merge(f);
   CHECK(e.size() == 2);
   CHECK(e.front() == 8);
-  CHECK(e.back()  == 9);
+  CHECK(e.back() == 9);
   CHECK(f.empty());
 }
 
@@ -237,18 +238,18 @@ static void testCopySemantics() {
   SimpleList<int> orig{1, 2, 3};
 
   SimpleList<int> copy_ctor(orig);
-  CHECK(copy_ctor.size()  == 3);
+  CHECK(copy_ctor.size() == 3);
   CHECK(copy_ctor.front() == 1);
-  CHECK(copy_ctor.back()  == 3);
+  CHECK(copy_ctor.back() == 3);
 
   // Modifying copy does not affect original
   copy_ctor.pushBack(4);
-  CHECK(orig.size()      == 3);
+  CHECK(orig.size() == 3);
   CHECK(copy_ctor.size() == 4);
 
   SimpleList<int> copy_assign;
   copy_assign = orig;
-  CHECK(copy_assign.size()  == 3);
+  CHECK(copy_assign.size() == 3);
   CHECK(copy_assign.front() == 1);
 
   // Self-assignment
@@ -265,7 +266,7 @@ static void testMoveSemantics() {
   CHECK(moved_ctor.size() == 3);
   CHECK(src.empty());
   CHECK(moved_ctor.front() == 10);
-  CHECK(moved_ctor.back()  == 30);
+  CHECK(moved_ctor.back() == 30);
 
   SimpleList<int> moved_assign;
   moved_assign = std::move(moved_ctor);
@@ -282,9 +283,9 @@ static void testMoveValues() {
   std::string s2 = "bar";
   l.pushBack(std::move(s1));
   l.pushFront(std::move(s2));
-  CHECK(l.size()  == 2);
+  CHECK(l.size() == 2);
   CHECK(l.front() == "bar");
-  CHECK(l.back()  == "foo");
+  CHECK(l.back() == "foo");
 }
 
 static void testSingleElement() {
@@ -301,13 +302,13 @@ static void testSingleElement() {
   l.pushFront(7);
   CHECK(!l.empty());
   CHECK(l.front() == 7);
-  CHECK(l.back()  == 7);
+  CHECK(l.back() == 7);
 }
 
 // ============================================================
 // Suite entry point
 // ============================================================
-auto testSimpleList() -> bool {
+auto testSimpleList() -> TestStats {
   checks   = 0;
   failures = 0;
 
@@ -327,5 +328,5 @@ auto testSimpleList() -> bool {
   testSingleElement();
 
   std::printf("  SimpleList: %d checks, %d failures\n", checks, failures);
-  return failures == 0;
+  return TestStats{checks - failures, failures};
 }
