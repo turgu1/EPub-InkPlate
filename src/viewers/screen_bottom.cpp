@@ -12,7 +12,7 @@
 const std::string ScreenBottom::dw[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> void {
-  Font *font = fonts.get(FONT);
+  FontPtr &font = appFonts.getFont(FONT);
 
   Page::Format fmt = {
       .fontIndex = FONT,

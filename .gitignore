@@ -9,6 +9,7 @@ example
 build
 build_linux
 build_test
+build_test_config
 test-books
 release*
 SDCard/epub-test

@@ -22,8 +22,8 @@
     bool apRunning{false};
     bool mdnsRunning{false};
 
-    auto startMdnsService(const std::string &hostname) -> void;
- inline auto setIpAddress(esp_ip4_addr_t addr) -> void { ipAddress = addr; }
+    auto startMdnsService(const HimemString &hostname) -> void;
+    inline auto setIpAddress(esp_ip4_addr_t addr) -> void { ipAddress = addr; }
 
   public:
     WIFI() {}

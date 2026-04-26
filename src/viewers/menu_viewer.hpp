@@ -20,7 +20,7 @@ private:
 
   MenuViewer() = default;
 
-  PagePtr page = Page::Make();
+  PagePtr page = Page::Make(appFonts);
 
 public:
   ~MenuViewer() = default; // { LOG_I("MenuViewer destructor called"); }

@@ -22,7 +22,7 @@
 auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
                      const char *fmtStr, ...) -> ConfirmDataPtr {
   HimemUniquePtr<char[]> buff = makeUniqueHimem<char[]>(BUFFER_SIZE);
-  auto page                   = Page::Make();
+  auto page                   = Page::Make(appFonts);
   auto confirmData            = ConfirmData::Make();
 
   uint16_t width = Screen::getWidth() - 60;
@@ -57,14 +57,9 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
 
   page->putRounded(Dim(width - 4, HEIGHT - 4), Pos(fmt.screenLeft + 2, fmt.screenTop + 2));
 
-  Font *font = fonts.get(0);
+  FontPtr &iconFont = appFonts.getFont(0);
 
-  if (font == nullptr) {
-    LOG_E("Internal error (Drawings Font not available!");
-    return nullptr;
-  }
-
-  Glyph *glyph = font->getGlyph(iconChar[msgType], 24);
+  Glyph *glyph = iconFont->getGlyph(iconChar[msgType], 24);
 
   if (glyph != nullptr) {
     page->putCharAt(
@@ -108,12 +103,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
         page->addText("[Please TAP the screen]", fmt);
         page->endParagraph(fmt);
       } else {
-        font = fonts.get(1);
-
-        if (font == nullptr) {
-          LOG_E("Internal error (Main Font not available!");
-          return nullptr;
-        }
+        FontPtr &font = appFonts.getFont(1);
 
         Dim dim, okDim;
         font->getSize("CANCEL", &dim, 10);
@@ -202,7 +192,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
 #if 1
   auto MsgViewer::showProgress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr> {
 
-    auto page         = Page::Make();
+    auto page         = Page::Make(appFonts);
     auto progressData = ProgressData::Make();
 
     uint16_t width = Screen::getWidth() - 60;

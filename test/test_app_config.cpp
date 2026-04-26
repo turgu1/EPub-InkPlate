@@ -69,7 +69,6 @@ static void testAppDefaults() {
   int8_t orientation = 99;
   int8_t fontSize    = 0;
   int32_t port       = 0;
-  std::string ssid;
 
   ACFG_CHECK(c.get(ConfigIdent::BATTERY, &battery) && battery == 2,
              "default battery == 2 (VOLTAGE)");
@@ -77,6 +76,7 @@ static void testAppDefaults() {
              "default orientation == 1 (RIGHT)");
   ACFG_CHECK(c.get(ConfigIdent::FONT_SIZE, &fontSize) && fontSize == 12, "default font_size == 12");
   ACFG_CHECK(c.get(ConfigIdent::PORT, &port) && port == 80, "default http_port == 80");
+  HimemString ssid;
   ACFG_CHECK(c.get(ConfigIdent::SSID, ssid) && ssid == "NONE", "default wifi_ssid == NONE");
 
   remove(tmp);
@@ -95,9 +95,9 @@ static void testAppPutGet() {
   c.read(); // initialise to defaults
 
   // STRING
-  std::string newSsid = "my-network";
+  HimemString newSsid = "my-network";
   c.put(ConfigIdent::SSID, newSsid);
-  std::string gotSsid;
+  HimemString gotSsid;
   ACFG_CHECK(c.get(ConfigIdent::SSID, gotSsid) && gotSsid == "my-network",
              "put/get STRING (wifi_ssid) round-trip");
 
@@ -131,7 +131,7 @@ static void testAppPersistence() {
     Config c(tmp, false);
     c.read();
 
-    std::string ssid = "persisted-ssid";
+    HimemString ssid = "persisted-ssid";
     c.put(ConfigIdent::SSID, ssid);
     c.put(ConfigIdent::PORT, (int32_t)7777);
     c.put(ConfigIdent::TIMEOUT, (int8_t)5);
@@ -142,7 +142,7 @@ static void testAppPersistence() {
   ACFG_CHECK(c2.read(), "read() of saved file succeeds");
   ACFG_CHECK(!c2.isModified(), "isModified() false after clean read");
 
-  std::string ssid;
+  HimemString ssid;
   int32_t port   = 0;
   int8_t timeout = 0;
 
@@ -173,7 +173,7 @@ static void testAppSaveWhenModified() {
   ACFG_CHECK(f == nullptr, "file NOT re-written when unmodified");
   if (f) fclose(f);
 
-  std::string pwd = "new-password";
+  HimemString pwd = "new-password";
   c.put(ConfigIdent::PWD, pwd);
   ACFG_CHECK(c.save(false), "save(false) returns true after modification");
   f = fopen(tmp, "r");
@@ -198,7 +198,7 @@ static void testFixtureParsing() {
   if (!ok) return;
 
   // STRING fields
-  std::string ssid, pwd, dnsName, apSsid, apPwd;
+  HimemString ssid, pwd, dnsName, apSsid, apPwd;
   ACFG_CHECK(c.get(ConfigIdent::SSID, ssid) && ssid == "TestSSID", "ssid == TestSSID");
   ACFG_CHECK(c.get(ConfigIdent::PWD, pwd) && pwd == "TestPWD", "pwd == TestPWD");
   ACFG_CHECK(c.get(ConfigIdent::DNS_NAME, dnsName) && dnsName == "testplate",

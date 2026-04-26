@@ -212,13 +212,20 @@ auto Unzip::readFileEntries(uint32_t offset, uint16_t count) -> bool {
 }
 
 auto Unzip::openZipFile(const char *zipFilename) -> bool {
+  std::scoped_lock guard(mutex);
+
   // Open zip file
-  if (zipFileIsOpen) closeZipFile();
+  if (zipFileIsOpen) {
+    if (currentFilename == zipFilename) return true;
+    closeZipFile();
+  }
+
   if ((file = fopen(zipFilename, "r")) == nullptr) {
     LOG_E("Unable to open file: %s", zipFilename);
     return false;
   }
-  zipFileIsOpen = true;
+  zipFileIsOpen   = true;
+  currentFilename = zipFilename;
 
   bool completed =
       seekToCentralDirectory() && readFileEntries(getUint32((const unsigned char *)&buffer[16]),
@@ -294,8 +301,8 @@ char *cleanFname(const char *filename) {
 }
 
 auto Unzip::getFileSize(const char *filename) -> int32_t {
-  LOG_D("Mutex lock...");
-  mutex.lock();
+
+  std::scoped_lock guard(mutex);
 
   if (!zipFileIsOpen) return 0;
 
@@ -316,10 +323,8 @@ auto Unzip::getFileSize(const char *filename) -> int32_t {
       }
       std::cout << "[End of List]" << std::endl;
     #endif
-    mutex.unlock();
     return 0;
   } else {
-    mutex.unlock();
     return (*currentFileEntry)->size;
   }
 }
@@ -342,8 +347,6 @@ auto Unzip::fileExists(const char *filename) -> bool {
 }
 
 auto Unzip::openFile(const char *filename) -> bool {
-  LOG_D("Mutex lock...");
-  mutex.lock();
 
   int err = 0;
 
@@ -366,7 +369,6 @@ auto Unzip::openFile(const char *filename) -> bool {
       }
       std::cout << "[End of List]" << std::endl;
     #endif
-    mutex.unlock();
     return false;
   }
   // else {
@@ -442,20 +444,22 @@ auto Unzip::openFile(const char *filename) -> bool {
   } else {
     LOG_E("Unzip openFile: Error!: %d", err);
     LOG_D("Mutex unlock...");
-    mutex.unlock();
     return false;
   }
 }
 
-auto Unzip::closeFile() -> void {
-  LOG_D("Mutex unlock...");
-  mutex.unlock();
-}
+auto Unzip::closeFile() -> void {}
 
 #if !STB
 
   auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
-    if (!openFile(filename)) return false;
+
+    mutex.lock();
+
+    if (!openFile(filename)) {
+      mutex.unlock();
+      return false;
+    }
 
     repeat  = ((*currentFileEntry)->compressedSize) / BUFFER_SIZE;
     remains = ((*currentFileEntry)->compressedSize) % BUFFER_SIZE;
@@ -497,11 +501,14 @@ auto Unzip::closeFile() -> void {
   }
 
   auto Unzip::closeStreamFile() -> void {
-    if (aborted) return;
+    if (!aborted) {
 
-    mz_inflateEnd(&zstr);
+      mz_inflateEnd(&zstr);
 
-    closeFile();
+      closeFile();
+    }
+
+    mutex.unlock();
   }
 
   auto Unzip::streamSkip(uint32_t byteCount) -> bool {

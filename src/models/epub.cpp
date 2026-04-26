@@ -414,8 +414,8 @@ auto EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -
   }
 }
 
-auto EPub::loadFont(const std::string filename, const std::string fontFamily,
-                    const Fonts::FaceStyle style) -> bool {
+auto EPub::loadFont(const std::string filename, const std::string fontFamily, const FaceStyle style)
+    -> bool {
   uint32_t size;
   LOG_D("Font file name: %s", filename.c_str());
   if ((size = unzip.getFileSize(filename.c_str())) > 0) {
@@ -496,16 +496,16 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
       const CSS::Values *values;
       if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
-        Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
-        Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
-        Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
-        std::string fontFamily       = values->front()->str;
+        FaceStyle style        = FaceStyle::NORMAL;
+        FaceStyle font_weight  = FaceStyle::NORMAL;
+        FaceStyle font_style   = FaceStyle::NORMAL;
+        std::string fontFamily = values->front()->str;
 
         if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
-          font_style = (Fonts::FaceStyle)values->front()->choice.faceStyle;
+          font_style = (FaceStyle)values->front()->choice.faceStyle;
         }
         if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
-          font_weight = (Fonts::FaceStyle)values->front()->choice.faceStyle;
+          font_weight = (FaceStyle)values->front()->choice.faceStyle;
         }
         style = fonts.adjustFontStyle(style, font_style, font_weight);
         // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
@@ -1030,58 +1030,45 @@ auto EPub::getItemAtIndex(int16_t itemrefIndex) -> bool {
 auto EPub::getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool {
   if (!fileIsOpen) return false;
 
-  LOG_D("Mutex lock...");
+  xml_node node = xml_node();
+  int16_t index = 0;
 
-  {
-    std::scoped_lock guard(mutex);
-
-    xml_node node = xml_node();
-    int16_t index = 0;
-
-    for (auto n : opf.find_child(packagePred).find_child(spinePred).children()) {
-      if (index == itemrefIndex) {
-        node = n;
-        break;
-      }
-      index++;
+  for (auto n : opf.find_child(packagePred).find_child(spinePred).children()) {
+    if (index == itemrefIndex) {
+      node = n;
+      break;
     }
-
-    bool res = false;
-
-    if (node) {
-      res               = getItem(node, item);
-      item.itemrefIndex = itemrefIndex;
-    }
-
-    LOG_D("Mutex unlocked...");
-    return res;
+    index++;
   }
+
+  bool res = false;
+
+  if (node) {
+    res               = getItem(node, item);
+    item.itemrefIndex = itemrefIndex;
+  }
+
+  return res;
 }
 
 auto EPub::getPicture(std::string &fname, bool load) -> PicturePtr {
-  LOG_D("Mutex lock...");
 
-  {
-    std::scoped_lock guard(mutex);
+  std::string filename = filenameLocate(fname.c_str());
+  auto pict = PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load);
 
-    std::string filename = filenameLocate(fname.c_str());
-    auto pict =
-        PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load);
-
-    if ((pict == nullptr) || (load && (pict->getBitmap() == nullptr)) ||
-        (pict->getDim().height == 0) || (pict->getDim().width == 0)) {
-      if (pict != nullptr) pict.reset();
-      pict = nullptr;
-    }
-
-    // if (pict->getBitmap() != nullptr) {
-    //   std::cout << "----- Picture content -----" << std::endl;
-    //   for (int i = 0; i < 200; i++) {
-    //     std::cout << std::hex << std::setw(2) << +pict->getBitmap()[i];
-    //   }
-    //   std::cout << std::endl << "-----" << std::endl;
-    // }
-    LOG_D("Mutex unlocked...");
-    return pict;
+  if ((pict == nullptr) || (load && (pict->getBitmap() == nullptr)) ||
+      (pict->getDim().height == 0) || (pict->getDim().width == 0)) {
+    if (pict != nullptr) pict.reset();
+    pict = nullptr;
   }
+
+  // if (pict->getBitmap() != nullptr) {
+  //   std::cout << "----- Picture content -----" << std::endl;
+  //   for (int i = 0; i < 200; i++) {
+  //     std::cout << std::hex << std::setw(2) << +pict->getBitmap()[i];
+  //   }
+  //   std::cout << std::endl << "-----" << std::endl;
+  // }
+
+  return pict;
 }

@@ -50,7 +50,7 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
       .screenRight      = 10,
       .screenTop        = ypos,
       .screenBottom     = static_cast<uint16_t>(Screen::getHeight() - (ypos + maxTitleSize + 20)),
-      .fontStyle        = Fonts::FaceStyle::BOLD,
+      .fontStyle        = FaceStyle::BOLD,
       .align            = CSS::Align::CENTER,
   };
 
@@ -65,7 +65,7 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
 
   fmt.fontIndex = entryFont;
   fmt.fontSize  = entryFontSize;
-  fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+  fmt.fontStyle = FaceStyle::NORMAL;
   fmt.align     = CSS::Align::LEFT;
 
   for (int16_t screenIdx = 0; entryIdx < lastIdx; screenIdx++, entryIdx++) {

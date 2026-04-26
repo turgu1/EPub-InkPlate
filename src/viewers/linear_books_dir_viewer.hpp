@@ -33,7 +33,7 @@ private:
   auto showPage(int16_t pageNbr, int16_t hightlight_item_idx) -> void;
   auto highlight(int16_t item_idx) -> void;
 
-  PagePtr page{Page::Make()};
+  PagePtr page{Page::Make(appFonts)};
 
   LinearBooksDirViewer() = default;
 

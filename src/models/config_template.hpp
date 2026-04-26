@@ -5,6 +5,8 @@
 #pragma once
 #include "global.hpp"
 
+#include "models/fonts_db.hpp"
+
 #include <array>
 #include <fstream>
 #include <inttypes.h>
@@ -14,7 +16,7 @@ class ConfigBase {
 public:
   using Ident = IdType;
   enum class EntryType {
-    STRING, INT, INT64, BYTE
+    STRING, INT, INT64, BYTE, FONTS_DB
   };
   struct ConfigDescr {
     Ident ident;
@@ -47,16 +49,17 @@ public:
   auto get(IdType id, int32_t *val) -> bool;
   auto get(IdType id, int8_t *val) -> bool;
   auto get(IdType id, int64_t *val) -> bool;
-  auto get(IdType id, std::string &val) -> bool;
+  auto get(IdType id, HimemString &val) -> bool;
+  auto get(IdType id, FontsDB **val) -> bool;
   auto put(IdType id, int32_t val) -> void;
   auto put(IdType id, int8_t val) -> void;
   auto put(IdType id, int64_t val) -> void;
-  auto put(IdType id, std::string &val) -> void;
+  auto put(IdType id, HimemString &val) -> void;
 
   auto read() -> bool;
   auto save(bool force = false) -> bool;
 
- [[nodiscard]] inline auto isModified() -> bool { return modified; }
+  [[nodiscard]] inline auto isModified() -> bool { return modified; }
 
   #if DEBUGGING
     auto show() -> void;
@@ -105,10 +108,23 @@ auto ConfigBase<IdType, cfg_size>::get(IdType id, int8_t *val) -> bool {
 // ----- get(std::string) -----
 
 template <class IdType, int cfg_size>
-auto ConfigBase<IdType, cfg_size>::get(IdType id, std::string &val) -> bool {
+auto ConfigBase<IdType, cfg_size>::get(IdType id, HimemString &val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       val.assign(((char *)entry.value));
+      return true;
+    }
+  }
+  return false;
+}
+
+// ----- get(FontsDB) -----
+
+template <class IdType, int cfg_size>
+auto ConfigBase<IdType, cfg_size>::get(IdType id, FontsDB **val) -> bool {
+  for (auto &entry : cfg) {
+    if ((entry.ident == id) && (entry.type == EntryType::FONTS_DB)) {
+      *val = (FontsDB *)entry.value;
       return true;
     }
   }
@@ -157,7 +173,7 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, int8_t val) {
 // ---- put(std::string) -----
 
 template <class IdType, int cfg_size>
-void ConfigBase<IdType, cfg_size>::put(IdType id, std::string &val) {
+void ConfigBase<IdType, cfg_size>::put(IdType id, HimemString &val) {
   for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       strlcpy((char *)entry.value, val.c_str(), entry.max_size);
@@ -226,9 +242,19 @@ auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **
 
 template <class IdType, int cfg_size>
 auto ConfigBase<IdType, cfg_size>::read() -> bool {
+  FontsDB *fontsDB     = nullptr;
+  uint8_t fontIndex    = 0;
+  int8_t *fontIndexRef = nullptr;
+
   // First, initialize all configs to default values
   for (auto &entry : cfg) {
-    if (entry.type == EntryType::STRING) {
+    if (entry.type == EntryType::FONTS_DB) {
+      fontsDB = (FontsDB *)entry.value;
+      // For the FONTS_DB entry, default_value points to the byte config variable
+      // that stores the selected user font index.
+      fontIndexRef = (int8_t *)entry.default_value;
+      fontIndex    = (fontIndexRef != nullptr) ? *fontIndexRef : 0;
+    } else if (entry.type == EntryType::STRING) {
       strlcpy((char *)entry.value, (char *)entry.default_value, entry.max_size);
     } else if (entry.type == EntryType::INT) {
       *((int32_t *)entry.value) = *((int32_t *)entry.default_value);
@@ -254,6 +280,7 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
     file->getline(buff, 128);
     if (parseLine(buff, &caption, &value)) {
       LOG_D("Caption: %s, value: %s", caption, value);
+      if (*caption == '\0') continue;
       for (auto &entry : cfg) {
         if (strcmp(caption, entry.caption) == 0) {
           if (entry.type == EntryType::STRING) {
@@ -262,6 +289,9 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
             *((int32_t *)entry.value) = atoi(value);
           } else if (entry.type == EntryType::INT64) {
             *((int64_t *)entry.value) = atol(value);
+          } else if (entry.type == EntryType::FONTS_DB) {
+            // FontsDB is an object pointer entry, not a scalar config value.
+            // Its associated selected font index is handled via default_font.
           } else {
             *((int8_t *)entry.value) = atoi(value);
           }
@@ -276,7 +306,11 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
   delete file;
   delete[] buff;
 
-  return true;
+  if (fontIndexRef != nullptr) {
+    fontIndex = *fontIndexRef;
+  }
+
+  return (fontsDB != nullptr) ? fontsDB->load(fontIndex) : true;
 }
 
 // ----- save() -----
@@ -302,7 +336,9 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
                "#\n";
 
       for (auto &entry : cfg) {
-        *file << "#      " << entry.caption << std::endl;
+        if (entry.type != EntryType::FONTS_DB) {
+          *file << "#      " << entry.caption << std::endl;
+        }
       }
 
       *file << "# ---\n\n";
@@ -315,6 +351,8 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
         *file << entry.caption << " = " << *(int32_t *)entry.value << std::endl;
       } else if (entry.type == EntryType::INT64) {
         *file << entry.caption << " = " << *(int64_t *)entry.value << std::endl;
+      } else if (entry.type == EntryType::FONTS_DB) {
+        // Do not serialize object entries.
       } else {
         *file << entry.caption << " = " << +*(int8_t *)entry.value << std::endl;
       }
@@ -341,6 +379,8 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
         LOG_D("%s = %" PRIi32, entry.caption, *(int32_t *)entry.value);
       } else if (entry.type == EntryType::INT64) {
         LOG_D("%s = %" PRIi64, entry.caption, *(int64_t *)entry.value);
+      } else if (entry.type == EntryType::FONTS_DB) {
+        LOG_D("%s = <FontsDB>", entry.caption);
       } else {
         LOG_D("%s = %" PRIi8, entry.caption, *(int8_t *)entry.value);
       }

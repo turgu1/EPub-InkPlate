@@ -82,7 +82,7 @@ auto LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
     fmt.fontIndex    = TITLE_FONT;
     fmt.fontSize     = TITLE_FONT_SIZE;
-    fmt.fontStyle    = Fonts::FaceStyle::NORMAL;
+    fmt.fontStyle    = FaceStyle::NORMAL;
     fmt.screenTop    = ypos;
     fmt.screenBottom = static_cast<int16_t>(
         Screen::getHeight() - (ypos + BooksDir::coverDim.height + SPACE_BETWEEN_ENTRIES));
@@ -97,7 +97,7 @@ auto LinearBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
     fmt.fontIndex = AUTHOR_FONT;
     fmt.fontSize  = AUTHOR_FONT_SIZE;
-    fmt.fontStyle = Fonts::FaceStyle::ITALIC;
+    fmt.fontStyle = FaceStyle::ITALIC;
 
     page->newParagraph(fmt);
     page->addText(book->author, fmt);
@@ -129,7 +129,7 @@ auto LinearBooksDirViewer::highlight(int16_t item_idx) -> void {
 
       if (!book) return;
 
-      // TTF * font = fonts.get(1, 9);
+      // TTF * font = appFonts.get(1, 9);
 
       Page::Format fmt = {
           .lineHeightFactor = 0.9,
@@ -158,7 +158,7 @@ auto LinearBooksDirViewer::highlight(int16_t item_idx) -> void {
 
       fmt.fontIndex = AUTHOR_FONT;
       fmt.fontSize  = AUTHOR_FONT_SIZE;
-      fmt.fontStyle = Fonts::FaceStyle::ITALIC;
+      fmt.fontStyle = FaceStyle::ITALIC;
 
       page->newParagraph(fmt);
       page->addText(book->author, fmt);
@@ -181,7 +181,7 @@ auto LinearBooksDirViewer::highlight(int16_t item_idx) -> void {
 
       fmt.fontIndex = TITLE_FONT;
       fmt.fontSize  = TITLE_FONT_SIZE;
-      fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+      fmt.fontStyle = FaceStyle::NORMAL;
       fmt.screenTop = ypos;
       fmt.screenBottom =
           static_cast<int16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.width + 20));
@@ -195,7 +195,7 @@ auto LinearBooksDirViewer::highlight(int16_t item_idx) -> void {
       page->endParagraph(fmt);
 
       fmt.fontIndex = AUTHOR_FONT, fmt.fontSize = AUTHOR_FONT_SIZE,
-      fmt.fontStyle = Fonts::FaceStyle::ITALIC,
+      fmt.fontStyle = FaceStyle::ITALIC,
 
       page->newParagraph(fmt);
       page->addText(book->author, fmt);

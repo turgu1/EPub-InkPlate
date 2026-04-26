@@ -33,6 +33,7 @@
 #      show_rtc
 #      ntp_server
 #      tz
+#      
 # ---
 
 version = 1
@@ -53,8 +54,9 @@ resolution = 1
 show_heap = 0
 show_title = 1
 front_light = 15
-dir_view = 0
+dir_view = 1
 cover_size = 1
 show_rtc = 1
 ntp_server = "pool.ntp.org"
 tz = "EST5EDT,M3.2.0,M11.1.0"
+ = -48

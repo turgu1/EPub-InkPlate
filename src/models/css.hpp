@@ -132,19 +132,19 @@
 using CSSPtr = HimemUniquePtr<class CSS>;
 class CSS {
 private:
-  std::string id;          // Unique identifier (filename) for this CSS instance
+  std::string id;         // Unique identifier (filename) for this CSS instance
   std::string folderPath; // Path used for all other files access (relative)
-  bool ghost;              // True if this instance rules content came from other instances
+  bool ghost;             // True if this instance rules content came from other instances
   uint8_t priority;
 
   CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size,
       uint8_t prio);
 
   CSS(const char *cssId) {
-    id          = cssId;
+    id         = cssId;
     folderPath = "";
-    ghost       = true;
-    priority    = 0;
+    ghost      = true;
+    priority   = 0;
   }
 
   CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio);
@@ -222,8 +222,8 @@ public:
     } spec;
     auto show() -> void const {
       #if DEBUGGING
-        std::cout << "[" << +spec.priority << "," << +spec.idCount << "," << +spec.classCount
-                  << "," << +spec.tagCount << "](" << value << ") ";
+        std::cout << "[" << +spec.priority << "," << +spec.idCount << "," << +spec.classCount << ","
+                  << +spec.tagCount << "](" << value << ") ";
       #endif
     }
   };
@@ -236,9 +236,9 @@ public:
     SelOp op;
     DOM::Tag tag;
     SelectorNode() {
-      op          = SelOp::NONE;
-      tag         = DOM::Tag::NONE;
-      qualifier   = Qualifier::NONE;
+      op         = SelOp::NONE;
+      tag        = DOM::Tag::NONE;
+      qualifier  = Qualifier::NONE;
       classCount = 0;
       idCount    = 0;
     }
@@ -321,12 +321,12 @@ public:
       Display display;
       Align align;
       TextTransform textTransform;
-      Fonts::FaceStyle faceStyle;
+      FaceStyle faceStyle;
       VerticalAlign verticalAlign;
     } choice;
     Value() {
       valueType = ValueType::NO_TYPE;
-      num        = 0.0;
+      num       = 0.0;
     }
     auto show() -> void {
       #if DEBUGGING

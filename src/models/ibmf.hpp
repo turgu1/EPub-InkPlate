@@ -3,14 +3,17 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "memory_pool.hpp"
 #include "models/font.hpp"
+#include "models/fonts_db.hpp"
 #include "models/ibmf_font.hpp"
 
 #include <forward_list>
-#include <mutex>
+// #include <mutex>
 #include <unordered_map>
 
 class IBMF : public Font {
@@ -18,13 +21,21 @@ private:
   static constexpr char const *TAG = "IBMF";
 
   IBMFFont *face;
-  std::mutex mutex;
+  // std::mutex mutex;
   IBMFFont::GlyphInfo *glyphData;
 
+  IBMF(const FontFaceDescriptorPtr descr);
+
 public:
-  IBMF(const std::string &filename);
-  IBMF(MemoryFontPtr buffer, int32_t size);
   ~IBMF();
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
+
+  static inline auto Make(const FontFaceDescriptorPtr descr) -> FontPtr {
+    return makeUniqueHimem<IBMF>(descr);
+  }
 
   /**
    * @brief Get a glyph object
@@ -52,7 +63,7 @@ public:
    * @return int32_t Normal line height of the face in pixels
    */
   auto getLineHeight(int16_t glyphSize) -> int32_t {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->getLineHeight());
   }
@@ -64,7 +75,7 @@ public:
    *                 the current font size.
    */
   auto getDescenderHeight(int16_t glyphSize) -> int32_t {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->getDescenderHeight());
   }
@@ -78,12 +89,11 @@ private:
    * Get a font from memory loaded and ready to supply glyphs. Note
    * that the buffer will be freed when the face will be removed.
    *
-   * @param buffer The buffer containing the font.
-   * @param size   The buffer size in bytes.
+   * @param descr The font face descriptor.
    * @return true The font was found and retrieved.
    * @return false Some error (file not found, unsupported format).
    */
-  auto setFontFaceFromMemory(MemoryFontPtr buffer, int32_t size) -> bool;
+  auto setFontFace(const FontFaceDescriptorPtr descr) -> bool;
 
   /**
    * @brief Set the font size
@@ -99,5 +109,7 @@ private:
 
   auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph *;
 
- [[nodiscard]] inline auto translate(uint32_t charcode) -> uint32_t { return face->translate(charcode); }
+  [[nodiscard]] inline auto translate(uint32_t charcode) -> uint32_t {
+    return face->translate(charcode);
+  }
 };

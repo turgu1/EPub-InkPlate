@@ -107,9 +107,9 @@
     ESP_ERROR_CHECK(
         esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_event_handler, NULL));
 
-    std::string wifiSsid;
-    std::string wifiPassword;
-    std::string dnsName;
+    HimemString wifiSsid;
+    HimemString wifiPassword;
+    HimemString dnsName;
 
     config.get(Config::Ident::SSID, wifiSsid);
     config.get(Config::Ident::PWD, wifiPassword);
@@ -158,7 +158,7 @@
     return connected;
   }
 
-  auto WIFI::startMdnsService(const std::string &hostname) -> void {
+  auto WIFI::startMdnsService(const HimemString &hostname) -> void {
     // initialize mDNS service
     esp_err_t err = mdns_init();
     if (err) {
@@ -196,9 +196,9 @@
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
                                                         &wifi_ap_event_handler, NULL, NULL));
 
-    std::string apSsid;
-    std::string apPassword;
-    std::string dnsName;
+    HimemString apSsid;
+    HimemString apPassword;
+    HimemString dnsName;
 
     uint8_t apSsidRaw[32];
     uint8_t apPasswordRaw[64];

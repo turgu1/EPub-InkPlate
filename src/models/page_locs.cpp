@@ -33,8 +33,6 @@
 
 auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
 
-  stopControlTask();
-
   completed                   = false;
   aborted                     = false;
   controlTaskReadyToBeStopped = false;
@@ -82,13 +80,13 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
 auto PageLocs::stopControlTask() -> void {
 
   if (controlTask) {
-    SHOW_IT("Sending STOP");
+    LOG_I("Sending STOP");
     PageLocsControl::send({.req = PageLocsControl::Req::STOP});
 
     QueueData queueData;
     SHOW_IT("==> Waiting for STOPPED... <==");
     receive(queueData);
-    SHOW_IT("-> %s <-", (queueData.req == Req::STOPPED) ? "STOPPED" : "ERROR!!!");
+    LOG_I("-> %s <-", (queueData.req == Req::STOPPED) ? "STOPPED" : "ERROR!!!");
 
     controlTask->waitForExit();
     controlTask.reset();
@@ -122,7 +120,7 @@ auto PageLocs::getPageCountOrPercent() -> int16_t {
 }
 
 auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
-  if (controlTask) stopControlTask();
+  stopControlTask();
 
   currentFilename = epub->getCurrentFilename();
   checkForFormatChanges(epub, itemrefIndex, !load(currentFilename));
@@ -139,7 +137,7 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
       itemsSet.insert(id.itemrefIndex);
     } else {
       while (true) {
-        if (mutex.try_lock_for(std::chrono::milliseconds(10))) {
+        if (mutex.try_lock_for(std::chrono::milliseconds(2))) {
           pagesMap.insert(std::make_pair(id, info));
           itemsSet.insert(id.itemrefIndex);
           mutex.unlock();
@@ -346,13 +344,28 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
 
     LOG_D("==> Page locations recalc. <==");
 
-    if (controlTask) stopControlTask();
+    stopControlTask();
+
+    if (controlTask) {
+      LOG_E("Unable to stop existing control task. Aborting page locations computation.");
+      return;
+    }
 
     clear();
+
+    epub->getFonts().clearGlyphCaches();
 
     setupPagesComputation(epub);
 
     currentFormatParams = *epub->getBookFormatParams();
+
+    LOG_I("Starting page locations computation for itemref index %d with format params: ident=%d, "
+          "orientation=%d, "
+          "showTitle=%d, showPictures=%d, fontSize=%d, useFontsInBook=%d, font=%d",
+          itemrefIndex, currentFormatParams.ident, currentFormatParams.orientation,
+          currentFormatParams.showTitle, currentFormatParams.showPictures,
+          currentFormatParams.fontSize, currentFormatParams.useFontsInBook,
+          currentFormatParams.font);
 
     SHOW_IT("startNewDocument: Sending START_DOCUMENT");
     PageLocsControl::send({.req          = PageLocsControl::Req::START_DOCUMENT,

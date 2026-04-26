@@ -65,6 +65,25 @@ auto testMakeDefaultBlockSize() -> void {
   HP_CHECK(pool->liveCount() == 0);
 }
 
+auto testDirectConstruction() -> void {
+  std::printf("  [direct stack construction]\n");
+
+  HimemPool<Tracked> pool(3);
+  HP_CHECK(pool.blockSize() == 3);
+  HP_CHECK(pool.blockCount() == 0);
+  HP_CHECK(pool.liveCount() == 0);
+
+  {
+    auto a = pool.allocate(10);
+    auto b = pool.allocate(20);
+    HP_CHECK(a != nullptr && b != nullptr);
+    HP_CHECK(pool.blockCount() == 1);
+    HP_CHECK(pool.liveCount() == 2);
+  }
+
+  HP_CHECK(pool.liveCount() == 0);
+}
+
 auto testCustomBlockGrowth() -> void {
   std::printf("  [custom block size and growth]\n");
 
@@ -181,6 +200,7 @@ auto testHimemPoolTest() -> TestStats {
   std::printf("[himem_pool_test] start\n");
 
   testMakeDefaultBlockSize();
+  testDirectConstruction();
   testCustomBlockGrowth();
   testFreedSlotReuse();
   testCtorDtorPairing();

@@ -45,12 +45,7 @@ auto KeyboardViewer::getAlfanum(char * str, uint16_t len, UpdateHandler handler)
     Dim(width - 4, HEIGHT - 4), 
     Pos(((Screen::getWidth() - width ) >> 1) + 2, ((Screen::getHeight() - HEIGHT) >> 1) + 2));
 
-  TTF * font = fonts.get(0);
-
-  if (font == nullptr) {
-    LOG_E("Internal error (Drawings Font not available!");
-    return;
-  }
+  FontPtr &font = appFonts.getFont(0);
 
   Glyph * glyph = font->getGlyph(icon_char[severity], 24);
 

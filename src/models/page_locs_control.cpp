@@ -50,8 +50,10 @@ auto PageLocsControl::setup(const std::string &epubFilename) -> bool {
 }
 
 auto PageLocsControl::waitForExit() -> void {
-  controlThread.join();
-  controlThread.~thread();
+  if (controlThread.joinable()) {
+    controlThread.join();
+    controlThread.~thread();
+  }
 }
 
 auto PageLocsControl::requestNextItem(int16_t itemref, bool alreadySentToMgr) -> void {

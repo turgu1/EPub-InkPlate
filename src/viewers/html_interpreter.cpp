@@ -156,21 +156,21 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
 
       case DOM::Tag::B:
       case DOM::Tag::STRONG: {
-        Fonts::FaceStyle style = fmt.fontStyle;
-        if (style == Fonts::FaceStyle::NORMAL)
-          style = Fonts::FaceStyle::BOLD;
-        else if (style == Fonts::FaceStyle::ITALIC)
-          style = Fonts::FaceStyle::BOLD_ITALIC;
+        FaceStyle style = fmt.fontStyle;
+        if (style == FaceStyle::NORMAL)
+          style = FaceStyle::BOLD;
+        else if (style == FaceStyle::ITALIC)
+          style = FaceStyle::BOLD_ITALIC;
         page->resetFontIndex(fmt, style);
       } break;
 
       case DOM::Tag::I:
       case DOM::Tag::EM: {
-        Fonts::FaceStyle style = fmt.fontStyle;
-        if (style == Fonts::FaceStyle::NORMAL)
-          style = Fonts::FaceStyle::ITALIC;
-        else if (style == Fonts::FaceStyle::BOLD)
-          style = Fonts::FaceStyle::BOLD_ITALIC;
+        FaceStyle style = fmt.fontStyle;
+        if (style == FaceStyle::NORMAL)
+          style = FaceStyle::ITALIC;
+        else if (style == FaceStyle::BOLD)
+          style = FaceStyle::BOLD_ITALIC;
         page->resetFontIndex(fmt, style);
       } break;
 

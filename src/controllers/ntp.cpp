@@ -32,7 +32,7 @@
 
       NTPPacket packet;
 
-      std::string hostName;
+      HimemString hostName;
 
       config.get(Config::Ident::NTP_SERVER, hostName);
 

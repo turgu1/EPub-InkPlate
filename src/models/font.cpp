@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 
 Font::Font() {
-  memoryFont      = nullptr;
   currentFontSize = -1;
   ready           = false;
 }
@@ -47,7 +46,7 @@ auto Font::bytePoolAlloc(uint16_t size) -> uint8_t * {
 }
 
 auto Font::clearCache() -> void {
-  std::scoped_lock guard(mutex);
+  // std::scoped_lock guard(mutex);
 
   LOG_D("Clear cache...");
   for (auto const &entry : cache) {
@@ -67,7 +66,7 @@ auto Font::clearCache() -> void {
 
 auto Font::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
   {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
 
     return ready ? getGlyphInternal(charcode, glyphSize) : nullptr;
   }
@@ -76,7 +75,7 @@ auto Font::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
 auto Font::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
                     bool &ignoreNext) -> Glyph * {
   {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
 
     ignoreNext   = false;
     Glyph *glyph = getGlyphInternal(charcode, glyphSize);
@@ -95,49 +94,9 @@ auto Font::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
   }
 }
 
-auto Font::setFontFaceFromFile(const std::string fontFilename) -> bool {
-  LOG_D("setFontFaceFromFile() ...");
-
-  FILE *fontFile;
-  if ((fontFile = fopen(fontFilename.c_str(), "r")) == nullptr) {
-    LOG_E("setFontFaceFromFile: Unable to open font file '%s'", fontFilename.c_str());
-    return false;
-  } else {
-    struct stat statBuf;
-    fstat(fileno(fontFile), &statBuf);
-    int32_t length = statBuf.st_size;
-
-    LOG_D("Font File Length: %" PRIi32, length);
-
-    auto buffer = makeUniqueHimem<uint8_t[]>(length + 1);
-
-    if (buffer == nullptr) {
-      LOG_E("Unable to allocate font buffer: %" PRIi32, (int32_t)(length + 1));
-      MsgViewer::outOfMemory("font buffer allocation");
-    }
-
-    if (fread(buffer.get(), length, 1, fontFile) != 1) {
-      LOG_E("setFontFaceFromFile: Unable to read file content");
-      fclose(fontFile);
-      return false;
-    }
-
-    fclose(fontFile);
-
-    buffer[length] = 0;
-
-    if (setFontFaceFromMemory(std::move(buffer), length)) {
-      return true;
-    } else {
-      LOG_E("Font Filename in trouble: '%s'", fontFilename.c_str());
-      return false;
-    }
-  }
-}
-
 auto Font::getSize(const char *str, Dim *dim, int16_t glyphSize) -> void {
   {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
 
     int16_t maxUp   = 0;
     int16_t maxDown = 0;

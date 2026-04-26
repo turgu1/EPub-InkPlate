@@ -48,8 +48,8 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     ESP::show_heaps_info();
   #endif
 
-  Font *font = fonts.get(ScreenBottom::FONT);
-  pageBottom = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
+  FontPtr &font = epub->getFonts().getFont(ScreenBottom::FONT);
+  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
 
   // page->setComputeMode(Page::ComputeMode::MOVE);
 
@@ -66,12 +66,12 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     int16_t title_baseline_offset = 0;
 
     if (showTitle != 0) {
-      Font *title_font      = fonts.get(TITLE_FONT);
+      FontPtr &title_font   = epub->getFonts().getFont(TITLE_FONT);
       page_top              = title_font->getCharsHeight(TITLE_FONT_SIZE) + 10;
       title_baseline_offset = page_top + title_font->getDescenderHeight(TITLE_FONT_SIZE);
     }
 
-    if ((idx = fonts.getIndex("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
+    if ((idx = epub->getFonts().getIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
 
@@ -85,10 +85,10 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         .screenBottom     = pageBottom,
     };
 
-    mutex.unlock();
+    // mutex.unlock();
     std::this_thread::yield();
     const PageLocs::PageInfo *page_info = pageLocs.getPageInfo(pageId);
-    mutex.lock();
+    // mutex.lock();
 
     if (page_info == nullptr) return;
 
@@ -128,7 +128,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         fmt.lineHeightFactor = 1.0;
         fmt.fontIndex        = TITLE_FONT;
         fmt.fontSize         = TITLE_FONT_SIZE;
-        fmt.fontStyle        = Fonts::FaceStyle::ITALIC;
+        fmt.fontStyle        = FaceStyle::ITALIC;
         fmt.align            = CSS::Align::CENTER;
 
         std::ostringstream ostr;
@@ -174,7 +174,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
       .fontSize     = 14,
       .screenTop    = 100,
       .screenBottom = 30,
-      .fontStyle    = Fonts::FaceStyle::ITALIC,
+      .fontStyle    = FaceStyle::ITALIC,
       .align        = CSS::Align::CENTER,
   };
 
@@ -190,7 +190,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   fmt.fontIndex = 1;
   fmt.fontSize  = 18;
   fmt.screenTop = 200;
-  fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+  fmt.fontStyle = FaceStyle::NORMAL;
 
   page->setLimits(fmt);
   page->newParagraph(fmt, false);
@@ -201,7 +201,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
 }
 
 auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
-  std::scoped_lock guard(mutex);
+  // std::scoped_lock guard(mutex);
 
   current_page_id = pageId;
 

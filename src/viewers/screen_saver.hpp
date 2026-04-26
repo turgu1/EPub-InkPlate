@@ -18,7 +18,7 @@
 
     auto setup() -> bool;
 
-    PagePtr page{Page::Make()};
+    PagePtr page{Page::Make(appFonts)};
 
   public:
     ScreenSaver()  = default;

@@ -7,25 +7,26 @@
 
 #include "himem.hpp"
 #include "memory_pool.hpp"
+#include "models/fonts_db.hpp"
 
 #include <forward_list>
-#include <mutex>
+// #include <mutex>
 #include <unordered_map>
 
-using MemoryFontPtr = HimemUniquePtr<uint8_t[]>;
+using FontPtr = HimemUniquePtr<class Font>;
 
 class Font {
 
 private:
   static constexpr char const *TAG = "Font";
 
-  std::mutex mutex;
+  // std::mutex mutex;
 
 public:
   Font();
   virtual ~Font() {};
 
- [[nodiscard]] inline auto isReady() const -> bool { return ready; }
+  [[nodiscard]] inline auto isReady() const -> bool { return ready; }
 
   /**
    * @brief Get a glyph object
@@ -43,15 +44,15 @@ public:
   virtual auto getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph *;
   // #endif
 
-  virtual auto getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
-                          int16_t &kern, bool &ignoreNext) -> Glyph *;
+  virtual auto getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
+                        bool &ignoreNext) -> Glyph *;
 
   auto clearCache() -> void;
 
   auto getSize(const char *str, Dim *dim, int16_t glyphSize) -> void;
 
- inline auto setFontsCacheIndex(int16_t index) -> void { fontsCacheIndex = index; }
- [[nodiscard]] inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
+  inline auto setFontsCacheIndex(int16_t index) -> void { fontsCacheIndex = index; }
+  [[nodiscard]] inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
   auto bytePoolAlloc(uint16_t size) -> uint8_t *;
 
   /**
@@ -98,18 +99,18 @@ protected:
 
   auto addBuffToBytePool() -> void;
 
-  MemoryFontPtr memoryFont; ///< Buffer for memory fonts
+  FontFaceDescriptorPtr fontFaceDescriptor{nullptr};
 
-  /**
-   * @brief Set the font face object
-   *
-   * Get a font file loaded and ready to supply glyphs.
-   *
-   * @param fontFilename The filename of the font.
-   * @return true The font was found and retrieved
-   * @return false Some error (file not found, unsupported format)
-   */
-  auto setFontFaceFromFile(const std::string fontFilename) -> bool;
+  // /**
+  //  * @brief Set the font face object
+  //  *
+  //  * Get a font file loaded and ready to supply glyphs.
+  //  *
+  //  * @param fontFilename The filename of the font.
+  //  * @return true The font was found and retrieved
+  //  * @return false Some error (file not found, unsupported format)
+  //  */
+  // auto setFontFaceFromFile(const std::string fontFilename) -> bool;
 
   /**
    * @brief Set the font size
@@ -123,19 +124,19 @@ protected:
    */
   auto setFontSize(int16_t size) -> bool;
 
-  /**
-   * @brief Set the font face object
-   *
-   * Get a font from memory loaded and ready to supply glyphs. Note
-   * that the buffer will be freed when the face will be removed.
-   *
-   * @param buffer The buffer containing the font.
-   * @param size   The buffer size in bytes.
-   * @return true The font was found and retrieved.
-   * @return false Some error (file not found, unsupported format).
-   */
-  virtual auto setFontFaceFromMemory(MemoryFontPtr buffer, int32_t size) -> bool = 0;
-  virtual auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph *  = 0;
+  // /**
+  //  * @brief Set the font face object
+  //  *
+  //  * Get a font from memory loaded and ready to supply glyphs. Note
+  //  * that the buffer will be freed when the face will be removed.
+  //  *
+  //  * @param buffer The buffer containing the font.
+  //  * @param size   The buffer size in bytes.
+  //  * @return true The font was found and retrieved.
+  //  * @return false Some error (file not found, unsupported format).
+  //  */
+  // virtual auto setFontFace(const FontFaceDescriptorPtr descr) -> bool            = 0;
+  virtual auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph * = 0;
   virtual auto adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t nextCharcode,
-                                       int16_t &kern, bool &ignoreNext) -> Glyph *  = 0;
+                                     int16_t &kern, bool &ignoreNext) -> Glyph * = 0;
 };

@@ -7,7 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-#include <mutex>
+// #include <mutex>
 #include <unordered_map>
 
 #if EPUB_LINUX_BUILD
@@ -33,13 +33,13 @@ class BookViewer {
 private:
   static constexpr char const *TAG = "BookViewer";
 
-  BookViewer() = default;
+  BookViewer(Fonts &fonts) : page(Page::Make(fonts)) {};
 
-  std::mutex mutex;
+  // std::mutex mutex;
   uint16_t pageBottom;
   PageId current_page_id{-1, -1};
 
-  PagePtr page{Page::Make()};
+  PagePtr page{nullptr};
 
   auto buildPageAt(const PageId &pageId, EPubPtr &epub) -> void;
 
@@ -52,11 +52,11 @@ public:
     requires(!std::is_array_v<T>)
   friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make() { return makeUniqueHimem<BookViewer>(); }
+  static inline auto Make(Fonts &fonts) { return makeUniqueHimem<BookViewer>(fonts); }
 
   ~BookViewer() = default;
 
-  inline std::mutex &getMutex() { return mutex; }
+  // inline std::mutex &getMutex() { return mutex; }
 
   /**
    * @brief Show a page on the display.

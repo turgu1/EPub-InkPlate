@@ -139,18 +139,25 @@ struct PsramDeleter<T[]> {
 // ===========================================================================
 // HimemSharedPtr / makeSharedHimem
 //
-// std::allocate_shared places the control-block and the managed object in
-// a single allocation, so the entire shared_ptr machinery lives in PSRAM.
+// The managed object is placed in PSRAM via direct placement new.
+// The shared_ptr control block lives on the default heap.
 // ===========================================================================
 
 template <typename T>
 using HimemSharedPtr = std::shared_ptr<T>;
 
 // Single-object overload
+// Construction is done via placement new directly inside this function so that
+// classes with private constructors can grant access with a simple friend
+// declaration (same pattern as makeUniqueHimem).  The control block is placed
+// on the default heap; the managed object itself lives in PSRAM.
 template <typename T, typename... Args>
   requires(!std::is_array_v<T>)
 [[nodiscard]] auto makeSharedHimem(Args &&...args) -> HimemSharedPtr<T> {
-  return std::allocate_shared<T>(PsramAllocator<T>{}, std::forward<Args>(args)...);
+  void *mem = HIMEM_MALLOC(sizeof(T));
+  if (!mem) return nullptr;
+  T *obj = ::new (mem) T(std::forward<Args>(args)...);
+  return HimemSharedPtr<T>{obj, PsramDeleter<T>{}};
 }
 
 // Unbounded-array overload  (e.g. makeSharedHimem<int[]>(n))
@@ -246,7 +253,15 @@ using HimemString = std::basic_string<char, std::char_traits<char>, PsramAllocat
 // ===========================================================================
 
 template <typename T>
-using HimemVector = std::vector<T, PsramAllocator<T>>;
+class HimemVector : public std::vector<T, PsramAllocator<T>> {
+public:
+  using Base = std::vector<T, PsramAllocator<T>>;
+  using Base::Base;
+
+  HimemVector() = default;
+
+  explicit HimemVector(const PsramAllocator<T> &alloc) : Base(alloc) {}
+};
 
 // ===========================================================================
 // HimemUnorderedMap<K, V>

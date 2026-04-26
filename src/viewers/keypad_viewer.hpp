@@ -17,7 +17,7 @@ using KeypadViewerPtr = HimemUniquePtr<class KeypadViewer>;
 class KeypadViewer {
 private:
   KeypadViewer() = default;
-  PagePtr page{Page::Make()};
+  PagePtr page{Page::Make(appFonts)};
 
 public:
   auto getValue() -> uint16_t { return clientValue; }
@@ -60,11 +60,10 @@ private:
   Pos fieldPos;         // Where to put the number on screen
   uint16_t clientValue; // Computed value
   Page::Format fmt;
-  Font *font;
   Glyph *glyph;
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    auto getKeyVal(uint16_t x, uint16_t y)  -> int8_t{
+    auto getKeyVal(uint16_t x, uint16_t y) -> int8_t {
       for (int i = 0; i < (KEY_COUNT - 1); i++) {
         if ((x >= keyLocs[i].pos.x) && (x <= keyLocs[i].pos.x + keyDim.width) &&
             (y >= keyLocs[i].pos.y) && (y <= keyLocs[i].pos.y + keyDim.height)) {
@@ -164,8 +163,8 @@ public:
 
     // LOG_I("Digits: %s", digits);
 
-    font  = fonts.get(1);
-    glyph = font->getGlyph('0', FONT_SIZE);
+    FontPtr &font = appFonts.getFont(1);
+    glyph         = font->getGlyph('0', FONT_SIZE);
 
     keyDim  = Dim(glyph->dim.width + KEY_ADDED_WIDTH, glyph->dim.height + KEY_ADDED_HEIGHT);
     keyDim2 = Dim((keyDim.width << 1) + 2, keyDim.height);

@@ -14,8 +14,8 @@
 #include <string>
 #include <utility>
 
-#include "models/css.hpp"
 #include "display_list.hpp"
+#include "models/css.hpp"
 #include "models/fonts.hpp"
 
 /**
@@ -33,7 +33,9 @@ using PagePtr = HimemUniquePtr<class Page>;
 
 class Page {
 private:
-  Page() = default;
+  Page(Fonts &fonts) : fonts(fonts) {}
+
+  Fonts &fonts;
 
 public:
   ~Page() = default; // { LOG_D("Page destructor called"); };
@@ -42,7 +44,7 @@ public:
     requires(!std::is_array_v<T>)
   friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
-  static inline auto Make() { return makeUniqueHimem<Page>(); }
+  static inline auto Make(Fonts &fonts) { return makeUniqueHimem<Page>(fonts); }
 
   static const uint16_t HORIZONTAL_CENTER = 9999;
 
@@ -65,7 +67,7 @@ public:
     uint16_t           verticalAlign    =   0; ///< In pixels
     bool               trim             = true;
     bool               pre              = false;
-    Fonts::FaceStyle   fontStyle        = Fonts::FaceStyle::NORMAL;
+    FaceStyle          fontStyle        = FaceStyle::NORMAL;
     CSS::Align         align            = CSS::Align::LEFT;
     CSS::TextTransform textTransform    = CSS::TextTransform::NONE;
     CSS::Display       display          = CSS::Display::INLINE;
@@ -108,8 +110,8 @@ private:
   DisplayListPool displayListPool; ///< Memory pool for DisplayListEntry objects, shared across
                                    ///< all DisplayList instances used by this Page instance
 
-  DisplayListPtr displayList = DisplayList::Make(displayListPool);
-  DisplayListPtr lineList = DisplayList::Make(displayListPool); ///< Line preparation for paragraphs
+  DisplayListPtr displayList{DisplayList::Make(displayListPool)};
+  DisplayListPtr lineList{DisplayList::Make(displayListPool)}; ///< Line preparation for paragraphs
 
   Pos pos;                        ///< Current drawing Screen position
   int16_t minY, maxX, maxY, minX; ///< Screen limits for page content
@@ -302,16 +304,16 @@ public:
     #endif
   }
 
- inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
+  inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
 
- [[nodiscard]] inline auto getComputeMode() const -> ComputeMode { return computeMode; }
- [[nodiscard]] inline auto paintWidth() const -> int16_t { return maxX - minX; }
- [[nodiscard]] inline auto isFull() const -> bool { return screenIsFull; }
- [[nodiscard]] inline auto isEmpty() const -> bool { return displayList->empty(); }
- [[nodiscard]] inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
- [[nodiscard]] inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
- [[nodiscard]] inline auto getLineList() const -> const DisplayList & { return *lineList; }
- [[nodiscard]] inline auto getPosY() const -> int16_t { return pos.y; }
+  [[nodiscard]] inline auto getComputeMode() const -> ComputeMode { return computeMode; }
+  [[nodiscard]] inline auto paintWidth() const -> int16_t { return maxX - minX; }
+  [[nodiscard]] inline auto isFull() const -> bool { return screenIsFull; }
+  [[nodiscard]] inline auto isEmpty() const -> bool { return displayList->empty(); }
+  [[nodiscard]] inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
+  [[nodiscard]] inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
+  [[nodiscard]] inline auto getLineList() const -> const DisplayList & { return *lineList; }
+  [[nodiscard]] inline auto getPosY() const -> int16_t { return pos.y; }
 
   auto getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical = false)
       -> int16_t;
@@ -321,7 +323,7 @@ public:
                     const CSSPtr &itemCss);
   auto adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void;
 
- inline auto resetFontIndex(Format &fmt, Fonts::FaceStyle style) -> void {
+  inline auto resetFontIndex(Format &fmt, FaceStyle style) -> void {
     if (style != fmt.fontStyle) {
       int16_t idx = -1;
       if ((idx = fonts.getIndex(fonts.getName(fmt.fontIndex), style)) == -1) {
@@ -329,7 +331,7 @@ public:
         idx = fonts.getIndex("Default", style);
       }
       if (idx == -1) {
-        fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+        fmt.fontStyle = FaceStyle::NORMAL;
         fmt.fontIndex = 3;
       } else {
         fmt.fontStyle = style;

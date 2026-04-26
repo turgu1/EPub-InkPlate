@@ -42,7 +42,7 @@ private:
   auto showPage(int16_t page_nbr, int16_t hightlight_item_idx) -> void;
   auto highlight(int16_t item_idx) -> void;
 
-  PagePtr page{Page::Make()};
+  PagePtr page{Page::Make(appFonts)};
 
   MatrixBooksDirViewer() = default;
 
@@ -70,8 +70,7 @@ public:
 
   auto getIndexAt(uint16_t x, uint16_t y) -> int16_t {
     if ((x < 5) || (y < firstEntryYpos)) return -1;
-    int16_t line_idx =
-        (y - firstEntryYpos) / (BooksDir::coverDim.height + vertSpaceBetweenEntries);
+    int16_t line_idx = (y - firstEntryYpos) / (BooksDir::coverDim.height + vertSpaceBetweenEntries);
     int16_t column_idx = (x - 5) / (BooksDir::coverDim.width + horizSpaceBetweenEntries);
     if ((line_idx >= lineCount) || (column_idx >= columnCount)) return -1;
     return (currentPageNbr * booksPerPage) + (column_idx * lineCount) + line_idx;

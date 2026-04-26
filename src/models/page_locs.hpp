@@ -31,6 +31,8 @@
 
 #if 1
   #define SHOW_IT(msg, ...) LOG_I(msg, ##__VA_ARGS__)
+#else
+  #define SHOW_IT(msg, ...)
 #endif
 
 /**
@@ -95,7 +97,7 @@ private:
 
   std::recursive_timed_mutex mutex;
 
-  PageLocsControlPtr controlTask;
+  PageLocsControlPtr controlTask{nullptr};
 
   PagesMap pagesMap;
   ItemsSet itemsSet;
@@ -161,7 +163,7 @@ public:
   [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
     if (controlTaskReadyToBeStopped) stopControlTask();
 
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
     PagesMap::iterator it = checkAndFind(pageId);
     return it == pagesMap.end() ? nullptr : &it->second;
   }

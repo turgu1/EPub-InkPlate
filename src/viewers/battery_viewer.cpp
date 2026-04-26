@@ -28,12 +28,7 @@
 
     // Show battery icon
 
-    Font *font = fonts.get(0);
-
-    if (font == nullptr) {
-      LOG_E("Internal error (Drawings Font not available!");
-      return;
-    }
+    FontPtr &font = appFonts.getFont(0);
 
     float value       = ((voltage - 2.5) * 4.0) / 1.2;
     int16_t iconIndex = value; // max is 3.7
@@ -54,7 +49,7 @@
     // page->clearRegion(dim, pos);
 
     fmt.fontIndex = 0;
-    pos.x          = 5;
+    pos.x         = 5;
     page->putCharAt(icons[iconIndex], pos, fmt);
 
     // LOG_E("Battery icon index: %d (%c)", iconIndex, icons[iconIndex]);
@@ -72,9 +67,8 @@
         sprintf(str, "%5.2fv", voltage);
       }
 
-      font           = fonts.get(1);
       fmt.fontIndex = 1;
-      pos.x          = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
+      pos.x         = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
       page->putStrAt(str, pos, fmt);
     }
   }

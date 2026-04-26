@@ -8,6 +8,7 @@
 
 #if EPUB_INKPLATE_BUILD
   #include "esp.hpp"
+  #include "freertos/task.h"
 
   QueueHandle_t PageLocsRetriever::retrieverQueue{nullptr};
 #else
@@ -60,7 +61,7 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
     auto cfg        = esp_pthread_get_default_config();
     cfg.thread_name = "retrieverTask";
     cfg.pin_to_core = 1;
-    cfg.stack_size  = 40 * 1024;
+    cfg.stack_size  = 30 * 1024;
     cfg.prio        = configMAX_PRIORITIES - 2;
     cfg.inherit_cfg = true;
 
@@ -93,8 +94,13 @@ auto PageLocsRetriever::task() -> void {
 
       case Req::RETRIEVE_ITEM:
       case Req::GET_ASAP: {
-        SHOW_IT("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
-
+        #if EPUB_INKPLATE_BUILD
+          SHOW_IT("-> %s (%" PRIi32 ") <-",
+                  (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM",
+                  (int32_t)uxTaskGetStackHighWaterMark(nullptr));
+        #else
+          SHOW_IT("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
+        #endif
         retrieve_item(queueData.req, queueData.itemrefIndex);
 
       } break;
@@ -138,9 +144,11 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
 auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
   // std::scoped_lock guard(book_viewer.getMutex());
 
-  Font *font = fonts.get(ScreenBottom::FONT);
-  pageBottom = font->getLineHeight(ScreenBottom::FONT_SIZE) +
-               (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
+  Fonts &fonts = epub->getFonts();
+
+  FontPtr &font = fonts.getFont(ScreenBottom::FONT);
+  pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) +
+                  (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
 
   // pageOut->setComputeMode(Page::ComputeMode::LOCATION);
 
@@ -156,7 +164,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
     int16_t idx;
 
-    if ((idx = fonts.getIndex("Fontbase", Fonts::FaceStyle::NORMAL)) == -1) {
+    if ((idx = fonts.getIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
 
@@ -168,8 +176,8 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     uint16_t pageTop = 0;
 
     if (showTitle != 0) {
-      Font *titleFont = fonts.get(BookViewer::TITLE_FONT);
-      pageTop         = titleFont->getCharsHeight(BookViewer::TITLE_FONT_SIZE) + 10;
+      FontPtr &titleFont = fonts.getFont(BookViewer::TITLE_FONT);
+      pageTop            = titleFont->getCharsHeight(BookViewer::TITLE_FONT_SIZE) + 10;
     }
 
     Page::Format fmt = {
@@ -181,7 +189,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     };
 
     auto dom     = DOM::Make();
-    auto pageOut = Page::Make();
+    auto pageOut = Page::Make(fonts);
 
     auto interp =
         PageLocsInterpreter::Make(epub, pageOut, dom, Page::ComputeMode::LOCATION, itemInfo);

@@ -201,21 +201,21 @@ static auto testParagraphProperties(const CSS::RulesMap &rules) -> void {
       SUITE_CHECK(v->num == 12.0f, "p: font-size != 12");
     }
   }
-  // font-style: italic → Fonts::FaceStyle::ITALIC
+  // font-style: italic → FaceStyle::ITALIC
   {
     const CSS::Value *v = firstValue(matched, CSS::PropertyId::FONT_STYLE);
     SUITE_CHECK(v != nullptr, "p: no font-style value");
     if (v) {
       SUITE_CHECK(v->valueType == CSS::ValueType::STR, "p: font-style not STR");
-      SUITE_CHECK(v->choice.faceStyle == Fonts::FaceStyle::ITALIC, "p: font-style != ITALIC");
+      SUITE_CHECK(v->choice.faceStyle == FaceStyle::ITALIC, "p: font-style != ITALIC");
     }
   }
-  // font-weight: bold → Fonts::FaceStyle::BOLD
+  // font-weight: bold → FaceStyle::BOLD
   {
     const CSS::Value *v = firstValue(matched, CSS::PropertyId::FONT_WEIGHT);
     SUITE_CHECK(v != nullptr, "p: no font-weight value");
     if (v) {
-      SUITE_CHECK(v->choice.faceStyle == Fonts::FaceStyle::BOLD, "p: font-weight != BOLD");
+      SUITE_CHECK(v->choice.faceStyle == FaceStyle::BOLD, "p: font-weight != BOLD");
     }
   }
   // text-align: justify → Align::JUSTIFY
@@ -574,12 +574,11 @@ static auto testFontFaceProperties(const CSS::RulesMap &rules) -> void {
                     "@font-face: src url doesn't contain test.ttf");
         break;
       case CSS::PropertyId::FONT_STYLE:
-        SUITE_CHECK((*vi)->choice.faceStyle == Fonts::FaceStyle::NORMAL,
+        SUITE_CHECK((*vi)->choice.faceStyle == FaceStyle::NORMAL,
                     "@font-face: font-style != NORMAL");
         break;
       case CSS::PropertyId::FONT_WEIGHT:
-        SUITE_CHECK((*vi)->choice.faceStyle == Fonts::FaceStyle::BOLD,
-                    "@font-face: font-weight != BOLD");
+        SUITE_CHECK((*vi)->choice.faceStyle == FaceStyle::BOLD, "@font-face: font-weight != BOLD");
         break;
       default:
         break;
@@ -726,7 +725,7 @@ static auto testImportant(const CSS::RulesMap &rules) -> void {
       const CSS::Value *v = firstValue(single, CSS::PropertyId::FONT_WEIGHT);
       SUITE_CHECK(v != nullptr, "!important: no font-weight");
       if (v) {
-        SUITE_CHECK(v->choice.faceStyle == Fonts::FaceStyle::BOLD,
+        SUITE_CHECK(v->choice.faceStyle == FaceStyle::BOLD,
                     "!important: font-weight value corrupted");
       }
     }
@@ -762,7 +761,7 @@ static auto testInlineStyle() -> void {
   const CSS::Value *w = firstValue(css->rulesMap, CSS::PropertyId::FONT_WEIGHT);
   SUITE_CHECK(w != nullptr, "inline: no font-weight");
   if (w) {
-    SUITE_CHECK(w->choice.faceStyle == Fonts::FaceStyle::BOLD, "inline: font-weight != BOLD");
+    SUITE_CHECK(w->choice.faceStyle == FaceStyle::BOLD, "inline: font-weight != BOLD");
   }
 }
 

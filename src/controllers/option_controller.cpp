@@ -16,6 +16,7 @@
 #include "models/epub.hpp"
 #include "models/fonts.hpp"
 #include "models/nvs_mgr.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
 // #undef DEBUGGING
@@ -67,65 +68,57 @@ static int8_t oldCoverSize;
 #endif
 
 static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
-    {.caption    = "Minutes Before Sleeping :",
-     .u          = {.ch = {.value        = &timeout,
-                           .choiceCount = 3,
-                           .choices      = FormChoiceField::timeoutChoices}},
+    {.caption = "Minutes Before Sleeping :",
+     .u = {.ch = {.value = &timeout, .choiceCount = 3, .choices = FormChoiceField::timeoutChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Books Directory View :",
-     .u          = {.ch = {.value        = &dirView,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::dirViewChoices}},
+    {.caption = "Books Directory View :",
+     .u = {.ch = {.value = &dirView, .choiceCount = 2, .choices = FormChoiceField::dirViewChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Books Cover Size :",
-     .u          = {.ch = {.value        = &coverSize,
-                           .choiceCount = 3,
-                           .choices      = FormChoiceField::coverSizeChoices}},
+    {.caption   = "Books Cover Size :",
+     .u         = {.ch = {.value       = &coverSize,
+                          .choiceCount = 3,
+                          .choices     = FormChoiceField::coverSizeChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    {.caption    = "uSDCard Position (*):",
-     .u          = {.ch = {.value        = (int8_t *)&orientation,
-                           .choiceCount = 4,
-                           .choices      = FormChoiceField::orientationChoices}},
+    {.caption   = "uSDCard Position (*):",
+     .u         = {.ch = {.value       = (int8_t *)&orientation,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::orientationChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #else
-    {.caption    = "Buttons Position (*):",
-     .u          = {.ch = {.value        = (int8_t *)&orientation,
-                           .choiceCount = 3,
-                           .choices      = FormChoiceField::orientationChoices}},
+    {.caption   = "Buttons Position (*):",
+     .u         = {.ch = {.value       = (int8_t *)&orientation,
+                          .choiceCount = 3,
+                          .choices     = FormChoiceField::orientationChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #endif
-    {.caption    = "Pixel Resolution :",
-     .u          = {.ch = {.value        = (int8_t *)&resolution,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::resolutionChoices}},
+    {.caption   = "Pixel Resolution :",
+     .u         = {.ch = {.value       = (int8_t *)&resolution,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::resolutionChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Show Battery Level :",
-     .u          = {.ch = {.value        = &showBattery,
-                           .choiceCount = 4,
-                           .choices      = FormChoiceField::batteryVisualChoices}},
+    {.caption   = "Show Battery Level :",
+     .u         = {.ch = {.value       = &showBattery,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::batteryVisualChoices}},
      .entryType = FormEntryType::VERTICAL},
-    {.caption    = "Show Title (*):",
-     .u          = {.ch = {.value        = &showTitle,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption = "Show Title (*):",
+     .u = {.ch = {.value = &showTitle, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #if DATE_TIME_RTC
-    {.caption    = "Right Bottom Corner :",
-     .u          = {.ch = {.value        = &showHeapOrRtc,
-                           .choiceCount = 3,
-                           .choices      = FormChoiceField::rightCornerChoices}},
+    {.caption   = "Right Bottom Corner :",
+     .u         = {.ch = {.value       = &showHeapOrRtc,
+                          .choiceCount = 3,
+                          .choices     = FormChoiceField::rightCornerChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #else
-    {.caption    = "Show Heap Sizes :",
-     .u          = {.ch = {.value        = &showHeap,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption = "Show Heap Sizes :",
+     .u = {.ch = {.value = &showHeap, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #endif
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    {.caption    = " DONE ",
-     .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+    {.caption   = " DONE ",
+     .u         = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
      .entryType = FormEntryType::DONE}
 #endif
 };
@@ -136,29 +129,29 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
   static constexpr int8_t FONT_FORM_SIZE = 4;
 #endif
 static FormEntry fontParamsFormEntries[FONT_FORM_SIZE] = {
-    {.caption    = "Default Font Size (*):",
-     .u          = {.ch = {.value        = &fontSize,
-                           .choiceCount = 4,
-                           .choices      = FormChoiceField::fontSizeChoices}},
+    {.caption   = "Default Font Size (*):",
+     .u         = {.ch = {.value       = &fontSize,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::fontSizeChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Use Fonts in E-books (*):",
-     .u          = {.ch = {.value        = &useFontsInBooks,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption   = "Use Fonts in E-books (*):",
+     .u         = {.ch = {.value       = &useFontsInBooks,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption    = "Default Font (*):",
-     .u          = {.ch = {.value        = &defaultFont,
-                           .choiceCount = 8,
-                           .choices      = FormChoiceField::fontChoices}},
+    {.caption   = "Default Font (*):",
+     .u         = {.ch = {.value       = &defaultFont,
+                          .choiceCount = 8,
+                          .choices     = FormChoiceField::fontChoices}},
      .entryType = FormEntryType::VERTICAL},
-    {.caption    = "Show Images in E-books (*):",
-     .u          = {.ch = {.value        = &showPictures,
-                           .choiceCount = 2,
-                           .choices      = FormChoiceField::yesNoChoices}},
+    {.caption   = "Show Images in E-books (*):",
+     .u         = {.ch = {.value       = &showPictures,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    {.caption    = " DONE ",
-     .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+    {.caption   = " DONE ",
+     .u         = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
      .entryType = FormEntryType::DONE}
 #endif
 };
@@ -171,28 +164,28 @@ static FormEntry fontParamsFormEntries[FONT_FORM_SIZE] = {
   #endif
 
   static FormEntry dateTimeFormEntries[DATE_TIME_FORM_SIZE] = {
-      {.caption    = "Year :",
-       .u          = {.val = {.value = &year, .min = 2022, .max = 2099}},
+      {.caption   = "Year :",
+       .u         = {.val = {.value = &year, .min = 2022, .max = 2099}},
        .entryType = FormEntryType::UINT16},
-      {.caption    = "Month :",
-       .u          = {.val = {.value = &month, .min = 1, .max = 12}},
+      {.caption   = "Month :",
+       .u         = {.val = {.value = &month, .min = 1, .max = 12}},
        .entryType = FormEntryType::UINT16},
-      {.caption    = "Day :",
-       .u          = {.val = {.value = &day, .min = 1, .max = 31}},
+      {.caption   = "Day :",
+       .u         = {.val = {.value = &day, .min = 1, .max = 31}},
        .entryType = FormEntryType::UINT16},
-      {.caption    = "Hour :",
-       .u          = {.val = {.value = &hour, .min = 0, .max = 23}},
+      {.caption   = "Hour :",
+       .u         = {.val = {.value = &hour, .min = 0, .max = 23}},
        .entryType = FormEntryType::UINT16},
-      {.caption    = "Minute :",
-       .u          = {.val = {.value = &minute, .min = 0, .max = 59}},
+      {.caption   = "Minute :",
+       .u         = {.val = {.value = &minute, .min = 0, .max = 59}},
        .entryType = FormEntryType::UINT16},
-      {.caption    = "Second :",
-       .u          = {.val = {.value = &second, .min = 0, .max = 59}},
+      {.caption   = "Second :",
+       .u         = {.val = {.value = &second, .min = 0, .max = 59}},
        .entryType = FormEntryType::UINT16},
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      {.caption    = "DONE",
-       .u          = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
+      {.caption   = "DONE",
+       .u         = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
        .entryType = FormEntryType::DONE}
   #endif
   };
@@ -253,10 +246,11 @@ auto OptionController::defaultParameters() -> void {
 }
 
 auto OptionController::wifiMode() -> void {
+  pageLocs.stopControlTask();
 
   #if EPUB_INKPLATE_BUILD
-    fonts.clear(true);
-    fonts.clearGlyphCaches();
+    appFonts.clear(true);
+    appFonts.clearGlyphCaches();
 
     eventMgr.setStayOn(true); // DO NOT sleep
 
@@ -330,7 +324,7 @@ auto OptionController::initNvs() -> void {
     // pageLocs.abort_threads();
     // epub.closeFile();
 
-    std::string ntpServer;
+    HimemString ntpServer;
     config.get(Config::Ident::NTP_SERVER, ntpServer);
 
     MsgViewer::show(MsgViewer::MsgType::NTP_CLOCK, false, true, "Date/Time Retrival",
@@ -402,7 +396,9 @@ auto OptionController::setFontCount(uint8_t count) -> void {
 }
 
 auto OptionController::enter() -> void {
-  setFontCount(fonts.getStandardFontCount());
+  FontsDB *fontsDB{nullptr};
+  config.get(Config::Ident::FONTS_DB, &fontsDB);
+  setFontCount(fontsDB ? fontsDB->getStandardFontCount() : 0);
 
   menuViewer = MenuViewer::Make();
   formViewer = FormViewer::Make();
@@ -517,7 +513,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       }
 
       if (oldResolution != resolution) {
-        fonts.clearGlyphCaches();
+        appFonts.clearGlyphCaches();
         screen.setPixelResolution(resolution);
       }
 
@@ -549,13 +545,15 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       // }
 
       if (oldDefaultFont != defaultFont) {
-        fonts.adjustDefaultFont(defaultFont);
+        pageLocs.stopControlTask();
+        appFonts.adjustDefaultFont(defaultFont);
       }
 
       if (oldUseFontsInBooks != useFontsInBooks) {
+        pageLocs.stopControlTask();
         if (useFontsInBooks == 0) {
-          fonts.clear();
-          fonts.clearGlyphCaches();
+          appFonts.clear();
+          appFonts.clearGlyphCaches();
         }
       }
       // }

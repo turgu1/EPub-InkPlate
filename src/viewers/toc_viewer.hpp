@@ -39,7 +39,7 @@ private:
   auto showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void;
   auto highlight(int16_t screenIdx) -> void;
 
-  PagePtr page{Page::Make()};
+  PagePtr page{Page::Make(appFonts)};
   EPubPtr &epub;
 
   TocViewer(EPubPtr &theEpub) : epub(theEpub) {}

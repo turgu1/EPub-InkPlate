@@ -13,8 +13,8 @@
 // allocations.  T's constructor and destructor are called at the appropriate
 // moments.
 //
-// The pool object itself lives in PSRAM; use HimemPool<T>::Make(blockSize)
-// to create one.  It returns a HimemUniquePtr<HimemPool<T>>.
+// The pool object can be constructed directly (stack/heap) or allocated in
+// PSRAM using HimemPool<T>::Make(blockSize).
 //
 // Each individual object allocation is returned as a HimemPool<T>::Ptr,
 // a std::unique_ptr<T, HimemPool<T>::Deleter> that, when destroyed (or
@@ -71,10 +71,6 @@ private:
   std::size_t liveCount_{0};    ///< number of objects currently alive
   std::size_t blockCount_{0};   ///< number of backing blocks allocated
 
-  // ---- Private constructor (use Make()) ------------------------------------
-  explicit HimemPool(std::size_t blockSize) noexcept
-      : blockSize_(blockSize < 1u ? 1u : blockSize) {}
-
   // ---- Internal helpers ----------------------------------------------------
 
   /// Returns a pointer to the Slot_ array that follows a Block_ header.
@@ -111,6 +107,11 @@ private:
   }
 
 public:
+  // ---- Constructors --------------------------------------------------------
+  /// Creates a pool with the requested objects-per-block capacity.
+  explicit HimemPool(std::size_t blockSize = 20) noexcept
+      : blockSize_(blockSize < 1u ? 1u : blockSize) {}
+
   // ---- Custom deleter -------------------------------------------------------
   // Held by every Ptr returned from allocate().  On destruction it calls
   // ~T() on the managed object and recycles its slot back to the pool.
@@ -169,6 +170,12 @@ public:
     T *ptr = ::new (&slot->element) T(std::forward<Args>(args)...);
     ++liveCount_;
     return Ptr{ptr, Deleter{this}};
+  }
+
+  /// Raw-pointer release helper for legacy/manual call sites.
+  /// Prefer Ptr ownership when possible.
+  auto deallocate(T *ptr) noexcept -> void {
+    if (ptr) deallocate_(ptr);
   }
 
   // ---- Statistics ----------------------------------------------------------

@@ -13,8 +13,6 @@
 #include "himem.hpp"
 #include "miniz.h"
 
-using FileContentPtr = HimemUniquePtr<uint8_t[]>;
-
 class Unzip {
 private:
   static constexpr char const *TAG = "Unzip";
@@ -56,6 +54,7 @@ private:
 
   FILE *file; // Current File Descriptor
   bool zipFileIsOpen;
+  std::string currentFilename;
 
   mz_stream zstr;
 

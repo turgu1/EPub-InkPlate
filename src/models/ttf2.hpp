@@ -13,8 +13,9 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
+#include "models/fonts_db.hpp"
 #include <forward_list>
-#include <mutex>
+// #include <mutex>
 #include <unordered_map>
 
 class TTF : public Font {
@@ -22,12 +23,20 @@ private:
   static constexpr char const *TAG = "TTF";
 
   FT_Face face;
-  std::mutex mutex;
+  // std::mutex mutex;
+
+  TTF(const FontFaceDescriptorPtr descr, FT_Library &library);
 
 public:
-  TTF(const std::string &filename);
-  TTF(MemoryFontPtr buffer, int32_t size);
   ~TTF();
+
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
+
+  static inline auto Make(const FontFaceDescriptorPtr descr, FT_Library &library) -> FontPtr {
+    return makeUniqueHimem<TTF>(descr, library);
+  }
 
   // /**
   //  * @brief Get a glyph object
@@ -59,7 +68,7 @@ public:
    * @return int32_t Normal line height of the face in pixels
    */
   auto getLineHeight(int16_t glyphSize) -> int32_t {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->size->metrics.height >> 6);
   }
@@ -71,13 +80,12 @@ public:
    *                 the current font size.
    */
   auto getDescenderHeight(int16_t glyphSize) -> int32_t {
-    std::scoped_lock guard(mutex);
+    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->size->metrics.descender >> 6);
   }
 
 private:
-  static FT_Library library;
   auto clearFace() -> void;
 
   /**
@@ -86,12 +94,12 @@ private:
    * Get a font from memory loaded and ready to supply glyphs. Note
    * that the buffer will be freed when the face will be removed.
    *
-   * @param buffer The buffer containing the font.
-   * @param size   The buffer size in bytes.
+   * @param descr The font descriptor containing the font data.
+   * @param library The FreeType library instance.
    * @return true The font was found and retrieved.
    * @return false Some error (file not found, unsupported format).
    */
-  auto setFontFaceFromMemory(MemoryFontPtr buffer, int32_t size) -> bool;
+  auto setFontFace(const FontFaceDescriptorPtr descr, FT_Library &library) -> bool;
 
   /**
    * @brief Set the font size

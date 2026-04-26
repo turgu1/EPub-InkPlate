@@ -242,7 +242,7 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
 auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   const char *s = str.c_str();
   if (fmt.align == CSS::Align::LEFT) {
@@ -342,7 +342,7 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
 auto Page::putCharAt(char ch, Pos pos, const Format &fmt) -> void {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   glyph = font->getGlyph(ch, fmt.fontSize);
   if (glyph != nullptr) {
@@ -439,8 +439,9 @@ auto Page::start(const Format &fmt) -> void {
   displayList->clear();
   lineList->clear();
 
-  paraIndent = 0;
-  lineWidth  = 0;
+  paraIndent   = 0;
+  lineWidth    = 0;
+  glyphsHeight = 0;
 }
 
 auto Page::setLimits(const Format &fmt) -> void {
@@ -455,13 +456,14 @@ auto Page::setLimits(const Format &fmt) -> void {
 
   lineList->clear();
 
-  paraIndent = 0;
-  lineWidth  = 0;
-  topMargin  = 0;
+  paraIndent   = 0;
+  lineWidth    = 0;
+  topMargin    = 0;
+  glyphsHeight = 0;
 }
 
 auto Page::lineBreak(const Format &fmt, int8_t indentNextLine) -> bool {
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   if (!lineList->empty()) {
     addLine(fmt, false);
@@ -478,7 +480,7 @@ auto Page::lineBreak(const Format &fmt, int8_t indentNextLine) -> bool {
 }
 
 auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   // Check if there is enough room for the first line of the paragraph.
   if (!recover) {
@@ -489,6 +491,8 @@ auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
       return false;
     }
   }
+
+  lineHeightFactor = fmt.lineHeightFactor;
 
   paraMinX = minX + fmt.marginLeft;
   paraMaxX = maxX - fmt.marginRight;
@@ -518,7 +522,7 @@ auto Page::breakParagraph(const Format &fmt) -> void {
 }
 
 auto Page::endParagraph(const Format &fmt) -> bool {
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   if (!lineList->empty()) {
     addLine(fmt, false);
@@ -709,8 +713,7 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
 
 #if 1
   auto Page::addWord(const char *word, const Format &fmt) -> bool {
-    Font *font = fonts.get(fmt.fontIndex);
-    if (font == nullptr) return false;
+    FontPtr &font = fonts.getFont(fmt.fontIndex);
 
     if (lineList->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
@@ -790,9 +793,7 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
     const char *str = word;
     int32_t code;
 
-    Font *font = fonts.get(fmt.fontIndex, fmt.fontSize);
-
-    if (font == nullptr) return false;
+    FontPtr &font = fonts.getFont(fmt.fontIndex, fmt.fontSize);
 
     if (lineList->empty()) {
       // We are about to start a new line. Check if it will fit on the page.
@@ -852,9 +853,7 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
 auto Page::addChar(const char *ch, const Format &fmt) -> bool {
   Glyph *glyph;
 
-  Font *font = fonts.get(fmt.fontIndex);
-
-  if (font == nullptr) return false;
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   if (screenIsFull) return false;
 
@@ -926,7 +925,7 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
 
   // Compute the baseline advance for the bitmap, using info from the current font
   Glyph *glyph;
-  Font *font = fonts.get(fmt.fontIndex);
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
   const char *str = "m";
   const char *s1;
@@ -1365,23 +1364,23 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
 
   // LOG_D("Found!");
 
-  Fonts::FaceStyle fontWeight = ((fmt.fontStyle == Fonts::FaceStyle::BOLD) ||
-                                 (fmt.fontStyle == Fonts::FaceStyle::BOLD_ITALIC))
-                                    ? Fonts::FaceStyle::BOLD
-                                    : Fonts::FaceStyle::NORMAL;
-  Fonts::FaceStyle fontStyle  = ((fmt.fontStyle == Fonts::FaceStyle::ITALIC) ||
-                                 (fmt.fontStyle == Fonts::FaceStyle::BOLD_ITALIC))
-                                    ? Fonts::FaceStyle::ITALIC
-                                    : Fonts::FaceStyle::NORMAL;
+  FaceStyle fontWeight =
+      ((fmt.fontStyle == FaceStyle::BOLD) || (fmt.fontStyle == FaceStyle::BOLD_ITALIC))
+          ? FaceStyle::BOLD
+          : FaceStyle::NORMAL;
+  FaceStyle fontStyle =
+      ((fmt.fontStyle == FaceStyle::ITALIC) || (fmt.fontStyle == FaceStyle::BOLD_ITALIC))
+          ? FaceStyle::ITALIC
+          : FaceStyle::NORMAL;
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_STYLE))) {
-    fontStyle = (Fonts::FaceStyle)vals->front()->choice.faceStyle;
+    fontStyle = (FaceStyle)vals->front()->choice.faceStyle;
   }
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_WEIGHT))) {
-    fontWeight = (Fonts::FaceStyle)vals->front()->choice.faceStyle;
+    fontWeight = (FaceStyle)vals->front()->choice.faceStyle;
   }
 
-  Fonts::FaceStyle newStyle = fonts.adjustFontStyle(fmt.fontStyle, fontStyle, fontWeight);
+  FaceStyle newStyle = fonts.adjustFontStyle(fmt.fontStyle, fontStyle, fontWeight);
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
@@ -1393,7 +1392,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
       idx = fonts.getIndex("Default", newStyle);
     }
     if (idx == -1) {
-      fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+      fmt.fontStyle = FaceStyle::NORMAL;
       fmt.fontIndex = 3;
     } else {
       // LOG_D("Font index: %d", idx);
@@ -1405,7 +1404,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   }
 
   if (!fonts.check(fmt.fontIndex, fmt.fontStyle)) {
-    fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+    fmt.fontStyle = FaceStyle::NORMAL;
     fmt.fontIndex = 3;
   }
 
@@ -1497,7 +1496,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
     } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::SUPER) {
       fmt.verticalAlign = -5;
     } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::VALUE) {
-      Font *font = fonts.get(fmt.fontIndex);
+      FontPtr &font = fonts.getFont(fmt.fontIndex);
 
       fmt.verticalAlign = -getPixelValue(*(vals->front()), fmt, font->getLineHeight(fmt.fontSize));
     }

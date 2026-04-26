@@ -2,8 +2,8 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define _IBMF_ 1
 #include "models/ibmf.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
 #include "alloc.hpp"
@@ -249,16 +249,10 @@ static constexpr uint16_t translationLatinA[] = {
     /* 0x17F */ 0x20    // ſ
 };
 
-IBMF::IBMF(const std::string &filename) : Font() {
+IBMF::IBMF(const FontFaceDescriptorPtr descr) : Font() {
   face = nullptr;
 
-  setFontFaceFromFile(filename);
-}
-
-IBMF::IBMF(MemoryFontPtr buffer, int32_t bufferSize) : Font() {
-  face = nullptr;
-
-  setFontFaceFromMemory(std::move(buffer), bufferSize);
+  setFontFace(descr);
 }
 
 IBMF::~IBMF() {
@@ -267,6 +261,8 @@ IBMF::~IBMF() {
 }
 
 auto IBMF::clearFace() -> void {
+  LOG_I("Clearing IBMF face and cache...");
+  pageLocs.stopControlTask();
   clearCache();
   if (face != nullptr) {
     delete face;
@@ -372,8 +368,8 @@ auto IBMF::clearFace() -> void {
 // }
 
 auto IBMF::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
-                      bool &ignoreNext) -> Glyph * {
-  std::scoped_lock guard(mutex);
+                    bool &ignoreNext) -> Glyph * {
+  // std::scoped_lock guard(mutex);
 
   uint32_t glyphCode = translate(charcode);
 
@@ -395,7 +391,7 @@ auto IBMF::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
 }
 
 auto IBMF::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
-  std::scoped_lock guard(mutex);
+  // std::scoped_lock guard(mutex);
 
   uint32_t glyphCode = translate(charcode);
 
@@ -467,23 +463,24 @@ auto IBMF::setFontSize(int16_t size) -> bool {
   }
 }
 
-auto IBMF::setFontFaceFromMemory(MemoryFontPtr buffer, int32_t bufferSize) -> bool {
+auto IBMF::setFontFace(const FontFaceDescriptorPtr descr) -> bool {
   if (face != nullptr) clearFace();
 
-  face = new IBMFFont(buffer.get(), bufferSize, *this);
+  face = new IBMFFont(descr->fontData.get(), descr->fontDataSize, *this);
 
   if (face == nullptr) {
     LOG_E("The memory font format is unsupported or is broken.");
     return false;
   }
 
-  ready      = true;
-  memoryFont = std::move(buffer);
+  ready              = true;
+  fontFaceDescriptor = descr;
+
   return true;
 }
 
 auto IBMF::adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t nextCharcode,
-                                   int16_t &kern, bool &ignoreNext) -> Glyph * {
+                                 int16_t &kern, bool &ignoreNext) -> Glyph * {
   ignoreNext = false;
   kern       = 0;
 

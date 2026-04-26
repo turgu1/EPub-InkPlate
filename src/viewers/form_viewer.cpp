@@ -54,18 +54,18 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
   if (FormChoiceField::fontChoicesCount == 0) FormChoiceField::adjustFontChoices();
 
-  Font *font = fonts.get(1);
+  FontPtr &font = appFonts.getFont(1);
 
   if (!refresh) {
-    title        = titleArg;
+    title       = titleArg;
     formEntries = formEntriesArg;
-    size         = sizeArg;
+    size        = sizeArg;
     bottomMsg   = bottomMsgArg;
 
     fields.clear();
 
     for (int i = 0; i < size; i++) {
-      FormFieldPtr field = FieldFactory::create(formEntries[i], *font, *page.get());
+      FormFieldPtr field = FieldFactory::create(formEntries[i], *font.get(), *page.get());
       if (field != nullptr) {
         field->computeCaptionDim();
         field->computeFieldDim();
@@ -88,7 +88,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
       if (width > allCaptionsWidth) allCaptionsWidth = width;
     }
 
-    width                    = allCaptionsWidth + allFieldsWidth + 25;
+    width                   = allCaptionsWidth + allFieldsWidth + 25;
     const int16_t rightXpos = (Screen::getWidth() >> 1) + (width >> 1);
 
     int16_t currentYpos  = TOP_YPOS + 20;
@@ -198,7 +198,7 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
       case EventMgr::EventKind::TAP:
         currentField = findField(event.x, event.y);
 
-        if ((*currentField)->getType() == FormEntryType::DONE) {
+        if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
           completed = true;
         } else {
           if (currentField != fields.end()) {

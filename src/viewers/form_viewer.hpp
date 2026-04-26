@@ -9,7 +9,9 @@
 #include "memory_pool.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "models/config.hpp"
 #include "models/fonts.hpp"
+#include "models/fonts_db.hpp"
 #include "viewers/keypad_viewer.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -66,12 +68,12 @@ public:
   virtual ~FormField() = default; // { LOG_I("FormField destructor called"); }
 
   virtual auto getFieldDim() -> const Dim { return fieldDim; }
- [[nodiscard]] inline auto getCaptionDim() -> const Dim & { return captionDim; }
+  [[nodiscard]] inline auto getCaptionDim() -> const Dim & { return captionDim; }
 
- [[nodiscard]] inline auto getFieldPos() -> const Pos & { return fieldPos; }
- [[nodiscard]] inline auto getCaptionPos() -> const Pos & { return captionPos; }
+  [[nodiscard]] inline auto getFieldPos() -> const Pos & { return fieldPos; }
+  [[nodiscard]] inline auto getCaptionPos() -> const Pos & { return captionPos; }
 
- [[nodiscard]] inline auto getType() -> FormEntryType { return formEntry.entryType; }
+  [[nodiscard]] inline auto getType() -> FormEntryType { return formEntry.entryType; }
 
   auto computeCaptionDim() -> void {
     if (formEntry.caption != nullptr) {
@@ -90,9 +92,11 @@ public:
 
   virtual auto event(const EventMgr::Event &event) -> bool { return false; }
 
- [[nodiscard]] inline auto inEventControl() -> bool { return eventControl; }
+  [[nodiscard]] inline auto inEventControl() -> bool { return eventControl; }
 
-  auto computeCaptionPos(Pos fromPos) -> void { captionPos = Pos(fromPos.x - captionDim.width, fromPos.y); }
+  auto computeCaptionPos(Pos fromPos) -> void {
+    captionPos = Pos(fromPos.x - captionDim.width, fromPos.y);
+  }
 
   auto showHighlighted(bool showIt) -> void {
     if (showIt) {
@@ -123,7 +127,7 @@ public:
   }
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
- [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
+    [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
       return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
              (x <= (fieldPos.x + fieldDim.width + 10)) &&
              (y <= (fieldPos.y + fieldDim.height + 10));
@@ -190,10 +194,13 @@ public:
   }
 
   static auto adjustFontChoices() -> void {
-    auto fontCount = fonts.getStandardFontCount();
+    FontsDB *fontsDB{nullptr};
+
+    config.get(Config::Ident::FONTS_DB, &fontsDB);
+    auto fontCount = fontsDB ? fontsDB->getStandardFontCount() : 0;
     if (fontCount > 8) fontCount = 8;
     for (uint8_t i = 0; i < fontCount; i++) {
-      fontChoices[i].caption = fonts.getStandardName(i);
+      fontChoices[i].caption = fontsDB->getStandardFontName(i).c_str();
     }
     fontChoicesCount = fontCount;
   }
@@ -259,7 +266,9 @@ public:
     oldItem = currentItem;
   }
 
-  auto saveValue() -> void { *formEntry.u.ch.value = formEntry.u.ch.choices[(*currentItem)->idx].value; }
+  auto saveValue() -> void {
+    *formEntry.u.ch.value = formEntry.u.ch.choices[(*currentItem)->idx].value;
+  }
 
 protected:
   struct Item {
@@ -503,7 +512,7 @@ class FormViewer {
 private:
   FormViewer() = default;
 
-  PagePtr page{Page::Make()};
+  PagePtr page{Page::Make(appFonts)};
 
 public:
   using FormEntries = FormEntry *;

@@ -16,22 +16,23 @@ enum class ConfigIdent {
     SHOW_RTC,    NTP_SERVER,         TIME_ZONE,
   #endif
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER
+    CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER,
   #endif
+  FONTS_DB
 };
 // clang-format on
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 30>;
+    using Config = ConfigBase<ConfigIdent, 31>;
   #else
-    using Config = ConfigBase<ConfigIdent, 27>;
+    using Config = ConfigBase<ConfigIdent, 28>;
   #endif
 #else
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 23>;
+    using Config = ConfigBase<ConfigIdent, 24>;
   #else
-    using Config = ConfigBase<ConfigIdent, 20>;
+    using Config = ConfigBase<ConfigIdent, 21>;
   #endif
 #endif
 
@@ -71,6 +72,8 @@ enum class ConfigIdent {
     static const int64_t defaultCalib = 0;
   #endif
 
+  static FontsDB fontsDB;
+
   // clang-format off
   static const int32_t defaultPort            = 80;
   static const int8_t  defaultBattery         =  2; // 0 = NONE, 1 = PERCENT, 2 = VOLTAGE, 3 = ICON
@@ -79,7 +82,7 @@ enum class ConfigIdent {
   static const int8_t  defaultTimeout         = 15; // 5, 15, 30 minutes
   static const int8_t  defaultShowPictures    =  0; // 0 = NO, 1 = YES
   static const int8_t  defaultUseFontsInBooks =  1; // 0 = NO, 1 = YES
-  static const int8_t  defaultDefaultFont     =  1; // 0 = CALADEA, 1 = CRIMSON, 2 = RED HAT, 3 = ASAP
+  static const int8_t  defaultDefaultFont     =  1; // index from the user fonts list
   static const int8_t  defaultResolution      =  0; // 0 = 1bit, 1 = 3bits
   static const int8_t  defaultShowHeap        =  0; // 0 = NO, 1 = YES
   static const int8_t  defaultShowTitle       =  1;
@@ -127,6 +130,7 @@ enum class ConfigIdent {
       {Config::Ident::CALIB_F,            Config::EntryType::INT64,  "calib_f",       &calibF,               &defaultCalib,           0},
       {Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,  "calib_divider", &calibDivider,         &defaultCalib,           0},
   #endif
+      {Config::Ident::FONTS_DB,           Config::EntryType::FONTS_DB, "",            &fontsDB,              &defaultFont,            0},
   }};
 
   // clang-format on

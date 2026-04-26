@@ -19,7 +19,6 @@
 #include <forward_list>
 #include <list>
 #include <map>
-#include <mutex>
 
 class TOC;
 class EPub;
@@ -78,8 +77,6 @@ public:
 private:
   static constexpr char const *TAG = "EPub";
 
-  std::recursive_timed_mutex mutex;
-
   pugi::xml_document opf; ///< The OPF document description.
   pugi::xml_document encryption;
   pugi::xml_node currentItemRef{pugi::xml_node(nullptr)};
@@ -96,6 +93,10 @@ private:
   BookParams *bookParams{nullptr};
   BookFormatParams bookFormatParams{};
 
+  Fonts fonts; ///< Fonts loaded from the e-book. They are used in priority to the default
+               ///< application fonts when the "use fonts in book" option is enabled. They are
+               ///< cleared when a new book is loaded.
+
   CSSList cssCache; ///< All css files in the ebook are maintained here.
 
   bool fileIsOpen{false};
@@ -104,15 +105,17 @@ private:
   int32_t fontsSize{0};
   bool pageLocsInstance{false};
 
-  auto getMeta(const std::string &name) -> const char *;
-  auto getOpf(std::string &filename) -> bool;
-  auto checkMimetype() -> bool;
+  // clang-format off
+  auto getMeta(const std::string &name)      -> const char *;
+  auto getOpf(std::string &filename)         -> bool;
+  auto checkMimetype()                       -> bool;
   auto getOpfFilename(std::string &filename) -> bool;
-  auto retrieveFontsFromCss(CSSPtr &css) -> void;
-  auto getEncryptionXml() -> bool;
-  auto sha1(const std::string &data) -> void;
+  auto getEncryptionXml()                    -> bool;
+  auto retrieveFontsFromCss(CSSPtr &css)     -> void;
+  auto sha1(const std::string &data)         -> void;
+  // clang-format on
 
-  EPub() = default;
+  EPub() { fonts.setup(); };
 
 public:
   ~EPub();
@@ -123,26 +126,32 @@ public:
 
   static inline auto Make() { return makeUniqueHimem<EPub>(); }
 
-  auto retrieveCss(ItemInfo &item) -> void;
-  auto loadFonts() -> void;
-  auto clearItemData(ItemInfo &item) -> void;
-  auto openParams(const std::string &epubFilename) -> void;
-  auto open(const std::string &epubFilename) -> bool;
-  auto closeFile() -> bool;
-  auto getPicture(std::string &fname, bool load) -> PicturePtr;
-  auto retrieveFile(const char *fname, uint32_t &size) -> HimemUniquePtr<uint8_t[]>;
-  auto getItem(pugi::xml_node itemref, ItemInfo &item) -> bool;
-  auto getItemAtIndex(int16_t itemrefIndex) -> bool;
+  // clang-format off
+  auto open(const std::string &epubFilename)                -> bool;
+  auto closeFile()                                          -> bool;
+  auto getPicture(std::string &fname, bool load)            -> PicturePtr;
+  auto retrieveFile(const char *fname, uint32_t &size)      -> HimemUniquePtr<uint8_t[]>;
+  auto getItem(pugi::xml_node itemref, ItemInfo &item)      -> bool;
+  auto getItemAtIndex(int16_t itemrefIndex)                 -> bool;
   auto getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool;
-  auto getUniqueIdentifier() -> std::string;
-  auto getKeys() -> bool;
-  auto filenameLocate(const char *fname) -> std::string;
-  auto getItemCount() -> int16_t;
-  auto updateBookFormatParams() -> void;
-  auto getFileObfuscation(const char *filename) -> ObfuscationType;
+  auto getUniqueIdentifier()                                -> std::string;
+  auto getKeys()                                            -> bool;
+  auto filenameLocate(const char *fname)                    -> std::string;
+  auto getItemCount()                                       -> int16_t;
+  auto getFileObfuscation(const char *filename)             -> ObfuscationType;
+  auto getFonts()                                           -> Fonts & { return fonts; }
+  auto loadFont(const std::string filename, const std::string fontFamily, const FaceStyle style)
+                                                            -> bool;
+
+  auto retrieveCss(ItemInfo &item)                                         -> void;
+  auto loadFonts()                                                         -> void;
+  auto clearItemData(ItemInfo &item)                                       -> void;
+  auto openParams(const std::string &epubFilename)                         -> void;
+  auto updateBookFormatParams()                                            -> void;
   auto decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void;
-  auto loadFont(const std::string filename, const std::string fontFamily,
-                const Fonts::FaceStyle style) -> bool;
+
+  // clang-format on
+
   /**
    * @brief Retrieve cover's filename
    *
@@ -173,7 +182,7 @@ public:
  [[nodiscard]] inline auto encryptionIsPresent() const    -> bool                       { return encryptionPresent; }
  [[nodiscard]] inline auto getBinUuid() const             -> const BinUUID &            { return binUuid; }
   
- inline auto setPageLocsInstance(bool val) -> void { pageLocsInstance = val; }
+               inline auto setPageLocsInstance(bool val)  -> void { pageLocsInstance = val; }
   // clang-format on
 };
 

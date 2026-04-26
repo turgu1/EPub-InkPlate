@@ -231,7 +231,7 @@
     }
 
     auto EventMgr::showCalibration() -> void {
-      auto page = Page::Make();
+      auto page = Page::Make(appFonts);
 
       switch (screen.getOrientation()) {
       case Screen::Orientation::BOTTOM:

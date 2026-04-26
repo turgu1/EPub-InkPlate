@@ -100,11 +100,11 @@ private:
       ch = '\0';
   }
 
- [[nodiscard]] inline auto isWhiteSpace() -> bool {
+  [[nodiscard]] inline auto isWhiteSpace() -> bool {
     return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n') || (ch == '\f');
   }
 
- [[nodiscard]] inline auto isNmChar() -> bool {
+  [[nodiscard]] inline auto isNmChar() -> bool {
     return ((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) ||
            ((ch >= '0') && (ch <= '9')) || (ch == '_') || (ch == '-') || (ch == '\\') ||
            (ch >= 160);
@@ -312,133 +312,133 @@ private:
         nextCh();
         token = Token::STAR;
       } else if ((ch == '\'') || (ch == '\"')) {
-        token      = parseString() ? Token::STRING : Token::BAD_STRING;
+        token     = parseString() ? Token::STRING : Token::BAD_STRING;
         valueType = CSS::ValueType::STR;
       } else if ((((ch == '-') || (ch == '+')) &&
                   ((str[0] == '.') || ((str[0] >= '0') && (str[0] <= '9')))) ||
                  ((ch >= '0') && (ch <= '9')) ||
                  ((ch == '.') && ((str[0] >= '0') && (str[0] <= '9')))) {
         parseNumber();
-        token      = Token::NUMBER;
+        token     = Token::NUMBER;
         valueType = CSS::ValueType::NO_TYPE;
         if ((ch == 'e') && (str[0] == 'm')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::EM;
         } else if ((ch == 'e') && (str[0] == 'x')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::EX;
         } else if (ch == '%') {
           nextCh();
-          token      = Token::PERCENTAGE;
+          token     = Token::PERCENTAGE;
           valueType = CSS::ValueType::PERCENT;
         } else if ((ch == 'p') && (str[0] == 'x')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::PX;
         } else if ((ch == 'p') && (str[0] == 't')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::PT;
         } else if ((ch == 'p') && (str[0] == 'c')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::PC;
         } else if ((ch == 'c') && (str[0] == 'm')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::CM;
         } else if ((ch == 'm') && (str[0] == 'm')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::MM;
         } else if ((ch == 'i') && (str[0] == 'n')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::IN;
         } else if ((ch == 'v') && (str[0] == 'h')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::VH;
         } else if ((ch == 'v') && (str[0] == 'w')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::VW;
         } else if ((ch == 'c') && (str[0] == 'h')) {
           nextCh();
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::CH;
         } else if ((ch == 'm') && (str[0] == 's')) {
           nextCh();
           nextCh();
-          token      = Token::TIME;
+          token     = Token::TIME;
           valueType = CSS::ValueType::MSEC;
         } else if (ch == 's') {
           nextCh();
-          token      = Token::TIME;
+          token     = Token::TIME;
           valueType = CSS::ValueType::SEC;
         } else if ((ch == 'h') && (str[0] == 'z')) {
           nextCh();
           nextCh();
-          token      = Token::FREQ;
+          token     = Token::FREQ;
           valueType = CSS::ValueType::HERTZ;
         } else if ((ch == 'k') && (str[0] == 'h') && (str[1] == 'z')) {
           remains -= 2;
           str += 2;
           nextCh();
-          token      = Token::FREQ;
+          token     = Token::FREQ;
           valueType = CSS::ValueType::KHERTZ;
         } else if ((ch == 'd') && (str[0] == 'e') && (str[1] == 'g')) {
           remains -= 2;
           str += 2;
           nextCh();
-          token      = Token::ANGLE;
+          token     = Token::ANGLE;
           valueType = CSS::ValueType::DEG;
         } else if ((ch == 'r') && (str[0] == 'a') && (str[1] == 'd')) {
           remains -= 2;
           str += 2;
           nextCh();
-          token      = Token::ANGLE;
+          token     = Token::ANGLE;
           valueType = CSS::ValueType::RAD;
         } else if ((ch == 'r') && (str[0] == 'e') && (str[1] == 'm')) {
           remains -= 2;
           str += 2;
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::REM;
         } else if ((ch == 'g') && (str[0] == 'r') && (str[1] == 'a') && (str[2] == 'd')) {
           remains -= 3;
           str += 3;
           nextCh();
-          token      = Token::ANGLE;
+          token     = Token::ANGLE;
           valueType = CSS::ValueType::GRAD;
         } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'i') && (str[2] == 'n')) {
           remains -= 3;
           str += 3;
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::VMIN;
         } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'a') && (str[2] == 'x')) {
           remains -= 3;
           str += 3;
           nextCh();
-          token      = Token::LENGTH;
+          token     = Token::LENGTH;
           valueType = CSS::ValueType::VMAX;
         } else if (isNmStart(ch)) {
           parseIdent();
-          token      = Token::DIMENSION;
+          token     = Token::DIMENSION;
           valueType = CSS::ValueType::DIMENSION;
         }
       } else if ((ch == '-') && (str[0] == '-') && (str[1] == '>')) {
@@ -699,16 +699,16 @@ private:
           (token == Token::ANGLE) || (token == Token::TIME) || (token == Token::DIMENSION) ||
           (token == Token::FREQ)) {
         v->valueType = valueType;
-        v->num        = neg ? -num : num;
+        v->num       = neg ? -num : num;
         if (id == CSS::PropertyId::VERTICAL_ALIGN)
           v->choice.verticalAlign = CSS::VerticalAlign::VALUE;
         skipBlanks();
       } else if (token == Token::STRING) {
         v->valueType = CSS::ValueType::STR;
-        v->str        = string;
+        v->str       = string;
         skipBlanks();
       } else if (token == Token::IDENT) {
-        v->str        = ident;
+        v->str       = ident;
         v->valueType = CSS::ValueType::STR;
         if (id == CSS::PropertyId::TEXT_ALIGN) {
           if (v->str.compare("left") == 0)
@@ -754,9 +754,9 @@ private:
           }
         } else if (id == CSS::PropertyId::FONT_WEIGHT) {
           if ((v->str.compare("bold") == 0) || (v->str.compare("bolder") == 0))
-            v->choice.faceStyle = Fonts::FaceStyle::BOLD;
+            v->choice.faceStyle = FaceStyle::BOLD;
           else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0))
-            v->choice.faceStyle = Fonts::FaceStyle::NORMAL;
+            v->choice.faceStyle = FaceStyle::NORMAL;
           else {
             // LOG_E("font-weight not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str -
             // buffer_start));
@@ -764,9 +764,9 @@ private:
           }
         } else if (id == CSS::PropertyId::FONT_STYLE) {
           if ((v->str.compare("italic") == 0) || (v->str.compare("oblique") == 0))
-            v->choice.faceStyle = Fonts::FaceStyle::ITALIC;
+            v->choice.faceStyle = FaceStyle::ITALIC;
           else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0))
-            v->choice.faceStyle = Fonts::FaceStyle::NORMAL;
+            v->choice.faceStyle = FaceStyle::NORMAL;
           else {
             // LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str -
             // buffer_start));
@@ -802,7 +802,7 @@ private:
         }
         skipBlanks();
       } else if (token == Token::URI) {
-        v->str        = string;
+        v->str       = string;
         v->valueType = CSS::ValueType::URL;
         skipBlanks();
       } else if (token == Token::FUNCTION) {
@@ -1383,9 +1383,9 @@ private:
 public:
   auto parse(const char *buffer, int32_t size) -> bool {
 
-    str      = buffer;
-    remains  = size;
-    skip     = 0;
+    str     = buffer;
+    remains = size;
+    skip    = 0;
     lineNbr = 1;
 
     nextCh();
@@ -1454,9 +1454,9 @@ public:
 
   auto parse(DOM::Tag tag, const char *buffer, int32_t size) -> bool {
 
-    str      = buffer;
-    remains  = size;
-    skip     = 0;
+    str     = buffer;
+    remains = size;
+    skip    = 0;
     lineNbr = 1;
 
     nextCh();

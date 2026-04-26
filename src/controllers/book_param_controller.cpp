@@ -15,6 +15,7 @@
 #include "models/config.hpp"
 #include "models/epub.hpp"
 #include "models/fonts.hpp"
+#include "models/fonts_db.hpp"
 #include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
@@ -122,16 +123,18 @@ auto BookParamController::revertToDefaults() -> void {
                   "E-book parameters reverted to default values.");
 
   if (oldUseFontsInBook != bookFormatParams->useFontsInBook) {
+    pageLocs.stopControlTask();
     if (bookFormatParams->useFontsInBook) {
       epub->loadFonts();
     } else {
-      fonts.clear();
-      fonts.clearGlyphCaches();
+      epub->getFonts().clear();
+      epub->getFonts().clearGlyphCaches();
     }
   }
 
   if (oldFont != bookFormatParams->font) {
-    fonts.adjustDefaultFont(bookFormatParams->font);
+    pageLocs.stopControlTask();
+    epub->getFonts().adjustDefaultFont(bookFormatParams->font);
   }
 }
 
@@ -157,10 +160,12 @@ auto BookParamController::tocCtrl() -> void {
 }
 
 auto BookParamController::wifiMode() -> void {
+  pageLocs.stopControlTask();
+
   #if EPUB_INKPLATE_BUILD
     epub->closeFile();
-    fonts.clear(true);
-    fonts.clearGlyphCaches();
+    appFonts.clear(true);
+    appFonts.clearGlyphCaches();
 
     eventMgr.setStayOn(true); // DO NOT sleep
 
@@ -172,6 +177,7 @@ auto BookParamController::wifiMode() -> void {
 
 auto BookParamController::powerOff() -> void {
   booksDirController.saveLastBook(bookController.getCurrentPageId(), true);
+  pageLocs.stopControlTask();
 
   CommonActions::powerItOff();
 }
@@ -207,7 +213,9 @@ auto BookParamController::enter() -> void {
   filePath.replace(dotPos, 5, ".toc");
   menu[1].visible = stat(filePath.c_str(), &fileStat) != -1;
 
-  setFontCount(fonts.getStandardFontCount());
+  FontsDB *fontsDB{nullptr};
+  config.get(Config::Ident::FONTS_DB, &fontsDB);
+  setFontCount(fontsDB ? fontsDB->getStandardFontCount() : 0);
 
   menuViewer = MenuViewer::Make();
   formViewer = FormViewer::Make();
@@ -255,13 +263,13 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
         if (useFontsInBook) {
           epub->loadFonts();
         } else {
-          fonts.clear();
-          fonts.clearGlyphCaches();
+          epub->getFonts().clear();
+          epub->getFonts().clearGlyphCaches();
         }
       }
 
       if (oldFont != font) {
-        fonts.adjustDefaultFont(font);
+        epub->getFonts().adjustDefaultFont(font);
       }
       // }
       // menuViewer.clearHighlight();
@@ -330,6 +338,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
   #endif
     else {
     if (menuViewer->event(event)) {
+      LOG_I("Returning to book controller with updated EPub...");
       bookController.becomeOwnerOfBook(std::move(epub));
       appController.setController(AppController::Ctrl::BOOK);
     }

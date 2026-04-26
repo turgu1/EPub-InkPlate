@@ -2,8 +2,8 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define _TTF_ 1
 #include "models/ttf2.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
 #include "alloc.hpp"
@@ -13,34 +13,10 @@
 #include <ostream>
 #include <sys/stat.h>
 
-FT_Library TTF::library{nullptr};
-
-TTF::TTF(const std::string &filename) : Font() {
+TTF::TTF(const FontFaceDescriptorPtr descr, FT_Library &library) : Font() {
   face = nullptr;
 
-  if (library == nullptr) {
-    int error = FT_Init_FreeType(&library);
-    if (error) {
-      LOG_E("An error occurred during FreeType library initialization.");
-      std::abort();
-    }
-  }
-
-  setFontFaceFromFile(filename);
-}
-
-TTF::TTF(MemoryFontPtr buffer, int32_t bufferSize) : Font() {
-  face = nullptr;
-
-  if (library == nullptr) {
-    int error = FT_Init_FreeType(&library);
-    if (error) {
-      LOG_E("An error occurred during FreeType library initialization.");
-      std::abort();
-    }
-  }
-
-  setFontFaceFromMemory(std::move(buffer), bufferSize);
+  setFontFace(descr, library);
 }
 
 TTF::~TTF() {
@@ -49,6 +25,8 @@ TTF::~TTF() {
 }
 
 auto TTF::clearFace() -> void {
+  LOG_I("Clearing TTF face and cache...");
+  pageLocs.stopControlTask();
   clearCache();
   if (face != nullptr) {
     FT_Done_Face(face);
@@ -178,16 +156,18 @@ auto TTF::setFontSize(int16_t size) -> bool {
   return true;
 }
 
-auto TTF::setFontFaceFromMemory(MemoryFontPtr buffer, int32_t bufferSize) -> bool {
+auto TTF::setFontFace(const FontFaceDescriptorPtr descr, FT_Library &library) -> bool {
   if (face != nullptr) clearFace();
 
-  int error = FT_New_Memory_Face(library, (const FT_Byte *)buffer.get(), bufferSize, 0, &face);
+  int error = FT_New_Memory_Face(library, (const FT_Byte *)descr->fontData.get(),
+                                 descr->fontDataSize, 0, &face);
   if (error) {
     LOG_E("The memory font format is unsupported or is broken (%d).", error);
     return false;
   }
 
-  ready      = true;
-  memoryFont = std::move(buffer);
+  ready              = true;
+  fontFaceDescriptor = descr;
+
   return true;
 }

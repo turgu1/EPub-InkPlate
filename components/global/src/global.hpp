@@ -9,6 +9,8 @@
 #include <int_to_str.hpp>
 #include <strlcpy.hpp>
 
+#include "himem.hpp"
+
 // #pragma GCC diagnostic error "-Wframe-larger-than=10"
 
 #ifndef APP_VERSION
@@ -146,3 +148,9 @@ struct PageId {
   }
   PageId() = default;
 };
+
+enum class FaceStyle : uint8_t {
+  NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC
+};
+
+using FileContentPtr = HimemUniquePtr<uint8_t[]>;

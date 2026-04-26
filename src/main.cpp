@@ -92,7 +92,7 @@
       if (configErr) LOG_E("Config Error.");
       #if DATE_TIME_RTC
         else {
-          std::string timeZone;
+          HimemString timeZone;
 
           config.get(Config::Ident::TIME_ZONE, timeZone);
           setenv("TZ", timeZone.c_str(), 1);
@@ -105,7 +105,9 @@
 
       pugi::set_memory_management_functions(allocate, free);
 
-      if (fonts.setup()) {
+      // The appFonts only contains the icon and system fonts. Books related fonts are
+      // instanciated inside the epub class when a book is open.
+      if (appFonts.setup()) {
 
         Screen::Orientation orientation    = Screen::Orientation::TOP;
         Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
@@ -159,7 +161,7 @@
     #endif
   }
 
-  #define STACK_SIZE 60000
+  #define STACK_SIZE 40000
 
   extern "C" {
 
@@ -217,8 +219,8 @@
   static const char *TAG = "Main";
 
   void exitApp() {
-    fonts.clearGlyphCaches();
-    fonts.clear(true);
+    appFonts.clearGlyphCaches();
+    appFonts.clear(true);
   }
 
   auto main(int argc, char **argv) -> int {
@@ -239,7 +241,7 @@
       }
     #endif
 
-    if (fonts.setup()) {
+    if (appFonts.setup()) {
 
       Screen::Orientation orientation{Screen::Orientation::RIGHT};
       Screen::PixelResolution resolution{Screen::PixelResolution::ONE_BIT};

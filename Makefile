@@ -204,7 +204,6 @@ TEST_SRC_CPP := \
   test/test_himem_pool.cpp \
   test/test_dom.cpp \
   test/test_simple_db.cpp \
-  test/test_config.cpp \
   test/test_css.cpp \
   test/test_display_list.cpp \
   test/test_app_config.cpp \
@@ -226,13 +225,29 @@ TEST_OBJS_C   := $(patsubst %.c,$(TEST_BUILD)/%.o,$(TEST_SRC_C))
 TEST_OBJS     := $(patsubst %.cpp,$(TEST_BUILD)/%.o,$(TEST_SRC_CPP)) $(TEST_OBJS_C)
 TEST_DEPS     := $(TEST_OBJS:.o=.d)
 
-.PHONY: test build_test clean_test
+.PHONY: test build_test clean_test all_tests \
+        test_himem test_himem_pool_test test_dom test_simple_db test_css \
+        test_display_list test_app_config test_epub test_simple_list
 
 build_test: $(TEST_BUILD)/$(TEST_TARGET)
 
 test: $(TEST_BUILD)/$(TEST_TARGET)
 	@echo "Running test suite..."
 	@$(TEST_BUILD)/$(TEST_TARGET)
+
+# Per-suite targets — build the test binary if needed then run a single suite.
+test_himem:          $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) himem
+test_himem_pool_test:$(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) himem_pool_test
+test_dom:            $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) dom
+test_simple_db:      $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) simple_db
+test_css:            $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) css
+test_display_list:   $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) display_list
+test_app_config:     $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) app_config
+test_epub:           $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) epub
+test_simple_list:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) simple_list
+
+# Convenience target: run both test suites in sequence.
+all_tests: test config_test
 
 $(TEST_BUILD)/$(TEST_TARGET): $(TEST_OBJS)
 	@echo "Linking $@"
@@ -252,6 +267,82 @@ $(TEST_BUILD)/%.o: %.c
 clean_test:
 	rm -rf $(TEST_BUILD)
 
+# ---------------------------------------------------------------------------
+# Standalone Config-class test
+#
+# Transitional helper while other suites are being adapted to the new fonts
+# management flow integrated with Config.
+#
+# Usage:
+#   make config_test        # build and run standalone Config test
+#   make build_config_test  # build standalone Config test only
+#   make clean_config_test  # remove standalone Config test artefacts
+# ---------------------------------------------------------------------------
+
+CONFIG_TEST_BUILD   := build_test_config
+CONFIG_TEST_TARGET  := epub_config_test
+
+CONFIG_TEST_DEFINES := \
+  -DEPUB_LINUX_BUILD=1 \
+  -DAPP_VERSION=\"$(APP_VERSION)\" \
+  -DDATE_TIME_RTC=1
+
+CONFIG_TEST_INCLUDES := \
+  -I test/stubs \
+  -I test \
+  -I src \
+  -I src/controllers \
+  -I src/helpers \
+  -I src/models \
+  -I src/viewers \
+  -I lib_linux/EPub_InkPlate/src \
+  -I components/global/src \
+  -I components/sys_functions/include \
+  -I components/himem/src \
+  -I components/simple_db/src \
+  -I components/memory_pool/src \
+  -I components/pictures/src \
+  -I components/zip/src \
+  -I components/pugixml/src \
+  -I components/display_list/src \
+  -I components/simple_list/src
+
+CONFIG_TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(CONFIG_TEST_DEFINES) $(CONFIG_TEST_INCLUDES) \
+                        -Wall -Wno-psabi -MMD -MP
+
+CONFIG_TEST_SRC_CPP := \
+  test/test_config_standalone.cpp \
+  src/models/fonts_db.cpp \
+  components/pugixml/src/pugixml.cpp \
+  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/strlcpy.cpp \
+  lib_linux/EPub_InkPlate/src/logging.cpp
+
+CONFIG_TEST_OBJS := $(patsubst %.cpp,$(CONFIG_TEST_BUILD)/%.o,$(CONFIG_TEST_SRC_CPP))
+CONFIG_TEST_DEPS := $(CONFIG_TEST_OBJS:.o=.d)
+
+.PHONY: config_test build_config_test clean_config_test
+
+build_config_test: $(CONFIG_TEST_BUILD)/$(CONFIG_TEST_TARGET)
+
+config_test: $(CONFIG_TEST_BUILD)/$(CONFIG_TEST_TARGET)
+	@echo "Running standalone Config test..."
+	@$(CONFIG_TEST_BUILD)/$(CONFIG_TEST_TARGET)
+
+$(CONFIG_TEST_BUILD)/$(CONFIG_TEST_TARGET): $(CONFIG_TEST_OBJS)
+	@echo "Linking $@"
+	@$(CXX) $(CONFIG_TEST_OBJS) -lpthread -lssl -lcrypto -o $@
+	@echo "Built: $@"
+
+$(CONFIG_TEST_BUILD)/%.o: %.cpp
+	@echo "Compiling (config-test) $<"
+	@mkdir -p $(dir $@)
+	@$(CXX) $(CONFIG_TEST_CXXFLAGS) -c $< -o $@
+
+clean_config_test:
+	rm -rf $(CONFIG_TEST_BUILD)
+
 # Auto-generated header dependencies
+-include $(CONFIG_TEST_DEPS)
 -include $(TEST_DEPS)
 -include $(DEPS)

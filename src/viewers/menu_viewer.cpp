@@ -19,7 +19,7 @@ auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
   fmt.fontIndex = 1;
   fmt.fontSize  = CAPTION_SIZE;
 
-  Font *font = fonts.get(1);
+  FontPtr &font = appFonts.getFont(1);
   Dim captionDim;
   font->getSize(caption.c_str(), &captionDim, CAPTION_SIZE);
   page->putStrAt(caption, Pos{(uint16_t)((Screen::getWidth() - captionDim.width) >> 1), textYPos},
@@ -27,7 +27,7 @@ auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
 }
 
 auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) -> void {
-  Font *font = fonts.get(1);
+  FontPtr &textFont = appFonts.getFont(1);
 
   menuEntryCount        = 1;
   int visibleEntryCount = 0;
@@ -45,17 +45,12 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
     return;
   }
 
-  lineHeight = font->getLineHeight(CAPTION_SIZE);
-  textHeight = lineHeight - font->getDescenderHeight(CAPTION_SIZE);
+  lineHeight = textFont->getLineHeight(CAPTION_SIZE);
+  textHeight = lineHeight - textFont->getDescenderHeight(CAPTION_SIZE);
 
-  font = fonts.get(0);
+  FontPtr &iconFont = appFonts.getFont(0);
 
-  if (font == nullptr) {
-    LOG_E("Internal error (Drawings Font not available!");
-    return;
-  }
-
-  Glyph *icon = font->getGlyph('A', ICON_SIZE);
+  Glyph *icon = iconFont->getGlyph('A', ICON_SIZE);
 
   iconHeight = icon == nullptr ? 50 : icon->dim.height;
 
@@ -100,7 +95,7 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
 
     if (menu[idx].visible) {
       char ch      = iconChar[(int)menu[idx].icon];
-      Glyph *glyph = font->getGlyph(ch, ICON_SIZE);
+      Glyph *glyph = iconFont->getGlyph(ch, ICON_SIZE);
 
       if (glyph == nullptr) {
         entryLocs[idx].pos = pos;
@@ -267,6 +262,8 @@ auto MenuViewer::event(const EventMgr::Event &event) -> bool {
           (menu[currentEntryIndex].func)();
         }
         return false;
+      } else if (regionHeight < event.y) {
+        return true;
       }
       break;
 

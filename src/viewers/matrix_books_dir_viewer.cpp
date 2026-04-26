@@ -27,14 +27,14 @@
 #endif
 
 auto MatrixBooksDirViewer::setup() -> void {
-  Font *font      = fonts.get(TITLE_FONT);
+  FontPtr &font   = appFonts.getFont(TITLE_FONT);
   titleFontHeight = font->getLineHeight(TITLE_FONT_SIZE) * 0.8 + 5;
 
-  font             = fonts.get(AUTHOR_FONT);
-  authorFontHeight = font->getLineHeight(AUTHOR_FONT_SIZE) * 0.8;
+  FontPtr &authorFont = appFonts.getFont(AUTHOR_FONT);
+  authorFontHeight    = authorFont->getLineHeight(AUTHOR_FONT_SIZE) * 0.8;
 
-  font              = fonts.get(ScreenBottom::FONT);
-  pagenbrFontHeight = font->getLineHeight(ScreenBottom::FONT_SIZE);
+  FontPtr &pageNbrFont = appFonts.getFont(ScreenBottom::FONT);
+  pagenbrFontHeight    = pageNbrFont->getLineHeight(ScreenBottom::FONT_SIZE);
 
   firstEntryYpos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 25;
 
@@ -76,13 +76,13 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
   Page::Format fmt = {
       .lineHeightFactor = 0.9,
-      .fontIndex         = TITLE_FONT,
-      .fontSize           = TITLE_FONT_SIZE,
-      .screenLeft        = 20,
-      .screenRight       = 20,
-      .screenTop         = 18,
-      .screenBottom      = 100,
-      .align              = CSS::Align::CENTER,
+      .fontIndex        = TITLE_FONT,
+      .fontSize         = TITLE_FONT_SIZE,
+      .screenLeft       = 20,
+      .screenRight      = 20,
+      .screenTop        = 18,
+      .screenBottom     = 100,
+      .align            = CSS::Align::CENTER,
   };
 
   page->start(fmt);
@@ -108,8 +108,8 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
                            Pos(xpos - 3, ypos - 3));
 
         fmt.fontIndex = TITLE_FONT;
-        fmt.fontSize   = TITLE_FONT_SIZE;
-        fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+        fmt.fontSize  = TITLE_FONT_SIZE;
+        fmt.fontStyle = FaceStyle::NORMAL;
 
         char title[MAX_TITLE_SIZE];
         title[MAX_TITLE_SIZE - 1] = 0;
@@ -131,8 +131,8 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
         page->endParagraph(fmt);
 
         fmt.fontIndex = AUTHOR_FONT;
-        fmt.fontSize   = AUTHOR_FONT_SIZE;
-        fmt.fontStyle = Fonts::FaceStyle::ITALIC;
+        fmt.fontSize  = AUTHOR_FONT_SIZE;
+        fmt.fontStyle = FaceStyle::ITALIC;
 
         page->newParagraph(fmt);
         page->addText(book->author, fmt);
@@ -173,13 +173,13 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
 
   Page::Format fmt = {
       .lineHeightFactor = 0.9,
-      .fontIndex         = TITLE_FONT,
-      .fontSize           = TITLE_FONT_SIZE,
-      .screenLeft        = 15,
-      .screenRight       = 15,
-      .screenTop         = 18,
-      .screenBottom      = 100,
-      .align              = CSS::Align::CENTER,
+      .fontIndex        = TITLE_FONT,
+      .fontSize         = TITLE_FONT_SIZE,
+      .screenLeft       = 15,
+      .screenRight      = 15,
+      .screenTop        = 18,
+      .screenBottom     = 100,
+      .align            = CSS::Align::CENTER,
   };
 
   page->setComputeMode(Page::ComputeMode::DISPLAY);
@@ -202,7 +202,7 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
 
     if (!book) return;
 
-    // Font * font = fonts.get(1, 9);
+    // Font * font = appFonts.get(1, 9);
 
     page->clearHighlight(Dim(BooksDir::coverDim.width + 4, BooksDir::coverDim.height + 4),
                          Pos(xpos - 2, ypos - 2));
@@ -239,8 +239,8 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
                     Pos(20, 20));
 
   fmt.fontIndex = TITLE_FONT;
-  fmt.fontSize   = TITLE_FONT_SIZE;
-  fmt.fontStyle = Fonts::FaceStyle::NORMAL;
+  fmt.fontSize  = TITLE_FONT_SIZE;
+  fmt.fontStyle = FaceStyle::NORMAL;
 
   char title[MAX_TITLE_SIZE];
   title[MAX_TITLE_SIZE - 1] = 0;
@@ -262,8 +262,8 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
   page->endParagraph(fmt);
 
   fmt.fontIndex = AUTHOR_FONT;
-  fmt.fontSize   = AUTHOR_FONT_SIZE;
-  fmt.fontStyle = Fonts::FaceStyle::ITALIC;
+  fmt.fontSize  = AUTHOR_FONT_SIZE;
+  fmt.fontStyle = FaceStyle::ITALIC;
 
   page->newParagraph(fmt);
   page->addText(book->author, fmt);
@@ -294,12 +294,12 @@ auto MatrixBooksDirViewer::clearHighlight() -> void {
 
   if (!book) return;
 
-  // Font * font = fonts.get(1, 9);
+  // Font * font = appFonts.get(1, 9);
 
   Page::Format fmt = {
       .lineHeightFactor = 0.9,
-      .fontIndex         = TITLE_FONT,
-      .fontSize           = TITLE_FONT_SIZE,
+      .fontIndex        = TITLE_FONT,
+      .fontSize         = TITLE_FONT_SIZE,
       .screenBottom =
           static_cast<uint16_t>(Screen::getHeight() - (ypos + BooksDir::coverDim.height + 20)),
   };
@@ -345,7 +345,9 @@ auto MatrixBooksDirViewer::showPageAndHighlight(int16_t book_idx) -> int16_t {
   return currentBookIdx;
 }
 
-auto MatrixBooksDirViewer::highlightBook(int16_t book_idx) -> void { highlight(book_idx % booksPerPage); }
+auto MatrixBooksDirViewer::highlightBook(int16_t book_idx) -> void {
+  highlight(book_idx % booksPerPage);
+}
 
 auto MatrixBooksDirViewer::nextPage() -> int16_t {
   int16_t page_nbr = currentPageNbr + 1;

@@ -26,23 +26,24 @@
 //            we must emit the definition before including display_list.hpp).
 // ============================================================================
 
-#define __FONTS__ 1          // makes fonts.hpp emit `Fonts fonts;`
-#include "models/fonts.hpp"  // includes char_pool.hpp, models/font.hpp — no GTK
+#define __FONTS__ 1         // makes fonts.hpp emit `Fonts fonts;`
+#include "models/fonts.hpp" // includes char_pool.hpp, models/font.hpp — no GTK
 
-Fonts::Fonts()  {}
+Fonts::Fonts() {}
 Fonts::~Fonts() {}
 
 auto Fonts::adjustDefaultFont(uint8_t) -> void {}
-auto Fonts::clear(bool)                -> void {}
-auto Fonts::setup()                    -> bool { return true; }
-auto Fonts::clearGlyphCaches()         -> void {}
+auto Fonts::clear(bool) -> void {}
+auto Fonts::clearEverything() -> void {}
+auto Fonts::setup(bool) -> bool { return true; }
+auto Fonts::clearGlyphCaches() -> void {}
 
-auto Fonts::add(const std::string &, FaceStyle, MemoryFontPtr, int32_t,
-                const std::string &) -> bool { return false; }
-auto Fonts::add(const std::string &, FaceStyle,
-                const std::string &) -> bool { return false; }
-auto Fonts::replace(int16_t, const std::string &, FaceStyle,
-                    const std::string &) -> bool { return false; }
+auto Fonts::add(const FontFaceDescriptorPtr &) -> bool { return false; }
+auto Fonts::add(const std::string &, FaceStyle, FileContentPtr, size_t, const std::string &)
+    -> bool {
+  return false;
+}
+auto Fonts::replace(int16_t, const FontFaceDescriptorPtr &) -> bool { return false; }
 auto Fonts::adjustFontStyle(FaceStyle s, FaceStyle, FaceStyle) const -> FaceStyle { return s; }
 auto Fonts::getIndex(const std::string &, FaceStyle) -> int16_t { return -1; }
 
@@ -66,11 +67,10 @@ auto DisplayList::getNewEntry() -> DisplayListEntry * {
 // test/stubs/viewers/msg_viewer.hpp shadows the real header (no GTK needed).
 // ============================================================================
 
-#include "viewers/msg_viewer.hpp"  // → test/stubs/viewers/msg_viewer.hpp
+#include "viewers/msg_viewer.hpp" // → test/stubs/viewers/msg_viewer.hpp
 
 auto MsgViewer::outOfMemory(const char *reason) -> void {
-  std::fprintf(stderr, "[STUB] MsgViewer::outOfMemory(\"%s\") — aborting\n",
-               reason ? reason : "");
+  std::fprintf(stderr, "[STUB] MsgViewer::outOfMemory(\"%s\") — aborting\n", reason ? reason : "");
   std::abort();
 }
 
@@ -106,4 +106,21 @@ auto TOC::loadFromEpub(EPub &) -> bool { return true; }
 #include "png_picture.hpp"
 
 JPegPicture::JPegPicture(std::string, Dim, bool, bool) {}
-PngPicture::PngPicture (std::string, Dim, bool)       {}
+PngPicture::PngPicture(std::string, Dim, bool) {}
+
+// ============================================================================
+// FontsDB — load() stub: the test runner exercises Config mechanics only;
+// real FontsDB I/O is covered by the standalone config_test target.
+// ============================================================================
+
+#include "models/fonts_db.hpp"
+
+auto FontsDB::load(uint8_t) -> bool { return true; }
+auto FontsDB::adjustDefaultFont(uint8_t) -> void {}
+auto FontsDB::getFile(const char *, size_t) -> HimemUniquePtr<char[]> { return {}; }
+auto FontsDB::filterFilename(HimemString &fname) -> HimemString & { return fname; }
+auto FontsDB::checkFile(const HimemString &) -> bool { return true; }
+auto FontsDB::add(const HimemString &, FaceStyle, const HimemString &) -> bool { return true; }
+auto FontsDB::replace(int16_t, const HimemString &, FaceStyle, const HimemString &) -> bool {
+  return true;
+}
