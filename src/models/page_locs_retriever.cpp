@@ -17,7 +17,7 @@
   mqd_t PageLocsRetriever::retrieverQueue{-1};
 #endif
 
-auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
+auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
 
   epub = EPub::Make();
   if (epub == nullptr) {
@@ -65,6 +65,10 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
     cfg.prio        = configMAX_PRIORITIES - 2;
     cfg.inherit_cfg = true;
 
+    LOG_I("Retriever task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
+          (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
+          static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
+
     esp_pthread_set_cfg(&cfg);
     retrieverThread = std::thread(&PageLocsRetriever::task, this);
   #endif
@@ -73,8 +77,7 @@ auto PageLocsRetriever::setup(const std::string &epubFilename) -> bool {
 }
 
 auto PageLocsRetriever::waitForExit() -> void {
-  retrieverThread.join();
-  retrieverThread.~thread();
+  if (retrieverThread.joinable()) retrieverThread.join();
 }
 
 auto PageLocsRetriever::task() -> void {

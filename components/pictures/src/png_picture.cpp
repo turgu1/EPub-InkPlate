@@ -40,13 +40,26 @@ static auto onDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t 
   }
 }
 
-PngPicture::PngPicture(std::string filename, Dim max, bool loadBitmap) : Picture() {
+PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : Picture() {
   LOG_D("Loading PNG picture file %s", filename.c_str());
 
   if (unzip.openStreamFile(filename.c_str(), fileSize)) {
 
     pngle_t *pngle = mypngle_new();
-    auto work      = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
+    if (pngle == nullptr) {
+      LOG_E("Unable to allocate PNG decoder state.");
+      unzip.closeStreamFile();
+      return;
+    }
+
+    auto work = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
+    if (work == nullptr) {
+      LOG_E("Unable to allocate PNG decoder work buffer.");
+      mypngle_destroy(pngle);
+      unzip.closeStreamFile();
+      return;
+    }
+
     bool first     = true;
     uint32_t total = 0;
 

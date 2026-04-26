@@ -132,8 +132,8 @@
 using CSSPtr = HimemUniquePtr<class CSS>;
 class CSS {
 private:
-  std::string id;         // Unique identifier (filename) for this CSS instance
-  std::string folderPath; // Path used for all other files access (relative)
+  HimemString id;         // Unique identifier (filename) for this CSS instance
+  HimemString folderPath; // Path used for all other files access (relative)
   bool ghost;             // True if this instance rules content came from other instances
   uint8_t priority;
 
@@ -167,8 +167,8 @@ public:
     return makeUniqueHimem<CSS>(cssId, tag, buffer, size, prio);
   }
 
-  auto getId() const -> const std::string & { return id; }
-  auto getFolderPath() const -> const std::string & { return folderPath; }
+  auto getId() const -> const HimemString & { return id; }
+  auto getFolderPath() const -> const HimemString & { return folderPath; }
   auto getPriority() const -> uint8_t { return priority; }
 
   enum class ValueType : uint8_t {
@@ -315,7 +315,7 @@ public:
 
   struct Value {
     float num;
-    std::string str;
+    HimemString str;
     ValueType valueType;
     union {
       Display display;

@@ -7,14 +7,12 @@
 
   #include "viewers/page.hpp"
 
-  #include <vector>
-
   using ScreenSaverPtr = HimemUniquePtr<class ScreenSaver>;
   class ScreenSaver {
   private:
     static constexpr char const *TAG = "ScreenSaver";
 
-    std::vector<std::string> picture_filenames;
+    HimemVector<HimemString> picture_filenames;
 
     auto setup() -> bool;
 

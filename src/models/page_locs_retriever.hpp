@@ -20,7 +20,7 @@ private:
   static constexpr const char *TAG = "PageLocsRetriever";
 
 public:
-  PageLocsRetriever() = default;
+  PageLocsRetriever()  = default;
   ~PageLocsRetriever() = default; // { LOG_I("PageLocsRetriever destructor called"); }
 
   enum class Req : int8_t {
@@ -40,7 +40,7 @@ public:
     #endif
   }
 
-  auto setup(const std::string &epubFilename) -> bool;
+  auto setup(const HimemString &epubFilename) -> bool;
   auto waitForExit() -> void;
 
   [[nodiscard]] inline auto getCurrentItemrefIndex() const { return currentItemrefIndex; }
@@ -48,7 +48,7 @@ public:
 private:
   DOMPtr dom{nullptr};
   EPubPtr epub{nullptr};
-  uint16_t pageBottom;
+  uint16_t pageBottom{0};
   int16_t currentItemrefIndex{-1};
 
   EPub::BookFormatParams currentFormatParams;

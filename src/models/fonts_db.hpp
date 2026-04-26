@@ -28,7 +28,7 @@ public:
   FaceStyle style;
   HimemString filename;
   FileContentPtr fontData;
-  size_t fontDataSize;
+  size_t fontDataSize{0};
 };
 
 class FontsDB {

@@ -28,7 +28,7 @@
           std::string filename = std::string(SCREEN_SAVER_FOLDER) + "/" + entry->d_name;
           std::string ext      = filename.substr(filename.find_last_of(".") + 1);
           if ((ext == "jpg") || (ext == "jpeg")) {
-            picture_filenames.push_back(filename);
+            picture_filenames.emplace_back(filename.data(), filename.size());
           }
         }
       }

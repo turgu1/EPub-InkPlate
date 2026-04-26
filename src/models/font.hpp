@@ -11,7 +11,6 @@
 
 #include <forward_list>
 // #include <mutex>
-#include <unordered_map>
 
 using FontPtr = HimemUniquePtr<class Font>;
 
@@ -82,8 +81,8 @@ public:
 protected:
   static constexpr uint16_t BYTE_POOL_SIZE = 16384 * 2;
 
-  using Glyphs      = std::unordered_map<uint32_t, Glyph *>; ///< Cache for the glyphs' bitmap
-  using GlyphsCache = std::unordered_map<int16_t, Glyphs>;
+  using Glyphs      = HimemUnorderedMap<uint32_t, Glyph *>; ///< Cache for the glyphs' bitmap
+  using GlyphsCache = HimemUnorderedMap<int16_t, Glyphs>;
   using BytePool    = uint8_t[BYTE_POOL_SIZE];
   using BytePools   = std::forward_list<BytePool *>;
 

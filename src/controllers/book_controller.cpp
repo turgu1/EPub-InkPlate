@@ -49,7 +49,7 @@ auto BookController::leave(bool goingToDeepSleep) -> void {
   bookViewer.reset();
 }
 
-auto BookController::openBook(const std::string &bookTitle, const std::string &bookFilename,
+auto BookController::openBook(const HimemString &bookTitle, const HimemString &bookFilename,
                               const PageId &pageId) -> bool {
   LOG_D("===> openBook()...");
 

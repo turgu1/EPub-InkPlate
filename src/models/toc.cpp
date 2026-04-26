@@ -21,14 +21,14 @@ auto xmlnsPred(xml_attribute attr) -> bool;
 extern auto oneByAttr(xml_node n, const char *name1, const char *name2, const char *attr,
                       const char *value) -> xml_node;
 
-auto TOC::buildFilename(EPubPtr &epub) -> std::string {
-  std::string epubFilename = epub->getCurrentFilename();
+auto TOC::buildFilename(EPubPtr &epub) -> HimemString {
+  HimemString epubFilename = epub->getCurrentFilename();
   return epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
 }
 
 auto TOC::load(EPubPtr &epub) -> bool {
   LOG_D("load()");
-  std::string filename = buildFilename(epub);
+  HimemString filename = buildFilename(epub);
   clean();
 
   LOG_D("Reading toc: %s.", filename.c_str());
@@ -112,11 +112,11 @@ auto TOC::load(EPubPtr &epub) -> bool {
   return ready;
 }
 
-auto TOC::save(std::string epubFilename) -> bool {
+auto TOC::save(HimemString epubFilename) -> bool {
   LOG_D("save()");
   if (saved) return true;
 
-  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
+  HimemString filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
 
   if (!compact()) return false;
 
@@ -217,6 +217,10 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
     char *filenameToFind;
 
     entry.label = charPool->allocate(strlen(label) + 1);
+    if (entry.label == nullptr) {
+      LOG_E("Unable to allocate memory for TOC label.");
+      return false;
+    }
     strcpy(entry.label, label);
     entry.pageId = PageId(0, -1);
     entry.level  = level;
@@ -225,10 +229,18 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
     if (hashPos != nullptr) {
       theId.assign(hashPos + 1);
       filenameToFind = charPool->allocate(hashPos - fname + 1);
+      if (filenameToFind == nullptr) {
+        LOG_E("Unable to allocate memory for TOC filename.");
+        return false;
+      }
       strlcpy(filenameToFind, fname, hashPos - fname + 1);
     } else {
       theId.clear();
       filenameToFind = charPool->allocate(strlen(fname) + 1);
+      if (filenameToFind == nullptr) {
+        LOG_E("Unable to allocate memory for TOC filename.");
+        return false;
+      }
       strcpy(filenameToFind, fname);
     }
 
@@ -362,7 +374,17 @@ auto TOC::compact() -> bool {
 
   if (!entries.empty()) {
     for (auto &e : entries) {
-      charBufferSize += strlen(e.label) + 1;
+      const size_t labelLen = strlen(e.label) + 1;
+      if (labelLen > (std::numeric_limits<size_t>::max() - charBufferSize)) {
+        LOG_E("TOC compact size overflow.");
+        return false;
+      }
+      charBufferSize += labelLen;
+    }
+
+    if (charBufferSize > static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
+      LOG_E("TOC compact size too large: %u", static_cast<unsigned>(charBufferSize));
+      return false;
     }
 
     charBuffer = makeUniqueHimem<char[]>(charBufferSize);
@@ -399,7 +421,7 @@ auto TOC::clean() -> void {
 }
 
 auto TOC::set(std::string &id, int32_t currentOffset) -> void {
-  auto itemrefIndex    = pageLocs.getCurrentItemrefIndex();
+  auto itemrefIndex = pageLocs.getCurrentItemrefIndex();
   if (itemrefIndex < 0) return;
 
   Infos::iterator infosIt = infos.find(std::make_pair(itemrefIndex, id));
@@ -412,7 +434,7 @@ auto TOC::set(std::string &id, int32_t currentOffset) -> void {
 auto TOC::set(int32_t currentOffset) -> void {
   auto itemrefIndex = pageLocs.getCurrentItemrefIndex();
   if (itemrefIndex < 0) return;
-  int16_t idx          = -1;
+  int16_t idx = -1;
 
   for (auto &e : entries) {
     idx++;
@@ -425,9 +447,9 @@ auto TOC::set(int32_t currentOffset) -> void {
   }
 }
 
-auto TOC::exists(const std::string &epubFilename) -> bool {
-  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
-  auto db = SimpleDB::Make();
+auto TOC::exists(const HimemString &epubFilename) -> bool {
+  HimemString filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
+  auto db              = SimpleDB::Make();
   if (!db->open(filename)) return false;
 
   VersionRecord versionRecord;
@@ -436,8 +458,7 @@ auto TOC::exists(const std::string &epubFilename) -> bool {
   if ((db->getRecordCount() > 0) && db->gotoFirst() &&
       (db->getRecordSize() == sizeof(versionRecord)) &&
       db->getRecord(&versionRecord, sizeof(versionRecord)) &&
-      (versionRecord.version == TOC_DB_VERSION) &&
-      (strcmp(versionRecord.appName, TOC_NAME) == 0)) {
+      (versionRecord.version == TOC_DB_VERSION) && (strcmp(versionRecord.appName, TOC_NAME) == 0)) {
     ok = true;
   }
 

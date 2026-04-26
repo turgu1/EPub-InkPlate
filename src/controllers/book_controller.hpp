@@ -19,7 +19,7 @@ public:
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
   auto leave(bool goingToDeepSleep = false) -> void;
-  bool openBook(const std::string &bookTitle, const std::string &bookFilename,
+  bool openBook(const HimemString &bookTitle, const HimemString &bookFilename,
                 const PageId &pageId);
   // void put_str(const char *str, int xpos, int ypos);
 

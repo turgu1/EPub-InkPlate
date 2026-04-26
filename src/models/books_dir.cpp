@@ -440,7 +440,8 @@ auto BooksDir::setCoverSize() -> void {
  *
  * @see nvsMgr, db, sortedIndex, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
  */
-auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) -> void {
+auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex)
+    -> void {
 
   auto partialRecord = PartialRecord::Make();
 
@@ -471,11 +472,11 @@ auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedInde
 
       #if EPUB_INKPLATE_BUILD
         int8_t pos        = nvsMgr.getPos(partialRecord->id);
-        std::string title = " ";
+        HimemString title = " ";
         title += partialRecord->title;
         title.front() = (pos >= 0) ? 'a' + pos : 'z';
       #else
-        std::string title = "z";
+        HimemString title = "z";
         title += partialRecord->title;
       #endif
 
@@ -572,11 +573,11 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
         uint16_t idx = newDb->getRecordCount() - 1;
         #if EPUB_INKPLATE_BUILD
           int8_t pos        = nvsMgr.getPos(data->id);
-          std::string title = " ";
+          HimemString title = " ";
           title += data->title;
           title.front() = (pos >= 0) ? 'a' + pos : 'z';
         #else
-          std::string title = "z";
+          HimemString title = "z";
           title += data->title;
         #endif
         sortedIndex[title] = IndexInfo{.id = data->id, .dbIndex = idx};
@@ -646,10 +647,10 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
   #endif
 
   bool someAddedRecord = false;
-  bool result            = true;
+  bool result          = true;
 
   int fileCount = 0;
-  dp             = opendir(BOOKS_FOLDER);
+  dp            = opendir(BOOKS_FOLDER);
   while ((de = readdir(dp))) {
     int16_t size = strlen(de->d_name);
     if ((size > 5) && (strcasecmp(&de->d_name[size - 5], ".epub") == 0) &&
@@ -676,7 +677,7 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
       int16_t size = strlen(de->d_name);
       if ((size > 5) && (strcasecmp(&de->d_name[size - 5], ".epub") == 0)) {
 
-        std::string fname = de->d_name;
+        HimemString fname = de->d_name;
 
         // check if ebook file named fname is in the database
 
@@ -721,7 +722,7 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
           auto epub = EPub::Make();
 
           if (epub->open(fname)) {
-            std::string filename = epub->getCoverFilename();
+            HimemString filename = epub->getCoverFilename();
 
             PicturePtr pict;
             if (!filename.empty()) {
@@ -749,7 +750,7 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
 
             pict->resize(Dim(w, h));
 
-            auto bookRecordSize   = sizeof(EBookRecord) + w * h;
+            auto bookRecordSize    = sizeof(EBookRecord) + w * h;
             EBookRecordPtr theBook = EBookRecord::Make(bookRecordSize);
 
             if (!theBook) {
@@ -766,7 +767,7 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
             LOG_D("Retrieving metadata");
             strlcpy(theBook->filename, de->d_name, FILENAME_SIZE);
             theBook->fileSize = fileSize;
-            theBook->id = generateId((uint8_t *)theBook->filename, strlen(theBook->filename));
+            theBook->id       = generateId((uint8_t *)theBook->filename, strlen(theBook->filename));
 
             const char *str;
 
@@ -784,11 +785,11 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
             uint16_t idx = db->getRecordCount() - 1;
             #if EPUB_INKPLATE_BUILD
               int8_t pos        = nvsMgr.getPos(theBook->id);
-              std::string title = " ";
+              HimemString title = " ";
               title += theBook->title;
               title.front() = (pos >= 0) ? 'a' + pos : 'z';
             #else
-              std::string title = "z";
+              HimemString title = "z";
               title += theBook->title;
             #endif
             sortedIndex[title] = {.id = theBook->id, .dbIndex = idx};

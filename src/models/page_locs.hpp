@@ -7,9 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-#include <map>
 #include <mutex>
-#include <set>
 #include <thread>
 
 #if EPUB_LINUX_BUILD
@@ -29,7 +27,7 @@
 
 #include "pugixml.hpp"
 
-#if 1
+#if 0
   #define SHOW_IT(msg, ...) LOG_I(msg, ##__VA_ARGS__)
 #else
   #define SHOW_IT(msg, ...)
@@ -65,8 +63,8 @@ public:
   };
 
   using PagePair = std::pair<const PageId, PageInfo>;
-  using PagesMap = std::map<PageId, PageInfo, PageCompare>;
-  using ItemsSet = std::set<int16_t>;
+  using PagesMap = HimemMap<PageId, PageInfo, PageCompare>;
+  using ItemsSet = HimemSet<int16_t>;
 
   enum class Req : int8_t {
     NONE, ASAP_READY, STOPPED, PERCENT, COMPLETED

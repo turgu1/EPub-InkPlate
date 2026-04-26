@@ -209,7 +209,7 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
   if ((pageId.itemrefIndex == 0) && (pageId.offset == 0)) {
 
     if (epub->getBookFormatParams()->showPictures != 0) {
-      std::string fname = epub->getCoverFilename();
+      HimemString fname = epub->getCoverFilename();
       if (!fname.empty()) {
         // LOG_D("Cover filename: %s", fname);
         auto pict = epub->getPicture(fname, true);

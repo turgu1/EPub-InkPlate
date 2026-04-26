@@ -118,7 +118,7 @@ static int outFunc(              /* Returns 1 to continue, 0 to abort */
   return 1; /* Continue to decompress */
 }
 
-JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fromFile)
+JPegPicture::JPegPicture(const HimemString &filename, Dim max, bool loadBitmap, bool fromFile)
     : Picture() {
 
   LOG_D("Loading picture file %s", filename.c_str());
@@ -131,6 +131,11 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
       JRESULT res; /* Result code of TJpgDec API */
       JDEC jdec;   /* Decompression object */
       auto work = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
+      if (work == nullptr) {
+        LOG_E("Unable to allocate JPEG decoder work buffer.");
+        unzip.closeStreamFile();
+        return;
+      }
 
       /* Prepare to decompress */
       res = jdec_prepare(&jdec, inFunc, work.get(), WORK_SIZE, &pictureData);
@@ -176,7 +181,7 @@ JPegPicture::JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fr
   }
 }
 
-auto JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) -> void {
+auto JPegPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBitmap) -> void {
   LOG_D("Loading picture from normal file %s", filename.c_str());
 
   jpegFile = fopen(filename.c_str(), "rb");
@@ -192,6 +197,11 @@ auto JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) -
   JRESULT res; /* Result code of TJpgDec API */
   JDEC jdec;   /* Decompression object */
   auto work = makeUniqueHimem<uint8_t[]>(WORK_SIZE);
+  if (work == nullptr) {
+    LOG_E("Unable to allocate JPEG decoder work buffer.");
+    fclose(jpegFile);
+    return;
+  }
 
   /* Prepare to decompress */
   res = jdec_prepare(&jdec, fileInFunc, work.get(), WORK_SIZE, &pictureData);
@@ -228,6 +238,9 @@ auto JPegPicture::loadFromFile(std::string filename, Dim max, bool loadBitmap) -
       dim = Dim(width, height);
     }
 
-    fclose(jpegFile);
+  } else {
+    LOG_E("Unable to prepare JPEG decoder. Error code: %d", res);
   }
+
+  fclose(jpegFile);
 }

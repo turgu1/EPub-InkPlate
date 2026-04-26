@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <utility>
 #include <vector>
 
@@ -81,8 +80,8 @@ public:
     char title[TITLE_SIZE];             ///< Title from epub meta-data
     char author[AUTHOR_SIZE];           ///< Author from epub meta-data
     char description[DESCRIPTION_SIZE]; ///< Description from epub meta-data
-    Dim coverDim;                      ///< Dimensions of the cover bitmap
-    uint8_t coverBitmap[];             ///< Cover bitmap shrinked for books list presentation
+    Dim coverDim;                       ///< Dimensions of the cover bitmap
+    uint8_t coverBitmap[];              ///< Cover bitmap shrinked for books list presentation
 
     auto coverSize() const -> uint32_t { return coverDim.width * coverDim.height; }
   };
@@ -141,7 +140,7 @@ private:
     uint16_t dbIndex;
   };
 
-  using SortedIndex = std::map<std::string, IndexInfo>; ///< Sorted map of book names and indexes.
+  using SortedIndex = HimemMap<HimemString, IndexInfo>; ///< Sorted map of book names and indexes.
   SortedIndex sortedIndex; ///< Books index pointing at the db index of each book
 
   auto clearDb() -> void;
@@ -163,7 +162,7 @@ public:
    *
    * @return int16_t The number of ebooks present in the database
    */
- [[nodiscard]] inline auto getBookCount() const -> int16_t { return sortedIndex.size(); }
+  [[nodiscard]] inline auto getBookCount() const -> int16_t { return sortedIndex.size(); }
 
   /**
    * @brief Get an ebook meta-data

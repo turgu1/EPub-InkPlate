@@ -25,10 +25,9 @@ class Picture {
 public:
   Picture() = default;
   Picture(Dim d, FileContentPtr b) : dim(d), bitmap(std::move(b)) {}
-  Picture(Dim d, const uint8_t *b, uint32_t size) : dim(d) {
-    bitmap = makeUniqueHimem<uint8_t[]>(size);
+  Picture(Dim d, const uint8_t *b, uint32_t size)
+      : dim(d), bitmap(makeUniqueHimem<uint8_t[]>(size)), fileSize(size) {
     memcpy(bitmap.get(), b, size);
-    fileSize = size;
   }
 
 protected:
@@ -52,9 +51,9 @@ public:
 
   virtual ~Picture() = default;
 
- [[nodiscard]] inline auto getOrigDim() const -> const Dim { return origDim; }
- [[nodiscard]] inline auto getDim() const -> const Dim { return dim; }
- [[nodiscard]] inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
+  [[nodiscard]] inline auto getOrigDim() const -> const Dim { return origDim; }
+  [[nodiscard]] inline auto getDim() const -> const Dim { return dim; }
+  [[nodiscard]] inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
 
   auto resize(Dim newDim) -> void;
 };

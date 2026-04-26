@@ -18,7 +18,7 @@
 #include "models/epub.hpp"
 
 #include <forward_list>
-#include <map>
+#include <limits>
 #include <utility>
 
 using TOCPtr = HimemUniquePtr<class TOC>;
@@ -56,8 +56,8 @@ public:
   };
   #pragma pack(pop)
 
-  using Infos   = std::map<std::pair<int16_t, std::string>, uint16_t>;
-  using Entries = std::vector<EntryRecord>;
+  using Infos   = HimemMap<std::pair<int16_t, std::string>, uint16_t>;
+  using Entries = HimemVector<EntryRecord>;
 
   const Entries &getEntries() { return entries; }
   [[nodiscard]] inline auto isReady() -> bool { return ready && !entries.empty(); }
@@ -85,7 +85,7 @@ public:
    *
    * @return True if saving was successfull.
    */
-  auto save(std::string epubFilename) -> bool;
+  auto save(HimemString epubFilename) -> bool;
 
   /**
    * @brief Load table of content from ePub file.
@@ -123,7 +123,7 @@ public:
   auto set(std::string &id, int32_t currentOffset) -> void;
   auto set(int32_t currentOffset) -> void;
 
-  static auto exists(const std::string &epubFilename) -> bool;
+  static auto exists(const HimemString &epubFilename) -> bool;
 
 private:
   static constexpr char const *TAG      = "TOC";
@@ -137,7 +137,7 @@ private:
 
   CharPoolPtr charPool{nullptr};
   HimemUniquePtr<char[]> charBuffer{nullptr};
-  uint16_t charBufferSize{0};
+  size_t charBufferSize{0};
 
   const pugi::xml_document *opf{nullptr};
 
@@ -148,7 +148,7 @@ private:
 
   auto clean() -> void;
   auto cleanFilename(char *fname) -> void;
-  auto buildFilename(EPubPtr &epub) -> std::string;
+  auto buildFilename(EPubPtr &epub) -> HimemString;
   auto doNavPoints(pugi::xml_node &node, uint8_t level) -> bool;
 
   #if DEBUGGING

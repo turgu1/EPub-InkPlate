@@ -16,16 +16,17 @@ private:
   static constexpr char const *TAG  = "JPegPicture";
   static constexpr size_t WORK_SIZE = 20 * 1024;
 
-  JPegPicture(std::string filename, Dim max, bool loadBitmap, bool fromFile = false);
+  JPegPicture(const HimemString &filename, Dim max, bool loadBitmap, bool fromFile = false);
 
-  auto loadFromFile(std::string filename, Dim max, bool loadBitmap) -> void;
+  auto loadFromFile(const HimemString &filename, Dim max, bool loadBitmap) -> void;
 
 public:
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
   friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(std::string filename, Dim max, bool loadBitmap, bool fromFile = false) {
+  static inline auto Make(const HimemString &filename, Dim max, bool loadBitmap,
+                          bool fromFile = false) {
     return makeUniqueHimem<JPegPicture>(filename, max, loadBitmap, fromFile);
   }
 

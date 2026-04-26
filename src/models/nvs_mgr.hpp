@@ -11,7 +11,7 @@
 
   class NVSMgr {
   public:
-    NVSMgr() : initialized(false) {}
+    NVSMgr() : trackCount(0), nextIdx(0), initialized(false) {}
     ~NVSMgr() {}
 
     #pragma pack(push, 1)
@@ -60,17 +60,17 @@
     auto findId(uint32_t id, uint32_t &index) -> bool;
     auto show() -> void;
 
- [[nodiscard]] inline auto bldKey(const char *prefix, uint32_t index) -> std::string {
+    [[nodiscard]] inline auto bldKey(const char *prefix, uint32_t index) -> std::string {
       char str[12];
       return std::string(prefix) + int_to_str(index, str, 12);
     }
 
- [[nodiscard]] inline auto exists(uint32_t index) -> bool {
+    [[nodiscard]] inline auto exists(uint32_t index) -> bool {
       TrackList::iterator it = trackList.find(index);
       return it != trackList.end();
     }
 
- [[nodiscard]] inline auto size() -> uint32_t { return trackCount; }
+    [[nodiscard]] inline auto size() -> uint32_t { return trackCount; }
   };
 
   #if __NVS_MGR__

@@ -39,7 +39,7 @@ public:
   using CSSRefList = std::list<std::reference_wrapper<CSS>>;
 
   struct ItemInfo {
-    std::string filePath{};
+    HimemString filePath{};
     int16_t itemrefIndex{};
     pugi::xml_document xmlDoc{};
     CSSList cssCache;   ///< style attributes part of the current processed item are kept here. They
@@ -86,8 +86,8 @@ private:
 
   FileContentPtr opfData{nullptr};
   FileContentPtr encryptionData{nullptr};
-  std::string currentFilename{""};
-  std::string opfBasePath{""};
+  HimemString currentFilename{""};
+  HimemString opfBasePath{""};
 
   ItemInfo currentItemInfo{};
   BookParams *bookParams{nullptr};
@@ -127,28 +127,30 @@ public:
   static inline auto Make() { return makeUniqueHimem<EPub>(); }
 
   // clang-format off
-  auto open(const std::string &epubFilename)                -> bool;
+  auto open(const HimemString &epubFilename)                -> bool;
   auto closeFile()                                          -> bool;
-  auto getPicture(std::string &fname, bool load)            -> PicturePtr;
+  auto getPicture(HimemString &fname, bool load)            -> PicturePtr;
   auto retrieveFile(const char *fname, uint32_t &size)      -> HimemUniquePtr<uint8_t[]>;
   auto getItem(pugi::xml_node itemref, ItemInfo &item)      -> bool;
   auto getItemAtIndex(int16_t itemrefIndex)                 -> bool;
   auto getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool;
   auto getUniqueIdentifier()                                -> std::string;
   auto getKeys()                                            -> bool;
-  auto filenameLocate(const char *fname)                    -> std::string;
+  auto filenameLocate(const char *fname)                    -> HimemString;
   auto getItemCount()                                       -> int16_t;
   auto getFileObfuscation(const char *filename)             -> ObfuscationType;
   auto getFonts()                                           -> Fonts & { return fonts; }
-  auto loadFont(const std::string filename, const std::string fontFamily, const FaceStyle style)
-                                                            -> bool;
+  auto loadFont(const HimemString &filename, 
+                const HimemString &fontFamily, 
+                const FaceStyle style)                      -> bool;
 
-  auto retrieveCss(ItemInfo &item)                                         -> void;
-  auto loadFonts()                                                         -> void;
-  auto clearItemData(ItemInfo &item)                                       -> void;
-  auto openParams(const std::string &epubFilename)                         -> void;
-  auto updateBookFormatParams()                                            -> void;
-  auto decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void;
+  auto retrieveCss(ItemInfo &item)                          -> void;
+  auto loadFonts()                                          -> void;
+  auto clearItemData(ItemInfo &item)                        -> void;
+  auto openParams(const HimemString &epubFilename)          -> void;
+  auto updateBookFormatParams()                             -> void;
+  auto decrypt(void *buffer, const uint32_t size, 
+               ObfuscationType obfType)                     -> void;
 
   // clang-format on
 
@@ -167,17 +169,17 @@ public:
  [[nodiscard]] inline auto getCssCache() const            -> const CSSList &            { return cssCache; }
  [[nodiscard]] inline auto getCurrentItemCss() const      -> const CSSPtr &             { return currentItemInfo.css; }
  [[nodiscard]] inline auto getCurrentItemInfo() const     -> const ItemInfo &           { return currentItemInfo; }
- [[nodiscard]] inline auto getCurrentItemFilePath() const -> const std::string &        { return currentItemInfo.filePath; }
+ [[nodiscard]] inline auto getCurrentItemFilePath() const -> const HimemString &        { return currentItemInfo.filePath; }
  [[nodiscard]] inline auto getItemrefIndex() const        -> int16_t                    { return currentItemInfo.itemrefIndex; }
  [[nodiscard]] inline auto getTitle()                     -> const char *               { return getMeta("dc:title"); }
  [[nodiscard]] inline auto getAuthor()                    -> const char *               { return getMeta("dc:creator"); }
  [[nodiscard]] inline auto getDescription()               -> const char *               { return getMeta("dc:description"); }
  [[nodiscard]] inline auto getCurrentItem() const         -> const pugi::xml_document & { return currentItemInfo.xmlDoc; }
- [[nodiscard]] inline auto getCurrentFilename()           -> std::string                { return currentFilename; }
+ [[nodiscard]] inline auto getCurrentFilename() const     -> const HimemString &        { return currentFilename; }
  [[nodiscard]] inline auto filenameIsEmpty()              -> bool                       { return currentFilename.empty(); }
  [[nodiscard]] inline auto getBookParams()                -> BookParams *               { return bookParams; }
  [[nodiscard]] inline auto getBookFormatParams()          -> BookFormatParams *         { return &bookFormatParams; }
- [[nodiscard]] inline auto getOpfBasePath() const         -> const std::string &        { return opfBasePath; }
+ [[nodiscard]] inline auto getOpfBasePath() const         -> const HimemString &        { return opfBasePath; }
  [[nodiscard]] inline auto getOpf()                       -> const pugi::xml_document & { return opf; }
  [[nodiscard]] inline auto encryptionIsPresent() const    -> bool                       { return encryptionPresent; }
  [[nodiscard]] inline auto getBinUuid() const             -> const BinUUID &            { return binUuid; }

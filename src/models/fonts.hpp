@@ -107,7 +107,7 @@ public:
    * @return Index number related to a font name and a face style.
    *         If not found, returns -1.
    */
-  auto getIndex(const std::string &name, FaceStyle style) -> int16_t;
+  auto getIndex(const HimemString &name, FaceStyle style) -> int16_t;
 
   auto replace(int16_t index, const FontFaceDescriptorPtr &descr) -> bool;
 
@@ -146,8 +146,8 @@ public:
    */
   auto add(const FontFaceDescriptorPtr &descr) -> bool;
 
-  auto add(const std::string &fontFamily, FaceStyle style, FileContentPtr buffer, size_t size,
-           const std::string &filename) -> bool;
+  auto add(const HimemString &fontFamily, FaceStyle style, FileContentPtr buffer, size_t size,
+           const HimemString &filename) -> bool;
 
   auto adjustFontStyle(FaceStyle style, FaceStyle fontStyle, FaceStyle fontWeight) const
       -> FaceStyle;

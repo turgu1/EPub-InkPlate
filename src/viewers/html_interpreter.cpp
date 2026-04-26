@@ -282,7 +282,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       // the start of the page offset
       currentOffset++;
     } else {
-      std::string fname = itemInfo.filePath;
+      HimemString fname = itemInfo.filePath;
       fname.append(pictureFilename);
 
       if (started && (currentOffset < endOffset)) {

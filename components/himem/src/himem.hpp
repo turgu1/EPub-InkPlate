@@ -25,6 +25,7 @@
 //   HimemString                 — std::basic_string with PsramAllocator
 //   HimemVector<T>              — std::vector<T>  with PsramAllocator
 //   HimemMap<K, V>              — std::map<K, V>  with PsramAllocator
+//   HimemSet<K>                 — std::set<K>     with PsramAllocator
 //   HimemUnorderedMap<K, V>     — std::unordered_map<K, V> with PsramAllocator
 // ---------------------------------------------------------------------------
 
@@ -34,6 +35,7 @@
 #include <map>
 #include <memory>
 #include <new>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -282,6 +284,15 @@ using HimemUnorderedMap =
 
 template <typename Key, typename T, typename Compare = std::less<Key>>
 using HimemMap = std::map<Key, T, Compare, PsramAllocator<std::pair<const Key, T>>>;
+
+// ===========================================================================
+// HimemSet<K>
+//
+// Drop-in for std::set<K> whose backing storage lives in PSRAM.
+// ===========================================================================
+
+template <typename Key, typename Compare = std::less<Key>>
+using HimemSet = std::set<Key, Compare, PsramAllocator<Key>>;
 
 // ===========================================================================
 // himemUniqueString

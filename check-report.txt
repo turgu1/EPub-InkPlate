@@ -1,0 +1,122 @@
+EPub-InkPlate Memory Usage Audit Report
+Date: 2026-04-26
+Scope: src/ and components/
+
+Summary
+- Linux path appears more tolerant to memory/lifetime defects.
+- ESP32 path is exposed to tighter heap/stack limits and embedded runtime behavior.
+- Multiple high-priority issues were found that can cause crashes, corruption, or leaks.
+
+Findings (ordered by severity)
+
+1) Undefined behavior: explicit std::thread destructor calls after join
+- Files:
+  - src/models/page_locs_control.cpp (line 55)
+  - src/models/page_locs_retriever.cpp (line 77)
+- Problem:
+  - The code manually calls ~thread() after join().
+  - The thread object will still be destroyed again by normal object lifetime, causing undefined behavior.
+- Why ESP32 can fail first:
+  - pthread shim/runtime differences make UB surface more readily.
+- Risk:
+  - Heap/runtime corruption, sporadic crashes.
+
+2) TOC compacted buffer size overflow (16-bit accumulator)
+- Files:
+  - src/models/toc.hpp (line 140)
+  - src/models/toc.cpp (lines 365, 368, 373)
+- Problem:
+  - charBufferSize is uint16_t while accumulating all TOC label lengths.
+  - Large TOCs can wrap size, allocate too little, then strcpy() overruns destination.
+- Why ESP32 can fail first:
+  - Smaller heaps and tighter memory pressure amplify overflow side effects.
+- Risk:
+  - Heap corruption, crashes during TOC build/save.
+
+3) Null-deref risk from unchecked CharPool allocation failures
+- Files:
+  - components/memory_pool/src/char_pool.hpp (lines 39, 48)
+  - src/models/toc.cpp (lines 219, 227, 231)
+- Problem:
+  - CharPool::allocate() can return nullptr.
+  - Call sites use result immediately with strcpy()/strlcpy() without checks.
+- Why ESP32 can fail first:
+  - PSRAM exhaustion is realistic on embedded loads.
+- Risk:
+  - Immediate crash in TOC parsing/loading paths.
+
+4) Unsafe Wi-Fi config memory handling in ESP32-only path
+- Files:
+  - src/controllers/wifi.cpp (lines 127, 128, 210, 214, 215, 217)
+- Problem:
+  - STA path uses unbounded strcpy() into fixed-size ESP-IDF buffers.
+  - AP path does not zero-initialize wifi_config_t before partial assignment.
+  - AP ssid_len is taken from source length without strict bounds alignment.
+- Why ESP32 can fail first:
+  - These structures are passed directly to ESP-IDF driver APIs.
+- Risk:
+  - Stack garbage passed to driver, buffer overrun, config instability/crash.
+
+5) ZIP filename cleanup leaks on early return paths
+- Files:
+  - components/zip/src/unzip.cpp (lines 303, 326, 349, 372, 378)
+  - src/models/epub.cpp (line 421 call site to getFileSize)
+- Problem:
+  - cleanFname() allocates memory that is not freed in some error/miss returns.
+  - getFileSize() and openFile() have non-symmetric cleanup.
+- Why ESP32 can fail first:
+  - Repeated leaks fragment limited heap faster than on Linux.
+- Risk:
+  - Progressive memory loss and eventual OOM/failures.
+
+6) Unchecked large buffer allocations in image decoders
+- Files:
+  - components/pictures/src/png_picture.cpp (lines 48, 49, 53)
+  - components/pictures/src/jpeg_picture.cpp (lines 133, 136, 194, 197)
+- Problem:
+  - Work buffers/decoder state setup proceed without consistently guarding allocation failure.
+  - Decoder APIs receive pointers that may be null under memory pressure.
+- Why ESP32 can fail first:
+  - Large contiguous allocations fail more often in fragmented PSRAM.
+- Risk:
+  - Null dereference or decoder failure path instability.
+
+7) Dangling pointer risk from PageLocs API returning internal map pointers
+- Files:
+  - src/models/page_locs.hpp (lines 163, 168)
+  - src/models/page_locs.cpp (lines 196, 239, 403)
+- Problem:
+  - APIs return raw pointers into pagesMap internals.
+  - pagesMap can later be cleared/rebuilt, invalidating previously returned pointers.
+- Why ESP32 can fail first:
+  - Timing/concurrency differences plus tighter memory behavior increase exposure.
+- Risk:
+  - Use-after-invalidate crashes.
+
+Prioritized TODO List
+
+P0 (fix immediately)
+1. Remove explicit std::thread destructor calls in page_locs_control/page_locs_retriever.
+2. Harden Wi-Fi config handling:
+   - zero-init wifi_config_t
+   - bounded copy with guaranteed null-termination
+   - explicit SSID/password length validation to ESP-IDF limits.
+3. Change TOC charBufferSize to a wider type (size_t/uint32_t) and add overflow checks before allocation/copy.
+4. Add nullptr checks after CharPool::allocate() and fail gracefully with logs.
+
+P1 (next)
+5. Fix unzip.cpp cleanup symmetry so cleanFname allocations are always freed on all return paths.
+6. Add strict allocation checks in PNG/JPEG loader setup before decoder preparation calls.
+
+P2 (stability hardening)
+7. Refactor PageLocs APIs to return values/copies instead of raw pointers into pagesMap internals.
+8. Add ESP32 memory-stress regression loop tests:
+   - repeated open/close books
+   - TOC-heavy books
+   - image-heavy chapters
+   - Wi-Fi STA/AP start-stop cycles
+   - track min heap and stack high-water marks.
+
+Validation Notes
+- Automated static pass via cppcheck was not possible in this environment (cppcheck not installed).
+- Findings are from direct source review and path-specific behavior analysis.

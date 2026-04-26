@@ -134,7 +134,7 @@ auto Fonts::clearGlyphCaches() -> void {
   }
 }
 
-auto Fonts::getIndex(const std::string &name, FaceStyle style) -> int16_t {
+auto Fonts::getIndex(const HimemString &name, FaceStyle style) -> int16_t {
   int16_t idx = 0;
 
   {
@@ -225,14 +225,14 @@ auto Fonts::add(const FontFaceDescriptorPtr &descr) -> bool {
   return false;
 }
 
-auto Fonts::add(const std::string &fontFamily, FaceStyle style, FileContentPtr buffer, size_t size,
-                const std::string &filename) -> bool {
+auto Fonts::add(const HimemString &fontFamily, FaceStyle style, FileContentPtr buffer, size_t size,
+                const HimemString &filename) -> bool {
 
   FontFaceDescriptorPtr descr = FontFaceDescriptor::Make();
 
-  descr->name         = HimemString(fontFamily);
+  descr->name         = fontFamily;
   descr->style        = style;
-  descr->filename     = HimemString(filename);
+  descr->filename     = filename;
   descr->fontData     = std::move(buffer);
   descr->fontDataSize = size;
 

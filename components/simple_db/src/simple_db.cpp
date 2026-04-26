@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sys/stat.h>
 
-auto SimpleDB::open(std::string filename) -> bool {
+auto SimpleDB::open(const HimemString &filename) -> bool {
   LOG_D("Opening database file: %s", filename.c_str());
 
   if (dbIsOpen) {
@@ -55,7 +55,7 @@ error:
   }
 }
 
-auto SimpleDB::create(std::string filename) -> bool {
+auto SimpleDB::create(const HimemString &filename) -> bool {
   LOG_D("Creating database file: %s", filename.c_str());
   if (dbIsOpen) {
     fclose(dbFile);

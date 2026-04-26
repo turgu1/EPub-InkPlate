@@ -115,17 +115,29 @@
     config.get(Config::Ident::PWD, wifiPassword);
     config.get(Config::Ident::DNS_NAME, dnsName);
 
-    wifi_config_t wifi_config;
-
-    bzero(&wifi_config, sizeof(wifi_config_t));
+    wifi_config_t wifi_config{};
 
     wifi_config.sta.bssid_set          = 0;
     wifi_config.sta.pmf_cfg.capable    = true;
     wifi_config.sta.pmf_cfg.required   = false;
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
-    strcpy((char *)wifi_config.sta.ssid, wifiSsid.c_str());
-    strcpy((char *)wifi_config.sta.password, wifiPassword.c_str());
+    const size_t staSsidMax = sizeof(wifi_config.sta.ssid);
+    if (wifiSsid.length() >= staSsidMax) {
+      LOG_E("Configured SSID is too long (%u >= %u)", static_cast<unsigned>(wifiSsid.length()),
+            static_cast<unsigned>(staSsidMax));
+      return false;
+    }
+
+    const size_t staPasswordMax = sizeof(wifi_config.sta.password);
+    if (wifiPassword.length() >= staPasswordMax) {
+      LOG_E("Configured password is too long (%u >= %u)",
+            static_cast<unsigned>(wifiPassword.length()), static_cast<unsigned>(staPasswordMax));
+      return false;
+    }
+
+    memcpy(wifi_config.sta.ssid, wifiSsid.c_str(), wifiSsid.length() + 1);
+    memcpy(wifi_config.sta.password, wifiPassword.c_str(), wifiPassword.length() + 1);
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config((wifi_interface_t)WIFI_IF_STA, &wifi_config));
@@ -200,23 +212,32 @@
     HimemString apPassword;
     HimemString dnsName;
 
-    uint8_t apSsidRaw[32];
-    uint8_t apPasswordRaw[64];
-
     config.get(Config::Ident::SSID, apSsid);
     config.get(Config::Ident::PWD, apPassword);
     config.get(Config::Ident::DNS_NAME, dnsName);
 
-    wifi_config_t wifi_config;
+    wifi_config_t wifi_config{};
 
-    // wifi_config.ap.ssid = apSsidRaw;
-    // wifi_config.ap.password = apPasswordRaw;
-    strncpy((char *)wifi_config.ap.ssid, apSsid.c_str(), 32);
-    strncpy((char *)wifi_config.ap.password, apPassword.c_str(), 32);
+    const size_t apSsidMax = sizeof(wifi_config.ap.ssid);
+    if ((apSsid.length() == 0) || (apSsid.length() >= apSsidMax)) {
+      LOG_E("Configured AP SSID length is invalid: %u", static_cast<unsigned>(apSsid.length()));
+      return false;
+    }
 
-    wifi_config.ap.ssid_len = apSsid.length();
-    wifi_config.ap.channel  = 11;
-    wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK, wifi_config.ap.max_connection = 5;
+    const size_t apPasswordMax = sizeof(wifi_config.ap.password);
+    if ((apPassword.length() < 8) || (apPassword.length() >= apPasswordMax)) {
+      LOG_E("Configured AP password length is invalid: %u",
+            static_cast<unsigned>(apPassword.length()));
+      return false;
+    }
+
+    memcpy(wifi_config.ap.ssid, apSsid.c_str(), apSsid.length() + 1);
+    memcpy(wifi_config.ap.password, apPassword.c_str(), apPassword.length() + 1);
+
+    wifi_config.ap.ssid_len         = static_cast<uint8_t>(apSsid.length());
+    wifi_config.ap.channel          = 11;
+    wifi_config.ap.authmode         = WIFI_AUTH_WPA2_PSK;
+    wifi_config.ap.max_connection   = 5;
     wifi_config.ap.pmf_cfg.required = false;
 
     // #ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
@@ -230,8 +251,8 @@
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGD(TAG, "startAp() finished. SSID:%s password:%s channel:%d", (char *)apSsidRaw,
-             (char *)apPasswordRaw, 11);
+    ESP_LOGD(TAG, "startAp() finished. SSID:%s password:%s channel:%d", apSsid.c_str(),
+             apPassword.c_str(), 11);
 
     apRunning = true;
     return true;

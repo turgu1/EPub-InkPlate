@@ -282,7 +282,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
       std::tie(result, confirmData) = MsgViewer::confirm(event, std::move(confirmData));
       if (result) {
         if (confirmData->ok) {
-          std::string filePath = epub->getCurrentFilename();
+          const HimemString &filePath = epub->getCurrentFilename();
           struct stat fileStat;
 
           if (stat(filePath.c_str(), &fileStat) != -1) {
@@ -293,25 +293,28 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
 
             int16_t dotPos = filePath.find_last_of('.');
 
-            filePath.replace(dotPos, 5, ".pars");
+            HimemString paramsFilePath = filePath;
+            paramsFilePath.replace(dotPos, 5, ".pars");
 
-            if (stat(filePath.c_str(), &fileStat) != -1) {
-              LOG_I("Deleting file : %s", filePath.c_str());
-              unlink(filePath.c_str());
+            if (stat(paramsFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : %s", paramsFilePath.c_str());
+              unlink(paramsFilePath.c_str());
             }
 
-            filePath.replace(dotPos, 5, ".locs");
+            HimemString locsFilePath = filePath;
+            locsFilePath.replace(dotPos, 5, ".locs");
 
-            if (stat(filePath.c_str(), &fileStat) != -1) {
-              LOG_I("Deleting file : %s", filePath.c_str());
-              unlink(filePath.c_str());
+            if (stat(locsFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : %s", locsFilePath.c_str());
+              unlink(locsFilePath.c_str());
             }
 
-            filePath.replace(dotPos, 5, ".toc");
+            HimemString tocFilePath = filePath;
+            tocFilePath.replace(dotPos, 5, ".toc");
 
-            if (stat(filePath.c_str(), &fileStat) != -1) {
-              LOG_I("Deleting file : %s", filePath.c_str());
-              unlink(filePath.c_str());
+            if (stat(tocFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : %s", tocFilePath.c_str());
+              unlink(tocFilePath.c_str());
             }
 
             int16_t refreshIndex;

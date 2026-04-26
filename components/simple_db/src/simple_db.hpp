@@ -40,18 +40,20 @@ private:
 
   static const uint16_t MAX_RECORD_COUNT = 1000;
 
-  FILE *dbFile;
+  FILE *dbFile{nullptr};
 
   bool dbIsOpen;
-  bool someRecordsDeleted;
-  int32_t recordOffset[MAX_RECORD_COUNT]; ///< record offset in file
-  bool isDeleted[MAX_RECORD_COUNT];       ///< true if record is deleted
+  bool someRecordsDeleted{false};
+  int32_t recordOffset[MAX_RECORD_COUNT]{}; ///< record offset in file
+  bool isDeleted[MAX_RECORD_COUNT]{};       ///< true if record is deleted
   uint16_t recordCount;
-  uint32_t fileSize;
+  uint32_t fileSize{0};
   uint16_t currentRecordIdx; ///< Index of current record in recordOffset
 
 public:
   SimpleDB() : dbIsOpen(false), recordCount(0), currentRecordIdx(0) {};
+  SimpleDB(const SimpleDB &)            = delete;
+  SimpleDB &operator=(const SimpleDB &) = delete;
   ~SimpleDB() {
     if (dbIsOpen) fclose(dbFile);
   }
@@ -69,7 +71,7 @@ public:
    * @return true The file has been opened.
    * @return false
    */
-  auto open(std::string filename) -> bool;
+  auto open(const HimemString &filename) -> bool;
 
   /**
    * @brief Create a new database.
@@ -81,16 +83,16 @@ public:
    * @return true File created and database pointing at it.
    * @return false File already exists and not overrided. Nothing done.
    */
-  auto create(std::string filename) -> bool;
+  auto create(const HimemString &filename) -> bool;
 
   auto close() -> void;
 
- [[nodiscard]] inline auto getCurrentIdx() -> uint16_t { return currentRecordIdx; }
- inline auto setCurrentIdx(int16_t index) -> void { currentRecordIdx = index; }
- [[nodiscard]] inline auto getRecordCount() -> uint16_t { return recordCount; }
- [[nodiscard]] inline auto getFileSize() -> uint16_t { return fileSize; }
- [[nodiscard]] inline auto someRecordsWereDeleted() -> bool { return someRecordsDeleted; }
- [[nodiscard]] inline auto isDbOpen() -> bool { return dbIsOpen; }
+  [[nodiscard]] inline auto getCurrentIdx() -> uint16_t { return currentRecordIdx; }
+  inline auto setCurrentIdx(int16_t index) -> void { currentRecordIdx = index; }
+  [[nodiscard]] inline auto getRecordCount() -> uint16_t { return recordCount; }
+  [[nodiscard]] inline auto getFileSize() -> uint16_t { return fileSize; }
+  [[nodiscard]] inline auto someRecordsWereDeleted() -> bool { return someRecordsDeleted; }
+  [[nodiscard]] inline auto isDbOpen() -> bool { return dbIsOpen; }
 
   /**
    * @brief Add a record at the end of the file.

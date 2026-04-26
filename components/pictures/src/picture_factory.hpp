@@ -15,10 +15,10 @@
 class PictureFactory {
 
 public:
-  static auto create(std::string filename, Dim max, bool loadBitmap, bool fromFile = false)
+  static auto create(HimemString filename, Dim max, bool loadBitmap, bool fromFile = false)
       -> PicturePtr {
 
-    std::string ext = filename.substr(filename.find_last_of(".") + 1);
+    auto ext = filename.substr(filename.find_last_of(".") + 1);
 
     if ((ext == "png") && !fromFile) {
       return PngPicture::Make(filename, max, loadBitmap);

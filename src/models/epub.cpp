@@ -90,7 +90,7 @@ auto oneByAttr(xml_node n, const char *name1, const char *name2, const char *att
 
 EPub::~EPub() { closeFile(); }
 
-void extractPath(const char *fname, std::string &path) {
+void extractPath(const char *fname, HimemString &path) {
   path.clear();
   int i = strlen(fname) - 1;
   while ((i > 0) && (fname[i] != '/')) i--;
@@ -341,7 +341,7 @@ auto EPub::getOpf(std::string &filename) -> bool {
   return completed;
 }
 
-auto EPub::filenameLocate(const char *fname) -> std::string {
+auto EPub::filenameLocate(const char *fname) -> HimemString {
   char name[256];
   uint8_t idx   = 0;
   const char *s = fname;
@@ -361,7 +361,7 @@ auto EPub::filenameLocate(const char *fname) -> std::string {
   }
   name[idx] = 0;
 
-  std::string filename = opfBasePath;
+  HimemString filename = opfBasePath;
   filename.append(name);
 
   return filename;
@@ -373,7 +373,7 @@ auto EPub::retrieveFile(const char *fname, uint32_t &size) -> FileContentPtr {
 
   LOG_D("Retrieving file %s", fname);
 
-  std::string filename = filenameLocate(fname);
+  HimemString filename = filenameLocate(fname);
 
   // LOG_D("Retrieving file %s", filename.c_str());
 
@@ -414,8 +414,8 @@ auto EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -
   }
 }
 
-auto EPub::loadFont(const std::string filename, const std::string fontFamily, const FaceStyle style)
-    -> bool {
+auto EPub::loadFont(const HimemString &filename, const HimemString &fontFamily,
+                    const FaceStyle style) -> bool {
   uint32_t size;
   LOG_D("Font file name: %s", filename.c_str());
   if ((size = unzip.getFileSize(filename.c_str())) > 0) {
@@ -499,7 +499,7 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
         FaceStyle style        = FaceStyle::NORMAL;
         FaceStyle font_weight  = FaceStyle::NORMAL;
         FaceStyle font_style   = FaceStyle::NORMAL;
-        std::string fontFamily = values->front()->str;
+        HimemString fontFamily = values->front()->str;
 
         if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
           font_style = (FaceStyle)values->front()->choice.faceStyle;
@@ -524,7 +524,7 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
               }
             }
 
-            std::string filename = css->getFolderPath() + values->front()->str;
+            HimemString filename = css->getFolderPath() + values->front()->str;
             filename             = filenameLocate(filename.c_str());
 
             loadFont(filename, fontFamily, style);
@@ -576,7 +576,7 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
 
           // The css file was not found. Load it in the cache.
           uint32_t size;
-          std::string fname = item.filePath;
+          HimemString fname = item.filePath;
           fname.append(css_id.c_str());
           auto data = retrieveFile(fname.c_str(), size);
 
@@ -585,7 +585,7 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
               memory_used += size;
             #endif
             LOG_D("CSS Filename: %s", fname.c_str());
-            std::string path;
+            HimemString path;
             extractPath(fname.c_str(), path);
             auto css_tmp = CSS::Make(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0);
             if (css_tmp == nullptr) MsgViewer::outOfMemory("css temp allocation");
@@ -783,15 +783,15 @@ auto EPub::updateBookFormatParams() -> void {
   // if (!bookFormatParams.useFontsInBook) fonts.clear();
 }
 
-auto EPub::openParams(const std::string &epubFilename) -> void {
-  std::string paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
+auto EPub::openParams(const HimemString &epubFilename) -> void {
+  HimemString paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
   bookParams                 = new BookParams(paramsFilename, false);
   if (bookParams != nullptr) {
     bookParams->read();
   }
 }
 
-auto EPub::open(const std::string &epubFilename) -> bool {
+auto EPub::open(const HimemString &epubFilename) -> bool {
   if (fileIsOpen && (currentFilename == epubFilename)) return true;
   if (fileIsOpen) closeFile();
 
@@ -1051,9 +1051,9 @@ auto EPub::getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool {
   return res;
 }
 
-auto EPub::getPicture(std::string &fname, bool load) -> PicturePtr {
+auto EPub::getPicture(HimemString &fname, bool load) -> PicturePtr {
 
-  std::string filename = filenameLocate(fname.c_str());
+  HimemString filename = filenameLocate(fname.c_str());
   auto pict = PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load);
 
   if ((pict == nullptr) || (load && (pict->getBitmap() == nullptr)) ||

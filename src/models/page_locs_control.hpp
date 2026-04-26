@@ -20,7 +20,7 @@ using PageLocsControlPtr = HimemUniquePtr<PageLocsControl>;
 class PageLocsControl {
 private:
   static constexpr const char *TAG = "PageLocsControl";
-  PageLocsControl() = default;
+  PageLocsControl()                = default;
 
 public:
   ~PageLocsControl() = default; // { LOG_I("PageLocsControl destructor called"); };
@@ -49,7 +49,7 @@ public:
     #endif
   }
 
-  auto setup(const std::string &epubFilename) -> bool;
+  auto setup(const HimemString &epubFilename) -> bool;
   auto waitForExit() -> void;
 
   [[nodiscard]] inline auto percentDone() -> int {
@@ -59,10 +59,11 @@ public:
     return percent;
   }
 
-  [[nodiscard]] inline auto getCurrentItemrefIndex() const { return retrieverTask.getCurrentItemrefIndex(); }
+  [[nodiscard]] inline auto getCurrentItemrefIndex() const {
+    return retrieverTask.getCurrentItemrefIndex();
+  }
 
-private:  
-
+private:
   std::atomic<bool> runningDown{false};
 
   int16_t itemrefCount{-1};                  // Number of items in the document

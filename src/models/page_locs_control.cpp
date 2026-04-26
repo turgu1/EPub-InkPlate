@@ -8,7 +8,7 @@
   mqd_t PageLocsControl::controlQueue{-1};
 #endif
 
-auto PageLocsControl::setup(const std::string &epubFilename) -> bool {
+auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
 
   if (!retrieverTask.setup(epubFilename)) {
     LOG_E("Unable to setup retriever task");
@@ -41,6 +41,10 @@ auto PageLocsControl::setup(const std::string &epubFilename) -> bool {
     cfg.prio        = configMAX_PRIORITIES - 2;
     cfg.inherit_cfg = true;
 
+    LOG_I("Control task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
+          (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
+          static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
+
     esp_pthread_set_cfg(&cfg);
     controlThread = std::thread(&PageLocsControl::task, this);
 
@@ -52,7 +56,6 @@ auto PageLocsControl::setup(const std::string &epubFilename) -> bool {
 auto PageLocsControl::waitForExit() -> void {
   if (controlThread.joinable()) {
     controlThread.join();
-    controlThread.~thread();
   }
 }
 

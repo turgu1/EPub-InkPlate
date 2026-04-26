@@ -65,13 +65,13 @@ private:
     static constexpr int16_t SPACE_BETWEEN_ICONS = 50;
   #endif
 
-  uint8_t currentEntryIndex;
-  uint8_t menuEntryCount;
-  uint16_t iconHeight, textHeight, lineHeight, regionHeight;
-  uint16_t iconYPos, textYPos;
+  uint8_t currentEntryIndex{0};
+  uint8_t menuEntryCount{0};
+  uint16_t iconHeight{0}, textHeight{0}, lineHeight{0}, regionHeight{0};
+  uint16_t iconYPos{0}, textYPos{0};
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    bool hintShown;
+    bool hintShown{false};
     auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
   #endif
 
@@ -84,5 +84,5 @@ private:
 
   EntryLocPtr entryLocs;
 
-  MenuEntry *menu;
+  MenuEntry *menu{nullptr};
 };

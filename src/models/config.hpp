@@ -136,7 +136,7 @@ enum class ConfigIdent {
   // clang-format on
 
   // Config config(conf, CONFIG_FILE);
-  Config config(CONFIG_FILE, true);
+  Config config(HimemString(CONFIG_FILE), true);
 #else
   extern Config config;
 #endif

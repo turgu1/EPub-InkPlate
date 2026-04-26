@@ -18,7 +18,7 @@ private:
   static constexpr char const *TAG = "Unzip";
 
   static const int BUFFER_SIZE = 1024 * 16;
-  char buffer[BUFFER_SIZE];
+  HimemUniquePtr<char[]> bufStorage{};
 
   std::mutex mutex;
 
@@ -37,7 +37,7 @@ private:
 
   typedef std::forward_list<FileEntry *> FileEntries;
   FileEntries fileEntries;
-  FileEntries::iterator currentFileEntry;
+  FileEntries::iterator currentFileEntry{};
 
   auto getUint32(const unsigned char *b) -> uint32_t {
     return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8) | (((uint32_t)b[2]) << 16) |
@@ -47,16 +47,16 @@ private:
     return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8);
   }
 
-  uint16_t repeat;
-  uint16_t remains;
-  uint16_t current;
-  bool aborted;
+  uint16_t repeat{0};
+  uint16_t remains{0};
+  uint16_t current{0};
+  bool aborted{false};
 
-  FILE *file; // Current File Descriptor
+  FILE *file{nullptr}; // Current File Descriptor
   bool zipFileIsOpen;
   std::string currentFilename;
 
-  mz_stream zstr;
+  mz_stream zstr{};
 
 public:
   Unzip();

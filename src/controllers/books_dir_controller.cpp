@@ -155,8 +155,8 @@ auto BooksDirController::showLastBook() -> void {
   if (lastReadBookIndex == -1) return;
 
   LOG_D("===> showLastBook()...");
-  static std::string bookFilenameLocal;
-  static std::string bookTitleLocal;
+  static HimemString bookFilenameLocal;
+  static HimemString bookTitleLocal;
 
   bookWasShown = false;
   auto book    = booksDir.getBookData(lastReadBookIndex);
@@ -202,8 +202,8 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
   auto BooksDirController::inputEvent(const EventMgr::Event &event) -> void {
-    static std::string bookFilenameLocal;
-    static std::string bookTitleLocal;
+    static HimemString bookFilenameLocal;
+    static HimemString bookTitleLocal;
 
     // auto book = booksDir.getBookData(lastReadBookIndex);
 
@@ -279,8 +279,8 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
   }
 #else
   auto BooksDirController::inputEvent(const EventMgr::Event &event) -> void {
-    static std::string bookFilenameLocal;
-    static std::string bookTitleLocal;
+    static HimemString bookFilenameLocal;
+    static HimemString bookTitleLocal;
 
     switch (event.kind) {
       #if EXTENDED_CASE
