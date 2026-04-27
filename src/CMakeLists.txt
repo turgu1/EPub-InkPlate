@@ -7,6 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)
 list(FILTER app_sources EXCLUDE REGEX "${CMAKE_SOURCE_DIR}/src/embed/*.*")
 
+# Include the ESP32 regression-loop test when REGRESSION_TEST is enabled
+if(DEFINED REGRESSION_TEST AND REGRESSION_TEST)
+  list(APPEND app_sources ${CMAKE_SOURCE_DIR}/test/esp32_regression_loop.cpp)
+  add_compile_definitions(REGRESSION_TEST=1)
+  message(STATUS "Regression loop test ENABLED")
+endif()
+
 set(components
     global
     zip

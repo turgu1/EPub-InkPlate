@@ -18,7 +18,7 @@ private:
   static constexpr char const *TAG = "Unzip";
 
   static const int BUFFER_SIZE = 1024 * 16;
-  HimemUniquePtr<char[]> bufStorage{};
+  char buffer[BUFFER_SIZE]; // Must stay in internal DRAM (DMA target for SPI/SD reads)
 
   std::mutex mutex;
 
@@ -55,8 +55,12 @@ private:
   FILE *file{nullptr}; // Current File Descriptor
   bool zipFileIsOpen;
   std::string currentFilename;
+  bool streamMutexHeld{false};
+  bool streamInflateInitialized{false};
 
   mz_stream zstr{};
+
+  auto closeZipFileUnsafe() -> void;
 
 public:
   Unzip();

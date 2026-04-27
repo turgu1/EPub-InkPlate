@@ -90,6 +90,7 @@ private:
   bool completed{false};
   bool aborted{false};
   bool controlTaskReadyToBeStopped{false};
+  bool pendingSave{false};
 
   int16_t pageCount{0};
 
@@ -182,6 +183,7 @@ public:
       completed                   = false;
       aborted                     = false;
       controlTaskReadyToBeStopped = false;
+      pendingSave                 = false;
     }
   }
 

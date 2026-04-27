@@ -41,7 +41,7 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
     cfg.prio        = configMAX_PRIORITIES - 2;
     cfg.inherit_cfg = true;
 
-    LOG_I("Control task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
+    LOG_D("Control task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
           (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
           static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
 

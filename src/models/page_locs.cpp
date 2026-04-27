@@ -14,6 +14,8 @@
 #include "viewers/page.hpp"
 
 #include <atomic>
+#include <cerrno>
+#include <cstring>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -80,16 +82,22 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
 auto PageLocs::stopControlTask() -> void {
 
   if (controlTask) {
-    LOG_I("Sending STOP");
+    LOG_D("Sending STOP");
     PageLocsControl::send({.req = PageLocsControl::Req::STOP});
 
     QueueData queueData;
     SHOW_IT("==> Waiting for STOPPED... <==");
     receive(queueData);
-    LOG_I("-> %s <-", (queueData.req == Req::STOPPED) ? "STOPPED" : "ERROR!!!");
+    LOG_D("-> %s <-", (queueData.req == Req::STOPPED) ? "STOPPED" : "ERROR!!!");
 
     controlTask->waitForExit();
     controlTask.reset();
+  }
+
+  // Save after worker teardown so SD/FATFS file locks are released.
+  if (pendingSave) {
+    pendingSave = false;
+    save(currentFilename);
   }
 
   controlTaskReadyToBeStopped = false;
@@ -273,7 +281,8 @@ auto PageLocs::computationCompleted() -> void {
 
     pageCount = pageNbr;
 
-    save(currentFilename);
+    // Defer the save until stopControlTask() after control/retriever shutdown.
+    pendingSave = true;
 
     // show();
 
@@ -305,6 +314,7 @@ auto PageLocs::computationAborted(std::string reason) -> void {
   controlTaskReadyToBeStopped = true;
   aborted                     = true;
   completed                   = true;
+  pendingSave                 = false;
 
   eventMgr.setStayOn(false);
 }
@@ -337,6 +347,10 @@ auto PageLocs::computationAborted(std::string reason) -> void {
  * @note Sets the event manager to stay on during the recalculation process
  */
 auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool force) -> void {
+  // Keep the target filename in sync even when callers invoke this directly
+  // (without going through startNewDocument).
+  currentFilename = epub->getCurrentFilename();
+
   if (force ||
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
        0) ||
@@ -359,7 +373,7 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
 
     currentFormatParams = *epub->getBookFormatParams();
 
-    LOG_I("Starting page locations computation for itemref index %d with format params: ident=%d, "
+    LOG_D("Starting page locations computation for itemref index %d with format params: ident=%d, "
           "orientation=%d, "
           "showTitle=%d, showPictures=%d, fontSize=%d, useFontsInBook=%d, font=%d",
           itemrefIndex, currentFormatParams.ident, currentFormatParams.orientation,
@@ -386,7 +400,8 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
   int16_t pgCount;
 
   if (!file.is_open()) {
-    LOG_I("Unable to open pages location file. Calculating locations...");
+    LOG_I("Unable to open pages location file '%s': errno=%d (%s). Calculating locations...",
+          filename.c_str(), errno, std::strerror(errno));
     return false;
   }
 
@@ -425,6 +440,11 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
 
   file.close();
 
+  if (!ok) {
+    LOG_E("Page locations load failed for '%s' (fail=%d bad=%d eof=%d)", filename.c_str(),
+          file.fail() ? 1 : 0, file.bad() ? 1 : 0, file.eof() ? 1 : 0);
+  }
+
   LOG_D("Page locations load %s.", ok ? "Success" : "Error");
 
   completed = ok;
@@ -439,7 +459,8 @@ auto PageLocs::save(const std::string &epubFilename) -> bool {
   LOG_D("Saving pages location to file %s", filename.c_str());
 
   if (!file.is_open()) {
-    LOG_E("Not able to open pages location file.");
+    LOG_E("Not able to open pages location file '%s': errno=%d (%s)", filename.c_str(), errno,
+          std::strerror(errno));
     return false;
   }
 
@@ -474,6 +495,11 @@ auto PageLocs::save(const std::string &epubFilename) -> bool {
 
   bool res = !file.fail();
   file.close();
+
+  if (!res) {
+    LOG_E("Page locations save failed for '%s' (fail=%d bad=%d eof=%d)", filename.c_str(),
+          file.fail() ? 1 : 0, file.bad() ? 1 : 0, file.eof() ? 1 : 0);
+  }
 
   LOG_D("Page locations save %s.", res ? "Success" : "Error");
 

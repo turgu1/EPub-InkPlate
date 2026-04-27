@@ -261,7 +261,7 @@ IBMF::~IBMF() {
 }
 
 auto IBMF::clearFace() -> void {
-  LOG_I("Clearing IBMF face and cache...");
+  LOG_D("Clearing IBMF face and cache...");
   pageLocs.stopControlTask();
   clearCache();
   if (face != nullptr) {

@@ -25,7 +25,7 @@ TTF::~TTF() {
 }
 
 auto TTF::clearFace() -> void {
-  LOG_I("Clearing TTF face and cache...");
+  LOG_D("Clearing TTF face and cache...");
   pageLocs.stopControlTask();
   clearCache();
   if (face != nullptr) {

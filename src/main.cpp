@@ -36,6 +36,11 @@
   #if TESTING
     #include "gtest/gtest.h"
   #endif
+
+  #if REGRESSION_TEST
+    extern void runRegressionLoop();
+  #endif
+
   #include <esp_chip_info.h>
   #include <esp_flash.h>
 
@@ -119,6 +124,13 @@
 
         eventMgr.setup();
         eventMgr.setOrientation(orientation);
+
+        #if REGRESSION_TEST
+          runRegressionLoop();
+          while (1) {
+            vTaskDelay(10000 / portTICK_PERIOD_MS);
+          }
+        #endif
 
         #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
           backLit.setup();

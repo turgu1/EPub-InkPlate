@@ -7,6 +7,7 @@
 #include "himem.hpp"
 
 #include <cstdio>
+#include <mutex>
 
 /**
  * @brief Very simple database tool
@@ -41,6 +42,7 @@ private:
   static const uint16_t MAX_RECORD_COUNT = 1000;
 
   FILE *dbFile{nullptr};
+  mutable std::recursive_mutex mutex;
 
   bool dbIsOpen;
   bool someRecordsDeleted{false};

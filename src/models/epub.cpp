@@ -845,7 +845,7 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
 
       struct stat fileStat;
       if (stat(filePath.c_str(), &fileStat) != -1) {
-        LOG_I("Deleting file : %s", filePath.c_str());
+        LOG_D("Deleting file : %s", filePath.c_str());
         unlink(filePath.c_str());
       }
     }
