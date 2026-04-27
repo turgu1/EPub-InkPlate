@@ -13,6 +13,7 @@ enum class WebServerMode : uint8_t {
 };
 
 PUBLIC auto startWebServer(WebServerMode serverMode = WebServerMode::STA) -> bool;
+PUBLIC auto startWebServerHeadless(WebServerMode serverMode = WebServerMode::STA) -> bool;
 PUBLIC void stopWebServer();
 
 #undef PUBLIC

@@ -7,6 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
+#include <atomic>
 #include <mutex>
 #include <thread>
 
@@ -91,6 +92,7 @@ private:
   bool aborted{false};
   bool controlTaskReadyToBeStopped{false};
   bool pendingSave{false};
+  std::atomic<bool> computationDone{false};
 
   int16_t pageCount{0};
 
@@ -101,6 +103,7 @@ private:
   PagesMap pagesMap;
   ItemsSet itemsSet;
   int16_t itemCount{0};
+  std::atomic<uint32_t> generatedPageEntryCount{0};
 
   std::string currentFilename;
 
@@ -171,6 +174,14 @@ public:
     return (controlTask) ? controlTask->getCurrentItemrefIndex() : -1;
   }
 
+  [[nodiscard]] inline auto getGeneratedPageEntryCount() const -> uint32_t {
+    return generatedPageEntryCount.load();
+  }
+
+  [[nodiscard]] inline auto isComputationCompleted() const -> bool {
+    return computationDone.load();
+  }
+
   auto insert(PageId &id, PageInfo &info) -> void;
 
   inline auto clear() -> void {
@@ -180,10 +191,12 @@ public:
       std::scoped_lock guard(mutex);
       pagesMap.clear();
       itemsSet.clear();
+      generatedPageEntryCount.store(0);
       completed                   = false;
       aborted                     = false;
       controlTaskReadyToBeStopped = false;
       pendingSave                 = false;
+      computationDone.store(false);
     }
   }
 

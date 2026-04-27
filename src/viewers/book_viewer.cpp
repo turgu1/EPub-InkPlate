@@ -19,6 +19,7 @@
 #include "alloc.hpp"
 #include "screen.hpp"
 
+#include <chrono>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -207,6 +208,7 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
 
   // if (pageLocs.getPageNbr(pageId) == 0) {
   if ((pageId.itemrefIndex == 0) && (pageId.offset == 0)) {
+    auto coverStart = std::chrono::steady_clock::now();
 
     if (epub->getBookFormatParams()->showPictures != 0) {
       HimemString fname = epub->getCoverFilename();
@@ -227,6 +229,10 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
     } else {
       showFakeCover(epub);
     }
+
+    auto coverEnd = std::chrono::steady_clock::now();
+    auto coverMs  = std::chrono::duration_cast<std::chrono::milliseconds>(coverEnd - coverStart);
+    LOG_I("Cover page prepare+show took %lld ms", static_cast<long long>(coverMs.count()));
   } else {
     buildPageAt(pageId, epub);
   }

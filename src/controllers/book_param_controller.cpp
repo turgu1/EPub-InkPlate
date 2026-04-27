@@ -341,7 +341,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
   #endif
     else {
     if (menuViewer->event(event)) {
-      LOG_I("Returning to book controller with updated EPub...");
+      LOG_D("Returning to book controller with updated EPub...");
       bookController.becomeOwnerOfBook(std::move(epub));
       appController.setController(AppController::Ctrl::BOOK);
     }

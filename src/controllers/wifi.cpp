@@ -19,6 +19,7 @@
 
   static EventGroupHandle_t wifiEventGroup = nullptr;
   static bool wifiFirstStart               = true;
+  static bool wifiStopRequested            = false;
 
   // ----- wifi_sta_event_handler() -----
 
@@ -56,6 +57,12 @@
       if (event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
       } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        // Ignore disconnect events while WiFi is being intentionally stopped.
+        if (wifiStopRequested) {
+          LOG_I("Wifi Disconnected (stop requested).");
+          return;
+        }
+
         if (wifiFirstStart) {
           if (retryCount < ESP_MAXIMUM_RETRY) {
             vTaskDelay(pdMS_TO_TICKS(10E3));
@@ -89,8 +96,9 @@
     if (staRunning) return true;
     if (apRunning) return false;
 
-    bool connected = false;
-    wifiFirstStart = true;
+    bool connected    = false;
+    wifiStopRequested = false;
+    wifiFirstStart    = true;
 
     if (wifiEventGroup == nullptr) wifiEventGroup = xEventGroupCreate();
 
@@ -198,6 +206,8 @@
     if (apRunning) return true;
     if (staRunning) return false;
 
+    wifiStopRequested = false;
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_ap();
@@ -266,6 +276,8 @@
     }
 
     if (staRunning || apRunning) {
+
+      wifiStopRequested = true;
 
       esp_wifi_disconnect();
       esp_wifi_stop();

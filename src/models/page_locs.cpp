@@ -38,6 +38,7 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
   completed                   = false;
   aborted                     = false;
   controlTaskReadyToBeStopped = false;
+  computationDone.store(false);
 
   controlTask = PageLocsControl::Make();
   controlTask->setup(epub->getCurrentFilename());
@@ -59,7 +60,8 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
   #endif
 }
 
-std::atomic<bool> relax{false};
+// Reference-counted: >0 means at least one thread is blocking on mgrQueue
+std::atomic<int> relax{0};
 
 auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
 
@@ -69,14 +71,32 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   PageLocsControl::send(
       {.req = PageLocsControl::Req::GET_ASAP, .itemrefIndex = itemrefIndex, .itemrefCount = 0});
 
-  relax = true;
+  relax.fetch_add(1, std::memory_order_relaxed);
   QueueData queueData;
   LOG_D("==> Waiting for answer... <==");
-  receive(queueData);
-  LOG_D("-> %s <-", queueData.req == Req::ASAP_READY ? "ASAP_READY" : "ERROR!!!");
-  relax = false;
 
-  return true;
+  bool gotReply = false;
+
+  #if EPUB_LINUX_BUILD
+    // Linux path keeps the legacy blocking behavior.
+    gotReply = (receive(queueData) >= 0);
+  #else
+    // On ESP, never block forever while holding the PageLocs mutex from
+    // getNextPageId/getPrevPageId callers.
+    constexpr TickType_t ASAP_REPLY_TIMEOUT = pdMS_TO_TICKS(2000);
+    gotReply                                = (receive(queueData, ASAP_REPLY_TIMEOUT) == pdTRUE);
+  #endif
+
+  if (!gotReply) {
+    LOG_W("retrieveAsap: timeout waiting for ASAP reply (itemref=%d)", itemrefIndex);
+    relax.fetch_sub(1, std::memory_order_relaxed);
+    return false;
+  }
+
+  LOG_D("-> %s <-", queueData.req == Req::ASAP_READY ? "ASAP_READY" : "ERROR!!!");
+  relax.fetch_sub(1, std::memory_order_relaxed);
+
+  return queueData.req == Req::ASAP_READY;
 }
 
 auto PageLocs::stopControlTask() -> void {
@@ -114,12 +134,12 @@ auto PageLocs::getPageCountOrPercent() -> int16_t {
     SHOW_IT("getPageCountOrPercent: Sending PERCENT");
     PageLocsControl::send({.req = PageLocsControl::Req::PERCENT});
 
-    relax = true;
+    relax.fetch_add(1, std::memory_order_relaxed);
     QueueData queueData;
     SHOW_IT("==> Waiting for answer... <==");
     receive(queueData);
     SHOW_IT("-> %s <-", queueData.req == Req::PERCENT ? "PERCENT" : "ERROR!!!");
-    relax = false;
+    relax.fetch_sub(1, std::memory_order_relaxed);
 
     return queueData.itemrefIndex;
   } else {
@@ -136,26 +156,34 @@ auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
 
 auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
   if (controlTask) {
-    if (relax) {
-      // The pageLocs class is still in control of the mutex, but is waiting
-      // for the completion of an GET_ASAP item. As such, it is safe to insert
-      // a new page info in the list.
+    if (relax.load(std::memory_order_relaxed) > 0) {
+      // At least one thread is blocking on mgrQueue; it holds the mutex while
+      // waiting so it is safe to insert without acquiring it here.
       LOG_D("Relaxed page info insert...");
-      pagesMap.insert(std::make_pair(id, info));
-      itemsSet.insert(id.itemrefIndex);
+      auto inserted = pagesMap.insert(std::make_pair(id, info));
+      if (inserted.second) {
+        itemsSet.insert(id.itemrefIndex);
+        generatedPageEntryCount.fetch_add(1);
+      }
     } else {
       while (true) {
         if (mutex.try_lock_for(std::chrono::milliseconds(2))) {
-          pagesMap.insert(std::make_pair(id, info));
-          itemsSet.insert(id.itemrefIndex);
+          auto inserted = pagesMap.insert(std::make_pair(id, info));
+          if (inserted.second) {
+            itemsSet.insert(id.itemrefIndex);
+            generatedPageEntryCount.fetch_add(1);
+          }
           mutex.unlock();
           break;
         }
       }
     }
   } else {
-    pagesMap.insert(std::make_pair(id, info));
-    itemsSet.insert(id.itemrefIndex);
+    auto inserted = pagesMap.insert(std::make_pair(id, info));
+    if (inserted.second) {
+      itemsSet.insert(id.itemrefIndex);
+      generatedPageEntryCount.fetch_add(1);
+    }
   }
 }
 
@@ -288,6 +316,7 @@ auto PageLocs::computationCompleted() -> void {
 
     completed                   = true;
     controlTaskReadyToBeStopped = true;
+    computationDone.store(true);
 
     // This cannot be done here!!!!
     // epub->toc->save(currentFilename);
@@ -416,6 +445,7 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
     if (file.read(reinterpret_cast<char *>(&pgCount), sizeof(pgCount)).fail()) break;
 
     pagesMap.clear();
+    generatedPageEntryCount.store(0);
 
     int16_t pageNbr = 0;
 

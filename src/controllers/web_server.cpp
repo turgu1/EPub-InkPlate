@@ -589,4 +589,23 @@
     wifi.stop();
   }
 
+  // Headless variant used by the regression test: no MsgViewer calls, no
+  // pageLocs.stopControlTask().  Returns true if both WiFi and the HTTP server
+  // started successfully.
+  auto startWebServerHeadless(WebServerMode serverMode) -> bool {
+    bool wifiOk = (serverMode == WebServerMode::STA) ? wifi.startSta() : wifi.startAp();
+    if (!wifiOk) {
+      LOG_E("S7: WiFi failed to start");
+      return false;
+    }
+    if (httpServerStart() != ESP_OK) {
+      LOG_E("S7: HTTP server failed to start");
+      wifi.stop();
+      return false;
+    }
+    esp_ip4_addr_t ip = wifi.getIpAddress();
+    LOG_I("S7: Web server running at " IPSTR, IP2STR(&ip));
+    return true;
+  }
+
 #endif
