@@ -64,7 +64,7 @@
 // and going to the selected page, some similar information will be sent to
 // the terminal. You can then compare the results and find the differences.
 //
-// To be used, only one book must be in the books folder and the booksDir.db
+// To be used, only one book must be in the books folder and the books_dir.db
 // file must be deleted before any trial.
 
 #define DEBUGGING_AID 0 ///< 1: Allow for specific page debugging output

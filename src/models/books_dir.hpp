@@ -117,7 +117,7 @@ public:
 
 private:
   static constexpr char const *TAG            = "BooksDir";
-  static constexpr char const *BOOKS_DIR_FILE = MAIN_FOLDER "/booksDir.db";
+  static constexpr char const *BOOKS_DIR_FILE = MAIN_FOLDER "/books_dir.db";
   static constexpr char const *NEW_DIR_FILE   = MAIN_FOLDER "/new_dir.db";
   static constexpr char const *APP_NAME       = "EPUB-INKPLATE";
 
