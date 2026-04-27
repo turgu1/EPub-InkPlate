@@ -1,6 +1,12 @@
 # EPub-InkPlate An EPub Reader for InkPlate devices
 
 ## Last news
+(Updated 2026.04.27)
+
+Hello all, a new version (version 3.0) is in the process of being prepared. My objective is to get it available at the end of the month of May 2026. A big effort to get it as robust as possible with some new capabilities. Development is completed and I'm now in the last testing phase and documentation update.
+
+Stay tuned!
+Guy
 
 (Updated 2026.01.20)
 
