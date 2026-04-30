@@ -54,25 +54,20 @@ auto Fonts::setup() -> bool {
       for (int i = 0; i < 3; i++) {
         const auto descr = fontsDB->getFontFaceDescriptor(i);
         if (descr) {
-          LOG_D("Loading font %s...", descr->name.c_str());
-          if (!add(descr)) {
-            LOG_E("Unable to load font %s", descr->name.c_str());
+          LOG_D("Loading font %s...", ((*descr)->name.c_str()));
+          if (!add(*descr)) {
+            LOG_E("Unable to load font %s", ((*descr)->name.c_str()));
           }
         }
       }
     } else {
-      // For books, the first 3 fonts are shared with the appFonts.
-      // the default fonts for books are loaded from the config.
       LOG_D("Loading fonts for books...");
-      for (int i = 0; i < 3; i++) {
-        fontCache.push_back(appFonts.getFontEntry(i));
-      }
-      for (int i = 3; i < 7; i++) {
+      for (int i = 0; i < 7; i++) {
         const auto descr = fontsDB->getFontFaceDescriptor(i);
         if (descr) {
-          LOG_D("Loading font %s...", descr->name.c_str());
-          if (!add(descr)) {
-            LOG_E("Unable to load font %s", descr->name.c_str());
+          LOG_D("Loading font %s...", ((*descr)->name.c_str()));
+          if (!add(*descr)) {
+            LOG_E("Unable to load font %s", ((*descr)->name.c_str()));
           }
         }
       }
@@ -184,10 +179,10 @@ void Fonts::adjustDefaultFont(uint8_t fontIndex) {
 
       fontsDB->adjustDefaultFont(fontIndex);
 
-      replace(3, fontsDB->getFontFaceDescriptor(3));
-      replace(4, fontsDB->getFontFaceDescriptor(4));
-      replace(5, fontsDB->getFontFaceDescriptor(5));
-      replace(6, fontsDB->getFontFaceDescriptor(6));
+      replace(3, *fontsDB->getFontFaceDescriptor(3));
+      replace(4, *fontsDB->getFontFaceDescriptor(4));
+      replace(5, *fontsDB->getFontFaceDescriptor(5));
+      replace(6, *fontsDB->getFontFaceDescriptor(6));
 
       LOG_D("Default font is now %s", fontsDB->getStandardFontName(fontIndex).c_str());
     }
@@ -236,9 +231,9 @@ auto Fonts::add(const HimemString &fontFamily, FaceStyle style, FileContentPtr b
   descr->fontData     = std::move(buffer);
   descr->fontDataSize = size;
 
-  bookFontFaceDescriptors.push_back(descr);
+  bookFontFaceDescriptors.push_back(std::move(descr));
 
-  return add(descr);
+  return add(bookFontFaceDescriptors.back());
 }
 
 auto Fonts::adjustFontStyle(FaceStyle style, FaceStyle fontStyle, FaceStyle fontWeight) const

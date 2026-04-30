@@ -271,7 +271,10 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
         auto pict = epub->getPicture(fname, true);
 
         if (pict != nullptr) {
-          page->showCover(pict);
+          if (!page->showCover(pict)) {
+            LOG_W("Cover picture display failed, falling back to generated cover");
+            showFakeCover(epub);
+          }
         } else {
           LOG_D("Unable to retrieve cover file: %s", fname.c_str());
           showFakeCover(epub);

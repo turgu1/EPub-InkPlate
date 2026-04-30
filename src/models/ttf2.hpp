@@ -22,10 +22,10 @@ class TTF : public Font {
 private:
   static constexpr char const *TAG = "TTF";
 
-  FT_Face face;
+  FT_Face face{nullptr};
   // std::mutex mutex;
 
-  TTF(const FontFaceDescriptorPtr descr, FT_Library &library);
+  TTF(const FontFaceDescriptorPtr &descr, FT_Library &library);
 
 public:
   ~TTF();
@@ -34,7 +34,7 @@ public:
     requires(!std::is_array_v<T>)
   friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(const FontFaceDescriptorPtr descr, FT_Library &library) -> FontPtr {
+  static inline auto Make(const FontFaceDescriptorPtr &descr, FT_Library &library) -> FontPtr {
     return makeUniqueHimem<TTF>(descr, library);
   }
 
@@ -99,7 +99,7 @@ private:
    * @return true The font was found and retrieved.
    * @return false Some error (file not found, unsupported format).
    */
-  auto setFontFace(const FontFaceDescriptorPtr descr, FT_Library &library) -> bool;
+  auto setFontFace(const FontFaceDescriptorPtr &descr, FT_Library &library) -> bool;
 
   /**
    * @brief Set the font size

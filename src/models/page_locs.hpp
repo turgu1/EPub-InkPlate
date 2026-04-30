@@ -162,6 +162,8 @@ public:
   auto computationAborted(std::string reason) -> void;
   auto startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void;
 
+  [[nodiscard]] inline auto isRunning() const -> bool { return controlTask != nullptr; }
+
   [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
     if (controlTaskReadyToBeStopped) stopControlTask();
 
@@ -191,6 +193,7 @@ public:
       std::scoped_lock guard(mutex);
       pagesMap.clear();
       itemsSet.clear();
+      itemCount = 0;
       generatedPageEntryCount.store(0);
       completed                   = false;
       aborted                     = false;

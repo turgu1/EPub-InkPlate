@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-using FontFaceDescriptorPtr = HimemSharedPtr<class FontFaceDescriptor>;
+using FontFaceDescriptorPtr = HimemUniquePtr<class FontFaceDescriptor>;
 class FontFaceDescriptor {
 private:
   FontFaceDescriptor() = default;
@@ -18,16 +18,16 @@ public:
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
-  friend auto makeSharedHimem(Args &&...args) -> HimemSharedPtr<T>;
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make() -> FontFaceDescriptorPtr {
-    return makeSharedHimem<FontFaceDescriptor>();
+    return makeUniqueHimem<FontFaceDescriptor>();
   }
 
   HimemString name;
   FaceStyle style;
   HimemString filename;
-  FileContentPtr fontData;
+  FileContentPtr fontData{nullptr};
   size_t fontDataSize{0};
 };
 
@@ -88,13 +88,13 @@ public:
     }
   }
 
-  auto getFontFaceDescriptor(uint8_t index) const -> const FontFaceDescriptorPtr {
+  auto getFontFaceDescriptor(uint8_t index) const -> const FontFaceDescriptorPtr * {
     if (index >= fontFaceDescriptors.size()) {
       LOG_E("getFontFaceDescriptor(): Wrong index: %d vs size: %u", index,
             fontFaceDescriptors.size());
       return nullptr;
     } else {
-      return fontFaceDescriptors.at(index);
+      return &fontFaceDescriptors.at(index);
     }
   }
 };

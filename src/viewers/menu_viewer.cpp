@@ -13,6 +13,8 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
 
+#include <algorithm>
+
 static const std::string TOUCH_AND_HOLD_STR = "Touch & hold icon for info. Tap for action.";
 
 auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
@@ -29,8 +31,12 @@ auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
 auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) -> void {
   FontPtr &textFont = appFonts.getFont(1);
 
-  menuEntryCount        = 1;
-  int visibleEntryCount = 0;
+  uint16_t iconHeight{0};
+  uint16_t iconWidth{0};
+  uint16_t spaceBetweenIcons{0};
+
+  menuEntryCount    = 0;
+  visibleEntryCount = 0;
 
   while (theMenu[menuEntryCount].icon != Icon::END_MENU) {
     if (theMenu[menuEntryCount].visible) {
@@ -52,21 +58,37 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
 
   Glyph *icon = iconFont->getGlyph('A', ICON_SIZE);
 
-  iconHeight = icon == nullptr ? 50 : icon->dim.height;
+  iconHeight = icon == nullptr ? 60 : icon->dim.height;
+  iconWidth  = icon == nullptr ? 60 : icon->dim.width;
 
-  int iconLineHeight  = iconHeight + 30;
-  uint16_t iconYPos   = 30 + iconHeight;
-  int maxIconsPerLine = (Screen::getWidth() - 60) / SPACE_BETWEEN_ICONS;
+  spaceBetweenIcons = iconWidth + (iconWidth >> 1);
 
-  if ((maxIconsPerLine * SPACE_BETWEEN_ICONS + icon->dim.width) < (Screen::getWidth() - 60)) {
+  uint16_t iconLineHeight  = iconHeight + 30;
+  uint16_t iconYPos        = 30 + iconHeight;
+  uint16_t maxIconsPerLine = (Screen::getWidth() - 100) / spaceBetweenIcons;
+
+  if ((maxIconsPerLine * spaceBetweenIcons + iconWidth) < (Screen::getWidth() - 100)) {
     maxIconsPerLine++;
   }
 
-  int16_t iconsLineCount = ((visibleEntryCount - 1) + maxIconsPerLine - 1) / maxIconsPerLine;
+  // If the number of visible entries is one more than the maximum number of
+  // icons per line, we need to reduce the maximum number of icons per line by
+  // one to avoid having a single icon in the last line.
+  if ((visibleEntryCount % maxIconsPerLine) == 2) {
+    maxIconsPerLine--;
+  }
+
+  uint16_t iconsLineCount = (visibleEntryCount + maxIconsPerLine - 1) / maxIconsPerLine;
 
   textYPos = iconsLineCount * iconLineHeight + lineHeight + 20;
 
-  regionHeight = textYPos + iconLineHeight + 10;
+  regionHeight = textYPos + iconLineHeight + 15;
+
+  // LOG_I("MenuViewer::show: menuEntryCount=%u, visibleEntryCount=%d, iconWidth=%d, "
+  //       "spaceBetweenIcons=%d, iconLineHeight=%d, maxIconsPerLine=%d, iconsLineCount=%d, "
+  //       "textYPos=%u, regionHeight=%u",
+  //       menuEntryCount, visibleEntryCount, iconWidth, spaceBetweenIcons, iconLineHeight,
+  //       maxIconsPerLine, iconsLineCount, textYPos, regionHeight);
 
   Page::Format fmt = {
       .fontIndex    = 0,
@@ -82,18 +104,34 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
 
   menu = theMenu;
 
-  uint8_t idx = 0;
+  // The last icon is placed at a fixed corner position, not in the grid.
+  // Use (visibleEntryCount - 1) for all grid centering calculations.
+  uint16_t firstLineIconCount =
+      std::min(uint16_t(visibleEntryCount - 1), (uint16_t)maxIconsPerLine);
+  uint16_t leftMargin = (Screen::getWidth() - (firstLineIconCount * spaceBetweenIcons -
+                                               (spaceBetweenIcons - iconWidth))) >>
+                        1;
+  uint8_t idx         = 0;
+  uint8_t visibleIdx  = 0;
 
-  Pos pos(30, iconYPos);
+  Pos pos(leftMargin, iconYPos);
+  uint16_t reminderCount = visibleEntryCount;
 
   while (idx < menuEntryCount) {
 
-    if ((idx % maxIconsPerLine == 0) && (idx != 0)) {
-      pos.x = 30;
-      pos.y += iconLineHeight;
-    }
-
     if (menu[idx].visible) {
+      if ((visibleIdx % maxIconsPerLine == 0) && (visibleIdx != 0)) {
+        // The last icon is placed at a fixed corner position, not in the grid.
+        // Count only the remaining grid icons (excluding the corner one).
+        reminderCount = (visibleEntryCount - 1) - visibleIdx;
+        leftMargin    = (Screen::getWidth() -
+                         (std::min(reminderCount, (uint16_t)maxIconsPerLine) * spaceBetweenIcons -
+                          (spaceBetweenIcons - iconWidth))) >>
+                        1;
+        pos.x         = leftMargin;
+        pos.y += iconLineHeight;
+      }
+
       char ch      = iconChar[(int)menu[idx].icon];
       Glyph *glyph = iconFont->getGlyph(ch, ICON_SIZE);
 
@@ -102,7 +140,7 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
         entryLocs[idx].dim = Dim(0, 0);
       } else {
         entryLocs[idx].dim = glyph->dim;
-        if (idx < (menuEntryCount - 1)) {
+        if (visibleIdx < (visibleEntryCount - 1)) {
           entryLocs[idx].pos.x = pos.x;
           entryLocs[idx].pos.y = pos.y + glyph->yoff;
         } else {
@@ -111,22 +149,10 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
         }
       }
 
-      // page->putHighlight(
-      //   Dim(entryLocs[idx].dim.width + 30, entryLocs[idx].pos.y + entryLocs[idx].dim.height +
-      //   15), Pos(entryLocs[idx].pos.x - 15, 0));
-
       page->putCharAt(ch, pos, fmt);
-      pos.x += SPACE_BETWEEN_ICONS;
+      pos.x += spaceBetweenIcons;
 
-      // std::cout << "["
-      //           << entryLocs[idx].pos.x
-      //           << ", "
-      //           << entryLocs[idx].pos.y
-      //           << ":"
-      //           << entryLocs[idx].dim.width
-      //           << ", "
-      //           << entryLocs[idx].dim.height
-      //           << "] ";
+      visibleIdx++;
     }
 
     idx++;

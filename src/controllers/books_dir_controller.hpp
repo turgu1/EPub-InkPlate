@@ -31,7 +31,9 @@ private:
   int8_t viewerId{0};
 
 public:
-  BooksDirController() = default;
+  BooksDirController()  = default;
+  ~BooksDirController() = default;
+
   auto setup() -> void;
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
@@ -42,8 +44,8 @@ public:
     if (booksDirViewer != nullptr) booksDirViewer->setup();
   }
 
- [[nodiscard]] inline auto getCurrentBookIndex() -> int16_t { return currentBookIndex; }
- inline auto setCurrentBookIndex(int16_t idx) -> void { currentBookIndex = idx; }
+  [[nodiscard]] inline auto getCurrentBookIndex() -> int16_t { return currentBookIndex; }
+  inline auto setCurrentBookIndex(int16_t idx) -> void { currentBookIndex = idx; }
 };
 
 #if __BOOKS_DIR_CONTROLLER__

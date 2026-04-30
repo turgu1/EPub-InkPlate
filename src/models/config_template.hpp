@@ -33,7 +33,7 @@ private:
 
   // const CfgType     & cfg;
   static CfgType cfg;
-  const HimemString config_filename;
+  const std::string config_filename;
 
   bool modified;
   bool comment;
@@ -43,8 +43,10 @@ private:
 public:
   ConfigBase(const HimemString &conf_filename, bool show_comment)
       : config_filename(conf_filename), modified(false), comment(show_comment) {};
-  // ConfigBase(const CfgType & conf, const HimemString & conf_filename)
+  // ConfigBase(const CfgType & conf, const std::string & conf_filename)
   //   : cfg(conf), config_filename(conf_filename), f(nullptr), modified(false) { };
+
+  ~ConfigBase() = default;
 
   auto get(IdType id, int32_t *val) -> bool;
   auto get(IdType id, int8_t *val) -> bool;
@@ -135,7 +137,7 @@ auto ConfigBase<IdType, cfg_size>::get(IdType id, FontsDB **val) -> bool {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, int32_t val) {
-  for (const auto &entry : cfg) {
+  for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT)) {
       *((int32_t *)entry.value) = val;
       modified                  = true;
@@ -148,7 +150,7 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, int32_t val) {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, int64_t val) {
-  for (const auto &entry : cfg) {
+  for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT64)) {
       *((int64_t *)entry.value) = val;
       modified                  = true;
@@ -174,7 +176,7 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, int8_t val) {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, HimemString &val) {
-  for (const auto &entry : cfg) {
+  for (auto entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       strlcpy((char *)entry.value, val.c_str(), entry.max_size);
       modified = true;
@@ -265,7 +267,7 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
     }
   }
 
-  std::ifstream *file = new std::ifstream(std::string(config_filename));
+  std::ifstream *file = new std::ifstream(config_filename);
 
   if (!file->is_open()) {
     delete file;
@@ -318,7 +320,7 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
 template <class IdType, int cfg_size>
 auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
   if (force || modified) {
-    std::ofstream *file = new std::ofstream(std::string(config_filename));
+    std::ofstream *file = new std::ofstream(config_filename);
     if (!file->is_open()) return false;
 
     if (comment) {
@@ -372,7 +374,7 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
   void ConfigBase<IdType, cfg_size>::show() {
     LOG_D("Configuration");
     LOG_D("-------------");
-    for (const auto &entry : cfg) {
+    for (auto entry : cfg) {
       if (entry.type == EntryType::STRING) {
         LOG_D("%s = \"%s\"", entry.caption, (char *)entry.value);
       } else if (entry.type == EntryType::INT) {

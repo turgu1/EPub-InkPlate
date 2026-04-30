@@ -15,13 +15,19 @@
 #define BYTES_PER_PIXEL 3
 
 Screen Screen::singleton;
+guchar *Screen::pixels = nullptr;
 
 uint16_t Screen::width;
 uint16_t Screen::height;
 
 const uint8_t Screen::LUT1BIT[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
 
-auto freePixels(guchar *pixels, gpointer data) -> void { delete[] pixels; }
+auto freePixels(guchar *pixels, gpointer data) -> void {
+  if (Screen::pixels != nullptr) {
+    delete[] Screen::pixels;
+    Screen::pixels = nullptr;
+  }
+}
 
 inline void setRgb(guchar *a, int row, int col, int stride, guchar color) {
   int p = row * stride + col * BYTES_PER_PIXEL;
@@ -268,8 +274,14 @@ auto Screen::update(bool noFull) -> void {
 extern void exitApp();
 
 static auto destroyApp(GtkWidget *widget, gpointer data) -> void {
+  char const *TAG = "DestroyApp";
+  LOG_I("Exiting application...");
   exitApp();
   gtk_main_quit();
+  if (Screen::pixels != nullptr) {
+    delete[] Screen::pixels;
+    Screen::pixels = nullptr;
+  }
 }
 
 auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void {
@@ -289,7 +301,8 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
   pictureData.stride = width * BYTES_PER_PIXEL;
   pictureData.stride += (4 - (pictureData.stride % 4)) % 4; // ensure multiple of 4
 
-  guchar *pixels = (guchar *)calloc(height * pictureData.stride, 1);
+  pixels = new guchar[height * pictureData.stride]();
+  memset(pixels, 255, height * pictureData.stride); // clear to white
 
   for (int r = 0; r < height; r++)
     for (int c = 0; c < width; c++) setRgb(pixels, r, c, pictureData.stride, 255);
@@ -306,6 +319,8 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
   );
 
   pictureData.picture = GTK_IMAGE(gtk_image_new_from_pixbuf(pb));
+  // g_object_unref(
+  //     pb); // transfer sole ownership to the GtkImage; freePixels fires when it's destroyed
 
   window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 

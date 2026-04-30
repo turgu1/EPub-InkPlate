@@ -22,6 +22,7 @@ private:
 
 public:
   TocController() : currentEntryIndex(-1), currentBookIndex(-1) {}
+  ~TocController() = default;
 
   inline auto becomeOwnerOfBook(EPubPtr epubPtr) -> void { epub = std::move(epubPtr); }
 

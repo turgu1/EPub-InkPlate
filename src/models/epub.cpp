@@ -795,6 +795,38 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
   if (fileIsOpen && (currentFilename == epubFilename)) return true;
   if (fileIsOpen) closeFile();
 
+  auto failOpen = [&]() -> bool {
+    clearItemData(currentItemInfo);
+
+    if (opfData) {
+      opf.reset();
+      opfData.reset();
+    }
+    opfBasePath.clear();
+
+    if (encryptionData) {
+      encryption.reset();
+      encryptionData.reset();
+    }
+
+    // Unzip is shared for pageLocs instances; only the owner closes it.
+    if (!pageLocsInstance) {
+      unzip.closeZipFile();
+    }
+
+    fonts.clear();
+    cssCache.clear();
+    encryptionPresent = false;
+    currentFilename.clear();
+
+    if (bookParams != nullptr) {
+      delete bookParams;
+      bookParams = nullptr;
+    }
+
+    return false;
+  };
+
   #if COMPUTE_SIZE
     memory_used = 0;
   #endif
@@ -805,16 +837,15 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
     return false;
   }
 
-  if (!checkMimetype()) return false;
+  if (!checkMimetype()) return failOpen();
 
   LOG_D("Getting the OPF file");
   std::string filename;
-  if (!getOpfFilename(filename)) return false;
+  if (!getOpfFilename(filename)) return failOpen();
 
   if (!getOpf(filename)) {
     LOG_E("EPub open_file: Unable to get opf of %s", epubFilename.c_str());
-    unzip.closeZipFile();
-    return false;
+    return failOpen();
   }
 
   getEncryptionXml();
@@ -832,7 +863,7 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
     toc = TOC::Make();
     if (toc == nullptr) {
       LOG_E("Unable to allocate memory for the book table of content.");
-      return false;
+      return failOpen();
     }
 
     toc->loadFromEpub(*this);
@@ -880,6 +911,10 @@ auto EPub::clearItemData(ItemInfo &item) -> void {
 auto EPub::closeFile() -> bool {
   if (!fileIsOpen) return true;
 
+  if (!pageLocsInstance) {
+    pageLocs.stopControlTask();
+  }
+
   clearItemData(currentItemInfo);
 
   if (opfData) {
@@ -894,10 +929,15 @@ auto EPub::closeFile() -> bool {
     encryptionData.reset();
   }
 
+  // Unzip is shared across EPub instances: pageLocsInstance must not close it.
   if (!pageLocsInstance) {
-    unzip.closeZipFile();
-    fonts.clear();
+    if (Unzip::isAlive()) {
+      unzip.closeZipFile();
+    }
   }
+
+  // Fonts are EPub-instance-owned and must always be released.
+  fonts.clear();
 
   cssCache.clear();
 

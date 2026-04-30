@@ -12,7 +12,8 @@
 
 class BookController {
 public:
-  BookController() = default;
+  BookController()  = default;
+  ~BookController() = default;
 
   inline auto becomeOwnerOfBook(EPubPtr epubPtr) -> void { epub = std::move(epubPtr); }
 

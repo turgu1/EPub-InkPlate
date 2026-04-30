@@ -139,6 +139,12 @@ auto BookParamController::revertToDefaults() -> void {
 }
 
 auto BookParamController::booksList() -> void {
+  // As the DirController will take control, the next
+  // time a book will be selected will have the BookControler
+  // pointing at the current epub. So we can release the ownership
+  // of the current book to the BookController before giving
+  // control to the DirController.
+  bookController.becomeOwnerOfBook(std::move(epub));
   appController.setController(AppController::Ctrl::DIR);
 }
 
@@ -237,6 +243,7 @@ auto BookParamController::enter() -> void {
 }
 
 auto BookParamController::leave(bool goingToDeepSleep) -> void {
+  confirmData.reset();
   menuViewer.reset();
   formViewer.reset();
 }
@@ -282,13 +289,13 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
       std::tie(result, confirmData) = MsgViewer::confirm(event, std::move(confirmData));
       if (result) {
         if (confirmData->ok) {
-          const HimemString &filePath = epub->getCurrentFilename();
+          const HimemString filePath = epub->getCurrentFilename();
           struct stat fileStat;
 
           if (stat(filePath.c_str(), &fileStat) != -1) {
             LOG_I("Deleting %s...", filePath.c_str());
 
-            epub->closeFile();
+            epub.reset();
             unlink(filePath.c_str());
 
             int16_t dotPos = filePath.find_last_of('.');

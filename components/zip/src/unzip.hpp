@@ -36,7 +36,7 @@ private:
   };
 
   typedef std::forward_list<FileEntry *> FileEntries;
-  FileEntries fileEntries;
+  FileEntries fileEntries{};
   FileEntries::iterator currentFileEntry{};
 
   auto getUint32(const unsigned char *b) -> uint32_t {
@@ -53,8 +53,8 @@ private:
   bool aborted{false};
 
   FILE *file{nullptr}; // Current File Descriptor
-  bool zipFileIsOpen;
-  std::string currentFilename;
+  bool zipFileIsOpen{false};
+  std::string currentFilename{};
   bool streamMutexHeld{false};
   bool streamInflateInitialized{false};
 
@@ -62,8 +62,17 @@ private:
 
   auto closeZipFileUnsafe() -> void;
 
+  static bool alive;
+
 public:
-  Unzip();
+  Unzip() { alive = true; };
+  ~Unzip() {
+    closeZipFileUnsafe();
+    alive = false;
+  };
+
+  static inline auto isAlive() -> bool { return alive; }
+
   auto seekToCentralDirectory() -> bool;
   auto readFileEntries(uint32_t offset, uint16_t count) -> bool;
   auto openZipFile(const char *zipFilename) -> bool;

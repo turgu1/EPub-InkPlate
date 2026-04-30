@@ -231,8 +231,8 @@
   static const char *TAG = "Main";
 
   void exitApp() {
-    appFonts.clearGlyphCaches();
-    appFonts.clear(true);
+    // appFonts.clearGlyphCaches();
+    // appFonts.clear(true);
   }
 
   auto main(int argc, char **argv) -> int {

@@ -23,7 +23,7 @@ private:
 
 public:
   Font();
-  virtual ~Font() {};
+  virtual ~Font() {}
 
   [[nodiscard]] inline auto isReady() const -> bool { return ready; }
 
@@ -98,8 +98,6 @@ protected:
 
   auto addBuffToBytePool() -> void;
 
-  FontFaceDescriptorPtr fontFaceDescriptor{nullptr};
-
   // /**
   //  * @brief Set the font face object
   //  *
@@ -134,7 +132,7 @@ protected:
   //  * @return true The font was found and retrieved.
   //  * @return false Some error (file not found, unsupported format).
   //  */
-  // virtual auto setFontFace(const FontFaceDescriptorPtr descr) -> bool            = 0;
+  // virtual auto setFontFace(const FontFaceDescriptorPtr *descr) -> bool            = 0;
   virtual auto getGlyphInternal(uint32_t charcode, int16_t glyphSize) -> Glyph * = 0;
   virtual auto adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t nextCharcode,
                                      int16_t &kern, bool &ignoreNext) -> Glyph * = 0;

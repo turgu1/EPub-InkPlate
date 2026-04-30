@@ -249,7 +249,7 @@ static constexpr uint16_t translationLatinA[] = {
     /* 0x17F */ 0x20    // ſ
 };
 
-IBMF::IBMF(const FontFaceDescriptorPtr descr) : Font() {
+IBMF::IBMF(const FontFaceDescriptorPtr &descr) : Font() {
   face = nullptr;
 
   setFontFace(descr);
@@ -463,7 +463,7 @@ auto IBMF::setFontSize(int16_t size) -> bool {
   }
 }
 
-auto IBMF::setFontFace(const FontFaceDescriptorPtr descr) -> bool {
+auto IBMF::setFontFace(const FontFaceDescriptorPtr &descr) -> bool {
   if (face != nullptr) clearFace();
 
   face = new IBMFFont(descr->fontData.get(), descr->fontDataSize, *this);
@@ -473,8 +473,7 @@ auto IBMF::setFontFace(const FontFaceDescriptorPtr descr) -> bool {
     return false;
   }
 
-  ready              = true;
-  fontFaceDescriptor = descr;
+  ready = true;
 
   return true;
 }

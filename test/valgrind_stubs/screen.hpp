@@ -39,6 +39,9 @@ public:
 
   [[nodiscard]] static auto getWidth() -> uint16_t { return 600; }
   [[nodiscard]] static auto getHeight() -> uint16_t { return 800; }
+  [[nodiscard]] auto getPixelResolution() const -> PixelResolution {
+    return PixelResolution::THREE_BITS;
+  }
 
   // No-op stubs for layout/display methods — never called in LOCATION compute mode.
   auto drawPicture(PicturePtr &, Pos) -> void {}
@@ -51,7 +54,6 @@ public:
   auto clear() -> void {}
   auto test() -> void {}
 
-private:
   Screen() = default;
 };
 

@@ -10,11 +10,14 @@
 using BooksDirViewerPtr = HimemUniquePtr<class BooksDirViewer>;
 class BooksDirViewer {
 public:
+  BooksDirViewer()          = default;
+  virtual ~BooksDirViewer() = default;
+
   virtual auto setup() -> void = 0;
 
   virtual int16_t showPageAndHighlight(int16_t bookIdx) = 0;
-  virtual auto highlightBook(int16_t bookIdx) -> void           = 0;
-  virtual auto clearHighlight() -> void                         = 0;
+  virtual auto highlightBook(int16_t bookIdx) -> void   = 0;
+  virtual auto clearHighlight() -> void                 = 0;
 
   virtual int16_t nextPage()   = 0;
   virtual int16_t prevPage()   = 0;

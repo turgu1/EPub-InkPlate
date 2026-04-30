@@ -36,8 +36,10 @@ auto BookController::enter() -> void {
     currentPageId.itemrefIndex = id->itemrefIndex;
     currentPageId.offset       = id->offset;
   } else {
-    currentPageId.itemrefIndex = 0;
-    currentPageId.offset       = 0;
+    // Keep the last known reading position while page locations are recomputed.
+    // Falling back to {0,0} forces the cover page and creates UI glitches.
+    LOG_W("PageLocs not ready for item=%d offset=%d, keeping current page id",
+          currentPageId.itemrefIndex, currentPageId.offset);
   }
   bookViewer->showPage(currentPageId, epub);
 }

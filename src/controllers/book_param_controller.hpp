@@ -23,7 +23,8 @@ private:
   EPubPtr epub{nullptr};
 
 public:
-  BookParamController() = default;
+  BookParamController()  = default;
+  ~BookParamController() = default;
 
   inline auto becomeOwnerOfBook(EPubPtr epubPtr) -> void { epub = std::move(epubPtr); }
 

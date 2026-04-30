@@ -21,7 +21,7 @@
   #include <iostream>
 #endif
 
-Unzip::Unzip() { zipFileIsOpen = false; }
+bool Unzip::alive = false;
 
 /**
  * @brief Seeks to the central directory of a ZIP file.
@@ -645,7 +645,15 @@ auto Unzip::closeFile() -> void {}
       stream_opened = true;
 
       if ((data = makeUniqueHimem<uint8_t[]>(fileSize + 1)) == nullptr) {
-        LOG_E("Not enough memory to retrieve file %s", filename);
+        #if EPUB_INKPLATE_BUILD
+          uint32_t spiramFree    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+          uint32_t spiramLargest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+          LOG_E("Not enough memory to retrieve file %s (need %" PRIu32 " B;"
+                " SPIRAM free=%" PRIu32 " B largest=%" PRIu32 " B)",
+                filename, fileSize, spiramFree, spiramLargest);
+        #else
+          LOG_E("Not enough memory to retrieve file %s (%" PRIu32 " bytes)", filename, fileSize);
+        #endif
       } else {
         data[fileSize] = 0;
 

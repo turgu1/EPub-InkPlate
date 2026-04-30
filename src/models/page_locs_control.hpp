@@ -37,13 +37,20 @@ public:
 
   struct QueueData {
     Req req{Req::NONE};
+    uint8_t reserved{0};
     int16_t itemrefIndex{0};
     int16_t itemrefCount{0};
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
-      return mq_send(controlQueue, (const char *)&data, sizeof(data), 1);
+      (void)timeout;
+      QueueData wireData{};
+      wireData.req          = data.req;
+      wireData.reserved     = 0;
+      wireData.itemrefIndex = data.itemrefIndex;
+      wireData.itemrefCount = data.itemrefCount;
+      return mq_send(controlQueue, (const char *)&wireData, sizeof(wireData), 1);
     #else
       return xQueueSendToBack(controlQueue, &data, timeout);
     #endif

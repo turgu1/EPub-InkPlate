@@ -47,6 +47,7 @@ public:
   };
 
   AppController();
+  ~AppController() = default;
 
   /**
    * @brief Start the application

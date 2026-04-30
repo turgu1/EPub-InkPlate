@@ -741,19 +741,24 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
 
       str = ignoreNext ? str2 : str1;
 
+      int16_t advance = kern;
+
       if (glyph == nullptr) {
         glyph = font->getGlyph(' ', fmt.fontSize);
+        if (glyph != nullptr) {
+          advance = glyph->advance;
+        }
       }
 
       if (glyph != nullptr) {
-        width += kern;
+        width += advance;
         first = false;
 
         DisplayListEntry *entry = lineEntries->getNewEntry();
         if (entry == nullptr) return false;
 
         entry->command = DisplayListCommand::GLYPH;
-        entry->v       = GlyphEntry{glyph, kern, false};
+        entry->v       = GlyphEntry{glyph, advance, false};
         entry->pos     = {0, fmt.verticalAlign};
 
         lineEntries->pushBack(entry);

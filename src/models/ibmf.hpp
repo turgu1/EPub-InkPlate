@@ -24,7 +24,7 @@ private:
   // std::mutex mutex;
   IBMFFont::GlyphInfo *glyphData;
 
-  IBMF(const FontFaceDescriptorPtr descr);
+  IBMF(const FontFaceDescriptorPtr &descr);
 
 public:
   ~IBMF();
@@ -33,7 +33,7 @@ public:
     requires(!std::is_array_v<T>)
   friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-  static inline auto Make(const FontFaceDescriptorPtr descr) -> FontPtr {
+  static inline auto Make(const FontFaceDescriptorPtr &descr) -> FontPtr {
     return makeUniqueHimem<IBMF>(descr);
   }
 
@@ -93,7 +93,7 @@ private:
    * @return true The font was found and retrieved.
    * @return false Some error (file not found, unsupported format).
    */
-  auto setFontFace(const FontFaceDescriptorPtr descr) -> bool;
+  auto setFontFace(const FontFaceDescriptorPtr &descr) -> bool;
 
   /**
    * @brief Set the font size

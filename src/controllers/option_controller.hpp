@@ -31,25 +31,26 @@ private:
   FormViewerPtr formViewer;
 
 public:
-  OptionController() = default;
+  OptionController()  = default;
+  ~OptionController() = default;
 
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
   auto leave(bool goingToDeepSleep = false) -> void;
   auto setFontCount(uint8_t count) -> void;
 
- inline auto setMainFormIsShown() -> void { mainFormIsShown = true; }
- inline auto setFontFormIsShown() -> void { fontFormIsShown = true; }
+  inline auto setMainFormIsShown() -> void { mainFormIsShown = true; }
+  inline auto setFontFormIsShown() -> void { fontFormIsShown = true; }
 
   #if DATE_TIME_RTC
- inline auto setDateTimeFormIsShown() -> void { dateTimeFormIsShown = true; }
+    inline auto setDateTimeFormIsShown() -> void { dateTimeFormIsShown = true; }
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
- inline auto setCalibrationIsShown() -> void { calibrationIsShown = true; }
+    inline auto setCalibrationIsShown() -> void { calibrationIsShown = true; }
   #endif
 
- inline auto setWaitForKeyAfterWifi(bool webServerStarted = false) -> void {
+  inline auto setWaitForKeyAfterWifi(bool webServerStarted = false) -> void {
     waitForKeyAfterWifi = true;
     webServerWasStarted = webServerStarted;
     mainFormIsShown     = false;

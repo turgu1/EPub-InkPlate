@@ -101,7 +101,7 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
 
 auto PageLocs::stopControlTask() -> void {
 
-  if (controlTask) {
+  if (isRunning()) {
     LOG_D("Sending STOP");
     PageLocsControl::send({.req = PageLocsControl::Req::STOP});
 
@@ -188,6 +188,8 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
 }
 
 auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterator {
+  if (pageId.itemrefIndex < 0) return pagesMap.end();
+
   PagesMap::iterator it = pagesMap.find(pageId);
   if (!completed && (it == pagesMap.end())) {
     if (retrieveAsap(pageId.itemrefIndex)) it = pagesMap.find(pageId);
@@ -251,14 +253,18 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
         do {
           if (id.offset == 0) {
             if (id.itemrefIndex == 0) {
-              if (count == 1)
-                id.itemrefIndex = itemCount - 1;
-              else
+              if (count == 1) {
+                if (itemCount > 0)
+                  id.itemrefIndex = itemCount - 1;
+                else
+                  done = true;
+              } else
                 done = true;
             } else
               id.itemrefIndex--;
 
-            if ((itemsSet.find(id.itemrefIndex) == itemsSet.end()) && !completed) {
+            if ((id.itemrefIndex >= 0) && (id.itemrefIndex < itemCount) &&
+                (itemsSet.find(id.itemrefIndex) == itemsSet.end()) && !completed) {
               retrieveAsap(id.itemrefIndex);
             }
           }
@@ -379,6 +385,7 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
   // Keep the target filename in sync even when callers invoke this directly
   // (without going through startNewDocument).
   currentFilename = epub->getCurrentFilename();
+  itemCount       = epub->getItemCount();
 
   if (force ||
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
@@ -389,7 +396,7 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
 
     stopControlTask();
 
-    if (controlTask) {
+    if (isRunning()) {
       LOG_E("Unable to stop existing control task. Aborting page locations computation.");
       return;
     }

@@ -130,7 +130,7 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
   if (!buildPageLocs(itemrefIndex)) {
     // Unable to retrieve pages location for the requested index. Send back
     // a negative value to indicate the issue to the control task
-    itemrefIndex = -itemrefIndex;
+    itemrefIndex = static_cast<int16_t>(-(itemrefIndex + 1));
   }
 
   PageLocsControl::QueueData controlQueueData = {.req = (req == Req::GET_ASAP)

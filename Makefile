@@ -126,9 +126,25 @@ DEPS := $(OBJS:.o=.d)
 # ---------------------------------------------------------------------------
 # Rules
 # ---------------------------------------------------------------------------
-.PHONY: all clean
+SUPP_FILE := gtk3.supp
+
+.PHONY: all clean valgrind_linux
 
 all: $(BUILD)/$(TARGET)
+
+# Run the GTK Linux binary under Valgrind, suppressing known GTK/GLib/Pango/
+# Cairo/fontconfig one-time allocations.  Focuses the report on application
+# leaks only.
+#
+# Usage:
+#   make DEBUG=1          # build with debug symbols first
+#   make valgrind_linux   # run under Valgrind
+LINUX_EPUB ?= $(VALGRIND_EPUB)
+valgrind_linux: $(BUILD)/$(TARGET)
+	valgrind --leak-check=full --show-leak-kinds=all \
+	         --track-origins=yes --num-callers=30 \
+	         --suppressions=$(SUPP_FILE) \
+	         $(BUILD)/$(TARGET) "$(LINUX_EPUB)"
 
 $(BUILD)/$(TARGET): $(OBJS)
 	@echo Linking $@
@@ -341,6 +357,133 @@ $(CONFIG_TEST_BUILD)/%.o: %.cpp
 
 clean_config_test:
 	rm -rf $(CONFIG_TEST_BUILD)
+
+# ---------------------------------------------------------------------------
+# Valgrind S5 build
+#
+# Headless Linux binary that runs the Scenario-5 (concurrent page navigation
+# + mid-flight pageLocs restart) for a single epub file.  Use this target to
+# detect memory leaks with Valgrind without needing a GTK display.
+#
+# Usage:
+#   make DEBUG=1 valgrind_s5                   # build
+#   make valgrind_run EPUB=/path/to/book.epub  # build + run under Valgrind
+#   make clean_valgrind                        # remove build artefacts
+#
+# The binary can also be run directly:
+#   build_valgrind/epub_valgrind_s5 [/path/to/book.epub]
+# ---------------------------------------------------------------------------
+
+VALGRIND_BUILD  := build_valgrind
+VALGRIND_TARGET := epub_valgrind_s5
+
+# test/stubs/ MUST come before lib_linux/ so that the headless screen.hpp and
+# msg_viewer.hpp stubs shadow the real GTK-dependent headers.
+VALGRIND_INCLUDES := \
+  -I test/valgrind_stubs \
+  -I test \
+  -I src \
+  -I src/controllers \
+  -I src/helpers \
+  -I src/models \
+  -I src/viewers \
+  -I lib_linux/EPub_InkPlate/src \
+  -I components/global/src \
+  -I components/sys_functions/include \
+  -I components/pugixml/src \
+  -I components/zip/src \
+  -I components/pictures/src \
+  -I components/memory_pool/src \
+  -I components/himem/src \
+  -I components/simple_db/src \
+  -I components/display_list/src \
+  -I components/simple_list/src \
+  $(FREETYPE_CFLAGS)
+
+VALGRIND_DEFINES := \
+  -DEPUB_LINUX_BUILD=1 \
+  -DAPP_VERSION=\"$(APP_VERSION)\" \
+  -DPNGLE_GRAYSCALE_OUTPUT=1 \
+  -DPNGLE_NO_GAMMA_CORRECTION=1 \
+  -DDATE_TIME_RTC=1
+
+# Always build with debug symbols + no optimisation for useful Valgrind traces.
+VALGRIND_CXXFLAGS := -std=c++23 -O0 -g3 -DDEBUGGING=0 \
+                     $(VALGRIND_DEFINES) $(VALGRIND_INCLUDES) \
+                     -Wall -Wno-psabi -MMD -MP
+
+VALGRIND_SRC_C := \
+  components/zip/src/miniz.c
+
+VALGRIND_SRC_CPP := \
+  test/linux_s5_valgrind.cpp \
+  test/valgrind_stubs.cpp \
+  src/models/book_params.cpp \
+  src/models/config.cpp \
+  src/models/css.cpp \
+  src/models/dom.cpp \
+  src/models/epub.cpp \
+  src/models/font.cpp \
+  src/models/fonts.cpp \
+  src/models/fonts_db.cpp \
+  src/models/ibmf.cpp \
+  src/models/page_locs.cpp \
+  src/models/page_locs_control.cpp \
+  src/models/page_locs_interpreter.cpp \
+  src/models/page_locs_retriever.cpp \
+  src/models/toc.cpp \
+  src/models/ttf2.cpp \
+  src/viewers/html_interpreter.cpp \
+  src/viewers/page.cpp \
+  components/pugixml/src/pugixml.cpp \
+  components/zip/src/unzip.cpp \
+  components/pictures/src/mypngle.cpp \
+  components/pictures/src/tjpgdec.cpp \
+  components/pictures/src/picture.cpp \
+  components/pictures/src/jpeg_picture.cpp \
+  components/pictures/src/png_picture.cpp \
+  components/simple_db/src/simple_db.cpp \
+  components/display_list/src/display_list.cpp \
+  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/strlcpy.cpp \
+  lib_linux/EPub_InkPlate/src/logging.cpp
+
+VALGRIND_OBJS_C   := $(patsubst %.c,$(VALGRIND_BUILD)/%.o,$(VALGRIND_SRC_C))
+VALGRIND_OBJS     := $(patsubst %.cpp,$(VALGRIND_BUILD)/%.o,$(VALGRIND_SRC_CPP)) \
+                     $(VALGRIND_OBJS_C)
+VALGRIND_DEPS     := $(VALGRIND_OBJS:.o=.d)
+
+.PHONY: valgrind_s5 valgrind_run clean_valgrind
+
+valgrind_s5: $(VALGRIND_BUILD)/$(VALGRIND_TARGET)
+
+$(VALGRIND_BUILD)/$(VALGRIND_TARGET): $(VALGRIND_OBJS)
+	@echo "Linking $@"
+	@$(CXX) $(VALGRIND_OBJS) -lpthread -lssl -lcrypto $(FREETYPE_LIBS) -o $@
+	@echo "Built: $@"
+
+$(VALGRIND_BUILD)/%.o: %.cpp
+	@echo "Compiling (valgrind) $<"
+	@mkdir -p $(dir $@)
+	@$(CXX) $(VALGRIND_CXXFLAGS) -c $< -o $@
+
+$(VALGRIND_BUILD)/%.o: %.c
+	@echo "Compiling (valgrind-C) $<"
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) $(VALGRIND_DEFINES) $(VALGRIND_INCLUDES) -O0 -g3 -MMD -MP -c $< -o $@
+
+# Convenience target: build then run under Valgrind.
+# Override the epub path: make valgrind_run EPUB=/path/to/book.epub
+VALGRIND_EPUB ?= /home/turgu1/Dev/EPub-InkPlate/SDCard/books/Austen,\ Jane\ -\ Pride\ and\ Prejudice.epub
+valgrind_run: $(VALGRIND_BUILD)/$(VALGRIND_TARGET)
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all \
+	         --num-callers=30 --error-exitcode=1 \
+	         $(VALGRIND_BUILD)/$(VALGRIND_TARGET) "$(VALGRIND_EPUB)"
+
+clean_valgrind:
+	rm -rf $(VALGRIND_BUILD)
+
+-include $(VALGRIND_DEPS)
 
 # Auto-generated header dependencies
 -include $(CONFIG_TEST_DEPS)

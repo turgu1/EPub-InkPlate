@@ -26,7 +26,8 @@
     inline auto setIpAddress(esp_ip4_addr_t addr) -> void { ipAddress = addr; }
 
   public:
-    WIFI() {}
+    WIFI()  = default;
+    ~WIFI() = default;
 
     auto startSta() -> bool;
     auto startAp() -> bool;

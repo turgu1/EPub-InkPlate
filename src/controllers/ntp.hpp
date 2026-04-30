@@ -44,6 +44,9 @@
 
   public:
     auto getAndSetTime() -> bool;
+
+    NTP()  = default;
+    ~NTP() = default;
   };
 
   #if __NTP__

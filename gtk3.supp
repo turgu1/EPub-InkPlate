@@ -1,0 +1,599 @@
+# Valgrind suppression file for GTK3 / GLib / Pango / Cairo / fontconfig
+# one-time process-lifetime allocations that are intentionally never freed.
+#
+# Usage:
+#   valgrind --suppressions=gtk3.supp --leak-check=full ... build_linux/epub_linux
+
+# ---------------------------------------------------------------------------
+# GLib / GObject type system
+# ---------------------------------------------------------------------------
+
+{
+  glib_type_init
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_type_init_with_debug_flags
+}
+
+{
+  glib_type_register_static
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_type_register_static
+}
+
+{
+  glib_type_register_fundamental
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_type_register_fundamental
+}
+
+{
+  glib_type_add_interface_static
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_type_add_interface_static
+}
+
+{
+  glib_quark_init
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_quark_from_static_string
+}
+
+{
+  glib_quark_from_string
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_quark_from_string
+}
+
+{
+  glib_intern_static_string
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_intern_static_string
+}
+
+{
+  glib_get_language_names
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_get_language_names
+}
+
+{
+  glib_get_home_dir
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_get_home_dir
+}
+
+{
+  glib_dataset_hash_table
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_datalist_id_set_data_full
+}
+
+{
+  glib_signal_connect
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_signal_connect_data
+}
+
+{
+  glib_closure_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_closure_new_simple
+}
+
+{
+  glib_object_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_object_new
+}
+
+{
+  glib_object_new_with_properties
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_object_new_with_properties
+}
+
+{
+  glib_io_channel_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_io_channel_new_file
+}
+
+{
+  glib_settings_schema_source
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_settings_schema_source_get_default
+}
+
+{
+  glib_module_open
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:g_module_open
+}
+
+# ---------------------------------------------------------------------------
+# GDK / GTK initialisation
+# ---------------------------------------------------------------------------
+
+{
+  gdk_display_open
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gdk_display_open
+}
+
+{
+  gdk_display_manager_get
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gdk_display_manager_get
+}
+
+{
+  gtk_init
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_init
+}
+
+{
+  gtk_settings_get_default
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_settings_get_default
+}
+
+{
+  gtk_style_context_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_style_context_new
+}
+
+{
+  gtk_css_provider_get_default
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_css_provider_get_default
+}
+
+{
+  gtk_widget_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_widget_new
+}
+
+{
+  gtk_window_new
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_window_new
+}
+
+{
+  gtk_icon_theme_get_default
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_icon_theme_get_default
+}
+
+# ---------------------------------------------------------------------------
+# Pango font system
+# ---------------------------------------------------------------------------
+
+{
+  pango_font_map_create_context
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_font_map_create_context
+}
+
+{
+  pango_cairo_font_map_get_default
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_cairo_font_map_get_default
+}
+
+{
+  pango_language_get_default
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_language_get_default
+}
+
+{
+  pango_language_from_string
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_language_from_string
+}
+
+{
+  pango_ot_info_get
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_ot_info_get
+}
+
+# ---------------------------------------------------------------------------
+# Cairo
+# ---------------------------------------------------------------------------
+
+{
+  cairo_font_face_create
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:cairo_ft_font_face_create_for_pattern
+}
+
+{
+  cairo_font_options_create
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:cairo_font_options_create
+}
+
+{
+  cairo_surface_create
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:cairo_image_surface_create
+}
+
+# ---------------------------------------------------------------------------
+# fontconfig (used by Pango/Cairo)
+# ---------------------------------------------------------------------------
+
+{
+  fontconfig_init
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcInit
+}
+
+{
+  fontconfig_config_get_current
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcConfigGetCurrent
+}
+
+{
+  fontconfig_pattern_create
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcPatternCreate
+}
+
+{
+  fontconfig_name_parse
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcNameParse
+}
+
+{
+  fontconfig_font_list
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcFontList
+}
+
+# ---------------------------------------------------------------------------
+# X11 / XCB (underlying display connection)
+# ---------------------------------------------------------------------------
+
+{
+  xcb_connect
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:xcb_connect
+}
+
+{
+  x_open_display
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:XOpenDisplay
+}
+
+{
+  x_init_threads
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:XInitThreads
+}
+
+# ---------------------------------------------------------------------------
+# dbus (used by GLib for session bus introspection)
+# ---------------------------------------------------------------------------
+
+{
+  dbus_connection_open
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:dbus_connection_open_private
+}
+
+{
+  dbus_bus_get
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:dbus_bus_get_private
+}
+
+# ---------------------------------------------------------------------------
+# dl / dlopen (GTK loads backend modules via dlopen)
+# ---------------------------------------------------------------------------
+
+{
+  dlopen_module
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:dlopen
+}
+
+{
+  dlopen_module_indirect
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_dl_open
+}
+
+# ---------------------------------------------------------------------------
+# pthread (one-time thread keys created by GLib/GTK)
+# ---------------------------------------------------------------------------
+
+{
+  pthread_key_create_glib
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pthread_key_create
+}
+
+# ---------------------------------------------------------------------------
+# Report-driven suppressions (captured from report.valgrind stack frames)
+# ---------------------------------------------------------------------------
+
+{
+  gtk_css_provider_load_internal_theme
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_css_provider_load_internal
+}
+
+{
+  gtk_css_named_provider
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_gtk_css_provider_load_named
+}
+
+{
+  gtk_css_selector_tree
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_gtk_css_selector_tree_builder_build
+}
+
+{
+  gtk_settings_display_style
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_settings_get_for_display
+}
+
+{
+  gdk_wayland_open_display
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_gdk_wayland_display_open
+}
+
+{
+  gdk_wayland_keymap
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_gdk_wayland_keymap_update_from_fd
+}
+
+{
+  wayland_cursor_theme
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:wl_cursor_theme_load
+}
+
+{
+  xkb_context
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:xkb_context_new
+}
+
+{
+  pango_fc_metrics
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_context_get_metrics
+}
+
+{
+  pango_fc_family_scan
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_fc_font_map_get_family
+}
+
+{
+  pango_fc_ensure_families
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:ensure_families
+}
+
+{
+  pangocairo_glyph_extents
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pango_cairo_fc_font_get_glyph_extents
+}
+
+{
+  cairo_scaled_font_glyph_cache
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:_cairo_scaled_font_allocate_glyph
+}
+
+{
+  cairo_pixman_glyph_cache
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:pixman_glyph_cache_create
+}
+
+{
+  fontconfig_pattern_insert
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcPatternObjectInsertElt
+}
+
+{
+  fontconfig_fontset_list
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcFontSetList
+}
+
+{
+  fontconfig_list_append
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcListAppend
+}
+
+{
+  fontconfig_config_values
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcConfigValues
+}
+
+{
+  fontconfig_dir_cache
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:FcDirCacheMapFd
+}
+
+{
+  gtk_module_reloader_init
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_module_init
+}
+
+{
+  gtk_css_node_declaration_writable
+  Memcheck:Leak
+  match-leak-kinds: reachable,possible,definite,indirect
+  ...
+  fun:gtk_css_node_declaration_make_writable*
+}
+
+{
+  glib_thread_tls_allocate
+  Memcheck:Leak
+  match-leak-kinds: possible,reachable
+  ...
+  fun:allocate_dtv
+  ...
+  fun:g_system_thread_new
+}

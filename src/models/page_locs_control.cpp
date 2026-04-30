@@ -172,6 +172,13 @@ auto PageLocsControl::task() -> void {
                  .itemrefIndex = static_cast<int16_t>(-(controlQueueData.itemrefIndex + 1))});
           } else {
             int16_t itemref = controlQueueData.itemrefIndex;
+            if ((itemref < 0) || (itemref >= itemrefCount)) {
+              LOG_W("Ignoring invalid GET_ASAP item index %d (count=%d)", itemref, itemrefCount);
+              PageLocs::send({.req = PageLocs::Req::ASAP_READY,
+                              .itemrefIndex =
+                                  (itemref >= 0) ? static_cast<int16_t>(-(itemref + 1)) : itemref});
+              break;
+            }
             if ((bitset[itemref >> 3] & (1 << (itemref & 7))) != 0) {
               SHOW_IT("Sending ASAP_READY to Mgr for itemref %d", itemref);
               PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
@@ -202,6 +209,12 @@ auto PageLocsControl::task() -> void {
               itemref = -(itemref + 1);
               LOG_E("Unable to retrieve pages location for item %d", itemref);
             }
+            if ((itemref < 0) || (itemref >= itemrefCount)) {
+              LOG_E("Ignoring ITEM_READY with invalid item index %d (count=%d)", itemref,
+                    itemrefCount);
+              requestNextItem(-1);
+              break;
+            }
             if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
               bitset[itemref >> 3] |= (1 << (itemref & 7));
               itemsDoneCount += 1;
@@ -227,6 +240,12 @@ auto PageLocsControl::task() -> void {
             if (itemref < 0) {
               itemref = -(itemref + 1);
               LOG_E("Unable to retrieve pages location for item %d", itemref);
+            }
+            if ((itemref < 0) || (itemref >= itemrefCount)) {
+              LOG_E("Ignoring ASAP_READY with invalid item index %d (count=%d)", itemref,
+                    itemrefCount);
+              requestNextItem(-1, true);
+              break;
             }
             if ((bitset[itemref >> 3] & (1 << (itemref & 7))) == 0) {
               bitset[itemref >> 3] |= (1 << (itemref & 7));

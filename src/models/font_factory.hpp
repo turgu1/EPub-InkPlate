@@ -12,7 +12,7 @@
 class FontFactory {
 
 public:
-  static FontPtr create(const FontFaceDescriptorPtr descr, FT_Library &library) {
+  static FontPtr create(const FontFaceDescriptorPtr &descr, FT_Library &library) {
     HimemString ext = descr->filename.substr(descr->filename.find_last_of(".") + 1);
 
     if (ext == "ibmf")

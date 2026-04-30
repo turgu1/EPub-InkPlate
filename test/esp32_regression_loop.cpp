@@ -19,7 +19,8 @@
 //   5. Concurrent navigation     – page-lookup API calls while pageLocs computes in background.
 //
 // After each scenario the minimum free heap so far and the task stack watermark
-// are printed.  The test fails (and prints a summary) if:
+// are printed and heap health is validated (leak + fragmentation regression).
+// The test fails (and prints a summary) if:
 //   - any individual operation returns an error, OR
 //   - the heap watermark drops below HEAP_WARN_THRESHOLD bytes.
 //
@@ -100,7 +101,12 @@
   // Tuning constants
   // ---------------------------------------------------------------------------
   static constexpr uint32_t HEAP_WARN_THRESHOLD = 32 * 1024; ///< Warn if free heap < 32 KB
-  static constexpr int OPEN_CLOSE_CYCLES        = 10;        ///< Repeat open/close N times per book
+  // Per-scenario heap validation tolerances.
+  static constexpr uint32_t HEAP_LEAK_TOLERANCE_BYTES   = 1024;
+  static constexpr uint32_t FRAG_GROWTH_TOLERANCE_BYTES = 1024;
+  static constexpr float FRAG_PERCENT_WARN              = 5.0f;
+  static constexpr int OPEN_CLOSE_CYCLES      = 10; ///< Repeat open/close N times per book
+  static constexpr int BASELINE_WARMUP_CYCLES = 1;  ///< Unmeasured pass to settle allocators
   // Page-locs recomputation can take multiple minutes on large books.
   static constexpr uint32_t PAGE_LOCS_TIMEOUT_MS = 15 * 60 * 1000;
   // Scenario 5: concurrent navigation parameters
@@ -134,6 +140,194 @@
       ESP_LOGW(TAG, "[%s] WARNING: heap dropped below %" PRIu32 " B threshold!", label,
                (uint32_t)HEAP_WARN_THRESHOLD);
     }
+  }
+
+  struct HeapSnapshot {
+    uint32_t free{0};          ///< heap_caps_get_free_size(DEFAULT)  = internal + PSRAM
+    uint32_t largest{0};       ///< heap_caps_get_largest_free_block(DEFAULT)
+    uint32_t minFree{0};       ///< rolling minimum of free (DEFAULT)
+    uint32_t spiramFree{0};    ///< heap_caps_get_free_size(SPIRAM)
+    uint32_t spiramLargest{0}; ///< heap_caps_get_largest_free_block(SPIRAM)
+  };
+
+  struct HeapTrendPoint {
+    const char *scenarioName{nullptr};
+    HeapSnapshot before{};
+    HeapSnapshot after{};
+  };
+
+  static constexpr uint8_t MAX_HEAP_TREND_POINTS = 16;
+  static HeapTrendPoint gHeapTrend[MAX_HEAP_TREND_POINTS];
+  static uint8_t gHeapTrendCount{0};
+
+  static auto takeHeapSnapshot() -> HeapSnapshot {
+    return {.free          = heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
+            .largest       = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT),
+            .minFree       = gMinFreeHeap,
+            .spiramFree    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+            .spiramLargest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)};
+  }
+
+  static auto fragmentationBytes(const HeapSnapshot &snap) -> uint32_t {
+    return (snap.free > snap.largest) ? (snap.free - snap.largest) : 0;
+  }
+
+  static auto fragmentationPercent(const HeapSnapshot &snap) -> float {
+    if (snap.free == 0) return 100.0f;
+    return (100.0f * static_cast<float>(fragmentationBytes(snap))) / static_cast<float>(snap.free);
+  }
+
+  static auto verifyHeapAfterScenario(const char *scenarioName, const HeapSnapshot &before,
+                                      const HeapSnapshot &after) -> int {
+    int errs = 0;
+
+    int32_t freeDelta        = static_cast<int32_t>(after.free) - static_cast<int32_t>(before.free);
+    uint32_t beforeFragBytes = fragmentationBytes(before);
+    uint32_t afterFragBytes  = fragmentationBytes(after);
+    float beforeFragPct      = fragmentationPercent(before);
+    float afterFragPct       = fragmentationPercent(after);
+
+    int32_t spiramDelta =
+        static_cast<int32_t>(after.spiramFree) - static_cast<int32_t>(before.spiramFree);
+    uint32_t spiramFragBefore =
+        (before.spiramFree > before.spiramLargest) ? (before.spiramFree - before.spiramLargest) : 0;
+    uint32_t spiramFragAfter =
+        (after.spiramFree > after.spiramLargest) ? (after.spiramFree - after.spiramLargest) : 0;
+    int32_t spiramFragDelta =
+        static_cast<int32_t>(spiramFragAfter) - static_cast<int32_t>(spiramFragBefore);
+
+    ESP_LOGI(TAG,
+             "[%s] DEFAULT free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ") largest=%" PRIu32
+             "->%" PRIu32 " frag=%" PRIu32 "B (%.1f%%)->%" PRIu32 "B (%.1f%%)",
+             scenarioName, before.free, after.free, freeDelta, before.largest, after.largest,
+             beforeFragBytes, beforeFragPct, afterFragBytes, afterFragPct);
+    ESP_LOGI(TAG,
+             "[%s] SPIRAM  free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ") largest=%" PRIu32
+             "->%" PRIu32 " frag=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ")",
+             scenarioName, before.spiramFree, after.spiramFree, spiramDelta, before.spiramLargest,
+             after.spiramLargest, spiramFragBefore, spiramFragAfter, spiramFragDelta);
+
+    if ((before.free > after.free) && ((before.free - after.free) > HEAP_LEAK_TOLERANCE_BYTES)) {
+      ESP_LOGE(TAG, "[%s] heap leak suspected: lost %" PRIu32 " B (tolerance=%" PRIu32 " B)",
+               scenarioName, (before.free - after.free), (uint32_t)HEAP_LEAK_TOLERANCE_BYTES);
+      errs++;
+    }
+
+    if ((before.spiramFree > after.spiramFree) &&
+        ((before.spiramFree - after.spiramFree) > HEAP_LEAK_TOLERANCE_BYTES)) {
+      ESP_LOGE(TAG, "[%s] SPIRAM leak suspected: lost %" PRIu32 " B (tolerance=%" PRIu32 " B)",
+               scenarioName, (before.spiramFree - after.spiramFree),
+               (uint32_t)HEAP_LEAK_TOLERANCE_BYTES);
+      errs++;
+    }
+
+    if ((afterFragBytes > beforeFragBytes) &&
+        ((afterFragBytes - beforeFragBytes) > FRAG_GROWTH_TOLERANCE_BYTES)) {
+      ESP_LOGE(TAG,
+               "[%s] DEFAULT fragmentation increased by %" PRIu32 " B (before=%" PRIu32
+               " B, after=%" PRIu32 " B, tolerance=%" PRIu32 " B)",
+               scenarioName, (afterFragBytes - beforeFragBytes), beforeFragBytes, afterFragBytes,
+               (uint32_t)FRAG_GROWTH_TOLERANCE_BYTES);
+      errs++;
+    }
+
+    if ((spiramFragAfter > spiramFragBefore) &&
+        ((spiramFragAfter - spiramFragBefore) > FRAG_GROWTH_TOLERANCE_BYTES)) {
+      ESP_LOGE(TAG,
+               "[%s] SPIRAM fragmentation increased by %" PRIu32 " B (before=%" PRIu32
+               " B, after=%" PRIu32 " B, tolerance=%" PRIu32 " B)",
+               scenarioName, (spiramFragAfter - spiramFragBefore), spiramFragBefore,
+               spiramFragAfter, (uint32_t)FRAG_GROWTH_TOLERANCE_BYTES);
+      errs++;
+    }
+
+    return errs;
+  }
+
+  static void recordHeapTrend(const char *scenarioName, const HeapSnapshot &before,
+                              const HeapSnapshot &after) {
+    if (gHeapTrendCount >= MAX_HEAP_TREND_POINTS) return;
+    gHeapTrend[gHeapTrendCount++] = {
+        .scenarioName = scenarioName, .before = before, .after = after};
+  }
+
+  static void logHeapPerBook(const char *scenarioName, uint8_t bookIndex, uint8_t bookCount,
+                             const char *bookPath, const HeapSnapshot &before,
+                             const HeapSnapshot &after) {
+    uint32_t beforeFrag = fragmentationBytes(before);
+    uint32_t afterFrag  = fragmentationBytes(after);
+    int32_t freeDelta   = static_cast<int32_t>(after.free) - static_cast<int32_t>(before.free);
+    int32_t largestDelta =
+        static_cast<int32_t>(after.largest) - static_cast<int32_t>(before.largest);
+
+    uint32_t beforeSpiramFrag =
+        (before.spiramFree > before.spiramLargest) ? (before.spiramFree - before.spiramLargest) : 0;
+    uint32_t afterSpiramFrag =
+        (after.spiramFree > after.spiramLargest) ? (after.spiramFree - after.spiramLargest) : 0;
+    int32_t spiramFreeDelta =
+        static_cast<int32_t>(after.spiramFree) - static_cast<int32_t>(before.spiramFree);
+    int32_t spiramLargestDelta =
+        static_cast<int32_t>(after.spiramLargest) - static_cast<int32_t>(before.spiramLargest);
+
+    ESP_LOGI(TAG,
+             "%s [%u/%u] '%s' DEFAULT free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32
+             ") largest=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ") frag=%" PRIu32 "->%" PRIu32,
+             scenarioName, static_cast<unsigned>(bookIndex + 1), static_cast<unsigned>(bookCount),
+             bookPath, before.free, after.free, freeDelta, before.largest, after.largest,
+             largestDelta, beforeFrag, afterFrag);
+
+    ESP_LOGI(TAG,
+             "%s [%u/%u] '%s' SPIRAM  free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32
+             ") largest=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ") frag=%" PRIu32 "->%" PRIu32,
+             scenarioName, static_cast<unsigned>(bookIndex + 1), static_cast<unsigned>(bookCount),
+             bookPath, before.spiramFree, after.spiramFree, spiramFreeDelta, before.spiramLargest,
+             after.spiramLargest, spiramLargestDelta, beforeSpiramFrag, afterSpiramFrag);
+  }
+
+  static void printHeapTrendHistory(uint32_t initialFreeHeap) {
+    ESP_LOGI(TAG, "------------- Heap Trend History -------------");
+    for (uint8_t i = 0; i < gHeapTrendCount; i++) {
+      const HeapTrendPoint &p = gHeapTrend[i];
+
+      int32_t freeDeltaScenario =
+          static_cast<int32_t>(p.after.free) - static_cast<int32_t>(p.before.free);
+      int32_t freeDeltaTotal =
+          static_cast<int32_t>(p.after.free) - static_cast<int32_t>(initialFreeHeap);
+      int32_t spiramDeltaScenario =
+          static_cast<int32_t>(p.after.spiramFree) - static_cast<int32_t>(p.before.spiramFree);
+      int32_t spiramLargestDelta = static_cast<int32_t>(p.after.spiramLargest) -
+                                   static_cast<int32_t>(p.before.spiramLargest);
+
+      uint32_t beforeFragBytes = fragmentationBytes(p.before);
+      uint32_t afterFragBytes  = fragmentationBytes(p.after);
+      int32_t fragDeltaScenario =
+          static_cast<int32_t>(afterFragBytes) - static_cast<int32_t>(beforeFragBytes);
+      float afterFragPct = fragmentationPercent(p.after);
+
+      uint32_t spiramFragBefore = (p.before.spiramFree > p.before.spiramLargest)
+                                      ? (p.before.spiramFree - p.before.spiramLargest)
+                                      : 0;
+      uint32_t spiramFragAfter  = (p.after.spiramFree > p.after.spiramLargest)
+                                      ? (p.after.spiramFree - p.after.spiramLargest)
+                                      : 0;
+      int32_t spiramFragDelta =
+          static_cast<int32_t>(spiramFragAfter) - static_cast<int32_t>(spiramFragBefore);
+
+      ESP_LOGI(TAG,
+               "[%u] %-18s DEFAULT free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 "/tot=%+" PRIi32
+               ") frag=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ",%.1f%%) min=%" PRIu32,
+               static_cast<unsigned>(i + 1), p.scenarioName, p.before.free, p.after.free,
+               freeDeltaScenario, freeDeltaTotal, beforeFragBytes, afterFragBytes,
+               fragDeltaScenario, afterFragPct, p.after.minFree);
+      ESP_LOGI(TAG,
+               "[%u] %-18s SPIRAM  free=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ") largest=%" PRIu32
+               "->%" PRIu32 " (d=%+" PRIi32 ") frag=%" PRIu32 "->%" PRIu32 " (d=%+" PRIi32 ")",
+               static_cast<unsigned>(i + 1), p.scenarioName, p.before.spiramFree,
+               p.after.spiramFree, spiramDeltaScenario, p.before.spiramLargest,
+               p.after.spiramLargest, spiramLargestDelta, spiramFragBefore, spiramFragAfter,
+               spiramFragDelta);
+    }
+    ESP_LOGI(TAG, "-----------------------------------------------");
   }
 
   // ---------------------------------------------------------------------------
@@ -196,6 +390,20 @@
     }
     printWatermarks("open/close");
     return errors;
+  }
+
+  [[maybe_unused]] static void warmupOpenCloseBaseline(BookList &bl) {
+    ESP_LOGI(TAG, "--- Baseline warm-up: open/close (%d cycle per book) ---",
+             BASELINE_WARMUP_CYCLES);
+    for (int cycle = 0; cycle < BASELINE_WARMUP_CYCLES; cycle++) {
+      for (uint8_t i = 0; i < bl.count; i++) {
+        auto epub = EPub::Make();
+        if (!epub) continue;
+        if (epub->open(bl.paths[i])) epub->closeFile();
+        updateHeap();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -267,11 +475,12 @@
     std::atomic<int> navNullCount{0};
     std::atomic<bool> shouldStop{false};
     std::atomic<bool> exited{false};
+    PageId currentPage{0, 0};
   };
 
   static void navigationThreadTask(void *pvParams) {
     NavThreadContext *ctx = static_cast<NavThreadContext *>(pvParams);
-    PageId currentPage{0, 0};
+    PageId currentPage    = ctx->currentPage;
 
     while (!ctx->shouldStop.load()) {
       // Alternate between forward/backward navigation
@@ -281,7 +490,8 @@
                                            : pageLocs.getPrevPageId(currentPage, 1);
 
       if (nextPageId) {
-        currentPage = *nextPageId;
+        currentPage      = *nextPageId;
+        ctx->currentPage = currentPage;
         ctx->navCount.fetch_add(1);
       } else {
         ctx->navNullCount.fetch_add(1);
@@ -305,15 +515,21 @@
     int errors = 0;
 
     for (uint8_t i = 0; i < bl.count; i++) {
+      HeapSnapshot beforeBook = takeHeapSnapshot();
+
       auto epub = EPub::Make();
       if (!epub) {
         ESP_LOGE(TAG, "S4: EPub::Make() failed");
         errors++;
+        HeapSnapshot afterBook = takeHeapSnapshot();
+        logHeapPerBook("S4", i, bl.count, bl.paths[i], beforeBook, afterBook);
         continue;
       }
       if (!epub->open(bl.paths[i])) {
         ESP_LOGE(TAG, "S4: open failed: %s", bl.paths[i]);
         errors++;
+        HeapSnapshot afterBook = takeHeapSnapshot();
+        logHeapPerBook("S4", i, bl.count, bl.paths[i], beforeBook, afterBook);
         continue;
       }
 
@@ -380,6 +596,7 @@
 
       // Always stop/join control/retriever before closing this book.
       pageLocs.stopControlTask();
+      pageLocs.clear();
 
       if (completed && (lastStatus <= 0)) {
         ESP_LOGE(TAG, "S4: invalid final page count (%" PRIi16 ") for %s", lastStatus, bl.paths[i]);
@@ -389,6 +606,9 @@
       epub->closeFile();
       updateHeap();
       vTaskDelay(20 / portTICK_PERIOD_MS);
+
+      HeapSnapshot afterBook = takeHeapSnapshot();
+      logHeapPerBook("S4", i, bl.count, bl.paths[i], beforeBook, afterBook);
     }
 
     printWatermarks("page_locs");
@@ -410,17 +630,23 @@
     }
 
     for (uint8_t bookIdx = 0; bookIdx < bl.count; bookIdx++) {
+      HeapSnapshot beforeBook = takeHeapSnapshot();
+
       ESP_LOGI(TAG, "S5: [%d/%d] '%s'", bookIdx + 1, bl.count, bl.paths[bookIdx]);
 
       auto epub = EPub::Make();
       if (!epub) {
         ESP_LOGE(TAG, "S5: EPub::Make() failed");
         errors++;
+        HeapSnapshot afterBook = takeHeapSnapshot();
+        logHeapPerBook("S5", bookIdx, bl.count, bl.paths[bookIdx], beforeBook, afterBook);
         continue;
       }
       if (!epub->open(bl.paths[bookIdx])) {
         ESP_LOGE(TAG, "S5: open failed: %s", bl.paths[bookIdx]);
         errors++;
+        HeapSnapshot afterBook = takeHeapSnapshot();
+        logHeapPerBook("S5", bookIdx, bl.count, bl.paths[bookIdx], beforeBook, afterBook);
         continue;
       }
 
@@ -429,7 +655,7 @@
 
       // Create navigation threads immediately
       NavThreadContext navCtx[NAV_THREAD_COUNT];
-      auto startNavThreads = [&](bool resetCounters) -> bool {
+      auto startNavThreads = [&](bool resetCounters, int16_t seedItemref = 0) -> bool {
         bool ok = true;
         for (int i = 0; i < NAV_THREAD_COUNT; i++) {
           navCtx[i].shouldStop.store(false);
@@ -437,6 +663,14 @@
           if (resetCounters) {
             navCtx[i].navCount.store(0);
             navCtx[i].navNullCount.store(0);
+            navCtx[i].currentPage = PageId{0, 0};
+          } else {
+            // After a format-change restart all page offsets are invalid: the old
+            // position refers to a layout that no longer exists.  Seed from the
+            // restart item so nav threads stay close to where the sequential
+            // retriever is working and avoid ASAP requests for items that haven't
+            // been computed yet in the new pass.
+            navCtx[i].currentPage = PageId{seedItemref, 0};
           }
           navCtx[i].handle = nullptr;
           esp_err_t res    = xTaskCreatePinnedToCore(navigationThreadTask, "nav_task", 4096,
@@ -567,7 +801,7 @@
           lastItemrefReported = -1;
           lastGeneratedPages  = 0;
 
-          navThreadsRunning = startNavThreads(false);
+          navThreadsRunning = startNavThreads(false, restartItemref);
           if (!navThreadsRunning) {
             deadlocked = true;
             break;
@@ -672,9 +906,13 @@
 
       // Per-book cleanup
       pageLocs.stopControlTask();
+      pageLocs.clear();
       epub->closeFile();
       updateHeap();
       vTaskDelay(20 / portTICK_PERIOD_MS);
+
+      HeapSnapshot afterBook = takeHeapSnapshot();
+      logHeapPerBook("S5", bookIdx, bl.count, bl.paths[bookIdx], beforeBook, afterBook);
     } // end for each book
 
     printWatermarks("concurrent_nav");
@@ -791,6 +1029,7 @@
     // Capture initial heap before any allocation.
     gInitialFreeHeap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
     gMinFreeHeap     = gInitialFreeHeap;
+    gHeapTrendCount  = 0;
     ESP_LOGI(TAG, "Initial free heap : %" PRIu32 " B", gInitialFreeHeap);
     ESP_LOGI(TAG, "Active scenarios  : 0x%02X", (unsigned)REGRESSION_SCENARIOS);
 
@@ -803,12 +1042,35 @@
       ESP_LOGW(TAG, "SD card / books folder not available — S1-S5 will be skipped.");
     }
 
+    if (booksFolderAvailable && (REGRESSION_SCENARIOS & NEEDS_BOOKS)) {
+      warmupOpenCloseBaseline(bl);
+      vTaskDelay(20 / portTICK_PERIOD_MS);
+      gInitialFreeHeap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+      gMinFreeHeap     = gInitialFreeHeap;
+      gHeapTrendCount  = 0;
+      ESP_LOGI(TAG, "Post-warmup free heap: %" PRIu32 " B", gInitialFreeHeap);
+    }
+
     int totalErrors = 0;
+
+    auto runScenarioWithHeapCheck = [&](const char *name, auto &&scenarioFn) -> void {
+      HeapSnapshot before = takeHeapSnapshot();
+      int scenarioErrs    = scenarioFn();
+
+      // Let deferred frees settle before measuring post-scenario state.
+      vTaskDelay(20 / portTICK_PERIOD_MS);
+      updateHeap();
+      HeapSnapshot after = takeHeapSnapshot();
+
+      totalErrors += scenarioErrs;
+      totalErrors += verifyHeapAfterScenario(name, before, after);
+      recordHeapTrend(name, before, after);
+    };
 
     // --- Scenario 1: repeated open/close ---
     if (REGRESSION_SCENARIOS & (1 << 0)) {
       if (booksFolderAvailable) {
-        totalErrors += scenarioOpenClose(bl);
+        runScenarioWithHeapCheck("S1 open/close", [&]() { return scenarioOpenClose(bl); });
       } else {
         ESP_LOGI(TAG, "--- Scenario 1: SKIPPED (no books folder) ---");
       }
@@ -819,7 +1081,7 @@
     // --- Scenario 2: TOC load ---
     if (REGRESSION_SCENARIOS & (1 << 1)) {
       if (booksFolderAvailable) {
-        totalErrors += scenarioToc(bl);
+        runScenarioWithHeapCheck("S2 toc", [&]() { return scenarioToc(bl); });
       } else {
         ESP_LOGI(TAG, "--- Scenario 2: SKIPPED (no books folder) ---");
       }
@@ -834,7 +1096,7 @@
         if (!booksDir.readBooksDirectory(nullptr, dummy)) {
           ESP_LOGW(TAG, "S3: books DB unavailable, skipping cover scenario");
         } else {
-          totalErrors += scenarioCoverImages(booksDir);
+          runScenarioWithHeapCheck("S3 covers", [&]() { return scenarioCoverImages(booksDir); });
         }
       } else {
         ESP_LOGI(TAG, "--- Scenario 3: SKIPPED (no books folder) ---");
@@ -846,7 +1108,7 @@
     // --- Scenario 4: pageLocs recomputation ---
     if (REGRESSION_SCENARIOS & (1 << 3)) {
       if (booksFolderAvailable) {
-        totalErrors += scenarioPageLocsRecompute(bl);
+        runScenarioWithHeapCheck("S4 page_locs", [&]() { return scenarioPageLocsRecompute(bl); });
       } else {
         ESP_LOGI(TAG, "--- Scenario 4: SKIPPED (no books folder) ---");
       }
@@ -857,7 +1119,8 @@
     // --- Scenario 5: concurrent navigation ---
     if (REGRESSION_SCENARIOS & (1 << 4)) {
       if (booksFolderAvailable) {
-        totalErrors += scenarioConcurrentNavigation(bl);
+        runScenarioWithHeapCheck("S5 concurrent_nav",
+                                 [&]() { return scenarioConcurrentNavigation(bl); });
       } else {
         ESP_LOGI(TAG, "--- Scenario 5: SKIPPED (no books folder) ---");
       }
@@ -868,7 +1131,7 @@
     // --- Scenario 6: WiFi + NTP ---
     if (REGRESSION_SCENARIOS & (1 << 5)) {
       #if DATE_TIME_RTC
-        totalErrors += scenarioWifiNtp();
+        runScenarioWithHeapCheck("S6 wifi_ntp", [&]() { return scenarioWifiNtp(); });
       #else
         ESP_LOGI(TAG, "--- Scenario 6: SKIPPED (DATE_TIME_RTC not enabled) ---");
       #endif
@@ -878,12 +1141,14 @@
 
     // --- Scenario 7: WiFi web server ---
     if (REGRESSION_SCENARIOS & (1 << 6)) {
-      totalErrors += scenarioWebServer();
+      runScenarioWithHeapCheck("S7 web_server", [&]() { return scenarioWebServer(); });
     } else {
       ESP_LOGI(TAG, "--- Scenario 7: SKIPPED (not in REGRESSION_SCENARIOS) ---");
     }
 
     // --- Final report ---
+    printHeapTrendHistory(gInitialFreeHeap);
+
     updateHeap();
     uint32_t finalFreeHeap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
     uint32_t stackHwm      = uxTaskGetStackHighWaterMark(nullptr) * (uint32_t)sizeof(StackType_t);

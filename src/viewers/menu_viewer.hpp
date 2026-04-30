@@ -56,19 +56,13 @@ public:
   auto clearHighlight() -> void;
 
 private:
-  static constexpr int16_t ICON_SIZE    = 15;
+  static constexpr int16_t ICON_SIZE    = 24;
   static constexpr int16_t CAPTION_SIZE = 10;
-
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    static constexpr int16_t SPACE_BETWEEN_ICONS = 70;
-  #else
-    static constexpr int16_t SPACE_BETWEEN_ICONS = 50;
-  #endif
 
   uint8_t currentEntryIndex{0};
   uint8_t menuEntryCount{0};
-  uint16_t iconHeight{0}, textHeight{0}, lineHeight{0}, regionHeight{0};
-  uint16_t iconYPos{0}, textYPos{0};
+  uint16_t visibleEntryCount{0};
+  uint16_t textHeight{0}, lineHeight{0}, regionHeight{0}, textYPos{0};
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     bool hintShown{false};

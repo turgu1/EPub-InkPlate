@@ -84,7 +84,8 @@ public:
     };
   #endif
 
-  EventMgr() = default;
+  EventMgr()  = default;
+  ~EventMgr() = default;
 
   auto setup() -> bool;
 
@@ -105,8 +106,8 @@ public:
     #endif
   #endif
 
- inline auto setStayOn(bool value) -> void { stayOn = value; };
- [[nodiscard]] inline auto stayingOn() -> bool { return stayOn; };
+  inline auto setStayOn(bool value) -> void { stayOn = value; };
+  [[nodiscard]] inline auto stayingOn() -> bool { return stayOn; };
   auto setOrientation(Screen::Orientation orient) -> void;
 };
 

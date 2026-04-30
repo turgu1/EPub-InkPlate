@@ -13,7 +13,7 @@
 #include <ostream>
 #include <sys/stat.h>
 
-TTF::TTF(const FontFaceDescriptorPtr descr, FT_Library &library) : Font() {
+TTF::TTF(const FontFaceDescriptorPtr &descr, FT_Library &library) : Font() {
   face = nullptr;
 
   setFontFace(descr, library);
@@ -26,13 +26,13 @@ TTF::~TTF() {
 
 auto TTF::clearFace() -> void {
   LOG_D("Clearing TTF face and cache...");
-  pageLocs.stopControlTask();
-  clearCache();
-  if (face != nullptr) {
+  // pageLocs.stopControlTask();
+  if (face != nullptr && face->internal != nullptr) {
     FT_Done_Face(face);
     face = nullptr;
   }
 
+  clearCache();
   ready           = false;
   currentFontSize = -1;
 }
@@ -156,7 +156,7 @@ auto TTF::setFontSize(int16_t size) -> bool {
   return true;
 }
 
-auto TTF::setFontFace(const FontFaceDescriptorPtr descr, FT_Library &library) -> bool {
+auto TTF::setFontFace(const FontFaceDescriptorPtr &descr, FT_Library &library) -> bool {
   if (face != nullptr) clearFace();
 
   int error = FT_New_Memory_Face(library, (const FT_Byte *)descr->fontData.get(),
@@ -166,8 +166,7 @@ auto TTF::setFontFace(const FontFaceDescriptorPtr descr, FT_Library &library) ->
     return false;
   }
 
-  ready              = true;
-  fontFaceDescriptor = descr;
+  ready = true;
 
   return true;
 }

@@ -27,6 +27,8 @@ public:
   static constexpr int8_t IDENT        = 99;
   static constexpr uint16_t RESOLUTION = 166; ///< Pixels per inch
 
+  static guchar *pixels;
+
   enum class Orientation : int8_t {
     LEFT, RIGHT, BOTTOM
   };
@@ -52,7 +54,9 @@ private:
   static const uint8_t LUT1BIT[8];
 
   static Screen singleton;
-  Screen() {};
+
+  Screen()  = default;
+  ~Screen() = default;
 
   static uint16_t width;
   static uint16_t height;
@@ -76,13 +80,13 @@ public:
   auto setup(PixelResolution resolution, Orientation orientation) -> void;
   auto setPixelResolution(PixelResolution resolution, bool force = false) -> void;
   auto setOrientation(Orientation orient) -> void;
- [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
+  [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
   auto getPicture() -> GtkImage * { return pictureData.picture; }
   // auto to_user_coord(uint16_t &x, uint16_t &y) -> void {}
- inline auto forceFullUpdate() -> void {}
+  inline auto forceFullUpdate() -> void {}
 
- [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
- [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
+  [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
+  [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
 
   #if TOUCH_TRIAL
     GtkWidget *window, *pictureBox;
