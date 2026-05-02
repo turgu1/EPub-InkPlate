@@ -20,7 +20,7 @@
 #include "screen.hpp"
 
 AppController::AppController() : currentCtrl(Ctrl::DIR), nextCtrl(Ctrl::NONE) {
-  for (int i = 0; i < LAST_COUNT; i++) {
+  for (int i = 0; i < LAST_COUNT; ++i) {
     lastCtrl[i] = Ctrl::DIR;
   }
 }
@@ -81,10 +81,10 @@ auto AppController::launch() -> void {
     currentCtrl = (theCtrl == Ctrl::LAST) ? lastCtrl[0] : theCtrl;
 
     if (theCtrl == Ctrl::LAST) {
-      for (int i = 1; i < LAST_COUNT; i++) lastCtrl[i - 1] = lastCtrl[i];
+      for (int i = 1; i < LAST_COUNT; ++i) lastCtrl[i - 1] = lastCtrl[i];
       lastCtrl[LAST_COUNT - 1] = Ctrl::DIR;
     } else {
-      for (int i = 1; i < LAST_COUNT; i++) lastCtrl[i] = lastCtrl[i - 1];
+      for (int i = 1; i < LAST_COUNT; ++i) lastCtrl[i] = lastCtrl[i - 1];
       lastCtrl[0] = tmp;
     }
 

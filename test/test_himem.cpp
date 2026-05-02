@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 
 #include "himem.hpp"
+#include "himem_simple_list.hpp"
 #include "test_stats.hpp"
 
 #include <cstdio>
@@ -494,8 +495,8 @@ static auto testHimemSimpleList() -> void {
   l.clear();
   HT_CHECK(l.empty(), "clear() empties the list");
 
-  // himemUniqueSimpleList
-  HT_LOG("--- himemUniqueSimpleList<int> ---");
+  // HimemUniqueSimpleList
+  HT_LOG("--- HimemUniqueSimpleList<int> ---");
   auto ul = makeUniqueHimemSimpleList<int>();
   HT_CHECK(ul != nullptr, "makeUniqueHimemSimpleList returns non-null");
   HT_CHECK(ul->empty(), "freshly-made unique simple list is empty");

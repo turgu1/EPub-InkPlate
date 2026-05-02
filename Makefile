@@ -206,7 +206,8 @@ TEST_INCLUDES := \
   -I components/zip/src \
   -I components/pugixml/src \
   -I components/display_list/src \
-  -I components/simple_list/src
+  -I components/simple_list/src \
+  $(FREETYPE_CFLAGS)
 
 TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) \
                  -Wall -Wno-psabi -MMD -MP
@@ -267,7 +268,7 @@ all_tests: test config_test
 
 $(TEST_BUILD)/$(TEST_TARGET): $(TEST_OBJS)
 	@echo "Linking $@"
-	@$(CXX) $(TEST_OBJS) -lpthread -lssl -lcrypto -o $@
+	@$(CXX) $(TEST_OBJS) -lpthread -lssl -lcrypto $(FREETYPE_LIBS) -o $@
 	@echo "Built: $@"
 
 $(TEST_BUILD)/%.o: %.cpp
@@ -474,7 +475,7 @@ $(VALGRIND_BUILD)/%.o: %.c
 
 # Convenience target: build then run under Valgrind.
 # Override the epub path: make valgrind_run EPUB=/path/to/book.epub
-VALGRIND_EPUB ?= /home/turgu1/Dev/EPub-InkPlate/SDCard/books/Austen,\ Jane\ -\ Pride\ and\ Prejudice.epub
+VALGRIND_EPUB ?= /home/turgu1/Dev/EPub-InkPlate/SDCard/books/Austen, Jane - Pride and Prejudice.epub
 valgrind_run: $(VALGRIND_BUILD)/$(VALGRIND_TARGET)
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all \
 	         --num-callers=30 --error-exitcode=1 \

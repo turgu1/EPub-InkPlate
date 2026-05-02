@@ -73,7 +73,7 @@ auto TOC::load(EPubPtr &epub) -> bool {
             if (db->getRecordSize() == sizeof(EntryRecord)) {
               if (!db->getRecord(&entries[idx], sizeof(EntryRecord))) break;
               entries[idx].label = charBuffer.get() + (size_t)entries[idx].label;
-              idx++;
+              ++idx;
             } else {
               LOG_E("DB corrupted.");
               break;
@@ -128,7 +128,7 @@ auto TOC::save(HimemString epubFilename) -> bool {
     if (db->addRecord(&versionRecord, sizeof(VersionRecord))) {
       if (db->addRecord(charBuffer.get(), charBufferSize)) {
         uint16_t idx;
-        for (idx = 0; idx < entries.size(); idx++) {
+        for (idx = 0; idx < entries.size(); ++idx) {
           EntryRecord e = entries[idx];
           e.label       = e.label - (size_t)charBuffer.get();
           if (!db->addRecord(&e, sizeof(EntryRecord))) {
@@ -263,7 +263,7 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
               found = true;
               break;
             }
-            index++;
+            ++index;
           }
 
           if (found) {
@@ -437,7 +437,7 @@ auto TOC::set(int32_t currentOffset) -> void {
   int16_t idx = -1;
 
   for (auto &e : entries) {
-    idx++;
+    ++idx;
     if (e.pageId.itemrefIndex == itemrefIndex) {
       break;
     }

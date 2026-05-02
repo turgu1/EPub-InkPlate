@@ -26,7 +26,7 @@
 
 #include "dom.hpp"
 #include "fonts.hpp"
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 
 /**
  * List of supported CSS properties
@@ -211,7 +211,7 @@ public:
     NONE, FIRST_CHILD
   };
 
-  using ClassList = std::forward_list<std::string>;
+  using ClassList = std::forward_list<HimemString>;
 
   #pragma pack(push, 1)
   // The following is OK in a little endian context.
@@ -227,9 +227,10 @@ public:
       #endif
     }
   };
+  #pragma pack(pop)
 
   struct SelectorNode {
-    std::string id;
+    HimemString id;
     ClassList classList;
     Qualifier qualifier;
     uint8_t classCount, idCount;
@@ -243,11 +244,11 @@ public:
       idCount    = 0;
     }
     ~SelectorNode() { classList.clear(); }
-    auto addClass(std::string className) -> void {
-      classList.push_front(className);
+    auto addClass(HimemString className) -> void {
+      classList.push_front(std::move(className));
       classCount += 1;
     }
-    auto addId(const std::string &theId) -> void {
+    auto addId(const HimemString &theId) -> void {
       id = theId;
       idCount += 1;
     }
@@ -273,26 +274,28 @@ public:
     }
   };
 
-  using SelectorNodeList = std::forward_list<SelectorNode *>;
+  using SelectorNodeList = std::forward_list<SelectorNode, HimemPool<SelectorNode>>;
 
   struct Selector {
     Specificity specificity;
     SelectorNodeList selectorNodeList;
     Selector() { specificity.value = 0; }
     ~Selector() {
-      for (auto *selectorNode : selectorNodeList) {
-        selectorNodePool.deleteElement(selectorNode);
-      }
+      // for (auto *selectorNode : selectorNodeList) {
+      //   selectorNodePool.deleteElement(selectorNode);
+      // }
       selectorNodeList.clear();
     }
-    auto addSelectorNode(SelectorNode *node) -> void { selectorNodeList.push_front(node); }
+    auto addSelectorNode(SelectorNode node) -> void {
+      selectorNodeList.push_front(std::move(node));
+    }
     auto computeSpecificity(uint8_t prio) -> void {
       specificity.spec.priority = prio;
-      for (auto *node : selectorNodeList) {
+      for (auto &node : selectorNodeList) {
         specificity.spec.tagCount +=
-            (((node->tag == DOM::Tag::NONE) || (node->tag == DOM::Tag::ANY)) ? 0 : 1);
-        specificity.spec.classCount += node->classCount;
-        specificity.spec.idCount += node->idCount;
+            (((node.tag == DOM::Tag::NONE) || (node.tag == DOM::Tag::ANY)) ? 0 : 1);
+        specificity.spec.classCount += node.classCount;
+        specificity.spec.idCount += node.idCount;
       }
     }
     auto isEmpty() -> bool { return selectorNodeList.empty(); }
@@ -301,7 +304,7 @@ public:
         if (nodeIt != selectorNodeList.end()) {
           SelectorNodeList::const_iterator nextNodeIt = nodeIt;
           showSelector(++nextNodeIt, lev + 1);
-          (*nodeIt)->show();
+          nodeIt->show();
         }
       #endif
     }
@@ -341,18 +344,18 @@ public:
     }
   };
 
-  using Values = std::forward_list<Value *>;
+  using Values = std::forward_list<Value, HimemPool<Value>>;
 
   struct Property {
     PropertyId id;
     Values values;
     ~Property() {
-      for (auto *value : values) {
-        valuePool.deleteElement(value);
-      }
+      // for (auto *value : values) {
+      //   valuePool.deleteElement(value);
+      // }
       values.clear();
     }
-    auto addValue(Value *v) -> void { values.push_front(v); }
+    auto addValue(Value v) -> void { values.push_front(std::move(v)); }
     auto completed() -> void { values.reverse(); }
     auto show() -> void {
       #if DEBUGGING
@@ -365,16 +368,15 @@ public:
         }
         std::cout << ": ";
         bool first = true;
-        for (auto *v : values) {
+        for (auto &v : values) {
           if (!first) std::cout << ", ";
-          v->show();
+          v.show();
           first = false;
         }
         std::cout << ';' << std::endl;
       #endif
     }
   };
-  #pragma pack(pop)
 
   // Sorted from the less specific to the most specific
   struct ruleCompare {
@@ -383,23 +385,22 @@ public:
     }
   };
 
-  using Selectors  = std::list<Selector *>;
-  using Properties = std::forward_list<Property *>;
+  using Selectors  = std::list<Selector, HimemPool<Selector>>;
+  using Properties = std::forward_list<Property, HimemPool<Property>>;
 
   // using PropertySuite = std::list<Properties *>;
-  using PropertySuiteList = std::forward_list<Properties *>;
+  using PropertySuiteList  = std::forward_list<Properties, HimemPool<Properties>>;
+  using SelectorSuiteList  = std::forward_list<Selectors, HimemPool<Selectors>>;
+  using SelectorSingleList = std::forward_list<Selector, HimemPool<Selector>>;
 
   using RulesMap = std::multimap<Selector *, Properties *, ruleCompare>;
 
   RulesMap rulesMap;
-  PropertySuiteList
-      suites; // Linear list of suites to be deleted when the instance will be destroyed.
 
-  static MemoryPool<Value> valuePool;
-  static MemoryPool<Property> propertyPool;
-  static MemoryPool<Properties> propertiesPool;
-  static MemoryPool<SelectorNode> selectorNodePool;
-  static MemoryPool<Selector> selectorPool;
+  // Owning lists — element destructors fire automatically on clear() / destruction.
+  PropertySuiteList propertySuites;
+  SelectorSuiteList selectorSuites;
+  SelectorSingleList selectorSingles;
 
   auto match(DOM::Node *node, RulesMap &toRules) -> void;
   auto show(RulesMap &theRulesMap) -> void;
@@ -411,8 +412,8 @@ public:
   static auto getValuesFromRules(const RulesMap &rules, PropertyId id) -> const Values * {
     Values *vals = nullptr;
     for (auto &rule : rules) {
-      for (auto *prop : *(rule.second)) {
-        if (id == prop->id) vals = &prop->values;
+      for (auto &prop : *(rule.second)) {
+        if (id == prop.id) vals = &prop.values;
       }
     }
     return vals;
@@ -421,7 +422,7 @@ public:
   auto getValuesFromProps(const Properties &props, PropertyId id) const -> const Values * {
     const Values *vals = nullptr;
     for (auto &prop : props) {
-      if (id == prop->id) vals = &prop->values;
+      if (id == prop.id) vals = &prop.values;
     }
     return vals;
   }

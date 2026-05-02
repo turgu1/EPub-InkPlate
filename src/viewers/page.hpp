@@ -6,7 +6,7 @@
 
 #include "global.hpp"
 #include "himem.hpp"
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 #include "picture.hpp"
 #include "pugixml.hpp"
 
@@ -107,8 +107,8 @@ private:
   ComputeMode computeMode{ComputeMode::DISPLAY};
   bool screenIsFull{false}; ///< True if screen no more space to add characters
 
-  DisplayListPool displayListPool; ///< Memory pool for DisplayListEntry objects, shared across
-                                   ///< all DisplayList instances used by this Page instance
+  DisplayListPool displayListPool{500}; ///< Memory pool for DisplayListEntry objects, shared across
+                                        ///< all DisplayList instances used by this Page instance
 
   DisplayListPtr displayList{DisplayList::Make(displayListPool)};
   DisplayListPtr lineList{DisplayList::Make(displayListPool)}; ///< Line preparation for paragraphs

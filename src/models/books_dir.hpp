@@ -183,11 +183,11 @@ public:
 
   auto getSortedIdx(uint16_t dbIdx) -> int16_t {
     int i = 0;
-    for (auto entry : sortedIndex) {
+    for (auto &entry : sortedIndex) {
       if (entry.second.dbIndex == dbIdx) {
         return i;
       }
-      i++;
+      ++i;
     }
     return -1;
   }
@@ -198,7 +198,7 @@ public:
       if (entry.second.id == id) {
         return i;
       }
-      i++;
+      ++i;
     }
     return -1;
   }

@@ -68,7 +68,7 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
   fmt.fontStyle = FaceStyle::NORMAL;
   fmt.align     = CSS::Align::LEFT;
 
-  for (int16_t screenIdx = 0; entryIdx < lastIdx; screenIdx++, entryIdx++) {
+  for (int16_t screenIdx = 0; entryIdx < lastIdx; ++screenIdx, ++entryIdx) {
 
     const TOC::EntryRecord &entry = epub->toc->getEntry(entryIdx);
 
@@ -79,8 +79,8 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
     #endif
 
     fmt.screenLeft   = 20 + (entry.level * 20);
-    fmt.screenTop    = ypos,
-    fmt.screenBottom = static_cast<int16_t>(Screen::getHeight() - (ypos + entryHeight)),
+    fmt.screenTop    = ypos;
+    fmt.screenBottom = static_cast<int16_t>(Screen::getHeight() - (ypos + entryHeight));
 
     page->setLimits(fmt);
     page->newParagraph(fmt);

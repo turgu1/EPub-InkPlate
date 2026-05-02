@@ -43,9 +43,9 @@ Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT
     uint32_t mask;
     uint32_t crc = CRC32_INITIAL;
 
-    for (i = 0; i < bufferLength; i++) {
+    for (i = 0; i < bufferLength; ++i) {
       crc ^= ((uint8_t *)buffer)[i];
-      for (j = 7; j >= 0; j--) {
+      for (j = 7; j >= 0; --j) {
         mask = -(crc & 1);
         crc = (crc >> 1) ^ (CRC32_POLYNOMIAL & mask);
       }
@@ -266,7 +266,7 @@ auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
       index = entry.second.dbIndex;
       break;
     }
-    i++;
+    ++i;
   }
   if (index == -1) {
     LOG_E("Unable to find idx: %d", idx);
@@ -307,7 +307,7 @@ auto BooksDir::getBookId(uint16_t idx, uint32_t &id) -> bool {
       found = true;
       break;
     }
-    i++;
+    ++i;
   }
   if (!found) LOG_E("Unable to find idx: %d", idx);
 
@@ -324,7 +324,7 @@ auto BooksDir::getBookIndex(uint32_t id, uint16_t &idx) -> bool {
       found = true;
       break;
     }
-    i++;
+    ++i;
   }
   if (!found) LOG_E("Unable to find id: 0x%08" PRIx32, id);
 

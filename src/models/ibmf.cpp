@@ -502,7 +502,7 @@ auto IBMF::adjustLigatureAndKern(Glyph *glyph, uint16_t glyphSize, uint32_t next
         }
       }
       if (step->stop == 1) break;
-      step++;
+      ++step;
     }
   }
   return glyph;

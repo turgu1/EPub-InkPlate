@@ -35,6 +35,11 @@ protected:
   int32_t startOffset{0};
   int32_t endOffset{0};
 
+  ///< This is used to adjust the offset when we need to add content that is not part of the
+  ///< original text, such as images. It is added to the currentOffset when checking for page
+  ///< limits.
+  int32_t offsetAdjustment{0};
+
   bool showPictures{false};
   bool started{false};
   // bool beginning_of_page;
@@ -43,7 +48,7 @@ protected:
   int16_t fromPage{-1}, toPage{-1};
   int16_t maxLevel{0};
 
-  MemoryPool<Page::Format> fmtPool;
+  HimemPool<Page::Format> fmtPool;
 
   // The pageEnd method is responsible of doing post-processing once
   // the end of a page has been detected (the page.isFull() method returns true or
@@ -85,40 +90,6 @@ public:
       page->showControls("  ");
       std::cout << "     ";
       page->showFmt(fmt, "  ");
-      // if (itemInfo.css != nullptr) itemInfo.css->show();
-      // std::cout << "--> Element CSS:" << std::endl;
-      // if (elementCss != nullptr) elementCss->show();
-      // std::cout << "[end show]" << std::endl;
-      // CSS::RulesMap rules;
-
-      // itemInfo.css->show();
-      // std::cout << "======" << std::endl;
-      // if (elementCss != nullptr) elementCss->show();
-      // std::cout << "------" << std::endl;
-      // domCurrentNode->show(1);
-
-      // if ((domCurrentNode != nullptr) && (itemInfo.css != nullptr)) {
-      //   itemInfo.css->match(domCurrentNode, rules);
-      //   if (!rules.empty()) {
-      // std::cout << "--> Item CSS match:" << std::endl;
-      // itemInfo.css->show(rules);
-      // }
-      // else {
-      // std::cout << "--> NO Item CSS match..." << std::endl;
-      //   }
-      // }
-      // else {
-      // std::cout << "--> No Item CSS..." << std::endl;
-      // }
-
-      // if (elementCss != nullptr) {
-      // std::cout << "--> Element style:" << std::endl;
-      // elementCss->show();
-      // }
-      // else {
-      // std::cout << "--> NO Element Style..." << std::endl;
-      // }
-      // std::cout << "[end show]" << std::endl;
     }
   }
 

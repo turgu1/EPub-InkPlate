@@ -137,7 +137,7 @@ auto ConfigBase<IdType, cfg_size>::get(IdType id, FontsDB **val) -> bool {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, int32_t val) {
-  for (auto entry : cfg) {
+  for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT)) {
       *((int32_t *)entry.value) = val;
       modified                  = true;
@@ -150,7 +150,7 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, int32_t val) {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, int64_t val) {
-  for (auto entry : cfg) {
+  for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::INT64)) {
       *((int64_t *)entry.value) = val;
       modified                  = true;
@@ -176,7 +176,7 @@ void ConfigBase<IdType, cfg_size>::put(IdType id, int8_t val) {
 
 template <class IdType, int cfg_size>
 void ConfigBase<IdType, cfg_size>::put(IdType id, HimemString &val) {
-  for (auto entry : cfg) {
+  for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::STRING)) {
       strlcpy((char *)entry.value, val.c_str(), entry.max_size);
       modified = true;
@@ -198,39 +198,39 @@ auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **
     // Get rid of blank lines, spaces at beginning of line and comments
 
     char *str = buff;
-    while (*str == ' ') str++;
+    while (*str == ' ') ++str;
     if ((*str == '#') || (*str == 0)) break;
 
     // isolate caption
 
     *caption = str;
-    while ((*str != 0) && (*str != ' ') && (*str != '=')) str++;
+    while ((*str != 0) && (*str != ' ') && (*str != '=')) ++str;
     if (*str == 0) break;
     if (*str == '=') {
       *str++ = 0;
     } else {
       *str++ = 0;
-      while (*str == ' ') str++;
+      while (*str == ' ') ++str;
       if (*str++ != '=') break;
     }
-    while (*str == ' ') str++;
+    while (*str == ' ') ++str;
     if (*str == 0) break;
 
     // isolate value
 
     if (*str == '"') {
-      str++;
+      ++str;
       *value = str;
-      while ((*str != 0) && (*str != '"')) str++;
+      while ((*str != 0) && (*str != '"')) ++str;
       if (*str == '"')
         *str = 0;
       else
         break;
     } else {
       *value = str;
-      while (*str != 0) str++;
-      str--;
-      while (*str == ' ') str--;
+      while (*str != 0) ++str;
+      --str;
+      while (*str == ' ') --str;
       *++str = 0;
     }
     done = true;

@@ -64,7 +64,7 @@
             uint32_t id;
             if (nvs_get_u32(nvsHandle, info.key, &id) == ESP_OK) {
               trackList[index] = id;
-              trackCount++;
+              ++trackCount;
             }
           }
           res = nvs_entry_next(&it);
@@ -198,8 +198,8 @@
     }
 
     savedData.nvsData = nvsData;
-    uint32_t index     = nextIdx;
-    std::string key    = bldKey("ID_", index);
+    uint32_t index    = nextIdx;
+    std::string key   = bldKey("ID_", index);
 
     if ((err = nvs_set_u32(nvsHandle, key.c_str(), id)) == ESP_OK) {
       key = bldKey("DATA_", index);
@@ -208,10 +208,10 @@
           LOG_E("Unable to save new NEXT_IDX: %s", esp_err_to_name(err));
         }
         trackList[index] = id;
-        trackCount++;
+        ++trackCount;
         int8_t pos = 0;
         for (TrackList::reverse_iterator rit = trackList.rbegin(); rit != trackList.rend();
-             rit++, pos++) {
+             ++rit, ++pos) {
           booksDir.setTrackOrder(rit->second, pos);
         }
         return true;
@@ -231,9 +231,8 @@
       uint64_t oldData;
       SavedData newData;
       newData.nvsData = nvsData;
-      std::string key  = bldKey("DATA_", index);
-      if ((nvs_get_u64(nvsHandle, key.c_str(), &oldData) == ESP_OK) &&
-          (oldData == newData.data)) {
+      std::string key = bldKey("DATA_", index);
+      if ((nvs_get_u64(nvsHandle, key.c_str(), &oldData) == ESP_OK) && (oldData == newData.data)) {
         return true;
       }
     }
@@ -274,7 +273,7 @@
     bool found = false;
 
     for (TrackList::reverse_iterator rit = trackList.rbegin(); rit != trackList.rend();
-         rit++, pos++) {
+         ++rit, ++pos) {
       if (rit->second == id) {
         found = true;
         break;
@@ -321,7 +320,7 @@
 
       for (TrackList::reverse_iterator rit = trackList.rbegin();
                     rit != trackList.rend();
-                    rit++) {
+                    ++rit) {
         std::string key = bldKey("ID_", rit->first);
         uint32_t    id;
         if (nvs_get_u32(nvsHandle, key.c_str(), &id) == ESP_OK) {

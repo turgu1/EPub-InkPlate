@@ -269,7 +269,7 @@
         page->putHighlight(Dim(7, 45), Pos(x - 3, y - 22));
       };
 
-      for (int i = 0; i < 3; i++) crossHair(calibPoint.x[i], calibPoint.y[i]);
+      for (int i = 0; i < 3; ++i) crossHair(calibPoint.x[i], calibPoint.y[i]);
 
       Page::Format fmt = {
           .fontSize     = 11,
@@ -372,7 +372,7 @@
       case EventKind::TAP:
         if (calibCount < 3) {
           getPosition(touchPoint.x[calibCount], touchPoint.y[calibCount]);
-          calibCount++;
+          ++calibCount;
         }
         if (calibCount >= 3) {
           uint16_t temp;

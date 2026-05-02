@@ -32,12 +32,12 @@
 
 class CSSParser {
 public:
-  CSSParser(CSS &theCss, const char *buffer, int32_t size) : css(theCss), skip(0), selNbr(0) {
+  CSSParser(CSS &css, const char *buffer, int32_t size) : css(css), skip(0), selNbr(0) {
     parse(buffer, size);
   }
 
-  CSSParser(CSS &theCss, DOM::Tag tag, const char *buffer, int32_t size)
-      : css(theCss), skip(0), selNbr(0) {
+  CSSParser(CSS &css, DOM::Tag tag, const char *buffer, int32_t size)
+      : css(css), skip(0), selNbr(0) {
     parse(tag, buffer, size);
   }
 
@@ -95,7 +95,7 @@ private:
     if (remains > 0) {
       remains--;
       ch = *str++;
-      if (ch == '\n') lineNbr++;
+      if (ch == '\n') ++lineNbr;
     } else
       ch = '\0';
   }
@@ -685,134 +685,161 @@ private:
     }
   #endif
 
-  CSS::Value *term(bool &none, CSS::PropertyId id) {
-    none          = false;
-    bool neg      = false;
-    CSS::Value *v = css.valuePool.newElement();
-    bool done     = false;
+  auto term(bool &none, CSS::PropertyId id) -> std::pair<bool, CSS::Value> {
+    none     = false;
+    bool neg = false;
+    CSS::Value v;
+    bool done = false;
     while (true) {
       if ((token == Token::PLUS) || (token == Token::MINUS)) {
         neg = token == Token::MINUS;
         skipBlanks();
       }
-      if ((token == Token::NUMBER) || (token == Token::PERCENTAGE) || (token == Token::LENGTH) ||
-          (token == Token::ANGLE) || (token == Token::TIME) || (token == Token::DIMENSION) ||
-          (token == Token::FREQ)) {
-        v->valueType = valueType;
-        v->num       = neg ? -num : num;
+      switch (token) {
+      case Token::NUMBER:
+      case Token::PERCENTAGE:
+      case Token::LENGTH:
+      case Token::ANGLE:
+      case Token::TIME:
+      case Token::DIMENSION:
+      case Token::FREQ:
+        v.valueType = valueType;
+        v.num       = neg ? -num : num;
         if (id == CSS::PropertyId::VERTICAL_ALIGN)
-          v->choice.verticalAlign = CSS::VerticalAlign::VALUE;
+          v.choice.verticalAlign = CSS::VerticalAlign::VALUE;
         skipBlanks();
-      } else if (token == Token::STRING) {
-        v->valueType = CSS::ValueType::STR;
-        v->str       = string;
+        break;
+
+      case Token::STRING:
+        v.valueType = CSS::ValueType::STR;
+        v.str       = string;
         skipBlanks();
-      } else if (token == Token::IDENT) {
-        v->str       = ident;
-        v->valueType = CSS::ValueType::STR;
-        if (id == CSS::PropertyId::TEXT_ALIGN) {
-          if (v->str.compare("left") == 0)
-            v->choice.align = CSS::Align::LEFT;
-          else if (v->str.compare("center") == 0)
-            v->choice.align = CSS::Align::CENTER;
-          else if (v->str.compare("right") == 0)
-            v->choice.align = CSS::Align::RIGHT;
-          else if (v->str.compare("justify") == 0)
-            v->choice.align = CSS::Align::JUSTIFY;
-          else if (v->str.compare("justified") == 0)
-            v->choice.align = CSS::Align::JUSTIFY;
+        break;
+      case Token::IDENT:
+        v.str       = ident;
+        v.valueType = CSS::ValueType::STR;
+        switch (id) {
+        case CSS::PropertyId::TEXT_ALIGN:
+          if (v.str.compare("left") == 0)
+            v.choice.align = CSS::Align::LEFT;
+          else if (v.str.compare("center") == 0)
+            v.choice.align = CSS::Align::CENTER;
+          else if (v.str.compare("right") == 0)
+            v.choice.align = CSS::Align::RIGHT;
+          else if (v.str.compare("justify") == 0)
+            v.choice.align = CSS::Align::JUSTIFY;
+          else if (v.str.compare("justified") == 0)
+            v.choice.align = CSS::Align::JUSTIFY;
           else {
-            // LOG_E("text-align not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str -
+            // LOG_E("text-align not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str -
             // buffer_start));
-            break;
+            goto end;
           }
-        } else if (id == CSS::PropertyId::TEXT_TRANSFORM) {
-          if (v->str.compare("lowercase") == 0)
-            v->choice.textTransform = CSS::TextTransform::LOWERCASE;
-          else if (v->str.compare("uppercase") == 0)
-            v->choice.textTransform = CSS::TextTransform::UPPERCASE;
-          else if (v->str.compare("capitalize") == 0)
-            v->choice.textTransform = CSS::TextTransform::CAPITALIZE;
-          else if (v->str.compare("none") == 0)
-            v->choice.textTransform = CSS::TextTransform::NONE;
+          break;
+        case CSS::PropertyId::TEXT_TRANSFORM:
+          if (v.str.compare("lowercase") == 0)
+            v.choice.textTransform = CSS::TextTransform::LOWERCASE;
+          else if (v.str.compare("uppercase") == 0)
+            v.choice.textTransform = CSS::TextTransform::UPPERCASE;
+          else if (v.str.compare("capitalize") == 0)
+            v.choice.textTransform = CSS::TextTransform::CAPITALIZE;
+          else if (v.str.compare("none") == 0)
+            v.choice.textTransform = CSS::TextTransform::NONE;
           else {
-            // LOG_E("text-transform not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str
+            // LOG_E("text-transform not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str
             // - buffer_start));
-            break;
+            goto end;
           }
-        } else if (id == CSS::PropertyId::VERTICAL_ALIGN) {
-          if (v->str.compare("sub") == 0)
-            v->choice.verticalAlign = CSS::VerticalAlign::SUB;
-          else if (v->str.compare("super") == 0)
-            v->choice.verticalAlign = CSS::VerticalAlign::SUPER;
-          else if (v->str.compare("top") == 0)
-            v->choice.verticalAlign = CSS::VerticalAlign::SUPER;
-          else if (v->str.compare("text-top") == 0)
-            v->choice.verticalAlign = CSS::VerticalAlign::SUPER;
+          break;
+        case CSS::PropertyId::VERTICAL_ALIGN:
+          if (v.str.compare("sub") == 0)
+            v.choice.verticalAlign = CSS::VerticalAlign::SUB;
+          else if (v.str.compare("super") == 0)
+            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+          else if (v.str.compare("top") == 0)
+            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+          else if (v.str.compare("text-top") == 0)
+            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
           else {
-            v->choice.verticalAlign = CSS::VerticalAlign::NORMAL;
+            v.choice.verticalAlign = CSS::VerticalAlign::NORMAL;
           }
-        } else if (id == CSS::PropertyId::FONT_WEIGHT) {
-          if ((v->str.compare("bold") == 0) || (v->str.compare("bolder") == 0))
-            v->choice.faceStyle = FaceStyle::BOLD;
-          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0))
-            v->choice.faceStyle = FaceStyle::NORMAL;
+          break;
+        case CSS::PropertyId::FONT_WEIGHT:
+          if ((v.str.compare("bold") == 0) || (v.str.compare("bolder") == 0))
+            v.choice.faceStyle = FaceStyle::BOLD;
+          else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0))
+            v.choice.faceStyle = FaceStyle::NORMAL;
           else {
-            // LOG_E("font-weight not decoded: '%s' at offset: %d", v->str.c_str(), (int32_t)(str -
+            // LOG_E("font-weight not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str -
             // buffer_start));
-            break;
+            goto end;
           }
-        } else if (id == CSS::PropertyId::FONT_STYLE) {
-          if ((v->str.compare("italic") == 0) || (v->str.compare("oblique") == 0))
-            v->choice.faceStyle = FaceStyle::ITALIC;
-          else if ((v->str.compare("normal") == 0) || (v->str.compare("initial") == 0))
-            v->choice.faceStyle = FaceStyle::NORMAL;
+          break;
+        case CSS::PropertyId::FONT_STYLE:
+          if ((v.str.compare("italic") == 0) || (v.str.compare("oblique") == 0))
+            v.choice.faceStyle = FaceStyle::ITALIC;
+          else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0))
+            v.choice.faceStyle = FaceStyle::NORMAL;
           else {
             // LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str -
             // buffer_start));
-            break;
+            goto end;
           }
-        } else if (id == CSS::PropertyId::DISPLAY) {
-          if (v->str.compare("none") == 0)
-            v->choice.display = CSS::Display::NONE;
-          else if (v->str.compare("inline") == 0)
-            v->choice.display = CSS::Display::INLINE;
-          else if (v->str.compare("block") == 0)
-            v->choice.display = CSS::Display::BLOCK;
-          else if (v->str.compare("inline-block") == 0)
-            v->choice.display = CSS::Display::INLINE_BLOCK;
+          break;
+        case CSS::PropertyId::DISPLAY:
+          if (v.str.compare("none") == 0)
+            v.choice.display = CSS::Display::NONE;
+          else if (v.str.compare("inline") == 0)
+            v.choice.display = CSS::Display::INLINE;
+          else if (v.str.compare("block") == 0)
+            v.choice.display = CSS::Display::BLOCK;
+          else if (v.str.compare("inline-block") == 0)
+            v.choice.display = CSS::Display::INLINE_BLOCK;
           else {
             // LOG_E("display not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str -
             // buffer_start));
-            break;
+            goto end;
           }
-        } else if ((id == CSS::PropertyId::FONT_SIZE) && (v->valueType == CSS::ValueType::STR)) {
-          v->valueType                  = CSS::ValueType::PT;
-          CSS::FontSizeMap::iterator it = css.fontSizeMap.find(static_cast<HimemString>(v->str));
-          if (it != css.fontSizeMap.end()) {
-            v->num = it->second;
-          } else {
-            // int8_t fontSize;
-            // config.get(Config::Ident::FONT_SIZE, &fontSize);
-            // v->num = fontSize;
-            v->num = 12;
+          break;
+        case CSS::PropertyId::FONT_SIZE:
+          if (v.valueType == CSS::ValueType::STR) {
+            v.valueType                   = CSS::ValueType::PT;
+            CSS::FontSizeMap::iterator it = css.fontSizeMap.find(static_cast<HimemString>(v.str));
+            if (it != css.fontSizeMap.end()) {
+              v.num = it->second;
+            } else {
+              // int8_t fontSize;
+              // config.get(Config::Ident::FONT_SIZE, &fontSize);
+              // v->num = fontSize;
+              v.num = 12;
+            }
+          } else if (v.str.compare("inherit") == 0) {
+            v.valueType = CSS::ValueType::INHERIT;
           }
-        } else if (v->str.compare("inherit") == 0) {
-          v->valueType = CSS::ValueType::INHERIT;
+          break;
+        default:
+          if (v.str.compare("inherit") == 0) {
+            v.valueType = CSS::ValueType::INHERIT;
+          }
+          break;
         }
         skipBlanks();
-      } else if (token == Token::URI) {
-        v->str       = string;
-        v->valueType = CSS::ValueType::URL;
+        break;
+
+      case Token::URI:
+        v.str       = string;
+        v.valueType = CSS::ValueType::URL;
         skipBlanks();
-      } else if (token == Token::FUNCTION) {
+        break;
+      case Token::FUNCTION:
         // if (!function()) return false; // Not supported yet
         break;
-      } else if (token == Token::HASH) {
+      case Token::HASH:
         // v->str = name;
         skipBlanks();
         break; // Not supported yet
-      } else {
+
+      default:
         none = true;
         break;
       }
@@ -820,40 +847,39 @@ private:
       done = true;
       break;
     }
+  end:
 
-    if (done) {
-      return v;
-    } else {
-      css.valuePool.deleteElement(v);
-      return nullptr;
-    }
+    return {done, std::move(v)};
   }
 
   auto expression(CSS::Property &prop) -> bool {
-    CSS::Value *v;
     bool none;
-    if ((((v = term(none, prop.id))) == nullptr) || none) return false;
-    prop.addValue(v);
+
+    auto [hasTerm, termValue] = term(none, prop.id);
+    if (!hasTerm || none) return false;
+    prop.addValue(std::move(termValue));
+
     for (;;) {
       if ((token == Token::SLASH) || (token == Token::COMMA)) {
         skipBlanks();
       }
-      if ((((v = term(none, prop.id))) == nullptr) && !none) return false;
+      auto [hasTerm, termValue] = term(none, prop.id);
+      if (!hasTerm && !none) return false;
       if (none) break;
-      prop.addValue(v);
+      prop.addValue(std::move(termValue));
     }
     prop.completed();
     return true;
   }
 
-  CSS::Property *declaration() {
-    CSS::Property *prop = css.propertyPool.newElement();
-    bool done           = false;
+  auto declaration(CSS::Property &prop) -> bool {
+
+    bool done = false;
     while (true) {
       // process IDENT property
       CSS::PropertyMap::iterator it = css.propertyMap.find(ident);
       if (it != css.propertyMap.end())
-        prop->id = it->second;
+        prop.id = it->second;
       else
         break;
       skipBlanks();
@@ -862,21 +888,18 @@ private:
         skipBlanks();
       else
         break;
-      if (!expression(*prop)) break;
+      if (!expression(prop)) break;
       if (token == Token::IMPORTANT_SYM) skipBlanks();
       if (token == Token::SEMICOLON) skipBlanks(); // may not be optional
       done = true;
       break;
     }
-    if (done) {
-      return prop;
-    } else {
-      for (auto *v : prop->values) css.valuePool.deleteElement(v);
-      prop->values.clear();
-      css.propertyPool.deleteElement(prop);
+
+    if (!done) {
       skipBlock();
-      return nullptr;
     }
+
+    return done;
   }
 
   auto namespaceStatement() -> bool { // Not implemented yet
@@ -910,22 +933,27 @@ private:
   }
 
   auto fontFaceStatement() -> bool {
-    CSS::Selectors sels;
-    CSS::Selector *sel      = css.selectorPool.newElement();
-    CSS::SelectorNode *node = css.selectorNodePool.newElement();
-    node->tag               = DOM::Tag::FONT_FACE;
-    sel->addSelectorNode(node);
-    sel->computeSpecificity(css.getPriority());
-    sels.push_front(sel);
+    auto &sels = css.selectorSuites.emplace_front();
+    auto &sel  = sels.emplace_front();
+    auto &node = sel.selectorNodeList.emplace_front();
+
+    node.tag = DOM::Tag::FONT_FACE;
+
+    sel.computeSpecificity(css.getPriority());
+
     skipBlanks();
     if (token == Token::LBRACE) {
       skipBlanks();
-      CSS::Properties *props = properties();
+      auto &props = css.propertySuites.emplace_front();
+      properties(props);
+
       if (token == Token::RBRACE) {
         skipBlanks();
         return addRules(sels, props);
       }
+      css.propertySuites.pop_front();
     }
+    css.selectorSuites.pop_front();
     return false;
   }
     
@@ -983,12 +1011,12 @@ private:
   auto subSelectorNode(CSS::SelectorNode &node) -> bool {
     for (;;) {
       if (token == Token::HASH) {
-        node.addId(std::string(name));
+        node.addId(name);
         nextToken();
       } else if (token == Token::DOT) {
         nextToken();
         if (token == Token::IDENT) {
-          node.addClass(std::string(ident));
+          node.addClass(ident);
           nextToken();
         }
       } else if (token == Token::LBRACK) {
@@ -1004,58 +1032,55 @@ private:
     return true;
   }
 
-  CSS::SelectorNode *selectorNode() {
-    CSS::SelectorNode *node = css.selectorNodePool.newElement();
-    bool done               = false;
+  auto selectorNode() -> std::pair<bool, CSS::SelectorNode> {
+    CSS::SelectorNode node;
+    bool done = false;
     while (true) {
       if (token == Token::IDENT) {
         DOM::Tags::const_iterator it = DOM::tags.find(ident);
         if (it != DOM::tags.end()) {
-          node->setTag(it->second);
+          node.setTag(it->second);
           nextToken();
         } else
           break;
       } else if (token == Token::STAR) {
-        node->tag = DOM::Tag::ANY;
+        node.tag = DOM::Tag::ANY;
         nextToken();
       }
       if ((token == Token::HASH) || (token == Token::DOT) || (token == Token::LBRACK) ||
           (token == Token::COLON)) {
-        if (!subSelectorNode(*node)) break;
+        if (!subSelectorNode(node)) break;
       }
 
       done = true;
       break;
     }
-    if (done) {
-      return node;
-    } else {
-      css.selectorNodePool.deleteElement(node);
-      return nullptr;
-    }
+
+    return {done, std::move(node)};
   }
 
-  CSS::Selector *selector() {
-    CSS::Selector *sel = css.selectorPool.newElement();
-    CSS::SelectorNode *node;
+  auto selector(CSS::Selector &sel) -> bool {
     bool done = false;
     while (true) {
-      if (((node = selectorNode())) == nullptr) break;
-      sel->addSelectorNode(node);
+      auto [hasNode, node] = selectorNode();
+      if (!hasNode) break;
+      sel.addSelectorNode(std::move(node));
       bool done2 = false;
       while (true) {
         if (token == Token::WHITESPACE) skipBlanks();
         if ((token == Token::PLUS) || (token == Token::GT) || (token == Token::TILDE)) {
           Token t = token;
           skipBlanks();
-          if (((node = selectorNode())) == nullptr) break;
-          node->op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
-          sel->addSelectorNode(node);
+          auto [hasNode, node] = selectorNode();
+          if (!hasNode) break;
+          node.op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
+          sel.addSelectorNode(std::move(node));
         } else if ((token == Token::IDENT) || (token == Token::STAR) || (token == Token::HASH) ||
                    (token == Token::DOT) || (token == Token::LBRACK) || (token == Token::COLON)) {
-          if (((node = selectorNode())) == nullptr) break;
-          node->op = CSS::SelOp::DESCENDANT;
-          sel->addSelectorNode(node);
+          auto [hasNode, node] = selectorNode();
+          if (!hasNode) break;
+          node.op = CSS::SelOp::DESCENDANT;
+          sel.addSelectorNode(std::move(node));
         } else {
           done2 = true;
           break;
@@ -1064,46 +1089,34 @@ private:
       done = done2;
       break;
     }
-    if (done) {
-      if (!sel->isEmpty()) {
-        sel->computeSpecificity(css.getPriority());
-        return sel;
-      } else {
-        css.selectorPool.deleteElement(sel);
-        return nullptr;
-      }
-    } else {
-      css.selectorPool.deleteElement(sel);
-      return nullptr;
+
+    if (done && !sel.isEmpty()) {
+      sel.computeSpecificity(css.getPriority());
     }
+
+    return done;
   }
 
-  CSS::Properties *properties() {
-    CSS::Properties *props = css.propertiesPool.newElement();
-    CSS::Property *property;
+  auto properties(CSS::Properties &props) -> void {
     while (token == Token::IDENT) {
-      if (((property = declaration())) != nullptr) props->push_front(property);
+      if (!declaration(props.emplace_front())) props.pop_front();
     }
-    return props;
   }
 
-  auto addRules(CSS::Selectors &sels, CSS::Properties *props) -> bool {
-    if (props->empty()) {
-      for (auto *sel : sels) {
-        for (auto *node : sel->selectorNodeList) css.selectorNodePool.deleteElement(node);
-      }
-      css.propertiesPool.deleteElement(props);
+  auto addRules(CSS::Selectors &sels, CSS::Properties &props) -> bool {
+    if (props.empty()) {
+      sels.clear();
+      css.selectorSuites.pop_front();
+      css.propertySuites.pop_front();
       return false;
     } else {
-      for (auto *sel : sels) css.addRule(sel, props);
-      css.suites.push_front(props);
+      for (auto &sel : sels) css.addRule(&sel, &props);
     }
     return true;
   }
 
   auto ruleset() -> bool {
-    CSS::Selectors selectors; // multiple selectors can be associated to a property list
-    CSS::Selector *sel;
+    auto &selectors = css.selectorSuites.emplace_front(); // multiple selectors per property list
     // skip everything until we get th beginning of a ruleset
     // while ((token != Token::END_OF_FILE) &&
     //        (token != Token::IDENT      ) &&
@@ -1111,28 +1124,35 @@ private:
     //        (token != Token::DOT        ) &&
     //        (token != Token::LBRACK     ) &&
     //        (token != Token::COLON      )) nextToken();
-    if (((sel = selector())) != nullptr)
-      selectors.push_back(sel);
-    else
+    if (!selector(selectors.emplace_back())) {
+      selectors.pop_back();
       while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
         nextToken();
+    }
     while (token == Token::COMMA) {
       skipBlanks();
-      if (((sel = selector())) != nullptr)
-        selectors.push_back(sel);
-      else
+      if (!selector(selectors.emplace_back())) {
+        selectors.pop_back();
+
         while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
           nextToken();
+      }
     }
     if (selectors.empty()) {
+      css.selectorSuites.pop_front();
       skipBlock();
     } else if (token == Token::LBRACE) {
       skipBlanks();
-      CSS::Properties *props = properties();
+      auto &props = css.propertySuites.emplace_front();
+      properties(props);
       if (token == Token::RBRACE) {
         skipBlanks();
         return addRules(selectors, props);
       }
+      css.selectorSuites.pop_front();
+      css.propertySuites.pop_front();
+    } else {
+      css.selectorSuites.pop_front();
     }
     return false;
   }
@@ -1391,6 +1411,7 @@ public:
     nextCh();
     nextToken();
 
+    // Skip the optional @charset statement
     if (token == Token::CHARSET_SYM) {
       nextToken();
       if (token == Token::STRING) {
@@ -1405,9 +1426,9 @@ public:
 
     while ((token == Token::WHITESPACE) || (token == Token::CDO) || (token == Token::CDC)) {
       if (token == Token::CDO)
-        skip++;
+        ++skip;
       else if (token == Token::CDC)
-        skip--;
+        --skip;
       nextToken();
     }
 
@@ -1415,9 +1436,9 @@ public:
       if (!importStatement()) return false;
       while ((token == Token::CDO) || (token == Token::CDC)) {
         if (token == Token::CDO)
-          skip++;
+          ++skip;
         else if (token == Token::CDC)
-          skip--;
+          --skip;
         skipBlanks();
       }
     }
@@ -1442,9 +1463,9 @@ public:
       }
       while ((token == Token::CDO) || (token == Token::CDC)) {
         if (token == Token::CDO)
-          skip++;
+          ++skip;
         else if (token == Token::CDC)
-          skip--;
+          --skip;
         skipBlanks();
       }
       if (token == Token::END_OF_FILE) break;
@@ -1462,16 +1483,14 @@ public:
     nextCh();
     nextToken();
 
-    CSS::Properties *props = properties();
+    auto &props = css.propertySuites.emplace_front();
+    properties(props);
 
-    if (props != nullptr) {
-      CSS::Selector *sel      = css.selectorPool.newElement();
-      CSS::SelectorNode *node = css.selectorNodePool.newElement();
-      node->setTag(tag);
-      sel->addSelectorNode(node);
-      sel->computeSpecificity(css.getPriority());
-      css.addRule(sel, props);
-    }
+    auto &sel  = css.selectorSingles.emplace_front();
+    auto &node = sel.selectorNodeList.emplace_front();
+    node.setTag(tag);
+    sel.computeSpecificity(css.getPriority());
+    css.addRule(&sel, &props);
     return true;
   }
 };

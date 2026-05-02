@@ -298,7 +298,7 @@ auto PageLocs::getPageId(const PageId &pageId) -> const PageId * {
         result = it;
         break;
       }
-      it++;
+      ++it;
     }
     return (result == pagesMap.end()) ? nullptr : &result->first;
   }
@@ -456,7 +456,7 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
 
     int16_t pageNbr = 0;
 
-    for (int16_t i = 0; i < pgCount; i++) {
+    for (int16_t i = 0; i < pgCount; ++i) {
       PageId pageId;
       PageInfo pageInfo;
 

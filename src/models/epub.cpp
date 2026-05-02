@@ -284,7 +284,7 @@ auto EPub::getKeys() -> bool {
 
     // Convert it to binary big-endien version
     static const uint8_t idxs[16] = {0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34};
-    for (uint8_t idx = 0; idx < 16; idx++) {
+    for (uint8_t idx = 0; idx < 16; ++idx) {
       if (!toBin(&str[pos + idxs[idx]], &binUuid[idx])) return false;
     }
   }
@@ -499,20 +499,20 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
         FaceStyle style        = FaceStyle::NORMAL;
         FaceStyle font_weight  = FaceStyle::NORMAL;
         FaceStyle font_style   = FaceStyle::NORMAL;
-        HimemString fontFamily = values->front()->str;
+        HimemString fontFamily = values->front().str;
 
         if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
-          font_style = (FaceStyle)values->front()->choice.faceStyle;
+          font_style = (FaceStyle)values->front().choice.faceStyle;
         }
         if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
-          font_weight = (FaceStyle)values->front()->choice.faceStyle;
+          font_weight = (FaceStyle)values->front().choice.faceStyle;
         }
         style = fonts.adjustFontStyle(style, font_style, font_weight);
         // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
 
         if (fonts.getIndex(fontFamily.c_str(), style) == -1) { // If not already loaded
           if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::SRC)) &&
-              (!values->empty()) && (values->front()->valueType == CSS::ValueType::URL)) {
+              (!values->empty()) && (values->front().valueType == CSS::ValueType::URL)) {
 
             if (!pageLocsInstance) {
               if (first) {
@@ -524,7 +524,7 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
               }
             }
 
-            HimemString filename = css->getFolderPath() + values->front()->str;
+            HimemString filename = css->getFolderPath() + values->front().str;
             filename             = filenameLocate(filename.c_str());
 
             loadFont(filename, fontFamily, style);
@@ -569,8 +569,8 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
 
         while (css_cache_it != cssCache.end()) {
           if ((*css_cache_it)->getId().compare(css_id) == 0) break;
-          css_cache_it++;
-          idx++;
+          ++css_cache_it;
+          ++idx;
         }
         if (css_cache_it == cssCache.end()) {
 
@@ -1050,7 +1050,7 @@ auto EPub::getItemAtIndex(int16_t itemrefIndex) -> bool {
       node = n;
       break;
     }
-    index++;
+    ++index;
   }
 
   if (node == nullptr) return false;
@@ -1078,7 +1078,7 @@ auto EPub::getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool {
       node = n;
       break;
     }
-    index++;
+    ++index;
   }
 
   bool res = false;
@@ -1104,7 +1104,7 @@ auto EPub::getPicture(HimemString &fname, bool load) -> PicturePtr {
 
   // if (pict->getBitmap() != nullptr) {
   //   std::cout << "----- Picture content -----" << std::endl;
-  //   for (int i = 0; i < 200; i++) {
+  //   for (int i = 0; i < 200; ++i) {
   //     std::cout << std::hex << std::setw(2) << +pict->getBitmap()[i];
   //   }
   //   std::cout << std::endl << "-----" << std::endl;

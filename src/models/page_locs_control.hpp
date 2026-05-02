@@ -32,7 +32,7 @@ public:
   static inline auto Make() { return makeUniqueHimem<PageLocsControl>(); }
 
   enum class Req : int8_t {
-    NONE, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT
+    NONE, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT, ITEM_INTERRUPTED
   };
 
   struct QueueData {

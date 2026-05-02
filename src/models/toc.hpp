@@ -17,6 +17,7 @@
 
 #include "models/epub.hpp"
 
+#include <cstring>
 #include <forward_list>
 #include <limits>
 #include <utility>
@@ -36,14 +37,29 @@ public:
   static inline auto Make() { return makeUniqueHimem<TOC>(); }
 
   #pragma pack(push, 1)
+  struct PackedPageId {
+    int16_t itemrefIndex;
+    int16_t dummy;
+    int32_t offset;
+
+    PackedPageId() : itemrefIndex(0), dummy(0), offset(0) {}
+    PackedPageId(int16_t idx, int32_t off) : itemrefIndex(idx), dummy(0), offset(off) {}
+
+    auto operator=(const PageId &pageIdValue) -> PackedPageId & {
+      itemrefIndex = pageIdValue.itemrefIndex;
+      dummy        = 0;
+      offset       = pageIdValue.offset;
+      return *this;
+    }
+
+    [[nodiscard]] operator PageId() const { return PageId(itemrefIndex, offset); }
+  };
+
   struct EntryRecord {
     char *label;
-    PageId pageId;
+    PackedPageId pageId;
     uint8_t level;
-    EntryRecord() {
-      label = nullptr;
-      level = 0;
-    }
+    EntryRecord() : label(nullptr), pageId(0, -1), level(0) {}
   };
 
   struct VersionRecord {

@@ -5,7 +5,7 @@
 #pragma once
 #include "global.hpp"
 
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 #include "models/font.hpp"
 
 #include <ft2build.h>

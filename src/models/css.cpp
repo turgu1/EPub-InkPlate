@@ -5,12 +5,6 @@
 #include "models/css.hpp"
 #include "models/css_parser.hpp"
 
-MemoryPool<CSS::Value> CSS::valuePool;
-MemoryPool<CSS::Property> CSS::propertyPool;
-MemoryPool<CSS::Properties> CSS::propertiesPool;
-MemoryPool<CSS::SelectorNode> CSS::selectorNodePool;
-MemoryPool<CSS::Selector> CSS::selectorPool;
-
 // clang-format off
 CSS::PropertyMap CSS::propertyMap = {
   {"not-used",       CSS::PropertyId::NOT_USED},
@@ -58,8 +52,7 @@ CSS::CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int3
   ghost      = false;
   priority   = prio;
 
-  CSSParser *parser = new CSSParser(*this, buffer, size);
-  delete parser;
+  CSSParser parser(*this, buffer, size);
 }
 
 CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio) {
@@ -68,26 +61,17 @@ CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint
   ghost      = false;
   priority   = prio;
 
-  CSSParser *parser = new CSSParser(*this, tag, buffer, size);
-  delete parser;
+  CSSParser parser(*this, tag, buffer, size);
 }
 
 CSS::~CSS() {
   if (ghost) {
     rulesMap.clear();
   } else {
-    for (auto *props : suites) {
-      for (auto *prop : *props) {
-        propertyPool.deleteElement(prop);
-      }
-      propertiesPool.deleteElement(props);
-    }
-    suites.clear();
-
-    for (auto &rule : rulesMap) {
-      selectorPool.deleteElement(rule.first);
-    }
     rulesMap.clear();
+    selectorSuites.clear();
+    selectorSingles.clear();
+    propertySuites.clear();
   }
 }
 
@@ -96,7 +80,7 @@ auto CSS::matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool 
     for (auto &selClass : simpleSel.classList) {
       bool found = false;
       for (auto &nodeClass : node.classList) {
-        if (selClass.compare(nodeClass) == 0) {
+        if (selClass.compare(nodeClass.c_str()) == 0) {
           found = true;
           break;
         }
@@ -107,7 +91,7 @@ auto CSS::matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool 
   if ((simpleSel.tag != DOM::Tag::NONE) && (simpleSel.tag != DOM::Tag::ANY) &&
       (simpleSel.tag != node.tag))
     return false;
-  if ((simpleSel.idCount > 0) && (simpleSel.id.compare(node.id) != 0)) return false;
+  if ((simpleSel.idCount > 0) && (simpleSel.id.compare(node.id.c_str()) != 0)) return false;
   if ((simpleSel.qualifier == Qualifier::FIRST_CHILD) && !node.firstChild) return false;
   return true;
 }
@@ -117,29 +101,29 @@ auto CSS::matchSelector(DOM::Node *node, Selector &sel) -> bool {
   DOM::Node *theNode = node;
   // The selectorNodeList is already in a reverse order, so we process selectors from right to
   // left
-  for (auto *selNode : sel.selectorNodeList) {
+  for (auto &selNode : sel.selectorNodeList) {
     switch (op) {
     case SelOp::NONE:
-      if (!matchSimpleSelector(*theNode, *selNode)) return false;
+      if (!matchSimpleSelector(*theNode, selNode)) return false;
       break;
     case SelOp::ADJACENT:
       theNode = theNode->predecessor;
-      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, *selNode)) return false;
+      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, selNode)) return false;
       break;
     case SelOp::CHILD:
       theNode = theNode->father;
-      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, *selNode)) return false;
+      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, selNode)) return false;
       break;
     case SelOp::DESCENDANT:
       theNode = theNode->father;
       while (theNode != nullptr) {
-        if (matchSimpleSelector(*theNode, *selNode)) break;
+        if (matchSimpleSelector(*theNode, selNode)) break;
         theNode = theNode->father;
       }
       if (theNode == nullptr) return false;
       break;
     }
-    op = selNode->op;
+    op = selNode.op;
   }
   return true;
 }
@@ -158,8 +142,8 @@ auto CSS::show(RulesMap &theRulesMap) -> void {
     for (auto &rule : theRulesMap) {
       rule.first->show();
       std::cout << " {" << std::endl;
-      for (auto *prop : *rule.second) {
-        prop->show();
+      for (auto &prop : *rule.second) {
+        prop.show();
       }
       std::cout << "}" << std::endl;
     }

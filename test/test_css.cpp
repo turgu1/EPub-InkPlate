@@ -67,15 +67,15 @@ static auto firstValue(const CSS::RulesMap &rules, CSS::PropertyId pid) -> const
   if (!vals) return nullptr;
 
   auto it = vals->begin();
-  return (it != vals->end()) ? *it : nullptr;
+  return (it != vals->end()) ? &(*it) : nullptr;
 }
 
 // Count how many rules in the map have a node whose tag equals `tag`.
 static auto countRulesForTag(const CSS::RulesMap &rules, DOM::Tag tag) -> int {
   int count = 0;
   for (const auto &[sel, props] : rules) {
-    for (const auto *node : sel->selectorNodeList) {
-      if (node->tag == tag) {
+    for (const auto &node : sel->selectorNodeList) {
+      if (node.tag == tag) {
         ++count;
         break;
       }
@@ -88,9 +88,9 @@ static auto countRulesForTag(const CSS::RulesMap &rules, DOM::Tag tag) -> int {
 static auto countRulesForClass(const CSS::RulesMap &rules, const std::string &cls) -> int {
   int count = 0;
   for (const auto &[sel, props] : rules) {
-    for (const auto *node : sel->selectorNodeList) {
-      for (const auto &c : node->classList) {
-        if (c == cls) {
+    for (const auto &node : sel->selectorNodeList) {
+      for (const auto &c : node.classList) {
+        if (c == cls.c_str()) {
           ++count;
           goto next_rule;
         }
@@ -105,8 +105,8 @@ static auto countRulesForClass(const CSS::RulesMap &rules, const std::string &cl
 static auto countRulesForId(const CSS::RulesMap &rules, const std::string &id) -> int {
   int count = 0;
   for (const auto &[sel, props] : rules) {
-    for (const auto *node : sel->selectorNodeList) {
-      if (node->idCount > 0 && node->id == id) {
+    for (const auto &node : sel->selectorNodeList) {
+      if (node.idCount > 0 && node.id == id.c_str()) {
         ++count;
         break;
       }
@@ -120,12 +120,12 @@ static auto countRulesForId(const CSS::RulesMap &rules, const std::string &id) -
 static auto hasUniversalRule(const CSS::RulesMap &rules) -> bool {
   for (const auto &[sel, props] : rules) {
     bool allUniversal = true;
-    for (const auto *node : sel->selectorNodeList) {
-      if (node->tag != DOM::Tag::ANY && node->tag != DOM::Tag::NONE) {
+    for (const auto &node : sel->selectorNodeList) {
+      if (node.tag != DOM::Tag::ANY && node.tag != DOM::Tag::NONE) {
         allUniversal = false;
         break;
       }
-      if (node->classCount > 0 || node->idCount > 0) {
+      if (node.classCount > 0 || node.idCount > 0) {
         allUniversal = false;
         break;
       }
@@ -184,11 +184,11 @@ static auto testParagraphProperties(const CSS::RulesMap &rules) -> void {
     auto it = sel->selectorNodeList.begin();
     if (it == sel->selectorNodeList.end()) continue;
     if (std::next(it) != sel->selectorNodeList.end()) continue; // multi-node
-    const auto *node = *it;
-    if (node->tag != DOM::Tag::P) continue;
-    if (node->op != CSS::SelOp::NONE) continue;
-    if (node->classCount != 0 || node->idCount != 0) continue;
-    if (node->qualifier != CSS::Qualifier::NONE) continue;
+    const auto &node = *it;
+    if (node.tag != DOM::Tag::P) continue;
+    if (node.op != CSS::SelOp::NONE) continue;
+    if (node.classCount != 0 || node.idCount != 0) continue;
+    if (node.qualifier != CSS::Qualifier::NONE) continue;
     matched.insert({const_cast<CSS::Selector *>(sel), props});
   }
 
@@ -298,8 +298,8 @@ static auto testClassProperties(const CSS::RulesMap &rules) -> void {
     bool singleHighlight = false;
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->classCount == 1) {
-      for (const auto &c : (*it)->classList) {
+    if (it->classCount == 1) {
+      for (const auto &c : it->classList) {
         if (c == "highlight") {
           singleHighlight = true;
           break;
@@ -339,7 +339,7 @@ static auto testClassProperties(const CSS::RulesMap &rules) -> void {
   for (const auto &[sel, props] : rules) {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->idCount != 1 || (*it)->id != "main" || (*it)->tag != DOM::Tag::NONE) continue;
+    if (it->idCount != 1 || it->id != "main" || it->tag != DOM::Tag::NONE) continue;
 
     CSS::RulesMap single;
     single.insert({const_cast<CSS::Selector *>(sel), props});
@@ -379,18 +379,18 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "hidden") {
         match = true;
         break;
       }
     }
     if (!match) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::DISPLAY) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->choice.display == CSS::Display::NONE, ".hidden: display != NONE");
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::DISPLAY) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->choice.display == CSS::Display::NONE, ".hidden: display != NONE");
         }
       }
     }
@@ -402,18 +402,18 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "no-transform") {
         match = true;
         break;
       }
     }
     if (!match) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::TEXT_TRANSFORM) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->choice.textTransform == CSS::TextTransform::NONE,
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::TEXT_TRANSFORM) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->choice.textTransform == CSS::TextTransform::NONE,
                       ".no-transform: text-transform != NONE");
         }
       }
@@ -426,18 +426,18 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "lower") {
         match = true;
         break;
       }
     }
     if (!match) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::TEXT_TRANSFORM) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->choice.textTransform == CSS::TextTransform::LOWERCASE,
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::TEXT_TRANSFORM) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->choice.textTransform == CSS::TextTransform::LOWERCASE,
                       ".lower: text-transform != LOWERCASE");
         }
       }
@@ -450,18 +450,18 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "left-align") {
         match = true;
         break;
       }
     }
     if (!match) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::TEXT_ALIGN) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->choice.align == CSS::Align::LEFT, ".left-align: text-align != LEFT");
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::TEXT_ALIGN) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->choice.align == CSS::Align::LEFT, ".left-align: text-align != LEFT");
         }
       }
     }
@@ -472,12 +472,12 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
   for (const auto &[sel, props] : rules) {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->tag != DOM::Tag::SUP) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::VERTICAL_ALIGN) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->choice.verticalAlign == CSS::VerticalAlign::SUPER,
+    if (it->tag != DOM::Tag::SUP) continue;
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::VERTICAL_ALIGN) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->choice.verticalAlign == CSS::VerticalAlign::SUPER,
                       "sup: vertical-align != SUPER");
         }
       }
@@ -489,12 +489,12 @@ static auto testEnumValues(const CSS::RulesMap &rules) -> void {
   for (const auto &[sel, props] : rules) {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->tag != DOM::Tag::EM) continue;
-    for (const auto *p : *props) {
-      if (p->id == CSS::PropertyId::LINE_HEIGHT) {
-        auto vi = p->values.begin();
-        if (vi != p->values.end()) {
-          SUITE_CHECK((*vi)->valueType == CSS::ValueType::INHERIT, "em: line-height not INHERIT");
+    if (it->tag != DOM::Tag::EM) continue;
+    for (const auto &p : *props) {
+      if (p.id == CSS::PropertyId::LINE_HEIGHT) {
+        auto vi = p.values.begin();
+        if (vi != p.values.end()) {
+          SUITE_CHECK(vi->valueType == CSS::ValueType::INHERIT, "em: line-height not INHERIT");
         }
       }
     }
@@ -511,7 +511,7 @@ static auto testUnits(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "units-test") {
         match = true;
         break;
@@ -519,29 +519,29 @@ static auto testUnits(const CSS::RulesMap &rules) -> void {
     }
     if (!match) continue;
 
-    for (const auto *p : *props) {
-      auto vi = p->values.begin();
-      if (vi == p->values.end()) continue;
-      switch (p->id) {
+    for (const auto &p : *props) {
+      auto vi = p.values.begin();
+      if (vi == p.values.end()) continue;
+      switch (p.id) {
       case CSS::PropertyId::WIDTH:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::CM, ".units-test: width not CM");
-        SUITE_CHECK((*vi)->num == 2.0f, ".units-test: width != 2");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::CM, ".units-test: width not CM");
+        SUITE_CHECK(vi->num == 2.0f, ".units-test: width != 2");
         break;
       case CSS::PropertyId::HEIGHT:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::MM, ".units-test: height not MM");
-        SUITE_CHECK((*vi)->num == 15.0f, ".units-test: height != 15");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::MM, ".units-test: height not MM");
+        SUITE_CHECK(vi->num == 15.0f, ".units-test: height != 15");
         break;
       case CSS::PropertyId::MARGIN_LEFT:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::IN, ".units-test: margin-left not IN");
-        SUITE_CHECK(std::abs((*vi)->num - 0.5f) < 0.001f, ".units-test: margin-left != 0.5");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::IN, ".units-test: margin-left not IN");
+        SUITE_CHECK(std::abs(vi->num - 0.5f) < 0.001f, ".units-test: margin-left != 0.5");
         break;
       case CSS::PropertyId::FONT_SIZE:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::PT, ".units-test: font-size not PT");
-        SUITE_CHECK((*vi)->num == 14.0f, ".units-test: font-size != 14");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::PT, ".units-test: font-size not PT");
+        SUITE_CHECK(vi->num == 14.0f, ".units-test: font-size != 14");
         break;
       case CSS::PropertyId::TEXT_INDENT:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::PC, ".units-test: text-indent not PC");
-        SUITE_CHECK((*vi)->num == 1.0f, ".units-test: text-indent != 1");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::PC, ".units-test: text-indent not PC");
+        SUITE_CHECK(vi->num == 1.0f, ".units-test: text-indent != 1");
         break;
       default:
         break;
@@ -558,27 +558,26 @@ static auto testFontFaceProperties(const CSS::RulesMap &rules) -> void {
   for (const auto &[sel, props] : rules) {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->tag != DOM::Tag::FONT_FACE) continue;
+    if (it->tag != DOM::Tag::FONT_FACE) continue;
 
-    for (const auto *p : *props) {
-      auto vi = p->values.begin();
-      if (vi == p->values.end()) continue;
-      switch (p->id) {
+    for (const auto &p : *props) {
+      auto vi = p.values.begin();
+      if (vi == p.values.end()) continue;
+      switch (p.id) {
       case CSS::PropertyId::FONT_FAMILY:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::STR, "@font-face: font-family not STR");
-        SUITE_CHECK((*vi)->str == "TestFont", "@font-face: font-family != TestFont");
+        SUITE_CHECK(vi->valueType == CSS::ValueType::STR, "@font-face: font-family not STR");
+        SUITE_CHECK(vi->str == "TestFont", "@font-face: font-family != TestFont");
         break;
       case CSS::PropertyId::SRC:
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::URL, "@font-face: src not URL");
-        SUITE_CHECK((*vi)->str.find("test.ttf") != std::string::npos,
+        SUITE_CHECK(vi->valueType == CSS::ValueType::URL, "@font-face: src not URL");
+        SUITE_CHECK(vi->str.find("test.ttf") != std::string::npos,
                     "@font-face: src url doesn't contain test.ttf");
         break;
       case CSS::PropertyId::FONT_STYLE:
-        SUITE_CHECK((*vi)->choice.faceStyle == FaceStyle::NORMAL,
-                    "@font-face: font-style != NORMAL");
+        SUITE_CHECK(vi->choice.faceStyle == FaceStyle::NORMAL, "@font-face: font-style != NORMAL");
         break;
       case CSS::PropertyId::FONT_WEIGHT:
-        SUITE_CHECK((*vi)->choice.faceStyle == FaceStyle::BOLD, "@font-face: font-weight != BOLD");
+        SUITE_CHECK(vi->choice.faceStyle == FaceStyle::BOLD, "@font-face: font-weight != BOLD");
         break;
       default:
         break;
@@ -603,16 +602,16 @@ static auto testSpecificity(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
     // single-node <p>
-    if ((*it)->tag == DOM::Tag::P && (*it)->classCount == 0 && (*it)->idCount == 0 &&
+    if (it->tag == DOM::Tag::P && it->classCount == 0 && it->idCount == 0 &&
         std::next(it) == sel->selectorNodeList.end())
       specP = sel->specificity.value;
     // #main (no tag)
-    if ((*it)->idCount == 1 && (*it)->id == "main" && (*it)->tag == DOM::Tag::NONE &&
+    if (it->idCount == 1 && it->id == "main" && it->tag == DOM::Tag::NONE &&
         std::next(it) == sel->selectorNodeList.end())
       specId = sel->specificity.value;
     // .highlight (no tag)
-    if ((*it)->classCount == 1 && (*it)->idCount == 0 && (*it)->tag == DOM::Tag::NONE) {
-      for (const auto &c : (*it)->classList) {
+    if (it->classCount == 1 && it->idCount == 0 && it->tag == DOM::Tag::NONE) {
+      for (const auto &c : it->classList) {
         if (c == "highlight" && std::next(it) == sel->selectorNodeList.end())
           specCls = sel->specificity.value;
       }
@@ -641,17 +640,16 @@ static auto testCombinators(const CSS::RulesMap &rules) -> void {
     auto nit = std::next(it);
     if (nit == sel->selectorNodeList.end()) {
       // single-node: check :first-child qualifier
-      if ((*it)->tag == DOM::Tag::P && (*it)->qualifier == CSS::Qualifier::FIRST_CHILD)
+      if (it->tag == DOM::Tag::P && it->qualifier == CSS::Qualifier::FIRST_CHILD)
         foundFirstChild = true;
       continue;
     }
     // two-node selectors — remember the list is stored reversed (most-specific node first)
     // it = right-hand node (e.g. <p>), nit = left-hand node (e.g. <body>/<div>/<h1>)
-    if ((*it)->tag == DOM::Tag::P) {
-      if ((*it)->op == CSS::SelOp::DESCENDANT && (*nit)->tag == DOM::Tag::BODY)
-        foundDescendant = true;
-      if ((*it)->op == CSS::SelOp::CHILD && (*nit)->tag == DOM::Tag::DIV) foundChild = true;
-      if ((*it)->op == CSS::SelOp::ADJACENT && (*nit)->tag == DOM::Tag::H1) foundAdjacent = true;
+    if (it->tag == DOM::Tag::P) {
+      if (it->op == CSS::SelOp::DESCENDANT && nit->tag == DOM::Tag::BODY) foundDescendant = true;
+      if (it->op == CSS::SelOp::CHILD && nit->tag == DOM::Tag::DIV) foundChild = true;
+      if (it->op == CSS::SelOp::ADJACENT && nit->tag == DOM::Tag::H1) foundAdjacent = true;
     }
   }
 
@@ -680,23 +678,23 @@ static auto testMarginShorthand(const CSS::RulesMap &rules) -> void {
   for (const auto &[sel, props] : rules) {
     if (sel->selectorNodeList.empty()) continue;
     auto it = sel->selectorNodeList.begin();
-    if ((*it)->tag != DOM::Tag::P || (*it)->classCount != 0 || (*it)->idCount != 0) continue;
+    if (it->tag != DOM::Tag::P || it->classCount != 0 || it->idCount != 0) continue;
     if (std::next(it) != sel->selectorNodeList.end()) continue;
 
-    for (const auto *p : *props) {
-      if (p->id != CSS::PropertyId::MARGIN) continue;
+    for (const auto &p : *props) {
+      if (p.id != CSS::PropertyId::MARGIN) continue;
       int cnt = 0;
-      for (auto vi = p->values.begin(); vi != p->values.end(); ++vi) ++cnt;
+      for (auto vi = p.values.begin(); vi != p.values.end(); ++vi) ++cnt;
       SUITE_CHECK(cnt >= 2, "p margin shorthand: fewer than 2 values");
-      auto vi = p->values.begin();
-      if (vi != p->values.end()) {
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::PX, "p margin[0] not PX");
-        SUITE_CHECK((*vi)->num == 10.0f, "p margin[0] != 10");
+      auto vi = p.values.begin();
+      if (vi != p.values.end()) {
+        SUITE_CHECK(vi->valueType == CSS::ValueType::PX, "p margin[0] not PX");
+        SUITE_CHECK(vi->num == 10.0f, "p margin[0] != 10");
         ++vi;
       }
-      if (vi != p->values.end()) {
-        SUITE_CHECK((*vi)->valueType == CSS::ValueType::PX, "p margin[1] not PX");
-        SUITE_CHECK((*vi)->num == 20.0f, "p margin[1] != 20");
+      if (vi != p.values.end()) {
+        SUITE_CHECK(vi->valueType == CSS::ValueType::PX, "p margin[1] not PX");
+        SUITE_CHECK(vi->num == 20.0f, "p margin[1] != 20");
       }
     }
     break;
@@ -711,7 +709,7 @@ static auto testImportant(const CSS::RulesMap &rules) -> void {
     if (sel->selectorNodeList.empty()) continue;
     auto it    = sel->selectorNodeList.begin();
     bool match = false;
-    for (const auto &c : (*it)->classList) {
+    for (const auto &c : it->classList) {
       if (c == "important-test") {
         match = true;
         break;

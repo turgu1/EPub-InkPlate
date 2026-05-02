@@ -5,7 +5,7 @@
 #include <iterator>
 #include <variant>
 
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 #include "picture.hpp"
 
 enum class DisplayListCommand {
@@ -48,7 +48,7 @@ public:
   }
 };
 
-using DisplayListPool = MemoryPool<DisplayListEntry>;
+using DisplayListPool = HimemPool<DisplayListEntry>;
 using DisplayListPtr  = HimemUniquePtr<class DisplayList>;
 
 class DisplayList {
@@ -249,6 +249,6 @@ public:
     }
   #endif
 
- [[nodiscard]] inline auto empty() const -> bool { return head == nullptr; }
- [[nodiscard]] inline auto last() const -> DisplayListEntry * { return tail; }
+  [[nodiscard]] inline auto empty() const -> bool { return head == nullptr; }
+  [[nodiscard]] inline auto last() const -> DisplayListEntry * { return tail; }
 };

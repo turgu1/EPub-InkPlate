@@ -21,10 +21,10 @@
 // ---------------------------------------------------------------------------
 
 #include <cstddef>
+#include <initializer_list>
 #include <iterator>
 #include <memory>
 #include <utility>
-#include <initializer_list>
 
 template <typename T, typename Alloc = std::allocator<T>>
 class SimpleList {
@@ -33,12 +33,11 @@ public:
   // Node
   // -------------------------------------------------------------------------
   struct Node {
-    T     value;
+    T value;
     Node *next{nullptr};
 
     template <typename... Args>
-    explicit Node(Args&&... args)
-      : value(std::forward<Args>(args)...), next(nullptr) {}
+    explicit Node(Args &&...args) : value(std::forward<Args>(args)...), next(nullptr) {}
   };
 
   // -------------------------------------------------------------------------
@@ -51,7 +50,7 @@ private:
   [[no_unique_address]] NodeAlloc alloc_;
 
   template <typename... Args>
-  Node *newNode(Args&&... args) {
+  Node *newNode(Args &&...args) {
     Node *p = NodeTraits::allocate(alloc_, 1);
     try {
       NodeTraits::construct(alloc_, p, std::forward<Args>(args)...);
@@ -74,6 +73,7 @@ public:
   class Iterator {
     friend class SimpleList;
     friend class ConstIterator;
+
   public:
     using iterator_category = std::forward_iterator_tag;
     using value_type        = T;
@@ -83,11 +83,18 @@ public:
 
     explicit Iterator(Node *n = nullptr) : current_(n) {}
 
-    reference  operator*()  const { return  current_->value; }
-    pointer    operator->() const { return &current_->value; }
+    reference operator*() const { return current_->value; }
+    pointer operator->() const { return &current_->value; }
 
-    Iterator& operator++()    { current_ = current_->next; return *this; }
-    Iterator  operator++(int) { Iterator tmp(*this); ++(*this); return tmp; }
+    Iterator &operator++() {
+      current_ = current_->next;
+      return *this;
+    }
+    Iterator operator++(int) {
+      Iterator tmp(*this);
+      ++(*this);
+      return tmp;
+    }
 
     bool operator==(const Iterator &o) const { return current_ == o.current_; }
     bool operator!=(const Iterator &o) const { return current_ != o.current_; }
@@ -108,13 +115,20 @@ public:
     explicit ConstIterator(const Node *n = nullptr) : current_(n) {}
     // Conversion from mutable iterator — accesses Iterator::current_ via friend.
     /* implicit */ ConstIterator(const Iterator &it) noexcept // NOLINT
-      : current_(it.current_) {}
+        : current_(it.current_) {}
 
-    reference  operator*()  const { return  current_->value; }
-    pointer    operator->() const { return &current_->value; }
+    reference operator*() const { return current_->value; }
+    pointer operator->() const { return &current_->value; }
 
-    ConstIterator& operator++()    { current_ = current_->next; return *this; }
-    ConstIterator  operator++(int) { ConstIterator tmp(*this); ++(*this); return tmp; }
+    ConstIterator &operator++() {
+      current_ = current_->next;
+      return *this;
+    }
+    ConstIterator operator++(int) {
+      ConstIterator tmp(*this);
+      ++(*this);
+      return tmp;
+    }
 
     bool operator==(const ConstIterator &o) const { return current_ == o.current_; }
     bool operator!=(const ConstIterator &o) const { return current_ != o.current_; }
@@ -130,21 +144,20 @@ public:
 
   explicit SimpleList(const Alloc &a) : alloc_(a) {}
 
-  explicit SimpleList(std::initializer_list<T> init, const Alloc &a = Alloc{})
-    : alloc_(a) {
+  explicit SimpleList(std::initializer_list<T> init, const Alloc &a = Alloc{}) : alloc_(a) {
     for (const T &v : init) pushBack(v);
   }
 
   // Copy constructor — propagate allocator according to POCCA rule.
   SimpleList(const SimpleList &other)
-    : alloc_(NodeTraits::select_on_container_copy_construction(other.alloc_)) {
+      : alloc_(NodeTraits::select_on_container_copy_construction(other.alloc_)) {
     for (const T &v : other) pushBack(v);
   }
 
   // Move constructor — steal resources; move allocator per POCMA.
   SimpleList(SimpleList &&other) noexcept
-    : alloc_(std::move(other.alloc_))
-    , head_(other.head_), tail_(other.tail_), count_(other.count_) {
+      : alloc_(std::move(other.alloc_)), head_(other.head_), tail_(other.tail_),
+        count_(other.count_) {
     other.head_  = nullptr;
     other.tail_  = nullptr;
     other.count_ = 0;
@@ -155,7 +168,7 @@ public:
   // -------------------------------------------------------------------------
   // Assignment
   // -------------------------------------------------------------------------
-  SimpleList& operator=(const SimpleList &other) {
+  SimpleList &operator=(const SimpleList &other) {
     if (this != &other) {
       clear();
       if constexpr (NodeTraits::propagate_on_container_copy_assignment::value)
@@ -165,14 +178,14 @@ public:
     return *this;
   }
 
-  SimpleList& operator=(SimpleList &&other) noexcept {
+  SimpleList &operator=(SimpleList &&other) noexcept {
     if (this != &other) {
       clear();
       if constexpr (NodeTraits::propagate_on_container_move_assignment::value)
         alloc_ = std::move(other.alloc_);
-      head_  = other.head_;
-      tail_  = other.tail_;
-      count_ = other.count_;
+      head_        = other.head_;
+      tail_        = other.tail_;
+      count_       = other.count_;
       other.head_  = nullptr;
       other.tail_  = nullptr;
       other.count_ = 0;
@@ -183,18 +196,16 @@ public:
   // -------------------------------------------------------------------------
   // Allocator access
   // -------------------------------------------------------------------------
-  Alloc getAllocator() const noexcept {
-    return static_cast<Alloc>(alloc_);
-  }
+  Alloc getAllocator() const noexcept { return static_cast<Alloc>(alloc_); }
 
   // -------------------------------------------------------------------------
   // Element access
   // -------------------------------------------------------------------------
-  T&       front()       { return head_->value; }
-  const T& front() const { return head_->value; }
+  T &front() { return head_->value; }
+  const T &front() const { return head_->value; }
 
-  T&       back()        { return tail_->value; }
-  const T& back()  const { return tail_->value; }
+  T &back() { return tail_->value; }
+  const T &back() const { return tail_->value; }
 
   /// Returns the tail Node pointer (mirrors DisplayList::last()).
   Node *last() const { return tail_; }
@@ -221,7 +232,7 @@ public:
   }
 
   template <typename... Args>
-  T& emplaceFront(Args&&... args) {
+  T &emplaceFront(Args &&...args) {
     Node *n = newNode(std::forward<Args>(args)...);
     n->next = head_;
     head_   = n;
@@ -254,7 +265,7 @@ public:
   }
 
   template <typename... Args>
-  T& emplaceBack(Args&&... args) {
+  T &emplaceBack(Args &&...args) {
     Node *n = newNode(std::forward<Args>(args)...);
     if (tail_ == nullptr) {
       head_ = tail_ = n;
@@ -269,7 +280,7 @@ public:
   /// Remove the front element — O(1). UB if empty.
   void popFront() {
     Node *old = head_;
-    head_ = head_->next;
+    head_     = head_->next;
     if (head_ == nullptr) tail_ = nullptr;
     freeNode(old);
     --count_;
@@ -281,7 +292,7 @@ public:
     if (head_ == tail_) {
       freeNode(head_);
       head_ = tail_ = nullptr;
-      count_ = 0;
+      count_        = 0;
       return;
     }
     Node *prev = head_;
@@ -297,14 +308,36 @@ public:
   /// Precondition: both lists must share the same allocator.
   void merge(SimpleList &other) {
     if (other.empty()) return;
-    if (empty()) {
-      head_  = other.head_;
-      tail_  = other.tail_;
-      count_ = other.count_;
+    if (alloc_ == other.alloc_) {
+      // Same allocator instance (e.g. shared pool, or stateless PsramAllocator):
+      // O(1) pointer splice — nodes are freely interchangeable between the two lists.
+      if (empty()) {
+        head_  = other.head_;
+        tail_  = other.tail_;
+        count_ = other.count_;
+      } else {
+        tail_->next = other.head_;
+        tail_       = other.tail_;
+        count_ += other.count_;
+      }
     } else {
-      tail_->next = other.head_;
-      tail_       = other.tail_;
-      count_     += other.count_;
+      // Different allocator instances (e.g. per-list HimemPool):
+      // Allocate a new node in *this* pool for each node in other, then free
+      // the original from other's pool.  O(n) but correct.
+      Node *cur = other.head_;
+      while (cur != nullptr) {
+        Node *next = cur->next;
+        Node *newN = newNode(std::move(cur->value));
+        if (tail_ == nullptr) {
+          head_ = tail_ = newN;
+        } else {
+          tail_->next = newN;
+          tail_       = newN;
+        }
+        ++count_;
+        other.freeNode(cur);
+        cur = next;
+      }
     }
     other.head_  = nullptr;
     other.tail_  = nullptr;
@@ -327,21 +360,21 @@ public:
   // -------------------------------------------------------------------------
   // Capacity
   // -------------------------------------------------------------------------
-  bool   empty() const { return head_ == nullptr; }
-  size_t size()  const { return count_; }
+  bool empty() const { return head_ == nullptr; }
+  size_t size() const { return count_; }
 
   // -------------------------------------------------------------------------
   // Iterators
   // -------------------------------------------------------------------------
-  Iterator      begin()        { return Iterator(head_);        }
-  Iterator      end()          { return Iterator(nullptr);      }
-  ConstIterator begin()  const { return ConstIterator(head_);   }
-  ConstIterator end()    const { return ConstIterator(nullptr);  }
-  ConstIterator cbegin() const { return ConstIterator(head_);   }
-  ConstIterator cend()   const { return ConstIterator(nullptr);  }
+  Iterator begin() { return Iterator(head_); }
+  Iterator end() { return Iterator(nullptr); }
+  ConstIterator begin() const { return ConstIterator(head_); }
+  ConstIterator end() const { return ConstIterator(nullptr); }
+  ConstIterator cbegin() const { return ConstIterator(head_); }
+  ConstIterator cend() const { return ConstIterator(nullptr); }
 
 private:
-  Node   *head_{nullptr};
-  Node   *tail_{nullptr};
-  size_t  count_{0};
+  Node *head_{nullptr};
+  Node *tail_{nullptr};
+  size_t count_{0};
 };

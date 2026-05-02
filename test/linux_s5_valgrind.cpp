@@ -221,9 +221,12 @@ auto main(int argc, char **argv) -> int {
   // ------------------------------------------------------------------
   // Clean up — this is where leaks must NOT appear
   // ------------------------------------------------------------------
+  // Stop the control/retriever tasks FIRST so that no nav thread can race
+  // into getNextPageId() → stopControlTask() → receive() and deadlock when
+  // stopNavThreads() tries to join() those same threads.
+  pageLocs.stopControlTask();
   stopNavThreads(navCtx);
 
-  pageLocs.stopControlTask();
   pageLocs.clear();
   epub->closeFile();
   epub.reset(); // explicitly destroy before appFonts cleanup

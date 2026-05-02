@@ -69,7 +69,7 @@ static constexpr const char *NO_METADATA  = "test/fixtures/no_metadata.epub";
 static auto makeEPub(const char *path) -> EPubPtr {
   auto epub = EPub::Make();
   if (!epub) return nullptr;
-  epub->open(std::string(path));
+  epub->open(path);
   return epub;
 }
 
@@ -82,10 +82,7 @@ static auto testOpenClose() -> bool {
   auto epub = EPub::Make();
   EPUB_CHECK(epub != nullptr, "EPub::Make() returns non-null");
 
-  bool opened = epub->open(std::string(MINIMAL));
-  EPUB_CHECK(opened, "open(minimal.epub) returns true");
-
-  // A successful open makes getCurrentFilename() non-empty.
+  bool opened = epub->open(MINIMAL);
   EPUB_CHECK(!epub->filenameIsEmpty(), "filename is non-empty after open");
 
   bool closed = epub->closeFile();
@@ -104,7 +101,7 @@ static auto testMetadata() -> bool {
   EPUB_LOG("--- metadata ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   const char *title  = epub->getTitle();
   const char *author = epub->getAuthor();
@@ -131,7 +128,7 @@ static auto testUniqueId() -> bool {
   // called.  The binUuid array must remain all-zeros; encryptionIsPresent() must
   // be false.
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   EPUB_CHECK(!epub->encryptionIsPresent(), "encryptionIsPresent() == false for plain epub");
 
@@ -156,7 +153,7 @@ static auto testItemCount() -> bool {
   EPUB_LOG("--- item count ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   int16_t count = epub->getItemCount();
   EPUB_CHECK(count == 2, "getItemCount() == 2 for minimal.epub (ch1 + ch2)");
@@ -171,10 +168,10 @@ static auto testOpfBasePath() -> bool {
   EPUB_LOG("--- OPF base path ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   // OPF is at OEBPS/content.opf → basePath should be "OEBPS/"
-  const std::string &base = epub->getOpfBasePath();
+  const HimemString &base = epub->getOpfBasePath();
   EPUB_CHECK(base == "OEBPS/", "opfBasePath == \"OEBPS/\"");
 
   return sFail == 0;
@@ -187,7 +184,7 @@ static auto testGetItemAtIndex() -> bool {
   EPUB_LOG("--- getItemAtIndex ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   bool ok0 = epub->getItemAtIndex(0);
   EPUB_CHECK(ok0, "getItemAtIndex(0) succeeds");
@@ -220,7 +217,7 @@ static auto testCoverFilename() -> bool {
   EPUB_LOG("--- cover filename ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
 
   const char *cover = epub->getCoverFilename();
   EPUB_CHECK(cover != nullptr, "getCoverFilename() not null");
@@ -238,7 +235,7 @@ static auto testBadMimetype() -> bool {
   EPUB_LOG("--- bad mimetype ---");
 
   auto epub   = EPub::Make();
-  bool opened = epub->open(std::string(BAD_MIME));
+  bool opened = epub->open(BAD_MIME);
   EPUB_CHECK(!opened, "open(bad_mimetype.epub) returns false");
   EPUB_CHECK(epub->filenameIsEmpty(), "filename empty after failed open");
 
@@ -252,7 +249,7 @@ static auto testNoContainer() -> bool {
   EPUB_LOG("--- no META-INF/container.xml ---");
 
   auto epub   = EPub::Make();
-  bool opened = epub->open(std::string(NO_CONTAINER));
+  bool opened = epub->open(NO_CONTAINER);
   EPUB_CHECK(!opened, "open(no_container.epub) returns false");
 
   return sFail == 0;
@@ -265,7 +262,7 @@ static auto testNoMetadata() -> bool {
   EPUB_LOG("--- no dc:title / dc:creator metadata ---");
 
   auto epub   = EPub::Make();
-  bool opened = epub->open(std::string(NO_METADATA));
+  bool opened = epub->open(NO_METADATA);
   EPUB_CHECK(opened, "open(no_metadata.epub) returns true (structural epub is valid)");
 
   // getMeta() returns empty string (not nullptr) when the element is absent.
@@ -288,10 +285,10 @@ static auto testReopenSameFile() -> bool {
   EPUB_LOG("--- reopen same file ---");
 
   auto epub  = EPub::Make();
-  bool first = epub->open(std::string(MINIMAL));
+  bool first = epub->open(MINIMAL);
   EPUB_CHECK(first, "first open(minimal.epub) succeeds");
 
-  bool second = epub->open(std::string(MINIMAL));
+  bool second = epub->open(MINIMAL);
   EPUB_CHECK(second, "second open(same path) returns true");
 
   // File should still be readable after the second open call.
@@ -309,14 +306,14 @@ static auto testReopenOtherFile() -> bool {
   EPUB_LOG("--- reopen different file ---");
 
   auto epub = EPub::Make();
-  epub->open(std::string(MINIMAL));
+  epub->open(MINIMAL);
   EPUB_CHECK(!epub->filenameIsEmpty(), "minimal.epub opened");
 
   // Open the no_metadata epub — should implicitly close minimal first.
-  bool ok = epub->open(std::string(NO_METADATA));
+  bool ok = epub->open(NO_METADATA);
   EPUB_CHECK(ok, "open(no_metadata.epub) after minimal succeeds");
 
-  std::string fname = epub->getCurrentFilename();
+  HimemString fname = epub->getCurrentFilename();
   EPUB_CHECK(fname.find("no_metadata") != std::string::npos,
              "getCurrentFilename() points to second epub");
 

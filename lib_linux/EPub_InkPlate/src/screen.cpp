@@ -56,8 +56,8 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
     int16_t error;
     memset(err, 0, 601 * 2);
 
-    for (int j = pos.y, q = 0; j < yMax; j++, q++) {
-      for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); i++, p++, k++) {
+    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
         int32_t v = bitmapData[p] + err[k + 1];
         if (v > 128) {
           error = (v - 255);
@@ -75,8 +75,8 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
       }
     }
   } else {
-    for (int j = pos.y, q = 0; j < yMax; j++, q++) {
-      for (int i = pos.x, p = q * dim.width; i < xMax; i++, p++) {
+    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      for (int i = pos.x, p = q * dim.width; i < xMax; ++i, ++p) {
         setRgb(g, j, i, pictureData.stride, bitmapData[p]);
       }
     }
@@ -95,11 +95,11 @@ auto Screen::drawRectangle(Dim dim, Pos pos,
   if (yMax > height) yMax = height;
   if (xMax > width) xMax = width;
 
-  for (int i = pos.x; i < xMax; i++) {
+  for (int i = pos.x; i < xMax; ++i) {
     setRgb(g, pos.y, i, pictureData.stride, color);
     setRgb(g, yMax - 1, i, pictureData.stride, color);
   }
-  for (int j = pos.y; j < yMax; j++) {
+  for (int j = pos.y; j < yMax; ++j) {
     setRgb(g, j, pos.x, pictureData.stride, color);
     setRgb(g, j, xMax - 1, pictureData.stride, color);
   }
@@ -134,7 +134,7 @@ auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner
       ddFy += 2;
       f += ddFy;
     }
-    x++;
+    ++x;
     ddFx += 2;
     f += ddFx;
 
@@ -174,11 +174,11 @@ auto Screen::drawRoundRectangle(Dim dim, Pos pos,
   if (yMax > height) yMax = height;
   if (xMax > width) xMax = width;
 
-  for (int i = pos.x + 10; i < xMax - 10; i++) {
+  for (int i = pos.x + 10; i < xMax - 10; ++i) {
     setRgb(g, pos.y, i, pictureData.stride, color);
     setRgb(g, yMax - 1, i, pictureData.stride, color);
   }
-  for (int j = pos.y + 10; j < yMax - 10; j++) {
+  for (int j = pos.y + 10; j < yMax - 10; ++j) {
     setRgb(g, j, pos.x, pictureData.stride, color);
     setRgb(g, j, xMax - 1, pictureData.stride, color);
   }
@@ -199,8 +199,8 @@ auto Screen::colorizeRegion(Dim dim, Pos pos, Color color) -> void {
   if (yMax > height) yMax = height;
   if (xMax > width) xMax = width;
 
-  for (int j = pos.y; j < yMax; j++) {
-    for (int i = pos.x; i < xMax; i++) {
+  for (int j = pos.y; j < yMax; ++j) {
+    for (int i = pos.x; i < xMax; ++i) {
       setRgb(g, j, i, pictureData.stride, color);
     }
   }
@@ -217,8 +217,8 @@ auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16
   if (xMax > width) xMax = width;
 
   if (pixelResolution == PixelResolution::ONE_BIT) {
-    for (int j = pos.y, q = 0; j < yMax; j++, q++) {
-      for (int i = pos.x, p = (q * pitch) << 3; i < xMax; i++, p++) {
+    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      for (int i = pos.x, p = (q * pitch) << 3; i < xMax; ++i, ++p) {
         // int v = (255 - bitmapData[p]);
         // if (v != 255) {
         //   v &= 0xE0; // 8 levels of grayscale
@@ -229,8 +229,8 @@ auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16
       }
     }
   } else {
-    for (int j = pos.y, q = 0; j < yMax; j++, q++) {
-      for (int i = pos.x, p = q * pitch; i < xMax; i++, p++) {
+    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      for (int i = pos.x, p = q * pitch; i < xMax; ++i, ++p) {
         // int v = (255 - bitmapData[p]);
         // if (v != 255) {
         //   v &= 0xE0; // 8 levels of grayscale
@@ -257,8 +257,8 @@ auto Screen::test() -> void {
 
   guchar *g = gdk_pixbuf_get_pixels(pb);
 
-  for (int r = 0; r < pictureData.rows; r++)
-    for (int c = 0; c < pictureData.cols; c++)
+  for (int r = 0; r < pictureData.rows; ++r)
+    for (int c = 0; c < pictureData.cols; ++c)
       if ((r + N) / 20 % 2 && (c + N) / 20 % 2) setRgb(g, r, c, pictureData.stride, 0);
 
   N = (N + 1) % 100;
@@ -304,8 +304,8 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
   pixels = new guchar[height * pictureData.stride]();
   memset(pixels, 255, height * pictureData.stride); // clear to white
 
-  for (int r = 0; r < height; r++)
-    for (int c = 0; c < width; c++) setRgb(pixels, r, c, pictureData.stride, 255);
+  for (int r = 0; r < height; ++r)
+    for (int c = 0; c < width; ++c) setRgb(pixels, r, c, pictureData.stride, 255);
 
   GdkPixbuf *pb = gdk_pixbuf_new_from_data(pixels,
                                            GDK_COLORSPACE_RGB, // colorspace

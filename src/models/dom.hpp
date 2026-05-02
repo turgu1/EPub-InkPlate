@@ -14,7 +14,7 @@
 #include <map>
 #include <sstream>
 
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 
 using DOMPtr = HimemUniquePtr<class DOM>;
 class DOM {
@@ -62,11 +62,14 @@ public:
   };
 
 private:
-  MemoryPool<Node> nodePool;
-  DOM() = default;
+  std::forward_list<Node, HimemPool<Node>> nodeList;
+  DOM() {
+    nodeList.emplace_front(nullptr, Tag::BODY);
+    body = &nodeList.front();
+  }
 
 public:
-  ~DOM() = default; // { nodePool.deleteElement(body); }
+  ~DOM() = default;
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
@@ -74,10 +77,11 @@ public:
 
   static inline auto Make() { return makeUniqueHimem<DOM>(); }
 
-  Node *body{nodePool.newElement(nullptr, Tag::BODY)};
+  Node *body{nullptr};
 
   auto addChild(Node *parentNode, Tag theTag) -> Node * {
-    return nodePool.newElement(parentNode, theTag);
+    nodeList.emplace_front(parentNode, theTag);
+    return &nodeList.front();
   }
 
   auto show() -> void {

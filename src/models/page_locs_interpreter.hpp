@@ -12,12 +12,16 @@
   #include <thread>
 #endif
 
+#include <atomic>
+
 using PageLocsInterpreterPtr = HimemUniquePtr<class PageLocsInterpreter>;
 class PageLocsInterpreter : public HTMLInterpreter {
 private:
   PageLocsInterpreter(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
-                      Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem)
-      : HTMLInterpreter(theEpub, thePage, theDom, theCompMode, theItem), itemInfo(theItem) {}
+                      Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem,
+                      const std::atomic<bool> &abortFlag)
+      : HTMLInterpreter(theEpub, thePage, theDom, theCompMode, theItem), itemInfo(theItem),
+        abortFlag(abortFlag) {}
 
 public:
   ~PageLocsInterpreter() {}
@@ -27,14 +31,17 @@ public:
   friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
-                          Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem) {
-    return makeUniqueHimem<PageLocsInterpreter>(theEpub, thePage, theDom, theCompMode, theItem);
+                          Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem,
+                          const std::atomic<bool> &abortFlag) {
+    return makeUniqueHimem<PageLocsInterpreter>(theEpub, thePage, theDom, theCompMode, theItem,
+                                                abortFlag);
   }
 
   auto inline docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
 
 private:
   const EPub::ItemInfo &itemInfo;
+  const std::atomic<bool> &abortFlag;
 
 protected:
   [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
@@ -71,6 +78,10 @@ protected:
     startOffset = currentOffset;
 
     page->start(fmt); // Start a new page
+
+    // Check if the control task has requested an abort to process a higher-priority item.
+    // Partial pages already inserted into pagesMap are safe — insert() is idempotent.
+    if (abortFlag.load(std::memory_order_relaxed)) return false;
 
     return res;
   }

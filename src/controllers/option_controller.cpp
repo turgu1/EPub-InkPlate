@@ -348,7 +348,7 @@ auto OptionController::initNvs() -> void {
   auto OptionController::debugging() -> void {
     auto [page, progressData] = MsgViewer::showProgress(
         "A small test to check the show progress capability. Please wait...");
-    for (int i = 0; i <= 10; i++) {
+    for (int i = 0; i <= 10; ++i) {
       std::tie(page, progressData) =
           MsgViewer::updateProgress(std::move(page), std::move(progressData), i * 10);
       sleep(1);
@@ -459,7 +459,7 @@ auto OptionController::enter() -> void {
       break;
     }
 
-    idx++;
+    ++idx;
   }
 
   if (menuViewer) {

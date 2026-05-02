@@ -6,7 +6,7 @@
 
 #include "global.hpp"
 #include "himem.hpp"
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 
 #include "controllers/event_mgr.hpp"
 #include "models/config.hpp"
@@ -172,7 +172,7 @@ public:
 
   auto computeFieldDim() -> void {
     fieldDim = {0, 0};
-    for (int8_t i = 0; i < formEntry.u.ch.choiceCount; i++) {
+    for (int8_t i = 0; i < formEntry.u.ch.choiceCount; ++i) {
       Item *item = itemPool.newElement();
       items.push_back(item);
       font.getSize(formEntry.u.ch.choices[i].caption, &item->dim, FORM_FONT_SIZE);
@@ -181,12 +181,12 @@ public:
 
     int i       = 0;
     currentItem = items.end();
-    for (Items::iterator it = items.begin(); it != items.end(); it++) {
+    for (Items::iterator it = items.begin(); it != items.end(); ++it) {
       if (formEntry.u.ch.choices[i].value == *formEntry.u.ch.value) {
         currentItem = it;
         break;
       }
-      i++;
+      ++i;
     }
     if (currentItem == items.end()) currentItem = items.begin();
 
@@ -199,7 +199,7 @@ public:
     config.get(Config::Ident::FONTS_DB, &fontsDB);
     auto fontCount = fontsDB ? fontsDB->getStandardFontCount() : 0;
     if (fontCount > 8) fontCount = 8;
-    for (uint8_t i = 0; i < fontCount; i++) {
+    for (uint8_t i = 0; i < fontCount; ++i) {
       fontChoices[i].caption = fontsDB->getStandardFontName(i).c_str();
     }
     fontChoicesCount = fontCount;
@@ -223,7 +223,7 @@ public:
     auto event(const EventMgr::Event &event) -> bool {
       oldItem = currentItem;
       Items::iterator it;
-      for (it = items.begin(); it != items.end(); it++) {
+      for (it = items.begin(); it != items.end(); ++it) {
         if ((event.x >= (*it)->pos.x - 5) && (event.y >= (*it)->pos.y - 5) &&
             (event.x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
             (event.y <= ((*it)->pos.y + (*it)->dim.height + 5))) {
@@ -244,7 +244,7 @@ public:
         break;
       case EventMgr::EventKind::DBL_NEXT:
       case EventMgr::EventKind::NEXT:
-        currentItem++;
+        ++currentItem;
         if (currentItem == items.end()) currentItem = items.begin();
         break;
       default:
@@ -277,7 +277,7 @@ protected:
     uint8_t idx;
   };
 
-  static MemoryPool<Item> itemPool; // Shared by all FormChoiceField
+  static HimemPool<Item> itemPool; // Shared by all FormChoiceField
 
   using Items = std::list<Item *>;
 
@@ -555,7 +555,7 @@ private:
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     auto findField(uint16_t x, uint16_t y) -> Fields::iterator {
-      for (Fields::iterator it = fields.begin(); it != fields.end(); it++) {
+      for (Fields::iterator it = fields.begin(); it != fields.end(); ++it) {
         if ((*it)->isPointed(x, y)) return it;
       }
 

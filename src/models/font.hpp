@@ -6,7 +6,7 @@
 #include "global.hpp"
 
 #include "himem.hpp"
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 #include "models/fonts_db.hpp"
 
 #include <forward_list>
@@ -91,7 +91,7 @@ protected:
   int8_t currentFontSize;
   bool ready;
 
-  MemoryPool<Glyph> bitmapGlyphPool;
+  HimemPool<Glyph> bitmapGlyphPool{100};
 
   BytePools bytePools;
   uint16_t bytePoolIdx;

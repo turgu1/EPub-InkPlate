@@ -375,7 +375,7 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
 
   if (clearScreen) screen.clear();
 
-  // int count = 0;
+  int count = 0;
 
   for (auto *entry : *displayList) {
     switch (entry->command) {
@@ -414,10 +414,10 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
       break;
     }
 
-    // count++;
+    ++count;
   }
 
-  // LOG_I("Painted %d entries on screen", count);
+  LOG_I("Painted %d entries on screen", count);
 
   screen.update(noFull);
 }
@@ -580,7 +580,7 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
         for (auto *entry : *lineList) {
           if (entry->pos.x > 0) { // This means it's a white space
             atLeastOnce = true;
-            entry->pos.x++;
+            ++entry->pos.x;
             if (++lineWidth >= targetWidth) break;
           }
         }
@@ -670,27 +670,6 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
   entry->command = DisplayListCommand::PICTURE;
   entry->v       = PictureEntry{std::move(picture), advance};
 
-  // if (computeMode == ComputeMode::DISPLAY) {
-  //   if (copy) {
-  //     int32_t size = picture.dim.width * picture.dim.height;
-  //     if (picture.bitmap != nullptr) {
-  //       if ((entry->kind.picture_entry.picture.bitmap = new unsigned char[size]) == nullptr) {
-  //         msg_viewer.outOfMemory("picture bitmap allocation");
-  //       }
-  //       memcpy((void *) entry->kind.picture_entry.picture.bitmap, picture.bitmap, size);
-  //     }
-  //     else {
-  //       entry->kind.picture_entry.picture.bitmap = nullptr;
-  //     }
-  //   }
-  //   else {
-  //     entry->kind.picture_entry.picture.bitmap = picture.bitmap;
-  //   }
-  // }
-  // else {
-  //   entry->kind.picture_entry.picture.bitmap = nullptr;
-  // }
-
   entry->pos = {0, 0};
 
   if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
@@ -711,149 +690,85 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
   (pos.y + (fmt.lineHeightFactor * font->getLineHeight(fmt.fontSize)) -                            \
    font->getDescenderHeight(fmt.fontSize))
 
-#if 1
-  auto Page::addWord(const char *word, const Format &fmt) -> bool {
-    FontPtr &font = fonts.getFont(fmt.fontIndex);
+auto Page::addWord(const char *word, const Format &fmt) -> bool {
+  FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-    if (lineList->empty()) {
-      // We are about to start a new line. Check if it will fit on the page.
-      if ((screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY)) return false;
-    }
+  if (lineList->empty()) {
+    // We are about to start a new line. Check if it will fit on the page.
+    if ((screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY)) return false;
+  }
 
-    Glyph *glyph;
+  Glyph *glyph;
 
-    auto lineEntries = DisplayList::Make(displayListPool);
-    const char *str  = word;
-    int16_t height   = font->getLineHeight(fmt.fontSize);
-    int16_t width    = 0;
-    bool first       = true;
+  auto lineEntries = DisplayList::Make(displayListPool);
+  const char *str  = word;
+  int16_t height   = font->getLineHeight(fmt.fontSize);
+  int16_t width    = 0;
+  bool first       = true;
 
-    while (*str) {
-      bool ignoreNext;
-      const char *str1, *str2;
-      uint32_t uc1, uc2;
-      int16_t kern;
+  while (*str) {
+    bool ignoreNext;
+    const char *str1, *str2;
+    uint32_t uc1, uc2;
+    int16_t kern;
 
-      uc1 = toUnicode(str, fmt.textTransform, first, &str1);
-      uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
+    uc1 = toUnicode(str, fmt.textTransform, first, &str1);
+    uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
 
-      glyph = font->getGlyph(uc1, uc2, fmt.fontSize, kern, ignoreNext);
+    glyph = font->getGlyph(uc1, uc2, fmt.fontSize, kern, ignoreNext);
 
-      str = ignoreNext ? str2 : str1;
+    str = ignoreNext ? str2 : str1;
 
-      int16_t advance = kern;
+    int16_t advance = kern;
 
-      if (glyph == nullptr) {
-        glyph = font->getGlyph(' ', fmt.fontSize);
-        if (glyph != nullptr) {
-          advance = glyph->advance;
-        }
-      }
-
+    if (glyph == nullptr) {
+      glyph = font->getGlyph(' ', fmt.fontSize);
       if (glyph != nullptr) {
-        width += advance;
-        first = false;
-
-        DisplayListEntry *entry = lineEntries->getNewEntry();
-        if (entry == nullptr) return false;
-
-        entry->command = DisplayListCommand::GLYPH;
-        entry->v       = GlyphEntry{glyph, advance, false};
-        entry->pos     = {0, fmt.verticalAlign};
-
-        lineEntries->pushBack(entry);
+        advance = glyph->advance;
       }
     }
 
-    uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
-
-    if (width >= availableWidth) {
-      if (strncasecmp(word, "http", 4) == 0) {
-        return addWord("[URL removed]", fmt);
-      } else {
-        LOG_E("WORD TOO LARGE!! '%s'", word);
-      }
-    }
-
-    if ((lineWidth + width) >= availableWidth) {
-      addLine(fmt, true);
-      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
-      if (screenIsFull) {
-        return false;
-      }
-    }
-
-    lineList->merge(*lineEntries.get());
-
-    if (glyphsHeight < height) glyphsHeight = height;
-    if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
-    lineWidth += width;
-
-    return true;
-  }
-#else
-  // ToDo: Optimize this method...
-  auto Page::addWord(const char *word, const Format &fmt) -> bool {
-    Glyph *glyph;
-    const char *str = word;
-    int32_t code;
-
-    FontPtr &font = fonts.getFont(fmt.fontIndex, fmt.fontSize);
-
-    if (lineList->empty()) {
-      // We are about to start a new line. Check if it will fit on the page.
-      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
-      if (screenIsFull) {
-        return false;
-      }
-    }
-
-    int16_t width = 0;
-    bool first = true;
-    while (*str) {
-      const char *s1;
-      glyph = font->getGlyph(code = toUnicode(str, fmt.textTransform, first, &s1), fmt.fontSize);
-      str = s1;
-      if (glyph != nullptr) width += glyph->advance;
+    if (glyph != nullptr) {
+      width += advance;
       first = false;
-    }
 
-    if (width >= (paraMaxX - paraMinX - paraIndent)) {
-      if (strncasecmp(word, "http", 4) == 0) {
-        return addWord("[URL removed]", fmt);
-      } else {
-        LOG_E("WORD TOO LARGE!! '%s'", word);
-      }
-    }
+      DisplayListEntry *entry = lineEntries->getNewEntry();
+      if (entry == nullptr) return false;
 
-    if ((lineWidth + width) >= (paraMaxX - paraMinX - paraIndent)) {
-      addLine(fmt, true);
-      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
-      if (screenIsFull) {
-        return false;
-      }
-    }
+      entry->command = DisplayListCommand::GLYPH;
+      entry->v       = GlyphEntry{glyph, advance, false};
+      entry->pos     = {0, fmt.verticalAlign};
 
-    first = true;
-    while (*word) {
-      if (font) {
-        const char *s1;
-        glyph = font->getGlyph(toUnicode(word, fmt.textTransform, first, &s1), fmt.fontSize);
-        word = s1;
-        if (glyph == nullptr) {
-          glyph = font->getGlyph(' ', fmt.fontSize);
-        }
-        if (glyph != nullptr) {
-          addGlyphToLine(glyph, fmt.fontSize, *font, false);
-          // font->show_glyph(*glyph);
-        }
-      }
-      first = false;
+      lineEntries->pushBack(entry);
     }
-
-    return true;
   }
-#endif
+
+  uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
+
+  if (width >= availableWidth) {
+    if (strncasecmp(word, "http", 4) == 0) {
+      return addWord("[URL removed]", fmt);
+    } else {
+      LOG_E("WORD TOO LARGE!! '%s'", word);
+    }
+  }
+
+  if ((lineWidth + width) >= availableWidth) {
+    addLine(fmt, true);
+    screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+    if (screenIsFull) {
+      return false;
+    }
+  }
+
+  lineList->merge(*lineEntries.get());
+
+  if (glyphsHeight < height) glyphsHeight = height;
+  if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+  lineWidth += width;
+
+  return true;
+}
 
 auto Page::addChar(const char *ch, const Format &fmt) -> bool {
   Glyph *glyph;
@@ -924,6 +839,7 @@ auto Page::addChar(const char *ch, const Format &fmt) -> bool {
  */
 auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of_page*/)
     -> std::pair<bool, PicturePtr> {
+
   if (screenIsFull) {
     return {false, std::move(picture)};
   }
@@ -983,16 +899,8 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
   // Verify that there is enough room for the bitmap on the line
 
   if ((lineWidth + advance) >= (paraMaxX - paraMinX - paraIndent)) {
-    //    if (!(lineList->empty() && at_start_of_page)) {
+    // Not enough room on line, try to put the bitmap on next line
     addLine(fmt, true);
-    // }
-    // else {
-    //   paraIndent = 0;
-    //   topMargin = 0;
-    // }
-
-    // int16_t the_height = (fmt.lineHeightFactor * font->getLineHeight()) -
-    // font->getDescenderHeight(); if (the_height < h) the_height = h;
   }
 
   if ((screenIsFull = ((pos.y + h) > maxY))) return {false, std::move(picture)};
@@ -1008,6 +916,11 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
 
         picture->resize(Dim(w, h));
       }
+    } else {
+      // In non DISPLAY compute mode, we don't want to do the actual resizing of the picture as it
+      // is not needed and can be costly. We just set the dimensions that will be used for layouting
+      // and rendering the picture later on when in DISPLAY compute mode.
+      picture->setDim(Dim(w, h));
     }
   }
 
@@ -1047,7 +960,7 @@ auto Page::addText(const std::string &str, const Format &fmt) -> void {
         myfmt.trim = *s == ' ';
         if (!addChar(s, myfmt)) break;
       }
-      s++;
+      ++s;
     } else {
       int16_t count = 0;
       while ((uint8_t(*s) > ' ') && (count < 99)) {
@@ -1379,10 +1292,10 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
           : FaceStyle::NORMAL;
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_STYLE))) {
-    fontStyle = (FaceStyle)vals->front()->choice.faceStyle;
+    fontStyle = (FaceStyle)vals->front().choice.faceStyle;
   }
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_WEIGHT))) {
-    fontWeight = (FaceStyle)vals->front()->choice.faceStyle;
+    fontWeight = (FaceStyle)vals->front().choice.faceStyle;
   }
 
   FaceStyle newStyle = fonts.adjustFontStyle(fmt.fontStyle, fontStyle, fontWeight);
@@ -1390,10 +1303,10 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
     for (auto &fontName : *vals) {
-      if ((idx = fonts.getIndex(fontName->str, newStyle)) != -1) break;
+      if ((idx = fonts.getIndex(fontName.str, newStyle)) != -1) break;
     }
     if (idx == -1) {
-      LOG_D("Font not found 1: %s %d", vals->front()->str.c_str(), (int)newStyle);
+      LOG_D("Font not found 1: %s %d", vals->front().str.c_str(), (int)newStyle);
       idx = fonts.getIndex("Default", newStyle);
     }
     if (idx == -1) {
@@ -1414,22 +1327,22 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_ALIGN))) {
-    fmt.align = (CSS::Align)vals->front()->choice.align;
+    fmt.align = (CSS::Align)vals->front().choice.align;
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_INDENT))) {
-    fmt.indent = getPixelValue(*(vals->front()), fmt, paintWidth());
+    fmt.indent = getPixelValue(vals->front(), fmt, paintWidth());
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_SIZE))) {
-    fmt.fontSize = getPointValue(*(vals->front()), fmt, fmt.fontSize);
+    fmt.fontSize = getPointValue(vals->front(), fmt, fmt.fontSize);
     if (fmt.fontSize == 0) {
       LOG_E("adjustFormatFromSuite: setting fmt.fontSize to 0!!!");
     }
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::LINE_HEIGHT))) {
-    fmt.lineHeightFactor = getFactorValue(*(vals->front()), fmt, fmt.lineHeightFactor);
+    fmt.lineHeightFactor = getFactorValue(vals->front(), fmt, fmt.lineHeightFactor);
   }
 
   int16_t widthRef  = Screen::getWidth() - fmt.screenLeft - fmt.screenRight;
@@ -1438,72 +1351,72 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN))) {
 
     int16_t size = 0;
-    for (auto val __attribute__((unused)) : *vals) size++;
+    for (auto val __attribute__((unused)) : *vals) ++size;
     CSS::Values::const_iterator it = vals->begin();
 
     if (size == 1) {
-      fmt.marginTop = fmt.marginBottom = getPixelValue(*(vals->front()), fmt, heightRef, true);
-      fmt.marginRight = fmt.marginLeft = getPixelValue(*(vals->front()), fmt, widthRef);
+      fmt.marginTop = fmt.marginBottom = getPixelValue(vals->front(), fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(vals->front(), fmt, widthRef);
     } else if (size == 2) {
-      fmt.marginTop = fmt.marginBottom = getPixelValue(**it++, fmt, heightRef, true);
-      fmt.marginRight = fmt.marginLeft = getPixelValue(**it, fmt, widthRef);
+      fmt.marginTop = fmt.marginBottom = getPixelValue(*it++, fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(*it, fmt, widthRef);
     } else if (size == 3) {
-      fmt.marginTop   = getPixelValue(**it++, fmt, heightRef, true);
-      fmt.marginRight = fmt.marginLeft = getPixelValue(**it++, fmt, widthRef);
-      fmt.marginBottom                 = getPixelValue(**it, fmt, heightRef, true);
+      fmt.marginTop   = getPixelValue(*it++, fmt, heightRef, true);
+      fmt.marginRight = fmt.marginLeft = getPixelValue(*it++, fmt, widthRef);
+      fmt.marginBottom                 = getPixelValue(*it, fmt, heightRef, true);
     } else if (size == 4) {
-      fmt.marginTop    = getPixelValue(**it++, fmt, heightRef, true);
-      fmt.marginRight  = getPixelValue(**it++, fmt, widthRef);
-      fmt.marginBottom = getPixelValue(**it++, fmt, heightRef, true);
-      fmt.marginLeft   = getPixelValue(**it, fmt, widthRef);
+      fmt.marginTop    = getPixelValue(*it++, fmt, heightRef, true);
+      fmt.marginRight  = getPixelValue(*it++, fmt, widthRef);
+      fmt.marginBottom = getPixelValue(*it++, fmt, heightRef, true);
+      fmt.marginLeft   = getPixelValue(*it, fmt, widthRef);
     }
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::DISPLAY))) {
-    fmt.display = vals->front()->choice.display;
+    fmt.display = vals->front().choice.display;
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_LEFT))) {
-    fmt.marginLeft = getPixelValue(*(vals->front()), fmt, widthRef);
+    fmt.marginLeft = getPixelValue(vals->front(), fmt, widthRef);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_RIGHT))) {
-    fmt.marginRight = getPixelValue(*(vals->front()), fmt, widthRef);
+    fmt.marginRight = getPixelValue(vals->front(), fmt, widthRef);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_TOP))) {
-    fmt.marginTop = getPixelValue(*(vals->front()), fmt, heightRef, true);
+    fmt.marginTop = getPixelValue(vals->front(), fmt, heightRef, true);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::MARGIN_BOTTOM))) {
-    fmt.marginBottom = getPixelValue(*(vals->front()), fmt, heightRef, true);
+    fmt.marginBottom = getPixelValue(vals->front(), fmt, heightRef, true);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::WIDTH))) {
-    fmt.width = getPixelValue(*(vals->front()), fmt,
+    fmt.width = getPixelValue(vals->front(), fmt,
                               fmt.width /*Screen::getWidth() - fmt.screenLeft - fmt.screenRight */);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::HEIGHT))) {
-    fmt.height = getPixelValue(*(vals->front()), fmt,
-                               Screen::getHeight() - fmt.screenTop - fmt.screenBottom);
+    fmt.height =
+        getPixelValue(vals->front(), fmt, Screen::getHeight() - fmt.screenTop - fmt.screenBottom);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {
-    fmt.textTransform = vals->front()->choice.textTransform;
+    fmt.textTransform = vals->front().choice.textTransform;
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::VERTICAL_ALIGN))) {
-    if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::NORMAL) {
+    if (vals->front().choice.verticalAlign == CSS::VerticalAlign::NORMAL) {
       fmt.verticalAlign = 0;
-    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::SUB) {
+    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::SUB) {
       fmt.verticalAlign = 5;
-    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::SUPER) {
+    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::SUPER) {
       fmt.verticalAlign = -5;
-    } else if (vals->front()->choice.verticalAlign == CSS::VerticalAlign::VALUE) {
+    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::VALUE) {
       FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-      fmt.verticalAlign = -getPixelValue(*(vals->front()), fmt, font->getLineHeight(fmt.fontSize));
+      fmt.verticalAlign = -getPixelValue(vals->front(), fmt, font->getLineHeight(fmt.fontSize));
     }
   }
 }

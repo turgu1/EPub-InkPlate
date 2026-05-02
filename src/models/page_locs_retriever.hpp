@@ -13,6 +13,7 @@
   #include <mqueue.h>
 #endif
 
+#include <atomic>
 #include <thread>
 
 class PageLocsRetriever {
@@ -51,7 +52,14 @@ public:
 
   [[nodiscard]] inline auto getCurrentItemrefIndex() const { return currentItemrefIndex; }
 
+  /**
+   * Signal the retriever to abort the current item computation at the next page boundary.
+   * Called by PageLocsControl when a higher-priority GET_ASAP request arrives.
+   */
+  inline auto signalAbort() { abortCurrentItem.store(true, std::memory_order_relaxed); }
+
 private:
+  std::atomic<bool> abortCurrentItem{false};
   DOMPtr dom{nullptr};
   EPubPtr epub{nullptr};
   uint16_t pageBottom{0};

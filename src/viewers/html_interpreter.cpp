@@ -114,7 +114,6 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     }
     if (node.attribute("hidden")) return true;
 
-    // LOG_D("Node name: %s", name);
     // Do it only if we are now in the current page content
 
     fmt.display      = CSS::Display::INLINE;
@@ -124,8 +123,6 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     fmt.marginTop    = 0;
 
     if ((tagIt = DOM::tags.find(name)) != DOM::tags.end()) {
-
-      // LOG_D("==> %10s [%5d] %5d", name, currentOffset, page->getPosY());
 
       if (tagIt->second != DOM::Tag::BODY) {
         domCurrentNode = dom->addChild(domNode, tagIt->second);
@@ -153,14 +150,14 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               if ((attr = node.attribute("src")))
                 pictureFilename = attr.value();
               else
-                currentOffset++;
+                ++currentOffset;
             } else
-              currentOffset++;
+              ++currentOffset;
           } else {
             if ((attr = node.attribute("alt")))
               str = attr.value();
             else
-              currentOffset++;
+              ++currentOffset;
           }
           break;
 
@@ -170,9 +167,9 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               if ((attr = node.attribute("xlink:href")))
                 pictureFilename = attr.value();
               else
-                currentOffset++;
+                ++currentOffset;
             } else
-              currentOffset++;
+              ++currentOffset;
           }
           break;
 
@@ -202,7 +199,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             page->lineBreak(fmt);
           }
         }
-        currentOffset++;
+        ++currentOffset;
         break;
 
       case DOM::Tag::B:
@@ -331,7 +328,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     if (currentOffset < startOffset) {
       // As we move from the beginning of a file, we bypass everything that is there before
       // the start of the page offset
-      currentOffset++;
+      ++currentOffset;
     } else {
       HimemString fname = itemInfo.filePath;
       fname.append(pictureFilename);
@@ -339,6 +336,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       if (started && (currentOffset < endOffset)) {
         const bool displayMode = page->getComputeMode() == Page::ComputeMode::DISPLAY;
 
+        // If the image is large, show a loading icon while it loads to avoid a
+        // long wait with a blank page.
         if (displayMode) {
           auto pictInfo = epub->getPicture(fname, false);
           if (pictInfo != nullptr) {
@@ -360,16 +359,17 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           }
           showState("After IMG", fmt);
         } else {
-          str = "(An image is not compatible or not found)";
+          str              = "(An image is not compatible or not found)";
+          offsetAdjustment = 41;
         }
       }
-      currentOffset++;
+      ++currentOffset;
     }
   }
 
   if (namedElement) { // The element possesses a tag
     // Here we recurse on each child of the currernt tag.
-    currentOffset++;
+    ++currentOffset;
     xml_node sub = node.first_child();
     while (sub != nullptr) {
       if (page->isFull() && !pageEnd(fmt)) return false;
@@ -421,8 +421,13 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       // As we move from the beginning of a file, we bypass everything that is there before
       // the start of the page offset
       currentOffset += size;
+      currentOffset -= offsetAdjustment;
+      offsetAdjustment = 0;
     } else {
       showState("==> STR <==", fmt);
+
+      currentOffset -= offsetAdjustment;
+      offsetAdjustment = 0;
 
       bool toBeStarted = !checkIfStarted();
 
@@ -439,11 +444,11 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
                                            // end of a line
                 // get rid of multiple spaces in a row (if not pre)
                 do {
-                  str++;
-                  currentOffset++;
+                  ++str;
+                  ++currentOffset;
                 } while ((*str == ' ') || (*str == '\n'));
-                str--;
-                currentOffset--;
+                --str;
+                --currentOffset;
               }
               if (!page->addChar(" ", fmt)) {
                 // Unable to add the character... the page must be full
@@ -463,14 +468,14 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
             }
           }
-          str++;
-          currentOffset++; // Not an UTF-8, so it's ok...
+          ++str;
+          ++currentOffset; // Not an UTF-8, so it's ok...
         } else {
           const char *w = str;
           int16_t count = 0;
           while (uint8_t(*str) > ' ') {
-            str++;
-            count++;
+            ++str;
+            ++count;
           }
           if (checkIfStarted()) {
             if (toBeStarted) {
@@ -502,11 +507,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           }
           currentOffset += count;
         }
-        // ToDo: Not sure the following test is required...
-        // if (page->isFull()) {
-        //   if (!pageEnd(fmt)) return false;
-        // }
-        // ToDo: This may have to be moved down after the while loop..
+
         if (atEnd()) {
           if (*str) {
             showState("==> Before Break Paragraph 1 <==", fmt);

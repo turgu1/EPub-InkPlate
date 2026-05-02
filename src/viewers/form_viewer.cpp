@@ -5,7 +5,7 @@
 #define __FORM_VIEWER__ 1
 #include "viewers/form_viewer.hpp"
 
-MemoryPool<FormChoiceField::Item> FormChoiceField::itemPool;
+HimemPool<FormChoiceField::Item> FormChoiceField::itemPool;
 uint8_t FormChoiceField::fontChoicesCount = 0;
 
 // clang-format off
@@ -64,7 +64,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
     fields.clear();
 
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size; ++i) {
       FormFieldPtr field = FieldFactory::create(formEntries[i], *font.get(), *page.get());
       if (field != nullptr) {
         field->computeCaptionDim();
@@ -226,11 +226,11 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
       case EventMgr::EventKind::DBL_PREV:
       case EventMgr::EventKind::PREV:
         if (currentField == fields.begin()) currentField = fields.end();
-        currentField--;
+        --currentField;
         break;
       case EventMgr::EventKind::DBL_NEXT:
       case EventMgr::EventKind::NEXT:
-        currentField++;
+        ++currentField;
         if (currentField == fields.end()) currentField = fields.begin();
         break;
       case EventMgr::EventKind::SELECT:
@@ -253,7 +253,7 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
         case EventMgr::EventKind::SELECT:
           highlightingField = true;
           oldField = currentField;
-          currentField++;
+          ++currentField;
           if (currentField == fields.end()) currentField = fields.begin();
           break;
         case EventMgr::EventKind::NONE:
@@ -264,7 +264,7 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
           else {
             highlightingField = true;
             oldField = currentField;
-            currentField++;
+            ++currentField;
             if (currentField == fields.end()) currentField = fields.begin();
           }
           break;

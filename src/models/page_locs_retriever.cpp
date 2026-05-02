@@ -127,20 +127,36 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
 
   SHOW_IT("Retrieving itemref --> %d <--", itemrefIndex);
 
-  if (!buildPageLocs(itemrefIndex)) {
-    // Unable to retrieve pages location for the requested index. Send back
-    // a negative value to indicate the issue to the control task
-    itemrefIndex = static_cast<int16_t>(-(itemrefIndex + 1));
+  // Clear any stale abort signal before starting this item.
+  abortCurrentItem.store(false, std::memory_order_relaxed);
+
+  bool done    = buildPageLocs(itemrefIndex);
+  bool aborted = abortCurrentItem.load(std::memory_order_relaxed);
+
+  PageLocsControl::QueueData controlQueueData;
+
+  if (aborted && !done) {
+    // Interrupted mid-item by a higher-priority request.  Partial pages already
+    // inserted into pagesMap are harmless — pageLocs.insert() is idempotent.
+    SHOW_IT("Item %d interrupted; sending ITEM_INTERRUPTED to ControlTask", itemrefIndex);
+    controlQueueData = {.req          = PageLocsControl::Req::ITEM_INTERRUPTED,
+                        .itemrefIndex = itemrefIndex,
+                        .itemrefCount = 0};
+  } else {
+    if (!done) {
+      // Genuine failure (not an abort).
+      itemrefIndex = static_cast<int16_t>(-(itemrefIndex + 1));
+    }
+    controlQueueData = {.req          = (req == Req::GET_ASAP) ? PageLocsControl::Req::ASAP_READY
+                                                               : PageLocsControl::Req::ITEM_READY,
+                        .itemrefIndex = itemrefIndex,
+                        .itemrefCount = 0};
   }
 
-  PageLocsControl::QueueData controlQueueData = {.req = (req == Req::GET_ASAP)
-                                                            ? PageLocsControl::Req::ASAP_READY
-                                                            : PageLocsControl::Req::ITEM_READY,
-                                                 .itemrefIndex = itemrefIndex,
-                                                 .itemrefCount = 0};
-
   SHOW_IT("Sending %s to ControlTask",
-          (controlQueueData.req == PageLocsControl::Req::ASAP_READY) ? "ASAP_READY" : "ITEM_READY");
+          (controlQueueData.req == PageLocsControl::Req::ASAP_READY)   ? "ASAP_READY"
+          : (controlQueueData.req == PageLocsControl::Req::ITEM_READY) ? "ITEM_READY"
+                                                                       : "ITEM_INTERRUPTED");
   PageLocsControl::send(controlQueueData);
 }
 
@@ -194,8 +210,8 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     auto dom     = DOM::Make();
     auto pageOut = Page::Make(fonts);
 
-    auto interp =
-        PageLocsInterpreter::Make(epub, pageOut, dom, Page::ComputeMode::LOCATION, itemInfo);
+    auto interp = PageLocsInterpreter::Make(epub, pageOut, dom, Page::ComputeMode::LOCATION,
+                                            itemInfo, abortCurrentItem);
 
     #if DEBUGGING_AID
       interp->setPagesToShowState(PAGE_FROM, PAGE_TO);

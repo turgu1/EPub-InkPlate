@@ -55,5 +55,7 @@ public:
   [[nodiscard]] inline auto getDim() const -> const Dim { return dim; }
   [[nodiscard]] inline auto getBitmap() const -> uint8_t * { return bitmap.get(); }
 
+  auto setDim(Dim d) -> void { dim = d; }
+
   auto resize(Dim newDim) -> void;
 };

@@ -7,7 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
 #include "models/font.hpp"
 #include "models/fonts_db.hpp"
 #include "models/ibmf_font.hpp"

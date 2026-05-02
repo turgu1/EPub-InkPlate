@@ -74,8 +74,8 @@ auto testDirectConstruction() -> void {
   HP_CHECK(pool.liveCount() == 0);
 
   {
-    auto a = pool.allocate(10);
-    auto b = pool.allocate(20);
+    auto a = pool.create(10);
+    auto b = pool.create(20);
     HP_CHECK(a != nullptr && b != nullptr);
     HP_CHECK(pool.blockCount() == 1);
     HP_CHECK(pool.liveCount() == 2);
@@ -91,14 +91,14 @@ auto testCustomBlockGrowth() -> void {
   HP_CHECK(pool != nullptr);
   HP_CHECK(pool->blockSize() == 3);
 
-  auto a = pool->allocate(1);
-  auto b = pool->allocate(2);
-  auto c = pool->allocate(3);
+  auto a = pool->create(1);
+  auto b = pool->create(2);
+  auto c = pool->create(3);
   HP_CHECK(a != nullptr && b != nullptr && c != nullptr);
   HP_CHECK(pool->blockCount() == 1);
   HP_CHECK(pool->liveCount() == 3);
 
-  auto d = pool->allocate(4);
+  auto d = pool->create(4);
   HP_CHECK(d != nullptr);
   HP_CHECK(pool->blockCount() == 2);
   HP_CHECK(pool->liveCount() == 4);
@@ -110,16 +110,16 @@ auto testFreedSlotReuse() -> void {
   auto pool = HimemPool<Tracked>::Make(4);
   HP_CHECK(pool != nullptr);
 
-  auto a = pool->allocate(11);
-  auto b = pool->allocate(22);
-  auto c = pool->allocate(33);
+  auto a = pool->create(11);
+  auto b = pool->create(22);
+  auto c = pool->create(33);
   HP_CHECK(a != nullptr && b != nullptr && c != nullptr);
 
   Tracked *oldB = b.get();
   b.reset();
   HP_CHECK(pool->liveCount() == 2);
 
-  auto d = pool->allocate(44);
+  auto d = pool->create(44);
   HP_CHECK(d != nullptr);
   HP_CHECK(d.get() == oldB);
   HP_CHECK(pool->liveCount() == 3);
@@ -134,8 +134,8 @@ auto testCtorDtorPairing() -> void {
     HP_CHECK(pool != nullptr);
 
     {
-      auto x = pool->allocate(7);
-      auto y = pool->allocate(8);
+      auto x = pool->create(7);
+      auto y = pool->create(8);
       HP_CHECK(Tracked::live == 2);
       HP_CHECK(pool->liveCount() == 2);
     }
@@ -156,8 +156,8 @@ auto testNonTrivialType() -> void {
   HP_CHECK(pool != nullptr);
 
   {
-    auto s1 = pool->allocate("hello");
-    auto s2 = pool->allocate("world");
+    auto s1 = pool->create("hello");
+    auto s2 = pool->create("world");
     HP_CHECK(s1 != nullptr && s2 != nullptr);
     HP_CHECK(*s1 == "hello");
     HP_CHECK(*s2 == "world");
@@ -175,7 +175,7 @@ auto testLifetimeContract() -> void {
   auto pool = HimemPool<Tracked>::Make(2);
   HP_CHECK(pool != nullptr);
 
-  auto p = pool->allocate(123);
+  auto p = pool->create(123);
   HP_CHECK(p != nullptr);
   HP_CHECK(Tracked::live == 1);
 

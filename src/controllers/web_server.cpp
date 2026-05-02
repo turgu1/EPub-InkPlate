@@ -121,7 +121,7 @@
              "dir = table.getAttribute(\"next_sort\");"
              "while (switching) {"
              "switching = false; rows = table.rows;"
-             "for (i = 1; i < (rows.length - 1); i++) {"
+             "for (i = 1; i < (rows.length - 1); ++i) {"
              "shouldSwitch = false;"
              "x = rows[i].getElementsByTagName(\"TD\")[n];"
              "y = rows[i + 1].getElementsByTagName(\"TD\")[n];"
@@ -180,7 +180,7 @@
       uint8_t length      = strlen(entrysize);
       uint8_t commaOffset = length % 3;
 
-      for (uint8_t i = 0; i < length; i++) {
+      for (uint8_t i = 0; i < length; ++i) {
         if (((i % 3) == commaOffset) && (i != 0)) {
           theSize += ',';
         }

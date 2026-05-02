@@ -29,23 +29,23 @@
 #define __FONTS__ 1         // makes fonts.hpp emit `Fonts fonts;`
 #include "models/fonts.hpp" // includes char_pool.hpp, models/font.hpp — no GTK
 
-Fonts::Fonts() {}
+Fonts::Fonts(bool) {}
 Fonts::~Fonts() {}
 
 auto Fonts::adjustDefaultFont(uint8_t) -> void {}
 auto Fonts::clear(bool) -> void {}
 auto Fonts::clearEverything() -> void {}
-auto Fonts::setup(bool) -> bool { return true; }
+auto Fonts::setup() -> bool { return true; }
 auto Fonts::clearGlyphCaches() -> void {}
 
 auto Fonts::add(const FontFaceDescriptorPtr &) -> bool { return false; }
-auto Fonts::add(const std::string &, FaceStyle, FileContentPtr, size_t, const std::string &)
+auto Fonts::add(const HimemString &, FaceStyle, FileContentPtr, size_t, const HimemString &)
     -> bool {
   return false;
 }
 auto Fonts::replace(int16_t, const FontFaceDescriptorPtr &) -> bool { return false; }
 auto Fonts::adjustFontStyle(FaceStyle s, FaceStyle, FaceStyle) const -> FaceStyle { return s; }
-auto Fonts::getIndex(const std::string &, FaceStyle) -> int16_t { return -1; }
+auto Fonts::getIndex(const HimemString &, FaceStyle) -> int16_t { return -1; }
 
 // ============================================================================
 // DisplayList::getNewEntry()  (avoids msg_viewer.hpp → screen.hpp → gtk.h)
@@ -105,8 +105,8 @@ auto TOC::loadFromEpub(EPub &) -> bool { return true; }
 #include "jpeg_picture.hpp"
 #include "png_picture.hpp"
 
-JPegPicture::JPegPicture(std::string, Dim, bool, bool) {}
-PngPicture::PngPicture(std::string, Dim, bool) {}
+JPegPicture::JPegPicture(const HimemString &, Dim, bool, bool) {}
+PngPicture::PngPicture(const HimemString &, Dim, bool) {}
 
 // ============================================================================
 // FontsDB — load() stub: the test runner exercises Config mechanics only;
@@ -124,3 +124,15 @@ auto FontsDB::add(const HimemString &, FaceStyle, const HimemString &) -> bool {
 auto FontsDB::replace(int16_t, const HimemString &, FaceStyle, const HimemString &) -> bool {
   return true;
 }
+
+// ============================================================================
+// PageLocs — epub.cpp::closeFile() references the global `pageLocs` object
+// and calls stopControlTask().  The test build excludes page_locs.cpp, so we
+// provide the global object definition and an empty stub implementation here.
+// ============================================================================
+
+#include "models/page_locs.hpp" // brings in full PageLocs class definition
+
+PageLocs pageLocs; // the global instance referenced by epub.cpp
+
+auto PageLocs::stopControlTask() -> void {}

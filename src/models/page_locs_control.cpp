@@ -184,6 +184,9 @@ auto PageLocsControl::task() -> void {
               PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
             } else if (waitingForItemref != -1) {
               asapItemref = itemref;
+              // Signal the retriever to abort at the next page boundary so it can
+              // serve this higher-priority request sooner.
+              retrieverTask.signalAbort();
             } else {
               asapItemref       = -1;
               waitingForItemref = itemref;
@@ -263,6 +266,23 @@ auto PageLocsControl::task() -> void {
         SHOW_IT("Sending PERCENT to MGR");
         PageLocs::send(
             {.req = PageLocs::Req::PERCENT, .itemrefIndex = static_cast<int16_t>(percentDone())});
+        break;
+
+      // Sent by the retrieval task when it was aborted mid-item by a signalAbort() call.
+      // The partially-computed pages are already in pagesMap (insert is idempotent), so the
+      // item can safely be re-queued and reprocessed from scratch after the ASAP item is done.
+      case Req::ITEM_INTERRUPTED:
+        if (!runningDown) {
+          LOG_D("-> ITEM_INTERRUPTED <-");
+          int16_t itemref = controlQueueData.itemrefIndex;
+          SHOW_IT("Item %d interrupted; re-queuing after ASAP", itemref);
+          waitingForItemref = -1;
+          // Re-queue the interrupted item as a deferred request so it will be
+          // retried after the pending ASAP item is served.
+          nextItemrefToGet = itemref;
+          requestNextItem(-1);
+        }
+        break;
       }
   }
 }

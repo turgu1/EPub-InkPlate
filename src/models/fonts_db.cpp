@@ -200,7 +200,7 @@ auto FontsDB::load(uint8_t configFontIndex) -> bool {
     uint8_t fontCount = 0;
 
     auto userGroup = fd.child("fonts").find_child_by_attribute("group", "name", "USER");
-    for (auto fnt : userGroup.children("font")) {
+    for (auto &fnt : userGroup.children("font")) {
       if (fontCount >= 8) break;
       HimemString str = fnt.attribute("name").value();
 
@@ -221,7 +221,7 @@ auto FontsDB::load(uint8_t configFontIndex) -> bool {
               if (checkFile(str = filterFilename(str))) {
                 boldItalicFname[fontCount] = str;
                 LOG_I("Font %s OK", fontNames[fontCount].c_str());
-                fontCount++;
+                ++fontCount;
               }
             }
           }

@@ -16,16 +16,42 @@
 // The pool object can be constructed directly (stack/heap) or allocated in
 // PSRAM using HimemPool<T>::Make(blockSize).
 //
-// Each individual object allocation is returned as a HimemPool<T>::Ptr,
-// a std::unique_ptr<T, HimemPool<T>::Deleter> that, when destroyed (or
-// reset), calls ~T() and returns the slot to the pool's free list.
+// HimemPool<T> satisfies the C++ named requirement Allocator and can be
+// used as a stateful allocator for STL containers (e.g. SimpleList<T, HimemPool<T>>).
+// When used this way the container owns the pool by value; on move the pool
+// moves with the container (propagate_on_container_move_assignment = true);
+// on copy a fresh empty pool is created (propagate_on_container_copy_assignment = false).
 //
-// Example
-// -------
+// For direct (non-container) ownership there are two APIs:
+//
+//   create(args...) -> Ptr
+//     Returns a managing std::unique_ptr (Ptr). ~T() and slot recycling happen
+//     automatically when the Ptr goes out of scope or is reset().
+//
+//   newElement(args...) -> T*  /  deleteElement(T*)
+//     MemoryPool-compatible raw-pointer API.  Callers must call deleteElement()
+//     for every pointer returned by newElement().  Use this when replacing an
+//     existing MemoryPool<T> call site that uses those method names.
+//
+// Example — create() (preferred for new code)
+// -------------------------------------------
 //   auto pool = HimemPool<MyClass>::Make(32);   // 32 objects per block
-//   auto obj  = pool->allocate(ctorArg1, ctorArg2);
+//   auto obj  = pool->create(ctorArg1, ctorArg2);
 //   // ... use *obj ...
 //   obj.reset(); // or let it go out of scope — slot recycled automatically
+//
+// Example — newElement/deleteElement (drop-in for MemoryPool call sites)
+// -----------------------------------------------------------------------
+//   auto pool = HimemPool<MyClass>::Make(32);
+//   MyClass *obj = pool->newElement(ctorArg1, ctorArg2);
+//   // ... use obj ...
+//   pool->deleteElement(obj); // calls ~MyClass() and recycles slot
+//
+// Example — STL container allocator
+// ----------------------------------
+//   SimpleList<MyClass, HimemPool<MyClass>> list;
+//   list.pushBack(value);     // node allocated from embedded pool
+//   list.clear();             // nodes freed, slots recycled
 //
 // IMPORTANT: All Ptr values MUST be destroyed before the pool itself.
 // The pool destructor does NOT call destructors on any still-live objects.
@@ -100,17 +126,52 @@ private:
   /// Called by Deleter: destroys the T object and recycles its slot.
   void deallocate_(T *ptr) noexcept {
     ptr->~T();
-    Slot_ *slot = reinterpret_cast<Slot_ *>(ptr);
-    slot->next  = freeList_;
-    freeList_   = slot;
-    --liveCount_;
+    deallocate(ptr, 1);
   }
 
 public:
+  // ---- STL allocator interface types --------------------------------------
+  using value_type = T;
+
+  template <typename U>
+  struct rebind {
+    using other = HimemPool<U>;
+  };
+
+  using propagate_on_container_copy_assignment = std::false_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using propagate_on_container_swap            = std::true_type;
+
   // ---- Constructors --------------------------------------------------------
   /// Creates a pool with the requested objects-per-block capacity.
   explicit HimemPool(std::size_t blockSize = 20) noexcept
       : blockSize_(blockSize < 1u ? 1u : blockSize) {}
+
+  /// Rebind constructor — creates a fresh pool of U with the same block size.
+  /// Required by std::allocator_traits when the allocator is rebound to a
+  /// different element type (e.g. from HimemPool<T> to HimemPool<Node<T>>).
+  template <typename U>
+  explicit HimemPool(const HimemPool<U> &other) noexcept : blockSize_(other.blockSize()) {}
+
+  /// Move constructor — transfers all backing blocks to the new pool.
+  /// Outstanding Ptr instances must NOT exist at the time of the move because
+  /// their Deleter back-pointer would reference the (now empty) moved-from pool.
+  HimemPool(HimemPool &&other) noexcept
+      : blockSize_(other.blockSize_), blockList_(std::exchange(other.blockList_, nullptr)),
+        currentSlot_(std::exchange(other.currentSlot_, nullptr)),
+        lastSlot_(std::exchange(other.lastSlot_, nullptr)),
+        freeList_(std::exchange(other.freeList_, nullptr)),
+        liveCount_(std::exchange(other.liveCount_, 0)),
+        blockCount_(std::exchange(other.blockCount_, 0)) {}
+
+  /// Move assignment — frees current blocks, then steals from other.
+  HimemPool &operator=(HimemPool &&other) noexcept {
+    if (this != &other) {
+      this->~HimemPool();
+      ::new (this) HimemPool(std::move(other));
+    }
+    return *this;
+  }
 
   // ---- Custom deleter -------------------------------------------------------
   // Held by every Ptr returned from allocate().  On destruction it calls
@@ -128,7 +189,7 @@ public:
     }
   };
 
-  /// Smart-pointer type returned by allocate().
+  /// Smart-pointer type returned by create().
   using Ptr = std::unique_ptr<T, Deleter>;
 
   // ---- Factory -------------------------------------------------------------
@@ -144,7 +205,37 @@ public:
     return HimemUniquePtr<HimemPool>{pool};
   }
 
-  // ---- Object allocation ---------------------------------------------------
+  // ---- STL raw allocate/deallocate (no construction or destruction) --------
+  /// Acquires a raw slot.  n must be 1; hint is ignored (mirrors MemoryPool).
+  /// Called by std::allocator_traits on behalf of STL containers.
+  [[nodiscard]] auto allocate(std::size_t n = 1, const T * /*hint*/ = nullptr) -> T * {
+    (void)n; // only single-object allocation is supported, like MemoryPool
+    Slot_ *slot = nullptr;
+
+    if (freeList_) {
+      slot      = freeList_;
+      freeList_ = freeList_->next;
+    } else {
+      if (currentSlot_ >= lastSlot_) {
+        if (!allocateBlock()) return nullptr;
+      }
+      slot = currentSlot_++;
+    }
+
+    ++liveCount_;
+    return reinterpret_cast<T *>(slot);
+  }
+
+  /// Returns a raw slot to the free list.  Does NOT call the destructor.
+  /// Called by std::allocator_traits on behalf of STL containers.
+  auto deallocate(T *ptr, std::size_t /*n*/ = 1) noexcept -> void {
+    Slot_ *slot = reinterpret_cast<Slot_ *>(ptr);
+    slot->next  = freeList_;
+    freeList_   = slot;
+    --liveCount_;
+  }
+
+  // ---- Owning allocation (constructs T, returns managing Ptr) --------------
   /// Constructs a T in the pool with the supplied arguments and returns a
   /// managing Ptr.  Recycles a freed slot when available; otherwise carves
   /// out a fresh slot from the current block, allocating a new block if
@@ -152,29 +243,45 @@ public:
   ///
   /// @returns A non-null Ptr on success, or a null Ptr on OOM.
   template <typename... Args>
-  [[nodiscard]] auto allocate(Args &&...args) -> Ptr {
-    Slot_ *slot = nullptr;
-
-    if (freeList_) {
-      // Reuse a previously freed slot.
-      slot      = freeList_;
-      freeList_ = freeList_->next;
-    } else {
-      // Carve out the next fresh slot, growing the pool if needed.
-      if (currentSlot_ >= lastSlot_) {
-        if (!allocateBlock()) return Ptr{nullptr, Deleter{this}};
-      }
-      slot = currentSlot_++;
-    }
-
-    T *ptr = ::new (&slot->element) T(std::forward<Args>(args)...);
-    ++liveCount_;
+  [[nodiscard]] auto create(Args &&...args) -> Ptr {
+    T *ptr = allocate(1, nullptr);
+    if (!ptr) return Ptr{nullptr, Deleter{this}};
+    ::new (ptr) T(std::forward<Args>(args)...);
     return Ptr{ptr, Deleter{this}};
   }
 
+  // ---- STL allocator equality ---------------------------------------------
+  /// Two HimemPool<T> instances are equal only when they are the same object,
+  /// since memory allocated by one cannot be freed by another.
+  [[nodiscard]] bool operator==(const HimemPool &other) const noexcept { return this == &other; }
+  template <typename U>
+  [[nodiscard]] bool operator==(const HimemPool<U> &) const noexcept {
+    return false;
+  }
+
   /// Raw-pointer release helper for legacy/manual call sites.
-  /// Prefer Ptr ownership when possible.
-  auto deallocate(T *ptr) noexcept -> void {
+  /// Prefer Ptr ownership (create/~Ptr) when possible.
+  auto release(T *ptr) noexcept -> void {
+    if (ptr) deallocate_(ptr);
+  }
+
+  // ---- MemoryPool-compatible raw-pointer API ------------------------------
+  // These mirror the MemoryPool<T>::newElement / deleteElement interface so
+  // that HimemPool<T> is a drop-in replacement at every call site that uses
+  // those names.  Raw pointers returned by newElement() are NOT automatically
+  // managed — callers must eventually call deleteElement() on each one.
+
+  /// Constructs a T in the pool and returns a raw owning pointer.
+  /// Returns nullptr on OOM.
+  template <typename... Args>
+  [[nodiscard]] auto newElement(Args &&...args) -> T * {
+    T *ptr = allocate(1, nullptr);
+    if (ptr) ::new (ptr) T(std::forward<Args>(args)...);
+    return ptr;
+  }
+
+  /// Destroys the T object and recycles its slot.  Safe to call with nullptr.
+  auto deleteElement(T *ptr) noexcept -> void {
     if (ptr) deallocate_(ptr);
   }
 
@@ -187,10 +294,13 @@ public:
   [[nodiscard]] std::size_t blockSize() const noexcept { return blockSize_; }
 
   // ---- Lifecycle -----------------------------------------------------------
-  HimemPool(const HimemPool &)            = delete;
+  /// Copy constructor — creates a fresh EMPTY pool with the same block size.
+  /// This is intentionally NOT a deep copy.  The STL allocator contract
+  /// requires copy-constructibility for select_on_container_copy_construction;
+  /// the copy-constructed allocator starts with no backing blocks.
+  HimemPool(const HimemPool &other) noexcept : blockSize_(other.blockSize_) {}
+
   HimemPool &operator=(const HimemPool &) = delete;
-  HimemPool(HimemPool &&)                 = delete;
-  HimemPool &operator=(HimemPool &&)      = delete;
 
   /// Releases all backing blocks back to PSRAM.
   /// WARNING: Does NOT call destructors on any live objects still referenced

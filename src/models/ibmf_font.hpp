@@ -664,7 +664,7 @@ private:
       if (i == 0) {
         do {
           if (!getNybble(nyb)) return false;
-          i++;
+          ++i;
         } while (nyb == 0);
         j = nyb;
         while (i-- > 0) {
@@ -702,14 +702,14 @@ private:
 
     if (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) {
       uint32_t rowSize = (dim.width + 7) >> 3;
-      rowp              = bitmap + (offsets.y * rowSize);
+      rowp             = bitmap + (offsets.y * rowSize);
 
       if (glyphInfo->glyphMetric.dynF == 14) { // is a bitmap?
         uint32_t count = 8;
         uint8_t data;
 
-        for (uint32_t row = 0; row < glyphInfo->bitmapHeight; row++, rowp += rowSize) {
-          for (uint32_t col = offsets.x; col < glyphInfo->bitmapWidth + offsets.x; col++) {
+        for (uint32_t row = 0; row < glyphInfo->bitmapHeight; ++row, rowp += rowSize) {
+          for (uint32_t col = offsets.x; col < glyphInfo->bitmapWidth + offsets.x; ++col) {
             if (count >= 8) {
               if (!getnext8(data)) {
                 std::cerr << "Not enough bitmap data!" << std::endl;
@@ -719,7 +719,7 @@ private:
               count = 0;
             }
             if (data & (0x80U >> count)) rowp[col >> 3] |= (0x80U >> (col & 7));
-            count++;
+            ++count;
           }
         }
         // std::cout << std::endl;
@@ -731,28 +731,22 @@ private:
 
         bool black = !(glyphInfo->glyphMetric.firstIsBlack == 1);
 
-        for (uint32_t row = 0; row < glyphInfo->bitmapHeight; row++, rowp += rowSize) {
-          for (uint32_t col = offsets.x; col < glyphInfo->bitmapWidth + offsets.x; col++) {
+        for (uint32_t row = 0; row < glyphInfo->bitmapHeight; ++row, rowp += rowSize) {
+          for (uint32_t col = offsets.x; col < glyphInfo->bitmapWidth + offsets.x; ++col) {
             if (count == 0) {
               if (!getPackedNumber(count, *glyphInfo)) {
                 return false;
               }
               black = !black;
-              // if (black) {
-              //   std::cout << count << ' ';
-              // }
-              // else {
-              //   std::cout << '(' << count << ')' << ' ';
-              // }
             }
             if (black) rowp[col >> 3] |= (0x80U >> (col & 0x07));
-            count--;
+            --count;
           }
 
           // if (repeatCount != 0) std::cout << "Repeat count: " << repeatCount << std::endl;
           while ((row < glyphInfo->bitmapHeight) && (repeatCount-- > 0)) {
             bcopy(rowp, rowp + rowSize, rowSize);
-            row++;
+            ++row;
             rowp += rowSize;
           }
 
@@ -762,7 +756,7 @@ private:
       }
     } else {
       uint32_t rowSize = dim.width;
-      rowp              = bitmap + (offsets.y * rowSize);
+      rowp             = bitmap + (offsets.y * rowSize);
 
       repeatCount   = 0;
       nybbleFlipper = 0xf0U;
@@ -771,8 +765,8 @@ private:
         uint32_t count = 8;
         uint8_t data;
 
-        for (uint32_t row = 0; row < (glyphInfo->bitmapHeight); row++, rowp += rowSize) {
-          for (uint32_t col = offsets.x; col < (glyphInfo->bitmapWidth + offsets.x); col++) {
+        for (uint32_t row = 0; row < (glyphInfo->bitmapHeight); ++row, rowp += rowSize) {
+          for (uint32_t col = offsets.x; col < (glyphInfo->bitmapWidth + offsets.x); ++col) {
             if (count >= 8) {
               if (!getnext8(data)) {
                 std::cerr << "Not enough bitmap data!" << std::endl;
@@ -782,7 +776,7 @@ private:
               count = 0;
             }
             rowp[col] = (data & (0x80U >> count)) ? 0xFF : 0;
-            count++;
+            ++count;
           }
         }
         // std::cout << std::endl;
@@ -794,8 +788,8 @@ private:
 
         bool black = !(glyphInfo->glyphMetric.firstIsBlack == 1);
 
-        for (uint32_t row = 0; row < (glyphInfo->bitmapHeight); row++, rowp += rowSize) {
-          for (uint32_t col = offsets.x; col < (glyphInfo->bitmapWidth + offsets.x); col++) {
+        for (uint32_t row = 0; row < (glyphInfo->bitmapHeight); ++row, rowp += rowSize) {
+          for (uint32_t col = offsets.x; col < (glyphInfo->bitmapWidth + offsets.x); ++col) {
             if (count == 0) {
               if (!getPackedNumber(count, *glyphInfo)) {
                 return false;
@@ -809,13 +803,13 @@ private:
               // }
             }
             if (black) rowp[col] = 0xFF;
-            count--;
+            --count;
           }
 
           // if (repeatCount != 0) std::cout << "Repeat count: " << repeatCount << std::endl;
           while ((row < dim.height) && (repeatCount-- > 0)) {
             bcopy(rowp, rowp + rowSize, rowSize);
-            row++;
+            ++row;
             rowp += rowSize;
           }
 
@@ -831,14 +825,13 @@ private:
     preamble = (Preamble *)memory;
     if (strncmp("IBMF", preamble->marker, 4) != 0) return false;
     if (preamble->bits.version != IBMF_VERSION) return false;
-    sizes        = (uint8_t *)&memory[6 + (preamble->sizeCount * 4)];
+    sizes       = (uint8_t *)&memory[6 + (preamble->sizeCount * 4)];
     currentFont = nullptr;
 
     return true;
   }
 
   auto loadData() -> bool {
-    // for (uint8_t i = 0; i < MAX_GLYPH_COUNT; i++) glyphDataTable[i] = nullptr;
     memset(glyphInfoTable, 0, sizeof(glyphInfoTable));
 
     memoryPtr = currentFont;
@@ -846,8 +839,8 @@ private:
     header = (Header *)currentFont;
 
     memoryPtr += sizeof(Header);
-    for (int i = 0; i < header->glyphCount; i++) {
-      glyphInfo                              = (GlyphInfo *)memoryPtr;
+    for (int i = 0; i < header->glyphCount; ++i) {
+      glyphInfo                           = (GlyphInfo *)memoryPtr;
       glyphInfoTable[glyphInfo->charCode] = (GlyphInfo *)memoryPtr;
       memoryPtr += sizeof(GlyphInfo) + glyphInfo->packetLength;
       if (memoryPtr > memoryEnd) return false;
@@ -869,8 +862,8 @@ public:
   IBMFFont(uint8_t *memoryFont, uint32_t size, Font &font)
       : memory(memoryFont), memoryLength(size), font(font) {
 
-    memoryEnd                   = memory + memoryLength;
-    initialized                  = loadPreamble();
+    memoryEnd                = memory + memoryLength;
+    initialized              = loadPreamble();
     memoryOwnerIsTheInstance = false;
     if (!initialized) {
       std::cerr << "Font data not recognized!" << std::endl;
@@ -884,9 +877,9 @@ public:
     initialized = false;
 
     if (stat(filename.c_str(), &fileStat) != -1) {
-      FILE *file                   = fopen(filename.c_str(), "rb");
-      memory                       = new uint8_t[memoryLength = fileStat.st_size];
-      memoryEnd                   = (memory == nullptr) ? nullptr : memory + memoryLength;
+      FILE *file               = fopen(filename.c_str(), "rb");
+      memory                   = new uint8_t[memoryLength = fileStat.st_size];
+      memoryEnd                = (memory == nullptr) ? nullptr : memory + memoryLength;
       memoryOwnerIsTheInstance = true;
 
       if (memory != nullptr) {
@@ -910,14 +903,18 @@ public:
     }
   }
 
- [[nodiscard]] inline auto getFontSize() -> uint8_t { return header->pointSize; }
- [[nodiscard]] inline auto getLineHeight() -> uint16_t { return header->lineHeight; }
- [[nodiscard]] inline auto getCharsHeight() -> uint16_t { return header->emSize >> 6; }
- [[nodiscard]] inline auto getDescenderHeight() -> int16_t { return -static_cast<int16_t>(header->descenderHeight); }
- [[nodiscard]] inline auto getLigKern(uint8_t idx) -> LigKernStep * { return &ligKernPgm[idx]; }
- [[nodiscard]] inline auto getKern(uint8_t i) -> FIX16 { return kerns[i]; }
- [[nodiscard]] inline auto getGlyphInfo(uint8_t glyphCode) -> GlyphInfo * { return glyphInfoTable[glyphCode]; }
- [[nodiscard]] inline auto getCharSet() -> uint8_t { return preamble->bits.charSet; }
+  [[nodiscard]] inline auto getFontSize() -> uint8_t { return header->pointSize; }
+  [[nodiscard]] inline auto getLineHeight() -> uint16_t { return header->lineHeight; }
+  [[nodiscard]] inline auto getCharsHeight() -> uint16_t { return header->emSize >> 6; }
+  [[nodiscard]] inline auto getDescenderHeight() -> int16_t {
+    return -static_cast<int16_t>(header->descenderHeight);
+  }
+  [[nodiscard]] inline auto getLigKern(uint8_t idx) -> LigKernStep * { return &ligKernPgm[idx]; }
+  [[nodiscard]] inline auto getKern(uint8_t i) -> FIX16 { return kerns[i]; }
+  [[nodiscard]] inline auto getGlyphInfo(uint8_t glyphCode) -> GlyphInfo * {
+    return glyphInfoTable[glyphCode];
+  }
+  [[nodiscard]] inline auto getCharSet() -> uint8_t { return preamble->bits.charSet; }
 
   /**
    * @brief Translate unicode in an internal char code
@@ -998,16 +995,17 @@ public:
     return glyphCode;
   }
 
-  auto getGlyph(uint32_t glyphCode, Glyph &appGlyph, GlyphInfo **glyphData, bool loadBitmap) -> bool {
+  auto getGlyph(uint32_t glyphCode, Glyph &appGlyph, GlyphInfo **glyphData, bool loadBitmap)
+      -> bool {
     // uint32_t glyphCode = translate(charCode);
 
     glyph.clear();
 
-    uint8_t accent         = (glyphCode & 0x0000FF00) >> 8;
+    uint8_t accent        = (glyphCode & 0x0000FF00) >> 8;
     GlyphInfo *accentInfo = (accent != 0xFF) ? glyphInfoTable[accent] : nullptr;
 
     if (((glyphCode & 0xFF) == 0xFF) || (((glyphCode & 0xFF) < header->glyphCount) &&
-                                          (glyphInfoTable[glyphCode & 0xFF] == nullptr))) {
+                                         (glyphInfoTable[glyphCode & 0xFF] == nullptr))) {
       std::cerr << "No entry for char code 0x" << std::hex << glyphCode << std::endl;
       glyphCode = 0xFFFE;
     }
@@ -1035,9 +1033,9 @@ public:
 
       if (glyphCode == 0x276E) { // Apostrophe n
         // offsets.x = 0; // already set
-        addedLeft = accentInfo->bitmapWidth + 1 -
-                     (((header->xHeight >> 6) * header->slantCorrection) >> 6);
-        dim.width  = addedLeft + glyphInfo->bitmapWidth;
+        addedLeft =
+            accentInfo->bitmapWidth + 1 - (((header->xHeight >> 6) * header->slantCorrection) >> 6);
+        dim.width = addedLeft + glyphInfo->bitmapWidth;
       } else {
         // Horizontal adjustment
         if (glyphCode == 0x0C41) { // Ą
@@ -1046,18 +1044,17 @@ public:
           offsets.x = glyphInfo->bitmapWidth - accentInfo->bitmapWidth -
                       ((((int32_t)glyphInfo->bitmapHeight) * header->slantCorrection) >> 6);
         } else {
-          offsets.x =
-              ((glyphInfo->bitmapWidth > accentInfo->bitmapWidth)
-                   ? ((glyphInfo->bitmapWidth - accentInfo->bitmapWidth) >> 1)
-                   : 0) +
-              ((accentInfo->verticalOffset < 5)
-                   ? -(((header->xHeight >> 6) * header->slantCorrection) >> 6)
-                   : ((((int32_t)glyphInfo->bitmapHeight) * header->slantCorrection) >> 6))
+          offsets.x = ((glyphInfo->bitmapWidth > accentInfo->bitmapWidth)
+                           ? ((glyphInfo->bitmapWidth - accentInfo->bitmapWidth) >> 1)
+                           : 0) +
+                      ((accentInfo->verticalOffset < 5)
+                           ? -(((header->xHeight >> 6) * header->slantCorrection) >> 6)
+                           : ((((int32_t)glyphInfo->bitmapHeight) * header->slantCorrection) >> 6))
               /*- (accentInfo->horizontalOffset - glyphInfo->horizontalOffset)*/;
         }
         if ((offsets.x == 0) && (glyphInfo->bitmapWidth < accentInfo->bitmapWidth)) {
           addedLeft = (accentInfo->bitmapWidth - glyphInfo->bitmapWidth) >> 1;
-          dim.width  = accentInfo->bitmapWidth;
+          dim.width = accentInfo->bitmapWidth;
         }
         if (dim.width < (offsets.x + accentInfo->bitmapWidth)) {
           dim.width = offsets.x + accentInfo->bitmapWidth;
@@ -1071,7 +1068,7 @@ public:
       } else if (accentInfo->verticalOffset < 5) {
         // Accents below the main glyph (cedilla)
         int16_t addedHeight = (glyphInfo->bitmapHeight - glyphInfo->verticalOffset) -
-                               ((-accentInfo->verticalOffset) + accentInfo->bitmapHeight);
+                              ((-accentInfo->verticalOffset) + accentInfo->bitmapHeight);
         if (addedHeight < 0) dim.height += -addedHeight;
         offsets.y = glyphInfo->verticalOffset - accentInfo->verticalOffset;
       }
@@ -1122,9 +1119,9 @@ public:
   auto setFontSize(uint8_t size) -> bool {
     if (!initialized) return false;
     uint8_t i = 0;
-    while ((i < preamble->sizeCount) && (sizes[i] <= size)) i++;
-    if (i > 0) i--;
-    currentFont       = memory + preamble->fontOffsets[i];
+    while ((i < preamble->sizeCount) && (sizes[i] <= size)) ++i;
+    if (i > 0) --i;
+    currentFont      = memory + preamble->fontOffsets[i];
     currentPointSize = sizes[i];
     return loadData();
   }
@@ -1155,9 +1152,9 @@ public:
     for (col = 0; col < glyph.dim.width; col++) std::cout << '-';
     std::cout << '+' << std::endl;
 
-    for (row = 0, rowPtr = glyph.buffer; row < glyph.dim.height; row++, rowPtr += rowSize) {
+    for (row = 0, rowPtr = glyph.buffer; row < glyph.dim.height; ++row, rowPtr += rowSize) {
       std::cout << '|';
-      for (col = 0; col < glyph.dim.width; col++) {
+      for (col = 0; col < glyph.dim.width; ++col) {
         std::cout << ((rowPtr[col >> 3] & (0x80 >> (col & 7))) ? 'X' : ' ');
       }
       std::cout << '|';
@@ -1165,11 +1162,11 @@ public:
     }
 
     std::cout << '+';
-    for (col = 0; col < glyph.dim.width; col++) std::cout << '-';
+    for (col = 0; col < glyph.dim.width; ++col) std::cout << '-';
     std::cout << '+' << std::endl << std::endl;
 
     return true;
   }
 
- [[nodiscard]] inline auto isInitialized() -> bool { return initialized; }
+  [[nodiscard]] inline auto isInitialized() -> bool { return initialized; }
 };

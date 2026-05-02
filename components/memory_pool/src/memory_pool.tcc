@@ -147,6 +147,8 @@ MemoryPool<T, BlockSize>::newElement(Args &&...args) {
 }
 
 template <typename T, size_t BlockSize>
+/// Destroys an element and deallocates its memory back to the pool.
+/// @param p Pointer to the element to destroy and deallocate
 inline void MemoryPool<T, BlockSize>::deleteElement(pointer p) {
   if (p != nullptr) {
     p->~value_type();

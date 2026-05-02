@@ -68,7 +68,7 @@
             vTaskDelay(pdMS_TO_TICKS(10E3));
             LOG_I("retry to connect to the AP");
             esp_wifi_connect();
-            retryCount++;
+            ++retryCount;
           } else {
             xEventGroupSetBits(wifiEventGroup, WIFI_FAIL_BIT);
             LOG_I("connect to the AP fail");

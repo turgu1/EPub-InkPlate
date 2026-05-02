@@ -51,7 +51,7 @@ auto Fonts::setup() -> bool {
       // and system fonts) are loaded.
       LOG_D("Loading Application fonts...");
 
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 3; ++i) {
         const auto descr = fontsDB->getFontFaceDescriptor(i);
         if (descr) {
           LOG_D("Loading font %s...", ((*descr)->name.c_str()));
@@ -62,7 +62,7 @@ auto Fonts::setup() -> bool {
       }
     } else {
       LOG_D("Loading fonts for books...");
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < 7; ++i) {
         const auto descr = fontsDB->getFontFaceDescriptor(i);
         if (descr) {
           LOG_D("Loading font %s...", ((*descr)->name.c_str()));
@@ -97,7 +97,7 @@ auto Fonts::clear(bool all) -> void {
     // Keep the first 7 fonts as they are reused. Caches will be cleared.
     #if USE_EPUB_FONTS
       if (!thisIsAppFonts) {
-        for (int i = 0; i < (all ? 3 : 7); i++) {
+        for (int i = 0; i < (all ? 3 : 7); ++i) {
           fontCache.at(i)->font->clearCache();
         }
         fontCache.resize(all ? 3 : 7);
@@ -137,7 +137,7 @@ auto Fonts::getIndex(const HimemString &name, FaceStyle style) -> int16_t {
 
     for (auto &entry : fontCache) {
       if ((entry->name.compare(name) == 0) && (entry->style == style)) return idx;
-      idx++;
+      ++idx;
     }
   }
   return -1;
