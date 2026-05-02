@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <new>
 #include <sys/stat.h>
 
 using namespace pugi;
@@ -785,7 +786,7 @@ auto EPub::updateBookFormatParams() -> void {
 
 auto EPub::openParams(const HimemString &epubFilename) -> void {
   HimemString paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
-  bookParams                 = new BookParams(paramsFilename, false);
+  bookParams.reset(new (std::nothrow) BookParams(paramsFilename, false));
   if (bookParams != nullptr) {
     bookParams->read();
   }
@@ -819,10 +820,7 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
     encryptionPresent = false;
     currentFilename.clear();
 
-    if (bookParams != nullptr) {
-      delete bookParams;
-      bookParams = nullptr;
-    }
+    if (bookParams != nullptr) bookParams.reset();
 
     return false;
   };
@@ -947,8 +945,7 @@ auto EPub::closeFile() -> bool {
 
   if (bookParams != nullptr) {
     bookParams->save();
-    delete bookParams;
-    bookParams = nullptr;
+    bookParams.reset();
   }
 
   return true;

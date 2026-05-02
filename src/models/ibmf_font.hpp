@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 #include "global.hpp"
 #include "models/font.hpp"
@@ -546,7 +547,6 @@ private:
   static constexpr uint8_t IBMF_VERSION    = 2;
 
   bool initialized;
-  bool memoryOwnerIsTheInstance;
 
   #pragma pack(push, 1)
   struct Preamble {
@@ -574,8 +574,9 @@ private:
   };
   #pragma pack(pop)
 
-  uint8_t *memory;
-  uint32_t memoryLength;
+  std::unique_ptr<uint8_t[]> ownedMemory{};
+  uint8_t *memory{nullptr};
+  uint32_t memoryLength{0};
 
   uint8_t *memoryPtr;
   uint8_t *memoryEnd;
@@ -862,9 +863,8 @@ public:
   IBMFFont(uint8_t *memoryFont, uint32_t size, Font &font)
       : memory(memoryFont), memoryLength(size), font(font) {
 
-    memoryEnd                = memory + memoryLength;
-    initialized              = loadPreamble();
-    memoryOwnerIsTheInstance = false;
+    memoryEnd   = memory + memoryLength;
+    initialized = loadPreamble();
     if (!initialized) {
       std::cerr << "Font data not recognized!" << std::endl;
     }
@@ -877,31 +877,29 @@ public:
     initialized = false;
 
     if (stat(filename.c_str(), &fileStat) != -1) {
-      FILE *file               = fopen(filename.c_str(), "rb");
-      memory                   = new uint8_t[memoryLength = fileStat.st_size];
-      memoryEnd                = (memory == nullptr) ? nullptr : memory + memoryLength;
-      memoryOwnerIsTheInstance = true;
+      memoryLength = fileStat.st_size;
+      ownedMemory  = std::make_unique<uint8_t[]>(memoryLength);
+      memory       = ownedMemory.get();
+      memoryEnd    = (memory == nullptr) ? nullptr : memory + memoryLength;
 
       if (memory != nullptr) {
-        if (fread(memory, memoryLength, 1, file) == 1) {
+        std::ifstream file(filename, std::ios::binary);
+        if (file.is_open()) {
+          file.read(reinterpret_cast<char *>(memory), static_cast<std::streamsize>(memoryLength));
+        }
+        if (file.good() || (file.eof() && (static_cast<uint32_t>(file.gcount()) == memoryLength))) {
           initialized = loadPreamble();
         }
         if (!initialized) {
           std::cerr << "Font data not recognized!" << std::endl;
         }
       }
-      fclose(file);
     } else {
-      std::cerr << "Unable to find font file %s!" << filename.c_str() << std::endl;
+      std::cerr << "Unable to find font file " << filename << "!" << std::endl;
     }
   }
 
-  ~IBMFFont() {
-    if (memoryOwnerIsTheInstance && (memory != nullptr)) {
-      delete[] memory;
-      memory = nullptr;
-    }
-  }
+  ~IBMFFont() = default;
 
   [[nodiscard]] inline auto getFontSize() -> uint8_t { return header->pointSize; }
   [[nodiscard]] inline auto getLineHeight() -> uint16_t { return header->lineHeight; }

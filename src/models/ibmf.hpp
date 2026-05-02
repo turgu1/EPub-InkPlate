@@ -13,6 +13,7 @@
 #include "models/ibmf_font.hpp"
 
 #include <forward_list>
+#include <memory>
 // #include <mutex>
 #include <unordered_map>
 
@@ -20,7 +21,7 @@ class IBMF : public Font {
 private:
   static constexpr char const *TAG = "IBMF";
 
-  IBMFFont *face;
+  std::unique_ptr<IBMFFont> face;
   // std::mutex mutex;
   IBMFFont::GlyphInfo *glyphData;
 

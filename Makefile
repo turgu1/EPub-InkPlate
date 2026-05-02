@@ -225,6 +225,7 @@ TEST_SRC_CPP := \
   test/test_display_list.cpp \
   test/test_app_config.cpp \
   test/test_epub.cpp \
+  test/test_unzip.cpp \
   test/test_simple_list.cpp \
   test/stubs.cpp \
   src/models/dom.cpp \
@@ -244,7 +245,7 @@ TEST_DEPS     := $(TEST_OBJS:.o=.d)
 
 .PHONY: test build_test clean_test all_tests \
         test_himem test_himem_pool_test test_dom test_simple_db test_css \
-        test_display_list test_app_config test_epub test_simple_list
+  test_display_list test_app_config test_epub test_unzip test_simple_list
 
 build_test: $(TEST_BUILD)/$(TEST_TARGET)
 
@@ -261,6 +262,7 @@ test_css:            $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET
 test_display_list:   $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) display_list
 test_app_config:     $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) app_config
 test_epub:           $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) epub
+test_unzip:          $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) unzip
 test_simple_list:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) simple_list
 
 # Convenience target: run both test suites in sequence.

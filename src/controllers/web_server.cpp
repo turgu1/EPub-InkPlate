@@ -11,7 +11,7 @@
   #include "models/page_locs.hpp"
   #include "viewers/msg_viewer.hpp"
 
-  #include <stdio.h>
+  #include <fstream>
   #include <sys/param.h>
   #include <sys/stat.h>
   #include <sys/unistd.h>
@@ -271,7 +271,7 @@
   static auto downloadHandler(httpd_req_t *req) -> esp_err_t {
     LOG_D("downloadHandler(%s) %d", req->uri, (int)req->user_ctx);
 
-    FILE *fd = nullptr;
+    std::ifstream fd;
     struct stat fileStat;
 
     std::string filepath;
@@ -298,8 +298,8 @@
       return ESP_FAIL;
     }
 
-    fd = fopen(filepath.c_str(), "r");
-    if (!fd) {
+    fd.open(filepath.c_str(), std::ios::binary);
+    if (!fd.is_open()) {
       LOG_E("Failed to read existing file : %s", filepath.c_str());
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
       return ESP_FAIL;
@@ -312,11 +312,12 @@
     char *chunk = ((FileServerData *)req->user_ctx)->scratch;
     size_t chunksize;
     do {
-      chunksize = fread(chunk, 1, SCRATCH_BUFSIZE, fd);
+      fd.read(chunk, SCRATCH_BUFSIZE);
+      chunksize = static_cast<size_t>(fd.gcount());
 
       if (chunksize > 0) {
         if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) {
-          fclose(fd);
+          fd.close();
           LOG_E("File sending failed!");
           httpd_resp_sendstr_chunk(req, NULL);
           httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
@@ -325,7 +326,7 @@
       }
     } while (chunksize != 0);
 
-    fclose(fd);
+    fd.close();
     LOG_I("File sending complete");
 
     /* Respond with an empty chunk to signal HTTP response completion */
@@ -338,7 +339,7 @@
   static auto uploadHandler(httpd_req_t *req) -> esp_err_t {
     LOG_D("uploadHandler(%s)", req->uri);
 
-    FILE *fd = NULL;
+    std::ofstream fd;
     struct stat fileStat;
 
     std::string filepath;
@@ -365,8 +366,8 @@
       return ESP_FAIL;
     }
 
-    fd = fopen(filepath.c_str(), "w");
-    if (!fd) {
+    fd.open(filepath.c_str(), std::ios::binary);
+    if (!fd.is_open()) {
       LOG_E("Failed to create file : %s", filepath.c_str());
       httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
       return ESP_FAIL;
@@ -390,7 +391,7 @@
           continue;
         }
 
-        fclose(fd);
+        fd.close();
         unlink(filepath.c_str());
 
         LOG_E("File reception failed!");
@@ -399,10 +400,13 @@
       }
 
       /* Write buffer content to file on storage */
-      if (received && (received != fwrite(buf, 1, received, fd))) {
+      if (received) {
+        fd.write(buf, received);
+      }
+      if (!fd.good()) {
         /* Couldn't write everything to file!
          * Storage may be full? */
-        fclose(fd);
+        fd.close();
         unlink(filepath.c_str());
 
         LOG_E("File write failed!");
@@ -413,7 +417,7 @@
 
       remaining -= received;
     }
-    fclose(fd);
+    fd.close();
     LOG_I("File reception complete");
 
     /* Redirect onto root to see the updated file list */

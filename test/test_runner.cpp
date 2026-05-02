@@ -32,6 +32,7 @@ auto testCss() -> TestStats;
 auto testDisplayList() -> TestStats;
 auto testAppConfig() -> TestStats;
 auto testEPub() -> TestStats;
+auto testUnzip() -> TestStats;
 auto testSimpleList() -> TestStats;
 
 // ---------------------------------------------------------------------------
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
       {"display_list", testDisplayList},
       {"app_config", testAppConfig},
       {"epub", testEPub},
+      {"unzip", testUnzip},
       {"simple_list", testSimpleList},
   };
 

@@ -15,7 +15,7 @@
 #define BYTES_PER_PIXEL 3
 
 Screen Screen::singleton;
-guchar *Screen::pixels = nullptr;
+std::unique_ptr<guchar[]> Screen::pixels = nullptr;
 
 uint16_t Screen::width;
 uint16_t Screen::height;
@@ -24,8 +24,7 @@ const uint8_t Screen::LUT1BIT[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x
 
 auto freePixels(guchar *pixels, gpointer data) -> void {
   if (Screen::pixels != nullptr) {
-    delete[] Screen::pixels;
-    Screen::pixels = nullptr;
+    Screen::pixels.reset();
   }
 }
 
@@ -279,8 +278,7 @@ static auto destroyApp(GtkWidget *widget, gpointer data) -> void {
   exitApp();
   gtk_main_quit();
   if (Screen::pixels != nullptr) {
-    delete[] Screen::pixels;
-    Screen::pixels = nullptr;
+    Screen::pixels.reset();
   }
 }
 
@@ -301,13 +299,13 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
   pictureData.stride = width * BYTES_PER_PIXEL;
   pictureData.stride += (4 - (pictureData.stride % 4)) % 4; // ensure multiple of 4
 
-  pixels = new guchar[height * pictureData.stride]();
-  memset(pixels, 255, height * pictureData.stride); // clear to white
+  pixels = std::make_unique<guchar[]>(height * pictureData.stride);
+  memset(pixels.get(), 255, height * pictureData.stride); // clear to white
 
   for (int r = 0; r < height; ++r)
-    for (int c = 0; c < width; ++c) setRgb(pixels, r, c, pictureData.stride, 255);
+    for (int c = 0; c < width; ++c) setRgb(pixels.get(), r, c, pictureData.stride, 255);
 
-  GdkPixbuf *pb = gdk_pixbuf_new_from_data(pixels,
+  GdkPixbuf *pb = gdk_pixbuf_new_from_data(pixels.get(),
                                            GDK_COLORSPACE_RGB, // colorspace
                                            0,                  // has_alpha
                                            8,                  // bits-per-sample

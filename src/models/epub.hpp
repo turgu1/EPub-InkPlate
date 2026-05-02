@@ -19,6 +19,7 @@
 #include <forward_list>
 #include <list>
 #include <map>
+#include <memory>
 
 class TOC;
 class EPub;
@@ -90,7 +91,7 @@ private:
   HimemString opfBasePath{""};
 
   ItemInfo currentItemInfo{};
-  BookParams *bookParams{nullptr};
+  std::unique_ptr<BookParams> bookParams{nullptr};
   BookFormatParams bookFormatParams{};
 
   Fonts fonts; ///< Fonts loaded from the e-book. They are used in priority to the default
@@ -177,7 +178,7 @@ public:
  [[nodiscard]] inline auto getCurrentItem() const         -> const pugi::xml_document & { return currentItemInfo.xmlDoc; }
  [[nodiscard]] inline auto getCurrentFilename() const     -> const HimemString &        { return currentFilename; }
  [[nodiscard]] inline auto filenameIsEmpty()              -> bool                       { return currentFilename.empty(); }
- [[nodiscard]] inline auto getBookParams()                -> BookParams *               { return bookParams; }
+ [[nodiscard]] inline auto getBookParams()                -> BookParams *               { return bookParams.get(); }
  [[nodiscard]] inline auto getBookFormatParams()          -> BookFormatParams *         { return &bookFormatParams; }
  [[nodiscard]] inline auto getOpfBasePath() const         -> const HimemString &        { return opfBasePath; }
  [[nodiscard]] inline auto getOpf()                       -> const pugi::xml_document & { return opf; }

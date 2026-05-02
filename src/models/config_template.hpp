@@ -267,20 +267,19 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
     }
   }
 
-  std::ifstream *file = new std::ifstream(config_filename);
+  std::ifstream file(config_filename);
 
-  if (!file->is_open()) {
-    delete file;
+  if (!file.is_open()) {
     return save(true);
   }
 
-  char *buff = new char[128];
+  std::array<char, 128> buff{};
   char *caption;
   char *value;
 
-  while (!file->eof()) {
-    file->getline(buff, 128);
-    if (parseLine(buff, &caption, &value)) {
+  while (!file.eof()) {
+    file.getline(buff.data(), buff.size());
+    if (parseLine(buff.data(), &caption, &value)) {
       LOG_D("Caption: %s, value: %s", caption, value);
       if (*caption == '\0') continue;
       for (auto &entry : cfg) {
@@ -303,10 +302,7 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
     }
   }
 
-  file->close();
-
-  delete file;
-  delete[] buff;
+  file.close();
 
   if (fontIndexRef != nullptr) {
     fontIndex = *fontIndexRef;
@@ -320,47 +316,46 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
 template <class IdType, int cfg_size>
 auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
   if (force || modified) {
-    std::ofstream *file = new std::ofstream(config_filename);
-    if (!file->is_open()) return false;
+    std::ofstream file(config_filename);
+    if (!file.is_open()) return false;
 
     if (comment) {
-      *file << "# EPub-InkPlate Config File\n"
-               "# -------------------------\n"
-               "#\n"
-               "# (This file will be reinitialized automatically)\n"
-               "#\n"
-               "# Please respect the content format:\n"
-               "#\n"
-               "# - Comments start with # (no comment on parameter lines).\n"
-               "# - Parameters are of the form 'param_name = value' or 'param_name = \"value\"'.\n"
-               "# - Blank lines are allowed.\n"
-               "# - The following parameters are recognized:\n"
-               "#\n";
+      file << "# EPub-InkPlate Config File\n"
+              "# -------------------------\n"
+              "#\n"
+              "# (This file will be reinitialized automatically)\n"
+              "#\n"
+              "# Please respect the content format:\n"
+              "#\n"
+              "# - Comments start with # (no comment on parameter lines).\n"
+              "# - Parameters are of the form 'param_name = value' or 'param_name = \"value\"'.\n"
+              "# - Blank lines are allowed.\n"
+              "# - The following parameters are recognized:\n"
+              "#\n";
 
       for (auto &entry : cfg) {
         if (entry.type != EntryType::FONTS_DB) {
-          *file << "#      " << entry.caption << std::endl;
+          file << "#      " << entry.caption << std::endl;
         }
       }
 
-      *file << "# ---\n\n";
+      file << "# ---\n\n";
     }
 
     for (auto &entry : cfg) {
       if (entry.type == EntryType::STRING) {
-        *file << entry.caption << " = \"" << (char *)entry.value << '"' << std::endl;
+        file << entry.caption << " = \"" << (char *)entry.value << '"' << std::endl;
       } else if (entry.type == EntryType::INT) {
-        *file << entry.caption << " = " << *(int32_t *)entry.value << std::endl;
+        file << entry.caption << " = " << *(int32_t *)entry.value << std::endl;
       } else if (entry.type == EntryType::INT64) {
-        *file << entry.caption << " = " << *(int64_t *)entry.value << std::endl;
+        file << entry.caption << " = " << *(int64_t *)entry.value << std::endl;
       } else if (entry.type == EntryType::FONTS_DB) {
         // Do not serialize object entries.
       } else {
-        *file << entry.caption << " = " << +*(int8_t *)entry.value << std::endl;
+        file << entry.caption << " = " << +*(int8_t *)entry.value << std::endl;
       }
     }
-    file->close();
-    delete file;
+    file.close();
     modified = false;
   }
   return true;

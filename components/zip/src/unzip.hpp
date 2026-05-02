@@ -6,11 +6,13 @@
 #include "global.hpp"
 
 #include <forward_list>
+#include <fstream>
 #include <mutex>
 
 #define MINIZ 1
 
 #include "himem.hpp"
+#include "himem_pool.hpp"
 #include "miniz.h"
 
 class Unzip {
@@ -26,16 +28,19 @@ private:
    * @brief File descriptor inside the zip file
    *
    */
-  struct FileEntry {
-    char *filename;
-    uint32_t startPos;       // in zip file
-    uint32_t compressedSize; // in zip file
-    uint32_t size;           // once decompressed
-    uint32_t currentPos;
-    uint16_t method; // compress method (0 = not compressed, 8 = DEFLATE)
+  class FileEntry {
+  public:
+    HimemString filename{};
+    uint32_t startPos{0};       // in zip file
+    uint32_t compressedSize{0}; // in zip file
+    uint32_t size{0};           // once decompressed
+    uint32_t currentPos{0};
+    uint16_t method{0}; // compress method (0 = not compressed, 8 = DEFLATE)
+    FileEntry()  = default;
+    ~FileEntry() = default;
   };
 
-  typedef std::forward_list<FileEntry *> FileEntries;
+  using FileEntries = std::forward_list<FileEntry, HimemPool<FileEntry>>;
   FileEntries fileEntries{};
   FileEntries::iterator currentFileEntry{};
 
@@ -52,7 +57,8 @@ private:
   uint16_t current{0};
   bool aborted{false};
 
-  FILE *file{nullptr}; // Current File Descriptor
+  std::ifstream file{}; // Current zip file stream
+
   bool zipFileIsOpen{false};
   std::string currentFilename{};
   bool streamMutexHeld{false};

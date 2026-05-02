@@ -4,18 +4,22 @@
 
 #include "fonts_db.hpp"
 #include <cinttypes>
+#include <fstream>
 #include <sys/stat.h>
 
 auto FontsDB::getFile(const char *filename, size_t size) -> HimemUniquePtr<char[]> {
-  FILE *f                     = fopen(filename, "r");
   HimemUniquePtr<char[]> buff = nullptr;
 
-  if (f) {
+  std::ifstream f(filename, std::ios::binary);
+
+  if (f.is_open()) {
     buff = makeUniqueHimem<char[]>(size);
-    if (buff && (fread(buff.get(), size, 1, f) != 1)) {
+    if (buff) {
+      f.read(buff.get(), static_cast<std::streamsize>(size));
+    }
+    if (!buff || (f.gcount() != static_cast<std::streamsize>(size))) {
       buff.reset();
     }
-    fclose(f);
   }
 
   return buff;
@@ -47,17 +51,20 @@ auto FontsDB::checkFile(const HimemString &filename) -> bool {
 
 auto FontsDB::add(const HimemString &name, FaceStyle style, const HimemString &filename) -> bool {
 
-  FILE *fontFile;
-
-  if ((fontFile = fopen(filename.c_str(), "r")) == nullptr) {
+  struct stat statBuf;
+  if (stat(filename.c_str(), &statBuf) == -1) {
     LOG_E("add: Unable to open font file '%s'", filename.c_str());
     return false;
   } else {
-    struct stat statBuf;
-    fstat(fileno(fontFile), &statBuf);
     int32_t length = statBuf.st_size;
 
     LOG_D("Font File Length: %" PRIi32, length);
+
+    std::ifstream fontFile(filename.c_str(), std::ios::binary);
+    if (!fontFile.is_open()) {
+      LOG_E("add: Unable to open font file '%s'", filename.c_str());
+      return false;
+    }
 
     auto buffer = makeUniqueHimem<uint8_t[]>(length + 1);
 
@@ -66,13 +73,11 @@ auto FontsDB::add(const HimemString &name, FaceStyle style, const HimemString &f
       return false;
     }
 
-    if (fread(buffer.get(), length, 1, fontFile) != 1) {
+    fontFile.read(reinterpret_cast<char *>(buffer.get()), static_cast<std::streamsize>(length));
+    if (fontFile.gcount() != static_cast<std::streamsize>(length)) {
       LOG_E("add: Unable to read file content");
-      fclose(fontFile);
       return false;
     }
-
-    fclose(fontFile);
 
     buffer[length] = 0;
 
@@ -92,17 +97,20 @@ auto FontsDB::add(const HimemString &name, FaceStyle style, const HimemString &f
 auto FontsDB::replace(int16_t index, const HimemString &name, FaceStyle style,
                       const HimemString &filename) -> bool {
 
-  FILE *fontFile;
-
-  if ((fontFile = fopen(filename.c_str(), "r")) == nullptr) {
+  struct stat statBuf;
+  if (stat(filename.c_str(), &statBuf) == -1) {
     LOG_E("replace: Unable to open font file '%s'", filename.c_str());
     return false;
   } else {
-    struct stat statBuf;
-    fstat(fileno(fontFile), &statBuf);
     int32_t length = statBuf.st_size;
 
     LOG_D("Font File Length: %" PRIi32, length);
+
+    std::ifstream fontFile(filename.c_str(), std::ios::binary);
+    if (!fontFile.is_open()) {
+      LOG_E("replace: Unable to open font file '%s'", filename.c_str());
+      return false;
+    }
 
     auto buffer = makeUniqueHimem<uint8_t[]>(length + 1);
 
@@ -111,13 +119,11 @@ auto FontsDB::replace(int16_t index, const HimemString &name, FaceStyle style,
       return false;
     }
 
-    if (fread(buffer.get(), length, 1, fontFile) != 1) {
+    fontFile.read(reinterpret_cast<char *>(buffer.get()), static_cast<std::streamsize>(length));
+    if (fontFile.gcount() != static_cast<std::streamsize>(length)) {
       LOG_E("replace: Unable to read file content");
-      fclose(fontFile);
       return false;
     }
-
-    fclose(fontFile);
 
     buffer[length] = 0;
 

@@ -10,6 +10,7 @@
 #include "screen.hpp"
 
 #include <iostream>
+#include <new>
 #include <ostream>
 #include <sys/stat.h>
 
@@ -249,11 +250,7 @@ static constexpr uint16_t translationLatinA[] = {
     /* 0x17F */ 0x20    // ſ
 };
 
-IBMF::IBMF(const FontFaceDescriptorPtr &descr) : Font() {
-  face = nullptr;
-
-  setFontFace(descr);
-}
+IBMF::IBMF(const FontFaceDescriptorPtr &descr) : Font() { setFontFace(descr); }
 
 IBMF::~IBMF() {
   ready = false;
@@ -265,8 +262,7 @@ auto IBMF::clearFace() -> void {
   pageLocs.stopControlTask();
   clearCache();
   if (face != nullptr) {
-    delete face;
-    face = nullptr;
+    face.reset();
   }
 
   ready           = false;
@@ -466,7 +462,8 @@ auto IBMF::setFontSize(int16_t size) -> bool {
 auto IBMF::setFontFace(const FontFaceDescriptorPtr &descr) -> bool {
   if (face != nullptr) clearFace();
 
-  face = new IBMFFont(descr->fontData.get(), descr->fontDataSize, *this);
+  face = std::unique_ptr<IBMFFont>(new (std::nothrow)
+                                       IBMFFont(descr->fontData.get(), descr->fontDataSize, *this));
 
   if (face == nullptr) {
     LOG_E("The memory font format is unsupported or is broken.");

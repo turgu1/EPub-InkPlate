@@ -12,6 +12,8 @@
 #include "models/nvs_mgr.hpp"
 #include "viewers/book_viewer.hpp"
 
+#include <fstream>
+
 #if EPUB_INKPLATE_BUILD
   #include "models/nvs_mgr.hpp"
 #endif
@@ -58,36 +60,29 @@ auto BooksDirController::setup() -> void {
 
   #else
 
-    char *bookFilenameBuffer = new char[256];
-    char *filename           = nullptr;
+    std::string bookFilenameBuffer;
+    char *filename = nullptr;
 
-    bookFilenameBuffer[0] = 0;
+    std::ifstream f(MAIN_FOLDER "/last_book.txt");
+    if (f.is_open() && std::getline(f, bookFilenameBuffer)) {
+      if (!bookFilenameBuffer.empty() && (bookFilenameBuffer.back() == '\r')) {
+        bookFilenameBuffer.pop_back();
+      }
 
-    FILE *f  = fopen(MAIN_FOLDER "/last_book.txt", "r");
-    filename = nullptr;
-    if (f != nullptr) {
+      std::string buffer;
+      if (std::getline(f, buffer)) {
+        bookPageId.itemrefIndex = atoi(buffer.c_str());
 
-      if (fgets(bookFilenameBuffer, 256, f)) {
-        int16_t size = strlen(bookFilenameBuffer) - 1;
-        if (bookFilenameBuffer[size] == '\n') bookFilenameBuffer[size] = 0;
+        if (std::getline(f, buffer)) {
+          bookPageId.offset = atoi(buffer.c_str());
 
-        char buffer[20];
-        if (fgets(buffer, 20, f)) {
-          bookPageId.itemrefIndex = atoi(buffer);
-
-          if (fgets(buffer, 20, f)) {
-            bookPageId.offset = atoi(buffer);
-
-            if (fgets(buffer, 20, f)) {
-              int8_t wasShown = atoi(buffer);
-              filename        = bookFilenameBuffer;
-              bookWasShown    = (bool)wasShown;
-            }
+          if (std::getline(f, buffer)) {
+            int8_t wasShown = atoi(buffer.c_str());
+            filename        = bookFilenameBuffer.data();
+            bookWasShown    = (bool)wasShown;
           }
         }
       }
-
-      fclose(f);
     }
 
     int16_t dbIdx = -1;
@@ -110,7 +105,6 @@ auto BooksDirController::setup() -> void {
     LOG_D("Book to show: idx:%d page:(%d, %d) wasShown:%s", lastReadBookIndex,
           bookPageId.itemrefIndex, bookPageId.offset, bookWasShown ? "yes" : "no");
 
-    delete[] bookFilenameBuffer;
   #endif
 }
 
@@ -141,11 +135,12 @@ auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
 
   #else
 
-    FILE *f = fopen(MAIN_FOLDER "/last_book.txt", "w");
-    if (f != nullptr) {
-      fprintf(f, "%s\n%d\n%d\n%d\n", bookFilename.c_str(), pageId.itemrefIndex, pageId.offset,
-              goingToDeepSleep ? 1 : 0);
-      fclose(f);
+    std::ofstream f(MAIN_FOLDER "/last_book.txt");
+    if (f.is_open()) {
+      f << bookFilename << '\n'
+        << pageId.itemrefIndex << '\n'
+        << pageId.offset << '\n'
+        << (goingToDeepSleep ? 1 : 0) << '\n';
     }
   #endif
 }

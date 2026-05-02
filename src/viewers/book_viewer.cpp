@@ -24,6 +24,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #include "logging.hpp"
@@ -147,9 +148,9 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     // start_of_page_offset = pageId.offset;
     // end_of_page_offset   = pageId.offset + page_info->size;
 
-    auto dom                 = DOM::Make();
-    BookViewerInterp *interp = new BookViewerInterp(epub, page, dom, Page::ComputeMode::DISPLAY,
-                                                    epub->getCurrentItemInfo());
+    auto dom    = DOM::Make();
+    auto interp = std::make_unique<BookViewerInterp>(epub, page, dom, Page::ComputeMode::DISPLAY,
+                                                     epub->getCurrentItemInfo());
     interp->setLimits(pageId.offset, pageId.offset + page_info->size,
                       epub->getBookFormatParams()->showPictures != 0);
 
@@ -209,9 +210,6 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     }
 
     interp->checkForCompletion();
-
-    delete interp;
-    interp = nullptr;
   }
   LOG_D("end of buildPageAt()");
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)

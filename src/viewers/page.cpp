@@ -375,7 +375,7 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
 
   if (clearScreen) screen.clear();
 
-  int count = 0;
+  // int count = 0;
 
   for (auto *entry : *displayList) {
     switch (entry->command) {
@@ -414,10 +414,10 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
       break;
     }
 
-    ++count;
+    // ++count;
   }
 
-  LOG_I("Painted %d entries on screen", count);
+  // LOG_I("Painted %d entries on screen", count);
 
   screen.update(noFull);
 }

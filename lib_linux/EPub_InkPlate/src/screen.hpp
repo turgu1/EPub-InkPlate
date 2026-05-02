@@ -9,6 +9,7 @@
 #include "non_copyable.hpp"
 
 #include <gtk/gtk.h>
+#include <memory>
 
 /**
  * @brief Low level logical Screen display
@@ -27,7 +28,7 @@ public:
   static constexpr int8_t IDENT        = 99;
   static constexpr uint16_t RESOLUTION = 166; ///< Pixels per inch
 
-  static guchar *pixels;
+  static std::unique_ptr<guchar[]> pixels;
 
   enum class Orientation : int8_t {
     LEFT, RIGHT, BOTTOM
