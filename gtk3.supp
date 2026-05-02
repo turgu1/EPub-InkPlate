@@ -144,6 +144,14 @@
   fun:g_module_open
 }
 
+{
+  glib_ctor_reachable_tables
+  Memcheck:Leak
+  match-leak-kinds: reachable
+  ...
+  fun:glib_init_ctor
+}
+
 # ---------------------------------------------------------------------------
 # GDK / GTK initialisation
 # ---------------------------------------------------------------------------

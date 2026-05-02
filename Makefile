@@ -478,7 +478,8 @@ $(VALGRIND_BUILD)/%.o: %.c
 VALGRIND_EPUB ?= /home/turgu1/Dev/EPub-InkPlate/SDCard/books/Austen, Jane - Pride and Prejudice.epub
 valgrind_run: $(VALGRIND_BUILD)/$(VALGRIND_TARGET)
 	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all \
-	         --num-callers=30 --error-exitcode=1 \
+           --num-callers=30 --error-exitcode=1 \
+           --suppressions=$(SUPP_FILE) \
 	         $(VALGRIND_BUILD)/$(VALGRIND_TARGET) "$(VALGRIND_EPUB)"
 
 clean_valgrind:

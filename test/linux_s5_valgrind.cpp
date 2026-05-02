@@ -57,6 +57,12 @@ struct NavCtx {
 static void navThreadFn(NavCtx *ctx) {
   PageId cur = ctx->currentPage;
   while (!ctx->stop.load(std::memory_order_relaxed)) {
+    // Avoid queue-consumer races during teardown: once pageLocs reports completion,
+    // navigation threads should stop making PageLocs requests.
+    if (pageLocs.isComputationCompleted()) {
+      break;
+    }
+
     bool forward       = (ctx->navCount.load() % 2) == 0;
     const PageId *next = forward ? pageLocs.getNextPageId(cur, 1) : pageLocs.getPrevPageId(cur, 1);
     if (next) {
@@ -221,11 +227,10 @@ auto main(int argc, char **argv) -> int {
   // ------------------------------------------------------------------
   // Clean up — this is where leaks must NOT appear
   // ------------------------------------------------------------------
-  // Stop the control/retriever tasks FIRST so that no nav thread can race
-  // into getNextPageId() → stopControlTask() → receive() and deadlock when
-  // stopNavThreads() tries to join() those same threads.
-  pageLocs.stopControlTask();
+  // Stop nav threads first so they cannot consume mgrQueue replies intended
+  // for stopControlTask() (single-consumer queue semantics).
   stopNavThreads(navCtx);
+  pageLocs.stopControlTask();
 
   pageLocs.clear();
   epub->closeFile();
