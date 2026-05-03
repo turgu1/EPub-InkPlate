@@ -50,7 +50,10 @@ auto BooksDirController::setup() -> void {
 
           lastReadBookIndex = currentBookIndex = idx;
 
-          // LOG_D("Last book filename: %s",  bookFilenameBuffer);
+          // LOG_I("last book id: %" PRIu32 " page:(%d, %d) wasShown:%s", id,
+          // bookPageId.itemrefIndex,
+          //       bookPageId.offset, bookWasShown ? "yes" : "no");
+
           LOG_D("Last book ref index: %" PRIi16, bookPageId.itemrefIndex);
           LOG_D("Last book offset: %" PRIi32, bookPageId.offset);
           LOG_D("Show it now: %s", bookWasShown ? "yes" : "no");
@@ -131,6 +134,9 @@ auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
         LOG_E("Unable to save current ebook location");
       }
       lastReadBookIndex = currentBookIndex = booksDir.getSortedIdxFromId(bookId);
+
+      // LOG_I("Saved last book location: id:%" PRIu32 " page:(%d, %d) wasShown:%s", bookId,
+      //       pageId.itemrefIndex, pageId.offset, goingToDeepSleep ? "yes" : "no");
     }
 
   #else
@@ -160,6 +166,10 @@ auto BooksDirController::showLastBook() -> void {
     bookFilenameLocal = BOOKS_FOLDER "/";
     bookFilenameLocal += book->filename;
     bookTitleLocal = book->title;
+
+    // LOG_I("Showing last book: id:%" PRIu32 " page:(%d, %d) wasShown:%s", book->id,
+    //       bookPageId.itemrefIndex, bookPageId.offset, bookWasShown ? "yes" : "no");
+
     if (bookController.openBook(bookTitleLocal, bookFilenameLocal, bookPageId)) {
       appController.setController(AppController::Ctrl::BOOK);
     }

@@ -287,7 +287,7 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
 
     auto coverEnd = std::chrono::steady_clock::now();
     auto coverMs  = std::chrono::duration_cast<std::chrono::milliseconds>(coverEnd - coverStart);
-    LOG_I("Cover page prepare+show took %lld ms", static_cast<long long>(coverMs.count()));
+    LOG_D("Cover page prepare+show took %lld ms", static_cast<long long>(coverMs.count()));
   } else {
     buildPageAt(pageId, epub);
   }

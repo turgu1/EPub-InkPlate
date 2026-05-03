@@ -35,6 +35,8 @@ auto BookController::enter() -> void {
   if (id != nullptr) {
     currentPageId.itemrefIndex = id->itemrefIndex;
     currentPageId.offset       = id->offset;
+    // LOG_I("Showing page: itemrefIndex=%d offset=%d", currentPageId.itemrefIndex,
+    //       currentPageId.offset);
   } else {
     // Keep the last known reading position while page locations are recomputed.
     // Falling back to {0,0} forces the cover page and creates UI glitches.
@@ -74,6 +76,7 @@ auto BookController::openBook(const HimemString &bookTitle, const HimemString &b
 
     if (epub->open(bookFilename)) {
       pageLocs.startNewDocument(epub, pageId.itemrefIndex);
+      currentPageId = pageId;
     } else {
       MsgViewer::show(MsgViewer::MsgType::ALERT, true, true, "Error",
                       "An error occurred while opening the book. Please try again.");
