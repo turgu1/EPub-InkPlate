@@ -20,6 +20,7 @@ Update to version 3.0.0
 - Menu icons are larger and icon lists are centered on screen over multiple lines.
 - A waiting icon is now displayed on screen when a large image is being prepared.
 - Screen Saver: a `screen_saver` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display when the device is turned off or enters deep sleep.
+- A new battery_trim config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability.
 - Bug fix: bad page location restored when returning from deep sleep.
 
 **Page locations (PageLocs) architecture**
