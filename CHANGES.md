@@ -2,26 +2,71 @@
 
 ## Last News
 
-(Updated 2026.04.XX)
+(Updated 2026.05.04)
 
 Update to version 3.0.0
 
-- Now using:
-  - ESP-IDF framework version 5.5.4
-  - PugiXML version 1.15
-  - FreeType version 2.14.3
-  - C++ gnu++23 (As per ESP-IDF C++ support)
-- Page::Format default values in the struct definition. All uses of the struct are now reduced in the code to the changed parameters from the default.
-- DisplayList is now a separate class that is faster than std::forward_list and better adapted to the needs of the Page class. No need to reverse entries anymore.
-- All GUI has been revisited.
-- Books list cover images can now be display in three sizes (small, medium, large).
-- Screen Saver: A `screen_saver` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display on screen when power is turned off or a deep sleep sequence is initiated by the application.
-- Pages location computation rebuilt for better coherence and multithread behaviour
-- (still not sure for that one) Pages location are no longer computed every time a page formatting parameter is changed by the user, reducing wait time between page changes.
-- Lot of code update
-  - All methods / variable are now CamelCase instead of snake_case
-  - All methods converted to the "auto" definition/declaration
-  - [[nodiscard]] on all inline methods that return a value
+**Frameworks and dependencies**
+
+- ESP-IDF framework updated to version 5.5.4
+- PugiXML updated to version 1.15
+- FreeType updated to version 2.14.3 (including OTF support correction)
+- C++ standard updated to gnu++23 (as supported by ESP-IDF)
+
+**User-visible changes**
+
+- All GUI has been revisited and polished.
+- Book list cover images can now be displayed in three sizes: small, medium, and large.
+- Menu icons are larger and icon lists are centered on screen over multiple lines.
+- A waiting icon is now displayed on screen when a large image is being prepared.
+- Screen Saver: a `screen_saver` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display when the device is turned off or enters deep sleep.
+- Bug fix: bad page location restored when returning from deep sleep.
+
+**Page locations (PageLocs) architecture**
+
+- The PageLocs subsystem has been completely rebuilt for better coherence and multithreading robustness. It is now split into dedicated task classes: `PageLocs`, `PageLocsInterpreter`, `PageLocsRetriever`, and `PageLocsControl`.
+- PageLocs now manages its own internal EPub instance, removing shared-state coupling with the active reader.
+- SPI bus access between the display driver and SD card is now protected by a mutex, preventing conflicts during concurrent access.
+- Bug fix in HTMLInterpreter: byte offset was not correctly adjusted when inserting non-text content (e.g. images), which could cause incorrect page break positions.
+
+**Fonts**
+
+- Font caches are now associated with individual EPub instances rather than being global.
+- The global fonts instance has been renamed `appFonts` for clarity.
+- A new `FontsDB` database is populated by the Config class at startup, allowing cleaner font selection logic.
+- Font presence checks are now more robust, validating the index against the actual cache size.
+
+**Memory management**
+
+- `MemoryPool` replaced by the new `HimemPool` class for more efficient PSRAM-backed allocation and deallocation.
+- `std::forward_list` node allocations now use `HimemPool`.
+- More data structures pushed to PSRAM through Himem templates.
+- `std::string` replaced with `HimemString` for many variables and parameters throughout the codebase.
+
+**Component restructuring**
+
+- `DisplayList` is now a separate component, faster than `std::forward_list` and better adapted to the needs of the `Page` class. No need to reverse entries anymore.
+- New `SimpleList` component: a lightweight linked list usable in both application code and tests.
+- `BooksDir` class significantly restructured.
+- The `image` component renamed to `pictures`; `Image` → `Picture`, `ImageFactory` → `PictureFactory`.
+- `simple_db` component moved from `src/helpers` to `components/simple_db`.
+- `Page::Format` struct now carries default field values; all call sites only pass parameters that differ from the defaults.
+
+**Code quality**
+
+- All methods and variables renamed from snake_case to CamelCase.
+- All methods converted to the `auto` return-type declaration syntax.
+- `[[nodiscard]]` applied to all inline methods that return a value.
+- Raw pointers replaced with smart pointers throughout; `stdio` replaced with `std::iostream`.
+- EPub ownership transfer between controllers corrected.
+- Complete list of HTML named character references added to the CSS/HTML parser.
+- Several small CSS parser bugs fixed; new CSS tokens added.
+
+**Testing and validation**
+
+- A Linux build target is still available for rapid development and debugging without requiring physical hardware.
+- Valgrind integration for the Linux build: a dedicated test binary and stubs allow full leak analysis under Valgrind.
+- An ESP32 regression test suite (`esp32_regression_loop`) is included, covering 7 scenarios (book open/close, TOC load, cover images, page-location recomputation, concurrent navigation, WiFi/NTP, and web server). It can be enabled at build time.
 
 (Updated 2026.01.20)
 

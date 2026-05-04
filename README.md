@@ -2,17 +2,19 @@
 
 ## Last news
 
-(updated 2026.04.XX)
+(Updated 2026.05.04)
 
-- Now Version 3.0.0!
-- Now using ESP-IDF framework v5.5.4
-- Using C++ gnu++23 (As per ESP-IDF C++ support)
-- Page::Format default values in the struct definition. All use of the
-  struct are now shrinked in the code to the changed parameters from the default.
-- Pages location are no longer being computed everytime a page formatting
-  parameter is changed by the user, this to reduce wait time between
-  page changes.
-  
+### Version 3.0.0
+
+- **Cover image sizes**: the book list now lets you choose between small, medium, and large cover images.
+- **Screen Saver**: place JPEG images in a `screen_saver` folder on the SD Card and they will be randomly displayed when the device turns off or enters deep sleep.
+- **Larger menu icons**: icons in parameter and option menus are bigger and centred across multiple lines for easier navigation.
+- **Waiting indicator**: a spinner is shown on screen while a large image is being prepared.
+- **Bug fix**: the reading position was not correctly restored after waking from deep sleep.
+- **Dependency updates**: ESP-IDF v5.5.4, PugiXML 1.15, FreeType 2.14.3 (with improved OTF support).
+
+See [CHANGES.md](CHANGES.md) for a complete list of changes including internal improvements.
+
 (Updated 2026.01.20)
 
 Update to version 2.1.0
