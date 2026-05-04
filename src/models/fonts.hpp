@@ -14,6 +14,8 @@
 // #include <mutex>
 #include <vector>
 
+#define FT_DEBUG_LOGGING 1
+
 #include <ft2build.h>
 
 #include FT_FREETYPE_H

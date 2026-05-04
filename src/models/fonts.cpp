@@ -17,7 +17,49 @@
 #include <algorithm>
 #include <sys/stat.h>
 
+#include <freetype/ftlogging.h>
+#include <freetype/ftmodapi.h>
+#include <freetype/ftsystem.h>
+
 using namespace pugi;
+
+void myFtLog(const char *ft_component, const char *fmt, va_list args) {
+
+  const char *TAG = "FreeType";
+  LOG_I("FreeType: %s: ", ft_component);
+  vprintf(fmt, args);
+}
+
+static auto myFtAlloc(FT_Memory memory, long size) -> void * {
+  #if EPUB_INKPLATE_BUILD
+    return heap_caps_malloc(static_cast<size_t>(size), MALLOC_CAP_SPIRAM);
+  #else
+    return malloc(static_cast<size_t>(size));
+  #endif
+}
+
+static auto myFtRealloc(FT_Memory memory, long currSize, long newSize, void *block) -> void * {
+  #if EPUB_INKPLATE_BUILD
+    return heap_caps_realloc(block, static_cast<size_t>(newSize), MALLOC_CAP_SPIRAM);
+  #else
+    return realloc(block, static_cast<size_t>(newSize));
+  #endif
+}
+
+static void myFtFree(FT_Memory memory, void *block) {
+  #if EPUB_INKPLATE_BUILD
+    heap_caps_free(block);
+  #else
+    free(block);
+  #endif
+}
+
+static FT_MemoryRec_ ftMemory = {
+    nullptr,
+    myFtAlloc,
+    myFtFree,
+    myFtRealloc,
+};
 
 Fonts::Fonts(bool thisIsAppFonts) : thisIsAppFonts(thisIsAppFonts) {
   #if USE_EPUB_FONTS
@@ -27,11 +69,13 @@ Fonts::Fonts(bool thisIsAppFonts) : thisIsAppFonts(thisIsAppFonts) {
   #endif
 
   if (library == nullptr) {
-    int error = FT_Init_FreeType(&library);
+    FT_Error error = FT_New_Library(&ftMemory, &library);
     if (error) {
       LOG_E("An error occurred during FreeType library initialization.");
       std::abort();
     }
+    FT_Add_Default_Modules(library);
+    FT_Set_Log_Handler(myFtLog);
   }
 }
 
@@ -83,7 +127,7 @@ auto Fonts::setup() -> bool {
 Fonts::~Fonts() {
   fontCache.clear();
   if (library) {
-    FT_Done_FreeType(library);
+    FT_Done_Library(library);
     library = nullptr;
   }
 }

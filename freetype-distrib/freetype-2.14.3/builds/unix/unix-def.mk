@@ -23,7 +23,7 @@ SEP    := /
 
 # This is used for `make refdoc' and `make refdoc-venv'
 #
-PYTHON := python3
+PYTHON := /home/turgu1/.espressif/tools/python/v5.5.4/venv/bin/python
 BIN    := bin
 
 # this is used for `make distclean' and `make install'

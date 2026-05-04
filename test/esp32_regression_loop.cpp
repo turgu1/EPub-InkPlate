@@ -96,7 +96,7 @@
   //   0x10  – run only S5 (concurrent navigation)
   //   0x0F  – run S1-S4
   // ---------------------------------------------------------------------------
-  #define REGRESSION_SCENARIOS 0x03 // default: S1-S5 during active development
+  #define REGRESSION_SCENARIOS 0x10 // default: S1-S5 during active development
 
   // ---------------------------------------------------------------------------
   // Tuning constants
@@ -491,6 +491,9 @@
     PageId currentPage    = ctx->currentPage;
 
     while (!ctx->shouldStop.load()) {
+      // Once computation is complete there is no need to keep querying pageLocs.
+      if (pageLocs.isComputationCompleted()) break;
+
       // Alternate between forward/backward navigation
       bool goForward = (ctx->navCount.load() % 2) == 0;
 
@@ -706,6 +709,12 @@
           }
           if (!navCtx[i].exited.load()) {
             ESP_LOGW(TAG, "S5: nav thread %d did not exit cleanly", i);
+            if (navCtx[i].handle != nullptr) {
+              ESP_LOGW(TAG, "S5: force-killing nav thread %d", i);
+              vTaskDelete(navCtx[i].handle);
+              navCtx[i].handle = nullptr;
+            }
+            navCtx[i].exited.store(true);
             ++errors;
             clean = false;
           }
@@ -880,7 +889,7 @@
 
       if (navThreadsRunning) {
         navThreadsRunning = false;
-        (void)stopNavThreads();
+        stopNavThreads();
       }
 
       // Verify computation outcome
