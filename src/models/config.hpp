@@ -18,21 +18,21 @@ enum class ConfigIdent {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER,
   #endif
-  FONTS_DB
+  FONTS_DB, BATTERY_TRIM
 };
 // clang-format on
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 31>;
+    using Config = ConfigBase<ConfigIdent, 32>;
   #else
-    using Config = ConfigBase<ConfigIdent, 28>;
+    using Config = ConfigBase<ConfigIdent, 29>;
   #endif
 #else
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 24>;
+    using Config = ConfigBase<ConfigIdent, 25>;
   #else
-    using Config = ConfigBase<ConfigIdent, 21>;
+    using Config = ConfigBase<ConfigIdent, 22>;
   #endif
 #endif
 
@@ -61,6 +61,7 @@ enum class ConfigIdent {
   static int8_t frontLight;
   static int8_t dirView;
   static int8_t coverSize;
+  static double batteryTrim;
 
   #if DATE_TIME_RTC
     static int8_t showRtc;
@@ -91,46 +92,48 @@ enum class ConfigIdent {
   static const int8_t  defaultCoverSize       =  0; // 0 = SMALL, 1 = LARGE
   static const int8_t  theVersion             =  1;
   static const int8_t  defaultShowRtc         =  0;
+  static const double   defaultBatteryTrim     =  4.086 / 4.26;
 
   template <>
   Config::CfgType Config::cfg = {{
-      {Config::Ident::VERSION,            Config::EntryType::BYTE,   "version",      &version,               &theVersion,             0},
-      {Config::Ident::SSID,               Config::EntryType::STRING, "wifi_ssid",    ssid,                   "NONE",                 32},
-      {Config::Ident::PWD,                Config::EntryType::STRING, "wifi_pwd",     pwd,                    "NONE",                 32},
-      {Config::Ident::DNS_NAME,           Config::EntryType::STRING, "dns_name",     dnsName,                "inkplate",             32},
-      {Config::Ident::AP_SSID,            Config::EntryType::STRING, "ap_wifi_ssid", apSsid,                 "inkplate",             32},
-      {Config::Ident::AP_PWD,             Config::EntryType::STRING, "ap_wifi_pwd",  apPwd,                  "qwerty1234",           32},
-      {Config::Ident::PORT,               Config::EntryType::INT,    "http_port",    &port,                  &defaultPort,            0},
-      {Config::Ident::BATTERY,            Config::EntryType::BYTE,   "battery",      &battery,               &defaultBattery,         0},
-      {Config::Ident::TIMEOUT,            Config::EntryType::BYTE,   "timeout",      &timeout,               &defaultTimeout,         0},
-      {Config::Ident::FONT_SIZE,          Config::EntryType::BYTE,   "font_size",    &fontSize,              &defaultFontSize,        0},
-      {Config::Ident::DEFAULT_FONT,       Config::EntryType::BYTE,   "default_font", &defaultFont,           &defaultDefaultFont,     0},
-      {Config::Ident::USE_FONTS_IN_BOOKS, Config::EntryType::BYTE,   "use_fonts_in_books", &useFontsInBooks, &defaultUseFontsInBooks, 0},
-      {Config::Ident::SHOW_PICTURES,      Config::EntryType::BYTE,   "show_images",  &showPictures,          &defaultShowPictures,    0},
-      {Config::Ident::ORIENTATION,        Config::EntryType::BYTE,   "orientation",  &orientation,           &defaultOrientation,     0},
-      {Config::Ident::PIXEL_RESOLUTION,   Config::EntryType::BYTE,   "resolution",   &resolution,            &defaultResolution,      0},
-      {Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",    &showHeap,              &defaultShowHeap,        0},
-      {Config::Ident::SHOW_TITLE,         Config::EntryType::BYTE,   "show_title",   &showTitle,             &defaultShowTitle,       0},
-      {Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",  &frontLight,            &defaultFrontLight,      0},
-      {Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",     &dirView,               &defaultDirView,         0},
-      {Config::Ident::COVER_SIZE,         Config::EntryType::BYTE,   "cover_size",   &coverSize,             &defaultCoverSize,       0},
+      {Config::Ident::VERSION,            Config::EntryType::BYTE,   "version",       &version,               &theVersion,             0},
+      {Config::Ident::SSID,               Config::EntryType::STRING, "wifi_ssid",     ssid,                   "NONE",                 32},
+      {Config::Ident::PWD,                Config::EntryType::STRING, "wifi_pwd",      pwd,                    "NONE",                 32},
+      {Config::Ident::DNS_NAME,           Config::EntryType::STRING, "dns_name",      dnsName,                "inkplate",             32},
+      {Config::Ident::AP_SSID,            Config::EntryType::STRING, "ap_wifi_ssid",  apSsid,                 "inkplate",             32},
+      {Config::Ident::AP_PWD,             Config::EntryType::STRING, "ap_wifi_pwd",   apPwd,                  "qwerty1234",           32},
+      {Config::Ident::PORT,               Config::EntryType::INT,    "http_port",     &port,                  &defaultPort,            0},
+      {Config::Ident::BATTERY,            Config::EntryType::BYTE,   "battery",       &battery,               &defaultBattery,         0},
+      {Config::Ident::TIMEOUT,            Config::EntryType::BYTE,   "timeout",       &timeout,               &defaultTimeout,         0},
+      {Config::Ident::FONT_SIZE,          Config::EntryType::BYTE,   "font_size",     &fontSize,              &defaultFontSize,        0},
+      {Config::Ident::DEFAULT_FONT,       Config::EntryType::BYTE,   "default_font",  &defaultFont,           &defaultDefaultFont,     0},
+      {Config::Ident::USE_FONTS_IN_BOOKS, Config::EntryType::BYTE,   "use_fonts_in_books", &useFontsInBooks, &defaultUseFontsInBooks,  0},
+      {Config::Ident::SHOW_PICTURES,      Config::EntryType::BYTE,   "show_images",   &showPictures,          &defaultShowPictures,    0},
+      {Config::Ident::ORIENTATION,        Config::EntryType::BYTE,   "orientation",   &orientation,           &defaultOrientation,     0},
+      {Config::Ident::PIXEL_RESOLUTION,   Config::EntryType::BYTE,   "resolution",    &resolution,            &defaultResolution,      0},
+      {Config::Ident::SHOW_HEAP,          Config::EntryType::BYTE,   "show_heap",     &showHeap,              &defaultShowHeap,        0},
+      {Config::Ident::SHOW_TITLE,         Config::EntryType::BYTE,   "show_title",    &showTitle,             &defaultShowTitle,       0},
+      {Config::Ident::FRONT_LIGHT,        Config::EntryType::BYTE,   "front_light",   &frontLight,            &defaultFrontLight,      0},
+      {Config::Ident::DIR_VIEW,           Config::EntryType::BYTE,   "dir_view",      &dirView,               &defaultDirView,         0},
+      {Config::Ident::COVER_SIZE,         Config::EntryType::BYTE,   "cover_size",    &coverSize,             &defaultCoverSize,       0},
 
   #if DATE_TIME_RTC
-      {Config::Ident::SHOW_RTC,           Config::EntryType::BYTE,   "show_rtc",      &showRtc,              &defaultShowRtc,         0},
-      {Config::Ident::NTP_SERVER,         Config::EntryType::STRING, "ntp_server",    ntpServer,             "pool.ntp.org",         32},
-      {Config::Ident::TIME_ZONE,          Config::EntryType::STRING, "tz",            timeZone,              "",                     32},
+      {Config::Ident::SHOW_RTC,           Config::EntryType::BYTE,   "show_rtc",       &showRtc,              &defaultShowRtc,         0},
+      {Config::Ident::NTP_SERVER,         Config::EntryType::STRING, "ntp_server",     ntpServer,             "pool.ntp.org",         32},
+      {Config::Ident::TIME_ZONE,          Config::EntryType::STRING, "tz",             timeZone,              "",                     32},
   #endif
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      {Config::Ident::CALIB_A,            Config::EntryType::INT64,  "calib_a",       &calibA,               &defaultCalib,           0},
-      {Config::Ident::CALIB_B,            Config::EntryType::INT64,  "calib_b",       &calibB,               &defaultCalib,           0},
-      {Config::Ident::CALIB_C,            Config::EntryType::INT64,  "calib_c",       &calibC,               &defaultCalib,           0},
-      {Config::Ident::CALIB_D,            Config::EntryType::INT64,  "calib_d",       &calibD,               &defaultCalib,           0},
-      {Config::Ident::CALIB_E,            Config::EntryType::INT64,  "calib_e",       &calibE,               &defaultCalib,           0},
-      {Config::Ident::CALIB_F,            Config::EntryType::INT64,  "calib_f",       &calibF,               &defaultCalib,           0},
-      {Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,  "calib_divider", &calibDivider,         &defaultCalib,           0},
+      {Config::Ident::CALIB_A,            Config::EntryType::INT64,  "calib_a",        &calibA,               &defaultCalib,           0},
+      {Config::Ident::CALIB_B,            Config::EntryType::INT64,  "calib_b",        &calibB,               &defaultCalib,           0},
+      {Config::Ident::CALIB_C,            Config::EntryType::INT64,  "calib_c",        &calibC,               &defaultCalib,           0},
+      {Config::Ident::CALIB_D,            Config::EntryType::INT64,  "calib_d",        &calibD,               &defaultCalib,           0},
+      {Config::Ident::CALIB_E,            Config::EntryType::INT64,  "calib_e",        &calibE,               &defaultCalib,           0},
+      {Config::Ident::CALIB_F,            Config::EntryType::INT64,  "calib_f",        &calibF,               &defaultCalib,           0},
+      {Config::Ident::CALIB_DIVIDER,      Config::EntryType::INT64,  "calib_divider",  &calibDivider,         &defaultCalib,           0},
   #endif
-      {Config::Ident::FONTS_DB,           Config::EntryType::FONTS_DB, "",            &fontsDB,              &defaultFont,            0},
+      {Config::Ident::FONTS_DB,           Config::EntryType::FONTS_DB, "",             &fontsDB,              &defaultFont,            0},
+      {Config::Ident::BATTERY_TRIM,       Config::EntryType::DOUBLE,   "battery_trim", &batteryTrim,          &defaultBatteryTrim,     0},
   }};
 
   // clang-format on

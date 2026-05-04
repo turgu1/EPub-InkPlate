@@ -16,7 +16,7 @@ class ConfigBase {
 public:
   using Ident = IdType;
   enum class EntryType {
-    STRING, INT, INT64, BYTE, FONTS_DB
+    STRING, INT, INT64, BYTE, FONTS_DB, DOUBLE
   };
   struct ConfigDescr {
     Ident ident;
@@ -53,6 +53,7 @@ public:
   auto get(IdType id, int64_t *val) -> bool;
   auto get(IdType id, HimemString &val) -> bool;
   auto get(IdType id, FontsDB **val) -> bool;
+  auto get(IdType id, double *val) -> bool;
   auto put(IdType id, int32_t val) -> void;
   auto put(IdType id, int8_t val) -> void;
   auto put(IdType id, int64_t val) -> void;
@@ -127,6 +128,19 @@ auto ConfigBase<IdType, cfg_size>::get(IdType id, FontsDB **val) -> bool {
   for (auto &entry : cfg) {
     if ((entry.ident == id) && (entry.type == EntryType::FONTS_DB)) {
       *val = (FontsDB *)entry.value;
+      return true;
+    }
+  }
+  return false;
+}
+
+// ----- get(double) -----
+
+template <class IdType, int cfg_size>
+auto ConfigBase<IdType, cfg_size>::get(IdType id, double *val) -> bool {
+  for (auto &entry : cfg) {
+    if ((entry.ident == id) && (entry.type == EntryType::DOUBLE)) {
+      *val = *((double *)entry.value);
       return true;
     }
   }
@@ -250,20 +264,31 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
 
   // First, initialize all configs to default values
   for (auto &entry : cfg) {
-    if (entry.type == EntryType::FONTS_DB) {
+    switch (entry.type) {
+    case EntryType::FONTS_DB:
       fontsDB = (FontsDB *)entry.value;
       // For the FONTS_DB entry, default_value points to the byte config variable
       // that stores the selected user font index.
       fontIndexRef = (int8_t *)entry.default_value;
       fontIndex    = (fontIndexRef != nullptr) ? *fontIndexRef : 0;
-    } else if (entry.type == EntryType::STRING) {
+      break;
+    case EntryType::STRING:
       strlcpy((char *)entry.value, (char *)entry.default_value, entry.max_size);
-    } else if (entry.type == EntryType::INT) {
+      break;
+    case EntryType::INT:
       *((int32_t *)entry.value) = *((int32_t *)entry.default_value);
-    } else if (entry.type == EntryType::INT64) {
+      break;
+    case EntryType::INT64:
       *((int64_t *)entry.value) = *((int64_t *)entry.default_value);
-    } else {
+      break;
+    case EntryType::DOUBLE:
+      *((double *)entry.value) = *((double *)entry.default_value);
+      break;
+    case EntryType::BYTE:
       *((int8_t *)entry.value) = *((int8_t *)entry.default_value);
+      break;
+    default:
+      break;
     }
   }
 
@@ -284,17 +309,28 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
       if (*caption == '\0') continue;
       for (auto &entry : cfg) {
         if (strcmp(caption, entry.caption) == 0) {
-          if (entry.type == EntryType::STRING) {
+          switch (entry.type) {
+          case EntryType::STRING:
             strlcpy((char *)entry.value, value, entry.max_size);
-          } else if (entry.type == EntryType::INT) {
+            break;
+          case EntryType::INT:
             *((int32_t *)entry.value) = atoi(value);
-          } else if (entry.type == EntryType::INT64) {
+            break;
+          case EntryType::INT64:
             *((int64_t *)entry.value) = atol(value);
-          } else if (entry.type == EntryType::FONTS_DB) {
+            break;
+          case EntryType::FONTS_DB:
             // FontsDB is an object pointer entry, not a scalar config value.
             // Its associated selected font index is handled via default_font.
-          } else {
+            break;
+          case EntryType::DOUBLE:
+            *((double *)entry.value) = atof(value);
+            break;
+          case EntryType::BYTE:
             *((int8_t *)entry.value) = atoi(value);
+            break;
+          default:
+            break;
           }
           break;
         }
@@ -343,18 +379,30 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
     }
 
     for (auto &entry : cfg) {
-      if (entry.type == EntryType::STRING) {
+      switch (entry.type) {
+      case EntryType::STRING:
         file << entry.caption << " = \"" << (char *)entry.value << '"' << std::endl;
-      } else if (entry.type == EntryType::INT) {
+        break;
+      case EntryType::INT:
         file << entry.caption << " = " << *(int32_t *)entry.value << std::endl;
-      } else if (entry.type == EntryType::INT64) {
+        break;
+      case EntryType::INT64:
         file << entry.caption << " = " << *(int64_t *)entry.value << std::endl;
-      } else if (entry.type == EntryType::FONTS_DB) {
+        break;
+      case EntryType::FONTS_DB:
         // Do not serialize object entries.
-      } else {
+        break;
+      case EntryType::DOUBLE:
+        file << entry.caption << " = " << *(double *)entry.value << std::endl;
+        break;
+      case EntryType::BYTE:
         file << entry.caption << " = " << +*(int8_t *)entry.value << std::endl;
+        break;
+      default:
+        break;
       }
     }
+
     file.close();
     modified = false;
   }
@@ -370,16 +418,27 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
     LOG_D("Configuration");
     LOG_D("-------------");
     for (auto entry : cfg) {
-      if (entry.type == EntryType::STRING) {
+      switch (entry.type) {
+      case EntryType::STRING:
         LOG_D("%s = \"%s\"", entry.caption, (char *)entry.value);
-      } else if (entry.type == EntryType::INT) {
+        break;
+      case EntryType::INT:
         LOG_D("%s = %" PRIi32, entry.caption, *(int32_t *)entry.value);
-      } else if (entry.type == EntryType::INT64) {
+        break;
+      case EntryType::INT64:
         LOG_D("%s = %" PRIi64, entry.caption, *(int64_t *)entry.value);
-      } else if (entry.type == EntryType::FONTS_DB) {
+        break;
+      case EntryType::FONTS_DB:
         LOG_D("%s = <FontsDB>", entry.caption);
-      } else {
+        break;
+      case EntryType::DOUBLE:
+        LOG_D("%s = %f", entry.caption, *(double *)entry.value);
+        break;
+      case EntryType::BYTE:
         LOG_D("%s = %" PRIi8, entry.caption, *(int8_t *)entry.value);
+        break;
+      default:
+        break;
       }
     }
     LOG_D("---");

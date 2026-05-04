@@ -6,8 +6,11 @@
 
 ### Version 3.0.0
 
+This is an overdue update of the EPub reader. A lot of changes were made internally to make the application more solid. Also, some changes to the user interface were done to make the application easier to use.
+
 - **Cover image sizes**: the book list now lets you choose between small, medium, and large cover images.
-- **Screen Saver**: place JPEG images in a `screen_saver` folder on the SD Card and they will be randomly displayed when the device turns off or enters deep sleep.
+- **Screen Saver**: place JPEG images in a `screen_saver` folder on the SD Card and they will be randomly displayed when the device turns off or enters deep sleep. The release package contains such a folder with 7 default images. This can be added to your existing SD card if you are updating to this new version.
+- **Battery Trim Factor**: a new battery_trim config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability.
 - **Larger menu icons**: icons in parameter and option menus are bigger and centred across multiple lines for easier navigation.
 - **Waiting indicator**: a spinner is shown on screen while a large image is being prepared.
 - **Bug fix**: the reading position was not correctly restored after waking from deep sleep.
@@ -15,18 +18,6 @@
 
 See [CHANGES.md](CHANGES.md) for a complete list of changes including internal improvements.
 
-(Updated 2026.01.20)
-
-Update to version 2.1.0
-
-- Now using ESP-IDF framework v5.5.2
-- No longer using PlatformIO. Using cmake through idf.py to build applications
-
-- Added support through the ESP-IDF-InkPlace v0.9.8 project:
-  - Support for new devices Inkplace-6PLUS-V2, Inkplace-6FLICK
-  - Added support for PCAL GPIO chip (Soldered devices)
-  - Added support for Cypress touchscreen (6FLICK)
-  - Added support for SD Card power control (Soldered devices)
 
 ### Building the application image
 

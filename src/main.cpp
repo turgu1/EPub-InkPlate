@@ -15,6 +15,7 @@
   #include "freertos/task.h"
 
   #include "alloc.hpp"
+  #include "battery.hpp"
   #include "controllers/app_controller.hpp"
   #include "controllers/books_dir_controller.hpp"
   #include "esp.hpp"
@@ -87,20 +88,37 @@
         #define LEVEL 1
       #endif
 
+      // Initialize the platform first, to be able to use its delay and
+      // deep sleep functions in case of critical errors.
       bool inkplateErr = !inkplate_platform.setup(true);
       if (inkplateErr) {
         LOG_E("Inkplate Platform Setup Error. Restarting!");
         inkplate_platform.restart();
       }
 
+      // Initialize the Config object, reading the config.txt file. If there
+      // is an error reading the config file, it will be created with default values.
       bool configErr = !config.read();
       if (configErr) LOG_E("Config Error.");
       #if DATE_TIME_RTC
         else {
+          // Set the time zone from config and apply it to the system.
+          // This is needed for the NTP client to work with the correct time zone.
+
           HimemString timeZone;
 
           config.get(Config::Ident::TIME_ZONE, timeZone);
           setenv("TZ", timeZone.c_str(), 1);
+
+          // Set battery trim factor from config, if available. This is used to
+          // calibrate the battery voltage readings.
+
+          double batteryTrimFactor;
+
+          if (config.get(Config::Ident::BATTERY_TRIM, &batteryTrimFactor)) {
+            LOG_I("Battery trim factor: %f", batteryTrimFactor);
+            battery.set_voltage_trim(batteryTrimFactor);
+          }
         }
       #endif
 
@@ -108,6 +126,8 @@
         config.show();
       #endif
 
+      // Set pugixml memory management functions to use the ESP PSRAM heap,
+      // which is more efficient and has more capacity than the C++ heap.
       pugi::set_memory_management_functions(allocate, free);
 
       // The appFonts only contains the icon and system fonts. Books related fonts are
