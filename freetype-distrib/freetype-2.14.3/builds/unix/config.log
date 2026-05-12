@@ -771,8 +771,8 @@ configure: failed program was:
 configure:14150: result: support not detected
 configure:14282: checking for getpagesize
 configure:14282: xtensa-esp32-elf-gcc -o conftest -mlongcalls -O2   conftest.c  >&5
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc7VlcEo.o:(.literal.startup+0x0): undefined reference to `getpagesize'
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc7VlcEo.o: in function `main':
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccQ2s9MU.o:(.literal.startup+0x0): undefined reference to `getpagesize'
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccQ2s9MU.o: in function `main':
 conftest.c:(.text.startup+0x3): undefined reference to `getpagesize'
 collect2: error: ld returned 1 exit status
 configure:14282: $? = 1
@@ -1024,11 +1024,11 @@ configure:17038: result: no
 configure:16980: checking for the pthreads library -lpthreads
 configure:17028: xtensa-esp32-elf-gcc -o conftest -mlongcalls -O2 -fvisibility=hidden -DHAVE_FSSPEC=0 -DHAVE_FSREF=0 -DHAVE_QUICKDRAW_TOOLBOX=0 -DHAVE_QUICKDRAW_CARBON=0 -DHAVE_ATS=0 -I$(TOP_DIR)/builds/mac/    conftest.c -lpthreads  >&5
 /home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: cannot find -lpthreads: No such file or directory
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc1nj1fO.o:(.literal.startup+0x18): warning: _pthread_cleanup_pop is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc1nj1fO.o:(.literal.startup+0x14): warning: _pthread_cleanup_push is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc1nj1fO.o:(.literal.startup+0x10): warning: pthread_attr_init is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc1nj1fO.o:(.literal.startup+0x8): warning: pthread_create is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc1nj1fO.o:(.literal.startup+0xc): warning: pthread_join is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccY65jyb.o:(.literal.startup+0x18): warning: _pthread_cleanup_pop is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccY65jyb.o:(.literal.startup+0x14): warning: _pthread_cleanup_push is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccY65jyb.o:(.literal.startup+0x10): warning: pthread_attr_init is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccY65jyb.o:(.literal.startup+0x8): warning: pthread_create is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccY65jyb.o:(.literal.startup+0xc): warning: pthread_join is not implemented and will always fail
 collect2: error: ld returned 1 exit status
 configure:17028: $? = 1
 configure: failed program was:
@@ -1081,11 +1081,11 @@ configure: failed program was:
 configure:17038: result: no
 configure:16909: checking whether pthreads work without any flags
 configure:17028: xtensa-esp32-elf-gcc -o conftest -mlongcalls -O2 -fvisibility=hidden -DHAVE_FSSPEC=0 -DHAVE_FSREF=0 -DHAVE_QUICKDRAW_TOOLBOX=0 -DHAVE_QUICKDRAW_CARBON=0 -DHAVE_ATS=0 -I$(TOP_DIR)/builds/mac/    conftest.c   >&5
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccV1eSpn.o:(.literal.startup+0x18): warning: _pthread_cleanup_pop is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccV1eSpn.o:(.literal.startup+0x14): warning: _pthread_cleanup_push is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccV1eSpn.o:(.literal.startup+0x10): warning: pthread_attr_init is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccV1eSpn.o:(.literal.startup+0x8): warning: pthread_create is not implemented and will always fail
-/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/ccV1eSpn.o:(.literal.startup+0xc): warning: pthread_join is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc8UKPfh.o:(.literal.startup+0x18): warning: _pthread_cleanup_pop is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc8UKPfh.o:(.literal.startup+0x14): warning: _pthread_cleanup_push is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc8UKPfh.o:(.literal.startup+0x10): warning: pthread_attr_init is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc8UKPfh.o:(.literal.startup+0x8): warning: pthread_create is not implemented and will always fail
+/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/../lib/gcc/xtensa-esp-elf/14.2.0/../../../../xtensa-esp-elf/bin/ld: /tmp/cc8UKPfh.o:(.literal.startup+0xc): warning: pthread_join is not implemented and will always fail
 configure:17028: $? = 0
 configure:17038: result: yes
 configure:17162: checking for joinable pthread attribute

@@ -17,21 +17,20 @@
 
   #include "helpers/duration.hpp"
 
+  #include "display_list.hpp"
+  #include "font.hpp"
+  #include "font_factory.hpp"
+  #include "fonts.hpp"
+  #include "ttf2.hpp"
+
   #include "models/books_dir.hpp"
   #include "models/css.hpp"
   #include "models/css_parser.hpp"
-  #include "display_list.hpp"
   #include "models/dom.hpp"
   #include "models/epub.hpp"
-  #include "models/font.hpp"
-  #include "models/font_factory.hpp"
-  #include "models/fonts.hpp"
-  #include "models/ibmf.hpp"
-  #include "models/ibmf_font.hpp"
   #include "models/nvs_mgr.hpp"
   #include "models/page_locs.hpp"
   #include "models/toc.hpp"
-  #include "models/ttf2.hpp"
 
   #include "viewers/book_viewer.hpp"
   #include "viewers/books_dir_viewer.hpp"
@@ -114,10 +113,10 @@
     printClassSize<Duration>("Duration");
     printClassSize<BooksDir>("BooksDir");
     printClassSize<TOC>("TOC");
-    printClassSize<IBMF>("IBMF");
+    // printClassSize<IBMF>("IBMF");
     printClassSize<Fonts>("Fonts");
     printClassSize<TTF>("TTF");
-    printClassSize<IBMFFont>("IBMFFont");
+    // printClassSize<IBMFFont>("IBMFFont");
 
     #if EPUB_INKPLATE_BUILD
       printClassSize<NVSMgr>("NVSMgr");

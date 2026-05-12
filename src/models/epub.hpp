@@ -65,6 +65,7 @@ public:
     int8_t showTitle;
     int8_t showPictures;
     int8_t fontSize;
+    int8_t lineHeight;
     int8_t useFontsInBook;
     int8_t font;
   };
@@ -77,6 +78,8 @@ public:
 
 private:
   static constexpr char const *TAG = "EPub";
+
+  static constexpr float lineHeightFactors[3] = {0.65, 0.8, 0.95};
 
   pugi::xml_document opf; ///< The OPF document description.
   pugi::xml_document encryption;
@@ -98,6 +101,9 @@ private:
                ///< application fonts when the "use fonts in book" option is enabled. They are
                ///< cleared when a new book is loaded.
 
+  CSS::CSSPools cssPools;
+  DOM::DOMPools domPools;
+
   CSSList cssCache; ///< All css files in the ebook are maintained here.
 
   bool fileIsOpen{false};
@@ -114,6 +120,7 @@ private:
   auto getEncryptionXml()                    -> bool;
   auto retrieveFontsFromCss(CSSPtr &css)     -> void;
   auto sha1(const std::string &data)         -> void;
+
   // clang-format on
 
   EPub() { fonts.setup(); };
@@ -141,6 +148,8 @@ public:
   auto getItemCount()                                       -> int16_t;
   auto getFileObfuscation(const char *filename)             -> ObfuscationType;
   auto getFonts()                                           -> Fonts & { return fonts; }
+  auto getCssPools()                                        -> CSS::CSSPools & { return cssPools; }
+  auto getDomPools()                                        -> DOM::DOMPools & { return domPools; }
   auto loadFont(const HimemString &filename, 
                 const HimemString &fontFamily, 
                 const FaceStyle style)                      -> bool;
@@ -148,10 +157,16 @@ public:
   auto retrieveCss(ItemInfo &item)                          -> void;
   auto loadFonts()                                          -> void;
   auto clearItemData(ItemInfo &item)                        -> void;
-  auto openParams(const HimemString &epubFilename)          -> void;
+  auto openParams(const HimemString &epubFilename)          -> bool;
   auto updateBookFormatParams()                             -> void;
   auto decrypt(void *buffer, const uint32_t size, 
                ObfuscationType obfType)                     -> void;
+
+  [[nodiscard]] inline auto getLineHeightFactor() const -> float {
+    int8_t lineHeight = bookFormatParams.lineHeight;
+    if ((lineHeight < 0) || (lineHeight > 2)) lineHeight = 1; // default
+    return lineHeightFactors[lineHeight];
+  }
 
   // clang-format on
 
@@ -168,6 +183,7 @@ public:
 
   // clang-format off
  [[nodiscard]] inline auto getCssCache() const            -> const CSSList &            { return cssCache; }
+               inline auto clearCssCache()                -> void                        { cssCache.clear(); }
  [[nodiscard]] inline auto getCurrentItemCss() const      -> const CSSPtr &             { return currentItemInfo.css; }
  [[nodiscard]] inline auto getCurrentItemInfo() const     -> const ItemInfo &           { return currentItemInfo; }
  [[nodiscard]] inline auto getCurrentItemFilePath() const -> const HimemString &        { return currentItemInfo.filePath; }

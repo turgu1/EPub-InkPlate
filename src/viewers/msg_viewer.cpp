@@ -36,7 +36,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   va_end(args);
 
   Page::Format fmt = {
-      .fontIndex    = 0,
+      .fontIndex    = ICONS_FONT_INDEX,
       .fontSize     = 24,
       .marginLeft   = 10,
       .marginRight  = 10,
@@ -67,7 +67,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
         Pos(fmt.screenLeft + 50 - (glyph->dim.width >> 1), (Screen::getHeight() >> 1) + 20), fmt);
   }
 
-  fmt.fontIndex = 1;
+  fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
   fmt.fontSize  = 10;
 
   // Title

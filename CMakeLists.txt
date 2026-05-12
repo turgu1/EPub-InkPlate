@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(DEVICE "INKPLATE_6FLICK")
+# set(DEVICE "INKPLATE_6FLICK")
+set(DEVICE "INKPLATE_6PLUS")
 # set(DEBUGGING 1)
 # set(REGRESSION_TEST 1)
 

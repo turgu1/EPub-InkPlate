@@ -24,6 +24,35 @@
 
 bool Unzip::alive = false;
 
+static void *zipMem = nullptr;
+
+static auto myZAlloc(void *opaque, size_t items, size_t size) -> void * {
+  if (zipMem != nullptr) {
+    return zipMem;
+  } else {
+    #if EPUB_INKPLATE_BUILD
+      return zipMem = heap_caps_malloc(items * size, MALLOC_CAP_SPIRAM);
+    #else
+      const char *TAG = "myZAlloc";
+      LOG_I("Allocating %zu bytes for zlib", items * size);
+      return zipMem = malloc(items * size);
+    #endif
+  }
+}
+
+static void myZFree(void *opaque, void *address) {
+  // Do nothing
+  #if 0
+  #if EPUB_INKPLATE_BUILD
+    heap_caps_free(address);
+  #else
+    const char *TAG = "myZFree";
+    LOG_I("Freeing memory for zlib");
+    free(address);
+  #endif
+  #endif
+}
+
 /**
  * @brief Seeks to the central directory of a ZIP file.
  *
@@ -215,21 +244,27 @@ auto Unzip::readFileEntries(uint32_t offset, uint16_t count) -> bool {
       uint16_t extra_size    = getUint16((const unsigned char *)&buffer[26]);
       uint16_t comment_size  = getUint16((const unsigned char *)&buffer[28]);
 
-      auto fname = makeUniqueHimem<char[]>(filename_size + 1);
-      if ((fname == nullptr) || !readExact(fname.get(), filename_size)) {
-        LOG_E("Unable to read filename from central directory entry.");
+      if (filename_size > CharPool::MAX_ALLOC - 1) {
+        LOG_E("Filename too long for CharPool: %u", filename_size);
         break;
       }
-      fname[filename_size] = 0;
 
-      fileEntries.emplace_front();
-      auto &fe = fileEntries.front();
+      fileEntries.emplace_back();
+      auto &fe = fileEntries.back();
+      fe.filename.resize(filename_size);
+      if (!readExact(fe.filename.data(), filename_size)) {
+        LOG_E("Unable to read filename from central directory entry.");
+        fileEntries.removeLast();
+        break;
+      }
 
-      fe.filename       = fname.get();
       fe.startPos       = getUint32((const unsigned char *)&buffer[38]);
       fe.compressedSize = getUint32((const unsigned char *)&buffer[16]);
       fe.size           = getUint32((const unsigned char *)&buffer[20]);
       fe.method         = getUint16((const unsigned char *)&buffer[6]);
+      ++filenameEntryCount;
+      totalFilenameBytes += filename_size;
+      if (filename_size > maxFilenameSize) maxFilenameSize = filename_size;
 
       // LOG_D("File: %s %d %d %d %d", fe.filename, fe.startPos, fe.compressedSize,
       // fe.size, fe.method);
@@ -258,6 +293,18 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
     LOG_E("Unable to open file: %s", zipFilename);
     return false;
   }
+
+  filenamePool = CharPool::Make();
+  if (filenamePool == nullptr) {
+    LOG_E("Unable to allocate filename CharPool.");
+    file.close();
+    return false;
+  }
+  PoolContext<FilenamePoolTag>::init(filenamePool.get());
+  filenameEntryCount = 0;
+  totalFilenameBytes = 0;
+  maxFilenameSize    = 0;
+
   zipFileIsOpen   = true;
   currentFilename = zipFilename;
 
@@ -268,6 +315,13 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
   if (!completed) {
     closeZipFileUnsafe();
   } else {
+    LOG_I("ZIP entries=%u filenameBytes=%u maxFilename=%u", filenameEntryCount, totalFilenameBytes,
+          maxFilenameSize);
+    if (filenamePool != nullptr) {
+      size_t allocated = filenamePool->getTotalAllocated();
+      size_t freed     = filenamePool->getTotalFreed();
+      LOG_I("Filename CharPool: alloc=%zu freed=%zu live=%zu", allocated, freed, allocated - freed);
+    }
     LOG_D("openZipFile completed!");
     #if DEBUGGING
       std::cout << "---- Files available: ----" << std::endl;
@@ -281,7 +335,6 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
     #endif
   }
 
-  fileEntries.reverse();
   return completed;
 }
 
@@ -292,7 +345,21 @@ auto Unzip::closeZipFileUnsafe() -> void {
   }
 
   if (zipFileIsOpen) {
+    if (filenamePool != nullptr) {
+      size_t allocated = filenamePool->getTotalAllocated();
+      size_t freed     = filenamePool->getTotalFreed();
+      LOG_I("Closing ZIP: entries=%u filenameBytes=%u maxFilename=%u pool alloc=%zu freed=%zu "
+            "live=%zu",
+            filenameEntryCount, totalFilenameBytes, maxFilenameSize, allocated, freed,
+            allocated - freed);
+    }
+
     fileEntries.clear();
+    PoolContext<FilenamePoolTag>::reset();
+    filenamePool.reset();
+    filenameEntryCount = 0;
+    totalFilenameBytes = 0;
+    maxFilenameSize    = 0;
     if (file.is_open()) file.close();
     zipFileIsOpen = false;
   }
@@ -446,12 +513,18 @@ auto Unzip::openFile(const char *filename) -> bool {
   auto seekAbs = [this](std::streamoff pos) -> bool {
     file.clear();
     file.seekg(pos, std::ios::beg);
+    if (!file.good()) {
+      LOG_E("Error seeking to file data at pos: %d", pos);
+    }
     return file.good();
   };
 
   auto readExact = [this](void *dst, std::size_t size) -> bool {
     if (size == 0) return true;
     file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+    if (!file.good()) {
+      LOG_E("Error reading file data at pos: %d", file.tellg());
+    }
     return file.good();
   };
 
@@ -510,8 +583,8 @@ auto Unzip::closeFile() -> void {}
     current = 0;
     aborted = false;
 
-    zstr.zalloc    = nullptr;
-    zstr.zfree     = nullptr;
+    zstr.zalloc    = myZAlloc;
+    zstr.zfree     = myZFree;
     zstr.opaque    = nullptr;
     zstr.next_in   = nullptr;
     zstr.next_out  = nullptr;
@@ -521,6 +594,7 @@ auto Unzip::closeFile() -> void {}
     int zret;
 
     if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
+      LOG_E("Error initializing zlib inflate: %d", zret);
       aborted = true;
       closeStreamFile();
       return false;
@@ -532,6 +606,9 @@ auto Unzip::closeFile() -> void {}
     auto readExact = [this](void *dst, std::size_t size) -> bool {
       if (size == 0) return true;
       file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+      if (!file.good()) {
+        LOG_E("Error reading zip content at pos: %d", file.tellg());
+      }
       return file.good();
     };
 

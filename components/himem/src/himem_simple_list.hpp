@@ -34,7 +34,55 @@
 #include "simple_list.hpp"
 
 template <typename T>
-using HimemSimpleList = SimpleList<T, HimemPool<T>>;
+class HimemSimpleList : public SimpleList<T, HimemPool<T>> {
+private:
+  using Base = SimpleList<T, HimemPool<T>>;
+
+public:
+  using typename Base::ConstIterator;
+  using typename Base::Iterator;
+  using iterator       = Iterator;
+  using const_iterator = ConstIterator;
+
+  using Base::Base;
+
+  HimemSimpleList() = default;
+
+  HimemSimpleList(const HimemSimpleList &)                         = default;
+  HimemSimpleList(HimemSimpleList &&) noexcept                     = default;
+  auto operator=(const HimemSimpleList &) -> HimemSimpleList &     = default;
+  auto operator=(HimemSimpleList &&) noexcept -> HimemSimpleList & = default;
+  ~HimemSimpleList()                                               = default;
+
+  void push_front(const T &value) noexcept { this->pushFront(value); }
+  void push_front(T &&value) noexcept { this->pushFront(std::move(value)); }
+
+  template <typename... Args>
+  auto emplace_front(Args &&...args) noexcept -> T * {
+    return this->emplaceFront(std::forward<Args>(args)...);
+  }
+
+  void pop_front() noexcept { this->popFront(); }
+
+  void push_back(const T &value) noexcept { this->pushBack(value); }
+  void push_back(T &&value) noexcept { this->pushBack(std::move(value)); }
+
+  template <typename... Args>
+  auto emplace_back(Args &&...args) noexcept -> T * {
+    return this->emplaceBack(std::forward<Args>(args)...);
+  }
+
+  void pop_back() noexcept { this->removeLast(); }
+
+  void reverse() noexcept {
+    HimemSimpleList<T> rev;
+    while (!this->empty()) {
+      rev.pushFront(std::move(this->front()));
+      this->popFront();
+    }
+    this->merge(rev);
+  }
+};
 
 template <typename T>
 using HimemUniqueSimpleList = HimemUniquePtr<HimemSimpleList<T>>;

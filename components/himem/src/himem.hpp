@@ -42,6 +42,8 @@
 #include <utility>
 #include <vector>
 
+// #include <iostream>
+
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
   #define HIMEM_MALLOC(size_) heap_caps_malloc((size_), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
@@ -82,6 +84,13 @@ public:
   // ---- core interface ------------------------------------------------------
 
   [[nodiscard]] auto allocate(std::size_t n) -> T * {
+    // auto size = n * sizeof(T);
+    // if ((size == 1616) || (size == 24016) || (size == 816)) {
+    //   std::cout << "PsramAllocator: Allocating " << size << " bytes for " << n
+    //             << " item(s) of size " << sizeof(T) << " Type = " << typeid(T).name() <<
+    //             std::endl;
+    // }
+
     if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
       return nullptr; // match std::make_unique<T>(...) behaviour on allocation failure
 

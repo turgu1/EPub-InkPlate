@@ -59,6 +59,8 @@ INCLUDES := \
   -I src/viewers \
   -I lib_linux/EPub_InkPlate/src \
   -I components/global/src \
+  -I components/config/src \
+  -I components/fonts/src \
   -I components/sys_functions/include \
   -I components/pugixml/src \
   -I components/zip/src \
@@ -97,12 +99,22 @@ SRC_CPP := $(shell find src -name '*.cpp' ! -path 'src/embed/*')
 
 # Component sources compiled for Linux
 SRC_CPP += \
+  components/config/src/config.cpp \
+  components/config/src/fonts_db.cpp \
+  components/fonts/src/fonts.cpp \
+  components/fonts/src/ttf2.cpp \
+  components/fonts/src/font.cpp \
   components/pugixml/src/pugixml.cpp \
-  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
   components/pictures/src/mypngle.cpp \
+  components/pictures/src/jpeg_decoder.cpp \
   components/pictures/src/tjpgdec.cpp \
   components/pictures/src/picture.cpp \
+  components/pictures/src/gif_decoder.cpp \
+  components/pictures/src/gif_picture.cpp \
+  components/pictures/src/svg_decoder.cpp \
+  components/pictures/src/svg_picture.cpp \
   components/pictures/src/jpeg_picture.cpp \
   components/pictures/src/png_picture.cpp \
   components/simple_db/src/simple_db.cpp \
@@ -186,7 +198,8 @@ TEST_TARGET  := epub_test
 TEST_DEFINES := \
   -DEPUB_LINUX_BUILD=1 \
   -DAPP_VERSION=\"$(APP_VERSION)\" \
-  -DDATE_TIME_RTC=1
+  -DDATE_TIME_RTC=1 \
+  -DMAIN_FOLDER=\"$(CURDIR)/test/fixtures/config_data\"
 
 TEST_INCLUDES := \
   -I test/stubs \
@@ -198,6 +211,8 @@ TEST_INCLUDES := \
   -I src/viewers \
   -I lib_linux/EPub_InkPlate/src \
   -I components/global/src \
+  -I components/config/src \
+  -I components/fonts/src \
   -I components/sys_functions/include \
   -I components/himem/src \
   -I components/simple_db/src \
@@ -217,8 +232,13 @@ TEST_SRC_C := \
 
 TEST_SRC_CPP := \
   test/test_runner.cpp \
+  test/test_gif_decoder.cpp \
+  test/test_svg_decoder.cpp \
   test/test_himem.cpp \
   test/test_himem_pool.cpp \
+  test/test_char_pool.cpp \
+  test/test_fonts_cache.cpp \
+  test/test_screen_stub.cpp \
   test/test_dom.cpp \
   test/test_simple_db.cpp \
   test/test_css.cpp \
@@ -232,10 +252,20 @@ TEST_SRC_CPP := \
   src/models/css.cpp \
   src/models/epub.cpp \
   src/models/book_params.cpp \
+  components/config/src/fonts_db.cpp \
+  components/fonts/src/fonts.cpp \
+  components/fonts/src/font.cpp \
+  components/fonts/src/ttf2.cpp \
+  components/pictures/src/mypngle.cpp \
+  components/pictures/src/jpeg_decoder.cpp \
+  components/pictures/src/gif_decoder.cpp \
+  components/pictures/src/gif_picture.cpp \
+  components/pictures/src/svg_decoder.cpp \
+  components/pictures/src/svg_picture.cpp \
   components/zip/src/unzip.cpp \
   components/pugixml/src/pugixml.cpp \
   components/simple_db/src/simple_db.cpp \
-  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp
 
@@ -244,7 +274,8 @@ TEST_OBJS     := $(patsubst %.cpp,$(TEST_BUILD)/%.o,$(TEST_SRC_CPP)) $(TEST_OBJS
 TEST_DEPS     := $(TEST_OBJS:.o=.d)
 
 .PHONY: test build_test clean_test all_tests \
-        test_himem test_himem_pool_test test_dom test_simple_db test_css \
+  test_himem test_himem_pool_test test_char_pool test_fonts_cache test_fonts_cache_stress test_dom test_simple_db test_css \
+  test_gif_decoder test_svg_decoder \
   test_display_list test_app_config test_epub test_unzip test_simple_list
 
 build_test: $(TEST_BUILD)/$(TEST_TARGET)
@@ -263,6 +294,11 @@ test_display_list:   $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET
 test_app_config:     $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) app_config
 test_epub:           $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) epub
 test_unzip:          $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) unzip
+test_char_pool:      $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) char_pool
+test_fonts_cache:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) fonts_cache
+test_fonts_cache_stress: $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) fonts_cache_stress
+test_gif_decoder:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) gif_decoder
+test_svg_decoder:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) svg_decoder
 test_simple_list:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) simple_list
 
 # Convenience target: run both test suites in sequence.
@@ -331,9 +367,9 @@ CONFIG_TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(CONFIG_TEST_DEFINES) $(CONFIG_
 
 CONFIG_TEST_SRC_CPP := \
   test/test_config_standalone.cpp \
-  src/models/fonts_db.cpp \
+  components/config/fonts_db.cpp \
   components/pugixml/src/pugixml.cpp \
-  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp
 
@@ -392,6 +428,8 @@ VALGRIND_INCLUDES := \
   -I src/viewers \
   -I lib_linux/EPub_InkPlate/src \
   -I components/global/src \
+  -I components/config/src \
+  -I components/fonts/src \
   -I components/sys_functions/include \
   -I components/pugixml/src \
   -I components/zip/src \
@@ -421,33 +459,38 @@ VALGRIND_SRC_C := \
 VALGRIND_SRC_CPP := \
   test/linux_s5_valgrind.cpp \
   test/valgrind_stubs.cpp \
+  src/helpers/picture_load_icon.cpp \
   src/models/book_params.cpp \
-  src/models/config.cpp \
   src/models/css.cpp \
   src/models/dom.cpp \
   src/models/epub.cpp \
-  src/models/font.cpp \
-  src/models/fonts.cpp \
-  src/models/fonts_db.cpp \
-  src/models/ibmf.cpp \
   src/models/page_locs.cpp \
   src/models/page_locs_control.cpp \
   src/models/page_locs_interpreter.cpp \
   src/models/page_locs_retriever.cpp \
   src/models/toc.cpp \
-  src/models/ttf2.cpp \
   src/viewers/html_interpreter.cpp \
   src/viewers/page.cpp \
+  components/config/src/config.cpp \
+  components/config/src/fonts_db.cpp \
+  components/fonts/src/fonts.cpp \
+  components/fonts/src/ttf2.cpp \
+  components/fonts/src/font.cpp \
   components/pugixml/src/pugixml.cpp \
   components/zip/src/unzip.cpp \
   components/pictures/src/mypngle.cpp \
+  components/pictures/src/jpeg_decoder.cpp \
   components/pictures/src/tjpgdec.cpp \
   components/pictures/src/picture.cpp \
+  components/pictures/src/gif_decoder.cpp \
+  components/pictures/src/gif_picture.cpp \
+  components/pictures/src/svg_decoder.cpp \
+  components/pictures/src/svg_picture.cpp \
   components/pictures/src/jpeg_picture.cpp \
   components/pictures/src/png_picture.cpp \
   components/simple_db/src/simple_db.cpp \
   components/display_list/src/display_list.cpp \
-  components/sys_functions/int_to_str.cpp \
+  components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp
 

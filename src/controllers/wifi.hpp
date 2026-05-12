@@ -4,7 +4,7 @@
 
 #if EPUB_INKPLATE_BUILD
 
-  #include "models/config.hpp"
+  #include "config.hpp"
 
   #include "esp_wifi.h"
 

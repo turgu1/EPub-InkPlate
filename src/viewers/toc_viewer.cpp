@@ -4,8 +4,8 @@
 
 #include "viewers/toc_viewer.hpp"
 
-#include "models/config.hpp"
-#include "models/fonts.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 

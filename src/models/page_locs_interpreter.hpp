@@ -17,11 +17,15 @@
 using PageLocsInterpreterPtr = HimemUniquePtr<class PageLocsInterpreter>;
 class PageLocsInterpreter : public HTMLInterpreter {
 private:
+  using PendingRequestCheck = auto (*)(void *) -> bool;
+
   PageLocsInterpreter(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
                       Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem,
-                      const std::atomic<bool> &abortFlag)
+                      const std::atomic<bool> &abortFlag, PendingRequestCheck pendingRequestCheck,
+                      void *pendingRequestContext)
       : HTMLInterpreter(theEpub, thePage, theDom, theCompMode, theItem), itemInfo(theItem),
-        abortFlag(abortFlag) {}
+        abortFlag(abortFlag), pendingRequestCheck(pendingRequestCheck),
+        pendingRequestContext(pendingRequestContext) {}
 
 public:
   ~PageLocsInterpreter() {}
@@ -32,9 +36,11 @@ public:
 
   static inline auto Make(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom,
                           Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem,
-                          const std::atomic<bool> &abortFlag) {
+                          const std::atomic<bool> &abortFlag,
+                          PendingRequestCheck pendingRequestCheck, void *pendingRequestContext) {
     return makeUniqueHimem<PageLocsInterpreter>(theEpub, thePage, theDom, theCompMode, theItem,
-                                                abortFlag);
+                                                abortFlag, pendingRequestCheck,
+                                                pendingRequestContext);
   }
 
   auto inline docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
@@ -42,6 +48,8 @@ public:
 private:
   const EPub::ItemInfo &itemInfo;
   const std::atomic<bool> &abortFlag;
+  PendingRequestCheck pendingRequestCheck;
+  void *pendingRequestContext;
 
 protected:
   [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
@@ -79,9 +87,13 @@ protected:
 
     page->start(fmt); // Start a new page
 
-    // Check if the control task has requested an abort to process a higher-priority item.
+    // Abort at page boundaries when control has signalled an interrupt or when a queued
+    // retriever request (typically GET_ASAP or STOP) is waiting to be handled next.
     // Partial pages already inserted into pagesMap are safe — insert() is idempotent.
-    if (abortFlag.load(std::memory_order_relaxed)) return false;
+    if (abortFlag.load(std::memory_order_relaxed) ||
+        ((pendingRequestCheck != nullptr) && pendingRequestCheck(pendingRequestContext))) {
+      return false;
+    }
 
     return res;
   }

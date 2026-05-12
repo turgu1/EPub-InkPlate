@@ -2,30 +2,31 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __OPTION_CONTROLLER__ 1
-#include "controllers/option_controller.hpp"
-
+#include "config.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/clock.hpp"
 #include "controllers/common_actions.hpp"
 #include "controllers/ntp.hpp"
 #include "controllers/web_server.hpp"
+#include "fonts.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
 #include "models/epub.hpp"
-#include "models/fonts.hpp"
 #include "models/nvs_mgr.hpp"
 #include "models/page_locs.hpp"
+#include "viewers/keypad_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-// #undef DEBUGGING
-// #define DEBUGGING 1
-
 #if EPUB_INKPLATE_BUILD
+  #include "battery.hpp"
   #include "esp_system.h"
-  #include "option_controller.hpp"
 #endif
+
+#undef DEBUGGING
+#define DEBUGGING 1
+
+#define __OPTION_CONTROLLER__ 1
+#include "controllers/option_controller.hpp"
 
 // static int8_t boolean_value;
 
@@ -36,6 +37,7 @@ static int8_t showBattery;
 static int8_t timeout;
 static int8_t showPictures;
 static int8_t fontSize;
+static int8_t lineHeight;
 static int8_t useFontsInBooks;
 static int8_t defaultFont;
 static int8_t showTitle;
@@ -43,15 +45,20 @@ static int8_t dirView;
 static int8_t coverSize;
 static int8_t done;
 
+static double batteryTrim;
+
 static Screen::Orientation oldOrientation;
 static Screen::PixelResolution oldResolution;
 static int8_t oldShowPictures;
 static int8_t oldFontSize;
+static int8_t oldLineHeight;
 static int8_t oldUseFontsInBooks;
 static int8_t oldDefaultFont;
 static int8_t oldShowTitle;
 static int8_t oldDirView;
 static int8_t oldCoverSize;
+
+static double oldBatteryTrim;
 
 #if DATE_TIME_RTC
   static int8_t showHeapOrRtc;
@@ -62,9 +69,9 @@ static int8_t oldCoverSize;
 #endif
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static constexpr int8_t MAIN_FORM_SIZE = 9;
+  static constexpr int8_t MAIN_FORM_SIZE = 10;
 #else
-  static constexpr int8_t MAIN_FORM_SIZE = 8;
+  static constexpr int8_t MAIN_FORM_SIZE = 9;
 #endif
 
 static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
@@ -116,6 +123,10 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
      .u = {.ch = {.value = &showHeap, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
 #endif
+    {.caption   = "Battery Trim:",
+     .u         = {.floatVal = {.value = &batteryTrim, .min = 0.0, .max = 2.0}},
+     .entryType = FormEntryType::FLOAT},
+
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     {.caption   = " DONE ",
      .u         = {.ch = {.value = &done, .choiceCount = 0, .choices = nullptr}},
@@ -124,15 +135,20 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static constexpr int8_t FONT_FORM_SIZE = 5;
+  static constexpr int8_t FONT_FORM_SIZE = 6;
 #else
-  static constexpr int8_t FONT_FORM_SIZE = 4;
+  static constexpr int8_t FONT_FORM_SIZE = 5;
 #endif
 static FormEntry fontParamsFormEntries[FONT_FORM_SIZE] = {
     {.caption   = "Default Font Size (*):",
      .u         = {.ch = {.value       = &fontSize,
                           .choiceCount = 4,
                           .choices     = FormChoiceField::fontSizeChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+    {.caption   = "Line Height (*):",
+     .u         = {.ch = {.value       = &lineHeight,
+                          .choiceCount = 3,
+                          .choices     = FormChoiceField::lineHeightChoices}},
      .entryType = FormEntryType::HORIZONTAL},
     {.caption   = "Use Fonts in E-books (*):",
      .u         = {.ch = {.value       = &useFontsInBooks,
@@ -164,23 +180,27 @@ static FormEntry fontParamsFormEntries[FONT_FORM_SIZE] = {
   #endif
 
   static FormEntry dateTimeFormEntries[DATE_TIME_FORM_SIZE] = {
-      {.caption   = "Year :",
-       .u         = {.val = {.value = &year, .min = 2022, .max = 2099}},
+      {.caption = "Year :", // As the keypad viewer is used to edit the value of the field, we don't
+                            // want to show the field as selected when it's a numeric field, to
+                            // avoid confusion with the highlighting of the keypad viewer. So we
+                            // just show the field as highlighted when it's selected, and not when
+                            // it's in control of events.
+       .u         = {.intVal = {.value = &year, .min = 2022, .max = 2099}},
        .entryType = FormEntryType::UINT16},
       {.caption   = "Month :",
-       .u         = {.val = {.value = &month, .min = 1, .max = 12}},
+       .u         = {.intVal = {.value = &month, .min = 1, .max = 12}},
        .entryType = FormEntryType::UINT16},
       {.caption   = "Day :",
-       .u         = {.val = {.value = &day, .min = 1, .max = 31}},
+       .u         = {.intVal = {.value = &day, .min = 1, .max = 31}},
        .entryType = FormEntryType::UINT16},
       {.caption   = "Hour :",
-       .u         = {.val = {.value = &hour, .min = 0, .max = 23}},
+       .u         = {.intVal = {.value = &hour, .min = 0, .max = 23}},
        .entryType = FormEntryType::UINT16},
       {.caption   = "Minute :",
-       .u         = {.val = {.value = &minute, .min = 0, .max = 59}},
+       .u         = {.intVal = {.value = &minute, .min = 0, .max = 59}},
        .entryType = FormEntryType::UINT16},
       {.caption   = "Second :",
-       .u         = {.val = {.value = &second, .min = 0, .max = 59}},
+       .u         = {.intVal = {.value = &second, .min = 0, .max = 59}},
        .entryType = FormEntryType::UINT16},
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -203,6 +223,7 @@ auto OptionController::mainParameters() -> void {
   config.get(Config::Ident::BATTERY, &showBattery);
   config.get(Config::Ident::SHOW_TITLE, &showTitle);
   config.get(Config::Ident::TIMEOUT, &timeout);
+  config.get(Config::Ident::BATTERY_TRIM, &batteryTrim);
 
   #if DATE_TIME_RTC
     int8_t showHeap{0}, showRtc{0};
@@ -219,6 +240,7 @@ auto OptionController::mainParameters() -> void {
   oldCoverSize   = coverSize;
   oldResolution  = resolution;
   oldShowTitle   = showTitle;
+  oldBatteryTrim = batteryTrim;
   done           = 1;
 
   formViewer->show(MAIN_PARAMS_CAPTION, mainParamsFormEntries, MAIN_FORM_SIZE,
@@ -230,6 +252,7 @@ auto OptionController::mainParameters() -> void {
 auto OptionController::defaultParameters() -> void {
   config.get(Config::Ident::SHOW_PICTURES, &showPictures);
   config.get(Config::Ident::FONT_SIZE, &fontSize);
+  config.get(Config::Ident::LINE_HEIGHT, &lineHeight);
   config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBooks);
   config.get(Config::Ident::DEFAULT_FONT, &defaultFont);
 
@@ -237,6 +260,7 @@ auto OptionController::defaultParameters() -> void {
   oldUseFontsInBooks = useFontsInBooks;
   oldDefaultFont     = defaultFont;
   oldFontSize        = fontSize;
+  oldLineHeight      = lineHeight;
   done               = 1;
 
   formViewer->show(BOOK_DEFAULTS_CAPTION, fontParamsFormEntries, FONT_FORM_SIZE,
@@ -346,13 +370,16 @@ auto OptionController::initNvs() -> void {
 
 #if DEBUGGING
   auto OptionController::debugging() -> void {
-    auto [page, progressData] = MsgViewer::showProgress(
-        "A small test to check the show progress capability. Please wait...");
-    for (int i = 0; i <= 10; ++i) {
-      std::tie(page, progressData) =
-          MsgViewer::updateProgress(std::move(page), std::move(progressData), i * 10);
-      sleep(1);
-    }
+    // auto [page, progressData] = MsgViewer::showProgress(
+    //     "A small test to check the show progress capability. Please wait...");
+    // for (int i = 0; i <= 10; ++i) {
+    //   std::tie(page, progressData) =
+    //       MsgViewer::updateProgress(std::move(page), std::move(progressData), i * 10);
+    //   sleep(1);
+    // }
+
+    auto keypad = KeypadViewer::Make();
+    keypad->show(uint16_t(1234), "Test Keypad");
   }
 #endif
 
@@ -374,12 +401,8 @@ static MenuViewer::MenuEntry menu[] = {
   {MenuViewer::Icon::NTP_CLOCK,   true,  true,  nullptr,  "Retrieve Date/Time from Time Server"},
 #endif
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || MENU_6PLUS
   {MenuViewer::Icon::CALIB,       true,  false, nullptr,  "Touch Screen Calibration"},
-  {MenuViewer::Icon::CLR_HISTORY, true,  true,  nullptr,  "Clear e-books' read history"},
-#elif MENU_6PLUS
-  {MenuViewer::Icon::CALIB,       true,  false, nullptr,  "Touch Screen Calibration"},
-  {MenuViewer::Icon::CLR_HISTORY, true,  true,  nullptr,  "Clear e-books' read history"},
 #endif
 #if DEBUGGING
   {MenuViewer::Icon::DEBUG,       true,  true,  nullptr,  "Debugging"},
@@ -478,7 +501,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
   if (mainFormIsShown) {
     if (formViewer->event(event)) {
       mainFormIsShown = false;
-      // if (ok) {
+
       config.put(Config::Ident::ORIENTATION, static_cast<int8_t>(orientation));
       config.put(Config::Ident::DIR_VIEW, dirView);
       config.put(Config::Ident::COVER_SIZE, coverSize);
@@ -486,6 +509,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       config.put(Config::Ident::BATTERY, showBattery);
       config.put(Config::Ident::SHOW_TITLE, showTitle);
       config.put(Config::Ident::TIMEOUT, timeout);
+      config.put(Config::Ident::BATTERY_TRIM, batteryTrim);
 
       #if DATE_TIME_RTC
         config.put(Config::Ident::SHOW_HEAP, static_cast<int8_t>(showHeapOrRtc == 2 ? 1 : 0));
@@ -497,6 +521,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       config.save();
 
       if (oldOrientation != orientation) {
+        pageLocs.stopControlTask();
         screen.setOrientation(orientation);
         eventMgr.setOrientation(orientation);
         booksDirController.newOrientation();
@@ -517,6 +542,12 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
         screen.setPixelResolution(resolution);
       }
 
+      #if EPUB_INKPLATE_BUILD
+        if (oldBatteryTrim != batteryTrim) {
+          battery.set_voltage_trim(batteryTrim);
+        }
+      #endif
+
       // if ((oldOrientation != orientation) || (oldShowTitle != showTitle)) {
       //   epub.update_book_format_params();
       // }
@@ -535,6 +566,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       // if (ok) {
       config.put(Config::Ident::SHOW_PICTURES, showPictures);
       config.put(Config::Ident::FONT_SIZE, fontSize);
+      config.put(Config::Ident::LINE_HEIGHT, lineHeight);
       config.put(Config::Ident::DEFAULT_FONT, defaultFont);
       config.put(Config::Ident::USE_FONTS_IN_BOOKS, useFontsInBooks);
       config.save();
@@ -610,3 +642,5 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
     }
   }
 }
+
+#undef DEBUGGING

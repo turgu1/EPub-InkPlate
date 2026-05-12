@@ -33,6 +33,7 @@ private:
   int16_t lineCount;
   int16_t pageCount;
   int16_t firstEntryYpos;
+  int16_t headerHeight;
   uint16_t titleFontHeight;
   uint16_t authorFontHeight;
   uint16_t pagenbrFontHeight;

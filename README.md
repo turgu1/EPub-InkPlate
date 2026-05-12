@@ -9,15 +9,16 @@
 This is an overdue update of the EPub reader. A lot of changes were made internally to make the application more solid. Also, some changes to the user interface were done to make the application easier to use.
 
 - **Cover image sizes**: the book list now lets you choose between small, medium, and large cover images.
-- **Screen Saver**: place JPEG images in a `screen_saver` folder on the SD Card and they will be randomly displayed when the device turns off or enters deep sleep. The release package contains such a folder with 7 default images. This can be added to your existing SD card if you are updating to this new version.
-- **Battery Trim Factor**: a new battery_trim config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability.
-- **Larger menu icons**: icons in parameter and option menus are bigger and centred across multiple lines for easier navigation.
+- **Line Height**: Three line heights are available for displaying book content: Tight, Medium, and Large.
+- **Kerning and Ligatures**: Fonts and FreeType library adjusted to support kerning. A small algorithm was added for the usual ligatures.
+- **Screen Saver**: place JPEG images in a `screen_saver` folder on the SD card and they will be randomly displayed when the device turns off or enters deep sleep. The release package contains such a folder with 7 default images. This can be added to your existing SD card if you are updating to this new version.
+- **Battery Trim Factor**: a new `battery_trim` config value (floating point) permits adjustment of the battery voltage read from the Inkplate ADC capability.
+- **Larger menu icons**: icons in parameter and option menus are bigger and centered across multiple lines for easier navigation.
 - **Waiting indicator**: a spinner is shown on screen while a large image is being prepared.
 - **Bug fix**: the reading position was not correctly restored after waking from deep sleep.
 - **Dependency updates**: ESP-IDF v5.5.4, PugiXML 1.15, FreeType 2.14.3 (with improved OTF support).
 
 See [CHANGES.md](CHANGES.md) for a complete list of changes including internal improvements.
-
 
 ### Building the application image
 

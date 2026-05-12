@@ -28,7 +28,11 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
   #else
     esp_pthread_init();
 
-    if (controlQueue == nullptr) controlQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
+    if (controlQueue == nullptr) {
+      controlQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
+    } else {
+      xQueueReset(controlQueue);
+    }
     if (controlQueue == nullptr) {
       LOG_E("Unable to create controlQueue");
       return false;
@@ -122,6 +126,7 @@ auto PageLocsControl::task() -> void {
 
       case Req::STOP:
         runningDown = true;
+        retrieverTask.requestStop();
         SHOW_IT("abortControlTask: Sending STOP to Retriever");
         PageLocsRetriever::send({.req = PageLocsRetriever::Req::STOP});
 
@@ -183,10 +188,26 @@ auto PageLocsControl::task() -> void {
               SHOW_IT("Sending ASAP_READY to Mgr for itemref %d", itemref);
               PageLocs::send({.req = PageLocs::Req::ASAP_READY, .itemrefIndex = itemref});
             } else if (waitingForItemref != -1) {
-              asapItemref = itemref;
-              // Signal the retriever to abort at the next page boundary so it can
-              // serve this higher-priority request sooner.
-              retrieverTask.signalAbort();
+              if (itemref != waitingForItemref) {
+                asapItemref = itemref;
+                // Queue the ASAP request immediately so the retriever can notice it at the next
+                // page boundary and switch items without completing the current one.
+                SHOW_IT("Queueing GET_ASAP to Retriever for itemref %d while item %d is running",
+                        itemref, waitingForItemref);
+                PageLocsRetriever::send(
+                    {.req = PageLocsRetriever::Req::GET_ASAP, .itemrefIndex = itemref});
+              } else if (asapItemref == -1) {
+                // The retriever is already computing this very item sequentially.
+                // Instead of ignoring the request (which would cause a 2 s timeout),
+                // mark asapItemref so that ASAP_READY is delivered to the manager
+                // as soon as ITEM_READY arrives — no retriever interrupt needed.
+                asapItemref = itemref;
+                SHOW_IT("GET_ASAP for current item %d: will send ASAP_READY on completion",
+                        itemref);
+              } else {
+                SHOW_IT("GET_ASAP for current item %d ignored (asapItemref=%d already pending)",
+                        itemref, asapItemref);
+              }
             } else {
               asapItemref       = -1;
               waitingForItemref = itemref;
@@ -280,7 +301,7 @@ auto PageLocsControl::task() -> void {
           // Re-queue the interrupted item as a deferred request so it will be
           // retried after the pending ASAP item is served.
           nextItemrefToGet = itemref;
-          requestNextItem(-1);
+          if (asapItemref == -1) requestNextItem(-1);
         }
         break;
       }

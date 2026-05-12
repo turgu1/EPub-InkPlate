@@ -1,5 +1,6 @@
-version = 1
+version = 2
 showPictures = -1
 fontSize = -1
+lineHeight = -1
 useFontsInBook = -1
 font = -1

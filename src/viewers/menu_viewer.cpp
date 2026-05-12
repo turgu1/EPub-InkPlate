@@ -6,8 +6,8 @@
 #include "viewers/menu_viewer.hpp"
 
 #include "controllers/app_controller.hpp"
+#include "fonts.hpp"
 #include "menu_viewer.hpp"
-#include "models/fonts.hpp"
 #include "screen.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -18,7 +18,7 @@
 static const std::string TOUCH_AND_HOLD_STR = "Touch & hold icon for info. Tap for action.";
 
 auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
-  fmt.fontIndex = 1;
+  fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
   fmt.fontSize  = CAPTION_SIZE;
 
   FontPtr &font = appFonts.getFont(1);
@@ -91,7 +91,7 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
   //       maxIconsPerLine, iconsLineCount, textYPos, regionHeight);
 
   Page::Format fmt = {
-      .fontIndex    = 0,
+      .fontIndex    = ICONS_FONT_INDEX,
       .fontSize     = ICON_SIZE,
       .screenBottom = 100,
   };

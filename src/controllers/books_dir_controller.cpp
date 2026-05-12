@@ -5,10 +5,10 @@
 #define __BOOKS_DIR_CONTROLLER__ 1
 #include "controllers/books_dir_controller.hpp"
 
+#include "config.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
 #include "models/nvs_mgr.hpp"
 #include "viewers/book_viewer.hpp"
 
@@ -110,6 +110,7 @@ auto BooksDirController::setup() -> void {
 
   #endif
 }
+#include <cstring>
 
 auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSleep) -> void {
   // As we leave, we keep the information required to return to the book
@@ -174,6 +175,44 @@ auto BooksDirController::showLastBook() -> void {
       appController.setController(AppController::Ctrl::BOOK);
     }
   }
+}
+
+auto BooksDirController::openBookFromPath(const char *bookPath, const PageId &pageId) -> bool {
+  if ((bookPath == nullptr) || (*bookPath == '\0')) return false;
+
+  static HimemString bookFilenameLocal;
+  static HimemString bookTitleLocal;
+
+  const char *filenameOnly = std::strrchr(bookPath, '/');
+  filenameOnly             = (filenameOnly != nullptr) ? (filenameOnly + 1) : bookPath;
+
+  currentBookIndex  = -1;
+  lastReadBookIndex = -1;
+  bookFilename      = filenameOnly;
+  bookTitleLocal.clear();
+
+  for (int16_t idx = 0; idx < booksDir.getBookCount(); ++idx) {
+    auto book = booksDir.getBookData(static_cast<uint16_t>(idx));
+    if ((book != nullptr) && (std::strcmp(book->filename, filenameOnly) == 0)) {
+      currentBookIndex  = idx;
+      lastReadBookIndex = idx;
+      bookTitleLocal    = book->title;
+      break;
+    }
+  }
+
+  if (bookTitleLocal.empty()) {
+    bookTitleLocal = filenameOnly;
+  }
+
+  bookFilenameLocal = bookPath;
+
+  if (!bookController.openBook(bookTitleLocal, bookFilenameLocal, pageId)) {
+    return false;
+  }
+
+  appController.setController(AppController::Ctrl::BOOK);
+  return true;
 }
 
 auto BooksDirController::enter() -> void {

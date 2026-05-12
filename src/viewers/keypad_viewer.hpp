@@ -9,7 +9,7 @@
 #include "himem.hpp"
 
 #include "controllers/event_mgr.hpp"
-#include "models/fonts.hpp"
+#include "fonts.hpp"
 #include "viewers/page.hpp"
 
 using KeypadViewerPtr = HimemUniquePtr<class KeypadViewer>;
@@ -20,7 +20,8 @@ private:
   PagePtr page{Page::Make(appFonts)};
 
 public:
-  auto getValue() -> uint16_t { return clientValue; }
+  auto getIntValue() -> uint16_t { return clientUIntValue; }
+  auto getFloatValue() -> double { return clientFloatValue; }
 
   template <typename T, typename... Args>
     requires(!std::is_array_v<T>)
@@ -32,9 +33,20 @@ public:
 private:
   static constexpr char const *TAG = "KeypadViewer";
 
-  static const uint8_t MAX_DIGITS = 4;
-  static const uint8_t KEY_COUNT  = 14;
-  static const uint8_t FONT_SIZE  = 9;
+  enum class Layout {
+    INT, FLOAT,
+  };
+
+  Layout layout{Layout::INT};
+
+  static const uint8_t MAX_INT_SIZE            = 4;
+  static const uint8_t MAX_FLOAT_FRACTION_SIZE = 3;
+  static const uint8_t MAX_FLOAT_INTEGER_SIZE  = 1;
+  static const uint8_t MAX_FLOAT_SIZE = MAX_FLOAT_INTEGER_SIZE + 1 + MAX_FLOAT_FRACTION_SIZE;
+  static const uint8_t KEY_COUNT      = 14;
+  static const uint8_t FONT_SIZE      = 9;
+
+  static const uint8_t NUMBER_STR_SIZE = MAX_FLOAT_SIZE + 1;
 
   struct KeyLocation {
     Pos pos;
@@ -55,10 +67,11 @@ private:
   Dim keypadDim;
   Pos keypadPos;
   Dim keyDim, keyDim2;
-  char digits[MAX_DIGITS + 1];
-  uint8_t digitsCount;
-  Pos fieldPos;         // Where to put the number on screen
-  uint16_t clientValue; // Computed value
+  char numberStr[NUMBER_STR_SIZE];
+  uint8_t numberStrCount;
+  Pos fieldPos;             // Where to put the number on screen
+  uint16_t clientUIntValue; // Computed value
+  double clientFloatValue;  // Computed value
   Page::Format fmt;
   Glyph *glyph;
 
@@ -83,32 +96,60 @@ private:
   auto updateValue() -> void {
     page->clearRegion(Dim(keypadDim.width - 6, keyDim.height - 6),
                       Pos(fieldPos.x + 3, fieldPos.y + 3));
-    page->putStrAt(digits,
+    page->putStrAt(numberStr,
                    Pos(fieldPos.x + (keypadDim.width >> 1),
                        fieldPos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
                    fmt);
   }
 
   auto addDigit(uint8_t d) -> void {
-    if ((digitsCount == 1) && (digits[0] == '0')) {
-      digits[0] = '0' + d;
-    } else if (digitsCount < MAX_DIGITS) {
-      digits[digitsCount++] = '0' + d;
-      digits[digitsCount]   = 0;
+    switch (layout) {
+    case Layout::INT:
+      if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+        numberStr[0] = '0' + d;
+      } else if (numberStrCount < MAX_INT_SIZE) {
+        numberStr[numberStrCount++] = '0' + d;
+        numberStr[numberStrCount]   = 0;
+      }
+      break;
+    case Layout::FLOAT:
+      if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+        numberStr[0]   = '0' + d;
+        numberStr[1]   = '.';
+        numberStr[2]   = 0;
+        numberStrCount = 2;
+      } else if (numberStrCount < MAX_FLOAT_SIZE) {
+        numberStr[numberStrCount++] = '0' + d;
+        numberStr[numberStrCount]   = 0;
+      }
+      break;
     }
   }
 
   auto clearDigits() -> void {
-    digits[0]   = '0';
-    digits[1]   = 0;
-    digitsCount = 1;
+    numberStr[0]   = '0';
+    numberStr[1]   = 0;
+    numberStrCount = 1;
   }
 
   auto removeDigit() -> void {
-    if (digitsCount == 1) {
-      digits[0] = '0';
-    } else {
-      digits[--digitsCount] = 0;
+    switch (layout) {
+    case Layout::INT:
+      if (numberStrCount == 1) {
+        numberStr[0] = '0';
+      } else {
+        numberStr[--numberStrCount] = 0;
+      }
+      break;
+    case Layout::FLOAT:
+      if (numberStrCount <= (MAX_FLOAT_INTEGER_SIZE + 1)) {
+        numberStr[0]   = '0';
+        numberStr[1]   = 0;
+        numberStrCount = 1;
+      } else {
+        numberStr[--numberStrCount] = 0;
+      }
+      break;
     }
   }
 
@@ -152,17 +193,7 @@ private:
   #endif
 
 public:
-  auto show(uint16_t value, const char *caption) -> void {
-
-    clientValue = value;
-    if (clientValue > 9999) clientValue = 9999;
-
-    int_to_str(clientValue, digits, 5);
-
-    digitsCount = strlen(digits);
-
-    // LOG_I("Digits: %s", digits);
-
+  auto display(const char *caption) -> void {
     FontPtr &font = appFonts.getFont(1);
     glyph         = font->getGlyph('0', FONT_SIZE);
 
@@ -195,7 +226,7 @@ public:
         .align        = CSS::Align::CENTER,
     };
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       page->start(fmt);
     #endif
 
@@ -280,9 +311,9 @@ public:
                            the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
                        fmt);
         break;
-      case -3: // Backspace
+      case -3: // Delete
         page->putHighlight(keyDim, the_pos);
-        page->putStrAt("BSP",
+        page->putStrAt("DEL",
                        Pos(the_pos.x + (keyDim.width >> 1),
                            the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
                        fmt);
@@ -313,9 +344,45 @@ public:
     #endif
 
     updateValue();
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+
+    #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       page->paint(false);
     #endif
+  }
+
+  auto show(uint16_t value, const char *caption) -> void {
+
+    layout = Layout::INT;
+
+    clientUIntValue = value;
+    if (clientUIntValue > 9999) clientUIntValue = 9999;
+
+    int_to_str(clientUIntValue, numberStr, 5);
+
+    numberStrCount = strlen(numberStr);
+
+    // LOG_I("Digits: %s", numberStr);
+
+    display(caption);
+  }
+
+  // BE AWARE THAT this is used only for the battery trim field, which is a float between 0.0
+  // and 2.0, with 3 digits after the dot, so we can use a fixed size string of 6 chars (1 for the
+  // integer part, 1 for the dot, and 3 for the fraction part, plus the null terminator)
+  auto show(double value, const char *caption) -> void {
+
+    layout = Layout::FLOAT;
+
+    clientFloatValue = value;
+    if ((clientFloatValue >= 2.0) || (clientFloatValue <= 0.0)) clientFloatValue = 1.0;
+
+    float_to_str(clientFloatValue, numberStr, 6, 3);
+
+    numberStrCount = strlen(numberStr);
+
+    // LOG_I("Digits: %s", numberStr);
+
+    display(caption);
   }
 
   /**
@@ -336,7 +403,11 @@ public:
           else if (value == -1)
             return false;
           else if (value == -2) {
-            clientValue = atoi(digits);
+            if (layout == Layout::INT) {
+              clientUIntValue = atoi(numberStr);
+            } else {
+              clientFloatValue = atof(numberStr);
+            }
             return false;
           } else if (value == -3)
             removeDigit();
@@ -395,7 +466,11 @@ public:
           else if (value == -1)
             return false;
           else if (value == -2) {
-            clientValue = atoi(digits);
+            if (layout == Layout::INT) {
+              clientUIntValue = atoi(numberStr);
+            } else {
+              clientFloatValue = atof(numberStr);
+            }
             return false;
           } else if (value == -3)
             removeDigit();
@@ -425,12 +500,12 @@ public:
 
 #if 0
 
-Keypad:
+Keypads:
 
    +-----------------+
    |     Caption     |
    +-----------------+
-   |      Value      |
+   |    Int Value    |
    +-----+-----+-----+
    |  7  |  8  |  9  |
    +-----+-----+-----+
@@ -438,7 +513,23 @@ Keypad:
    +-----+-----+-----+
    |  1  |  2  |  3  |
    +-----+-----+-----+
-   | CLR |  0  | BSP |
+   | CLR |  0  | DEL |
+   +-----+-----+-----+
+   | OK  |  CANCEL   |
+   +-----+-----------+
+
+   +-----------------+
+   |     Caption     |
+   +-----------------+
+   |   Float Value   |
+   +-----+-----+-----+
+   |  7  |  8  |  9  |
+   +-----+-----+-----+
+   |  4  |  5  |  6  |
+   +-----+-----+-----+
+   |  1  |  2  |  3  |
+   +-----+-----+-----+
+   |  .  |  0  | DEL |
    +-----+-----+-----+
    | OK  |  CANCEL   |
    +-----+-----------+

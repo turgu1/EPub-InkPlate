@@ -4,6 +4,8 @@
 
 #include "models/dom.hpp"
 
+#include <cstring>
+
 // clang-format off
 DOM::Tags DOM::tags = 
   {{"p",           Tag::P}, {"div",               Tag::DIV}, {"span", Tag::SPAN}, {"br",  Tag::BREAK}, {"h1",   Tag::H1},  
@@ -15,42 +17,89 @@ DOM::Tags DOM::tags =
   };
 // clang-format on
 
+auto DOM::defaultPools() -> DOMPools & {
+  static DOMPools pools;
+  return pools;
+}
+
+auto DOM::bindPools(DOMPools &poolsRef) -> void {
+  using Tag                                                           = ScopedListPoolTag;
+  ScopedHimemPoolBinding<DOMPools::NodeClassListNode, Tag, 256>::pool = &poolsRef.nodeClassListPool;
+  ScopedHimemPoolBinding<DOMPools::NodeNodeListNode, Tag, 512>::pool  = &poolsRef.nodeNodeListPool;
+  ScopedHimemPoolBinding<DOMPools::DomNodeListNode, Tag, 100>::pool   = &poolsRef.domNodeListPool;
+}
+
+auto DOM::unbindPools() -> void {
+  using Tag                                                           = ScopedListPoolTag;
+  ScopedHimemPoolBinding<DOMPools::NodeClassListNode, Tag, 256>::pool = nullptr;
+  ScopedHimemPoolBinding<DOMPools::NodeNodeListNode, Tag, 512>::pool  = nullptr;
+  ScopedHimemPoolBinding<DOMPools::DomNodeListNode, Tag, 100>::pool   = nullptr;
+}
+
+DOM::PoolsGuard::PoolsGuard(DOMPools &poolsRef) : poolsRef(poolsRef) { bindPools(poolsRef); }
+
+DOM::PoolsGuard::~PoolsGuard() { unbindPools(); }
+
+DOM::DOM(DOMPools &poolsRef) : pools(&poolsRef), guard(new PoolsGuard(poolsRef)), nodeList{} {
+  body = nodeList.emplaceFront(nullptr, Tag::BODY);
+}
+
+DOM::~DOM() {
+  nodeList.clear();
+  delete guard;
+  guard = nullptr;
+}
+
 DOM::Node::Node(Node *theFather, Tag theTag) {
   father = theFather;
   tag    = theTag;
   if (father != nullptr) {
     firstChild  = father->children.empty();
     predecessor = firstChild ? nullptr : father->children.front();
-    father->children.push_front(this);
+    father->children.pushFront(this);
   } else
     firstChild = true;
 };
 
 DOM::Node::~Node() { children.clear(); }
 
-auto DOM::Node::addClass(std::string theClass) -> Node * {
-  classList.push_front(theClass);
+auto DOM::Node::addClass(const char *theClass) -> Node * {
+  if ((theClass == nullptr) || (*theClass == '\0')) return this;
+  classList.pushFront(HimemString(theClass));
   return this;
 }
 
-auto DOM::Node::addClasses(std::string theClasses) -> Node * {
-  std::istringstream iss(theClasses);
-  std::string item;
-  while (std::getline(iss, item, ' ')) {
-    if (!item.empty()) classList.push_front(item);
+auto DOM::Node::addClasses(const char *theClasses) -> Node * {
+  if (theClasses == nullptr) return this;
+
+  const char *p = theClasses;
+  while (*p != '\0') {
+    while ((*p == ' ') || (*p == '\t') || (*p == '\n') || (*p == '\r')) ++p;
+    if (*p == '\0') break;
+
+    const char *start = p;
+    while ((*p != '\0') && (*p != ' ') && (*p != '\t') && (*p != '\n') && (*p != '\r')) ++p;
+
+    const size_t len = static_cast<size_t>(p - start);
+    if (len > 0) {
+      HimemString cls;
+      cls.assign(start, len);
+      classList.pushFront(std::move(cls));
+    }
   }
   return this;
 }
 
-auto DOM::Node::addId(const std::string &theId) -> Node * {
+auto DOM::Node::addId(const char *theId) -> Node * {
+  if (theId == nullptr) return this;
   id = theId;
   return this;
 }
 
-auto DOM::Node::showChildren(NodeList::const_iterator nodeIt, int8_t lev) -> void const {
+auto DOM::Node::showChildren(NodeList::ConstIterator nodeIt, int8_t lev) -> void const {
   #if DEBUGGING
     if (nodeIt != children.end()) {
-      NodeList::const_iterator nextNodeIt = nodeIt;
+      NodeList::ConstIterator nextNodeIt = nodeIt;
       showChildren(++nextNodeIt, lev);
       (*nodeIt)->show(lev);
     }

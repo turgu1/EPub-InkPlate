@@ -803,11 +803,16 @@ private:
           break;
         case CSS::PropertyId::FONT_SIZE:
           if (v.valueType == CSS::ValueType::STR) {
-            v.valueType                   = CSS::ValueType::PT;
-            CSS::FontSizeMap::iterator it = css.fontSizeMap.find(static_cast<HimemString>(v.str));
-            if (it != css.fontSizeMap.end()) {
-              v.num = it->second;
-            } else {
+            v.valueType = CSS::ValueType::PT;
+            bool found  = false;
+            for (const auto &[key, value] : css.fontSizeMap) {
+              if (std::strcmp(key.c_str(), v.str.c_str()) == 0) {
+                v.num = value;
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
               // int8_t fontSize;
               // config.get(Config::Ident::FONT_SIZE, &fontSize);
               // v->num = fontSize;
@@ -857,7 +862,7 @@ private:
 
     auto [hasTerm, termValue] = term(none, prop.id);
     if (!hasTerm || none) return false;
-    prop.addValue(std::move(termValue));
+    if (!prop.addValue(std::move(termValue))) return false;
 
     for (;;) {
       if ((token == Token::SLASH) || (token == Token::COMMA)) {
@@ -866,7 +871,7 @@ private:
       auto [hasTerm, termValue] = term(none, prop.id);
       if (!hasTerm && !none) return false;
       if (none) break;
-      prop.addValue(std::move(termValue));
+      if (!prop.addValue(std::move(termValue))) return false;
     }
     prop.completed();
     return true;
@@ -877,11 +882,15 @@ private:
     bool done = false;
     while (true) {
       // process IDENT property
-      CSS::PropertyMap::iterator it = css.propertyMap.find(ident);
-      if (it != css.propertyMap.end())
-        prop.id = it->second;
-      else
-        break;
+      bool found = false;
+      for (const auto &[key, value] : css.propertyMap) {
+        if (std::strcmp(key.c_str(), ident) == 0) {
+          prop.id = value;
+          found   = true;
+          break;
+        }
+      }
+      if (!found) break;
       skipBlanks();
 
       if (token == Token::COLON)
@@ -933,27 +942,46 @@ private:
   }
 
   auto fontFaceStatement() -> bool {
-    auto &sels = css.selectorSuites.emplace_front();
-    auto &sel  = sels.emplace_front();
-    auto &node = sel.selectorNodeList.emplace_front();
+    size_t oldSuiteCount = css.selectorSuites.size();
+    css.selectorSuites.pushBack(CSS::Selectors{});
+    if (css.selectorSuites.size() == oldSuiteCount) return false;
+    auto &sels = css.selectorSuites.back();
 
+    CSS::Selector sel;
+    CSS::SelectorNode node;
     node.tag = DOM::Tag::FONT_FACE;
-
+    if (!sel.addSelectorNode(std::move(node))) {
+      css.selectorSuites.popBack();
+      return false;
+    }
     sel.computeSpecificity(css.getPriority());
+
+    size_t oldSelectorCount = sels.size();
+    sels.pushBack(std::move(sel));
+    if (sels.size() == oldSelectorCount) {
+      css.selectorSuites.popBack();
+      return false;
+    }
 
     skipBlanks();
     if (token == Token::LBRACE) {
       skipBlanks();
-      auto &props = css.propertySuites.emplace_front();
+      size_t oldPropertySuiteCount = css.propertySuites.size();
+      css.propertySuites.pushBack(CSS::Properties{});
+      if (css.propertySuites.size() == oldPropertySuiteCount) {
+        css.selectorSuites.popBack();
+        return false;
+      }
+      auto &props = css.propertySuites.back();
       properties(props);
 
       if (token == Token::RBRACE) {
         skipBlanks();
         return addRules(sels, props);
       }
-      css.propertySuites.pop_front();
+      css.propertySuites.popBack();
     }
-    css.selectorSuites.pop_front();
+    css.selectorSuites.popBack();
     return false;
   }
     
@@ -1064,7 +1092,7 @@ private:
     while (true) {
       auto [hasNode, node] = selectorNode();
       if (!hasNode) break;
-      sel.addSelectorNode(std::move(node));
+      if (!sel.addSelectorNode(std::move(node))) return false;
       bool done2 = false;
       while (true) {
         if (token == Token::WHITESPACE) skipBlanks();
@@ -1074,13 +1102,13 @@ private:
           auto [hasNode, node] = selectorNode();
           if (!hasNode) break;
           node.op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
-          sel.addSelectorNode(std::move(node));
+          if (!sel.addSelectorNode(std::move(node))) return false;
         } else if ((token == Token::IDENT) || (token == Token::STAR) || (token == Token::HASH) ||
                    (token == Token::DOT) || (token == Token::LBRACK) || (token == Token::COLON)) {
           auto [hasNode, node] = selectorNode();
           if (!hasNode) break;
           node.op = CSS::SelOp::DESCENDANT;
-          sel.addSelectorNode(std::move(node));
+          if (!sel.addSelectorNode(std::move(node))) return false;
         } else {
           done2 = true;
           break;
@@ -1099,15 +1127,23 @@ private:
 
   auto properties(CSS::Properties &props) -> void {
     while (token == Token::IDENT) {
-      if (!declaration(props.emplace_front())) props.pop_front();
+      CSS::Property prop;
+      if (declaration(prop)) {
+        size_t oldSize = props.size();
+        props.pushBack(std::move(prop));
+        if (props.size() == oldSize) {
+          skipBlock();
+          return;
+        }
+      }
     }
   }
 
   auto addRules(CSS::Selectors &sels, CSS::Properties &props) -> bool {
     if (props.empty()) {
       sels.clear();
-      css.selectorSuites.pop_front();
-      css.propertySuites.pop_front();
+      css.selectorSuites.popBack();
+      css.propertySuites.popBack();
       return false;
     } else {
       for (auto &sel : sels) css.addRule(&sel, &props);
@@ -1116,7 +1152,10 @@ private:
   }
 
   auto ruleset() -> bool {
-    auto &selectors = css.selectorSuites.emplace_front(); // multiple selectors per property list
+    size_t oldSelectorSuiteCount = css.selectorSuites.size();
+    css.selectorSuites.pushBack(CSS::Selectors{}); // multiple selectors per property list
+    if (css.selectorSuites.size() == oldSelectorSuiteCount) return false;
+    auto &selectors = css.selectorSuites.back();
     // skip everything until we get th beginning of a ruleset
     // while ((token != Token::END_OF_FILE) &&
     //        (token != Token::IDENT      ) &&
@@ -1124,35 +1163,57 @@ private:
     //        (token != Token::DOT        ) &&
     //        (token != Token::LBRACK     ) &&
     //        (token != Token::COLON      )) nextToken();
-    if (!selector(selectors.emplace_back())) {
-      selectors.pop_back();
-      while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
-        nextToken();
+    {
+      CSS::Selector sel;
+      if (selector(sel)) {
+        size_t oldSize = selectors.size();
+        selectors.pushBack(std::move(sel));
+        if (selectors.size() == oldSize) {
+          css.selectorSuites.popBack();
+          return false;
+        }
+      } else {
+        while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
+          nextToken();
+      }
     }
     while (token == Token::COMMA) {
       skipBlanks();
-      if (!selector(selectors.emplace_back())) {
-        selectors.pop_back();
+      CSS::Selector sel;
+      if (selector(sel)) {
+        size_t oldSize = selectors.size();
+        selectors.pushBack(std::move(sel));
+        if (selectors.size() == oldSize) {
+          css.selectorSuites.popBack();
+          return false;
+        }
+      } else {
 
         while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
           nextToken();
       }
     }
     if (selectors.empty()) {
-      css.selectorSuites.pop_front();
+      css.selectorSuites.popBack();
       skipBlock();
     } else if (token == Token::LBRACE) {
       skipBlanks();
-      auto &props = css.propertySuites.emplace_front();
+      size_t oldPropertySuiteCount = css.propertySuites.size();
+      css.propertySuites.pushBack(CSS::Properties{});
+      if (css.propertySuites.size() == oldPropertySuiteCount) {
+        css.selectorSuites.popBack();
+        return false;
+      }
+      auto &props = css.propertySuites.back();
       properties(props);
       if (token == Token::RBRACE) {
         skipBlanks();
         return addRules(selectors, props);
       }
-      css.selectorSuites.pop_front();
-      css.propertySuites.pop_front();
+      css.selectorSuites.popBack();
+      css.propertySuites.popBack();
     } else {
-      css.selectorSuites.pop_front();
+      css.selectorSuites.popBack();
     }
     return false;
   }
@@ -1483,14 +1544,28 @@ public:
     nextCh();
     nextToken();
 
-    auto &props = css.propertySuites.emplace_front();
+    size_t oldPropertySuiteCount = css.propertySuites.size();
+    css.propertySuites.pushBack(CSS::Properties{});
+    if (css.propertySuites.size() == oldPropertySuiteCount) return false;
+    auto &props = css.propertySuites.back();
     properties(props);
 
-    auto &sel  = css.selectorSingles.emplace_front();
-    auto &node = sel.selectorNodeList.emplace_front();
+    CSS::Selector sel;
+    CSS::SelectorNode node;
     node.setTag(tag);
+    if (!sel.addSelectorNode(std::move(node))) {
+      css.propertySuites.popBack();
+      return false;
+    }
     sel.computeSpecificity(css.getPriority());
-    css.addRule(&sel, &props);
+
+    size_t oldSingleCount = css.selectorSingles.size();
+    css.selectorSingles.pushBack(std::move(sel));
+    if (css.selectorSingles.size() == oldSingleCount) {
+      css.propertySuites.popBack();
+      return false;
+    }
+    css.addRule(&css.selectorSingles.back(), &props);
     return true;
   }
 };

@@ -10,13 +10,14 @@
 //                  adding -DREGRESSION_TEST=1 to the CMakeLists extra CFLAGS)
 //
 // The test runs from mainTask() when REGRESSION_TEST is defined (see main.cpp).
-// It exercises five stress scenarios while tracking heap and stack watermarks:
+// It exercises stress scenarios while tracking heap and stack watermarks:
 //
 //   1. Repeated book open/close  – cycles through every .epub on the SDCard.
 //   2. TOC load                  – builds the TOC for every book.
 //   3. Cover / image retrieval   – fetches each book's cover bitmap from the DB.
 //   4. PageLocs recomputation     – recompute page start locations for each book.
 //   5. Concurrent navigation     – page-lookup API calls while pageLocs computes in background.
+//   8. Controller-driven switching – alternate two books while driving synthetic UI navigation.
 //
 // After each scenario the minimum free heap so far and the task stack watermark
 // are printed and heap health is validated (leak + fragmentation regression).
@@ -24,16 +25,19 @@
 //   - any individual operation returns an error, OR
 //   - the heap watermark drops below HEAP_WARN_THRESHOLD bytes.
 //
-// The test DOES NOT drive the display or FreeRTOS event manager, so it can
-// run before the screen is initialised.
+// Most scenarios are model-level only. Scenario 8 additionally exercises the
+// normal controller enter/leave path and dispatches synthetic EventMgr events.
 // ---------------------------------------------------------------------------
 
 #if EPUB_INKPLATE_BUILD && REGRESSION_TEST
 
+  #include "config.hpp"
+  #include "controllers/app_controller.hpp"
+  #include "controllers/book_controller.hpp"
+  #include "controllers/books_dir_controller.hpp"
   #include "global.hpp"
   #include "himem.hpp"
   #include "models/books_dir.hpp"
-  #include "models/config.hpp"
   #include "models/epub.hpp"
   #include "models/page_locs.hpp"
   #include "models/toc.hpp"
@@ -88,15 +92,17 @@
   //    4   S5 – Concurrent navigation
   //    5   S6 – WiFi + NTP time sync (requires DATE_TIME_RTC)
   //    6   S7 – WiFi web server (STA, 30 s smoke test)
+  //    7   S8 – Controller-driven two-book switching
   //
   // Examples:
-  //   0x7F  – run all seven scenarios
+  //   0xFF  – run all eight scenarios
+  //   0x80  – run only S8 (controller-driven switching)
   //   0x40  – run only S7 (web server)
   //   0x20  – run only S6 (WiFi/NTP)
   //   0x10  – run only S5 (concurrent navigation)
   //   0x0F  – run S1-S4
   // ---------------------------------------------------------------------------
-  #define REGRESSION_SCENARIOS 0x10 // default: S1-S5 during active development
+  #define REGRESSION_SCENARIOS 0x8F // default: S1-S5 during active development
 
   // ---------------------------------------------------------------------------
   // Tuning constants
@@ -105,8 +111,10 @@
   // Per-scenario heap validation tolerances.
   static constexpr uint32_t HEAP_LEAK_TOLERANCE_BYTES   = 1024;
   static constexpr uint32_t FRAG_GROWTH_TOLERANCE_BYTES = 1024;
-  static constexpr uint32_t S1_FRAG_GROWTH_TOLERANCE_BYTES =
-      70 * 1024; ///< S1 may trigger one-time allocator slab reshaping (~64 KiB)
+  static constexpr uint32_t OPEN_CYCLE_FRAG_GROWTH_TOLERANCE_BYTES =
+      70 * 1024; ///< S1/S2 may trigger one-time allocator slab reshaping (~64 KiB)
+                 ///< S2 measures from S1's artificially consolidated baseline, so the
+                 ///< same tolerance is needed in both directions.
   static constexpr float FRAG_PERCENT_WARN    = 5.0f;
   static constexpr int OPEN_CLOSE_CYCLES      = 10; ///< Repeat open/close N times per book
   static constexpr int BASELINE_WARMUP_CYCLES = 1;  ///< Unmeasured pass to settle allocators
@@ -122,6 +130,15 @@
       50 * 1000; ///< In S5, restart page-locs after 50 seconds of computation
   static constexpr uint32_t NAV_RESTART_PROGRESS_TIMEOUT_MS =
       30000; ///< After S5 restart, require forward progress within this window
+  // Scenario 8: controller-driven switching parameters
+  static constexpr uint8_t UI_SWITCH_CYCLES         = 5;
+  static constexpr uint8_t UI_SWITCH_WARMUP_CYCLES  = 1;
+  static constexpr uint32_t UI_SWITCH_PHASE_MS      = 60 * 1000;
+  static constexpr uint32_t UI_NAV_EVENT_PERIOD_MS  = 700;
+  static constexpr uint32_t UI_READY_POLL_MS        = 200;
+  static constexpr uint32_t UI_READY_TIMEOUT_MS     = 120 * 1000;
+  static constexpr char const *UI_SWITCH_BOOK1_PATH = BOOKS_FOLDER "/specific_books/Book1.epub";
+  static constexpr char const *UI_SWITCH_BOOK2_PATH = BOOKS_FOLDER "/specific_books/Book2.epub";
 
   // ---------------------------------------------------------------------------
   // Watermark helpers
@@ -184,10 +201,12 @@
                                       const HeapSnapshot &after) -> int {
     int errs = 0;
 
-    const bool isS1OpenClose =
-        (scenarioName != nullptr) && (strcmp(scenarioName, "S1 open/close") == 0);
-    const uint32_t fragGrowthTolerance =
-        isS1OpenClose ? S1_FRAG_GROWTH_TOLERANCE_BYTES : FRAG_GROWTH_TOLERANCE_BYTES;
+    const bool needsOpenCycleTolerance =
+        (scenarioName != nullptr) &&
+        ((strcmp(scenarioName, "S1 open/close") == 0) || (strcmp(scenarioName, "S2 toc") == 0));
+    const uint32_t fragGrowthTolerance = needsOpenCycleTolerance
+                                             ? OPEN_CYCLE_FRAG_GROWTH_TOLERANCE_BYTES
+                                             : FRAG_GROWTH_TOLERANCE_BYTES;
 
     int32_t freeDelta        = static_cast<int32_t>(after.free) - static_cast<int32_t>(before.free);
     uint32_t beforeFragBytes = fragmentationBytes(before);
@@ -938,6 +957,154 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Scenario 8 - Controller-driven switching between two fixed books
+  // ---------------------------------------------------------------------------
+  static auto makeSyntheticNavEvent(bool forward, bool longJump) -> EventMgr::Event {
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+      return {.kind = forward ? EventMgr::EventKind::SWIPE_LEFT : EventMgr::EventKind::SWIPE_RIGHT,
+              .x    = static_cast<uint16_t>(Screen::getWidth() / 2),
+              .y    = static_cast<uint16_t>(longJump ? (Screen::getHeight() - 10)
+                                                     : (Screen::getHeight() / 2)),
+              .dist = 0};
+    #else
+      #if EXTENDED_CASE
+        const auto kind =
+            longJump ? (forward ? EventMgr::EventKind::NEXT : EventMgr::EventKind::PREV)
+                     : (forward ? EventMgr::EventKind::DBL_NEXT : EventMgr::EventKind::DBL_PREV);
+      #else
+        const auto kind =
+            longJump ? (forward ? EventMgr::EventKind::DBL_NEXT : EventMgr::EventKind::DBL_PREV)
+                     : (forward ? EventMgr::EventKind::NEXT : EventMgr::EventKind::PREV);
+      #endif
+      return {.kind = kind};
+    #endif
+  }
+
+  static int scenarioControllerDrivenSwitching(uint8_t cycleCount = UI_SWITCH_CYCLES,
+                                               bool printBanner = true, bool logPerPhaseHeap = true,
+                                               bool printScenarioWatermarks = true) {
+    if (printBanner) {
+      ESP_LOGI(TAG, "--- Scenario 8: controller-driven two-book switching ---");
+    }
+
+    // Suppress expected log noise: book rendering, ASAP retrieval timeouts
+    // while page locations are still being computed, and BookController warnings
+    // about pages not being ready yet.
+    suppressNoisyTags();
+    esp_log_level_set("PageLocs", ESP_LOG_ERROR);
+    esp_log_level_set("BookController", ESP_LOG_ERROR);
+
+    int errors = 0;
+
+    auto fixtureExists = [&](const char *bookPath) -> bool {
+      struct stat st{};
+      if (stat(bookPath, &st) == 0) return true;
+      ESP_LOGE(TAG, "S8: missing fixture book on device: %s", bookPath);
+      return false;
+    };
+
+    if (!fixtureExists(UI_SWITCH_BOOK1_PATH) || !fixtureExists(UI_SWITCH_BOOK2_PATH)) {
+      return 1;
+    }
+
+    appController.startRegression(AppController::Ctrl::NONE);
+
+    auto closeCurrentBook = [&]() -> void {
+      pageLocs.stopControlTask();
+      pageLocs.clear();
+      appController.setController(AppController::Ctrl::NONE);
+      appController.launch();
+      bookController.becomeOwnerOfBook(nullptr);
+      vTaskDelay(20 / portTICK_PERIOD_MS);
+    };
+
+    auto runBookPhase = [&](const char *bookPath, uint8_t cycle, uint8_t phase) -> bool {
+      HeapSnapshot beforeBook = takeHeapSnapshot();
+
+      ESP_LOGI(TAG, "S8: cycle=%u phase=%u opening %s", static_cast<unsigned>(cycle + 1),
+               static_cast<unsigned>(phase + 1), bookPath);
+
+      if (!booksDirController.openBookFromPath(bookPath)) {
+        ESP_LOGE(TAG, "S8: unable to open %s through controller path", bookPath);
+        return false;
+      }
+      appController.launch();
+
+      // Wait until PageLocs has produced at least one page entry before injecting
+      // navigation events. For large books, getCurrentItemrefIndex() can remain -1
+      // for a long time, but generatedPageEntryCount becomes > 0 as soon as a
+      // navigable page is available.
+      uint32_t waitMs = 0;
+      while ((waitMs < UI_READY_TIMEOUT_MS) &&
+             (!pageLocs.isRunning() || (pageLocs.getGeneratedPageEntryCount() == 0))) {
+        vTaskDelay(UI_READY_POLL_MS / portTICK_PERIOD_MS);
+        waitMs += UI_READY_POLL_MS;
+      }
+      if (!pageLocs.isRunning() || (pageLocs.getGeneratedPageEntryCount() == 0)) {
+        ESP_LOGE(TAG,
+                 "S8: timeout waiting for first page on %s (running=%d item=%" PRIi16
+                 " generated=%" PRIu32 ")",
+                 bookPath, pageLocs.isRunning(), pageLocs.getCurrentItemrefIndex(),
+                 pageLocs.getGeneratedPageEntryCount());
+        closeCurrentBook();
+        return false;
+      }
+
+      uint32_t elapsedMs = 0;
+      uint32_t nextLogMs = 10000;
+      uint32_t eventSeq  = 0;
+
+      while (elapsedMs < UI_SWITCH_PHASE_MS) {
+        if (pageLocs.getGeneratedPageEntryCount() == 0) {
+          vTaskDelay(UI_READY_POLL_MS / portTICK_PERIOD_MS);
+          elapsedMs += UI_READY_POLL_MS;
+          continue;
+        }
+
+        const bool forward  = ((eventSeq % 5) != 4);
+        const bool longJump = ((eventSeq % 8) == 7);
+        const auto event    = makeSyntheticNavEvent(forward, longJump);
+
+        appController.inputEvent(event);
+        updateHeap();
+        vTaskDelay(UI_NAV_EVENT_PERIOD_MS / portTICK_PERIOD_MS);
+
+        elapsedMs += UI_NAV_EVENT_PERIOD_MS;
+        ++eventSeq;
+
+        if (elapsedMs >= nextLogMs) {
+          ESP_LOGI(TAG, "S8: %s elapsed=%" PRIu32 " ms item=%" PRIi16 " generated=%" PRIu32,
+                   bookPath, elapsedMs, pageLocs.getCurrentItemrefIndex(),
+                   pageLocs.getGeneratedPageEntryCount());
+          nextLogMs += 10000;
+        }
+      }
+
+      closeCurrentBook();
+      if (logPerPhaseHeap) {
+        HeapSnapshot afterBook = takeHeapSnapshot();
+        logHeapPerBook("S8", static_cast<uint8_t>((cycle * 2) + phase),
+                       static_cast<uint8_t>(cycleCount * 2), bookPath, beforeBook, afterBook);
+      }
+      return true;
+    };
+
+    for (uint8_t cycle = 0; cycle < cycleCount; ++cycle) {
+      if (!runBookPhase(UI_SWITCH_BOOK1_PATH, cycle, 0)) ++errors;
+      if (!runBookPhase(UI_SWITCH_BOOK2_PATH, cycle, 1)) ++errors;
+    }
+
+    restoreNoisyTags();
+    esp_log_level_set("PageLocs", ESP_LOG_WARN);
+    esp_log_level_set("BookController", ESP_LOG_WARN);
+
+    if (printScenarioWatermarks) {
+      printWatermarks("controller_switch");
+    }
+    return errors;
+  }
+
+  // ---------------------------------------------------------------------------
   // Scenario 6 – WiFi connectivity + NTP time retrieval
   // Reads wifi_ssid/wifi_pwd and ntp_server from config.txt on the SD card.
   // Skipped when WiFi is unconfigured (SSID == "NONE").
@@ -1161,6 +1328,20 @@
       runScenarioWithHeapCheck("S7 web_server", [&]() { return scenarioWebServer(); });
     } else {
       ESP_LOGI(TAG, "--- Scenario 7: SKIPPED (not in REGRESSION_SCENARIOS) ---");
+    }
+
+    // --- Scenario 8: controller-driven two-book switching ---
+    if (REGRESSION_SCENARIOS & (1 << 7)) {
+      ESP_LOGI(TAG, "--- Scenario 8 warm-up: controller-driven two-book switching (%u cycle) ---",
+               static_cast<unsigned>(UI_SWITCH_WARMUP_CYCLES));
+      (void)scenarioControllerDrivenSwitching(UI_SWITCH_WARMUP_CYCLES, false, false, false);
+      vTaskDelay(20 / portTICK_PERIOD_MS);
+      updateHeap();
+
+      runScenarioWithHeapCheck("S8 controller_switch",
+                               [&]() { return scenarioControllerDrivenSwitching(); });
+    } else {
+      ESP_LOGI(TAG, "--- Scenario 8: SKIPPED (not in REGRESSION_SCENARIOS) ---");
     }
 
     // --- Final report ---

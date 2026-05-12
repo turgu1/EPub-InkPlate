@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "fonts.hpp"
 #include "global.hpp"
 #include "himem.hpp"
 #include "himem_pool.hpp"
@@ -16,7 +17,6 @@
 
 #include "display_list.hpp"
 #include "models/css.hpp"
-#include "models/fonts.hpp"
 
 /**
  * @brief Page preparation
@@ -50,8 +50,8 @@ public:
 
   // clang-format off
   struct Format {
-    float              lineHeightFactor = 1.0; ///< In EMs
-    int16_t            fontIndex        =   1;
+    float              lineHeightFactor = 0.8; ///< In EMs
+    int16_t            fontIndex        = SYSTEM_REGULAR_FONT_INDEX;
     int16_t            fontSize         =  10; ///< In pixels
     int16_t            indent           =   0; ///< In pixels
     uint16_t           marginLeft       =   0; ///< In pixels
@@ -89,10 +89,18 @@ public:
     LOCATION, MOVE, DISPLAY
   };
 
+  struct EntityStringTag {};
+
 private:
   static constexpr char const *TAG = "Page";
 
-  using Entities = HimemUnorderedMap<HimemString, int32_t>;
+  using EntityString =
+      std::basic_string<char, std::char_traits<char>, StaticPoolAllocator<char, EntityStringTag>>;
+
+  using Entities = std::unordered_map<
+      EntityString, char32_t, std::hash<EntityString>, std::equal_to<EntityString>,
+      StaticPoolAllocator<std::pair<const EntityString, char32_t>, EntityStringTag>>;
+
   static Entities entities;
 
   /**
@@ -106,6 +114,7 @@ private:
    */
   ComputeMode computeMode{ComputeMode::DISPLAY};
   bool screenIsFull{false}; ///< True if screen no more space to add characters
+  bool pageEmpty{true};     ///< True if no content has been added to the page
 
   DisplayListPool displayListPool{500}; ///< Memory pool for DisplayListEntry objects, shared across
                                         ///< all DisplayList instances used by this Page instance
@@ -124,8 +133,6 @@ private:
   auto addLine(const Format &fmt, bool justifyable) -> void;
   auto addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bool isSpace) -> void;
   auto addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) -> void;
-  auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
-      -> int32_t;
 
 public:
   auto clean() -> void;
@@ -304,12 +311,15 @@ public:
     #endif
   }
 
+  auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
+      -> char32_t;
+
   inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
 
   [[nodiscard]] inline auto getComputeMode() const -> ComputeMode { return computeMode; }
   [[nodiscard]] inline auto paintWidth() const -> int16_t { return maxX - minX; }
   [[nodiscard]] inline auto isFull() const -> bool { return screenIsFull; }
-  [[nodiscard]] inline auto isEmpty() const -> bool { return displayList->empty(); }
+  [[nodiscard]] inline auto isEmpty() const -> bool { return pageEmpty; }
   [[nodiscard]] inline auto someDataWaiting() const -> bool { return !lineList->empty(); }
   [[nodiscard]] inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
   [[nodiscard]] inline auto getLineList() const -> const DisplayList & { return *lineList; }

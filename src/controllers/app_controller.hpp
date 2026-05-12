@@ -57,6 +57,14 @@ public:
   auto start() -> void;
 
   /**
+   * @brief Reset controller state and launch a controller once without entering the event loop.
+   *
+   * Used by device-side regression scenarios that need normal controller
+   * enter/leave transitions while dispatching synthetic events directly.
+   */
+  auto startRegression(Ctrl initialCtrl = Ctrl::DIR) -> void;
+
+  /**
    * @brief Set the controller object
    *
    * This method will call the current controller *leave()* method then

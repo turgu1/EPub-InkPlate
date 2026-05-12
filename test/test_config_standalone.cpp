@@ -12,7 +12,7 @@
 
 #define __GLOBAL__ 0
 #define __CONFIG__ 1
-#include "models/config.hpp"
+#include "config.hpp"
 #undef __CONFIG__
 
 #include "himem.hpp"

@@ -6,8 +6,8 @@
 
 #if EPUB_INKPLATE_BUILD
 
+  #include "config.hpp"
   #include "controllers/wifi.hpp"
-  #include "models/config.hpp"
   #include "models/page_locs.hpp"
   #include "viewers/msg_viewer.hpp"
 
@@ -25,7 +25,7 @@
   #include "esp_http_server.h"
   #include "esp_vfs.h"
 
-  #include "models/config.hpp"
+  #include "config.hpp"
 
   #define __WEB_SERVER__ 1
   #include "web_server.hpp"

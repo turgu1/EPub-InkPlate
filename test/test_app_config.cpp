@@ -24,7 +24,7 @@
 
 #define __GLOBAL__ 0 // inhibit global.hpp's own extern-storage block
 #define __CONFIG__ 1 // trigger the config.hpp storage / specialisation block
-#include "models/config.hpp"
+#include "config.hpp"
 #undef __CONFIG__
 
 #include "test_stats.hpp"

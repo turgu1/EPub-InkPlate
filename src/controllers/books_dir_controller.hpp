@@ -38,6 +38,7 @@ public:
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
   auto leave(bool goingToDeepSleep = false) -> void;
+  auto openBookFromPath(const char *bookPath, const PageId &pageId = {0, 0}) -> bool;
   auto saveLastBook(const PageId &pageId, bool goingToDeepSleep) -> void;
   auto showLastBook() -> void;
   auto newOrientation() -> void {

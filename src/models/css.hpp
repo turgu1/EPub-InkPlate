@@ -16,12 +16,11 @@
 
 #include "global.hpp"
 #include "himem.hpp"
+#include "simple_list.hpp"
 
-#include <forward_list>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <list>
 #include <map>
 
 #include "dom.hpp"
@@ -132,22 +131,40 @@
 using CSSPtr = HimemUniquePtr<class CSS>;
 class CSS {
 private:
+  // Tag used to isolate CSS allocator bindings from other subsystems.
+  struct ScopedListPoolTag;
+
+public:
+  class CSSPools;
+  class PoolsGuard;
+
+private:
+  /**
+   * @brief A SimpleList backed by a per-instance bound PSRAM pool.
+   *
+   * The allocator no longer uses a process-global static pool. Instead, it
+   * captures thread-local bindings activated by a CSS-owned PoolsGuard so all
+   * allocations are scoped to the EPub/CSS pool set currently in use.
+   */
+  template <typename T, std::size_t BlockSize>
+  using SimpleListSinglePool =
+      SimpleList<T, ScopedHimemPoolAllocator<T, ScopedListPoolTag, BlockSize>>;
+
+  CSSPools *pools;
+  PoolsGuard *guard;
+
   HimemString id;         // Unique identifier (filename) for this CSS instance
   HimemString folderPath; // Path used for all other files access (relative)
   bool ghost;             // True if this instance rules content came from other instances
   uint8_t priority;
 
-  CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size,
-      uint8_t prio);
+  CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size, uint8_t prio,
+      CSSPools &poolsRef);
 
-  CSS(const char *cssId) {
-    id         = cssId;
-    folderPath = "";
-    ghost      = true;
-    priority   = 0;
-  }
+  CSS(const char *cssId, CSSPools &poolsRef);
 
-  CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio);
+  CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio,
+      CSSPools &poolsRef);
 
 public:
   ~CSS();
@@ -157,19 +174,35 @@ public:
   friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
   static inline auto Make(const char *cssId, const char *fileFolderPath, const char *buffer,
-                          int32_t size, uint8_t prio) {
-    return makeUniqueHimem<CSS>(cssId, fileFolderPath, buffer, size, prio);
+                          int32_t size, uint8_t prio, CSSPools &poolsRef) {
+    return makeUniqueHimem<CSS>(cssId, fileFolderPath, buffer, size, prio, poolsRef);
   }
-  static inline auto Make(const char *cssId) { return makeUniqueHimem<CSS>(cssId); }
+  static inline auto Make(const char *cssId, CSSPools &poolsRef) {
+    return makeUniqueHimem<CSS>(cssId, poolsRef);
+  }
 
   static inline auto Make(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size,
+                          uint8_t prio, CSSPools &poolsRef) {
+    return makeUniqueHimem<CSS>(cssId, tag, buffer, size, prio, poolsRef);
+  }
+
+  // Compatibility entry points for non-EPub call sites.
+  static inline auto Make(const char *cssId, const char *fileFolderPath, const char *buffer,
+                          int32_t size, uint8_t prio) {
+    return Make(cssId, fileFolderPath, buffer, size, prio, defaultPools());
+  }
+  static inline auto Make(const char *cssId) { return Make(cssId, defaultPools()); }
+  static inline auto Make(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size,
                           uint8_t prio) {
-    return makeUniqueHimem<CSS>(cssId, tag, buffer, size, prio);
+    return Make(cssId, tag, buffer, size, prio, defaultPools());
   }
 
   auto getId() const -> const HimemString & { return id; }
   auto getFolderPath() const -> const HimemString & { return folderPath; }
   auto getPriority() const -> uint8_t { return priority; }
+  auto getPools() -> CSSPools & { return *pools; }
+
+  static auto defaultPools() -> CSSPools &;
 
   enum class ValueType : uint8_t {
     NO_TYPE, EM, EX, PERCENT, STR, PX, CM, MM, IN, PT, PC, VH, VW, REM, CH, VMIN, VMAX, DEG, RAD,
@@ -211,7 +244,7 @@ public:
     NONE, FIRST_CHILD
   };
 
-  using ClassList = std::forward_list<HimemString>;
+  using ClassList = SimpleListSinglePool<HimemString, 256>;
 
   #pragma pack(push, 1)
   // The following is OK in a little endian context.
@@ -244,8 +277,14 @@ public:
       idCount    = 0;
     }
     ~SelectorNode() { classList.clear(); }
+
+    SelectorNode(SelectorNode &&) noexcept            = default;
+    SelectorNode &operator=(SelectorNode &&) noexcept = default;
+    SelectorNode(const SelectorNode &)                = default;
+    SelectorNode &operator=(const SelectorNode &)     = default;
+
     auto addClass(HimemString className) -> void {
-      classList.push_front(std::move(className));
+      classList.pushBack(std::move(className));
       classCount += 1;
     }
     auto addId(const HimemString &theId) -> void {
@@ -254,7 +293,7 @@ public:
     }
     auto setTag(DOM::Tag theTag) -> void { tag = theTag; }
     auto setQualifier(Qualifier q) -> void { qualifier = q; }
-    auto show() -> void const {
+    auto show() const -> void const {
       #if DEBUGGING
         if (op == SelOp::CHILD) std::cout << " > ";
         if (op == SelOp::ADJACENT) std::cout << " + ";
@@ -274,20 +313,28 @@ public:
     }
   };
 
-  using SelectorNodeList = std::forward_list<SelectorNode, HimemPool<SelectorNode>>;
+  using SelectorNodeList = SimpleListSinglePool<SelectorNode, 512>;
 
   struct Selector {
     Specificity specificity;
     SelectorNodeList selectorNodeList;
     Selector() { specificity.value = 0; }
+
+    Selector(Selector &&) noexcept            = default;
+    Selector &operator=(Selector &&) noexcept = default;
+    Selector(const Selector &)                = default;
+    Selector &operator=(const Selector &)     = default;
+
     ~Selector() {
       // for (auto *selectorNode : selectorNodeList) {
       //   selectorNodePool.deleteElement(selectorNode);
       // }
       selectorNodeList.clear();
     }
-    auto addSelectorNode(SelectorNode node) -> void {
-      selectorNodeList.push_front(std::move(node));
+    auto addSelectorNode(SelectorNode node) -> bool {
+      size_t oldSize = selectorNodeList.size();
+      selectorNodeList.pushFront(std::move(node));
+      return selectorNodeList.size() == oldSize + 1;
     }
     auto computeSpecificity(uint8_t prio) -> void {
       specificity.spec.priority = prio;
@@ -299,10 +346,10 @@ public:
       }
     }
     auto isEmpty() -> bool { return selectorNodeList.empty(); }
-    auto showSelector(SelectorNodeList::const_iterator nodeIt, int8_t lev) -> void const {
+    auto showSelector(SelectorNodeList::ConstIterator nodeIt, int8_t lev) -> void const {
       #if DEBUGGING
         if (nodeIt != selectorNodeList.end()) {
-          SelectorNodeList::const_iterator nextNodeIt = nodeIt;
+          SelectorNodeList::ConstIterator nextNodeIt = nodeIt;
           showSelector(++nextNodeIt, lev + 1);
           nodeIt->show();
         }
@@ -331,6 +378,12 @@ public:
       valueType = ValueType::NO_TYPE;
       num       = 0.0;
     }
+
+    Value(Value &&) noexcept            = default;
+    Value &operator=(Value &&) noexcept = default;
+    Value(const Value &)                = default;
+    Value &operator=(const Value &)     = default;
+
     auto show() -> void {
       #if DEBUGGING
         if (valueType == ValueType::STR) {
@@ -344,19 +397,31 @@ public:
     }
   };
 
-  using Values = std::forward_list<Value, HimemPool<Value>>;
+  using Values = SimpleListSinglePool<Value, 512>;
 
   struct Property {
     PropertyId id;
     Values values;
+
+    Property() = default;
+
+    Property(Property &&) noexcept            = default;
+    Property &operator=(Property &&) noexcept = default;
+    Property(const Property &)                = default;
+    Property &operator=(const Property &)     = default;
+
     ~Property() {
       // for (auto *value : values) {
       //   valuePool.deleteElement(value);
       // }
       values.clear();
     }
-    auto addValue(Value v) -> void { values.push_front(std::move(v)); }
-    auto completed() -> void { values.reverse(); }
+    auto addValue(Value v) -> bool {
+      size_t oldSize = values.size();
+      values.pushBack(std::move(v));
+      return values.size() == oldSize + 1;
+    }
+    auto completed() -> void {}
     auto show() -> void {
       #if DEBUGGING
         std::cout << "  ";
@@ -385,13 +450,13 @@ public:
     }
   };
 
-  using Selectors  = std::list<Selector, HimemPool<Selector>>;
-  using Properties = std::forward_list<Property, HimemPool<Property>>;
+  using Selectors  = SimpleListSinglePool<Selector, 256>;
+  using Properties = SimpleListSinglePool<Property, 256>;
 
   // using PropertySuite = std::list<Properties *>;
-  using PropertySuiteList  = std::forward_list<Properties, HimemPool<Properties>>;
-  using SelectorSuiteList  = std::forward_list<Selectors, HimemPool<Selectors>>;
-  using SelectorSingleList = std::forward_list<Selector, HimemPool<Selector>>;
+  using PropertySuiteList  = SimpleListSinglePool<Properties, 128>;
+  using SelectorSuiteList  = SimpleListSinglePool<Selectors, 128>;
+  using SelectorSingleList = SimpleListSinglePool<Selector, 128>;
 
   using RulesMap = std::multimap<Selector *, Properties *, ruleCompare>;
 
@@ -401,6 +466,36 @@ public:
   PropertySuiteList propertySuites;
   SelectorSuiteList selectorSuites;
   SelectorSingleList selectorSingles;
+
+  class CSSPools {
+  public:
+    using ClassListNode          = ClassList::Node;
+    using SelectorNodeListNode   = SelectorNodeList::Node;
+    using ValuesNode             = Values::Node;
+    using SelectorsNode          = Selectors::Node;
+    using PropertiesNode         = Properties::Node;
+    using PropertySuiteListNode  = PropertySuiteList::Node;
+    using SelectorSuiteListNode  = SelectorSuiteList::Node;
+    using SelectorSingleListNode = SelectorSingleList::Node;
+
+    HimemPool<ClassListNode> classListPool{256};
+    HimemPool<SelectorNodeListNode> selectorNodeListPool{512};
+    HimemPool<ValuesNode> valuesPool{512};
+    HimemPool<SelectorsNode> selectorsPool{256};
+    HimemPool<PropertiesNode> propertiesPool{256};
+    HimemPool<PropertySuiteListNode> propertySuiteListPool{128};
+    HimemPool<SelectorSuiteListNode> selectorSuiteListPool{128};
+    HimemPool<SelectorSingleListNode> selectorSingleListPool{128};
+  };
+
+  class PoolsGuard {
+  public:
+    explicit PoolsGuard(CSSPools &poolsRef);
+    ~PoolsGuard();
+
+  private:
+    CSSPools &poolsRef;
+  };
 
   auto match(DOM::Node *node, RulesMap &toRules) -> void;
   auto show(RulesMap &theRulesMap) -> void;
@@ -440,6 +535,9 @@ public:
   }
 
 private:
+  static auto bindPools(CSSPools &poolsRef) -> void;
+  static auto unbindPools() -> void;
+
   auto matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool;
   auto matchSelector(DOM::Node *node, Selector &sel) -> bool;
 };

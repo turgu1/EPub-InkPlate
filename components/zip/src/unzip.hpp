@@ -11,13 +11,19 @@
 
 #define MINIZ 1
 
+#include "char_pool.hpp"
 #include "himem.hpp"
 #include "himem_pool.hpp"
+#include "himem_simple_list.hpp"
 #include "miniz.h"
 
 class Unzip {
 private:
   static constexpr char const *TAG = "Unzip";
+
+  struct FilenamePoolTag;
+  using ZipFilename =
+      std::basic_string<char, std::char_traits<char>, StaticPoolAllocator<char, FilenamePoolTag>>;
 
   static const int BUFFER_SIZE = 1024 * 16;
   char buffer[BUFFER_SIZE]; // Must stay in internal DRAM (DMA target for SPI/SD reads)
@@ -30,7 +36,7 @@ private:
    */
   class FileEntry {
   public:
-    HimemString filename{};
+    ZipFilename filename{};
     uint32_t startPos{0};       // in zip file
     uint32_t compressedSize{0}; // in zip file
     uint32_t size{0};           // once decompressed
@@ -40,9 +46,13 @@ private:
     ~FileEntry() = default;
   };
 
-  using FileEntries = std::forward_list<FileEntry, HimemPool<FileEntry>>;
+  using FileEntries = HimemSimpleList<FileEntry>;
   FileEntries fileEntries{};
   FileEntries::iterator currentFileEntry{};
+  CharPoolPtr filenamePool{};
+  uint32_t filenameEntryCount{0};
+  uint32_t totalFilenameBytes{0};
+  uint16_t maxFilenameSize{0};
 
   auto getUint32(const unsigned char *b) -> uint32_t {
     return ((uint32_t)b[0]) | (((uint32_t)b[1]) << 8) | (((uint32_t)b[2]) << 16) |

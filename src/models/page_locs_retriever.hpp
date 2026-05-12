@@ -50,6 +50,8 @@ public:
   auto setup(const HimemString &epubFilename) -> bool;
   auto waitForExit() -> void;
 
+  [[nodiscard]] static auto pollPendingQueueAtPageBoundary(void *context) -> bool;
+
   [[nodiscard]] inline auto getCurrentItemrefIndex() const { return currentItemrefIndex; }
 
   /**
@@ -58,14 +60,22 @@ public:
    */
   inline auto signalAbort() { abortCurrentItem.store(true, std::memory_order_relaxed); }
 
+  /**
+   * Request retriever shutdown at the next page boundary.
+   * Called before queueing STOP so long items do not have to run to completion.
+   */
+  inline auto requestStop() {
+    stopRequested.store(true, std::memory_order_relaxed);
+    abortCurrentItem.store(true, std::memory_order_relaxed);
+  }
+
 private:
+  std::atomic<bool> stopRequested{false};
   std::atomic<bool> abortCurrentItem{false};
   DOMPtr dom{nullptr};
   EPubPtr epub{nullptr};
   uint16_t pageBottom{0};
   int16_t currentItemrefIndex{-1};
-
-  EPub::BookFormatParams currentFormatParams;
 
   #if EPUB_LINUX_BUILD
     static mqd_t retrieverQueue;
@@ -84,6 +94,7 @@ private:
 
   std::thread retrieverThread;
   auto task() -> void;
+  auto handlePendingQueueAtPageBoundary() -> bool;
 
   auto retrieve_item(Req req, int16_t itemrefIndex) -> void;
 

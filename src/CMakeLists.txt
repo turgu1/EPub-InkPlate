@@ -16,6 +16,7 @@ endif()
 
 set(components
     global
+    config
     zip
     pugixml
     sys_functions

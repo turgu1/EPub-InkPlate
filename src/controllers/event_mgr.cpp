@@ -8,8 +8,8 @@
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"
 
+  #include "config.hpp"
   #include "controllers/app_controller.hpp"
-  #include "models/config.hpp"
 
   #include <iostream>
 

@@ -45,8 +45,47 @@ const char *CSS::valueTypeStr[25] = {
     "",    "em", "ex",   "%",    "",    "px",  "cm",   "mm",   "in",  "pt", "pc",  "vh", "vw",
     "rem", "ch", "vmin", "vmax", "deg", "rad", "grad", "msec", "sec", "hz", "khz", "url"};
 
+auto CSS::defaultPools() -> CSSPools & {
+  static CSSPools pools;
+  return pools;
+}
+
+auto CSS::bindPools(CSSPools &poolsRef) -> void {
+  using Tag                                                       = ScopedListPoolTag;
+  ScopedHimemPoolBinding<CSSPools::ClassListNode, Tag, 256>::pool = &poolsRef.classListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorNodeListNode, Tag, 512>::pool =
+      &poolsRef.selectorNodeListPool;
+  ScopedHimemPoolBinding<CSSPools::ValuesNode, Tag, 512>::pool     = &poolsRef.valuesPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorsNode, Tag, 256>::pool  = &poolsRef.selectorsPool;
+  ScopedHimemPoolBinding<CSSPools::PropertiesNode, Tag, 256>::pool = &poolsRef.propertiesPool;
+  ScopedHimemPoolBinding<CSSPools::PropertySuiteListNode, Tag, 128>::pool =
+      &poolsRef.propertySuiteListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorSuiteListNode, Tag, 128>::pool =
+      &poolsRef.selectorSuiteListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorSingleListNode, Tag, 128>::pool =
+      &poolsRef.selectorSingleListPool;
+}
+
+auto CSS::unbindPools() -> void {
+  using Tag                                                                = ScopedListPoolTag;
+  ScopedHimemPoolBinding<CSSPools::ClassListNode, Tag, 256>::pool          = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorNodeListNode, Tag, 512>::pool   = nullptr;
+  ScopedHimemPoolBinding<CSSPools::ValuesNode, Tag, 512>::pool             = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorsNode, Tag, 256>::pool          = nullptr;
+  ScopedHimemPoolBinding<CSSPools::PropertiesNode, Tag, 256>::pool         = nullptr;
+  ScopedHimemPoolBinding<CSSPools::PropertySuiteListNode, Tag, 128>::pool  = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorSuiteListNode, Tag, 128>::pool  = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorSingleListNode, Tag, 128>::pool = nullptr;
+}
+
+CSS::PoolsGuard::PoolsGuard(CSSPools &poolsRef) : poolsRef(poolsRef) { bindPools(poolsRef); }
+
+CSS::PoolsGuard::~PoolsGuard() { unbindPools(); }
+
 CSS::CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size,
-         uint8_t prio) {
+         uint8_t prio, CSSPools &poolsRef)
+    : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
   id         = cssId;
   folderPath = fileFolderPath;
   ghost      = false;
@@ -55,7 +94,10 @@ CSS::CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int3
   CSSParser parser(*this, buffer, size);
 }
 
-CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio) {
+CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio,
+         CSSPools &poolsRef)
+    : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
   id         = cssId;
   folderPath = "";
   ghost      = false;
@@ -64,15 +106,23 @@ CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint
   CSSParser parser(*this, tag, buffer, size);
 }
 
+CSS::CSS(const char *cssId, CSSPools &poolsRef)
+    : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
+  id         = cssId;
+  folderPath = "";
+  ghost      = true;
+  priority   = 0;
+}
+
 CSS::~CSS() {
-  if (ghost) {
-    rulesMap.clear();
-  } else {
-    rulesMap.clear();
-    selectorSuites.clear();
-    selectorSingles.clear();
-    propertySuites.clear();
-  }
+  rulesMap.clear();
+  selectorSuites.clear();
+  selectorSingles.clear();
+  propertySuites.clear();
+
+  delete guard;
+  guard = nullptr;
 }
 
 auto CSS::matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool {

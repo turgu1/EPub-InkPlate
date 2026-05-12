@@ -6,8 +6,8 @@
 
 #if EPUB_INKPLATE_BUILD
   #include "battery.hpp"
+  #include "config.hpp"
   #include "logging.hpp"
-  #include "models/config.hpp"
   #include "screen.hpp"
 
   #include <cstring>
@@ -48,7 +48,7 @@
 
     // page->clearRegion(dim, pos);
 
-    fmt.fontIndex = 0;
+    fmt.fontIndex = ICONS_FONT_INDEX;
     pos.x         = 5;
     page->putCharAt(icons[iconIndex], pos, fmt);
 
@@ -67,7 +67,7 @@
         sprintf(str, "%5.2fv", voltage);
       }
 
-      fmt.fontIndex = 1;
+      fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
       pos.x         = 5 + (glyph != nullptr ? glyph->advance : 10) + 5;
       page->putStrAt(str, pos, fmt);
     }

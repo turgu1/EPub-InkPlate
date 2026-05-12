@@ -16,13 +16,13 @@
 
   #include "alloc.hpp"
   #include "battery.hpp"
+  #include "config.hpp"
   #include "controllers/app_controller.hpp"
   #include "controllers/books_dir_controller.hpp"
   #include "esp.hpp"
+  #include "fonts.hpp"
   #include "inkplate_platform.hpp"
-  #include "models/config.hpp"
   #include "models/epub.hpp"
-  #include "models/fonts.hpp"
   #include "models/nvs_mgr.hpp"
   #include "pugixml.hpp"
   #include "screen.hpp"
@@ -116,7 +116,7 @@
           double batteryTrimFactor;
 
           if (config.get(Config::Ident::BATTERY_TRIM, &batteryTrimFactor)) {
-            LOG_I("Battery trim factor: %f", batteryTrimFactor);
+            LOG_D("Battery trim factor: %f", batteryTrimFactor);
             battery.set_voltage_trim(batteryTrimFactor);
           }
         }
@@ -235,11 +235,11 @@
 
   // Linux main function
 
+  #include "config.hpp"
   #include "controllers/app_controller.hpp"
   #include "controllers/books_dir_controller.hpp"
+  #include "fonts.hpp"
   #include "helpers/debug_tool.hpp"
-  #include "models/config.hpp"
-  #include "models/fonts.hpp"
   #include "models/page_locs.hpp"
   #include "screen.hpp"
   #include "viewers/msg_viewer.hpp"

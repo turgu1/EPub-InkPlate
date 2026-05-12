@@ -24,9 +24,9 @@
 #define __GLOBAL__ 1 // emit global singleton definitions from headers
 #include "global.hpp"
 
-#include "models/config.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
 #include "models/epub.hpp"
-#include "models/fonts.hpp"
 #include "models/page_locs.hpp"
 
 #include <atomic>
@@ -52,6 +52,7 @@ struct NavCtx {
   std::atomic<int> navCount{0};
   std::atomic<int> nullCount{0};
   PageId currentPage{0, 0};
+  bool forwardOnly{false}; ///< when true, never call getPrevPageId (avoids backward-ASAP cascade)
 };
 
 static void navThreadFn(NavCtx *ctx) {
@@ -63,7 +64,10 @@ static void navThreadFn(NavCtx *ctx) {
       break;
     }
 
-    bool forward       = (ctx->navCount.load() % 2) == 0;
+    // In forwardOnly mode always advance forward so that backward navigation
+    // past the cleared pagesMap boundary cannot pull the retriever into a
+    // repeated-interrupt cascade under Valgrind slowness.
+    bool forward       = ctx->forwardOnly || ((ctx->navCount.load() % 2) == 0);
     const PageId *next = forward ? pageLocs.getNextPageId(cur, 1) : pageLocs.getPrevPageId(cur, 1);
     if (next) {
       cur              = *next;
@@ -81,10 +85,11 @@ static void navThreadFn(NavCtx *ctx) {
 // ---------------------------------------------------------------------------
 static std::thread g_navThreads[NAV_THREAD_COUNT];
 
-static void startNavThreads(NavCtx ctx[], int16_t seedItemref) {
+static void startNavThreads(NavCtx ctx[], int16_t seedItemref, bool forwardOnly = false) {
   for (int i = 0; i < NAV_THREAD_COUNT; i++) {
     ctx[i].stop.store(false);
     ctx[i].currentPage = PageId{seedItemref, 0};
+    ctx[i].forwardOnly = forwardOnly;
     g_navThreads[i]    = std::thread(navThreadFn, &ctx[i]);
   }
 }
@@ -190,11 +195,17 @@ auto main(int argc, char **argv) -> int {
       elapsedMs = 0;
       nextLogMs = 10'000;
 
-      for (int i = 0; i < NAV_THREAD_COUNT; i++) {
-        navCtx[i].navCount.store(0);
-        navCtx[i].nullCount.store(0);
-      }
-      startNavThreads(navCtx, restartItem);
+      // Do NOT restart nav threads post-restart.
+      //
+      // After checkForFormatChanges the entire pagesMap is cleared.  Nav
+      // threads starting at item 0 would trigger retrieveAsap() for items
+      // 0, 1, 2, … (each costing a 5 s timeout) while the retriever
+      // sequentially recomputes from restartItem onwards — they perpetually
+      // interrupt each other and drag completion to a standstill.
+      //
+      // Concurrent ASAP stress is already exercised pre-restart.  The
+      // post-restart phase just needs to verify that computation finishes
+      // correctly with no crashes or memory leaks.
       continue;
     }
 

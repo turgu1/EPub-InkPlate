@@ -5,12 +5,12 @@
 #define __TOC_CONTROLLER__ 1
 #include "controllers/toc_controller.hpp"
 
+#include "config.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
 #include "controllers/book_param_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
 #include "models/toc.hpp"
 
 #if EPUB_INKPLATE_BUILD

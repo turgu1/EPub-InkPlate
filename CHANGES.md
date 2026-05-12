@@ -17,11 +17,13 @@ Update to version 3.0.0
 
 - All GUI has been revisited and polished.
 - Book list cover images can now be displayed in three sizes: small, medium, and large.
+- Adjustable Line Height for books content display: Thigh, Medium and Large.
 - Menu icons are larger and icon lists are centered on screen over multiple lines.
 - A waiting icon is now displayed on screen when a large image is being prepared.
 - Screen Saver: a `screen_saver` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display when the device is turned off or enters deep sleep.
-- A new battery_trim config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability.
+- A new `battery_trim` config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability. It is modifyable through the `Main Parameters` form.
 - Bug fix: bad page location restored when returning from deep sleep.
+- Bug fix: bad field highlighting when the keypad is shown over its location on screen.
 
 **Page locations (PageLocs) architecture**
 
@@ -36,6 +38,7 @@ Update to version 3.0.0
 - The global fonts instance has been renamed `appFonts` for clarity.
 - A new `FontsDB` database is populated by the Config class at startup, allowing cleaner font selection logic.
 - Font presence checks are now more robust, validating the index against the actual cache size.
+- Added support for kerning and ligature.
 
 **Memory management**
 
@@ -43,6 +46,7 @@ Update to version 3.0.0
 - `std::forward_list` node allocations now use `HimemPool`.
 - More data structures pushed to PSRAM through Himem templates.
 - `std::string` replaced with `HimemString` for many variables and parameters throughout the codebase.
+- CSS and DOM structures optimized considering the memory constaints of the devices.
 
 **Component restructuring**
 
@@ -52,6 +56,7 @@ Update to version 3.0.0
 - The `image` component renamed to `pictures`; `Image` → `Picture`, `ImageFactory` → `PictureFactory`.
 - `simple_db` component moved from `src/helpers` to `components/simple_db`.
 - `Page::Format` struct now carries default field values; all call sites only pass parameters that differ from the defaults.
+- A new floating point value support added to the `FormViewer` and `KeypadViewer` used to permit the edition of the `battery_trim` option.
 
 **Code quality**
 
@@ -62,6 +67,7 @@ Update to version 3.0.0
 - EPub ownership transfer between controllers corrected.
 - Complete list of HTML named character references added to the CSS/HTML parser.
 - Several small CSS parser bugs fixed; new CSS tokens added.
+- Issue with UINT16 form field that highlight the field before showing the keypad corrected.
 
 **Testing and validation**
 

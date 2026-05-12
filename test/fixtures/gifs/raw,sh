@@ -1,0 +1,12 @@
+#! /usr/bin/bash
+
+for f in *.gif; do
+  echo "Processing $f... to ${f%.gif}.bmp"
+
+#   size=$(identify -format "%wx%h" "${f}")
+
+#   echo $size
+
+  magick "$f" -depth 8 -compress none "${f%.gif}.bmp"
+
+done

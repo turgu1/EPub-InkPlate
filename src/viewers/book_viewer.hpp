@@ -17,10 +17,10 @@
   #include "freertos/task.h"
 #endif
 
+#include "fonts.hpp"
 #include "models/css.hpp"
 #include "models/dom.hpp"
 #include "models/epub.hpp"
-#include "models/fonts.hpp"
 #include "models/page_locs.hpp"
 #include "pugixml.hpp"
 #include "viewers/page.hpp"
@@ -30,9 +30,10 @@ using namespace pugi;
 using BookViewerPtr = HimemUniquePtr<class BookViewer>;
 
 class BookViewer {
-private:
+public:
   static constexpr char const *TAG = "BookViewer";
 
+private:
   BookViewer(Fonts &fonts) : page(Page::Make(fonts)) {};
 
   // std::mutex mutex;
@@ -41,6 +42,7 @@ private:
 
   PagePtr page{nullptr};
 
+  auto recreatePage(Fonts &fonts) -> bool;
   auto buildPageAt(const PageId &pageId, EPubPtr &epub) -> void;
 
   struct PageEnd {

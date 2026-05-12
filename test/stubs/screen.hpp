@@ -18,8 +18,10 @@
 
 #pragma once
 #include "global.hpp"
+#include "himem.hpp"
 #include "non_copyable.hpp"
-#include "picture.hpp" // for PicturePtr used in drawPicture signature
+
+using PicturePtr = HimemUniquePtr<class Picture>;
 
 class Screen : NonCopyable {
 public:
@@ -39,19 +41,26 @@ public:
 
   [[nodiscard]] static auto getWidth() -> uint16_t { return 600; }
   [[nodiscard]] static auto getHeight() -> uint16_t { return 800; }
+  [[nodiscard]] auto getPixelResolution() const -> PixelResolution {
+    return PixelResolution::ONE_BIT;
+  }
 
   // No-op stubs for layout/display methods — never called in LOCATION compute mode.
-  auto drawPicture(PicturePtr &, Pos) -> void {}
-  auto drawGlyph(const unsigned char *, Dim, Pos, uint16_t) -> void {}
-  auto drawRectangle(Dim, Pos, Color) -> void {}
-  auto drawRoundRectangle(Dim, Pos, Color) -> void {}
-  auto colorizeRegion(Dim, Pos, Color) -> void {}
+  template <typename P>
+  auto drawPicture(PicturePtr &, P) -> void {}
+  template <typename D, typename P>
+  auto drawGlyph(const unsigned char *, D, P, uint16_t) -> void {}
+  template <typename D, typename P>
+  auto drawRectangle(D, P, Color) -> void {}
+  template <typename D, typename P>
+  auto drawRoundRectangle(D, P, Color) -> void {}
+  template <typename D, typename P>
+  auto colorizeRegion(D, P, Color) -> void {}
   auto setup(PixelResolution, Orientation) -> void {}
   auto update(bool = false) -> void {}
   auto clear() -> void {}
   auto test() -> void {}
 
-private:
   Screen() = default;
 };
 

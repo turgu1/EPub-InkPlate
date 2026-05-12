@@ -5,8 +5,8 @@
 #define __PAGE_LOCS__ 1
 #include "models/page_locs.hpp"
 
+#include "config.hpp"
 #include "controllers/event_mgr.hpp"
-#include "models/config.hpp"
 #include "models/page_locs_control.hpp"
 
 #include "viewers/book_viewer.hpp"
@@ -55,7 +55,11 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
   #else
     esp_pthread_init();
 
-    if (mgrQueue == nullptr) mgrQueue = xQueueCreate(5, sizeof(QueueData));
+    if (mgrQueue == nullptr) {
+      mgrQueue = xQueueCreate(5, sizeof(QueueData));
+    } else {
+      xQueueReset(mgrQueue);
+    }
 
   #endif
 }
@@ -78,8 +82,22 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   bool gotReply = false;
 
   #if EPUB_LINUX_BUILD
-    // Linux path keeps the legacy blocking behavior.
-    gotReply = (receive(queueData) >= 0);
+    // Never block forever on Linux: nav threads must remain stoppable during
+    // S5 restart and test teardown.
+    //
+    // Under Valgrind, individual item computation can take 2–3 s.  After a
+    // mid-flight restart the retriever must also abort the current item and
+    // start fresh, so the first ASAP round-trip can approach 3–4 s.  Use a
+    // 5 s timeout to cover that overhead without ever blocking indefinitely.
+    timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    constexpr int64_t ASAP_REPLY_TIMEOUT_MS = 5000;
+    const int64_t nsecTotal = static_cast<int64_t>(ts.tv_nsec) + ASAP_REPLY_TIMEOUT_MS * 1000000LL;
+    ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+    ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+
+    gotReply =
+        (mq_timedreceive(mgrQueue, (char *)&queueData, sizeof(queueData), nullptr, &ts) >= 0);
   #else
     // On ESP, never block forever while holding the PageLocs mutex from
     // getNextPageId/getPrevPageId callers.
@@ -124,7 +142,7 @@ auto PageLocs::stopControlTask() -> void {
 }
 
 auto PageLocs::getPageCountOrPercent() -> int16_t {
-  if (controlTaskReadyToBeStopped) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) stopControlTask();
 
   if (completed) return pageCount;
 
@@ -199,7 +217,7 @@ auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterato
 
 auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageId * {
 
-  if (controlTaskReadyToBeStopped) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) stopControlTask();
 
   {
     std::scoped_lock guard(mutex);
@@ -237,7 +255,7 @@ auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageI
 
 auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * {
 
-  if (controlTaskReadyToBeStopped) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) stopControlTask();
 
   {
     std::scoped_lock guard(mutex);
@@ -284,7 +302,7 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
 
 auto PageLocs::getPageId(const PageId &pageId) -> const PageId * {
 
-  if (controlTaskReadyToBeStopped) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) stopControlTask();
 
   {
     std::scoped_lock guard(mutex);

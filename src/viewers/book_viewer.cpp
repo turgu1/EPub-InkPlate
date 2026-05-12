@@ -6,8 +6,9 @@
 #include "viewers/book_viewer.hpp"
 #include "controllers/book_controller.hpp"
 
-#include "models/config.hpp"
-#include "models/fonts.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
+#include "helpers/picture_load_icon.hpp"
 #include "picture_factory.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -20,7 +21,6 @@
 #include "alloc.hpp"
 #include "screen.hpp"
 
-#include <chrono>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -30,55 +30,6 @@
 #include "logging.hpp"
 
 using namespace pugi;
-
-namespace {
-
-auto showPictureLoadIcon(const Dim &imageDim) -> void {
-  if ((imageDim.width <= 200) && (imageDim.height <= 200)) return;
-
-  FontPtr &iconFont = appFonts.getFont(0);
-  Glyph *glyph      = iconFont->getGlyph('N', 24);
-  if ((glyph == nullptr) || (glyph->buffer == nullptr) || (glyph->dim.width == 0) ||
-      (glyph->dim.height == 0)) {
-    return;
-  }
-
-  int16_t iconX = (Screen::getWidth() - glyph->dim.width) / 2;
-  int16_t iconY = (Screen::getHeight() - (Screen::getHeight() / 4)) - (glyph->dim.height / 2);
-
-  int16_t rectW = glyph->dim.width * 2;
-  int16_t rectH = glyph->dim.height * 2;
-  int16_t rectX = iconX - (glyph->dim.width / 2);
-  int16_t rectY = iconY - (glyph->dim.height / 2);
-
-  int16_t clearW = rectW + 20;
-  int16_t clearH = rectH + 20;
-  int16_t clearX = rectX - 10;
-  int16_t clearY = rectY - 10;
-
-  if (rectX < 0) rectX = 0;
-  if (rectY < 0) rectY = 0;
-  if (rectX + rectW > Screen::getWidth()) rectW = Screen::getWidth() - rectX;
-  if (rectY + rectH > Screen::getHeight()) rectH = Screen::getHeight() - rectY;
-
-  if (clearX < 0) clearX = 0;
-  if (clearY < 0) clearY = 0;
-  if (clearX + clearW > Screen::getWidth()) clearW = Screen::getWidth() - clearX;
-  if (clearY + clearH > Screen::getHeight()) clearH = Screen::getHeight() - clearY;
-
-  screen.colorizeRegion(Dim(static_cast<uint16_t>(clearW), static_cast<uint16_t>(clearH)),
-                        Pos(static_cast<uint16_t>(clearX), static_cast<uint16_t>(clearY)),
-                        Screen::Color::WHITE);
-
-  screen.drawRoundRectangle(Dim(static_cast<uint16_t>(rectW), static_cast<uint16_t>(rectH)),
-                            Pos(static_cast<uint16_t>(rectX), static_cast<uint16_t>(rectY)),
-                            Screen::Color::BLACK);
-  screen.drawGlyph(glyph->buffer, glyph->dim,
-                   Pos(static_cast<uint16_t>(iconX), static_cast<uint16_t>(iconY)), glyph->pitch);
-  screen.update(true);
-}
-
-} // namespace
 
 class BookViewerInterp : public HTMLInterpreter {
 public:
@@ -94,18 +45,21 @@ protected:
   }
 };
 
+auto BookViewer::recreatePage(Fonts &fonts) -> bool {
+  page.reset();
+  page = Page::Make(fonts);
+  if (page == nullptr) {
+    LOG_E("Unable to allocate a new Page instance");
+    return false;
+  }
+  return true;
+}
+
 auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
   LOG_D("buildPageAt()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
 
   FontPtr &font = epub->getFonts().getFont(ScreenBottom::FONT);
   pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
-
-  // page->setComputeMode(Page::ComputeMode::MOVE);
-
-  // showPictures = epub->getBookFormatParams()->showPictures != 0;
 
   if (epub->getItemAtIndex(pageId.itemrefIndex)) {
 
@@ -127,28 +81,20 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
       idx = 3;
     }
 
-    int8_t fontSize = epub->getBookFormatParams()->fontSize;
-
     Page::Format fmt = {
-        .lineHeightFactor = 0.95,
+        .lineHeightFactor = epub->getLineHeightFactor(),
         .fontIndex        = idx,
-        .fontSize         = fontSize,
+        .fontSize         = epub->getBookFormatParams()->fontSize,
         .screenTop        = page_top,
         .screenBottom     = pageBottom,
     };
 
-    // mutex.unlock();
     std::this_thread::yield();
     const PageLocs::PageInfo *page_info = pageLocs.getPageInfo(pageId);
-    // mutex.lock();
 
     if (page_info == nullptr) return;
 
-    // currentOffset       = 0;
-    // start_of_page_offset = pageId.offset;
-    // end_of_page_offset   = pageId.offset + page_info->size;
-
-    auto dom    = DOM::Make();
+    auto dom    = DOM::Make(epub->getDomPools());
     auto interp = std::make_unique<BookViewerInterp>(epub, page, dom, Page::ComputeMode::DISPLAY,
                                                      epub->getCurrentItemInfo());
     interp->setLimits(pageId.offset, pageId.offset + page_info->size,
@@ -165,17 +111,11 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
       page->start(fmt);
 
-      // #if EPUB_INKPLATE_BUILD
-      //   esp_task_wdt_reset();
-      // #endif
-
       Page::Format *new_fmt = interp->duplicateFmt(fmt);
 
       if (interp->buildPagesRecurse(node, *new_fmt, dom->body, 1)) {
 
         if (page->someDataWaiting()) page->endParagraph(fmt);
-
-        // TTF * font = fonts.get(0, 7);
 
         fmt.lineHeightFactor = 1.0;
         fmt.fontIndex        = TITLE_FONT;
@@ -212,14 +152,11 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     interp->checkForCompletion();
   }
   LOG_D("end of buildPageAt()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
 }
 
 auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   Page::Format fmt = {
-      .fontIndex    = 2,
+      .fontIndex    = SYSTEM_ITALIC_FONT_INDEX,
       .fontSize     = 14,
       .screenTop    = 100,
       .screenBottom = 30,
@@ -236,7 +173,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   page->addText(author, fmt);
   page->endParagraph(fmt);
 
-  fmt.fontIndex = 1;
+  fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
   fmt.fontSize  = 18;
   fmt.screenTop = 200;
   fmt.fontStyle = FaceStyle::NORMAL;
@@ -250,14 +187,19 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
 }
 
 auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
-  // std::scoped_lock guard(mutex);
+  if ((pageId.itemrefIndex < 0) || (pageId.offset < 0)) {
+    LOG_W("Ignoring invalid showPage request: itemref=%d offset=%" PRIi32, pageId.itemrefIndex,
+          pageId.offset);
+    return;
+  }
+
+  if (!recreatePage(epub->getFonts())) return;
 
   current_page_id = pageId;
 
-  // if (pageLocs.getPageNbr(pageId) == 0) {
-  if ((pageId.itemrefIndex == 0) && (pageId.offset == 0)) {
-    auto coverStart = std::chrono::steady_clock::now();
+  const bool isCoverPage = (pageId.itemrefIndex == 0) && (pageId.offset == 0);
 
+  if (isCoverPage) {
     if (epub->getBookFormatParams()->showPictures != 0) {
       HimemString fname = epub->getCoverFilename();
       if (!fname.empty()) {
@@ -266,6 +208,7 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
         if (coverInfo != nullptr) {
           showPictureLoadIcon(coverInfo->getDim());
         }
+
         auto pict = epub->getPicture(fname, true);
 
         if (pict != nullptr) {
@@ -284,10 +227,6 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
     } else {
       showFakeCover(epub);
     }
-
-    auto coverEnd = std::chrono::steady_clock::now();
-    auto coverMs  = std::chrono::duration_cast<std::chrono::milliseconds>(coverEnd - coverStart);
-    LOG_D("Cover page prepare+show took %lld ms", static_cast<long long>(coverMs.count()));
   } else {
     buildPageAt(pageId, epub);
   }

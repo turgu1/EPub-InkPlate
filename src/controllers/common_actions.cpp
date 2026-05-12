@@ -22,7 +22,9 @@
 
 #endif
 
-auto CommonActions::returnToLast() -> void { appController.setController(AppController::Ctrl::LAST); }
+auto CommonActions::returnToLast() -> void {
+  appController.setController(AppController::Ctrl::LAST);
+}
 
 auto CommonActions::showLastBook() -> void { booksDirController.showLastBook(); }
 
@@ -55,6 +57,7 @@ auto CommonActions::powerItOff() -> void {
     while (eventMgr.stayingOn()) {
       #if EPUB_INKPLATE_BUILD
         ESP::delay(5000);
+        if (pageLocs.isControlTaskReadyToBeStopped()) pageLocs.stopControlTask();
       #endif
     }
   }

@@ -23,6 +23,35 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "EPub Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_test/epub_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "TEST_SVG_DECODER_FIXTURE",
+                    "value": "Fig2.15a.std.svg"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

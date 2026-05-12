@@ -40,6 +40,17 @@ auto AppController::start() -> void {
   #endif
 }
 
+auto AppController::startRegression(Ctrl initialCtrl) -> void {
+  currentCtrl = Ctrl::NONE;
+  nextCtrl    = initialCtrl;
+
+  for (int i = 0; i < LAST_COUNT; ++i) {
+    lastCtrl[i] = Ctrl::DIR;
+  }
+
+  launch();
+}
+
 auto AppController::setController(Ctrl newCtrl) -> void {
   LOG_D("===> setController()...");
 

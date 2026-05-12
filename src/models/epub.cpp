@@ -4,9 +4,9 @@
 
 #include "models/epub.hpp"
 
+#include "config.hpp"
+#include "fonts.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
-#include "models/fonts.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
@@ -472,7 +472,7 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
 
     CSS::RulesMap font_rules;
 
-    auto dom = DOM::Make();
+    auto dom = DOM::Make(domPools);
     if (dom == nullptr) {
       LOG_E("Failed to allocate DOM object for font extraction");
       return;
@@ -588,7 +588,8 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
             LOG_D("CSS Filename: %s", fname.c_str());
             HimemString path;
             extractPath(fname.c_str(), path);
-            auto css_tmp = CSS::Make(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0);
+            auto css_tmp =
+                CSS::Make(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0, cssPools);
             if (css_tmp == nullptr) MsgViewer::outOfMemory("css temp allocation");
 
             // #if DEBUGGING
@@ -619,7 +620,8 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
       } else {
         buffer = node.child_value();
       }
-      auto css_tmp = CSS::Make("current-item", item.filePath.c_str(), buffer, strlen(buffer), 1);
+      auto css_tmp =
+          CSS::Make("current-item", item.filePath.c_str(), buffer, strlen(buffer), 1, cssPools);
       if (!css_tmp) MsgViewer::outOfMemory("css temp allocation");
       retrieveFontsFromCss(css_tmp);
       // css_tmp->show();
@@ -630,11 +632,15 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
   // Populate the current item css structure with property suites present in
   // the identified css files in the <meta> portion of the html file.
 
-  if (!(item.css = CSS::Make("MergedForItem"))) {
-    MsgViewer::outOfMemory("css allocation");
+  if (!item.cssList.empty() || !item.cssCache.empty()) {
+    if (!(item.css = CSS::Make("MergedForItem", cssPools))) {
+      MsgViewer::outOfMemory("css allocation");
+    }
+    for (auto &css : item.cssList) item.css->retrieveDataFromCss(css);
+    for (auto &css : item.cssCache) item.css->retrieveDataFromCss(*css.get());
+  } else {
+    item.css.reset();
   }
-  for (auto &css : item.cssList) item.css->retrieveDataFromCss(css);
-  for (auto &css : item.cssCache) item.css->retrieveDataFromCss(*css.get());
 
   // item.css->show();
   LOG_D("end of retrieveCss()");
@@ -750,21 +756,42 @@ auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
   return completed;
 }
 
+/// Updates the book format parameters by loading them from persistent storage or applying defaults.
+///
+/// The book parameters (*bookParams*) are the parameters that are specific to the book. They are
+/// stored in a file with the same name as the book and the extension .pars.
+///
+/// The book format parameters (*bookFormatParams*) are the parameters that are used to format the
+/// book. They are adjusted based on the book parameters and the global configuration parameters.
+/// When a parameter value is -1, the corresponding global configuration value is used. The book
+/// format parameters are used to format the book when it is displayed.
+///
+/// This method performs the following:
+/// - Validates the book parameters version for compatibility;
+/// - Initializes book format parameters with default values if no persistent storage exists or
+///   if the version is incompatible;
+/// - Retrieves stored parameters (pictures, font size, line height, fonts, font selection) from
+///   storage;
+/// - Applies configuration settings for orientation and title visibility;
+/// - Falls back to global configuration defaults for any unset parameters.
 auto EPub::updateBookFormatParams() -> void {
   constexpr int8_t default_value = -1;
 
   if (bookParams == nullptr) {
+
     bookFormatParams = {.ident = Screen::IDENT,
                         .orientation =
-                            0, // Get de compiler happy (no warning). Will be set below...
+                            0, // Get the compiler happy (no warning). Will be set below...
                         .showTitle      = 0, // ... idem ...
                         .showPictures   = default_value,
                         .fontSize       = default_value,
+                        .lineHeight     = default_value,
                         .useFontsInBook = default_value,
                         .font           = default_value};
   } else {
     bookParams->get(BookParams::Ident::SHOW_PICTURES, &bookFormatParams.showPictures);
     bookParams->get(BookParams::Ident::FONT_SIZE, &bookFormatParams.fontSize);
+    bookParams->get(BookParams::Ident::LINE_HEIGHT, &bookFormatParams.lineHeight);
     bookParams->get(BookParams::Ident::USE_FONTS_IN_BOOK, &bookFormatParams.useFontsInBook);
     bookParams->get(BookParams::Ident::FONT, &bookFormatParams.font);
   }
@@ -776,6 +803,8 @@ auto EPub::updateBookFormatParams() -> void {
     config.get(Config::Ident::SHOW_PICTURES, &bookFormatParams.showPictures);
   if (bookFormatParams.fontSize == default_value)
     config.get(Config::Ident::FONT_SIZE, &bookFormatParams.fontSize);
+  if (bookFormatParams.lineHeight == default_value)
+    config.get(Config::Ident::LINE_HEIGHT, &bookFormatParams.lineHeight);
   if (bookFormatParams.useFontsInBook == default_value)
     config.get(Config::Ident::USE_FONTS_IN_BOOKS, &bookFormatParams.useFontsInBook);
   if (bookFormatParams.font == default_value)
@@ -784,12 +813,25 @@ auto EPub::updateBookFormatParams() -> void {
   // if (!bookFormatParams.useFontsInBook) fonts.clear();
 }
 
-auto EPub::openParams(const HimemString &epubFilename) -> void {
+auto EPub::openParams(const HimemString &epubFilename) -> bool {
   HimemString paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
   bookParams.reset(new (std::nothrow) BookParams(paramsFilename, false));
   if (bookParams != nullptr) {
     bookParams->read();
+
+    int8_t version = 0;
+
+    bookParams->get(BookParams::Ident::VERSION, &version);
+    if ((version != BOOK_PARAMS_VERSION)) {
+      unlink(paramsFilename.c_str());
+      bookParams->read();
+    }
+  } else {
+    LOG_E("Unable to allocate memory for book parameters.");
+    return false;
   }
+
+  return true;
 }
 
 auto EPub::open(const HimemString &epubFilename) -> bool {
@@ -848,7 +890,8 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
 
   getEncryptionXml();
 
-  openParams(epubFilename);
+  if (!openParams(epubFilename)) return failOpen();
+
   updateBookFormatParams();
 
   fonts.adjustDefaultFont(bookFormatParams.font);
@@ -900,8 +943,11 @@ auto EPub::clearItemData(ItemInfo &item) -> void {
   //   delete css;
   // }
   item.cssList.clear();
-
   item.cssCache.clear();
+
+  // Reset ghost CSS after clearing its source CSS objects to avoid dangling pointers
+  // in the rulesMap between clearItemData() and the next retrieveCss() call.
+  item.css.reset();
 
   item.itemrefIndex = -1;
 }
@@ -1091,7 +1137,8 @@ auto EPub::getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool {
 auto EPub::getPicture(HimemString &fname, bool load) -> PicturePtr {
 
   HimemString filename = filenameLocate(fname.c_str());
-  auto pict = PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load);
+  auto pict = PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load,
+                                     fonts.getFont(SYSTEM_REGULAR_FONT_INDEX));
 
   if ((pict == nullptr) || (load && (pict->getBitmap() == nullptr)) ||
       (pict->getDim().height == 0) || (pict->getDim().width == 0)) {

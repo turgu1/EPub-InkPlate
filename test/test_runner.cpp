@@ -34,6 +34,11 @@ auto testAppConfig() -> TestStats;
 auto testEPub() -> TestStats;
 auto testUnzip() -> TestStats;
 auto testSimpleList() -> TestStats;
+auto testCharPool() -> TestStats;
+auto testFontsCache() -> TestStats;
+auto testFontsCacheStress() -> TestStats;
+auto testGifDecoder() -> TestStats;
+auto testSvgDecoder() -> TestStats;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -68,6 +73,11 @@ int main(int argc, char *argv[]) {
       {"epub", testEPub},
       {"unzip", testUnzip},
       {"simple_list", testSimpleList},
+      {"char_pool", testCharPool},
+      {"fonts_cache", testFontsCache},
+      {"fonts_cache_stress", testFontsCacheStress},
+      {"gif_decoder", testGifDecoder},
+      {"svg_decoder", testSvgDecoder},
   };
 
   // Determine which suites to run. When no arguments are given, run all.

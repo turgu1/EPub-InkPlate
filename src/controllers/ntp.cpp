@@ -4,9 +4,9 @@
   #include "controllers/ntp.hpp"
 
   #if EPUB_INKPLATE_BUILD
+    #include "config.hpp"
     #include "controllers/clock.hpp"
     #include "controllers/wifi.hpp"
-    #include "models/config.hpp"
 
     #include "lwip/sockets.h"
     #include <lwip/netdb.h>

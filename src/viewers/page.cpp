@@ -16,6 +16,10 @@
 #include <string>
 #include <utility>
 
+static CharPoolPtr entitiesMapPool = CharPool::Make();
+static bool entitiesMapPoolInited =
+    (PoolContext<Page::EntityStringTag>::init(entitiesMapPool.get()), true);
+
 // clang-format off
 Page::Entities Page::entities 
   = {
@@ -158,6 +162,7 @@ auto Page::clean() -> void {
   topMargin  = 0;
   // computeMode   = ComputeMode::DISPLAY;
   screenIsFull = false;
+  pageEmpty    = true;
 }
 
 // 00000000 -- 0000007F: 	0xxxxxxx
@@ -166,9 +171,9 @@ auto Page::clean() -> void {
 // 00010000 -- 001FFFFF: 	11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
 auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
-                     const char **str2) const -> int32_t {
+                     const char **str2) const -> char32_t {
   const uint8_t *c = reinterpret_cast<const uint8_t *>(str);
-  int32_t u        = ' ';
+  char32_t u       = ' ';
   bool done        = false;
 
   if (*c == '&') {
@@ -182,7 +187,7 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
 
     if (*end == ';') {
       LOG_I("Entity: %.*s", len, name);
-      auto theStr = HimemString((char *)(name), (size_t)(end - name));
+      auto theStr = EntityString((char *)(name), (size_t)(end - name));
       auto search = entities.find(theStr);
       if (search != entities.end()) {
         u = search->second;
@@ -420,6 +425,11 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
   // LOG_I("Painted %d entries on screen", count);
 
   screen.update(noFull);
+
+  // Free rendered glyphs and the display list now that the page is on screen.
+  // This prevents PSRAM from accumulating cached bitmaps across pages.
+  // displayList->clear();
+  // fonts.clearGlyphCaches();
 }
 
 auto Page::start(const Format &fmt) -> void {
@@ -435,6 +445,7 @@ auto Page::start(const Format &fmt) -> void {
   paraMaxX = maxX;
 
   screenIsFull = false;
+  pageEmpty    = true;
 
   displayList->clear();
   lineList->clear();
@@ -442,6 +453,9 @@ auto Page::start(const Format &fmt) -> void {
   paraIndent   = 0;
   lineWidth    = 0;
   glyphsHeight = 0;
+
+  // Recycle any cached glyph bitmaps left from the previous page.
+  fonts.clearGlyphCaches();
 }
 
 auto Page::setLimits(const Format &fmt) -> void {
@@ -646,6 +660,14 @@ inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bo
     -> void {
   if (isSpace && (lineWidth == 0)) return;
 
+  if (computeMode != ComputeMode::DISPLAY) {
+    if (glyphsHeight < glyph->lineHeight) glyphsHeight = glyph->lineHeight;
+    if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+    lineWidth += glyph->advance;
+    pageEmpty = false;
+    return;
+  }
+
   DisplayListEntry *entry = lineList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -662,6 +684,15 @@ inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bo
 }
 
 auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) -> void {
+  if (computeMode != ComputeMode::DISPLAY) {
+    auto dim = picture->getDim();
+    if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+    if (glyphsHeight < dim.height) glyphsHeight = dim.height / lineHeightFactor;
+    lineWidth += advance;
+    pageEmpty = false;
+    return;
+  }
+
   DisplayListEntry *entry = lineList->getNewEntry();
   if (entry == nullptr) return;
 
@@ -698,7 +729,64 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
     if ((screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY)) return false;
   }
 
-  Glyph *glyph;
+  if (computeMode != ComputeMode::DISPLAY) {
+    const char *str = word;
+    int16_t height  = font->getLineHeight(fmt.fontSize);
+    int16_t width   = 0;
+    bool first      = true;
+
+    while (*str) {
+      const char *str1, *str2;
+      uint32_t uc1, uc2;
+
+      uc1 = toUnicode(str, fmt.textTransform, first, &str1);
+      uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
+
+      auto [glyph, kern, ignoreNext] = font->getGlyph(uc1, uc2, fmt.fontSize);
+
+      str = ignoreNext ? str2 : str1;
+
+      int16_t advance{0};
+
+      if (glyph == nullptr) {
+        glyph = font->getGlyph(' ', fmt.fontSize);
+        if (glyph != nullptr) {
+          advance = glyph->advance;
+        }
+      } else {
+        advance = glyph->advance + kern;
+      }
+
+      if (glyph != nullptr) {
+        width += advance;
+        first = false;
+      }
+    }
+
+    uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
+
+    if (width >= availableWidth) {
+      if (strncasecmp(word, "http", 4) == 0) {
+        return addWord("[<< ffi URL removed]", fmt);
+      } else {
+        LOG_E("WORD TOO LARGE!! '%s'", word);
+      }
+    }
+
+    if ((lineWidth + width) >= availableWidth) {
+      addLine(fmt, true);
+      screenIsFull = NEXT_LINE_REQUIRED_SPACE > maxY;
+      if (screenIsFull) {
+        return false;
+      }
+    }
+
+    if (glyphsHeight < height) glyphsHeight = height;
+    if (lineHeightFactor < fmt.lineHeightFactor) lineHeightFactor = fmt.lineHeightFactor;
+    lineWidth += width;
+
+    return true;
+  }
 
   auto lineEntries = DisplayList::Make(displayListPool);
   const char *str  = word;
@@ -707,25 +795,25 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
   bool first       = true;
 
   while (*str) {
-    bool ignoreNext;
     const char *str1, *str2;
-    uint32_t uc1, uc2;
-    int16_t kern;
+    char32_t uc1, uc2;
 
     uc1 = toUnicode(str, fmt.textTransform, first, &str1);
     uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
 
-    glyph = font->getGlyph(uc1, uc2, fmt.fontSize, kern, ignoreNext);
+    auto [glyph, kern, ignoreNext] = font->getGlyph(uc1, uc2, fmt.fontSize);
 
     str = ignoreNext ? str2 : str1;
 
-    int16_t advance = kern;
+    int16_t advance{0};
 
     if (glyph == nullptr) {
       glyph = font->getGlyph(' ', fmt.fontSize);
       if (glyph != nullptr) {
         advance = glyph->advance;
       }
+    } else {
+      advance = glyph->advance + kern;
     }
 
     if (glyph != nullptr) {
@@ -747,7 +835,7 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
 
   if (width >= availableWidth) {
     if (strncasecmp(word, "http", 4) == 0) {
-      return addWord("[URL removed]", fmt);
+      return addWord("[<< ffi URL removed]", fmt);
     } else {
       LOG_E("WORD TOO LARGE!! '%s'", word);
     }
@@ -1352,7 +1440,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
 
     int16_t size = 0;
     for (auto val __attribute__((unused)) : *vals) ++size;
-    CSS::Values::const_iterator it = vals->begin();
+    CSS::Values::ConstIterator it = vals->begin();
 
     if (size == 1) {
       fmt.marginTop = fmt.marginBottom = getPixelValue(vals->front(), fmt, heightRef, true);

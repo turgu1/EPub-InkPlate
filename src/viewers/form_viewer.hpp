@@ -8,10 +8,10 @@
 #include "himem.hpp"
 #include "himem_pool.hpp"
 
+#include "config.hpp"
 #include "controllers/event_mgr.hpp"
-#include "models/config.hpp"
-#include "models/fonts.hpp"
-#include "models/fonts_db.hpp"
+#include "fonts.hpp"
+#include "fonts_db.hpp"
 #include "viewers/keypad_viewer.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -19,7 +19,7 @@
 #include <list>
 
 enum class FormEntryType {
-  HORIZONTAL, VERTICAL, UINT16,
+  HORIZONTAL, VERTICAL, UINT16, FLOAT,
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
     DONE
   #endif
@@ -44,7 +44,12 @@ struct FormEntry {
       uint16_t *value;
       uint16_t min;
       uint16_t max;
-    } val;
+    } intVal;
+    struct {
+      double *value;
+      double min;
+      double max;
+    } floatVal;
   } u;
   FormEntryType entryType;
 };
@@ -108,7 +113,7 @@ public:
     }
   }
 
-  auto showSelected(bool showIt) -> void {
+  virtual auto showSelected(bool showIt) -> void {
     if (showIt) {
       page.putHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
                         Pos(fieldPos.x - 10, fieldPos.y - 10));
@@ -141,6 +146,8 @@ public:
   static constexpr FormChoice dirViewChoices[2] = {{"LINEAR", 0}, {"MATRIX", 1}};
 
   static constexpr FormChoice coverSizeChoices[3] = {{"SMALL", 0}, {"MEDIUM", 1}, {"LARGE", 2}};
+
+  static constexpr FormChoice lineHeightChoices[3] = {{"TIGHT", 0}, {"MEDIUM", 1}, {"LARGE", 2}};
 
   static constexpr FormChoice okCancelChoices[2] = {{"OK", 1}, {"CANCEL", 0}};
 
@@ -179,8 +186,7 @@ public:
       item->idx = i;
     }
 
-    int i       = 0;
-    currentItem = items.end();
+    int i = 0;
     for (Items::iterator it = items.begin(); it != items.end(); ++it) {
       if (formEntry.u.ch.choices[i].value == *formEntry.u.ch.value) {
         currentItem = it;
@@ -392,6 +398,18 @@ public:
     return makeUniqueHimem<FormUInt16>(formEntry, font, page);
   }
 
+  auto showSelected(bool showIt) -> void {
+
+    // As the keypad viewer is used to edit the value of the field, we don't
+    // want to show the field as selected when it's a numeric field, to avoid confusion with the
+    // highlighting of the keypad viewer. So we just show the field as highlighted when it's
+    // selected, and not when it's in control of events.
+    if (!showIt) {
+      page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
+                          Pos(fieldPos.x - 10, fieldPos.y - 10));
+    }
+  }
+
   auto formRefreshRequired() -> bool { return true; }
 
   auto computeFieldPos(Pos fromPos) -> void { fieldPos = fromPos; }
@@ -401,13 +419,13 @@ public:
     Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
     uint8_t offset = -glyph->yoff;
 
-    uint16_t v = *formEntry.u.val.value;
-    if (v < formEntry.u.val.min) {
-      v = formEntry.u.val.min;
-    } else if (v > formEntry.u.val.max) {
-      v = formEntry.u.val.max;
+    uint16_t v = *formEntry.u.intVal.value;
+    if (v < formEntry.u.intVal.min) {
+      v = formEntry.u.intVal.min;
+    } else if (v > formEntry.u.intVal.max) {
+      v = formEntry.u.intVal.max;
     }
-    *formEntry.u.val.value = v;
+    *formEntry.u.intVal.value = v;
 
     int_to_str(v, val, 8);
     page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + offset), fmt);
@@ -416,18 +434,18 @@ public:
 
   auto event(const EventMgr::Event &event) -> bool {
     if (!eventControl) {
-      keypadViewer->show(*formEntry.u.val.value, formEntry.caption);
+      keypadViewer->show(*formEntry.u.intVal.value, formEntry.caption);
       eventControl = true;
     } else {
       if (!keypadViewer->event(event)) {
-        uint16_t v = keypadViewer->getValue();
-        if (v < formEntry.u.val.min) {
-          v = formEntry.u.val.min;
-        } else if (v > formEntry.u.val.max) {
-          v = formEntry.u.val.max;
+        uint16_t v = keypadViewer->getIntValue();
+        if (v < formEntry.u.intVal.min) {
+          v = formEntry.u.intVal.min;
+        } else if (v > formEntry.u.intVal.max) {
+          v = formEntry.u.intVal.max;
         }
-        *formEntry.u.val.value = v;
-        eventControl           = false;
+        *formEntry.u.intVal.value = v;
+        eventControl              = false;
 
         return false; // release events control
       }
@@ -440,6 +458,79 @@ public:
   auto saveValue() -> void {}
 
   auto computeFieldDim() -> void { font.getSize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
+};
+
+using FormFloatPtr = HimemUniquePtr<class FormFloat>;
+
+class FormFloat : public FormField {
+private:
+  KeypadViewerPtr keypadViewer{KeypadViewer::Make()};
+
+public:
+  using FormField::FormField;
+
+  FormFloat()  = default;
+  ~FormFloat() = default;
+
+  static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
+    return makeUniqueHimem<FormFloat>(formEntry, font, page);
+  }
+
+  auto showSelected(bool showIt) -> void {
+    // As the keypad viewer is used to edit the value of the field, we don't
+    // want to show the field as selected when it's a numeric field, to avoid confusion with the
+    // highlighting of the keypad viewer. So we just show the field as highlighted when it's
+    // selected, and not when it's in control of events.
+    if (!showIt) {
+      page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
+                          Pos(fieldPos.x - 10, fieldPos.y - 10));
+    }
+  }
+
+  auto formRefreshRequired() -> bool { return true; }
+
+  auto computeFieldPos(Pos fromPos) -> void { fieldPos = fromPos; }
+
+  auto paint(Page::Format &fmt) -> void {
+    char val[8];
+    Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
+    uint8_t offset = -glyph->yoff;
+
+    double v = *formEntry.u.floatVal.value;
+    if ((v <= formEntry.u.floatVal.min) && (v >= formEntry.u.floatVal.max)) {
+      v = 1.0;
+    }
+    *formEntry.u.floatVal.value = v;
+
+    float_to_str(v, val, 6, 3);
+    page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + offset), fmt);
+    page.putStrAt(val, Pos(fieldPos.x, fieldPos.y + offset), fmt);
+  }
+
+  auto event(const EventMgr::Event &event) -> bool {
+    if (!eventControl) {
+      keypadViewer->show(*formEntry.u.floatVal.value, formEntry.caption);
+      eventControl = true;
+    } else {
+      if (!keypadViewer->event(event)) {
+        double v = keypadViewer->getFloatValue();
+        if ((v <= formEntry.u.floatVal.min) && (v >= formEntry.u.floatVal.max)) {
+          v = 1.0;
+        }
+        *formEntry.u.floatVal.value = v;
+        eventControl                = false;
+
+        return false; // release events control
+      }
+    }
+    return true; // keep events control
+  }
+
+  auto updateHighlight() -> void {}
+
+  auto saveValue() -> void {}
+
+  auto computeFieldDim() -> void { font.getSize("XXXXXXX", &fieldDim, FORM_FONT_SIZE); }
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -498,6 +589,8 @@ public:
       }
     case FormEntryType::UINT16:
       return FormUInt16::Make(entry, font, page);
+    case FormEntryType::FLOAT:
+      return FormFloat::Make(entry, font, page);
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       case FormEntryType::DONE:
         return FormDone::Make(entry, font, page);

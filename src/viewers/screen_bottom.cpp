@@ -1,8 +1,8 @@
 #define _SCREEN_BOTTOM_ 1
 #include "viewers/screen_bottom.hpp"
 
+#include "config.hpp"
 #include "controllers/clock.hpp"
-#include "models/config.hpp"
 #include "screen.hpp"
 #include "viewers/battery_viewer.hpp"
 

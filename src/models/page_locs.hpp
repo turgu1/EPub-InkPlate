@@ -84,6 +84,10 @@ public:
     #endif
   }
 
+  [[nodiscard]] inline auto isControlTaskReadyToBeStopped() const -> bool {
+    return controlTaskReadyToBeStopped;
+  }
+
 private:
   static constexpr const char *TAG                = "PageLocs";
   static constexpr const int8_t LOCS_FILE_VERSION = 3;
@@ -165,7 +169,7 @@ public:
   [[nodiscard]] inline auto isRunning() const -> bool { return controlTask != nullptr; }
 
   [[nodiscard]] inline auto getPageInfo(const PageId &pageId) -> const PageInfo * {
-    if (controlTaskReadyToBeStopped) stopControlTask();
+    if (isControlTaskReadyToBeStopped()) stopControlTask();
 
     // std::scoped_lock guard(mutex);
     PagesMap::iterator it = checkAndFind(pageId);
@@ -187,7 +191,7 @@ public:
   auto insert(PageId &id, PageInfo &info) -> void;
 
   inline auto clear() -> void {
-    if (controlTaskReadyToBeStopped) stopControlTask();
+    if (isControlTaskReadyToBeStopped()) stopControlTask();
 
     {
       std::scoped_lock guard(mutex);
@@ -206,7 +210,7 @@ public:
   auto getPageCountOrPercent() -> int16_t;
 
   [[nodiscard]] inline auto getPageNbr(const PageId &id) -> int16_t {
-    if (controlTaskReadyToBeStopped) stopControlTask();
+    if (isControlTaskReadyToBeStopped()) stopControlTask();
 
     {
       std::scoped_lock guard(mutex);

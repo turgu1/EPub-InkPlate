@@ -43,7 +43,13 @@ auto BookController::enter() -> void {
     LOG_W("PageLocs not ready for item=%d offset=%d, keeping current page id",
           currentPageId.itemrefIndex, currentPageId.offset);
   }
-  bookViewer->showPage(currentPageId, epub);
+
+  if ((currentPageId.itemrefIndex >= 0) && (currentPageId.offset >= 0)) {
+    bookViewer->showPage(currentPageId, epub);
+  } else {
+    LOG_I("Skipping showPage while waiting for valid PageId: itemref=%d offset=%" PRIi32,
+          currentPageId.itemrefIndex, currentPageId.offset);
+  }
 }
 
 auto BookController::leave(bool goingToDeepSleep) -> void {

@@ -468,6 +468,17 @@ static auto testHimemSimpleList() -> void {
   for (int v : l) sum += v;
   HT_CHECK(sum == 60, "range-for sums all elements correctly");
 
+  HimemSimpleList<int>::iterator it = l.begin();
+  HT_CHECK(it != l.end(), "iterator alias available and begin() valid");
+  HT_CHECK(*it == 0, "iterator dereference returns first element");
+  ++it;
+  HT_CHECK(*it == 10, "iterator increment traverses list");
+
+  const HimemSimpleList<int> &cl           = l;
+  HimemSimpleList<int>::const_iterator cit = cl.begin();
+  HT_CHECK(cit != cl.end(), "const_iterator alias available and begin() valid");
+  HT_CHECK(*cit == 0, "const_iterator dereference returns first element");
+
   // merge
   HimemSimpleList<int> a, b;
   a.pushBack(1);

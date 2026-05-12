@@ -1,7 +1,7 @@
 #include "page_locs_retriever.hpp"
 
-#include "models/config.hpp"
-#include "models/fonts.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
 #include "models/page_locs_interpreter.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -29,15 +29,12 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
   // and prepare the Table of content to be repopulated.
   // This is required to not interfere with main epub instance.
   epub->setPageLocsInstance(true);
+  epub->getFonts().setGlyphLoadMode(Font::GlyphLoadMode::METRICS_ONLY);
 
   if (!epub->open(epubFilename)) {
     LOG_E("Unable to open the book");
     return false;
   }
-
-  // In preparation to rebuild the pages location, we need to get the current
-  // format parameters of the book.
-  currentFormatParams = *epub->getBookFormatParams();
 
   #if EPUB_LINUX_BUILD
     mq_unlink("/retriever");
@@ -56,6 +53,8 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
         LOG_E("Unable to create retrieverQueue");
         return false;
       }
+    } else {
+      xQueueReset(retrieverQueue);
     }
 
     auto cfg        = esp_pthread_get_default_config();
@@ -78,6 +77,68 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
 
 auto PageLocsRetriever::waitForExit() -> void {
   if (retrieverThread.joinable()) retrieverThread.join();
+}
+
+auto PageLocsRetriever::pollPendingQueueAtPageBoundary(void *context) -> bool {
+  return static_cast<PageLocsRetriever *>(context)->handlePendingQueueAtPageBoundary();
+}
+
+auto PageLocsRetriever::handlePendingQueueAtPageBoundary() -> bool {
+  bool shouldAbort = false;
+
+  for (;;) {
+    QueueData queueData;
+
+    #if EPUB_LINUX_BUILD
+      mq_attr attr{};
+      if (mq_getattr(retrieverQueue, &attr) == -1) {
+        LOG_E("Unable to query retrieverQueue: %d", errno);
+        return shouldAbort;
+      }
+      if (attr.mq_curmsgs == 0) break;
+      if (receive(queueData) == -1) {
+        LOG_E("Unable to receive retrieverQueue message: %d", errno);
+        return shouldAbort;
+      }
+    #else
+      if (receive(queueData, 0) != pdTRUE) break;
+    #endif
+
+    switch (queueData.req) {
+    case Req::GET_ASAP:
+      if (queueData.itemrefIndex == currentItemrefIndex) {
+        SHOW_IT("Page boundary: ignoring GET_ASAP for current itemref %d", queueData.itemrefIndex);
+      } else {
+        SHOW_IT("Page boundary: received GET_ASAP for itemref %d", queueData.itemrefIndex);
+        abortCurrentItem.store(true, std::memory_order_relaxed);
+        shouldAbort = true;
+      }
+      break;
+
+    case Req::STOP:
+      SHOW_IT("Page boundary: received STOP");
+      stopRequested.store(true, std::memory_order_relaxed);
+      abortCurrentItem.store(true, std::memory_order_relaxed);
+      return true;
+
+    case Req::SHOW_HEAP:
+      #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+        ESP::show_heaps_info();
+      #endif
+      break;
+
+    case Req::NONE:
+      break;
+
+    case Req::RETRIEVE_ITEM:
+    case Req::COMPLETED:
+      LOG_W("Ignoring unexpected retriever queue message %d at page boundary",
+            static_cast<int>(queueData.req));
+      break;
+    }
+  }
+
+  return shouldAbort;
 }
 
 auto PageLocsRetriever::task() -> void {
@@ -105,6 +166,10 @@ auto PageLocsRetriever::task() -> void {
           SHOW_IT("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
         #endif
         retrieve_item(queueData.req, queueData.itemrefIndex);
+        if (stopRequested.load(std::memory_order_relaxed)) {
+          SHOW_IT("Stop requested during retrieval. Exiting retriever task...");
+          return;
+        }
 
       } break;
 
@@ -127,13 +192,23 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
 
   SHOW_IT("Retrieving itemref --> %d <--", itemrefIndex);
 
+  stopRequested.store(false, std::memory_order_relaxed);
+
   // Clear any stale abort signal before starting this item.
   abortCurrentItem.store(false, std::memory_order_relaxed);
 
-  bool done    = buildPageLocs(itemrefIndex);
-  bool aborted = abortCurrentItem.load(std::memory_order_relaxed);
+  bool done = buildPageLocs(itemrefIndex);
+
+  bool aborted  = abortCurrentItem.load(std::memory_order_relaxed);
+  bool stopping = stopRequested.load(std::memory_order_relaxed);
 
   PageLocsControl::QueueData controlQueueData;
+
+  if (stopping && aborted && !done) {
+    SHOW_IT("Item %d interrupted by STOP; exiting retrieve_item without notifying ControlTask",
+            itemrefIndex);
+    return;
+  }
 
   if (aborted && !done) {
     // Interrupted mid-item by a higher-priority request.  Partial pages already
@@ -161,17 +236,11 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
 }
 
 auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
-  // std::scoped_lock guard(book_viewer.getMutex());
-
   Fonts &fonts = epub->getFonts();
 
   FontPtr &font = fonts.getFont(ScreenBottom::FONT);
   pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) +
                   (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
-
-  // pageOut->setComputeMode(Page::ComputeMode::LOCATION);
-
-  // showPictures = current_format_params.showPictures == 1;
 
   bool resultOk = false;
 
@@ -186,9 +255,6 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     if ((idx = fonts.getIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
-
-    int8_t fontSize = currentFormatParams.fontSize;
-
     int8_t showTitle = 0;
     config.get(Config::Ident::SHOW_TITLE, &showTitle);
 
@@ -200,37 +266,34 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     }
 
     Page::Format fmt = {
-        .lineHeightFactor = 0.95,
+        .lineHeightFactor = epub->getLineHeightFactor(),
         .fontIndex        = idx,
-        .fontSize         = fontSize,
+        .fontSize         = epub->getBookFormatParams()->fontSize,
         .screenTop        = pageTop,
         .screenBottom     = pageBottom,
     };
 
-    auto dom     = DOM::Make();
+    auto dom     = DOM::Make(epub->getDomPools());
     auto pageOut = Page::Make(fonts);
 
-    auto interp = PageLocsInterpreter::Make(epub, pageOut, dom, Page::ComputeMode::LOCATION,
-                                            itemInfo, abortCurrentItem);
+    auto interp = PageLocsInterpreter::Make(
+        epub, pageOut, dom, Page::ComputeMode::LOCATION, itemInfo, abortCurrentItem,
+        &PageLocsRetriever::pollPendingQueueAtPageBoundary, this);
 
     #if DEBUGGING_AID
       interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
       interp->checkPageToShow(pages_map.size());
     #endif
 
-    interp->setLimits(0, 9999999, currentFormatParams.showPictures == 1);
+    // In PageLocs mode we only need stable text flow boundaries; skipping images avoids
+    // expensive decoder/setup allocations and reduces PSRAM pressure.
+    interp->setLimits(0, 9999999, false);
 
-    // currentOffset       = 0;
-    // start_of_page_offset = 0;
     xml_node node;
 
     if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
 
       pageOut->start(fmt);
-
-      // #if EPUB_INKPLATE_BUILD
-      //   esp_task_wdt_reset();
-      // #endif
 
       // newFmt is required to be able to modify the format in the recursive calls without
       // interfering with the original one used for page start
@@ -253,13 +316,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     } else {
       LOG_D("No <body>");
     }
-
-    // dom->show();
   }
-
-  // pageOut->setComputeMode(Page::ComputeMode::DISPLAY);
-
-  // itemInfo.css.reset();
 
   return resultOk;
 }

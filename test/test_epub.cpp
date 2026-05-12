@@ -31,7 +31,7 @@
 #include <cstdio>
 #include <cstring>
 
-// epub.hpp includes viewers/page.hpp → models/fonts.hpp, models/css.hpp,
+// epub.hpp includes viewers/page.hpp → fonts.hpp, models/css.hpp,
 // models/display_list.hpp.  None of these drag in GTK.  The problematic
 // msg_viewer.hpp include is in epub.cpp (not epub.hpp) and is shadowed by
 // test/stubs/viewers/msg_viewer.hpp via -I test/stubs.

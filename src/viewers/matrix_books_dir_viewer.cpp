@@ -7,8 +7,8 @@
 
 #include "picture.hpp"
 
-#include "models/config.hpp"
-#include "models/fonts.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
@@ -34,9 +34,10 @@ auto MatrixBooksDirViewer::setup() -> void {
   authorFontHeight    = authorFont->getLineHeight(AUTHOR_FONT_SIZE) * 0.8;
 
   FontPtr &pageNbrFont = appFonts.getFont(ScreenBottom::FONT);
-  pagenbrFontHeight    = pageNbrFont->getLineHeight(ScreenBottom::FONT_SIZE);
+  pagenbrFontHeight    = pageNbrFont->getLineHeight(ScreenBottom::FONT_SIZE) + 10;
 
   firstEntryYpos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 25;
+  headerHeight   = firstEntryYpos - 20;
 
   lineCount = (Screen::getHeight() - firstEntryYpos - pagenbrFontHeight - SPACE_ABOVE_PAGENBR +
                MIN_SPACE_BETWEEN_ENTRIES) /
@@ -49,9 +50,11 @@ auto MatrixBooksDirViewer::setup() -> void {
       (Screen::getWidth() - 10 - (BooksDir::coverDim.width * columnCount)) / (columnCount - 1);
   vertSpaceBetweenEntries = (Screen::getHeight() - firstEntryYpos - pagenbrFontHeight -
                              SPACE_ABOVE_PAGENBR - (BooksDir::coverDim.height * lineCount)) /
-                            (lineCount - 1);
-  booksPerPage            = lineCount * columnCount;
-  pageCount               = (booksDir.getBookCount() + booksPerPage - 1) / booksPerPage;
+                            (lineCount + 1);
+  firstEntryYpos += vertSpaceBetweenEntries;
+
+  booksPerPage = lineCount * columnCount;
+  pageCount    = (booksDir.getBookCount() + booksPerPage - 1) / booksPerPage;
 
   currentPageNbr = -1;
   currentBookIdx = -1;
@@ -159,7 +162,7 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
     page->endParagraph(fmt);
   #endif
 
-  page->putRounded(Dim(Screen::getWidth() - 20, firstEntryYpos - 20), Pos(10, 10));
+  page->putRounded(Dim(Screen::getWidth() - 20, headerHeight), Pos(10, 10));
 
   ScreenBottom::show(page, currentPageNbr, pageCount);
 

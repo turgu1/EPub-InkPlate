@@ -7,7 +7,7 @@
 //                  that live in hardware/viewer code excluded from the tests.
 //
 // Stubs provided here:
-//   • Fonts class + global      — avoids fonts.cpp / FreeType dependencies
+//   • Fonts global              — appFonts definition for the test link
 //   • MsgViewer::outOfMemory()  — abort instead of hardware shutdown
 //   • MsgViewer::show()         — no-op, returns nullptr
 //   • DisplayList::getNewEntry()— avoids pulling in the real msg_viewer.hpp
@@ -21,31 +21,10 @@
 #include <cstdlib>
 
 // ============================================================================
-// Fonts  — MUST be defined before any header that includes models/fonts.hpp
-//           (display_list.hpp → models/fonts.hpp via the included chain, so
-//            we must emit the definition before including display_list.hpp).
+// Fonts declarations (global appFonts is defined by components/fonts/src/fonts.cpp).
 // ============================================================================
 
-#define __FONTS__ 1         // makes fonts.hpp emit `Fonts fonts;`
-#include "models/fonts.hpp" // includes char_pool.hpp, models/font.hpp — no GTK
-
-Fonts::Fonts(bool) {}
-Fonts::~Fonts() {}
-
-auto Fonts::adjustDefaultFont(uint8_t) -> void {}
-auto Fonts::clear(bool) -> void {}
-auto Fonts::clearEverything() -> void {}
-auto Fonts::setup() -> bool { return true; }
-auto Fonts::clearGlyphCaches() -> void {}
-
-auto Fonts::add(const FontFaceDescriptorPtr &) -> bool { return false; }
-auto Fonts::add(const HimemString &, FaceStyle, FileContentPtr, size_t, const HimemString &)
-    -> bool {
-  return false;
-}
-auto Fonts::replace(int16_t, const FontFaceDescriptorPtr &) -> bool { return false; }
-auto Fonts::adjustFontStyle(FaceStyle s, FaceStyle, FaceStyle) const -> FaceStyle { return s; }
-auto Fonts::getIndex(const HimemString &, FaceStyle) -> int16_t { return -1; }
+#include "fonts.hpp" // includes char_pool.hpp, font.hpp — no GTK
 
 // ============================================================================
 // DisplayList::getNewEntry()  (avoids msg_viewer.hpp → screen.hpp → gtk.h)
@@ -107,23 +86,6 @@ auto TOC::loadFromEpub(EPub &) -> bool { return true; }
 
 JPegPicture::JPegPicture(const HimemString &, Dim, bool, bool) {}
 PngPicture::PngPicture(const HimemString &, Dim, bool) {}
-
-// ============================================================================
-// FontsDB — load() stub: the test runner exercises Config mechanics only;
-// real FontsDB I/O is covered by the standalone config_test target.
-// ============================================================================
-
-#include "models/fonts_db.hpp"
-
-auto FontsDB::load(uint8_t) -> bool { return true; }
-auto FontsDB::adjustDefaultFont(uint8_t) -> void {}
-auto FontsDB::getFile(const char *, size_t) -> HimemUniquePtr<char[]> { return {}; }
-auto FontsDB::filterFilename(HimemString &fname) -> HimemString & { return fname; }
-auto FontsDB::checkFile(const HimemString &) -> bool { return true; }
-auto FontsDB::add(const HimemString &, FaceStyle, const HimemString &) -> bool { return true; }
-auto FontsDB::replace(int16_t, const HimemString &, FaceStyle, const HimemString &) -> bool {
-  return true;
-}
 
 // ============================================================================
 // PageLocs — epub.cpp::closeFile() references the global `pageLocs` object

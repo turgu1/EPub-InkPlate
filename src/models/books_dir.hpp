@@ -39,8 +39,8 @@ public:
   static constexpr uint16_t MEDIUM_COVER_WIDTH  = 140;
   static constexpr uint16_t MEDIUM_COVER_HEIGHT = 180;
 
-  static constexpr uint16_t LARGE_COVER_WIDTH  = 200;
-  static constexpr uint16_t LARGE_COVER_HEIGHT = 260;
+  static constexpr uint16_t LARGE_COVER_WIDTH  = 180;
+  static constexpr uint16_t LARGE_COVER_HEIGHT = 240;
 
   /**
    * @brief Single EBook Record

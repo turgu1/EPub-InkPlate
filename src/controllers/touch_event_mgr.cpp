@@ -14,9 +14,9 @@
   #include <cmath>
   #include <iostream>
 
+  #include "config.hpp"
   #include "controllers/app_controller.hpp"
   #include "logging.hpp"
-  #include "models/config.hpp"
   #include "viewers/page.hpp"
 
   const char *EventMgr::eventStr[9] = {"NONE",         "TAP",         "HOLD",

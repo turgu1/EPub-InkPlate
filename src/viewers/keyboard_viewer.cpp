@@ -22,7 +22,7 @@ auto KeyboardViewer::getAlfanum(char * str, uint16_t len, UpdateHandler handler)
   if (page.getComputeMode() == Page::ComputeMode::LOCATION) return false; // Cannot be used durint location computation
 
   fmt = {
-    .fontIndex         =   0,
+    .fontIndex         =  ICONS_FONT_INDEX,
     .fontSize          =  24,
     .marginTop         =  30,
     .screenLeft        =  (Screen::getWidth()  - width ) >> 1,
@@ -56,7 +56,7 @@ auto KeyboardViewer::getAlfanum(char * str, uint16_t len, UpdateHandler handler)
       fmt);
   }
   
-  fmt.fontIndex =  1;
+  fmt.fontIndex =  SYSTEM_REGULAR_FONT_INDEX;
   fmt.fontSize  = 10;
 
   // Title

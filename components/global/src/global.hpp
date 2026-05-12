@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include <int_to_str.hpp>
+#include <number_to_str.hpp>
 #include <strlcpy.hpp>
 
 #include "himem.hpp"
@@ -29,11 +29,15 @@
   1 ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
 
 #if EPUB_LINUX_BUILD
-  #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
+  #ifndef MAIN_FOLDER
+    #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
+  #endif
 #endif
 
 #if EPUB_INKPLATE_BUILD
-  #define MAIN_FOLDER "/sdcard"
+  #ifndef MAIN_FOLDER
+    #define MAIN_FOLDER "/sdcard"
+  #endif
   #define LOG_LOCAL_LEVEL EPUB_LOG_LEVEL
 #endif
 
@@ -127,14 +131,16 @@ struct Glyph {
   int16_t advance{0};
   int16_t pitch{0};
   int16_t lineHeight{0};
-  int16_t ligatureAndKernPgmIndex{255};
+  // int16_t ligatureAndKernPgmIndex{255};
+  uint16_t index{0};
   uint8_t *buffer{nullptr};
   auto clear() -> void {
     dim.height = dim.width = 0;
     xoff = yoff = 0;
     advance = pitch = lineHeight = 0;
-    ligatureAndKernPgmIndex      = 255;
-    buffer                       = nullptr;
+    index                        = 0;
+    // ligatureAndKernPgmIndex      = 255;
+    buffer = nullptr;
   }
   Glyph() = default;
 };

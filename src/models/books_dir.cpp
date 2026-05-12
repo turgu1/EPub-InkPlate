@@ -8,7 +8,7 @@
 #define __BOOKS_DIR__ 1
 #include "models/books_dir.hpp"
 
-#include "models/config.hpp"
+#include "config.hpp"
 #include "models/default_cover.hpp"
 #include "models/epub.hpp"
 #include "picture_factory.hpp"

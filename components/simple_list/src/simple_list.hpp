@@ -50,14 +50,10 @@ private:
   [[no_unique_address]] NodeAlloc alloc_;
 
   template <typename... Args>
-  Node *newNode(Args &&...args) {
+  Node *newNode(Args &&...args) noexcept {
     Node *p = NodeTraits::allocate(alloc_, 1);
-    try {
-      NodeTraits::construct(alloc_, p, std::forward<Args>(args)...);
-    } catch (...) {
-      NodeTraits::deallocate(alloc_, p, 1);
-      throw;
-    }
+    if (p == nullptr) return nullptr;
+    NodeTraits::construct(alloc_, p, std::forward<Args>(args)...);
     return p;
   }
 
@@ -217,6 +213,7 @@ public:
   /// Insert a copy at the front — O(1).
   void pushFront(const T &value) {
     Node *n = newNode(value);
+    if (n == nullptr) return;
     n->next = head_;
     head_   = n;
     if (tail_ == nullptr) tail_ = n;
@@ -225,6 +222,7 @@ public:
 
   void pushFront(T &&value) {
     Node *n = newNode(std::move(value));
+    if (n == nullptr) return;
     n->next = head_;
     head_   = n;
     if (tail_ == nullptr) tail_ = n;
@@ -232,18 +230,20 @@ public:
   }
 
   template <typename... Args>
-  T &emplaceFront(Args &&...args) {
+  T *emplaceFront(Args &&...args) {
     Node *n = newNode(std::forward<Args>(args)...);
+    if (n == nullptr) return nullptr;
     n->next = head_;
     head_   = n;
     if (tail_ == nullptr) tail_ = n;
     ++count_;
-    return n->value;
+    return &n->value;
   }
 
   /// Append a copy at the back — O(1).
   void pushBack(const T &value) {
     Node *n = newNode(value);
+    if (n == nullptr) return;
     if (tail_ == nullptr) {
       head_ = tail_ = n;
     } else {
@@ -255,6 +255,7 @@ public:
 
   void pushBack(T &&value) {
     Node *n = newNode(std::move(value));
+    if (n == nullptr) return;
     if (tail_ == nullptr) {
       head_ = tail_ = n;
     } else {
@@ -265,8 +266,9 @@ public:
   }
 
   template <typename... Args>
-  T &emplaceBack(Args &&...args) {
+  T *emplaceBack(Args &&...args) {
     Node *n = newNode(std::forward<Args>(args)...);
+    if (n == nullptr) return nullptr;
     if (tail_ == nullptr) {
       head_ = tail_ = n;
     } else {
@@ -274,7 +276,7 @@ public:
       tail_       = n;
     }
     ++count_;
-    return n->value;
+    return &n->value;
   }
 
   /// Remove the front element — O(1). UB if empty.
@@ -283,6 +285,22 @@ public:
     head_     = head_->next;
     if (head_ == nullptr) tail_ = nullptr;
     freeNode(old);
+    --count_;
+  }
+
+  void popBack() {
+    if (head_ == nullptr) return;
+    if (head_ == tail_) {
+      freeNode(head_);
+      head_ = tail_ = nullptr;
+      count_        = 0;
+      return;
+    }
+    Node *prev = head_;
+    while (prev->next != tail_) prev = prev->next;
+    freeNode(tail_);
+    tail_       = prev;
+    tail_->next = nullptr;
     --count_;
   }
 
