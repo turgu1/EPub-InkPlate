@@ -7,6 +7,7 @@
   #include <dirent.h>
   }
 
+  #include "fonts.hpp"
   #include "picture.hpp"
   #include "picture_factory.hpp"
   #include "screen.hpp"
@@ -47,8 +48,9 @@
         if (index < 0) index = -index;
         if (index >= picture_filenames.size()) index = picture_filenames.size() - 1;
         LOG_D("Showing picture at index %d: %s", index, picture_filenames[index].c_str());
-        auto pict = PictureFactory::create(
-            picture_filenames[index], Dim(Screen::getWidth(), Screen::getHeight()), true, true);
+        auto pict = PictureFactory::create(picture_filenames[index],
+                                           Dim(Screen::getWidth(), Screen::getHeight()), true,
+                                           appFonts.getFont(1), true);
         if (pict) {
           // pict->show();
           page->showCover(pict);

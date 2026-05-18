@@ -22,184 +22,111 @@ TTF::~TTF() {
 }
 
 auto TTF::clearFace() -> void {
-  LOG_D("Clearing TTF face and cache...");
+  LOG_D("Clearing TTF face...");
   if (face != nullptr && face->internal != nullptr) {
     FT_Done_Face(face);
     face = nullptr;
   }
 
-  clearCache();
   ready           = false;
   currentFontSize = -1;
 }
 
-auto TTF::getGlyphPx(char32_t charcode, int16_t pixelHeight) -> Glyph * {
-  if (!ready || pixelHeight <= 0) return nullptr;
-  return getGlyphInternal(charcode, pixelHeight, SizeMode::PIXEL);
-}
-
-auto TTF::getGlyphPx(char32_t charcode, char32_t nextCharcode, int16_t pixelHeight)
-    -> std::tuple<Glyph *, int16_t, bool> {
-
-  if (!ready || pixelHeight <= 0) return std::make_tuple(nullptr, 0, false);
-
-  bool ignoreNext = false;
-  int16_t kern    = 0;
-
-  char32_t resultCharcode = charcode;
-
-  if (nextCharcode != 0) {
-    for (int i = 0; i < ligaturesSize; ++i) {
-      const Ligature &lig = ligatures[i];
-
-      if (lig.firstChar > charcode) break;
-
-      if ((lig.firstChar == charcode) && (lig.nextChar == nextCharcode)) {
-        resultCharcode = lig.replacement;
-        ignoreNext     = true;
-        break;
-      }
-    }
-  }
-
-  Glyph *glyph = getGlyphInternal(resultCharcode, pixelHeight, SizeMode::PIXEL);
-
-  if (glyph == nullptr) {
-    ignoreNext = false;
-    glyph      = getGlyphInternal(charcode, pixelHeight, SizeMode::PIXEL);
-  }
-
-  if ((glyph != nullptr) && (nextCharcode != 0)) {
-    kern = getKern(*glyph, nextCharcode);
-  }
-
-  return std::make_tuple(glyph, kern, ignoreNext);
-}
-
-auto TTF::getGlyphInternal(char32_t charcode, int16_t glyphSize) -> Glyph * {
-  return getGlyphInternal(charcode, glyphSize, SizeMode::POINT);
-}
-
-auto TTF::getGlyphInternal(char32_t charcode, int16_t glyphSize, SizeMode mode) -> Glyph * {
+auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -> bool {
   int error;
   Glyphs::iterator git;
 
-  if (face == nullptr) return nullptr;
+  if (face == nullptr) return false;
 
-  const bool useCache = (mode == SizeMode::POINT);
-
-  const int16_t cacheKey = toCacheKey(glyphSize, mode);
-
-  if (useCache) {
-    GlyphsCache::iterator cacheIt = cache.find(cacheKey);
-    bool found = (cacheIt != cache.end()) &&
-                 ((git = cacheIt->second.find(charcode)) != cacheIt->second.end());
-    if (found) return git->second;
+  if (currentFontSize != glyphSize) {
+    if (!setFontSize(glyphSize)) return false;
   }
 
-  {
-    if ((currentFontSize != glyphSize) || (currentSizeMode != mode)) {
-      bool resized = (mode == SizeMode::PIXEL) ? setPixelSize(glyphSize) : setFontSize(glyphSize);
-      if (!resized) return nullptr;
+  int glyphIndex = FT_Get_Char_Index(face, charcode);
+  if (glyphIndex == 0) {
+    LOG_D("Charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, charcode,
+          fontsCacheIndex);
+    return false;
+  } else {
+    error = FT_Load_Glyph(face,             /* handle to face object */
+                          glyphIndex,       /* glyph index           */
+                          FT_LOAD_DEFAULT); /* load flags            */
+    if (error) {
+      LOG_E("Unable to load glyph for charcode: %" PRIu32 " from face: %s", charcode,
+            face->family_name ? face->family_name : "unknown");
+      return false;
     }
+  }
 
-    int glyphIndex = FT_Get_Char_Index(face, charcode);
-    if (glyphIndex == 0) {
-      LOG_D("Charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, charcode,
-            fontsCacheIndex);
-      return nullptr;
-    } else {
-      error = FT_Load_Glyph(face,             /* handle to face object */
-                            glyphIndex,       /* glyph index           */
-                            FT_LOAD_DEFAULT); /* load flags            */
-      if (error) {
-        LOG_E("Unable to load glyph for charcode: %" PRIu32 " from face: %s", charcode,
-              face->family_name ? face->family_name : "unknown");
-        return nullptr;
-      }
-    }
+  FT_GlyphSlot slot = face->glyph;
 
-    Glyph *glyph = bitmapGlyphPool.newElement();
+  glyph.index      = glyphIndex;
+  glyph.dim.width  = slot->metrics.width >> 6;
+  glyph.dim.height = slot->metrics.height >> 6;
+  glyph.lineHeight = face->size->metrics.height >> 6;
 
-    if (glyph == nullptr) {
-      LOG_E("Unable to allocate memory for glyph.");
-      return nullptr;
-    }
-
-    FT_GlyphSlot slot = face->glyph;
-
-    glyph->index      = glyphIndex;
-    glyph->dim.width  = slot->metrics.width >> 6;
-    glyph->dim.height = slot->metrics.height >> 6;
-    glyph->lineHeight = face->size->metrics.height >> 6;
-
-    if (glyphLoadMode_ == GlyphLoadMode::WITH_BITMAP) {
-      if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-        const bool useMonoRender =
-            (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) &&
-            !isAntialiasingPreferred();
-        if (useMonoRender) {
-          error = FT_Render_Glyph(face->glyph,          // glyph slot
-                                  FT_RENDER_MODE_MONO); // render mode
-        } else {
-          error = FT_Render_Glyph(face->glyph,            // glyph slot
-                                  FT_RENDER_MODE_NORMAL); // render mode
-        }
-
-        if (error) {
-          LOG_E("Unable to render glyph for charcode: %" PRIu32 " error: %d", charcode, error);
-          return nullptr;
-        }
-      }
-
-      glyph->pitch      = slot->bitmap.pitch;
-      glyph->dim.height = slot->bitmap.rows;
-      glyph->dim.width  = slot->bitmap.width;
-      glyph->lineHeight = face->size->metrics.height >> 6;
-
-      int32_t size = glyph->pitch * glyph->dim.height;
-
-      if (size > 0) {
-        glyph->buffer = bytePoolAlloc(size);
-
-        if (glyph->buffer == nullptr) {
-          LOG_E("Unable to allocate memory for glyph.");
-          return nullptr;
-        }
-
-        memcpy(glyph->buffer, slot->bitmap.buffer, size);
+  if (glyphLoadMode == GlyphLoadMode::WITH_BITMAP) {
+    if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+      const bool useMonoRender =
+          (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) &&
+          !isAntialiasingPreferred();
+      if (useMonoRender) {
+        error = FT_Render_Glyph(face->glyph,          // glyph slot
+                                FT_RENDER_MODE_MONO); // render mode
       } else {
-        glyph->buffer = nullptr;
+        error = FT_Render_Glyph(face->glyph,            // glyph slot
+                                FT_RENDER_MODE_NORMAL); // render mode
       }
 
-      glyph->xoff = slot->bitmap_left;
-      glyph->yoff = -slot->bitmap_top;
+      if (error) {
+        LOG_E("Unable to render glyph for charcode: %" PRIu32 " error: %d", charcode, error);
+        return false;
+      }
+    }
+
+    glyph.pitch      = slot->bitmap.pitch;
+    glyph.dim.height = slot->bitmap.rows;
+    glyph.dim.width  = slot->bitmap.width;
+    glyph.lineHeight = face->size->metrics.height >> 6;
+
+    int32_t size = glyph.pitch * glyph.dim.height;
+
+    if (size > 0) {
+      glyph.buffer = bytePoolAlloc(size);
+
+      if (glyph.buffer == nullptr) {
+        LOG_E("Unable to allocate memory for glyph.");
+        return false;
+      }
+
+      memcpy(glyph.buffer, slot->bitmap.buffer, size);
     } else {
-      // METRICS_ONLY: skip rasterization and buffer allocation
-      glyph->buffer = nullptr;
-      glyph->pitch  = 0;
-      glyph->xoff   = slot->metrics.horiBearingX >> 6;
-      glyph->yoff   = -(slot->metrics.horiBearingY >> 6);
+      glyph.buffer = nullptr;
     }
 
-    glyph->advance = slot->advance.x >> 6;
-
-    // std::cout << "Glyph: " <<
-    //   " w:"  << glyph->dim.width <<
-    //   " bw:" << slot->bitmap.width <<
-    //   " h:"  << glyph->dim.height <<
-    //   " br:" << slot->bitmap.rows <<
-    //   " p:"  << glyph->pitch <<
-    //   " x:"  << glyph->xoff <<
-    //   " y:"  << glyph->yoff <<
-    //   " a:"  << glyph->advance << std::endl;
-
-    if (useCache) {
-      getOrCreateGlyphs(cacheKey)[charcode] = glyph;
-    }
-
-    return glyph;
+    glyph.xoff = slot->bitmap_left;
+    glyph.yoff = -slot->bitmap_top;
+  } else {
+    // METRICS_ONLY: skip rasterization and buffer allocation
+    glyph.buffer = nullptr;
+    glyph.pitch  = 0;
+    glyph.xoff   = slot->metrics.horiBearingX >> 6;
+    glyph.yoff   = -(slot->metrics.horiBearingY >> 6);
   }
+
+  glyph.advance = slot->advance.x >> 6;
+
+  // std::cout << "Glyph: " <<
+  //   " w:"  << glyph.dim.width <<
+  //   " bw:" << slot->bitmap.width <<
+  //   " h:"  << glyph.dim.height <<
+  //   " br:" << slot->bitmap.rows <<
+  //   " p:"  << glyph.pitch <<
+  //   " x:"  << glyph.xoff <<
+  //   " y:"  << glyph.yoff <<
+  //   " a:"  << glyph.advance << std::endl;
+
+  return true;
 }
 
 auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
@@ -230,32 +157,18 @@ auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
 }
 
 auto TTF::setFontSize(int16_t size) -> bool {
-  int error = FT_Set_Char_Size(face,                // handle to face object
-                               0,                   // char_width in 1/64th of points
-                               size * 64,           // char_height in 1/64th of points
-                               Screen::RESOLUTION,  // horizontal device resolution
-                               Screen::RESOLUTION); // vertical device resolution
-
+  int error = (currentSizeUnit == SizeUnit::POINTS)
+                  ? FT_Set_Char_Size(face,               // handle to face object
+                                     0,                  // char_width in 1/64th of points
+                                     size * 64,          // char_height in 1/64th of points
+                                     Screen::RESOLUTION, // horizontal device resolution
+                                     Screen::RESOLUTION) // vertical device resolution
+                  : FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(size));
   if (error) {
-    LOG_E("Unable to set font size.");
+    LOG_E("Unable to set font size Error code: %d", error);
     return false;
   }
 
-  currentFontSize = size;
-  currentSizeMode = SizeMode::POINT;
-  return true;
-}
-
-auto TTF::setPixelSize(int16_t size) -> bool {
-  int error = FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(size));
-
-  if (error) {
-    LOG_E("Unable to set pixel font size.");
-    return false;
-  }
-
-  currentFontSize = size;
-  currentSizeMode = SizeMode::PIXEL;
   return true;
 }
 

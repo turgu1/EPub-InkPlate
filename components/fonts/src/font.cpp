@@ -23,14 +23,30 @@ Font::Font() {
   ready           = false;
 }
 
-auto Font::getOrCreateGlyphs(int16_t glyphSize) -> Glyphs & {
-  auto it = cache.find(glyphSize);
-  if (it != cache.end()) return it->second;
+auto Font::getOrCreateGlyph(char32_t charcode, int16_t glyphSize) -> Glyph * {
+  auto key = toCacheKey(glyphSize, currentSizeUnit);
 
-  Glyphs glyphs(0, std::hash<uint32_t>{}, std::equal_to<uint32_t>{},
-                GlyphsAlloc{glyphsMapPool.get()});
-  it = cache.emplace(glyphSize, std::move(glyphs)).first;
-  return it->second;
+  auto it = cache.find(key);
+  if (it == cache.end()) {
+    Glyphs glyphs(0, std::hash<uint32_t>{}, std::equal_to<uint32_t>{},
+                  GlyphsAlloc{glyphsMapPool.get()});
+    it = cache.emplace(key, std::move(glyphs)).first;
+  }
+
+  auto git = it->second.find(charcode);
+  if (git != it->second.end()) return git->second;
+
+  Glyph *glyph = it->second.emplace(charcode, bitmapGlyphPool.allocate()).first->second;
+
+  if ((glyph == nullptr) || !getGlyphInternal(*glyph, charcode, glyphSize)) {
+    if (glyph != nullptr) {
+      bitmapGlyphPool.deleteElement(glyph);
+    }
+    it->second.erase(charcode);
+    return nullptr;
+  }
+
+  return glyph;
 }
 
 auto Font::addBuffToBytePool() -> void {
@@ -81,12 +97,7 @@ auto Font::clearCache() -> void {
 
 auto Font::getGlyph(char32_t charcode, int16_t glyphSize) -> Glyph * {
 
-  return ready ? getGlyphInternal(charcode, glyphSize) : nullptr;
-}
-
-auto Font::getGlyphPx(char32_t charcode, int16_t pixelHeight) -> Glyph * {
-
-  return getGlyph(charcode, pixelHeight);
+  return ready ? getOrCreateGlyph(charcode, glyphSize) : nullptr;
 }
 
 auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
@@ -113,11 +124,11 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
     }
   }
 
-  Glyph *glyph = getGlyphInternal(resultCharcode, glyphSize);
+  Glyph *glyph = getOrCreateGlyph(resultCharcode, glyphSize);
 
   if (glyph == nullptr) {
     ignoreNext = false;
-    glyph      = getGlyphInternal(charcode, glyphSize);
+    glyph      = getOrCreateGlyph(charcode, glyphSize);
   }
 
   if ((glyph != nullptr) && (nextCharcode != 0)) {
@@ -125,12 +136,6 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
   }
 
   return std::make_tuple(glyph, kern, ignoreNext);
-}
-
-auto Font::getGlyphPx(char32_t charcode, char32_t nextCharcode, int16_t pixelHeight)
-    -> std::tuple<Glyph *, int16_t, bool> {
-
-  return getGlyph(charcode, nextCharcode, pixelHeight);
 }
 
 auto Font::getSize(const char *str, Dim *dim, int16_t glyphSize) -> void {
@@ -143,7 +148,7 @@ auto Font::getSize(const char *str, Dim *dim, int16_t glyphSize) -> void {
     dim->width = 0;
 
     while (*str) {
-      Glyph *glyph = getGlyphInternal(*str++, glyphSize);
+      Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
       if (glyph != nullptr) {
         dim->width += glyph->advance;
 

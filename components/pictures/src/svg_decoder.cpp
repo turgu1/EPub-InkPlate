@@ -71,45 +71,44 @@ auto onPngInit(pngle_t *pngle, uint32_t w, uint32_t h) -> void {
 }
 
 #ifdef PNGLE_GRAYSCALE_OUTPUT
-  auto onPngDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha) -> void {
-    if (pngle == nullptr) return;
-    auto *ctx = static_cast<PngDecodeContext *>(mypngle_get_user_data(pngle));
-    if (ctx == nullptr || ctx->image == nullptr) return;
-    if (x >= static_cast<uint32_t>(ctx->image->width) ||
-        y >= static_cast<uint32_t>(ctx->image->height))
-      return;
+auto onPngDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t alpha) -> void {
+  if (pngle == nullptr) return;
+  auto *ctx = static_cast<PngDecodeContext *>(mypngle_get_user_data(pngle));
+  if (ctx == nullptr || ctx->image == nullptr) return;
+  if (x >= static_cast<uint32_t>(ctx->image->width) ||
+      y >= static_cast<uint32_t>(ctx->image->height))
+    return;
 
-    const uint8_t out = static_cast<uint8_t>(
-        (static_cast<uint32_t>(alpha) * pix + static_cast<uint32_t>(255U - alpha) * 255U) / 255U);
-    ctx->image->pixels[static_cast<std::size_t>(y) * static_cast<std::size_t>(ctx->image->width) +
-                       static_cast<std::size_t>(x)] = out;
-  }
+  const uint8_t out = static_cast<uint8_t>(
+      (static_cast<uint32_t>(alpha) * pix + static_cast<uint32_t>(255U - alpha) * 255U) / 255U);
+  ctx->image->pixels[static_cast<std::size_t>(y) * static_cast<std::size_t>(ctx->image->width) +
+                     static_cast<std::size_t>(x)] = out;
+}
 #else
-  auto onPngDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t rgba[4])
-      -> void {
-    if (pngle == nullptr) return;
-    auto *ctx = static_cast<PngDecodeContext *>(mypngle_get_user_data(pngle));
-    if (ctx == nullptr || ctx->image == nullptr || rgba == nullptr) return;
+auto onPngDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t rgba[4])
+    -> void {
+  if (pngle == nullptr) return;
+  auto *ctx = static_cast<PngDecodeContext *>(mypngle_get_user_data(pngle));
+  if (ctx == nullptr || ctx->image == nullptr || rgba == nullptr) return;
 
-    const uint8_t alpha   = rgba[3];
-    const uint8_t srcGray = static_cast<uint8_t>((77U * static_cast<uint32_t>(rgba[0]) +
-                                                  150U * static_cast<uint32_t>(rgba[1]) +
-                                                  29U * static_cast<uint32_t>(rgba[2])) >>
-                                                 8U);
-    const uint8_t out     = static_cast<uint8_t>(
-        (static_cast<uint32_t>(alpha) * srcGray + static_cast<uint32_t>(255U - alpha) * 255U) /
-        255U);
+  const uint8_t alpha   = rgba[3];
+  const uint8_t srcGray = static_cast<uint8_t>((77U * static_cast<uint32_t>(rgba[0]) +
+                                                150U * static_cast<uint32_t>(rgba[1]) +
+                                                29U * static_cast<uint32_t>(rgba[2])) >>
+                                               8U);
+  const uint8_t out     = static_cast<uint8_t>(
+      (static_cast<uint32_t>(alpha) * srcGray + static_cast<uint32_t>(255U - alpha) * 255U) / 255U);
 
-    for (uint32_t yy = y; yy < y + h; ++yy) {
-      if (yy >= static_cast<uint32_t>(ctx->image->height)) continue;
-      for (uint32_t xx = x; xx < x + w; ++xx) {
-        if (xx >= static_cast<uint32_t>(ctx->image->width)) continue;
-        ctx->image
-            ->pixels[static_cast<std::size_t>(yy) * static_cast<std::size_t>(ctx->image->width) +
-                     static_cast<std::size_t>(xx)] = out;
-      }
+  for (uint32_t yy = y; yy < y + h; ++yy) {
+    if (yy >= static_cast<uint32_t>(ctx->image->height)) continue;
+    for (uint32_t xx = x; xx < x + w; ++xx) {
+      if (xx >= static_cast<uint32_t>(ctx->image->width)) continue;
+      ctx->image
+          ->pixels[static_cast<std::size_t>(yy) * static_cast<std::size_t>(ctx->image->width) +
+                   static_cast<std::size_t>(xx)] = out;
     }
   }
+}
 #endif
 
 auto decodeBase64(std::string_view text, std::vector<uint8_t> &out) -> bool {
@@ -1648,7 +1647,7 @@ auto SvgDecoder::plot(int32_t x, int32_t y, uint8_t gray, uint8_t alpha) -> void
   if (x < 0 || y < 0 || x >= outputWidth_ || y >= outputHeight_) return;
   auto *dst = bitmap_.get() + static_cast<std::size_t>(y) * static_cast<std::size_t>(outputWidth_) +
               static_cast<std::size_t>(x);
-  *dst      = blendGray(*dst, gray, alpha);
+  *dst = blendGray(*dst, gray, alpha);
 }
 
 auto SvgDecoder::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint8_t gray,
@@ -1949,7 +1948,7 @@ auto SvgDecoder::renderLine(const pugi::xml_node &node, const PaintState &state,
   const auto markerStart             = std::string_view(markerStartValue);
   const auto markerEnd               = std::string_view(markerEndValue);
   const auto drawMarker              = [&](int32_t px, int32_t py, int32_t dx, int32_t dy,
-                                           std::string_view marker) {
+                              std::string_view marker) {
     if (marker.empty() || marker == "none") return;
     if (dx == 0 && dy == 0) {
       dx = 1;
@@ -2385,7 +2384,7 @@ auto SvgDecoder::renderText(const pugi::xml_node &node, const PaintState &state,
         charcode = ' ';
       }
 
-      Glyph *glyph = font_->getGlyphPx(charcode, glyphSize);
+      Glyph *glyph = font_->getGlyph(charcode, glyphSize);
 
       int16_t advance = 0;
       if (glyph != nullptr) {
@@ -2735,8 +2734,8 @@ auto SvgDecoder::renderPath(const pugi::xml_node &node, const PaintState &state,
     const float pyn    = ux;
 
     if (isMarkerLike(marker)) {
-      const int32_t radius = std::max(static_cast<int32_t>(1),
-                                      mapStrokeWidth(markerState.strokeWidth, markerState, scale));
+      const int32_t radius      = std::max(static_cast<int32_t>(1),
+                                           mapStrokeWidth(markerState.strokeWidth, markerState, scale));
       const auto circleCoverage = [](float dist, float r) -> float {
         const float edge       = 1.0;
         const float signedDist = r - dist;

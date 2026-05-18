@@ -31,3 +31,5 @@ valgrind.log
 SDCard-Save
 vgcore.*
 report.*
+test/results/*
+*.log

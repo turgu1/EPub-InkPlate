@@ -9,10 +9,12 @@
   #include <esp_pthread.h>
 #else
   #include <mqueue.h>
+  #include <time.h>
 #endif
 
 #include <atomic>
 #include <thread>
+#include <vector>
 
 class PageLocsControl;
 
@@ -40,19 +42,38 @@ public:
     uint8_t reserved{0};
     int16_t itemrefIndex{0};
     int16_t itemrefCount{0};
+    uint32_t correlationId{0}; // Hardening #1: correlation ID for tracking
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
       (void)timeout;
       QueueData wireData{};
-      wireData.req          = data.req;
-      wireData.reserved     = 0;
-      wireData.itemrefIndex = data.itemrefIndex;
-      wireData.itemrefCount = data.itemrefCount;
-      return mq_send(controlQueue, (const char *)&wireData, sizeof(wireData), 1);
+      wireData.req           = data.req;
+      wireData.reserved      = 0;
+      wireData.itemrefIndex  = data.itemrefIndex;
+      wireData.itemrefCount  = data.itemrefCount;
+      wireData.correlationId = data.correlationId;
+      return mq_send(managerQueue, (const char *)&wireData, sizeof(wireData), 1);
     #else
-      return xQueueSendToBack(controlQueue, &data, timeout);
+      return xQueueSendToBack(managerQueue, &data, timeout);
+    #endif
+  }
+
+  // Retriever notifications use a dedicated queue to avoid starvation/mixing
+  // with manager commands (GET_ASAP/STOP/PERCENT).
+  static inline auto sendFromRetriever(const QueueData data, int timeout = 0) {
+    #if EPUB_LINUX_BUILD
+      (void)timeout;
+      QueueData wireData{};
+      wireData.req           = data.req;
+      wireData.reserved      = 0;
+      wireData.itemrefIndex  = data.itemrefIndex;
+      wireData.itemrefCount  = data.itemrefCount;
+      wireData.correlationId = data.correlationId;
+      return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
+    #else
+      return xQueueSendToBack(retrieverQueue, &data, timeout);
     #endif
   }
 
@@ -78,23 +99,54 @@ private:
   int16_t waitingForItemref{-1};             // Current item being processed by retrieval task
   int16_t nextItemrefToGet{-1};              // Non prioritize item to get next
   int16_t asapItemref{-1};                   // Prioritize item to get next
+  std::vector<uint32_t> asapCorrelationIds;  // Correlations for pending ASAP manager replies
   HimemUniquePtr<uint8_t[]> bitset{nullptr}; // Set of all items processed so far
   uint8_t bitsetSize{0};                     // bitset byte length
 
   PageLocsRetriever retrieverTask;
 
   #if EPUB_LINUX_BUILD
-    static mqd_t controlQueue;
-    static constexpr mq_attr controlAttr = {0, 5, sizeof(QueueData), 0};
+    static mqd_t managerQueue;
+    static mqd_t retrieverQueue;
+    static constexpr mq_attr queueAttr = {0, 5, sizeof(QueueData), 0};
   #else
-    static QueueHandle_t controlQueue;
+    static QueueHandle_t managerQueue;
+    static QueueHandle_t retrieverQueue;
   #endif
 
-  auto receive(QueueData &data, int timeout = -1) {
+  auto receiveFromManager(QueueData &data, int timeout = -1) {
     #if EPUB_LINUX_BUILD
-      return mq_receive(controlQueue, (char *)&data, sizeof(data), nullptr);
+      if (timeout <= 0) {
+        return mq_receive(managerQueue, (char *)&data, sizeof(data), nullptr);
+      }
+
+      timespec ts{};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      const int64_t nsecTotal =
+          static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
+      ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+      ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+      return mq_timedreceive(managerQueue, (char *)&data, sizeof(data), nullptr, &ts);
     #else
-      return xQueueReceive(controlQueue, &data, timeout);
+      return xQueueReceive(managerQueue, &data, timeout);
+    #endif
+  }
+
+  auto receiveFromRetriever(QueueData &data, int timeout = -1) {
+    #if EPUB_LINUX_BUILD
+      if (timeout <= 0) {
+        return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
+      }
+
+      timespec ts{};
+      clock_gettime(CLOCK_REALTIME, &ts);
+      const int64_t nsecTotal =
+          static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
+      ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+      ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+      return mq_timedreceive(retrieverQueue, (char *)&data, sizeof(data), nullptr, &ts);
+    #else
+      return xQueueReceive(retrieverQueue, &data, timeout);
     #endif
   }
 
@@ -116,6 +168,8 @@ private:
    *                         avoiding duplicate manager notification.
    */
   auto requestNextItem(int16_t itemref, bool alreadySentToMgr = false) -> void;
+  auto sendPendingAsapReplies(int16_t itemref, const char *ctx, bool alreadySentToMgr = false)
+      -> void;
 
   std::thread controlThread;
   auto task() -> void;

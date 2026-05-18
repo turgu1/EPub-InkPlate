@@ -12,17 +12,13 @@
 #include <utility>
 #include <vector>
 
-enum class SvgOption : uint8_t {
-  SCALE_HALF, SCALE_QUARTER, SCALE_EIGHTH, Count
-};
+enum class SvgOption : uint8_t { SCALE_HALF, SCALE_QUARTER, SCALE_EIGHTH, Count };
 
 using SvgOptions = std::bitset<static_cast<uint8_t>(SvgOption::Count)>;
 
 #define SVG_OPTION(opt) static_cast<uint8_t>(SvgOption::opt)
 
-enum class SvgError : uint8_t {
-  SUCCESS, INVALID_PARAM, INVALID_FILE, PARSE_ERROR, DECODE_ERROR
-};
+enum class SvgError : uint8_t { SUCCESS, INVALID_PARAM, INVALID_FILE, PARSE_ERROR, DECODE_ERROR };
 
 struct SvgDraw {
   int32_t x{0};
@@ -38,8 +34,15 @@ using SvgDrawCallback = int32_t (*)(SvgDraw *pDraw);
 
 class SvgDecoder {
 public:
-  SvgDecoder(FontPtr &font) : font_(font) { font_->setPreferAntialiasing(true); }
-  ~SvgDecoder() { font_->setPreferAntialiasing(false); }
+  SvgDecoder(FontPtr &font) : font_(font) {
+    font_->setPreferAntialiasing(true);
+    font_->setCurrentSizeUnit(Font::SizeUnit::PIXELS);
+  }
+
+  ~SvgDecoder() {
+    font_->setPreferAntialiasing(false);
+    font_->setCurrentSizeUnit(Font::SizeUnit::POINTS);
+  }
 
   auto openRAM(const uint8_t *pData, int32_t iDataSize, SvgDrawCallback pfnDraw) -> int32_t;
   auto close() -> void;

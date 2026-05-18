@@ -11,24 +11,30 @@
 #include "himem_pool.hpp"
 
 #include <forward_list>
-#include <unordered_map>
 // #include <mutex>
 
 using FontPtr = HimemUniquePtr<class Font>;
 
 class Font {
+public:
+  Font();
+  virtual ~Font() { clearCache(); }
+
+  [[nodiscard]] inline auto isReady() const -> bool { return ready; }
+
+  enum class SizeUnit : uint8_t {
+    POINTS, ///< Size in points (1/72th of an inch)
+    PIXELS, ///< Size in pixels
+  };
 
 private:
   static constexpr char const *TAG = "Font";
 
-  // std::mutex mutex;
+  static constexpr auto toCacheKey(int16_t size, SizeUnit unit) -> int16_t {
+    return (unit == SizeUnit::PIXELS) ? static_cast<int16_t>(-size) : size;
+  }
 
 public:
-  Font();
-  virtual ~Font() {}
-
-  [[nodiscard]] inline auto isReady() const -> bool { return ready; }
-
   /**
    * @brief Get a glyph object
    *
@@ -37,45 +43,36 @@ public:
    * already there.
    *
    * @param charcode Character code as a unicode number.
-   * @return Glyph The glyph associated to the unicode character.
+   * @param nextCharcode Next character code (for ligatures and kerning), or 0 if none.
+   * @param glyphSize Size of the glyph.
+   * @param unit Unit of the glyph size (points or pixels).
+   * @return Glyph The glyph associated to the unicode character,
+   *         boolean indicating if nextCharCode is to be ignored (ligature conversion).
    */
-  // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  //   virtual Glyph * getGlyph(char32_t charcode, int16_t glyph_size, bool debugging = false);
-  // #else
-  virtual auto getGlyph(char32_t charcode, int16_t glyphSize) -> Glyph *;
-  // #endif
-
-  /**
-   * @brief Get a glyph using an explicit pixel height.
-   *
-   * Default implementation falls back to getGlyph(). Font backends that
-   * support pixel sizing (like FreeType) should override this method.
-   */
-  virtual auto getGlyphPx(char32_t charcode, int16_t pixelHeight) -> Glyph *;
 
   virtual auto getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
       -> std::tuple<Glyph *, int16_t, bool>;
 
-  virtual auto getGlyphPx(char32_t charcode, char32_t nextCharcode, int16_t pixelHeight)
-      -> std::tuple<Glyph *, int16_t, bool>;
+  virtual auto getGlyph(char32_t charcode, int16_t glyphSize) -> Glyph *;
 
   auto clearCache() -> void;
 
   auto getSize(const char *str, Dim *dim, int16_t glyphSize) -> void;
 
   enum class GlyphLoadMode : uint8_t {
-    METRICS_ONLY,   ///< Only metric fields; buffer == nullptr
-        WITH_BITMAP ///< Full glyph including rasterized bitmap (default)
+    METRICS_ONLY, ///< Only metric fields; buffer == nullptr
+    WITH_BITMAP   ///< Full glyph including rasterized bitmap (default)
   };
 
-  auto setGlyphLoadMode(GlyphLoadMode mode) -> void { glyphLoadMode_ = mode; }
-  [[nodiscard]] auto getGlyphLoadMode() const -> GlyphLoadMode { return glyphLoadMode_; }
+  auto setGlyphLoadMode(GlyphLoadMode mode) -> void { glyphLoadMode = mode; }
+  [[nodiscard]] auto getGlyphLoadMode() const -> GlyphLoadMode { return glyphLoadMode; }
+
   auto setPreferAntialiasing(bool enabled) -> void {
-    if (preferAntialiasing_ == enabled) return;
-    preferAntialiasing_ = enabled;
+    if (preferAntialiasing == enabled) return;
+    preferAntialiasing = enabled;
     clearCache();
   }
-  [[nodiscard]] auto isAntialiasingPreferred() const -> bool { return preferAntialiasing_; }
+  [[nodiscard]] auto isAntialiasingPreferred() const -> bool { return preferAntialiasing; }
 
   [[nodiscard]] auto getGlyphCacheLevelCount() const -> std::size_t { return cache.size(); }
 
@@ -95,7 +92,11 @@ public:
 
   inline auto setFontsCacheIndex(int16_t index) -> void { fontsCacheIndex = index; }
   [[nodiscard]] inline auto getFontsCacheIndex() -> int16_t { return fontsCacheIndex; }
+
   auto bytePoolAlloc(uint16_t size) -> uint8_t *;
+
+  inline auto setCurrentSizeUnit(SizeUnit unit) -> void { currentSizeUnit = unit; }
+  [[nodiscard]] inline auto getCurrentSizeUnit() const -> SizeUnit { return currentSizeUnit; }
 
   /**
    * @brief Face normal line height
@@ -110,7 +111,7 @@ public:
    *
    */
   virtual auto getCharsHeight(int16_t glyphSize) -> int32_t {
-    const Glyph *g = getGlyphInternal('E', glyphSize);
+    const Glyph *g = getOrCreateGlyph('E', glyphSize);
     return (g == nullptr) ? 0 : (g->dim.height - getDescenderHeight(glyphSize));
   };
 
@@ -159,16 +160,19 @@ protected:
       std::unordered_map<uint32_t, Glyph *, std::hash<uint32_t>, std::equal_to<uint32_t>,
                          GlyphsAlloc>; ///< Cache for glyph pointers, allocated from a pool
   using GlyphsCache = HimemUnorderedMap<int16_t, Glyphs>;
-  using BytePool    = uint8_t[BYTE_POOL_SIZE];
-  using BytePools   = std::forward_list<BytePool *>;
+
+  using BytePool  = uint8_t[BYTE_POOL_SIZE];
+  using BytePools = std::forward_list<BytePool *>;
 
   GlyphsCache cache;
   CharPoolPtr glyphsMapPool{nullptr};
   int16_t fontsCacheIndex;
+
   int8_t currentFontSize;
   bool ready;
-  GlyphLoadMode glyphLoadMode_{GlyphLoadMode::WITH_BITMAP};
-  bool preferAntialiasing_{false};
+  GlyphLoadMode glyphLoadMode{GlyphLoadMode::WITH_BITMAP};
+  bool preferAntialiasing{false};
+  SizeUnit currentSizeUnit{SizeUnit::POINTS};
 
   HimemPool<Glyph> bitmapGlyphPool{100};
 
@@ -176,43 +180,8 @@ protected:
   uint16_t bytePoolIdx;
 
   auto addBuffToBytePool() -> void;
-  auto getOrCreateGlyphs(int16_t glyphSize) -> Glyphs &;
+  auto getOrCreateGlyph(char32_t charcode, int16_t glyphSize) -> Glyph *;
 
-  // /**
-  //  * @brief Set the font face object
-  //  *
-  //  * Get a font file loaded and ready to supply glyphs.
-  //  *
-  //  * @param fontFilename The filename of the font.
-  //  * @return true The font was found and retrieved
-  //  * @return false Some error (file not found, unsupported format)
-  //  */
-  // auto setFontFaceFromFile(const std::string fontFilename) -> bool;
-
-  /**
-   * @brief Set the font size
-   *
-   * Set the font size. This will be used to set various general metrics
-   * required from the font structure.
-   *
-   * @param size The size of the glyphs in points (1/72th of an inch).
-   * @return true The font was resized.
-   * @return false Not able to resize the font.
-   */
-  auto setFontSize(int16_t size) -> bool;
-
-  // /**
-  //  * @brief Set the font face object
-  //  *
-  //  * Get a font from memory loaded and ready to supply glyphs. Note
-  //  * that the buffer will be freed when the face will be removed.
-  //  *
-  //  * @param buffer The buffer containing the font.
-  //  * @param size   The buffer size in bytes.
-  //  * @return true The font was found and retrieved.
-  //  * @return false Some error (file not found, unsupported format).
-  //  */
-  // virtual auto setFontFace(const FontFaceDescriptorPtr *descr) -> bool            = 0;
-  virtual auto getGlyphInternal(char32_t charcode, int16_t glyphSize) -> Glyph * = 0;
-  virtual auto getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t           = 0;
+  virtual auto getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -> bool = 0;
+  virtual auto getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t                      = 0;
 };

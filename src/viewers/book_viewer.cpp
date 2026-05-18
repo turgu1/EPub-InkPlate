@@ -77,7 +77,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
       title_baseline_offset = page_top + title_font->getDescenderHeight(TITLE_FONT_SIZE);
     }
 
-    if ((idx = epub->getFonts().getIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
+    if ((idx = epub->getFonts().getFontIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
 
@@ -100,10 +100,10 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     interp->setLimits(pageId.offset, pageId.offset + page_info->size,
                       epub->getBookFormatParams()->showPictures != 0);
 
-    #if DEBUGGING_AID
-      interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
-      interp->checkPageToShow(pageLocs.getPageNbr(pageId));
-    #endif
+#if DEBUGGING_AID
+    interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
+    interp->checkPageToShow(pageLocs.getPageNbr(pageId));
+#endif
 
     xml_node node;
 

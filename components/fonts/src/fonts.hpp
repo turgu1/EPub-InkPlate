@@ -4,14 +4,11 @@
 
 #pragma once
 
+#include "char_pool.hpp"
+#include "font.hpp"
 #include "global.hpp"
 #include "himem.hpp"
 
-#include "char_pool.hpp"
-
-#include "font.hpp"
-
-// #include <mutex>
 #include <vector>
 
 #define FT_DEBUG_LOGGING 1
@@ -113,7 +110,7 @@ public:
    * @return Index number related to a font name and a face style.
    *         If not found, returns -1.
    */
-  auto getIndex(const HimemString &name, FaceStyle style) -> int16_t;
+  auto getFontIndex(const HimemString &name, FaceStyle style) -> int16_t;
 
   auto replace(int16_t index, const FontFaceDescriptorPtr &descr) -> bool;
 
@@ -174,15 +171,14 @@ public:
 
 private:
   using FontCache = std::vector<FontEntryPtr>;
-  Font::GlyphLoadMode defaultGlyphLoadMode_{Font::GlyphLoadMode::WITH_BITMAP};
+  Font::GlyphLoadMode defaultGlyphLoadMode{Font::GlyphLoadMode::WITH_BITMAP};
   FontCache fontCache;
-  // std::mutex mutex;
 
   CharPoolPtr charPool{nullptr};
 };
 
 #if __FONTS__
-  Fonts appFonts(true);
+Fonts appFonts(true);
 #else
-  extern Fonts appFonts;
+extern Fonts appFonts;
 #endif

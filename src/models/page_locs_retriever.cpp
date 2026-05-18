@@ -2,21 +2,44 @@
 
 #include "config.hpp"
 #include "fonts.hpp"
+#include "models/page_locs.hpp"
 #include "models/page_locs_interpreter.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
+
+namespace {
+constexpr const char *TAG         = "PageLocsRetriever";
+constexpr int kControlSendRetries = 3;
+
+auto sendToControlChecked(const PageLocsControl::QueueData &msg, const char *ctx,
+                          bool critical = false) -> bool {
+  const int attempts = critical ? kControlSendRetries : 1;
+  for (int i = 0; i < attempts; ++i) {
+    if (PageLocsControl::sendFromRetriever(msg) >= 0) return true;
+    pageLocs.telemetry.queueSendFailures.fetch_add(1);
+    LOG_W("%s: PageLocsControl::sendFromRetriever failed (attempt %d/%d)", ctx, i + 1, attempts);
+  }
+  if (critical) {
+    LOG_E("%s: critical control send failed after retries", ctx);
+  }
+  return false;
+}
+} // namespace
 
 #if EPUB_INKPLATE_BUILD
   #include "esp.hpp"
   #include "freertos/task.h"
 
-  QueueHandle_t PageLocsRetriever::retrieverQueue{nullptr};
+QueueHandle_t PageLocsRetriever::retrieverQueue{nullptr};
 #else
   #include <mqueue.h>
 
-  mqd_t PageLocsRetriever::retrieverQueue{-1};
+mqd_t PageLocsRetriever::retrieverQueue{-1};
 #endif
 
+/**
+ * Initialize retriever dependencies, queue, and worker thread.
+ */
 auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
 
   epub = EPub::Make();
@@ -36,98 +59,111 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
     return false;
   }
 
-  #if EPUB_LINUX_BUILD
-    mq_unlink("/retriever");
+#if EPUB_LINUX_BUILD
+  mq_unlink("/retriever");
 
-    retrieverQueue = mq_open("/retriever", O_RDWR | O_CREAT, S_IRWXU, &retrieverAttr);
-    if (retrieverQueue == -1) {
-      LOG_E("Unable to open retrieverQueue: %d", errno);
+  retrieverQueue = mq_open("/retriever", O_RDWR | O_CREAT, S_IRWXU, &retrieverAttr);
+  if (retrieverQueue == -1) {
+    LOG_E("Unable to open retrieverQueue: %d", errno);
+    return false;
+  }
+
+  retrieverThread = std::thread(&PageLocsRetriever::task, this);
+#else
+  if (retrieverQueue == nullptr) {
+    retrieverQueue = xQueueCreate(5, sizeof(PageLocsRetriever::QueueData));
+    if (retrieverQueue == nullptr) {
+      LOG_E("Unable to create retrieverQueue");
       return false;
     }
+  } else {
+    xQueueReset(retrieverQueue);
+  }
 
-    retrieverThread = std::thread(&PageLocsRetriever::task, this);
-  #else
-    if (retrieverQueue == nullptr) {
-      retrieverQueue = xQueueCreate(5, sizeof(PageLocsRetriever::QueueData));
-      if (retrieverQueue == nullptr) {
-        LOG_E("Unable to create retrieverQueue");
-        return false;
-      }
-    } else {
-      xQueueReset(retrieverQueue);
-    }
+  auto cfg        = esp_pthread_get_default_config();
+  cfg.thread_name = "retrieverTask";
+  cfg.pin_to_core = 1;
+  cfg.stack_size  = 30 * 1024;
+  cfg.prio        = configMAX_PRIORITIES - 2;
+  cfg.inherit_cfg = true;
 
-    auto cfg        = esp_pthread_get_default_config();
-    cfg.thread_name = "retrieverTask";
-    cfg.pin_to_core = 1;
-    cfg.stack_size  = 30 * 1024;
-    cfg.prio        = configMAX_PRIORITIES - 2;
-    cfg.inherit_cfg = true;
+  LOG_D("Retriever task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
+        (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
+        static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
 
-    LOG_D("Retriever task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
-          (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
-          static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
-
-    esp_pthread_set_cfg(&cfg);
-    retrieverThread = std::thread(&PageLocsRetriever::task, this);
-  #endif
+  esp_pthread_set_cfg(&cfg);
+  retrieverThread = std::thread(&PageLocsRetriever::task, this);
+#endif
 
   return true;
 }
 
+/**
+ * Join retriever worker thread during teardown.
+ */
 auto PageLocsRetriever::waitForExit() -> void {
   if (retrieverThread.joinable()) retrieverThread.join();
 }
 
+/**
+ * Static callback adapter used by the interpreter at page boundaries.
+ */
 auto PageLocsRetriever::pollPendingQueueAtPageBoundary(void *context) -> bool {
   return static_cast<PageLocsRetriever *>(context)->handlePendingQueueAtPageBoundary();
 }
 
+/**
+ * Drain and process pending retriever messages at safe interruption points.
+ *
+ * Returns true when current item should be aborted (ASAP or STOP).
+ */
 auto PageLocsRetriever::handlePendingQueueAtPageBoundary() -> bool {
   bool shouldAbort = false;
 
   for (;;) {
     QueueData queueData;
 
-    #if EPUB_LINUX_BUILD
-      mq_attr attr{};
-      if (mq_getattr(retrieverQueue, &attr) == -1) {
-        LOG_E("Unable to query retrieverQueue: %d", errno);
-        return shouldAbort;
-      }
-      if (attr.mq_curmsgs == 0) break;
-      if (receive(queueData) == -1) {
-        LOG_E("Unable to receive retrieverQueue message: %d", errno);
-        return shouldAbort;
-      }
-    #else
-      if (receive(queueData, 0) != pdTRUE) break;
-    #endif
+#if EPUB_LINUX_BUILD
+    mq_attr attr{};
+    if (mq_getattr(retrieverQueue, &attr) == -1) {
+      LOG_E("Unable to query retrieverQueue: %d", errno);
+      return shouldAbort;
+    }
+    if (attr.mq_curmsgs == 0) break;
+    if (receive(queueData) == -1) {
+      LOG_E("Unable to receive retrieverQueue message: %d", errno);
+      return shouldAbort;
+    }
+#else
+    if (receive(queueData, 0) != pdTRUE) break;
+#endif
 
     switch (queueData.req) {
     case Req::GET_ASAP:
       if (queueData.itemrefIndex == currentItemrefIndex) {
         SHOW_IT("Page boundary: ignoring GET_ASAP for current itemref %d", queueData.itemrefIndex);
       } else {
-        SHOW_IT("Page boundary: received GET_ASAP for itemref %d", queueData.itemrefIndex);
+        SHOW_IT("%40c ----> PB GET_ASAP (%d)", ' ', queueData.itemrefIndex);
         abortCurrentItem.store(true, std::memory_order_relaxed);
         shouldAbort = true;
       }
       break;
 
     case Req::STOP:
-      SHOW_IT("Page boundary: received STOP");
+      SHOW_IT("%40c ----> PB STOP", ' ');
       stopRequested.store(true, std::memory_order_relaxed);
       abortCurrentItem.store(true, std::memory_order_relaxed);
       return true;
 
     case Req::SHOW_HEAP:
-      #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-        ESP::show_heaps_info();
-      #endif
+      SHOW_IT("%40c ----> PB SHOW_HEAP", ' ');
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      ESP::show_heaps_info();
+#endif
       break;
 
     case Req::NONE:
+      SHOW_IT("%40c ----> PB NONE", ' ');
       break;
 
     case Req::RETRIEVE_ITEM:
@@ -141,46 +177,55 @@ auto PageLocsRetriever::handlePendingQueueAtPageBoundary() -> bool {
   return shouldAbort;
 }
 
+/**
+ * Main retriever loop.
+ *
+ * Waits for work commands, performs item retrieval, and exits on STOP.
+ */
 auto PageLocsRetriever::task() -> void {
   for (;;) {
     LOG_D("==> Waiting for request... <==");
     QueueData queueData;
     if (receive(queueData) == -1) {
-      LOG_E("Receive error: %d: %s", errno, strerror(errno));
+      SHOW_IT("%40c ----> Error: %d: %s", ' ', errno, strerror(errno));
     } else {
       switch (queueData.req) {
       case Req::NONE:
+        SHOW_IT("%40c ----> NONE", ' ');
         break;
 
       case Req::STOP:
-        SHOW_IT("Received STOP request. Exiting retriever task...");
+        SHOW_IT("%40c ----> STOP", ' ');
+        // SHOW_IT("Received STOP request. Exiting retriever task...");
         return;
 
-      case Req::RETRIEVE_ITEM:
-      case Req::GET_ASAP: {
-        #if EPUB_INKPLATE_BUILD
-          SHOW_IT("-> %s (%" PRIi32 ") <-",
-                  (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM",
-                  (int32_t)uxTaskGetStackHighWaterMark(nullptr));
-        #else
-          SHOW_IT("-> %s <-", (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM");
-        #endif
-        retrieve_item(queueData.req, queueData.itemrefIndex);
+      case Req::GET_ASAP:
+      case Req::RETRIEVE_ITEM: {
+#if EPUB_INKPLATE_BUILD
+        SHOW_IT("%40c ---->  %s (%d, %" PRIi32 ")", ' ',
+                (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM",
+                queueData.itemrefIndex, (int32_t)uxTaskGetStackHighWaterMark(nullptr));
+#else
+        SHOW_IT("%40c ----> %s (%d)", ' ',
+                (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM",
+                queueData.itemrefIndex);
+#endif
+        retrieve_item(queueData.req, queueData.itemrefIndex, queueData.correlationId);
         if (stopRequested.load(std::memory_order_relaxed)) {
           SHOW_IT("Stop requested during retrieval. Exiting retriever task...");
           return;
         }
-
       } break;
 
       case Req::SHOW_HEAP:
-        #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-          ESP::show_heaps_info();
-        #endif
+        SHOW_IT("%40c ----> SHOW_HEAP", ' ');
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+        ESP::show_heaps_info();
+#endif
         break;
 
       case Req::COMPLETED:
-        SHOW_IT("Received COMPLETED request. Saving the TOC...");
+        SHOW_IT("%40c ----> COMPLETED", ' ');
         epub->toc->save(epub->getCurrentFilename());
         break;
       }
@@ -188,9 +233,14 @@ auto PageLocsRetriever::task() -> void {
   }
 }
 
-auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
+/**
+ * Retrieve one item and notify control with ITEM_READY, ASAP_READY, or
+ * ITEM_INTERRUPTED depending on completion vs preemption outcome.
+ */
+auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex, uint32_t correlationId)
+    -> void {
 
-  SHOW_IT("Retrieving itemref --> %d <--", itemrefIndex);
+  // SHOW_IT("Retrieving itemref --> %d <--", itemrefIndex);
 
   stopRequested.store(false, std::memory_order_relaxed);
 
@@ -205,42 +255,49 @@ auto PageLocsRetriever::retrieve_item(Req req, int16_t itemrefIndex) -> void {
   PageLocsControl::QueueData controlQueueData;
 
   if (stopping && aborted && !done) {
-    SHOW_IT("Item %d interrupted by STOP; exiting retrieve_item without notifying ControlTask",
-            itemrefIndex);
+    // SHOW_IT("Item %d interrupted by STOP; exiting retrieve_item without notifying ControlTask",
+    // itemrefIndex);
     return;
   }
 
   if (aborted && !done) {
     // Interrupted mid-item by a higher-priority request.  Partial pages already
     // inserted into pagesMap are harmless — pageLocs.insert() is idempotent.
-    SHOW_IT("Item %d interrupted; sending ITEM_INTERRUPTED to ControlTask", itemrefIndex);
-    controlQueueData = {.req          = PageLocsControl::Req::ITEM_INTERRUPTED,
-                        .itemrefIndex = itemrefIndex,
-                        .itemrefCount = 0};
+    // SHOW_IT("Item %d interrupted; sending ITEM_INTERRUPTED to ControlTask", itemrefIndex);
+    controlQueueData = {.req           = PageLocsControl::Req::ITEM_INTERRUPTED,
+                        .itemrefIndex  = itemrefIndex,
+                        .itemrefCount  = 0,
+                        .correlationId = correlationId};
   } else {
     if (!done) {
       // Genuine failure (not an abort).
       itemrefIndex = static_cast<int16_t>(-(itemrefIndex + 1));
     }
-    controlQueueData = {.req          = (req == Req::GET_ASAP) ? PageLocsControl::Req::ASAP_READY
-                                                               : PageLocsControl::Req::ITEM_READY,
-                        .itemrefIndex = itemrefIndex,
-                        .itemrefCount = 0};
+    controlQueueData = {.req           = (req == Req::GET_ASAP) ? PageLocsControl::Req::ASAP_READY
+                                                                : PageLocsControl::Req::ITEM_READY,
+                        .itemrefIndex  = itemrefIndex,
+                        .itemrefCount  = 0,
+                        .correlationId = (req == Req::GET_ASAP) ? correlationId : 0};
   }
 
-  SHOW_IT("Sending %s to ControlTask",
+  SHOW_IT("%40c <---- %s (%d)", ' ',
           (controlQueueData.req == PageLocsControl::Req::ASAP_READY)   ? "ASAP_READY"
           : (controlQueueData.req == PageLocsControl::Req::ITEM_READY) ? "ITEM_READY"
-                                                                       : "ITEM_INTERRUPTED");
-  PageLocsControl::send(controlQueueData);
+                                                                       : "ITEM_INTERRUPTED",
+          controlQueueData.itemrefIndex);
+  sendToControlChecked(controlQueueData, "retrieve_item/notify_control", true);
 }
 
+/**
+ * Compute page boundaries for one spine item and insert boundaries into
+ * PageLocs map through the interpreter path.
+ */
 auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
   Fonts &fonts = epub->getFonts();
 
   FontPtr &font = fonts.getFont(ScreenBottom::FONT);
   pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) +
-                  (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
+               (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
 
   bool resultOk = false;
 
@@ -252,7 +309,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
     int16_t idx;
 
-    if ((idx = fonts.getIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
+    if ((idx = fonts.getFontIndex("Fontbase", FaceStyle::NORMAL)) == -1) {
       idx = 3;
     }
     int8_t showTitle = 0;
@@ -280,10 +337,10 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
         epub, pageOut, dom, Page::ComputeMode::LOCATION, itemInfo, abortCurrentItem,
         &PageLocsRetriever::pollPendingQueueAtPageBoundary, this);
 
-    #if DEBUGGING_AID
-      interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
-      interp->checkPageToShow(pages_map.size());
-    #endif
+#if DEBUGGING_AID
+    interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
+    interp->checkPageToShow(pages_map.size());
+#endif
 
     // In PageLocs mode we only need stable text flow boundaries; skipping images avoids
     // expensive decoder/setup allocations and reduces PSRAM pressure.

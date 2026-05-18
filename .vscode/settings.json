@@ -1,4 +1,14 @@
 {
+  "makefile.configurations": [
+    {
+      "name": "default",
+      "makeArgs": [
+        "-j",
+        "14",
+        "DEBUG=1"
+      ]
+    }
+  ],
   "files.associations": {
     "array": "cpp",
     "string": "cpp",

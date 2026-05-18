@@ -253,23 +253,23 @@ inline auto toBin(const char *from, uint8_t *to) -> bool {
 #if EPUB_INKPLATE_BUILD
   #include "mbedtls/md.h"
 
-  auto EPub::sha1(const std::string &data) -> void {
-    mbedtls_md_context_t ctx;
-    mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
+auto EPub::sha1(const std::string &data) -> void {
+  mbedtls_md_context_t ctx;
+  mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
 
-    mbedtls_md_init(&ctx);
-    mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
-    mbedtls_md_starts(&ctx);
-    mbedtls_md_update(&ctx, (unsigned char *)data.c_str(), data.length());
-    mbedtls_md_finish(&ctx, (unsigned char *)&shaUuid);
-    mbedtls_md_free(&ctx);
-  }
+  mbedtls_md_init(&ctx);
+  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+  mbedtls_md_starts(&ctx);
+  mbedtls_md_update(&ctx, (unsigned char *)data.c_str(), data.length());
+  mbedtls_md_finish(&ctx, (unsigned char *)&shaUuid);
+  mbedtls_md_free(&ctx);
+}
 #else
   #include <openssl/sha.h>
 
-  auto EPub::sha1(const std::string &data) -> void {
-    SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&shaUuid);
-  }
+auto EPub::sha1(const std::string &data) -> void {
+  SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&shaUuid);
+}
 #endif
 
 auto EPub::getKeys() -> bool {
@@ -462,85 +462,85 @@ auto EPub::loadFont(const HimemString &filename, const HimemString &fontFamily,
 auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
   LOG_D("retrieveFontsFromCss()");
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  ESP::show_heaps_info();
+#endif
 
-  #if USE_EPUB_FONTS
+#if USE_EPUB_FONTS
 
-    if ((bookFormatParams.useFontsInBook == 0) || (fontsSizeTooLarge)) return;
+  if ((bookFormatParams.useFontsInBook == 0) || (fontsSizeTooLarge)) return;
 
-    CSS::RulesMap font_rules;
+  CSS::RulesMap font_rules;
 
-    auto dom = DOM::Make(domPools);
-    if (dom == nullptr) {
-      LOG_E("Failed to allocate DOM object for font extraction");
-      return;
-    }
+  auto dom = DOM::Make(domPools);
+  if (dom == nullptr) {
+    LOG_E("Failed to allocate DOM object for font extraction");
+    return;
+  }
 
-    auto ff = dom->addChild(dom->body, DOM::Tag::FONT_FACE);
-    if (ff == nullptr) {
-      LOG_E("Failed to add FONT_FACE child to DOM");
-      dom.reset();
-      return;
-    }
-
-    css->match(ff, font_rules);
-
+  auto ff = dom->addChild(dom->body, DOM::Tag::FONT_FACE);
+  if (ff == nullptr) {
+    LOG_E("Failed to add FONT_FACE child to DOM");
     dom.reset();
+    return;
+  }
 
-    if (font_rules.empty()) return;
+  css->match(ff, font_rules);
 
-    bool first = true;
+  dom.reset();
 
-    for (auto &rule : font_rules) {
-      const CSS::Values *values;
-      if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
+  if (font_rules.empty()) return;
 
-        FaceStyle style        = FaceStyle::NORMAL;
-        FaceStyle font_weight  = FaceStyle::NORMAL;
-        FaceStyle font_style   = FaceStyle::NORMAL;
-        HimemString fontFamily = values->front().str;
+  bool first = true;
 
-        if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
-          font_style = (FaceStyle)values->front().choice.faceStyle;
-        }
-        if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
-          font_weight = (FaceStyle)values->front().choice.faceStyle;
-        }
-        style = fonts.adjustFontStyle(style, font_style, font_weight);
-        // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
+  for (auto &rule : font_rules) {
+    const CSS::Values *values;
+    if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
-        if (fonts.getIndex(fontFamily.c_str(), style) == -1) { // If not already loaded
-          if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::SRC)) &&
-              (!values->empty()) && (values->front().valueType == CSS::ValueType::URL)) {
+      FaceStyle style        = FaceStyle::NORMAL;
+      FaceStyle font_weight  = FaceStyle::NORMAL;
+      FaceStyle font_style   = FaceStyle::NORMAL;
+      HimemString fontFamily = values->front().str;
 
-            if (!pageLocsInstance) {
-              if (first) {
-                first = false;
-                LOG_D("Displaying font loading msg.");
-                MsgViewer::show(
-                    MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
-                    "The application is retrieving font(s) from the EPub file. Please wait.");
-              }
+      if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
+        font_style = (FaceStyle)values->front().choice.faceStyle;
+      }
+      if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
+        font_weight = (FaceStyle)values->front().choice.faceStyle;
+      }
+      style = fonts.adjustFontStyle(style, font_style, font_weight);
+      // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
+
+      if (fonts.getFontIndex(fontFamily.c_str(), style) == -1) { // If not already loaded
+        if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::SRC)) &&
+            (!values->empty()) && (values->front().valueType == CSS::ValueType::URL)) {
+
+          if (!pageLocsInstance) {
+            if (first) {
+              first = false;
+              LOG_D("Displaying font loading msg.");
+              MsgViewer::show(
+                  MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
+                  "The application is retrieving font(s) from the EPub file. Please wait.");
             }
-
-            HimemString filename = css->getFolderPath() + values->front().str;
-            filename             = filenameLocate(filename.c_str());
-
-            loadFont(filename, fontFamily, style);
-            if (fontsSizeTooLarge) break;
           }
+
+          HimemString filename = css->getFolderPath() + values->front().str;
+          filename             = filenameLocate(filename.c_str());
+
+          loadFont(filename, fontFamily, style);
+          if (fontsSizeTooLarge) break;
         }
       }
     }
-  #endif
+  }
+#endif
 
   LOG_D("end of retrieveFontsFromCss()");
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  ESP::show_heaps_info();
+#endif
 }
 
 auto EPub::retrieveCss(ItemInfo &item) -> void {
@@ -550,9 +550,9 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
   // being processed.
 
   LOG_D("retrieveCss()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  ESP::show_heaps_info();
+#endif
 
   xml_node node;
   xml_attribute attr;
@@ -582,9 +582,9 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
           auto data = retrieveFile(fname.c_str(), size);
 
           if (data != nullptr) {
-            #if COMPUTE_SIZE
-              memory_used += size;
-            #endif
+#if COMPUTE_SIZE
+            memory_used += size;
+#endif
             LOG_D("CSS Filename: %s", fname.c_str());
             HimemString path;
             extractPath(fname.c_str(), path);
@@ -644,18 +644,18 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
 
   // item.css->show();
   LOG_D("end of retrieveCss()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  ESP::show_heaps_info();
+#endif
 }
 
 auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
   int err = 0;
-  #define ERR(e)                                                                                   \
-    {                                                                                              \
-      err = e;                                                                                     \
-      break;                                                                                       \
-    }
+#define ERR(e)                                                                                     \
+  {                                                                                                \
+    err = e;                                                                                       \
+    break;                                                                                         \
+  }
 
   if (!fileIsOpen) return false;
 
@@ -867,9 +867,9 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
     return false;
   };
 
-  #if COMPUTE_SIZE
-    memory_used = 0;
-  #endif
+#if COMPUTE_SIZE
+  memory_used = 0;
+#endif
 
   LOG_D("Opening EPub file through unzip...");
   if (!unzip.openZipFile(epubFilename.c_str())) {

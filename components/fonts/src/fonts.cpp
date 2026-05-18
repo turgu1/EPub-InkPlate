@@ -26,27 +26,27 @@ void myFtLog(const char *ft_component, const char *fmt, va_list args) {
 }
 
 static auto myFtAlloc(FT_Memory memory, long size) -> void * {
-  #if EPUB_INKPLATE_BUILD
-    return heap_caps_malloc(static_cast<size_t>(size), MALLOC_CAP_SPIRAM);
-  #else
-    return malloc(static_cast<size_t>(size));
-  #endif
+#if EPUB_INKPLATE_BUILD
+  return heap_caps_malloc(static_cast<size_t>(size), MALLOC_CAP_SPIRAM);
+#else
+  return malloc(static_cast<size_t>(size));
+#endif
 }
 
 static auto myFtRealloc(FT_Memory memory, long currSize, long newSize, void *block) -> void * {
-  #if EPUB_INKPLATE_BUILD
-    return heap_caps_realloc(block, static_cast<size_t>(newSize), MALLOC_CAP_SPIRAM);
-  #else
-    return realloc(block, static_cast<size_t>(newSize));
-  #endif
+#if EPUB_INKPLATE_BUILD
+  return heap_caps_realloc(block, static_cast<size_t>(newSize), MALLOC_CAP_SPIRAM);
+#else
+  return realloc(block, static_cast<size_t>(newSize));
+#endif
 }
 
 static void myFtFree(FT_Memory memory, void *block) {
-  #if EPUB_INKPLATE_BUILD
-    heap_caps_free(block);
-  #else
-    free(block);
-  #endif
+#if EPUB_INKPLATE_BUILD
+  heap_caps_free(block);
+#else
+  free(block);
+#endif
 }
 
 static FT_MemoryRec_ ftMemory = {
@@ -57,11 +57,11 @@ static FT_MemoryRec_ ftMemory = {
 };
 
 Fonts::Fonts(bool thisIsAppFonts) : thisIsAppFonts(thisIsAppFonts) {
-  #if USE_EPUB_FONTS
-    fontCache.reserve(20);
-  #else
-    fontCache.reserve(4);
-  #endif
+#if USE_EPUB_FONTS
+  fontCache.reserve(20);
+#else
+  fontCache.reserve(4);
+#endif
 
   if (library == nullptr) {
     FT_Error error = FT_New_Library(&ftMemory, &library);
@@ -128,57 +128,48 @@ Fonts::~Fonts() {
 }
 
 auto Fonts::clear(bool all) -> void {
-  #if USE_EPUB_FONTS
-    if (!thisIsAppFonts) {
-      for (int i = 0; i < (all ? 3 : 7); ++i) {
-        fontCache.at(i)->font->clearCache();
-      }
-      fontCache.resize(all ? 3 : 7);
-      bookFontFaceDescriptors.clear();
-      fontCache.reserve(20);
+#if USE_EPUB_FONTS
+  if (!thisIsAppFonts) {
+    for (int i = 0; i < (all ? 3 : 7); ++i) {
+      fontCache.at(i)->font->clearCache();
     }
-  #endif
+    fontCache.resize(all ? 3 : 7);
+    bookFontFaceDescriptors.clear();
+    fontCache.reserve(20);
+  }
+#endif
 }
 
 auto Fonts::clearEverything() -> void {
-  {
-    // std::scoped_lock guard(mutex);
+  charPool.reset();
 
-    charPool.reset();
-
-    fontCache.clear();
-    fontCache.resize(0);
-    fontCache.reserve(20);
-    bookFontFaceDescriptors.clear();
-  }
+  fontCache.clear();
+  fontCache.resize(0);
+  fontCache.reserve(20);
+  bookFontFaceDescriptors.clear();
 }
 
 auto Fonts::clearGlyphCaches() -> void {
-  // std::scoped_lock guard(mutex);
-
   for (auto &entry : fontCache) {
     entry->font->clearCache();
   }
 }
 
 auto Fonts::setGlyphLoadMode(Font::GlyphLoadMode mode) -> void {
-  defaultGlyphLoadMode_ = mode;
+  defaultGlyphLoadMode = mode;
   for (auto &entry : fontCache) {
     entry->font->setGlyphLoadMode(mode);
   }
 }
 
-auto Fonts::getIndex(const HimemString &name, FaceStyle style) -> int16_t {
+auto Fonts::getFontIndex(const HimemString &name, FaceStyle style) -> int16_t {
   int16_t idx = 0;
 
-  {
-    // std::scoped_lock guard(mutex);
-
-    for (auto &entry : fontCache) {
-      if ((entry->name.compare(name) == 0) && (entry->style == style)) return idx;
-      ++idx;
-    }
+  for (auto &entry : fontCache) {
+    if ((entry->name.compare(name) == 0) && (entry->style == style)) return idx;
+    ++idx;
   }
+
   return -1;
 }
 
@@ -190,7 +181,7 @@ auto Fonts::replace(int16_t index, const FontFaceDescriptorPtr &descr) -> bool {
       f->name  = descr->name;
       f->style = descr->style;
       f->font->setFontsCacheIndex(index);
-      f->font->setGlyphLoadMode(defaultGlyphLoadMode_);
+      f->font->setGlyphLoadMode(defaultGlyphLoadMode);
       fontCache.at(index) = f;
 
       LOG_D("Font %s (%s) replacement at index %d and style %d.", f->name.c_str(),
@@ -226,7 +217,6 @@ void Fonts::adjustDefaultFont(uint8_t fontIndex) {
 }
 
 auto Fonts::add(const FontFaceDescriptorPtr &descr) -> bool {
-  // std::scoped_lock guard(mutex);
 
   // If the font is already loaded, return promptly
   for (auto &font : fontCache) {
@@ -240,7 +230,7 @@ auto Fonts::add(const FontFaceDescriptorPtr &descr) -> bool {
       f->name  = descr->name;
       f->style = descr->style;
       f->font->setFontsCacheIndex(fontCache.size());
-      f->font->setGlyphLoadMode(defaultGlyphLoadMode_);
+      f->font->setGlyphLoadMode(defaultGlyphLoadMode);
       fontCache.push_back(f);
 
       LOG_D("Font %s added to cache at index %d and style %d.", f->name.c_str(),

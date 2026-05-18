@@ -84,10 +84,7 @@
 struct Dim {
   uint16_t width{0};
   uint16_t height{0};
-  // Dim(uint16_t w, uint16_t h) {
-  //   width  = w;
-  //   height = h;
-  // }
+
   Dim() = default;
   constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
 
@@ -131,7 +128,6 @@ struct Glyph {
   int16_t advance{0};
   int16_t pitch{0};
   int16_t lineHeight{0};
-  // int16_t ligatureAndKernPgmIndex{255};
   uint16_t index{0};
   uint8_t *buffer{nullptr};
   auto clear() -> void {
@@ -139,10 +135,10 @@ struct Glyph {
     xoff = yoff = 0;
     advance = pitch = lineHeight = 0;
     index                        = 0;
-    // ligatureAndKernPgmIndex      = 255;
-    buffer = nullptr;
+    buffer                       = nullptr;
   }
-  Glyph() = default;
+  Glyph()  = default;
+  ~Glyph() = default;
 };
 
 struct PageId {
@@ -155,8 +151,6 @@ struct PageId {
   PageId() = default;
 };
 
-enum class FaceStyle : uint8_t {
-  NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC
-};
+enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
 
 using FileContentPtr = HimemUniquePtr<uint8_t[]>;

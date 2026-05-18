@@ -32,15 +32,17 @@ public:
     Req req{Req::NONE};
     uint8_t reserved{0};
     int16_t itemrefIndex{0};
+    uint32_t correlationId{0};
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
     #if EPUB_LINUX_BUILD
       (void)timeout;
       QueueData wireData{};
-      wireData.req          = data.req;
-      wireData.reserved     = 0;
-      wireData.itemrefIndex = data.itemrefIndex;
+      wireData.req           = data.req;
+      wireData.reserved      = 0;
+      wireData.itemrefIndex  = data.itemrefIndex;
+      wireData.correlationId = data.correlationId;
       return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
     #else
       return xQueueSendToBack(retrieverQueue, &data, timeout);
@@ -96,7 +98,7 @@ private:
   auto task() -> void;
   auto handlePendingQueueAtPageBoundary() -> bool;
 
-  auto retrieve_item(Req req, int16_t itemrefIndex) -> void;
+  auto retrieve_item(Req req, int16_t itemrefIndex, uint32_t correlationId = 0) -> void;
 
   auto buildPageLocs(int16_t itemrefIndex) -> bool;
 };

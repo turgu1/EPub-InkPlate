@@ -372,10 +372,10 @@ auto loadBmpAsGray(const std::string &path, int expectedW, int expectedH,
                             (static_cast<uint32_t>(bmp[off + 1]) << 8U) |
                             (static_cast<uint32_t>(bmp[off + 2]) << 16U) |
                             (static_cast<uint32_t>(bmp[off + 3]) << 24U);
-        const uint8_t r   = extractChannel(px, redMask);
-        const uint8_t g   = extractChannel(px, greenMask);
-        const uint8_t b   = extractChannel(px, blueMask);
-        gray              = static_cast<uint8_t>((77U * r + 150U * g + 29U * b) >> 8U);
+        const uint8_t r = extractChannel(px, redMask);
+        const uint8_t g = extractChannel(px, greenMask);
+        const uint8_t b = extractChannel(px, blueMask);
+        gray            = static_cast<uint8_t>((77U * r + 150U * g + 29U * b) >> 8U);
       } else if (bpp == 24U && compression == 0U) {
         const std::size_t off = srcRow + static_cast<std::size_t>(x) * 3U;
         if (off + 3U > bmp.size()) return false;
@@ -431,8 +431,8 @@ auto drawCbCapture(SvgDraw *draw) -> int32_t {
 
     const uint8_t *src = draw->pPixels + static_cast<std::size_t>(row - rowStart) *
                                              static_cast<std::size_t>(draw->iWidth);
-    uint8_t *dst       = sink->bitmap.data() +
-                         static_cast<std::size_t>(row) * static_cast<std::size_t>(sink->expectedW);
+    uint8_t *dst = sink->bitmap.data() +
+                   static_cast<std::size_t>(row) * static_cast<std::size_t>(sink->expectedW);
     std::memcpy(dst, src, static_cast<std::size_t>(draw->iWidth));
 
     sink->rowSeen[static_cast<std::size_t>(row)] = 1U;
@@ -540,6 +540,8 @@ auto loadSvgFixtures() -> std::vector<SvgFixture> {
   static constexpr const char *kListFile = "test/fixtures/svgs/list.txt";
   const std::string fixtureFilter        = getFixtureFilter();
   bool matchedFilter                     = fixtureFilter.empty();
+  int missingSvgCount                    = 0;
+  int missingBmpCount                    = 0;
 
   std::vector<SvgFixture> fixtures;
   std::ifstream list(kListFile);
@@ -570,8 +572,12 @@ auto loadSvgFixtures() -> std::vector<SvgFixture> {
 
     const std::string filePath = std::string(kBaseDir) + fixture.fileName;
     if (!loadFileBytes(filePath, fixture.bytes)) {
-      std::printf("  FAIL [%s] unable to read fixture: %s\n", __func__, filePath.c_str());
-      ++failures;
+      if (fixtureFilter.empty()) {
+        ++missingSvgCount;
+      } else {
+        std::printf("  FAIL [%s] unable to read fixture: %s\n", __func__, filePath.c_str());
+        ++failures;
+      }
       continue;
     }
 
@@ -591,8 +597,13 @@ auto loadSvgFixtures() -> std::vector<SvgFixture> {
     const std::string baseName = fileStem(fixture.fileName);
     const std::string bmpPath  = std::string(kBaseDir) + baseName + ".bmp";
     if (!loadBmpAsGray(bmpPath, fixture.width, fixture.height, fixture.expectedBitmap)) {
-      std::printf("  FAIL [%s] unable to load/parse expected bmp: %s\n", __func__, bmpPath.c_str());
-      ++failures;
+      if (fixtureFilter.empty()) {
+        ++missingBmpCount;
+      } else {
+        std::printf("  FAIL [%s] unable to load/parse expected bmp: %s\n", __func__,
+                    bmpPath.c_str());
+        ++failures;
+      }
       continue;
     }
 
@@ -602,6 +613,11 @@ auto loadSvgFixtures() -> std::vector<SvgFixture> {
   if (!fixtureFilter.empty() && !matchedFilter) {
     std::printf("  FAIL [%s] fixture filter did not match: %s\n", __func__, fixtureFilter.c_str());
     ++failures;
+  }
+
+  if (fixtureFilter.empty() && (missingSvgCount > 0 || missingBmpCount > 0)) {
+    std::printf("  NOTE: skipped missing SVG fixtures: svgs=%d bmps=%d\n", missingSvgCount,
+                missingBmpCount);
   }
 
   CHECK(!fixtures.empty());
@@ -658,40 +674,40 @@ auto drawCbNoop(SvgDraw *draw) -> int32_t {
 }
 
 #if defined(__linux__)
-  auto readRssBytes(std::size_t &rssBytes) -> bool {
-    std::ifstream statm("/proc/self/statm");
-    if (!statm.is_open()) return false;
+auto readRssBytes(std::size_t &rssBytes) -> bool {
+  std::ifstream statm("/proc/self/statm");
+  if (!statm.is_open()) return false;
 
-    long pagesTotal = 0;
-    long pagesRss   = 0;
-    statm >> pagesTotal >> pagesRss;
-    if (!statm.good()) return false;
-    if (pagesTotal < 0 || pagesRss < 0) return false;
+  long pagesTotal = 0;
+  long pagesRss   = 0;
+  statm >> pagesTotal >> pagesRss;
+  if (!statm.good()) return false;
+  if (pagesTotal < 0 || pagesRss < 0) return false;
 
-    const long pageSize = ::sysconf(_SC_PAGESIZE);
-    if (pageSize <= 0) return false;
+  const long pageSize = ::sysconf(_SC_PAGESIZE);
+  if (pageSize <= 0) return false;
 
-    rssBytes = static_cast<std::size_t>(pagesRss) * static_cast<std::size_t>(pageSize);
-    return true;
-  }
+  rssBytes = static_cast<std::size_t>(pagesRss) * static_cast<std::size_t>(pageSize);
+  return true;
+}
 #endif
 
 auto runMemoryChurnCheck(const std::vector<SvgFixture> &fixtures, FontPtr &font) -> void {
   static constexpr int kRounds = 12;
 
-  #if defined(__linux__)
-    std::size_t rssStart = 0;
-    std::size_t rssEnd   = 0;
-    std::size_t rssPeak  = 0;
-    const bool hasRss    = readRssBytes(rssStart);
-    rssPeak              = rssStart;
-  #else
-    const bool hasRss = false;
-  #endif
+#if defined(__linux__)
+  std::size_t rssStart = 0;
+  std::size_t rssEnd   = 0;
+  std::size_t rssPeak  = 0;
+  const bool hasRss    = readRssBytes(rssStart);
+  rssPeak              = rssStart;
+#else
+  const bool hasRss = false;
+#endif
 
-  #if defined(__GLIBC__)
-    const auto miStart = ::mallinfo2();
-  #endif
+#if defined(__GLIBC__)
+  const auto miStart = ::mallinfo2();
+#endif
 
   for (int round = 0; round < kRounds; ++round) {
     for (const auto &fixture : fixtures) {
@@ -708,52 +724,52 @@ auto runMemoryChurnCheck(const std::vector<SvgFixture> &fixtures, FontPtr &font)
       decoder.close();
     }
 
-    #if defined(__linux__)
-      if (hasRss) {
-        std::size_t rssNow = 0;
-        if (readRssBytes(rssNow)) rssPeak = std::max(rssPeak, rssNow);
-      }
-    #endif
+#if defined(__linux__)
+    if (hasRss) {
+      std::size_t rssNow = 0;
+      if (readRssBytes(rssNow)) rssPeak = std::max(rssPeak, rssNow);
+    }
+#endif
   }
 
-  #if defined(__linux__)
-    if (hasRss) {
-      if (!readRssBytes(rssEnd)) rssEnd = rssPeak;
+#if defined(__linux__)
+  if (hasRss) {
+    if (!readRssBytes(rssEnd)) rssEnd = rssPeak;
 
-      static constexpr std::size_t kPeakGrowthLimitBytes = 32U * 1024U * 1024U;
-      static constexpr std::size_t kEndGrowthLimitBytes  = 16U * 1024U * 1024U;
+    static constexpr std::size_t kPeakGrowthLimitBytes = 32U * 1024U * 1024U;
+    static constexpr std::size_t kEndGrowthLimitBytes  = 16U * 1024U * 1024U;
 
-      const std::size_t peakGrowth = (rssPeak >= rssStart) ? (rssPeak - rssStart) : 0U;
-      const std::size_t endGrowth  = (rssEnd >= rssStart) ? (rssEnd - rssStart) : 0U;
+    const std::size_t peakGrowth = (rssPeak >= rssStart) ? (rssPeak - rssStart) : 0U;
+    const std::size_t endGrowth  = (rssEnd >= rssStart) ? (rssEnd - rssStart) : 0U;
 
-      CHECK(peakGrowth <= kPeakGrowthLimitBytes);
-      CHECK(endGrowth <= kEndGrowthLimitBytes);
-    } else {
-      std::printf("  NOTE: skipped RSS growth checks (unable to read /proc/self/statm).\n");
-    }
-  #else
-    std::printf("  NOTE: skipped RSS growth checks (non-Linux build).\n");
-  #endif
+    CHECK(peakGrowth <= kPeakGrowthLimitBytes);
+    CHECK(endGrowth <= kEndGrowthLimitBytes);
+  } else {
+    std::printf("  NOTE: skipped RSS growth checks (unable to read /proc/self/statm).\n");
+  }
+#else
+  std::printf("  NOTE: skipped RSS growth checks (non-Linux build).\n");
+#endif
 
-  #if defined(__GLIBC__)
-    const auto miEnd = ::mallinfo2();
+#if defined(__GLIBC__)
+  const auto miEnd = ::mallinfo2();
 
-    static constexpr std::size_t kUsedGrowthLimitBytes = 8U * 1024U * 1024U;
-    static constexpr std::size_t kFreeGrowthLimitBytes = 32U * 1024U * 1024U;
+  static constexpr std::size_t kUsedGrowthLimitBytes = 8U * 1024U * 1024U;
+  static constexpr std::size_t kFreeGrowthLimitBytes = 32U * 1024U * 1024U;
 
-    const std::size_t usedStart = static_cast<std::size_t>(miStart.uordblks);
-    const std::size_t usedEnd   = static_cast<std::size_t>(miEnd.uordblks);
-    const std::size_t freeStart = static_cast<std::size_t>(miStart.fordblks);
-    const std::size_t freeEnd   = static_cast<std::size_t>(miEnd.fordblks);
+  const std::size_t usedStart = static_cast<std::size_t>(miStart.uordblks);
+  const std::size_t usedEnd   = static_cast<std::size_t>(miEnd.uordblks);
+  const std::size_t freeStart = static_cast<std::size_t>(miStart.fordblks);
+  const std::size_t freeEnd   = static_cast<std::size_t>(miEnd.fordblks);
 
-    const std::size_t usedGrowth = (usedEnd >= usedStart) ? (usedEnd - usedStart) : 0U;
-    const std::size_t freeGrowth = (freeEnd >= freeStart) ? (freeEnd - freeStart) : 0U;
+  const std::size_t usedGrowth = (usedEnd >= usedStart) ? (usedEnd - usedStart) : 0U;
+  const std::size_t freeGrowth = (freeEnd >= freeStart) ? (freeEnd - freeStart) : 0U;
 
-    CHECK(usedGrowth <= kUsedGrowthLimitBytes);
-    CHECK(freeGrowth <= kFreeGrowthLimitBytes);
-  #else
-    std::printf("  NOTE: skipped mallinfo2 checks (non-glibc allocator).\n");
-  #endif
+  CHECK(usedGrowth <= kUsedGrowthLimitBytes);
+  CHECK(freeGrowth <= kFreeGrowthLimitBytes);
+#else
+  std::printf("  NOTE: skipped mallinfo2 checks (non-glibc allocator).\n");
+#endif
 }
 
 auto runPictureFactorySmokeCheck(const SvgFixture &fixture, FontPtr &font) -> void {

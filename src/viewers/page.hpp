@@ -85,9 +85,7 @@ public:
    * page to be shown. DISPLAY is used when preparing the page to be shown
    * on screen.
    */
-  enum class ComputeMode {
-    LOCATION, MOVE, DISPLAY
-  };
+  enum class ComputeMode { LOCATION, MOVE, DISPLAY };
 
   struct EntityStringTag {};
 
@@ -281,16 +279,15 @@ public:
   auto paint(bool clearScreen = true, bool noFull = false, bool doIt = false) -> void;
 
   auto showFmt(const Format &fmt, const char *spaces) -> void const {
-    #if DEBUGGING
-      std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
-                << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize
-                << " St:" << (int)fmt.fontStyle << " ind:" << fmt.indent
-                << " lhf:" << fmt.lineHeightFactor << " m:" << fmt.marginBottom << ","
-                << fmt.marginLeft << "," << fmt.marginRight << "," << fmt.marginTop
-                << " s:" << fmt.screenBottom << "," << fmt.screenLeft << "," << fmt.screenRight
-                << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
-                << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
-    #endif
+#if DEBUGGING
+    std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
+              << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
+              << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
+              << " m:" << fmt.marginBottom << "," << fmt.marginLeft << "," << fmt.marginRight << ","
+              << fmt.marginTop << " s:" << fmt.screenBottom << "," << fmt.screenLeft << ","
+              << fmt.screenRight << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
+              << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
+#endif
   }
 
   auto showCover(PicturePtr &pict) -> bool;
@@ -303,12 +300,12 @@ public:
   auto setRegion(Dim dim, Pos pos) -> void;
 
   auto showControls(const char *spaces) -> void const {
-    #if DEBUGGING
-      std::cout << spaces << " pos.x:" << pos.x << " pos.y:" << pos.y << " minX:" << minX
-                << " maxX:" << maxX << " minY:" << minY << " maxY:" << maxY
-                << " paraMinX:" << paraMinX << " paraMaxX:" << paraMaxX << " indent:" << paraIndent
-                << " width:" << lineWidth << std::endl;
-    #endif
+#if DEBUGGING
+    std::cout << spaces << " pos.x:" << pos.x << " pos.y:" << pos.y << " minX:" << minX
+              << " maxX:" << maxX << " minY:" << minY << " maxY:" << maxY
+              << " paraMinX:" << paraMinX << " paraMaxX:" << paraMaxX << " indent:" << paraIndent
+              << " width:" << lineWidth << std::endl;
+#endif
   }
 
   auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
@@ -336,9 +333,9 @@ public:
   inline auto resetFontIndex(Format &fmt, FaceStyle style) -> void {
     if (style != fmt.fontStyle) {
       int16_t idx = -1;
-      if ((idx = fonts.getIndex(fonts.getName(fmt.fontIndex), style)) == -1) {
+      if ((idx = fonts.getFontIndex(fonts.getName(fmt.fontIndex), style)) == -1) {
         // LOG_E("Font not found 2: %s %d", fonts.getName(fmt.fontIndex), style);
-        idx = fonts.getIndex("Default", style);
+        idx = fonts.getFontIndex("Default", style);
       }
       if (idx == -1) {
         fmt.fontStyle = FaceStyle::NORMAL;

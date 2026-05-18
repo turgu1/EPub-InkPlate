@@ -264,15 +264,15 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
                           static_cast<uint16_t>(pos.y + glyph->yoff)};
         entry->v       = GlyphEntry{glyph, glyph->advance, false};
 
-        #if DEBUGGING
-          // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-          //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-          // }
-          // else
-          if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-            LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-          }
-        #endif
+#if DEBUGGING
+        // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+        //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+        // }
+        // else
+        if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+          LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+        }
+#endif
 
         displayList->pushBack(entry);
 
@@ -325,15 +325,15 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
                           static_cast<uint16_t>(pos.y + glyph->yoff)};
         entry->v       = GlyphEntry{glyph, glyph->advance, false};
 
-        #if DEBUGGING
-          // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-          //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-          // }
-          // else
-          if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-            LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-          }
-        #endif
+#if DEBUGGING
+        // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+        //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+        // }
+        // else
+        if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+          LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+        }
+#endif
 
         displayList->pushBack(entry);
 
@@ -358,15 +358,15 @@ auto Page::putCharAt(char ch, Pos pos, const Format &fmt) -> void {
                       static_cast<uint16_t>(pos.y + glyph->yoff)};
     entry->v       = GlyphEntry{glyph, glyph->advance, false};
 
-    #if DEBUGGING
-      // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      //   LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-      // }
-      // else
-      if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-        LOG_E("Put_char_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-      }
-    #endif
+#if DEBUGGING
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("Put_char_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+    // }
+    // else
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+      LOG_E("Put_char_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+    }
+#endif
 
     displayList->pushBack(entry);
   }
@@ -630,19 +630,19 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
       LOG_E("Wrong entry type for addLine: %d", (int)entry->command);
     }
 
-    #if DEBUGGING
-      // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-      //   LOG_E("addLine entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y,
-      //   (int)entry->command); showControls("  -> "); showFmt(fmt, "  -> ");
-      // }
-      // else
-      if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-        LOG_E("addLine with a too large location: %d %d %d", entry->pos.x, entry->pos.y,
-              (int)entry->command);
-        showControls("  -> ");
-        showFmt(fmt, "  -> ");
-      }
-    #endif
+#if DEBUGGING
+    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+    //   LOG_E("addLine entry with a negative location: %d %d %d", entry->pos.x, entry->pos.y,
+    //   (int)entry->command); showControls("  -> "); showFmt(fmt, "  -> ");
+    // }
+    // else
+    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+      LOG_E("addLine with a too large location: %d %d %d", entry->pos.x, entry->pos.y,
+            (int)entry->command);
+      showControls("  -> ");
+      showFmt(fmt, "  -> ");
+    }
+#endif
   }
 
   lineWidth = lineHeight = glyphsHeight = 0;
@@ -761,12 +761,14 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
         width += advance;
         first = false;
       }
+      pageEmpty = false;
     }
 
     uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
 
     if (width >= availableWidth) {
       if (strncasecmp(word, "http", 4) == 0) {
+        pageEmpty = false;
         return addWord("[<< ffi URL removed]", fmt);
       } else {
         LOG_E("WORD TOO LARGE!! '%s'", word);
@@ -971,8 +973,15 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
     }
   } else {
     if ((dim.width < targetWidth) && (dim.height < targetHeight)) {
-      w = dim.width;
-      h = dim.height;
+      float scale = std::min(2.0f, std::min(static_cast<float>(targetWidth) / dim.width,
+                                            static_cast<float>(targetHeight) / dim.height));
+      w           = dim.width * scale;
+      h           = dim.height * scale;
+      // if (h > targetHeight) {
+      //   h = targetHeight;
+      //   w = dim.width * h / dim.height;
+      // }
+
     } else {
       w = targetWidth;
       h = dim.height * w / dim.width;
@@ -1070,15 +1079,15 @@ auto Page::putPicture(PicturePtr picture, Pos pos) -> void {
   entry->command = DisplayListCommand::PICTURE;
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("draw_bitmap with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("draw_bitmap with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("draw_bitmap with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1091,15 +1100,15 @@ auto Page::putHighlight(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1112,15 +1121,15 @@ auto Page::clearHighlight(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1133,15 +1142,15 @@ auto Page::putRounded(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("putHighlight with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("putHighlight with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1154,15 +1163,15 @@ auto Page::clearRounded(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1175,15 +1184,15 @@ auto Page::clearRegion(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1196,15 +1205,15 @@ auto Page::setRegion(Dim dim, Pos pos) -> void {
   entry->v       = RegionEntry{dim};
   entry->pos     = pos;
 
-  #if DEBUGGING
-    // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
-    //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
-    // }
-    // else
-    if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
-      LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
-    }
-  #endif
+#if DEBUGGING
+  // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
+  //   LOG_E("Put_str_at with a negative location: %d %d", entry->pos.x, entry->pos.y);
+  // }
+  // else
+  if ((entry->pos.x >= Screen::getWidth()) || (entry->pos.y >= Screen::getHeight())) {
+    LOG_E("Put_str_at with a too large location: %d %d", entry->pos.x, entry->pos.y);
+  }
+#endif
 
   displayList->pushBack(entry);
 }
@@ -1354,10 +1363,10 @@ void Page::adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &el
       // itemCss->show(rules);
       adjustFormatFromRules(fmt, rules);
     } else {
-      #if DEBUGGING1
-        LOG_D("No match");
-        domCurrentNode->show(1);
-      #endif
+#if DEBUGGING1
+      LOG_D("No match");
+      domCurrentNode->show(1);
+#endif
     }
   }
   if (elementCss != nullptr) {
@@ -1391,11 +1400,11 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::FONT_FAMILY))) {
     int16_t idx = -1;
     for (auto &fontName : *vals) {
-      if ((idx = fonts.getIndex(fontName.str, newStyle)) != -1) break;
+      if ((idx = fonts.getFontIndex(fontName.str, newStyle)) != -1) break;
     }
     if (idx == -1) {
       LOG_D("Font not found 1: %s %d", vals->front().str.c_str(), (int)newStyle);
-      idx = fonts.getIndex("Default", newStyle);
+      idx = fonts.getFontIndex("Default", newStyle);
     }
     if (idx == -1) {
       fmt.fontStyle = FaceStyle::NORMAL;
