@@ -124,7 +124,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
   Dim titleDim;
 
-  font->getSize(title, &titleDim, FORM_FONT_SIZE + 4);
+  font->getASCIISize(title, &titleDim, FORM_FONT_SIZE + 4);
 
   page->putStrAt(
       title,
@@ -165,14 +165,14 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   if (!refresh) {
     selectingField = false;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      currentField      = fields.end();
-      highlightingField = false;
-    #else
-      currentField      = fields.begin();
-      highlightingField = true;
-      (*currentField)->showHighlighted(true);
-    #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    currentField      = fields.end();
+    highlightingField = false;
+#else
+    currentField      = fields.begin();
+    highlightingField = true;
+    (*currentField)->showHighlighted(true);
+#endif
   }
 
   ScreenBottom::show(page);
@@ -184,96 +184,96 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
 
   completed = false;
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    if (currentField != fields.end()) {
-      if (!(*currentField)->event(event)) {
-        // The field releases control of future events
-        // Redraw the form
-        show(title, formEntries, size, bottomMsg, true);
-        currentField = fields.end();
-      }
-      return false; // Not completed yet
-    } else {
-      switch (event.kind) {
-      case EventMgr::EventKind::TAP:
-        currentField = findField(event.x, event.y);
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  if (currentField != fields.end()) {
+    if (!(*currentField)->event(event)) {
+      // The field releases control of future events
+      // Redraw the form
+      show(title, formEntries, size, bottomMsg, true);
+      currentField = fields.end();
+    }
+    return false; // Not completed yet
+  } else {
+    switch (event.kind) {
+    case EventMgr::EventKind::TAP:
+      currentField = findField(event.x, event.y);
 
-        if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
-          completed = true;
-        } else {
-          if (currentField != fields.end()) {
-            if ((*currentField)->event(event)) {
-              // The field needs to keep control of future events
-              // currentField is not reset for next event loop to pass
-              // control to it.
-              return false;
-            } else {
-              // The field doesn't need control of future events
-              currentField = fields.end();
-            }
+      if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
+        completed = true;
+      } else {
+        if (currentField != fields.end()) {
+          if ((*currentField)->event(event)) {
+            // The field needs to keep control of future events
+            // currentField is not reset for next event loop to pass
+            // control to it.
+            return false;
+          } else {
+            // The field doesn't need control of future events
+            currentField = fields.end();
           }
         }
-        break;
-
-      default:
-        break;
       }
+      break;
+
+    default:
+      break;
     }
-  #else
-    Fields::iterator oldField = currentField;
-    if (highlightingField) {
+  }
+#else
+  Fields::iterator oldField = currentField;
+  if (highlightingField) {
+    switch (event.kind) {
+    case EventMgr::EventKind::DBL_PREV:
+    case EventMgr::EventKind::PREV:
+      if (currentField == fields.begin()) currentField = fields.end();
+      --currentField;
+      break;
+    case EventMgr::EventKind::DBL_NEXT:
+    case EventMgr::EventKind::NEXT:
+      ++currentField;
+      if (currentField == fields.end()) currentField = fields.begin();
+      break;
+    case EventMgr::EventKind::SELECT:
+      highlightingField = false;
+      selectingField    = true;
+      break;
+    case EventMgr::EventKind::NONE:
+      return false;
+    case EventMgr::EventKind::DBL_SELECT:
+      completed = true;
+      break;
+    }
+  } else {
+    bool wasInControl = (*currentField)->inEventControl();
+    if (!(*currentField)->event(event)) {
+      if ((*currentField)->formRefreshRequired()) {
+        show(title, formEntries, size, bottomMsg, true);
+      }
       switch (event.kind) {
-      case EventMgr::EventKind::DBL_PREV:
-      case EventMgr::EventKind::PREV:
-        if (currentField == fields.begin()) currentField = fields.end();
-        --currentField;
-        break;
-      case EventMgr::EventKind::DBL_NEXT:
-      case EventMgr::EventKind::NEXT:
+      case EventMgr::EventKind::SELECT:
+        highlightingField = true;
+        oldField          = currentField;
         ++currentField;
         if (currentField == fields.end()) currentField = fields.begin();
-        break;
-      case EventMgr::EventKind::SELECT:
-        highlightingField = false;
-        selectingField = true;
         break;
       case EventMgr::EventKind::NONE:
         return false;
       case EventMgr::EventKind::DBL_SELECT:
-        completed = true;
-        break;
-      }
-    } else {
-      bool wasInControl = (*currentField)->inEventControl();
-      if (!(*currentField)->event(event)) {
-        if ((*currentField)->formRefreshRequired()) {
-          show(title, formEntries, size, bottomMsg, true);
-        }
-        switch (event.kind) {
-        case EventMgr::EventKind::SELECT:
+        if (!wasInControl)
+          completed = true;
+        else {
           highlightingField = true;
-          oldField = currentField;
+          oldField          = currentField;
           ++currentField;
           if (currentField == fields.end()) currentField = fields.begin();
-          break;
-        case EventMgr::EventKind::NONE:
-          return false;
-        case EventMgr::EventKind::DBL_SELECT:
-          if (!wasInControl)
-            completed = true;
-          else {
-            highlightingField = true;
-            oldField = currentField;
-            ++currentField;
-            if (currentField == fields.end()) currentField = fields.begin();
-          }
-          break;
-        default:
-          break;
         }
+        break;
+      default:
+        break;
       }
     }
-  #endif
+  }
+#endif
 
   if (completed) {
     for (auto &field : fields) {
@@ -293,18 +293,18 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
     page->start(fmt);
 
     if (highlightingField) {
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-        (*oldField)->showSelected(false);
-        (*currentField)->showHighlighted(true);
-      #endif
+#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      (*oldField)->showSelected(false);
+      (*currentField)->showHighlighted(true);
+#endif
     } else {
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-        if (selectingField) {
-          selectingField = false;
-          (*currentField)->showSelected(true);
-          (*currentField)->event(event);
-        }
-      #endif
+#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      if (selectingField) {
+        selectingField = false;
+        (*currentField)->showSelected(true);
+        (*currentField)->event(event);
+      }
+#endif
 
       for (auto &field : fields) {
         field->updateHighlight();

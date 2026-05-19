@@ -96,42 +96,42 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       case DOM::Tag::SPAN:
         break;
 
-        #if NO_IMAGE
-        case IMG:
-        case IMAGE:
-          break;
+#if NO_IMAGE
+      case IMG:
+      case IMAGE:
+        break;
 
-        #else
-        case DOM::Tag::IMG:
-          if (showPictures) {
-            if (started) {
-              if ((attr = node.attribute("src")))
-                pictureFilename = attr.value();
-              else
-                ++currentOffset;
-            } else
-              ++currentOffset;
-          } else {
-            if ((attr = node.attribute("alt")))
-              str = attr.value();
+#else
+      case DOM::Tag::IMG:
+        if (showPictures) {
+          if (started) {
+            if ((attr = node.attribute("src")))
+              pictureFilename = attr.value();
             else
               ++currentOffset;
-          }
-          break;
+          } else
+            ++currentOffset;
+        } else {
+          if ((attr = node.attribute("alt")))
+            str = attr.value();
+          else
+            ++currentOffset;
+        }
+        break;
 
-        case DOM::Tag::IMAGE:
-          if (showPictures) {
-            if (started) {
-              if ((attr = node.attribute("xlink:href")))
-                pictureFilename = attr.value();
-              else
-                ++currentOffset;
-            } else
+      case DOM::Tag::IMAGE:
+        if (showPictures) {
+          if (started) {
+            if ((attr = node.attribute("xlink:href")))
+              pictureFilename = attr.value();
+            else
               ++currentOffset;
-          }
-          break;
+          } else
+            ++currentOffset;
+        }
+        break;
 
-        #endif
+#endif
       case DOM::Tag::PRE:
         fmt.pre     = true;
         fmt.display = CSS::Display::BLOCK;
@@ -222,6 +222,22 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       case DOM::Tag::SUP:
         fmt.fontSize      = 0.75 * fmt.fontSize;
         fmt.verticalAlign = -5;
+        break;
+
+      case DOM::Tag::TABLE:
+      case DOM::Tag::COLGROUP:
+      case DOM::Tag::TR:
+      case DOM::Tag::TD:
+      case DOM::Tag::TH:
+      case DOM::Tag::TFOOT:
+      case DOM::Tag::THEAD:
+      case DOM::Tag::COL:
+      case DOM::Tag::CAPTION:
+      case DOM::Tag::TBODY:
+        // For now, we do not support tables, so we just ignore the content of the
+        // table tags and do not display them. We set the display to NONE, but we still process the
+        // content of the table tags to compute the page offsets properly.
+        fmt.display = CSS::Display::NONE;
         break;
 
       case DOM::Tag::NONE:
@@ -444,13 +460,13 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             std::string word;
             word.assign(w, count);
 
-            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-              static bool first = true;
-              if (first) {
-                LOG_D("before page->addWord()");
-                ESP::show_heaps_info();
-              }
-            #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+            static bool first = true;
+            if (first) {
+              LOG_D("before page->addWord()");
+              ESP::show_heaps_info();
+            }
+#endif
 
             if (!page->addWord(word.c_str(), fmt)) {
               if (!pageEnd(fmt)) return false;

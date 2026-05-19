@@ -573,149 +573,150 @@ auto countUtf8Codepoints(std::string_view text) -> std::size_t {
   return count;
 }
 
-auto glyphForChar(char c) -> const GlyphRows & {
-  static const GlyphRows kUnknown = {" ### ", "#   #", "   # ", "  #  ", "  #  ", "     ", "  #  "};
-  static const GlyphRows kSpace   = {"     ", "     ", "     ", "     ", "     ", "     ", "     "};
-  static const GlyphRows kDot     = {"     ", "     ", "     ", "     ", "     ", " ### ", " ### "};
-  static const GlyphRows kComma   = {"     ", "     ", "     ", "     ", " ### ", " ### ", "  #  "};
-  static const GlyphRows kDash    = {"     ", "     ", "     ", " ### ", "     ", "     ", "     "};
-  static const GlyphRows kSlash   = {"    #", "   # ", "   # ", "  #  ", " #   ", " #   ", "#    "};
-  static const GlyphRows kColon   = {"     ", " ### ", " ### ", "     ", " ### ", " ### ", "     "};
-  static const GlyphRows kLParen  = {"   # ", "  #  ", " #   ", " #   ", " #   ", "  #  ", "   # "};
-  static const GlyphRows kRParen  = {" #   ", "  #  ", "   # ", "   # ", "   # ", "  #  ", " #   "};
+// auto glyphForChar(char c) -> const GlyphRows & {
+//   static const GlyphRows kUnknown = {" ### ", "#   #", "   # ", "  #  ", "  #  ", "     ", "  #
+//   "}; static const GlyphRows kSpace   = {"     ", "     ", "     ", "     ", "     ", "     ", "
+//   "}; static const GlyphRows kDot     = {"     ", "     ", "     ", "     ", "     ", " ### ", "
+//   ### "}; static const GlyphRows kComma   = {"     ", "     ", "     ", "     ", " ### ", " ###
+//   ", "  #  "}; static const GlyphRows kDash    = {"     ", "     ", "     ", " ### ", "     ", "
+//   ", "     "}; static const GlyphRows kSlash   = {"    #", "   # ", "   # ", "  #  ", " #   ", "
+//   #   ", "#    "}; static const GlyphRows kColon   = {"     ", " ### ", " ### ", "     ", " ###
+//   ", " ### ", "     "}; static const GlyphRows kLParen  = {"   # ", "  #  ", " #   ", " #   ", "
+//   #   ", "  #  ", "   # "}; static const GlyphRows kRParen  = {" #   ", "  #  ", "   # ", "   #
+//   ", "   # ", "  #  ", " #   "};
 
-  static const GlyphRows k0 = {" ### ", "#   #", "#  ##", "# # #", "##  #", "#   #", " ### "};
-  static const GlyphRows k1 = {"  #  ", " ##  ", "# #  ", "  #  ", "  #  ", "  #  ", "#####"};
-  static const GlyphRows k2 = {" ### ", "#   #", "    #", "  ## ", " #   ", "#    ", "#####"};
-  static const GlyphRows k3 = {" ### ", "#   #", "    #", " ### ", "    #", "#   #", " ### "};
-  static const GlyphRows k4 = {"   ##", "  # #", " #  #", "#   #", "#####", "    #", "    #"};
-  static const GlyphRows k5 = {"#####", "#    ", "#    ", "#### ", "    #", "#   #", " ### "};
-  static const GlyphRows k6 = {" ### ", "#   #", "#    ", "#### ", "#   #", "#   #", " ### "};
-  static const GlyphRows k7 = {"#####", "    #", "   # ", "  #  ", "  #  ", "  #  ", "  #  "};
-  static const GlyphRows k8 = {" ### ", "#   #", "#   #", " ### ", "#   #", "#   #", " ### "};
-  static const GlyphRows k9 = {" ### ", "#   #", "#   #", " ####", "    #", "#   #", " ### "};
+//   static const GlyphRows k0 = {" ### ", "#   #", "#  ##", "# # #", "##  #", "#   #", " ### "};
+//   static const GlyphRows k1 = {"  #  ", " ##  ", "# #  ", "  #  ", "  #  ", "  #  ", "#####"};
+//   static const GlyphRows k2 = {" ### ", "#   #", "    #", "  ## ", " #   ", "#    ", "#####"};
+//   static const GlyphRows k3 = {" ### ", "#   #", "    #", " ### ", "    #", "#   #", " ### "};
+//   static const GlyphRows k4 = {"   ##", "  # #", " #  #", "#   #", "#####", "    #", "    #"};
+//   static const GlyphRows k5 = {"#####", "#    ", "#    ", "#### ", "    #", "#   #", " ### "};
+//   static const GlyphRows k6 = {" ### ", "#   #", "#    ", "#### ", "#   #", "#   #", " ### "};
+//   static const GlyphRows k7 = {"#####", "    #", "   # ", "  #  ", "  #  ", "  #  ", "  #  "};
+//   static const GlyphRows k8 = {" ### ", "#   #", "#   #", " ### ", "#   #", "#   #", " ### "};
+//   static const GlyphRows k9 = {" ### ", "#   #", "#   #", " ####", "    #", "#   #", " ### "};
 
-  static const GlyphRows kA = {" ### ", "#   #", "#   #", "#####", "#   #", "#   #", "#   #"};
-  static const GlyphRows kB = {"#### ", "#   #", "#   #", "#### ", "#   #", "#   #", "#### "};
-  static const GlyphRows kC = {" ### ", "#   #", "#    ", "#    ", "#    ", "#   #", " ### "};
-  static const GlyphRows kD = {"#### ", "#   #", "#   #", "#   #", "#   #", "#   #", "#### "};
-  static const GlyphRows kE = {"#####", "#    ", "#    ", "#### ", "#    ", "#    ", "#####"};
-  static const GlyphRows kF = {"#####", "#    ", "#    ", "#### ", "#    ", "#    ", "#    "};
-  static const GlyphRows kG = {" ### ", "#   #", "#    ", "# ###", "#   #", "#   #", " ### "};
-  static const GlyphRows kH = {"#   #", "#   #", "#   #", "#####", "#   #", "#   #", "#   #"};
-  static const GlyphRows kI = {"#####", "  #  ", "  #  ", "  #  ", "  #  ", "  #  ", "#####"};
-  static const GlyphRows kJ = {"#####", "    #", "    #", "    #", "    #", "#   #", " ### "};
-  static const GlyphRows kK = {"#   #", "#  # ", "# #  ", "##   ", "# #  ", "#  # ", "#   #"};
-  static const GlyphRows kL = {"#    ", "#    ", "#    ", "#    ", "#    ", "#    ", "#####"};
-  static const GlyphRows kM = {"#   #", "## ##", "# # #", "#   #", "#   #", "#   #", "#   #"};
-  static const GlyphRows kN = {"#   #", "##  #", "# # #", "#  ##", "#   #", "#   #", "#   #"};
-  static const GlyphRows kO = {" ### ", "#   #", "#   #", "#   #", "#   #", "#   #", " ### "};
-  static const GlyphRows kP = {"#### ", "#   #", "#   #", "#### ", "#    ", "#    ", "#    "};
-  static const GlyphRows kQ = {" ### ", "#   #", "#   #", "#   #", "# # #", "#  # ", " ## #"};
-  static const GlyphRows kR = {"#### ", "#   #", "#   #", "#### ", "# #  ", "#  # ", "#   #"};
-  static const GlyphRows kS = {" ### ", "#   #", "#    ", " ### ", "    #", "#   #", " ### "};
-  static const GlyphRows kT = {"#####", "  #  ", "  #  ", "  #  ", "  #  ", "  #  ", "  #  "};
-  static const GlyphRows kU = {"#   #", "#   #", "#   #", "#   #", "#   #", "#   #", " ### "};
-  static const GlyphRows kV = {"#   #", "#   #", "#   #", "#   #", "#   #", " # # ", "  #  "};
-  static const GlyphRows kW = {"#   #", "#   #", "#   #", "# # #", "# # #", "## ##", "#   #"};
-  static const GlyphRows kX = {"#   #", "#   #", " # # ", "  #  ", " # # ", "#   #", "#   #"};
-  static const GlyphRows kY = {"#   #", "#   #", " # # ", "  #  ", "  #  ", "  #  ", "  #  "};
-  static const GlyphRows kZ = {"#####", "    #", "   # ", "  #  ", " #   ", "#    ", "#####"};
+//   static const GlyphRows kA = {" ### ", "#   #", "#   #", "#####", "#   #", "#   #", "#   #"};
+//   static const GlyphRows kB = {"#### ", "#   #", "#   #", "#### ", "#   #", "#   #", "#### "};
+//   static const GlyphRows kC = {" ### ", "#   #", "#    ", "#    ", "#    ", "#   #", " ### "};
+//   static const GlyphRows kD = {"#### ", "#   #", "#   #", "#   #", "#   #", "#   #", "#### "};
+//   static const GlyphRows kE = {"#####", "#    ", "#    ", "#### ", "#    ", "#    ", "#####"};
+//   static const GlyphRows kF = {"#####", "#    ", "#    ", "#### ", "#    ", "#    ", "#    "};
+//   static const GlyphRows kG = {" ### ", "#   #", "#    ", "# ###", "#   #", "#   #", " ### "};
+//   static const GlyphRows kH = {"#   #", "#   #", "#   #", "#####", "#   #", "#   #", "#   #"};
+//   static const GlyphRows kI = {"#####", "  #  ", "  #  ", "  #  ", "  #  ", "  #  ", "#####"};
+//   static const GlyphRows kJ = {"#####", "    #", "    #", "    #", "    #", "#   #", " ### "};
+//   static const GlyphRows kK = {"#   #", "#  # ", "# #  ", "##   ", "# #  ", "#  # ", "#   #"};
+//   static const GlyphRows kL = {"#    ", "#    ", "#    ", "#    ", "#    ", "#    ", "#####"};
+//   static const GlyphRows kM = {"#   #", "## ##", "# # #", "#   #", "#   #", "#   #", "#   #"};
+//   static const GlyphRows kN = {"#   #", "##  #", "# # #", "#  ##", "#   #", "#   #", "#   #"};
+//   static const GlyphRows kO = {" ### ", "#   #", "#   #", "#   #", "#   #", "#   #", " ### "};
+//   static const GlyphRows kP = {"#### ", "#   #", "#   #", "#### ", "#    ", "#    ", "#    "};
+//   static const GlyphRows kQ = {" ### ", "#   #", "#   #", "#   #", "# # #", "#  # ", " ## #"};
+//   static const GlyphRows kR = {"#### ", "#   #", "#   #", "#### ", "# #  ", "#  # ", "#   #"};
+//   static const GlyphRows kS = {" ### ", "#   #", "#    ", " ### ", "    #", "#   #", " ### "};
+//   static const GlyphRows kT = {"#####", "  #  ", "  #  ", "  #  ", "  #  ", "  #  ", "  #  "};
+//   static const GlyphRows kU = {"#   #", "#   #", "#   #", "#   #", "#   #", "#   #", " ### "};
+//   static const GlyphRows kV = {"#   #", "#   #", "#   #", "#   #", "#   #", " # # ", "  #  "};
+//   static const GlyphRows kW = {"#   #", "#   #", "#   #", "# # #", "# # #", "## ##", "#   #"};
+//   static const GlyphRows kX = {"#   #", "#   #", " # # ", "  #  ", " # # ", "#   #", "#   #"};
+//   static const GlyphRows kY = {"#   #", "#   #", " # # ", "  #  ", "  #  ", "  #  ", "  #  "};
+//   static const GlyphRows kZ = {"#####", "    #", "   # ", "  #  ", " #   ", "#    ", "#####"};
 
-  if (c >= 'a' && c <= 'z') c = static_cast<char>(c - ('a' - 'A'));
-  switch (c) {
-  case ' ':
-    return kSpace;
-  case '.':
-    return kDot;
-  case ',':
-    return kComma;
-  case '-':
-    return kDash;
-  case '/':
-    return kSlash;
-  case ':':
-    return kColon;
-  case '(':
-    return kLParen;
-  case ')':
-    return kRParen;
-  case '0':
-    return k0;
-  case '1':
-    return k1;
-  case '2':
-    return k2;
-  case '3':
-    return k3;
-  case '4':
-    return k4;
-  case '5':
-    return k5;
-  case '6':
-    return k6;
-  case '7':
-    return k7;
-  case '8':
-    return k8;
-  case '9':
-    return k9;
-  case 'A':
-    return kA;
-  case 'B':
-    return kB;
-  case 'C':
-    return kC;
-  case 'D':
-    return kD;
-  case 'E':
-    return kE;
-  case 'F':
-    return kF;
-  case 'G':
-    return kG;
-  case 'H':
-    return kH;
-  case 'I':
-    return kI;
-  case 'J':
-    return kJ;
-  case 'K':
-    return kK;
-  case 'L':
-    return kL;
-  case 'M':
-    return kM;
-  case 'N':
-    return kN;
-  case 'O':
-    return kO;
-  case 'P':
-    return kP;
-  case 'Q':
-    return kQ;
-  case 'R':
-    return kR;
-  case 'S':
-    return kS;
-  case 'T':
-    return kT;
-  case 'U':
-    return kU;
-  case 'V':
-    return kV;
-  case 'W':
-    return kW;
-  case 'X':
-    return kX;
-  case 'Y':
-    return kY;
-  case 'Z':
-    return kZ;
-  default:
-    return kUnknown;
-  }
-}
+//   if (c >= 'a' && c <= 'z') c = static_cast<char>(c - ('a' - 'A'));
+//   switch (c) {
+//   case ' ':
+//     return kSpace;
+//   case '.':
+//     return kDot;
+//   case ',':
+//     return kComma;
+//   case '-':
+//     return kDash;
+//   case '/':
+//     return kSlash;
+//   case ':':
+//     return kColon;
+//   case '(':
+//     return kLParen;
+//   case ')':
+//     return kRParen;
+//   case '0':
+//     return k0;
+//   case '1':
+//     return k1;
+//   case '2':
+//     return k2;
+//   case '3':
+//     return k3;
+//   case '4':
+//     return k4;
+//   case '5':
+//     return k5;
+//   case '6':
+//     return k6;
+//   case '7':
+//     return k7;
+//   case '8':
+//     return k8;
+//   case '9':
+//     return k9;
+//   case 'A':
+//     return kA;
+//   case 'B':
+//     return kB;
+//   case 'C':
+//     return kC;
+//   case 'D':
+//     return kD;
+//   case 'E':
+//     return kE;
+//   case 'F':
+//     return kF;
+//   case 'G':
+//     return kG;
+//   case 'H':
+//     return kH;
+//   case 'I':
+//     return kI;
+//   case 'J':
+//     return kJ;
+//   case 'K':
+//     return kK;
+//   case 'L':
+//     return kL;
+//   case 'M':
+//     return kM;
+//   case 'N':
+//     return kN;
+//   case 'O':
+//     return kO;
+//   case 'P':
+//     return kP;
+//   case 'Q':
+//     return kQ;
+//   case 'R':
+//     return kR;
+//   case 'S':
+//     return kS;
+//   case 'T':
+//     return kT;
+//   case 'U':
+//     return kU;
+//   case 'V':
+//     return kV;
+//   case 'W':
+//     return kW;
+//   case 'X':
+//     return kX;
+//   case 'Y':
+//     return kY;
+//   case 'Z':
+//     return kZ;
+//   default:
+//     return kUnknown;
+//   }
+// }
 
 auto chooseScale(const SvgOptions &options) -> int32_t {
   if (options.test(SVG_OPTION(SCALE_EIGHTH))) return 8;

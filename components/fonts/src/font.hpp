@@ -57,7 +57,7 @@ public:
 
   auto clearCache() -> void;
 
-  auto getSize(const char *str, Dim *dim, int16_t glyphSize) -> void;
+  auto getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void;
 
   enum class GlyphLoadMode : uint8_t {
     METRICS_ONLY, ///< Only metric fields; buffer == nullptr

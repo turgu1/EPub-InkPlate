@@ -138,7 +138,11 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
   return std::make_tuple(glyph, kern, ignoreNext);
 }
 
-auto Font::getSize(const char *str, Dim *dim, int16_t glyphSize) -> void {
+// Only used for ASCII chars, so no need to be protected by
+// mutex as it is expected to be called only during form
+// fields dimensions computation, which is done before
+// showing the form and thus before any user interaction.
+auto Font::getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void {
   {
     // std::scoped_lock guard(mutex);
 

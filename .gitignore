@@ -8,6 +8,7 @@ build_linux
 build_test
 build_test_config
 build_valgrind
+build_page_locs_checker
 test-books
 release*
 SDCard/epub-test

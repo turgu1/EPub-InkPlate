@@ -503,10 +503,7 @@ VALGRIND_DEPS     := $(VALGRIND_OBJS:.o=.d)
 
 valgrind_s5: $(VALGRIND_BUILD)/$(VALGRIND_TARGET)
 
-$(VALGRIND_BUILD)/$(VALGRIND_TARGET): $(VALGRIND_OBJS)
-	@echo "Linking $@"
-	@$(CXX) $(VALGRIND_OBJS) -lpthread -lssl -lcrypto $(FREETYPE_LIBS) -o $@
-	@echo "Built: $@"
+$(VALGRIND_BUILD)/$(VALGRIND_TARGET): $(VALGRIND_OBJS) ; echo "Linking $@"; $(CXX) $(VALGRIND_OBJS) -no-pie -lpthread -lssl -lcrypto $(FREETYPE_LIBS) -o $@ && echo "Built: $@"
 
 $(VALGRIND_BUILD)/%.o: %.cpp
 	@echo "Compiling (valgrind) $<"

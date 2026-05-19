@@ -251,10 +251,10 @@ auto PageLocs::stopControlTask() -> void {
 auto PageLocs::getPageCountOrPercent() -> int16_t {
   if (isControlTaskReadyToBeStopped()) stopControlTask();
 
-  LOG_I("getPageCountOrPercent: completed=%d aborted=%d controlTask=%s itemsSet.size()=%d "
-        "itemCount=%d",
-        completed, aborted, controlTask ? "yes" : "no", static_cast<int>(itemsSet.size()),
-        static_cast<int>(itemCount));
+  // LOG_I("getPageCountOrPercent: completed=%d aborted=%d controlTask=%s itemsSet.size()=%d "
+  //       "itemCount=%d",
+  //       completed, aborted, controlTask ? "yes" : "no", static_cast<int>(itemsSet.size()),
+  //       static_cast<int>(itemCount));
 
   if (completed) return pageCount;
 
@@ -270,8 +270,10 @@ auto PageLocs::getPageCountOrPercent() -> int16_t {
     if (itemCount <= 0) return 0;
 
     int16_t percent = static_cast<int16_t>((itemsSet.size() * 100) / itemCount);
-    LOG_I("Progress: %d%% (%d/%d items)", percent, static_cast<int>(itemsSet.size()),
-          static_cast<int>(itemCount));
+
+    // LOG_I("Progress: %d%% (%d/%d items)", percent, static_cast<int>(itemsSet.size()),
+    //       static_cast<int>(itemCount));
+
     if (percent < 0) percent = 0;
     if (percent > 99) percent = 99;
     return percent;
@@ -300,6 +302,7 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
     auto inserted = pagesMap.insert(std::make_pair(id, info));
     if (inserted.second) {
       itemsSet.insert(id.itemrefIndex);
+      generatedPageEntryCount.fetch_add(1, std::memory_order_relaxed);
       telemetry.mapInsertions.fetch_add(1);
     }
     return;
@@ -313,6 +316,7 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
       auto inserted = pagesMap.insert(std::make_pair(id, info));
       if (inserted.second) {
         itemsSet.insert(id.itemrefIndex);
+        generatedPageEntryCount.fetch_add(1, std::memory_order_relaxed);
         telemetry.mapInsertions.fetch_add(1);
       }
       mutex.unlock();

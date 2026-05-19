@@ -479,7 +479,7 @@ auto Page::setLimits(const Format &fmt) -> void {
 auto Page::lineBreak(const Format &fmt, int8_t indentNextLine) -> bool {
   FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-  if (!lineList->empty()) {
+  if (!lineList->empty() || (computeMode != ComputeMode::DISPLAY && glyphsHeight > 0)) {
     addLine(fmt, false);
   } else {
     pos.y += font->getLineHeight(fmt.fontSize) * fmt.lineHeightFactor;
@@ -530,7 +530,7 @@ auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
 }
 
 auto Page::breakParagraph(const Format &fmt) -> void {
-  if (!lineList->empty()) {
+  if (!lineList->empty() || (computeMode != ComputeMode::DISPLAY && glyphsHeight > 0)) {
     addLine(fmt, true);
   }
 }
@@ -538,7 +538,7 @@ auto Page::breakParagraph(const Format &fmt) -> void {
 auto Page::endParagraph(const Format &fmt) -> bool {
   FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-  if (!lineList->empty()) {
+  if (!lineList->empty() || (computeMode != ComputeMode::DISPLAY && glyphsHeight > 0)) {
     addLine(fmt, false);
 
     int32_t descender = font->getDescenderHeight(fmt.fontSize);

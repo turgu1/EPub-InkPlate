@@ -19,10 +19,13 @@
 #include <list>
 
 enum class FormEntryType {
-  HORIZONTAL, VERTICAL, UINT16, FLOAT,
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    DONE
-  #endif
+  HORIZONTAL,
+  VERTICAL,
+  UINT16,
+  FLOAT,
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  DONE
+#endif
 };
 
 constexpr uint8_t FORM_FONT_SIZE = 9;
@@ -82,7 +85,7 @@ public:
 
   auto computeCaptionDim() -> void {
     if (formEntry.caption != nullptr) {
-      font.getSize(formEntry.caption, &captionDim, FORM_FONT_SIZE);
+      font.getASCIISize(formEntry.caption, &captionDim, FORM_FONT_SIZE);
     } else {
       captionDim = Dim(0, 0);
     }
@@ -131,14 +134,13 @@ public:
     }
   }
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
-      return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
-             (x <= (fieldPos.x + fieldDim.width + 10)) &&
-             (y <= (fieldPos.y + fieldDim.height + 10));
-    }
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
+    return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
+           (x <= (fieldPos.x + fieldDim.width + 10)) && (y <= (fieldPos.y + fieldDim.height + 10));
+  }
 
-  #endif
+#endif
 };
 
 class FormChoiceField : public FormField {
@@ -162,17 +164,16 @@ public:
 
   static constexpr FormChoice fontSizeChoices[4] = {{"8", 8}, {"10", 10}, {"12", 12}, {"15", 15}};
 
-  #if DATE_TIME_RTC
-    static constexpr FormChoice rightCornerChoices[3] = {
-        {"NONE", 0}, {"DATE TIME", 1}, {"HEAP", 2}};
-  #endif
+#if DATE_TIME_RTC
+  static constexpr FormChoice rightCornerChoices[3] = {{"NONE", 0}, {"DATE TIME", 1}, {"HEAP", 2}};
+#endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    static constexpr FormChoice orientationChoices[4] = {
-        {"LEFT", 3}, {"RIGHT", 2}, {"TOP", 1}, {"BOTTOM", 0}};
-  #else
-    static constexpr FormChoice orientationChoices[3] = {{"LEFT", 0}, {"RIGHT", 1}, {"BOTTOM", 2}};
-  #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  static constexpr FormChoice orientationChoices[4] = {
+      {"LEFT", 3}, {"RIGHT", 2}, {"TOP", 1}, {"BOTTOM", 0}};
+#else
+  static constexpr FormChoice orientationChoices[3] = {{"LEFT", 0}, {"RIGHT", 1}, {"BOTTOM", 2}};
+#endif
 
   static FormChoice fontChoices[8];
   static uint8_t fontChoicesCount;
@@ -182,7 +183,7 @@ public:
     for (int8_t i = 0; i < formEntry.u.ch.choiceCount; ++i) {
       Item *item = itemPool.newElement();
       items.push_back(item);
-      font.getSize(formEntry.u.ch.choices[i].caption, &item->dim, FORM_FONT_SIZE);
+      font.getASCIISize(formEntry.u.ch.choices[i].caption, &item->dim, FORM_FONT_SIZE);
       item->idx = i;
     }
 
@@ -225,40 +226,40 @@ public:
     }
   }
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    auto event(const EventMgr::Event &event) -> bool {
-      oldItem = currentItem;
-      Items::iterator it;
-      for (it = items.begin(); it != items.end(); ++it) {
-        if ((event.x >= (*it)->pos.x - 5) && (event.y >= (*it)->pos.y - 5) &&
-            (event.x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
-            (event.y <= ((*it)->pos.y + (*it)->dim.height + 5))) {
-          break;
-        }
-      }
-      if (it != items.end()) currentItem = it;
-      return false;
-    }
-  #else
-    auto event(const EventMgr::Event &event) -> bool {
-      oldItem = currentItem;
-      switch (event.kind) {
-      case EventMgr::EventKind::DBL_PREV:
-      case EventMgr::EventKind::PREV:
-        if (currentItem == items.begin()) currentItem = items.end();
-        currentItem--;
-        break;
-      case EventMgr::EventKind::DBL_NEXT:
-      case EventMgr::EventKind::NEXT:
-        ++currentItem;
-        if (currentItem == items.end()) currentItem = items.begin();
-        break;
-      default:
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  auto event(const EventMgr::Event &event) -> bool {
+    oldItem = currentItem;
+    Items::iterator it;
+    for (it = items.begin(); it != items.end(); ++it) {
+      if ((event.x >= (*it)->pos.x - 5) && (event.y >= (*it)->pos.y - 5) &&
+          (event.x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
+          (event.y <= ((*it)->pos.y + (*it)->dim.height + 5))) {
         break;
       }
-      return false;
     }
-  #endif
+    if (it != items.end()) currentItem = it;
+    return false;
+  }
+#else
+  auto event(const EventMgr::Event &event) -> bool {
+    oldItem = currentItem;
+    switch (event.kind) {
+    case EventMgr::EventKind::DBL_PREV:
+    case EventMgr::EventKind::PREV:
+      if (currentItem == items.begin()) currentItem = items.end();
+      currentItem--;
+      break;
+    case EventMgr::EventKind::DBL_NEXT:
+    case EventMgr::EventKind::NEXT:
+      ++currentItem;
+      if (currentItem == items.end()) currentItem = items.begin();
+      break;
+    default:
+      break;
+    }
+    return false;
+  }
+#endif
 
   auto updateHighlight() -> void {
     if (oldItem != currentItem) {
@@ -457,7 +458,7 @@ public:
 
   auto saveValue() -> void {}
 
-  auto computeFieldDim() -> void { font.getSize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
+  auto computeFieldDim() -> void { font.getASCIISize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
 };
 
 using FormFloatPtr = HimemUniquePtr<class FormFloat>;
@@ -530,49 +531,51 @@ public:
 
   auto saveValue() -> void {}
 
-  auto computeFieldDim() -> void { font.getSize("XXXXXXX", &fieldDim, FORM_FONT_SIZE); }
+  auto computeFieldDim() -> void { font.getASCIISize("XXXXXXX", &fieldDim, FORM_FONT_SIZE); }
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  class FormDone : public FormField {
+class FormDone : public FormField {
 
-  public:
-    using FormField::FormField;
+public:
+  using FormField::FormField;
 
-    FormDone()  = default;
-    ~FormDone() = default;
+  FormDone()  = default;
+  ~FormDone() = default;
 
-    static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
-      return makeUniqueHimem<FormDone>(formEntry, font, page);
-    }
+  static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
+    return makeUniqueHimem<FormDone>(formEntry, font, page);
+  }
 
-    // bool event(const EventMgr::Event &event);
+  // bool event(const EventMgr::Event &event);
 
-    const Dim getFieldDim() { return Dim(fieldDim.width, fieldDim.height + 10); }
-    auto saveValue() -> void {}
-    auto updateHighlight() -> void {
-      page.putRounded(Dim(fieldDim.width + 16, fieldDim.height + 16),
-                      Pos(fieldPos.x - 8, fieldPos.y - 8));
-      page.putRounded(Dim(fieldDim.width + 18, fieldDim.height + 18),
-                      Pos(fieldPos.x - 9, fieldPos.y - 9));
-      page.putRounded(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                      Pos(fieldPos.x - 10, fieldPos.y - 10));
-    }
+  const Dim getFieldDim() { return Dim(fieldDim.width, fieldDim.height + 10); }
+  auto saveValue() -> void {}
+  auto updateHighlight() -> void {
+    page.putRounded(Dim(fieldDim.width + 16, fieldDim.height + 16),
+                    Pos(fieldPos.x - 8, fieldPos.y - 8));
+    page.putRounded(Dim(fieldDim.width + 18, fieldDim.height + 18),
+                    Pos(fieldPos.x - 9, fieldPos.y - 9));
+    page.putRounded(Dim(fieldDim.width + 20, fieldDim.height + 20),
+                    Pos(fieldPos.x - 10, fieldPos.y - 10));
+  }
 
-    auto computeFieldDim() -> void { font.getSize(formEntry.caption, &fieldDim, FORM_FONT_SIZE); }
+  auto computeFieldDim() -> void {
+    font.getASCIISize(formEntry.caption, &fieldDim, FORM_FONT_SIZE);
+  }
 
-    auto computeFieldPos(Pos fromPos) -> void {
-      fieldPos.x = (Screen::getWidth() / 2) - (fieldDim.width / 2);
-      fieldPos.y = fromPos.y + 10;
-    }
+  auto computeFieldPos(Pos fromPos) -> void {
+    fieldPos.x = (Screen::getWidth() / 2) - (fieldDim.width / 2);
+    fieldPos.y = fromPos.y + 10;
+  }
 
-    auto paint(Page::Format &fmt) -> void {
-      Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
-      uint8_t offset = -glyph->yoff;
+  auto paint(Page::Format &fmt) -> void {
+    Glyph *glyph   = font.getGlyph('M', FORM_FONT_SIZE);
+    uint8_t offset = -glyph->yoff;
 
-      page.putStrAt(formEntry.caption, Pos(fieldPos.x, fieldPos.y + offset), fmt);
-    }
-  };
+    page.putStrAt(formEntry.caption, Pos(fieldPos.x, fieldPos.y + offset), fmt);
+  }
+};
 #endif
 
 class FieldFactory {
@@ -591,10 +594,10 @@ public:
       return FormUInt16::Make(entry, font, page);
     case FormEntryType::FLOAT:
       return FormFloat::Make(entry, font, page);
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      case FormEntryType::DONE:
-        return FormDone::Make(entry, font, page);
-      #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    case FormEntryType::DONE:
+      return FormDone::Make(entry, font, page);
+#endif
     }
     return nullptr;
   }
@@ -646,16 +649,16 @@ private:
 
   Pos bottomMsgPos;
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    auto findField(uint16_t x, uint16_t y) -> Fields::iterator {
-      for (Fields::iterator it = fields.begin(); it != fields.end(); ++it) {
-        if ((*it)->isPointed(x, y)) return it;
-      }
-
-      return fields.end();
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  auto findField(uint16_t x, uint16_t y) -> Fields::iterator {
+    for (Fields::iterator it = fields.begin(); it != fields.end(); ++it) {
+      if ((*it)->isPointed(x, y)) return it;
     }
 
-  #endif
+    return fields.end();
+  }
+
+#endif
 
 public:
   auto setCompleted(bool value) -> void { completed = value; }

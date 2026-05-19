@@ -41,10 +41,13 @@ public:
   using SimpleListSinglePool =
       SimpleList<T, ScopedHimemPoolAllocator<T, ScopedListPoolTag, BlockSize>>;
 
+  // clang-format off
   enum class Tag : uint8_t {
     NONE, BODY, P, LI, BREAK, H1, H2, H3, H4, H5, H6, B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
-        BLOCKQUOTE, STRONG, ANY, FONT_FACE, PAGE, SUB, SUP
+        BLOCKQUOTE, STRONG, ANY, FONT_FACE, PAGE, SUB, SUP, TABLE, COLGROUP, TR, TD, TH, TFOOT, 
+        THEAD, COL, CAPTION, TBODY
   };
+  // clang-format on
 
   using Tags = std::map<std::string, Tag>;
 
@@ -120,11 +123,11 @@ public:
   }
 
   auto show() -> void {
-    #if DEBUGGING
-      std::cout << "DOM:" << std::endl;
-      if (body != nullptr) body->show(1);
-      std::cout << "[END DOM]" << std::endl;
-    #endif
+#if DEBUGGING
+    std::cout << "DOM:" << std::endl;
+    if (body != nullptr) body->show(1);
+    std::cout << "[END DOM]" << std::endl;
+#endif
   }
 
 private:
