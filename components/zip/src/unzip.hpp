@@ -8,7 +8,13 @@
 #include <forward_list>
 #include <fstream>
 #include <mutex>
-#include <thread>
+
+#if EPUB_LINUX_BUILD
+  #include <thread>
+#else
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
+#endif
 
 #define MINIZ 1
 
@@ -73,8 +79,13 @@ private:
   bool zipFileIsOpen{false};
   std::string currentFilename{};
   bool streamMutexHeld{false};
-  std::thread::id streamOwnerThread{};
   bool streamInflateInitialized{false};
+
+#if EPUB_LINUX_BUILD
+  std::thread::id streamOwnerThread{};
+#else
+  TaskHandle_t streamOwnerThread{nullptr};
+#endif
 
   mz_stream zstr{};
 

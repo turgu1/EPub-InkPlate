@@ -69,6 +69,9 @@ protected:
       }
 
 #if EPUB_LINUX_BUILD
+      // This is to simulate a long processing time for page location computation
+      // and to give the chance to book_viewer to show a page if required during
+      // testing. It will be removed in production.
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #endif
 

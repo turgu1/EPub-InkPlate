@@ -366,19 +366,30 @@ auto Unzip::closeZipFileUnsafe() -> void {
   }
   currentFileEntry = fileEntries.end();
   currentFilename.clear();
-  streamMutexHeld   = false;
+  streamMutexHeld = false;
+  aborted         = false;
+
+#if EPUB_LINUX_BUILD
   streamOwnerThread = std::thread::id{};
-  aborted           = false;
+#else
+  streamOwnerThread = nullptr;
+#endif
 }
 
 auto Unzip::closeZipFile() -> void {
-  if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
-    // Stream APIs keep the mutex locked for the whole read session. If the owner thread asks
-    // to close the zip, avoid trying to lock the same non-recursive mutex twice.
+#if EPUB_LINUX_BUILD
+  if (std::this_thread::get_id() == streamOwnerThread) {
+    // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
     closeZipFileUnsafe();
-    mutex.unlock();
     return;
   }
+#else
+  if (xTaskGetCurrentTaskHandle() == streamOwnerThread) {
+    // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
+    closeZipFileUnsafe();
+    return;
+  }
+#endif
 
   std::scoped_lock guard(mutex);
   closeZipFileUnsafe();
@@ -579,18 +590,34 @@ auto Unzip::closeFile() -> void {}
 
 auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
 
+  #if EPUB_LINUX_BUILD
   if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
     LOG_E("openStreamFile called while a stream is already open on this thread.");
     return false;
   }
+  #else
+  if (streamMutexHeld && (streamOwnerThread == xTaskGetCurrentTaskHandle())) {
+    LOG_E("openStreamFile called while a stream is already open on this thread.");
+    return false;
+  }
+  #endif
 
   mutex.lock();
-  streamMutexHeld   = true;
+  streamMutexHeld = true;
+
+  #if EPUB_LINUX_BUILD
   streamOwnerThread = std::this_thread::get_id();
+  #else
+  streamOwnerThread = xTaskGetCurrentTaskHandle();
+  #endif
 
   if (!openFile(filename)) {
-    streamMutexHeld   = false;
+    streamMutexHeld = false;
+  #if EPUB_LINUX_BUILD
     streamOwnerThread = std::thread::id{};
+  #else
+    streamOwnerThread = nullptr;
+  #endif
     mutex.unlock();
     return false;
   }
@@ -648,10 +675,17 @@ auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
 auto Unzip::closeStreamFile() -> void {
   if (!streamMutexHeld) return;
 
+  #if EPUB_LINUX_BUILD
   if (streamOwnerThread != std::this_thread::get_id()) {
     LOG_E("closeStreamFile called from a non-owner thread.");
     return;
   }
+  #else
+  if (streamOwnerThread != xTaskGetCurrentTaskHandle()) {
+    LOG_E("closeStreamFile called from a non-owner thread.");
+    return;
+  }
+  #endif
 
   if (streamInflateInitialized) {
     mz_inflateEnd(&zstr);
@@ -660,9 +694,13 @@ auto Unzip::closeStreamFile() -> void {
 
   closeFile();
 
-  streamMutexHeld   = false;
+  streamMutexHeld = false;
+  #if EPUB_LINUX_BUILD
   streamOwnerThread = std::thread::id{};
-  aborted           = false;
+  #else
+  streamOwnerThread = nullptr;
+  #endif
+  aborted = false;
 
   mutex.unlock();
 }
@@ -684,11 +722,20 @@ auto Unzip::streamSkip(uint32_t byteCount) -> bool {
 auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
 
   if (dataSize == 0) return 0;
+
+  #if EPUB_LINUX_BUILD
   if (!streamMutexHeld || (streamOwnerThread != std::this_thread::get_id()) || !file.is_open()) {
     LOG_E("Unzip getStreamData called outside stream session.");
     aborted = true;
     return 0;
   }
+  #else
+  if (!streamMutexHeld || (streamOwnerThread != xTaskGetCurrentTaskHandle()) || !file.is_open()) {
+    LOG_E("Unzip getStreamData called outside stream session.");
+    aborted = true;
+    return 0;
+  }
+  #endif
 
   auto readExact = [this](void *dst, std::size_t size) -> bool {
     if (size == 0) return true;

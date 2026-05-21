@@ -232,7 +232,11 @@ auto PageLocsControl::task() -> void {
 #endif
 
     if (!hasMessage) {
+#if EPUB_LINUX_BUILD
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
+#else
+      vTaskDelay(pdMS_TO_TICKS(1));
+#endif
       continue;
     }
 
