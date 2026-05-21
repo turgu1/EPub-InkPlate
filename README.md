@@ -20,6 +20,9 @@ This is an overdue update of the EPub reader. A lot of changes were made interna
 
 See [CHANGES.md](CHANGES.md) for a complete list of changes including internal improvements.
 
+For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
+[doc/TESTING_TOOLS_GUIDE.md](doc/TESTING_TOOLS_GUIDE.md).
+
 ### Building the application image
 
 The project is built with ESP-IDF, using CMake through `idf.py`. To build a new image, first install ESP-IDF v5.5.4 together with Espressif's tool suite. The recommended setup is Visual Studio Code with the Espressif IDF extension, although a command-line installation also works. Refer to the [ESP-IDF framework installation documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/). This guide assumes the framework is installed in `~/.espressif/v5.5.4`.

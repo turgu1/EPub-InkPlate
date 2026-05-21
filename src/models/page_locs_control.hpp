@@ -6,14 +6,15 @@
 #include "models/page_locs_retriever.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include <esp_pthread.h>
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
 #else
   #include <mqueue.h>
+  #include <thread>
   #include <time.h>
 #endif
 
 #include <atomic>
-#include <thread>
 #include <vector>
 
 class PageLocsControl;
@@ -34,7 +35,14 @@ public:
   static inline auto Make() { return makeUniqueHimem<PageLocsControl>(); }
 
   enum class Req : int8_t {
-    NONE, STOP, START_DOCUMENT, GET_ASAP, ITEM_READY, ASAP_READY, PERCENT, ITEM_INTERRUPTED
+    NONE,
+    STOP,
+    START_DOCUMENT,
+    GET_ASAP,
+    ITEM_READY,
+    ASAP_READY,
+    PERCENT,
+    ITEM_INTERRUPTED
   };
 
   struct QueueData {
@@ -46,35 +54,35 @@ public:
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
-    #if EPUB_LINUX_BUILD
-      (void)timeout;
-      QueueData wireData{};
-      wireData.req           = data.req;
-      wireData.reserved      = 0;
-      wireData.itemrefIndex  = data.itemrefIndex;
-      wireData.itemrefCount  = data.itemrefCount;
-      wireData.correlationId = data.correlationId;
-      return mq_send(managerQueue, (const char *)&wireData, sizeof(wireData), 1);
-    #else
-      return xQueueSendToBack(managerQueue, &data, timeout);
-    #endif
+#if EPUB_LINUX_BUILD
+    (void)timeout;
+    QueueData wireData{};
+    wireData.req           = data.req;
+    wireData.reserved      = 0;
+    wireData.itemrefIndex  = data.itemrefIndex;
+    wireData.itemrefCount  = data.itemrefCount;
+    wireData.correlationId = data.correlationId;
+    return mq_send(managerQueue, (const char *)&wireData, sizeof(wireData), 1);
+#else
+    return xQueueSendToBack(managerQueue, &data, timeout);
+#endif
   }
 
   // Retriever notifications use a dedicated queue to avoid starvation/mixing
   // with manager commands (GET_ASAP/STOP/PERCENT).
   static inline auto sendFromRetriever(const QueueData data, int timeout = 0) {
-    #if EPUB_LINUX_BUILD
-      (void)timeout;
-      QueueData wireData{};
-      wireData.req           = data.req;
-      wireData.reserved      = 0;
-      wireData.itemrefIndex  = data.itemrefIndex;
-      wireData.itemrefCount  = data.itemrefCount;
-      wireData.correlationId = data.correlationId;
-      return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
-    #else
-      return xQueueSendToBack(retrieverQueue, &data, timeout);
-    #endif
+#if EPUB_LINUX_BUILD
+    (void)timeout;
+    QueueData wireData{};
+    wireData.req           = data.req;
+    wireData.reserved      = 0;
+    wireData.itemrefIndex  = data.itemrefIndex;
+    wireData.itemrefCount  = data.itemrefCount;
+    wireData.correlationId = data.correlationId;
+    return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
+#else
+    return xQueueSendToBack(retrieverQueue, &data, timeout);
+#endif
   }
 
   auto setup(const HimemString &epubFilename) -> bool;
@@ -105,49 +113,49 @@ private:
 
   PageLocsRetriever retrieverTask;
 
-  #if EPUB_LINUX_BUILD
-    static mqd_t managerQueue;
-    static mqd_t retrieverQueue;
-    static constexpr mq_attr queueAttr = {0, 5, sizeof(QueueData), 0};
-  #else
-    static QueueHandle_t managerQueue;
-    static QueueHandle_t retrieverQueue;
-  #endif
+#if EPUB_LINUX_BUILD
+  static mqd_t managerQueue;
+  static mqd_t retrieverQueue;
+  static constexpr mq_attr queueAttr = {0, 5, sizeof(QueueData), 0};
+#else
+  static QueueHandle_t managerQueue;
+  static QueueHandle_t retrieverQueue;
+#endif
 
   auto receiveFromManager(QueueData &data, int timeout = -1) {
-    #if EPUB_LINUX_BUILD
-      if (timeout <= 0) {
-        return mq_receive(managerQueue, (char *)&data, sizeof(data), nullptr);
-      }
+#if EPUB_LINUX_BUILD
+    if (timeout <= 0) {
+      return mq_receive(managerQueue, (char *)&data, sizeof(data), nullptr);
+    }
 
-      timespec ts{};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      const int64_t nsecTotal =
-          static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
-      ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
-      ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
-      return mq_timedreceive(managerQueue, (char *)&data, sizeof(data), nullptr, &ts);
-    #else
-      return xQueueReceive(managerQueue, &data, timeout);
-    #endif
+    timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    const int64_t nsecTotal =
+        static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
+    ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+    ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+    return mq_timedreceive(managerQueue, (char *)&data, sizeof(data), nullptr, &ts);
+#else
+    return xQueueReceive(managerQueue, &data, timeout);
+#endif
   }
 
   auto receiveFromRetriever(QueueData &data, int timeout = -1) {
-    #if EPUB_LINUX_BUILD
-      if (timeout <= 0) {
-        return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
-      }
+#if EPUB_LINUX_BUILD
+    if (timeout <= 0) {
+      return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
+    }
 
-      timespec ts{};
-      clock_gettime(CLOCK_REALTIME, &ts);
-      const int64_t nsecTotal =
-          static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
-      ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
-      ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
-      return mq_timedreceive(retrieverQueue, (char *)&data, sizeof(data), nullptr, &ts);
-    #else
-      return xQueueReceive(retrieverQueue, &data, timeout);
-    #endif
+    timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    const int64_t nsecTotal =
+        static_cast<int64_t>(ts.tv_nsec) + static_cast<int64_t>(timeout) * 1000000LL;
+    ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+    ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+    return mq_timedreceive(retrieverQueue, (char *)&data, sizeof(data), nullptr, &ts);
+#else
+    return xQueueReceive(retrieverQueue, &data, timeout);
+#endif
   }
 
   /**
@@ -171,6 +179,11 @@ private:
   auto sendPendingAsapReplies(int16_t itemref, const char *ctx, bool alreadySentToMgr = false)
       -> void;
 
+#if EPUB_INKPLATE_BUILD
+  TaskHandle_t controlTaskHandle{nullptr};
+#else
   std::thread controlThread;
+#endif
+
   auto task() -> void;
 };

@@ -9,6 +9,8 @@
 #include "helpers/picture_load_icon.hpp"
 #include "screen.hpp"
 
+#include "controllers/event_mgr.hpp"
+
 // MemoryPool<Page::Format> HTMLInterpreter::fmtPool;
 
 // This method process a single xml node and recurse for the associated children.
@@ -311,16 +313,16 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       if (started && (currentOffset < endOffset)) {
         const bool displayMode = page->getComputeMode() == Page::ComputeMode::DISPLAY;
 
+        auto pict = epub->getPicture(fname, displayMode);
+
         // If the image is large, show a loading icon while it loads to avoid a
         // long wait with a blank page.
         if (displayMode) {
-          auto pictInfo = epub->getPicture(fname, false);
-          if (pictInfo != nullptr) {
-            showPictureLoadIcon(pictInfo->getDim());
+          if ((pict != nullptr) && eventMgr.someEventWaiting()) {
+            showPictureLoadIcon(pict->getDim());
           }
         }
 
-        auto pict = epub->getPicture(fname, displayMode);
         if (pict != nullptr) {
           bool added            = false;
           std::tie(added, pict) = page->addPicture(std::move(pict), fmt /*, beginning_of_page */);

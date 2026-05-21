@@ -39,10 +39,12 @@
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
-static constexpr int NAV_THREAD_COUNT          = 2;
-static constexpr int64_t RESTART_TRIGGER_MS    = 50'000;  ///< trigger restart after 50 s
-static constexpr int64_t COMPLETION_TIMEOUT_MS = 600'000; ///< 10 min hard timeout
-static constexpr int64_t NAV_SLEEP_MS          = 50;      ///< nav thread yield interval
+static constexpr int NAV_THREAD_COUNT               = 2;
+static constexpr int64_t RESTART_TRIGGER_MS         = 50'000;  ///< trigger restart after 50 s
+static constexpr int64_t COMPLETION_TIMEOUT_MS      = 600'000; ///< 10 min hard timeout
+static constexpr int64_t NAV_SLEEP_MS               = 50;      ///< nav thread yield interval
+static constexpr int64_t PREFLIGHT_START_TIMEOUT_MS = 30'000;
+static constexpr int64_t PREFLIGHT_STOP_TIMEOUT_MS  = 15'000;
 
 // ---------------------------------------------------------------------------
 // Nav thread
@@ -101,6 +103,73 @@ static void stopNavThreads(NavCtx ctx[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Preflight: regression guard for PageLocs lock interaction
+//
+// Stress getPageNbr() calls while stopping an active control task. If stop
+// does not complete within the watchdog timeout, abort the process so CI/test
+// harnesses report a hard failure rather than hanging forever.
+// ---------------------------------------------------------------------------
+static auto runStopUnderPageNbrPollingPreflight(EPubPtr &epub) -> bool {
+  std::fprintf(stderr, "[S5 Valgrind] preflight: stopControlTask under getPageNbr polling\n");
+
+  pageLocs.checkForFormatChanges(epub, 0, true);
+
+  int64_t waitedMs = 0;
+  while (!pageLocs.isComputationCompleted() && (pageLocs.getGeneratedPageEntryCount() == 0) &&
+         (waitedMs < PREFLIGHT_START_TIMEOUT_MS)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    waitedMs += 100;
+  }
+
+  if (pageLocs.getGeneratedPageEntryCount() == 0) {
+    std::fprintf(stderr,
+                 "[S5 Valgrind] preflight failed: no generated pages after %" PRIi64 " ms\n",
+                 waitedMs);
+    pageLocs.stopControlTask();
+    pageLocs.clear();
+    return false;
+  }
+
+  std::atomic<bool> stopReader{false};
+  std::thread reader([&]() {
+    PageId p{0, 0};
+    while (!stopReader.load(std::memory_order_relaxed)) {
+      (void)pageLocs.getPageNbr(p);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+  });
+
+  std::atomic<bool> stopDone{false};
+  std::thread stopper([&]() {
+    pageLocs.stopControlTask();
+    stopDone.store(true, std::memory_order_release);
+  });
+
+  int64_t stopWaitMs = 0;
+  while (!stopDone.load(std::memory_order_acquire) && (stopWaitMs < PREFLIGHT_STOP_TIMEOUT_MS)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    stopWaitMs += 50;
+  }
+
+  if (!stopDone.load(std::memory_order_acquire)) {
+    std::fprintf(stderr,
+                 "[S5 Valgrind] preflight DEADLOCK: stopControlTask did not complete after %" PRIi64
+                 " ms\n",
+                 stopWaitMs);
+    std::fflush(stderr);
+    std::_Exit(2);
+  }
+
+  if (stopper.joinable()) stopper.join();
+  stopReader.store(true, std::memory_order_relaxed);
+  if (reader.joinable()) reader.join();
+
+  pageLocs.clear();
+  std::fprintf(stderr, "[S5 Valgrind] preflight: OK\n");
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 auto main(int argc, char **argv) -> int {
@@ -133,6 +202,11 @@ auto main(int argc, char **argv) -> int {
   }
   if (!epub->open(HimemString(epubPath))) {
     std::fprintf(stderr, "[S5 Valgrind] FATAL: epub->open() failed for %s\n", epubPath);
+    return 1;
+  }
+
+  if (!runStopUnderPageNbrPollingPreflight(epub)) {
+    std::fprintf(stderr, "[S5 Valgrind] FATAL: preflight regression failed\n");
     return 1;
   }
 

@@ -147,6 +147,9 @@ g++ -std=c++17 -pthread test/test_pagelocs_hardening.cpp \
   - Complete interaction analysis
   - Concurrency risk identification
   - Hardening roadmap (Items #3-6)
+- [TESTING_TOOLS_GUIDE.md](doc/TESTING_TOOLS_GUIDE.md)
+  - Consolidated guide for all project testing tools and commands
+  - Unit suites, valgrind harnesses, stress tests, and checker utilities
 
 ---
 

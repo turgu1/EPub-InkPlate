@@ -38,11 +38,11 @@ auto sendToRetrieverChecked(const PageLocsRetriever::QueueData &msg, const char 
 } // namespace
 
 #if EPUB_INKPLATE_BUILD
-  QueueHandle_t PageLocsControl::managerQueue{nullptr};
-  QueueHandle_t PageLocsControl::retrieverQueue{nullptr};
+QueueHandle_t PageLocsControl::managerQueue{nullptr};
+QueueHandle_t PageLocsControl::retrieverQueue{nullptr};
 #else
-  mqd_t PageLocsControl::managerQueue{-1};
-  mqd_t PageLocsControl::retrieverQueue{-1};
+mqd_t PageLocsControl::managerQueue{-1};
+mqd_t PageLocsControl::retrieverQueue{-1};
 #endif
 
 /**
@@ -57,61 +57,57 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
     return false;
   }
 
-  #if EPUB_LINUX_BUILD
-    mq_unlink("/control_mgr");
-    mq_unlink("/control_r2c");
+#if EPUB_LINUX_BUILD
+  mq_unlink("/control_mgr");
+  mq_unlink("/control_r2c");
 
-    managerQueue = mq_open("/control_mgr", O_RDWR | O_CREAT | O_NONBLOCK, S_IRWXU, &queueAttr);
-    if (managerQueue == -1) {
-      LOG_E("Unable to open managerQueue: %d", errno);
-      return false;
-    }
+  managerQueue = mq_open("/control_mgr", O_RDWR | O_CREAT | O_NONBLOCK, S_IRWXU, &queueAttr);
+  if (managerQueue == -1) {
+    LOG_E("Unable to open managerQueue: %d", errno);
+    return false;
+  }
 
-    retrieverQueue = mq_open("/control_r2c", O_RDWR | O_CREAT | O_NONBLOCK, S_IRWXU, &queueAttr);
-    if (retrieverQueue == -1) {
-      LOG_E("Unable to open retrieverQueue: %d", errno);
-      return false;
-    }
+  retrieverQueue = mq_open("/control_r2c", O_RDWR | O_CREAT | O_NONBLOCK, S_IRWXU, &queueAttr);
+  if (retrieverQueue == -1) {
+    LOG_E("Unable to open retrieverQueue: %d", errno);
+    return false;
+  }
 
-    controlThread = std::thread(&PageLocsControl::task, this);
-  #else
-    esp_pthread_init();
+  controlThread = std::thread(&PageLocsControl::task, this);
+#else
 
-    if (managerQueue == nullptr) {
-      managerQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
-    } else {
-      xQueueReset(managerQueue);
-    }
-    if (managerQueue == nullptr) {
-      LOG_E("Unable to create managerQueue");
-      return false;
-    }
+  if (managerQueue == nullptr) {
+    managerQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
+  } else {
+    xQueueReset(managerQueue);
+  }
+  if (managerQueue == nullptr) {
+    LOG_E("Unable to create managerQueue");
+    return false;
+  }
 
-    if (retrieverQueue == nullptr) {
-      retrieverQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
-    } else {
-      xQueueReset(retrieverQueue);
-    }
-    if (retrieverQueue == nullptr) {
-      LOG_E("Unable to create retrieverQueue");
-      return false;
-    }
+  if (retrieverQueue == nullptr) {
+    retrieverQueue = xQueueCreate(5, sizeof(PageLocsControl::QueueData));
+  } else {
+    xQueueReset(retrieverQueue);
+  }
+  if (retrieverQueue == nullptr) {
+    LOG_E("Unable to create retrieverQueue");
+    return false;
+  }
 
-    auto cfg        = esp_pthread_get_default_config();
-    cfg.thread_name = "controlTask";
-    cfg.pin_to_core = 0;
-    cfg.stack_size  = 10 * 1024;
-    cfg.prio        = configMAX_PRIORITIES - 2;
-    cfg.inherit_cfg = true;
+  if (pdPASS != xTaskCreatePinnedToCore([](void *param) {
+    auto *self = static_cast<PageLocsControl *>(param);
+    self->task();
+    vTaskDelete(nullptr);
+  }, "controlTask", 10 * 1024, this, (configMAX_PRIORITIES - 2) | portPRIVILEGE_BIT, nullptr, 1)) {
+    LOG_E("Unable to create control task");
+    return false;
+  }
 
-    LOG_D("Control task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
-          (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
-          static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
+  controlTaskHandle = xTaskGetHandle("controlTask");
 
-    esp_pthread_set_cfg(&cfg);
-    controlThread = std::thread(&PageLocsControl::task, this);
-
-  #endif
+#endif
 
   return true;
 }
@@ -120,9 +116,16 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
  * Join the control worker thread during shutdown.
  */
 auto PageLocsControl::waitForExit() -> void {
+#if EPUB_LINUX_BUILD
   if (controlThread.joinable()) {
     controlThread.join();
   }
+#else
+  // Signal the control task to stop and wait for it to exit before returning.
+  while (eTaskGetState(controlTaskHandle) != eDeleted) {
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+#endif
 }
 
 auto PageLocsControl::sendPendingAsapReplies(int16_t itemref, const char *ctx,
@@ -213,20 +216,20 @@ auto PageLocsControl::task() -> void {
 
     bool hasMessage = false;
 
-    // Manager commands first so GET_ASAP/STOP are not delayed by retriever chatter.
-    #if EPUB_LINUX_BUILD
-      if (receiveFromManager(controlQueueData, 0) >= 0) {
-        hasMessage = true;
-      } else if (receiveFromRetriever(controlQueueData, 0) >= 0) {
-        hasMessage = true;
-      }
-    #else
-      if (receiveFromManager(controlQueueData, 0) == pdTRUE) {
-        hasMessage = true;
-      } else if (receiveFromRetriever(controlQueueData, 0) == pdTRUE) {
-        hasMessage = true;
-      }
-    #endif
+// Manager commands first so GET_ASAP/STOP are not delayed by retriever chatter.
+#if EPUB_LINUX_BUILD
+    if (receiveFromManager(controlQueueData, 0) >= 0) {
+      hasMessage = true;
+    } else if (receiveFromRetriever(controlQueueData, 0) >= 0) {
+      hasMessage = true;
+    }
+#else
+    if (receiveFromManager(controlQueueData, 0) == pdTRUE) {
+      hasMessage = true;
+    } else if (receiveFromRetriever(controlQueueData, 0) == pdTRUE) {
+      hasMessage = true;
+    }
+#endif
 
     if (!hasMessage) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));

@@ -8,13 +8,14 @@
 #include "viewers/page.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include <esp_pthread.h>
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/task.h"
 #else
   #include <mqueue.h>
+  #include <thread>
 #endif
 
 #include <atomic>
-#include <thread>
 
 class PageLocsRetriever {
 private:
@@ -24,9 +25,7 @@ public:
   PageLocsRetriever()  = default;
   ~PageLocsRetriever() = default; // { LOG_I("PageLocsRetriever destructor called"); }
 
-  enum class Req : int8_t {
-    NONE, STOP, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP, COMPLETED
-  };
+  enum class Req : int8_t { NONE, STOP, RETRIEVE_ITEM, GET_ASAP, SHOW_HEAP, COMPLETED };
 
   struct QueueData {
     Req req{Req::NONE};
@@ -36,17 +35,17 @@ public:
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
-    #if EPUB_LINUX_BUILD
-      (void)timeout;
-      QueueData wireData{};
-      wireData.req           = data.req;
-      wireData.reserved      = 0;
-      wireData.itemrefIndex  = data.itemrefIndex;
-      wireData.correlationId = data.correlationId;
-      return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
-    #else
-      return xQueueSendToBack(retrieverQueue, &data, timeout);
-    #endif
+#if EPUB_LINUX_BUILD
+    (void)timeout;
+    QueueData wireData{};
+    wireData.req           = data.req;
+    wireData.reserved      = 0;
+    wireData.itemrefIndex  = data.itemrefIndex;
+    wireData.correlationId = data.correlationId;
+    return mq_send(retrieverQueue, (const char *)&wireData, sizeof(wireData), 1);
+#else
+    return xQueueSendToBack(retrieverQueue, &data, timeout);
+#endif
   }
 
   auto setup(const HimemString &epubFilename) -> bool;
@@ -79,22 +78,27 @@ private:
   uint16_t pageBottom{0};
   int16_t currentItemrefIndex{-1};
 
-  #if EPUB_LINUX_BUILD
-    static mqd_t retrieverQueue;
-    static constexpr mq_attr retrieverAttr = {0, 5, sizeof(QueueData), 0};
-  #else
-    static QueueHandle_t retrieverQueue;
-  #endif
+#if EPUB_LINUX_BUILD
+  static mqd_t retrieverQueue;
+  static constexpr mq_attr retrieverAttr = {0, 5, sizeof(QueueData), 0};
+#else
+  static QueueHandle_t retrieverQueue;
+#endif
 
   auto receive(QueueData &data, int timeout = -1) {
-    #if EPUB_LINUX_BUILD
-      return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
-    #else
-      return xQueueReceive(retrieverQueue, &data, timeout);
-    #endif
+#if EPUB_LINUX_BUILD
+    return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
+#else
+    return xQueueReceive(retrieverQueue, &data, timeout);
+#endif
   }
 
+#if EPUB_INKPLATE_BUILD
+  TaskHandle_t retrieverTaskHandle{nullptr};
+#else
   std::thread retrieverThread;
+#endif
+
   auto task() -> void;
   auto handlePendingQueueAtPageBoundary() -> bool;
 

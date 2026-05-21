@@ -80,19 +80,19 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
     xQueueReset(retrieverQueue);
   }
 
-  auto cfg        = esp_pthread_get_default_config();
-  cfg.thread_name = "retrieverTask";
-  cfg.pin_to_core = 1;
-  cfg.stack_size  = 30 * 1024;
-  cfg.prio        = configMAX_PRIORITIES - 2;
-  cfg.inherit_cfg = true;
+  if (pdPASS != xTaskCreatePinnedToCore(
+                    [](void *param) {
+    auto *self = static_cast<PageLocsRetriever *>(param);
+    self->task();
+    vTaskDelete(nullptr);
+  }, "retrieverTask", 30 * 1024, this, (configMAX_PRIORITIES - 2) | portPRIVILEGE_BIT, nullptr,
+                    1)) {
+    LOG_E("Unable to create retriever task");
+    return false;
+  }
 
-  LOG_D("Retriever task cfg: name=%s core=%d stack=%u prio=%d inherit=%d",
-        (cfg.thread_name != nullptr) ? cfg.thread_name : "(null)", cfg.pin_to_core,
-        static_cast<unsigned>(cfg.stack_size), cfg.prio, cfg.inherit_cfg ? 1 : 0);
+  retrieverTaskHandle = xTaskGetHandle("retrieverTask");
 
-  esp_pthread_set_cfg(&cfg);
-  retrieverThread = std::thread(&PageLocsRetriever::task, this);
 #endif
 
   return true;
@@ -102,7 +102,15 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
  * Join retriever worker thread during teardown.
  */
 auto PageLocsRetriever::waitForExit() -> void {
+#if EPUB_LINUX_BUILD
   if (retrieverThread.joinable()) retrieverThread.join();
+#else
+  // Signal the retriever task to stop and wait for it to exit before returning.
+  requestStop();
+  while (eTaskGetState(retrieverTaskHandle) != eDeleted) {
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+#endif
 }
 
 /**

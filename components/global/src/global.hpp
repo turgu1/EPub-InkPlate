@@ -142,13 +142,21 @@ struct Glyph {
 };
 
 struct PageId {
-  int16_t itemrefIndex{0};
-  int32_t offset{0};
+  int16_t itemrefIndex{-1};
+  int32_t offset{-1};
   PageId(int16_t idx, int32_t off) {
     itemrefIndex = idx;
     offset       = off;
   }
   PageId() = default;
+  bool operator==(const PageId &other) const {
+    return (itemrefIndex == other.itemrefIndex) && (offset == other.offset);
+  }
+  bool firstPage() const { return (itemrefIndex == 0) && (offset == 0); }
+  void reset() {
+    itemrefIndex = -1;
+    offset       = -1;
+  }
 };
 
 enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };

@@ -33,7 +33,7 @@ static auto myZAlloc(void *opaque, size_t items, size_t size) -> void * {
 #if EPUB_INKPLATE_BUILD
     return zipMem = heap_caps_malloc(items * size, MALLOC_CAP_SPIRAM);
 #else
-    const char *TAG = "myZAlloc";
+    // const char *TAG = "myZAlloc";
     // LOG_I("Allocating %zu bytes for zlib", items * size);
     return zipMem = malloc(items * size);
 #endif
@@ -319,8 +319,8 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
     // totalFilenameBytes,
     //       maxFilenameSize);
     if (filenamePool != nullptr) {
-      size_t allocated = filenamePool->getTotalAllocated();
-      size_t freed     = filenamePool->getTotalFreed();
+      [[maybe_unused]] size_t allocated = filenamePool->getTotalAllocated();
+      [[maybe_unused]] size_t freed     = filenamePool->getTotalFreed();
       // LOG_I("Filename CharPool: alloc=%zu freed=%zu live=%zu", allocated, freed, allocated -
       // freed);
     }
@@ -347,12 +347,12 @@ auto Unzip::closeZipFileUnsafe() -> void {
 
   if (zipFileIsOpen) {
     if (filenamePool != nullptr) {
-      size_t allocated = filenamePool->getTotalAllocated();
-      size_t freed     = filenamePool->getTotalFreed();
-      LOG_I("Closing ZIP: entries=%u filenameBytes=%u maxFilename=%u pool alloc=%zu freed=%zu "
-            "live=%zu",
-            filenameEntryCount, totalFilenameBytes, maxFilenameSize, allocated, freed,
-            allocated - freed);
+      [[maybe_unused]] size_t allocated = filenamePool->getTotalAllocated();
+      [[maybe_unused]] size_t freed     = filenamePool->getTotalFreed();
+      // LOG_I("Closing ZIP: entries=%u filenameBytes=%u maxFilename=%u pool alloc=%zu freed=%zu "
+      //       "live=%zu",
+      //       filenameEntryCount, totalFilenameBytes, maxFilenameSize, allocated, freed,
+      //       allocated - freed);
     }
 
     fileEntries.clear();
@@ -366,11 +366,20 @@ auto Unzip::closeZipFileUnsafe() -> void {
   }
   currentFileEntry = fileEntries.end();
   currentFilename.clear();
-  streamMutexHeld = false;
-  aborted         = false;
+  streamMutexHeld   = false;
+  streamOwnerThread = std::thread::id{};
+  aborted           = false;
 }
 
 auto Unzip::closeZipFile() -> void {
+  if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
+    // Stream APIs keep the mutex locked for the whole read session. If the owner thread asks
+    // to close the zip, avoid trying to lock the same non-recursive mutex twice.
+    closeZipFileUnsafe();
+    mutex.unlock();
+    return;
+  }
+
   std::scoped_lock guard(mutex);
   closeZipFileUnsafe();
 
@@ -570,11 +579,18 @@ auto Unzip::closeFile() -> void {}
 
 auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
 
+  if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
+    LOG_E("openStreamFile called while a stream is already open on this thread.");
+    return false;
+  }
+
   mutex.lock();
-  streamMutexHeld = true;
+  streamMutexHeld   = true;
+  streamOwnerThread = std::this_thread::get_id();
 
   if (!openFile(filename)) {
-    streamMutexHeld = false;
+    streamMutexHeld   = false;
+    streamOwnerThread = std::thread::id{};
     mutex.unlock();
     return false;
   }
@@ -632,6 +648,11 @@ auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
 auto Unzip::closeStreamFile() -> void {
   if (!streamMutexHeld) return;
 
+  if (streamOwnerThread != std::this_thread::get_id()) {
+    LOG_E("closeStreamFile called from a non-owner thread.");
+    return;
+  }
+
   if (streamInflateInitialized) {
     mz_inflateEnd(&zstr);
     streamInflateInitialized = false;
@@ -639,8 +660,9 @@ auto Unzip::closeStreamFile() -> void {
 
   closeFile();
 
-  streamMutexHeld = false;
-  aborted         = false;
+  streamMutexHeld   = false;
+  streamOwnerThread = std::thread::id{};
+  aborted           = false;
 
   mutex.unlock();
 }
@@ -662,7 +684,7 @@ auto Unzip::streamSkip(uint32_t byteCount) -> bool {
 auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
 
   if (dataSize == 0) return 0;
-  if (!streamMutexHeld || !file.is_open()) {
+  if (!streamMutexHeld || (streamOwnerThread != std::this_thread::get_id()) || !file.is_open()) {
     LOG_E("Unzip getStreamData called outside stream session.");
     aborted = true;
     return 0;

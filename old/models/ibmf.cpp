@@ -365,7 +365,6 @@ auto IBMF::clearFace() -> void {
 
 auto IBMF::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize, int16_t &kern,
                     bool &ignoreNext) -> Glyph * {
-  // std::scoped_lock guard(mutex);
 
   uint32_t glyphCode = translate(charcode);
 
@@ -387,7 +386,6 @@ auto IBMF::getGlyph(uint32_t charcode, uint32_t nextCharcode, int16_t glyphSize,
 }
 
 auto IBMF::getGlyph(uint32_t charcode, int16_t glyphSize) -> Glyph * {
-  // std::scoped_lock guard(mutex);
 
   uint32_t glyphCode = translate(charcode);
 

@@ -77,7 +77,6 @@ auto Font::bytePoolAlloc(uint16_t size) -> uint8_t * {
 }
 
 auto Font::clearCache() -> void {
-  // std::scoped_lock guard(mutex);
 
   LOG_D("Clear cache...");
   for (auto const &entry : cache) {
@@ -138,32 +137,26 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
   return std::make_tuple(glyph, kern, ignoreNext);
 }
 
-// Only used for ASCII chars, so no need to be protected by
-// mutex as it is expected to be called only during form
-// fields dimensions computation, which is done before
-// showing the form and thus before any user interaction.
+// Only used for ASCII chars
 auto Font::getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void {
-  {
-    // std::scoped_lock guard(mutex);
 
-    int16_t maxUp   = 0;
-    int16_t maxDown = 0;
+  int16_t maxUp   = 0;
+  int16_t maxDown = 0;
 
-    dim->width = 0;
+  dim->width = 0;
 
-    while (*str) {
-      Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
-      if (glyph != nullptr) {
-        dim->width += glyph->advance;
+  while (*str) {
+    Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
+    if (glyph != nullptr) {
+      dim->width += glyph->advance;
 
-        int16_t up   = -glyph->yoff;
-        int16_t down = glyph->dim.height + glyph->yoff;
+      int16_t up   = -glyph->yoff;
+      int16_t down = glyph->dim.height + glyph->yoff;
 
-        if (up > maxUp) maxUp = up;
-        if (down > maxDown) maxDown = down;
-      }
+      if (up > maxUp) maxUp = up;
+      if (down > maxDown) maxDown = down;
     }
-
-    dim->height = maxUp + maxDown;
   }
+
+  dim->height = maxUp + maxDown;
 }

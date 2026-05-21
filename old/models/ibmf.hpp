@@ -14,7 +14,6 @@
 
 #include <forward_list>
 #include <memory>
-// #include <mutex>
 #include <unordered_map>
 
 class IBMF : public Font {
@@ -22,7 +21,6 @@ private:
   static constexpr char const *TAG = "IBMF";
 
   std::unique_ptr<IBMFFont> face;
-  // std::mutex mutex;
   IBMFFont::GlyphInfo *glyphData;
 
   IBMF(const FontFaceDescriptorPtr &descr);
@@ -64,7 +62,6 @@ public:
    * @return int32_t Normal line height of the face in pixels
    */
   auto getLineHeight(int16_t glyphSize) -> int32_t {
-    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->getLineHeight());
   }
@@ -76,7 +73,6 @@ public:
    *                 the current font size.
    */
   auto getDescenderHeight(int16_t glyphSize) -> int32_t {
-    // std::scoped_lock guard(mutex);
     if (currentFontSize != glyphSize) setFontSize(glyphSize);
     return (face == nullptr) ? 0 : (face->getDescenderHeight());
   }

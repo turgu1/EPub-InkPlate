@@ -74,3 +74,5 @@ const std::string ScreenBottom::dw[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri
 // EventMgr instance.  We provide a stub instance here.
 #define __EVENT_MGR__ 1
 #include "controllers/event_mgr.hpp"
+
+auto EventMgr::someEventWaiting() -> bool { return false; }

@@ -8,6 +8,7 @@
 #include <forward_list>
 #include <fstream>
 #include <mutex>
+#include <thread>
 
 #define MINIZ 1
 
@@ -72,6 +73,7 @@ private:
   bool zipFileIsOpen{false};
   std::string currentFilename{};
   bool streamMutexHeld{false};
+  std::thread::id streamOwnerThread{};
   bool streamInflateInitialized{false};
 
   mz_stream zstr{};
@@ -83,7 +85,7 @@ private:
 public:
   Unzip() { alive = true; };
   ~Unzip() {
-    closeZipFileUnsafe();
+    closeZipFile();
     alive = false;
   };
 
@@ -100,16 +102,16 @@ public:
   auto openFile(const char *filename) -> bool;
   auto closeFile() -> void;
 
-  #if !STB
-    auto openStreamFile(const char *filename, uint32_t &fileSize) -> bool;
-    auto getStreamData(char *data, uint32_t size) -> uint32_t;
-    auto streamSkip(uint32_t byteCount) -> bool;
-    auto closeStreamFile() -> void;
-  #endif
+#if !STB
+  auto openStreamFile(const char *filename, uint32_t &fileSize) -> bool;
+  auto getStreamData(char *data, uint32_t size) -> uint32_t;
+  auto streamSkip(uint32_t byteCount) -> bool;
+  auto closeStreamFile() -> void;
+#endif
 };
 
 #if __UNZIP__
-  Unzip unzip;
+Unzip unzip;
 #else
-  extern Unzip unzip;
+extern Unzip unzip;
 #endif

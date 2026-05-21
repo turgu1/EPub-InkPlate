@@ -89,7 +89,12 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         .screenBottom     = pageBottom,
     };
 
+#if EPUB_LINUX_BUILD
     std::this_thread::yield();
+#else
+    vTaskDelay(pdMS_TO_TICKS(1));
+#endif
+
     const PageLocs::PageInfo *page_info = pageLocs.getPageInfo(pageId);
 
     if (page_info == nullptr) return;
@@ -124,7 +129,6 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         fmt.align            = CSS::Align::CENTER;
 
         std::ostringstream ostr;
-
         if (showTitle != 0) {
           const char *t = epub->getTitle();
           if (strlen(t) > 50) {
@@ -140,10 +144,6 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
           // page->putHighlight(Dim(screen.getWidth(), title_baseline_offset), Pos(0, 0));
           page->putStrAt(ostr.str(), Pos(Page::HORIZONTAL_CENTER, title_baseline_offset), fmt);
         }
-
-        ScreenBottom::show(page, pageLocs.getPageNbr(pageId), pageLocs.getPageCountOrPercent());
-
-        page->paint();
       }
       interp->showStat();
       interp->releaseFmt(new_fmt);
@@ -186,14 +186,19 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   page->paint();
 }
 
-auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
+auto BookViewer::displayPage(const PageId &pageId) -> void {
+  ScreenBottom::show(page, pageLocs.getPageNbr(pageId), pageLocs.getPageCountOrPercent());
+  page->paint();
+}
+
+auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
   if ((pageId.itemrefIndex < 0) || (pageId.offset < 0)) {
-    LOG_W("Ignoring invalid showPage request: itemref=%d offset=%" PRIi32, pageId.itemrefIndex,
+    LOG_W("Ignoring invalid preparePage request: itemref=%d offset=%" PRIi32, pageId.itemrefIndex,
           pageId.offset);
-    return;
+    return false;
   }
 
-  if (!recreatePage(epub->getFonts())) return;
+  if (!recreatePage(epub->getFonts())) return false;
 
   current_page_id = pageId;
 
@@ -216,18 +221,24 @@ auto BookViewer::showPage(const PageId &pageId, EPubPtr &epub) -> void {
             LOG_W("Cover picture display failed, falling back to generated cover");
             showFakeCover(epub);
           }
+
         } else {
           LOG_D("Unable to retrieve cover file: %s", fname.c_str());
           showFakeCover(epub);
         }
+        return false;
+
       } else {
         LOG_D("It seems there is no cover.");
         buildPageAt(pageId, epub);
       }
     } else {
       showFakeCover(epub);
+      return false;
     }
   } else {
     buildPageAt(pageId, epub);
   }
+
+  return true;
 }

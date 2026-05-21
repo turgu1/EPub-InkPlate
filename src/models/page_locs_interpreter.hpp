@@ -68,20 +68,24 @@ protected:
         pageInfo.size = -pageInfo.size; // The page will not be counted nor displayed
       }
 
-      #if EPUB_LINUX_BUILD
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      #endif
+#if EPUB_LINUX_BUILD
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#endif
 
       pageLocs.insert(pageId, pageInfo);
 
-      #if DEBUGGING
-        std::cout << pageId.offset << '|' << pageId.offset + pageInfo.size << ", "
-                  << pageInfo.pageNumber << ", " << pageInfo.size << std::endl;
-      #endif
+#if DEBUGGING
+      std::cout << pageId.offset << '|' << pageId.offset + pageInfo.size << ", "
+                << pageInfo.pageNumber << ", " << pageInfo.size << std::endl;
+#endif
     }
 
-    // Gives the chance to book_viewer to show a page if required
+// Gives the chance to book_viewer to show a page if required
+#if EPUB_LINUX_BUILD
     std::this_thread::yield();
+#else
+    vTaskDelay(pdMS_TO_TICKS(1));
+#endif
 
     startOffset = currentOffset;
 

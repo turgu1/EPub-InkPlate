@@ -260,8 +260,8 @@ public:
         // LOG_W("Page Locs not completed.");
         return -1;
       }
-      const PageInfo *info = getPageInfo(id);
-      return info == nullptr ? -1 : info->pageNumber;
+      PagesMap::iterator it = checkAndFind(id);
+      return it == pagesMap.end() ? -1 : it->second.pageNumber;
     }
   };
 };

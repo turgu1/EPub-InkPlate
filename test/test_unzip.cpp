@@ -8,8 +8,10 @@
 // Uses the EPUB fixture generated under test/fixtures/minimal.epub.
 // ---------------------------------------------------------------------------
 
+#include <atomic>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 
 #include "test_stats.hpp"
 #include "unzip.hpp"
@@ -96,6 +98,99 @@ static auto testReadDeflatedFile() -> bool {
   return sFail == 0;
 }
 
+#if !STB
+
+static auto testCloseZipWhileStreamOpenSameThread() -> bool {
+  UNZIP_LOG("--- close zip while stream open (same thread) ---");
+
+  bool opened = unzip.openZipFile(MINIMAL);
+  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
+  if (!opened) return false;
+
+  uint32_t fileSize = 0;
+  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
+  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
+  if (!streamOpened) {
+    unzip.closeZipFile();
+    return false;
+  }
+
+  // This used to be a potential self-deadlock path with a non-recursive mutex.
+  unzip.closeZipFile();
+
+  UNZIP_CHECK(!unzip.fileExists("mimetype"), "zip is closed after closeZipFile during stream");
+
+  return sFail == 0;
+}
+
+static auto testCloseStreamFromNonOwnerThread() -> bool {
+  UNZIP_LOG("--- close stream from non-owner thread ---");
+
+  bool opened = unzip.openZipFile(MINIMAL);
+  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
+  if (!opened) return false;
+
+  uint32_t fileSize = 0;
+  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
+  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
+  if (!streamOpened) {
+    unzip.closeZipFile();
+    return false;
+  }
+
+  std::atomic<bool> workerDone{false};
+  std::thread worker([&]() {
+    unzip.closeStreamFile();
+    workerDone.store(true, std::memory_order_release);
+  });
+  worker.join();
+
+  UNZIP_CHECK(workerDone.load(std::memory_order_acquire),
+              "non-owner closeStreamFile returns without blocking");
+
+  char data[8]{};
+  uint32_t got = unzip.getStreamData(data, sizeof(data));
+  UNZIP_CHECK(got > 0, "owner thread can still read stream after non-owner close attempt");
+
+  unzip.closeStreamFile();
+  unzip.closeZipFile();
+
+  return sFail == 0;
+}
+
+static auto testGetStreamDataFromNonOwnerThread() -> bool {
+  UNZIP_LOG("--- getStreamData from non-owner thread ---");
+
+  bool opened = unzip.openZipFile(MINIMAL);
+  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
+  if (!opened) return false;
+
+  uint32_t fileSize = 0;
+  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
+  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
+  if (!streamOpened) {
+    unzip.closeZipFile();
+    return false;
+  }
+
+  std::atomic<uint32_t> workerRead{1};
+  std::thread worker([&]() {
+    char data[8]{};
+    workerRead.store(unzip.getStreamData(data, sizeof(data)), std::memory_order_release);
+  });
+  worker.join();
+
+  UNZIP_CHECK(workerRead.load(std::memory_order_acquire) == 0,
+              "non-owner getStreamData is rejected");
+
+  unzip.closeStreamFile();
+  unzip.closeZipFile();
+
+  return sFail == 0;
+}
+
+#endif
+
 auto testUnzip() -> TestStats {
   int failsBefore;
 
@@ -113,6 +208,12 @@ auto testUnzip() -> TestStats {
   run("open-close", testOpenClose);
   run("lookup-stored", testLookupAndReadStoredFile);
   run("read-deflated", testReadDeflatedFile);
+
+#if !STB
+  run("close-zip-during-stream", testCloseZipWhileStreamOpenSameThread);
+  run("close-stream-non-owner", testCloseStreamFromNonOwnerThread);
+  run("read-stream-non-owner", testGetStreamDataFromNonOwnerThread);
+#endif
 
   UNZIP_LOG("========== Unzip test suite end: %d passed, %d failed ==========", sPass, sFail);
 

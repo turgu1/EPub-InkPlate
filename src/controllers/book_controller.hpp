@@ -17,6 +17,7 @@ public:
 
   inline auto becomeOwnerOfBook(EPubPtr epubPtr) -> void { epub = std::move(epubPtr); }
 
+  auto showPage(const PageId &pageId, EPubPtr &epub) -> void;
   auto inputEvent(const EventMgr::Event &event) -> void;
   auto enter() -> void;
   auto leave(bool goingToDeepSleep = false) -> void;
@@ -33,12 +34,13 @@ private:
   EPubPtr epub{nullptr};
 
   PageId currentPageId{0, 0};
+  PageId readyForDisplayPageId{-1, -1};
 
   BookViewerPtr bookViewer{nullptr};
 };
 
 #if __BOOK_CONTROLLER__
-  BookController bookController;
+BookController bookController;
 #else
-  extern BookController bookController;
+extern BookController bookController;
 #endif

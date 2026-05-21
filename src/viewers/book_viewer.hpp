@@ -7,7 +7,6 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-// #include <mutex>
 #include <unordered_map>
 
 #if EPUB_LINUX_BUILD
@@ -36,7 +35,6 @@ public:
 private:
   BookViewer(Fonts &fonts) : page(Page::Make(fonts)) {};
 
-  // std::mutex mutex;
   uint16_t pageBottom;
   PageId current_page_id{-1, -1};
 
@@ -58,14 +56,25 @@ public:
 
   ~BookViewer() = default;
 
-  // inline std::mutex &getMutex() { return mutex; }
+  /**
+   * @brief Prepare a page for display.
+   *
+   * @param pageId The ID of the page to prepare.
+   * @param epub The EPUB instance.
+   * @return true if the page was successfully prepared but not displayed, false otherwise.
+   * This can happen if the page is a cover page or if there was an error preparing the page.
+   */
+  auto preparePage(const PageId &pageId, EPubPtr &epub) -> bool;
 
   /**
-   * @brief Show a page on the display.
+   * @brief Display a prepared page.
    *
-   * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
+   * This function assumes that the page has already been prepared using preparePage().
+   * It will handle the actual rendering of the page on the screen.
+   * If the page was not prepared or if there was an error during preparation,
+   * this function may not display anything or may display an error message.
    */
-  auto showPage(const PageId &pageId, EPubPtr &epub) -> void;
+  auto displayPage(const PageId &pageId) -> void;
 
   auto showFakeCover(EPubPtr &epub) -> void;
 

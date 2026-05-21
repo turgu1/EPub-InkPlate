@@ -170,6 +170,13 @@ auto Page::clean() -> void {
 // 00000800 -- 0000FFFF: 	1110xxxx 10xxxxxx 10xxxxxx
 // 00010000 -- 001FFFFF: 	11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 
+auto hexValue(uint8_t c) -> char32_t {
+  if ((c >= '0') && (c <= '9')) return c - '0';
+  if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+  if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+  return 0;
+}
+
 auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
                      const char **str2) const -> char32_t {
   const uint8_t *c = reinterpret_cast<const uint8_t *>(str);
@@ -177,31 +184,54 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
   bool done        = false;
 
   if (*c == '&') {
-    const uint8_t *name = c + 1;
-    const uint8_t *end  = name;
-    uint8_t len         = 0;
-    while ((len < 7) && (*end != 0) && (*end != ';')) {
-      ++end;
-      ++len;
-    }
-
-    if (*end == ';') {
-      LOG_I("Entity: %.*s", len, name);
-      auto theStr = EntityString((char *)(name), (size_t)(end - name));
-      auto search = entities.find(theStr);
-      if (search != entities.end()) {
-        u = search->second;
+    if (c[1] == '#') {
+      // Numeric character reference
+      u = 0;
+      c += 2;
+      if (*c == 'x' || *c == 'X') {
+        // Hexadecimal
+        c++;
+        while (*c != ';' && *c != 0) {
+          u = (u << 4) + hexValue(*c);
+          c++;
+        }
+      } else {
+        // Decimal
+        while (*c != ';' && *c != 0) {
+          u = (u * 10) + (*c - '0');
+          c++;
+        }
       }
-    }
-
-    if (u == ' ') {
-      // Unknown or malformed entity: consume '&' and return it as-is.
-      u = '&';
-      ++c;
+      if (*c == ';') c++;
+      done = true;
     } else {
-      c = end + 1;
+      // Named character reference
+      const uint8_t *name = c + 1;
+      const uint8_t *end  = name;
+      uint8_t len         = 0;
+      while ((len < 7) && (*end != 0) && (*end != ';')) {
+        ++end;
+        ++len;
+      }
+
+      if (*end == ';') {
+        LOG_I("Entity: %.*s", len, name);
+        auto theStr = EntityString((char *)(name), (size_t)(end - name));
+        auto search = entities.find(theStr);
+        if (search != entities.end()) {
+          u = search->second;
+        }
+      }
+
+      if (u == ' ') {
+        // Unknown or malformed entity: consume '&' and return it as-is.
+        u = '&';
+        ++c;
+      } else {
+        c = end + 1;
+      }
+      done = true;
     }
-    done = true;
   } else if ((*c & 0x80) == 0x00) {
     u    = *c++;
     done = true;
@@ -232,7 +262,7 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
 
   *str2 = reinterpret_cast<const char *>(c);
 
-  if (done && (u >= 0) && (u <= 0x7F) && (transform != CSS::TextTransform::NONE)) {
+  if (done && (u <= 0x7F) && (transform != CSS::TextTransform::NONE)) {
     if (transform == CSS::TextTransform::UPPERCASE)
       u = toupper(static_cast<unsigned char>(u));
     else if (transform == CSS::TextTransform::LOWERCASE)
@@ -516,8 +546,8 @@ auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
   }
 
   // When recover == true, that means we are recovering the end of a paragraph that appears at the
-  // beginning of a page. topMargin and indent must then be forgot as the have already been used at
-  // the end of the page before...
+  // beginning of a page. topMargin and indent must then be forgot as the have already been used
+  // at the end of the page before...
 
   if (recover) {
     paraIndent = topMargin = 0;
@@ -918,7 +948,8 @@ auto Page::addChar(const char *ch, const Format &fmt) -> bool {
  *
  * @details
  * - Calculates the gap between glyph advance and glyph width for proper spacing
- * - Determines target picture dimensions based on available paragraph space and format constraints
+ * - Determines target picture dimensions based on available paragraph space and format
+ * constraints
  * - Maintains aspect ratio when scaling pictures
  * - Creates a new line if the picture exceeds remaining space on the current line
  * - Only performs actual picture resizing when computeMode is DISPLAY
@@ -1015,8 +1046,8 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
       }
     } else {
       // In non DISPLAY compute mode, we don't want to do the actual resizing of the picture as it
-      // is not needed and can be costly. We just set the dimensions that will be used for layouting
-      // and rendering the picture later on when in DISPLAY compute mode.
+      // is not needed and can be costly. We just set the dimensions that will be used for
+      // layouting and rendering the picture later on when in DISPLAY compute mode.
       picture->setDim(Dim(w, h));
     }
   }
