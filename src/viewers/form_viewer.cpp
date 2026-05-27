@@ -160,7 +160,9 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
     field->updateHighlight();
   }
 
-  page->putStrAt(bottomMsg, bottomMsgPos, fmt);
+  if (bottomMsg != nullptr) {
+    page->putStrAt(bottomMsg, bottomMsgPos, fmt);
+  }
 
   if (!refresh) {
     selectingField = false;

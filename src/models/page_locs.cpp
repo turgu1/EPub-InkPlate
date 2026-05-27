@@ -7,6 +7,7 @@
 
 #include "config.hpp"
 #include "controllers/event_mgr.hpp"
+#include "helpers/show_load_icon.hpp"
 #include "models/page_locs_control.hpp"
 
 #include "viewers/book_viewer.hpp"
@@ -583,6 +584,8 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
       (memcmp(epub->getBookFormatParams(), &currentFormatParams, sizeof(currentFormatParams)) !=
        0) ||
       (!controlTask && !TOC::exists(epub->getCurrentFilename()))) {
+
+    showLoadIcon(Dim(500, 500));
 
     LOG_D("==> Page locations recalc. <==");
 

@@ -28,13 +28,9 @@ using EPubPtr = HimemUniquePtr<class EPub>;
 class EPub {
 
 public:
-  enum class MediaType : uint8_t {
-    XML, JPEG, PNG, GIF, BMP
-  };
+  enum class MediaType : uint8_t { XML, JPEG, PNG, GIF, BMP };
 
-  enum class ObfuscationType : uint8_t {
-    NONE, ADOBE, IDPF, UNKNOWN
-  };
+  enum class ObfuscationType : uint8_t { NONE, ADOBE, IDPF, UNKNOWN };
 
   using CSSList    = std::list<CSSPtr>;
   using CSSRefList = std::list<std::reference_wrapper<CSS>>;
@@ -55,10 +51,10 @@ public:
     ~ItemInfo() = default;
   };
 
-  // This struct contains the current parameters that influence
-  // the rendering of e-book pages. Its content is constructed from
-  // both the e-book's specific parameters and default configuration options.
-  #pragma pack(push, 1)
+// This struct contains the current parameters that influence
+// the rendering of e-book pages. Its content is constructed from
+// both the e-book's specific parameters and default configuration options.
+#pragma pack(push, 1)
   struct BookFormatParams {
     int8_t ident;       ///< Device identity (screen.hpp IDENT constant)
     int8_t orientation; ///< Config option only
@@ -68,8 +64,9 @@ public:
     int8_t lineHeight;
     int8_t useFontsInBook;
     int8_t font;
+    Dim screenDim;
   };
-  #pragma pack(pop)
+#pragma pack(pop)
 
   using BinUUID = uint8_t[16];
   using ShaUUID = uint8_t[20];
@@ -79,7 +76,7 @@ public:
 private:
   static constexpr char const *TAG = "EPub";
 
-  static constexpr float lineHeightFactors[3] = {0.65, 0.8, 0.95};
+  static constexpr float lineHeightFactors[3] = {0.75, 0.9, 1.2};
 
   pugi::xml_document opf; ///< The OPF document description.
   pugi::xml_document encryption;
@@ -158,11 +155,11 @@ public:
   auto loadFonts()                                          -> void;
   auto clearItemData(ItemInfo &item)                        -> void;
   auto openParams(const HimemString &epubFilename)          -> bool;
-  auto updateBookFormatParams()                             -> void;
+  auto retrieveBookFormatParams()                           -> void;
   auto decrypt(void *buffer, const uint32_t size, 
                ObfuscationType obfType)                     -> void;
 
-  [[nodiscard]] inline auto getLineHeightFactor() const -> float {
+  [[nodiscard]] inline auto getLineHeightFactor() const     -> float {
     int8_t lineHeight = bookFormatParams.lineHeight;
     if ((lineHeight < 0) || (lineHeight > 2)) lineHeight = 1; // default
     return lineHeightFactors[lineHeight];
@@ -183,7 +180,7 @@ public:
 
   // clang-format off
  [[nodiscard]] inline auto getCssCache() const            -> const CSSList &            { return cssCache; }
-               inline auto clearCssCache()                -> void                        { cssCache.clear(); }
+               inline auto clearCssCache()                -> void                       { cssCache.clear(); }
  [[nodiscard]] inline auto getCurrentItemCss() const      -> const CSSPtr &             { return currentItemInfo.css; }
  [[nodiscard]] inline auto getCurrentItemInfo() const     -> const ItemInfo &           { return currentItemInfo; }
  [[nodiscard]] inline auto getCurrentItemFilePath() const -> const HimemString &        { return currentItemInfo.filePath; }

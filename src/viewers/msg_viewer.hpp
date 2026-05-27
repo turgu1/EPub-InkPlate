@@ -24,17 +24,15 @@ private:
   static constexpr uint16_t HEIGHT2 = 450;
 
 public:
-  enum MsgType {
-    INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM
-  };
+  enum MsgType { INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM };
   static constexpr char iconChar[7] = {'I', '!', 'H', 'E', 'S', 'Y', '!'};
 
   class ConfirmData {
   public:
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      Pos okPos, cancelPos;
-      Dim buttonsDim;
-    #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    Pos okPos, cancelPos;
+    Dim buttonsDim;
+#endif
     bool ok{false};
 
     ConfirmData()  = default;
@@ -74,8 +72,8 @@ public:
       -> std::pair<bool, ConfirmDataPtr>;
 
   static auto showProgress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr>;
-  static auto updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent)
-      -> std::pair<PagePtr, ProgressDataPtr>;
+  static auto updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent,
+                             const char *fmtStr, ...) -> std::pair<PagePtr, ProgressDataPtr>;
 
   /**
    * @brief Handle an unrecoverable out-of-memory condition.

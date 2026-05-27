@@ -6,7 +6,7 @@
 
 #include "config.hpp"
 #include "fonts.hpp"
-#include "helpers/picture_load_icon.hpp"
+#include "helpers/show_load_icon.hpp"
 #include "screen.hpp"
 
 #include "controllers/event_mgr.hpp"
@@ -66,6 +66,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       std::string id = attr.value();
       epub->toc->set(id, currentOffset);
     }
+
     if (node.attribute("hidden")) return true;
 
     // Do it only if we are now in the current page content
@@ -301,46 +302,52 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
 
   if (atEnd()) return true;
 
-  if (showPictures && !pictureFilename.empty()) {
-    if (currentOffset < startOffset) {
-      // As we move from the beginning of a file, we bypass everything that is there before
-      // the start of the page offset
-      ++currentOffset;
-    } else {
-      HimemString fname = itemInfo.filePath;
-      fname.append(pictureFilename);
+  if (!pictureFilename.empty()) {
+    if (showPictures) {
+      if (currentOffset < startOffset) {
+        // As we move from the beginning of a file, we bypass everything that is there before
+        // the start of the page offset
+        ++currentOffset;
+      } else {
+        HimemString fname = itemInfo.filePath;
+        fname.append(pictureFilename);
 
-      if (started && (currentOffset < endOffset)) {
-        const bool displayMode = page->getComputeMode() == Page::ComputeMode::DISPLAY;
+        // LOG_I("Processing image (%s): %s at offset %d",
+        //       page->getComputeMode() == Page::ComputeMode::DISPLAY ? "DISPLAY" : "OTHER",
+        //       pictureFilename.c_str(), currentOffset);
 
-        auto pict = epub->getPicture(fname, displayMode);
+        if (started && (currentOffset < endOffset)) {
+          const bool displayMode = page->getComputeMode() == Page::ComputeMode::DISPLAY;
 
-        // If the image is large, show a loading icon while it loads to avoid a
-        // long wait with a blank page.
-        if (displayMode) {
-          if ((pict != nullptr) && eventMgr.someEventWaiting()) {
-            showPictureLoadIcon(pict->getDim());
+          auto pict = epub->getPicture(fname, displayMode);
+
+          // If the image is large, show a loading icon while it loads to avoid a
+          // long wait with a blank page.
+          if (displayMode) {
+            if ((pict != nullptr) && eventMgr.someEventWaiting()) {
+              showLoadIcon(pict->getDim());
+            }
+          }
+
+          if (pict != nullptr) {
+            bool added            = false;
+            std::tie(added, pict) = page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
+            if (!added) {
+              if (page->isFull() && !pageEnd(fmt)) return false;
+              if (atEnd()) return true;
+
+              page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
+              if (page->isFull() && !pageEnd(fmt)) return false;
+              if (atEnd()) return true;
+            }
+            showState("After IMG", fmt);
+          } else {
+            str              = "(An image is not compatible or not found)";
+            offsetAdjustment = 41;
           }
         }
-
-        if (pict != nullptr) {
-          bool added            = false;
-          std::tie(added, pict) = page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
-          if (!added) {
-            if (page->isFull() && !pageEnd(fmt)) return false;
-            if (atEnd()) return true;
-
-            page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
-            if (page->isFull() && !pageEnd(fmt)) return false;
-            if (atEnd()) return true;
-          }
-          showState("After IMG", fmt);
-        } else {
-          str              = "(An image is not compatible or not found)";
-          offsetAdjustment = 41;
-        }
+        ++currentOffset;
       }
-      ++currentOffset;
     }
   }
 
@@ -417,8 +424,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               page->newParagraph(fmt, true);
             }
             if ((*str == ' ') || (!fmt.pre && (*str == '\n'))) {
-              if ((fmt.trim = !fmt.pre)) { // white spaces will be trimmed at the beginning and the
-                                           // end of a line
+              if ((fmt.trim = !fmt.pre)) { // white spaces will be trimmed at the beginning and
+                                           // the end of a line
                 // get rid of multiple spaces in a row (if not pre)
                 do {
                   ++str;

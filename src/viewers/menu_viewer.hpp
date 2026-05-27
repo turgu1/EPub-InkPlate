@@ -32,8 +32,24 @@ public:
   static inline auto Make() { return makeUniqueHimem<MenuViewer>(); }
 
   enum class Icon {
-    RETURN, CLR_HISTORY, REFRESH, BOOK, BOOK_LIST, MAIN_PARAMS, FONT_PARAMS, POWEROFF, WIFI, INFO,
-        TOC, DEBUG, DELETE, CLOCK, NTP_CLOCK, CALIB, REVERT, END_MENU
+    RETURN,
+    CLR_HISTORY,
+    REFRESH,
+    BOOK,
+    BOOK_LIST,
+    MAIN_PARAMS,
+    FONT_PARAMS,
+    POWEROFF,
+    WIFI,
+    INFO,
+    TOC,
+    DEBUG,
+    DELETE,
+    CLOCK,
+    NTP_CLOCK,
+    CALIB,
+    REVERT,
+    END_MENU
   };
   static constexpr char iconChar[17] = {'@', 'T', 'R', 'E', 'F', 'C', 'A', 'Z', 'S',
                                         'I', 'L', 'H', 'K', 'N', 'Y', 'M', 'U'};
@@ -64,10 +80,10 @@ private:
   uint16_t visibleEntryCount{0};
   uint16_t textHeight{0}, lineHeight{0}, regionHeight{0}, textYPos{0};
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    bool hintShown{false};
-    auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
-  #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  bool hintShown{false};
+  auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
+#endif
 
   struct EntryLoc {
     Pos pos;

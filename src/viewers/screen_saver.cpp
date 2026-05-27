@@ -37,7 +37,12 @@ auto ScreenSaver::setup() -> bool {
   }
 
   LOG_D("Found %d pictures.", picture_filenames.size());
-  return picture_filenames.size() > 0;
+  if (picture_filenames.size() > 0) {
+    screen.setOrientation(Screen::Orientation::LEFT);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 auto ScreenSaver::show() -> void {
@@ -51,7 +56,7 @@ auto ScreenSaver::show() -> void {
       auto pict = PictureFactory::create(picture_filenames[index],
                                          Dim(Screen::getWidth(), Screen::getHeight()), true,
                                          appFonts.getFont(1), true);
-      if (pict) {
+      if (pict && (pict->getBitmap() != nullptr)) {
         // pict->show();
         page->showCover(pict);
       } else {

@@ -20,7 +20,9 @@
     #include "freertos/queue.h"
     #include "freertos/task.h"
 
+    #include "helpers/goto_deep_sleep.hpp"
     #include "inkplate_platform.hpp"
+    #include "models/page_locs.hpp"
     #include "viewers/msg_viewer.hpp"
     #include "viewers/screen_saver.hpp"
     #include "wire.hpp"
@@ -318,6 +320,8 @@ auto EventMgr::loop() -> void {
       // rebooting after the user press a key.
 
       if (!stayOn) { // Unless somebody wants to keep us awake...
+        if (pageLocs.isControlTaskReadyToBeStopped()) pageLocs.stopControlTask();
+
         int8_t lightSleepDuration = 5;
         config.get(Config::Ident::TIMEOUT, &lightSleepDuration);
 
@@ -333,20 +337,8 @@ auto EventMgr::loop() -> void {
         if (inkplate_platform.light_sleep(lightSleepDuration, INT_PIN, 1)) {
 
           LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
-          screen.forceFullUpdate();
-          MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
-                          "Timeout period exceeded (%d minutes). The device is now "
-                          "entering into Deep Sleep mode. Please press a key to restart.",
-                          lightSleepDuration);
 
-          auto screenSaver = ScreenSaver::Make();
-          screenSaver->show();
-
-          ESP::delay(5000);
-
-          appController.goingToDeepSleep();
-
-          inkplate_platform.deep_sleep(INT_PIN, 1);
+          gotoDeepSleep(lightSleepDuration);
         }
       }
     }

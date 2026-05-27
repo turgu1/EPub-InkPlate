@@ -2,12 +2,12 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#include "helpers/picture_load_icon.hpp"
+#include "helpers/show_load_icon.hpp"
 
 #include "fonts.hpp"
 #include "screen.hpp"
 
-auto showPictureLoadIcon(const Dim &imageDim) -> void {
+auto showLoadIcon(const Dim &imageDim) -> void {
   if ((imageDim.width <= 200) && (imageDim.height <= 200)) return;
 
   FontPtr &iconFont = appFonts.getFont(0);

@@ -145,6 +145,11 @@ auto Font::getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void {
 
   dim->width = 0;
 
+  // if (str == nullptr) {
+  //   dim->height = 0;
+  //   return;
+  // }
+
   while (*str) {
     Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
     if (glyph != nullptr) {

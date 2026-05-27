@@ -279,6 +279,7 @@ public:
   auto paint(bool clearScreen = true, bool noFull = false, bool doIt = false) -> void;
 
   auto showFmt(const Format &fmt, const char *spaces) -> void const {
+
 #if DEBUGGING
     std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
               << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle

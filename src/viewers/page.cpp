@@ -158,9 +158,8 @@ Page::Entities Page::entities
 auto Page::clean() -> void {
   displayList->clear();
   lineList->clear();
-  paraIndent = 0;
-  topMargin  = 0;
-  // computeMode   = ComputeMode::DISPLAY;
+  paraIndent   = 0;
+  topMargin    = 0;
   screenIsFull = false;
   pageEmpty    = true;
 }
@@ -455,11 +454,6 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
   // LOG_I("Painted %d entries on screen", count);
 
   screen.update(noFull);
-
-  // Free rendered glyphs and the display list now that the page is on screen.
-  // This prevents PSRAM from accumulating cached bitmaps across pages.
-  // displayList->clear();
-  // fonts.clearGlyphCaches();
 }
 
 auto Page::start(const Format &fmt) -> void {
@@ -1275,7 +1269,12 @@ auto Page::showCover(PicturePtr &pict) -> bool {
       pict->resize(dim);
 
       screen.clear();
-      screen.drawPicture(pict, pos);
+      if (pict && pict->getBitmap()) {
+        screen.drawPicture(pict, pos);
+      } else {
+        LOG_W("Unable to load cover file");
+        return false;
+      }
       screen.update();
     } else {
       LOG_D("Unable to load cover file");

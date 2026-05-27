@@ -85,7 +85,7 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
     auto *self = static_cast<PageLocsRetriever *>(param);
     self->task();
     vTaskDelete(nullptr);
-  }, "retrieverTask", 30 * 1024, this, (configMAX_PRIORITIES - 2) | portPRIVILEGE_BIT, nullptr,
+  }, "retrieverTask", 25 * 1024, this, (configMAX_PRIORITIES - 2) | portPRIVILEGE_BIT, nullptr,
                     1)) {
     LOG_E("Unable to create retriever task");
     return false;
@@ -350,9 +350,8 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     interp->checkPageToShow(pages_map.size());
 #endif
 
-    // In PageLocs mode we only need stable text flow boundaries; skipping images avoids
-    // expensive decoder/setup allocations and reduces PSRAM pressure.
-    interp->setLimits(0, 9999999, false);
+    // In PageLocs mode we only need stable text flow boundaries.ure.
+    interp->setLimits(0, 9999999, epub->getBookFormatParams()->showPictures != 0);
 
     xml_node node;
 

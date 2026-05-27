@@ -1,4 +1,4 @@
-# EPub-InkPlate - Inkplate With Touch Screen User's Guide - Version 2.1.0
+# EPub-InkPlate - Inkplate With Touch Screen User's Guide - Version 3.0.0
 
 The EPub-InkPlate is an EPub reader application built specifically for the InkPlate ESP32-based devices. This version of the manual covers the following device types that use a touch screen:
 
@@ -12,11 +12,12 @@ Here are the main characteristics of the application:
 - TTF and OTF embedded fonts support
 - Bitmap fonts support in a specific IBMF font format
 - Normal, Bold, Italic, Bold+Italic face types
-- Bitmap images dithering display (JPEG, PNG)
+- Bitmap images dithering display (JPEG, PNG, GIF, SVG)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
 - Screen orientation (SDCard located to the left, right, up, and down positions from the screen)
 - Linear and Matrix view of books directory
+- Three size cover pictures user's selectable
 - Up to 200 books are allowed in the directory
 - Left, center, right, and justify text alignments
 - Indentation
@@ -24,7 +25,7 @@ Here are the main characteristics of the application:
 - Limited CSS formatting
 - WiFi-based documents download
 - Battery state and power management (light, deep sleep, battery level display)
-- Real-Time clock (Inkplate-10 and Inkplate-6PLUS only)
+- Real-Time clock (All devices, but the Inkplate-6)
 
 ## 1. Application startup
 
@@ -70,11 +71,11 @@ The books are presented in the following manner:
 - Books being read are presented first in the list.
 - The other books are then presented in alphabetical order by title.
 
-The list may require several pages depending on the number of books present on the SD-Card.
+The list may require several pages depending on the number of books present on the SD-Card and the size of the books' cover, selectable in the Main Parameters Form (see section 2.3 below).
 
-![The Books' List Linear View](pictures/linear-view-6PLUS.png){ width=50% }
+![The Books' List Linear View](pictures/linear-view-6PLUS_small.png){ width=40% }
 
-![The Books' List Matrix View](pictures/matrix-view-6PLUS.png){ width=50% }
+![The Books' List Matrix View](pictures/matrix-view-6PLUS_small.png){ width=40% }
 
 
 Use the **TAP** gesture on the cover page to have the book loaded, presenting the first page of it, or the last page read. The **SWIPE-LEFT** and **SWIPE-RIGHT** can be used to move to the next or previous page.
@@ -85,7 +86,7 @@ Using the Matrix view, you can use the **TOUCH-AND-HOLD** gesture on a cover pag
 
 The options menu is displayed at the top of the screen as icons. The options are as follows:
 
-![Books List options](pictures/dir-menu-options-1-6PLUS.png){ width=50% }
+![Books List options](pictures/dir-menu-options-6PLUS.png){ width=50% }
 
 - ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - Closes the options menu and returns to the book list.
 - ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** - Opens the last book read, at the last page displayed.
@@ -93,18 +94,12 @@ The options menu is displayed at the top of the screen as icons. The options are
 - ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** - Opens the Default Parameters form, where you can set default font and image settings for book rendering. Described below.
 - ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - Starts the Wi-Fi connection and a web server, allowing you to manage the book list on the SD-Card from a web browser — uploading, downloading, and removing books. Once started, tap the screen to stop the server, close the Wi-Fi connection, and restart the device. Note that while the web server is running, power-saving features (deep sleep and light sleep) are disabled.
 - ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - Refreshes the books database. This happens automatically at startup and is rarely needed manually. Note that this action refreshes *all* books, which can be time-consuming — allow five to ten seconds per book.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a box with the application version number and developer name.
-- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press the WakeUp button to restart.
-- ![](pictures/icon-next.png){ width=15 } Access the secondary menu.
-
-![Books List options](pictures/dir-menu-options-2-6PLUS.png){ width=50% }
-
-- ![](pictures/icon-prev.png){ width=15 } Return to the main menu.
-- ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - Closes the options menu and returns to the book list.
+- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - Erases all reading progress information (current position in each book and their priority placement at the top of the book list). The books themselves are not deleted.
 - ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - Opens a form to set the local date and time manually.
 - ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** - Starts the Wi-Fi connection and retrieves the current time from an NTP server. The server address can be set in `config.txt`; the default is `pool.ntp.org`. Once the time is retrieved, tap the screen to restart the device.
 - ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** - Launches the calibration screen. Each crosshair must be pressed **only once** to align the touch coordinates with the display. See section 2.1.1 for important details.
-- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - Erases all reading progress information (current position in each book and their priority placement at the top of the book list). The books themselves are not deleted.
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a box with the application version number and developer name.
+- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press the WakeUp button to restart.
 
 Use the **TOUCH-AND-HOLD** gesture on an icon to display the associated information text. Use the **TAP** gesture on the icon to select the option and execute its function.
 
@@ -163,12 +158,24 @@ The following items are displayed:
 
 - **Minutes Before Sleeping** - Options: 5, 15, or 30 minutes. The idle timeout after which the device enters Deep Sleep, a state in which battery consumption is minimal. Once asleep, the device wakes when the WakeUp button is pressed.
 - **Books Directory View** - Options: Linear or Matrix. Selects how the book list is displayed. The Linear view shows books as a vertical list with the cover on the left and the title/author on the right. The Matrix view arranges covers in a grid with the title/author of the selected book shown at the top of the screen.
+- **Books Cover Size** - Options: SMALL, MEDIUM, LARGE. Sets the size of the books cover that will be used to display the book list. They will be, respectively (Width x Height pixels): 70x90, 140x180, and 180x240 pixels.
 - **uSDCard Position** - Options: LEFT, RIGHT, TOP, BOTTOM. Sets the physical orientation of the device so the SD-Card slot is on the left, right, top, or bottom of the screen. Changing orientation between TOP/BOTTOM and LEFT/RIGHT (or vice versa) switches between portrait and landscape geometry, which affects how much content fits on each page and may trigger a recalculation of page locations for all books.
 - **Pixel Resolution** - Selects how many bits are used per pixel. 3 bits per pixel enables font anti-aliasing but requires a full screen refresh on every page turn. 1 bit per pixel enables faster partial screen updates but disables anti-aliasing, resulting in visibly jagged glyphs.
-- **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. Displays the battery level at the bottom-left of the screen, updated each time the screen refreshes in the book list and book reader modes (not updated while option menus or parameter forms are displayed). PERCENT shows the charge percentage (2.5 V = 0%, 3.7 V = 100%). VOLTAGE shows the raw battery voltage. The icon is shown for all options except NONE.
+- **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. Displays the battery level at the bottom-left of the screen, updated each time the screen refreshes in the book list and book reader modes (not updated while option menus or parameter forms are displayed). PERCENT shows the charge percentage (2.5 V = 0%, 3.7 V and more = 100%). VOLTAGE shows the raw battery voltage. The icon is shown for all options except NONE. (A 3.7 volts rechargeable battery may have a value than can go up to around 4.2 volts)
 - **Show Title** - When selected, display the book title at the top portion of pages.
 - **Right Bottom Selection** - What to show at the bottom-right of the screen: nothing, the date/time, or the stack/heap size. When date/time is selected, it is shown as `DDD - MM/DD HH:MM` (e.g., `Mon - 01/24 22:44`). When stack/heap size is selected, three numbers are shown left to right: unused stack space, largest available heap chunk, and total available heap memory. This is primarily useful for diagnosing memory issues. The total stack is 60 KB and the heap is approximately 4.3 MB.
-   
+- **Battery Trim** - This is a linear trim factor to adjust the proper display of the battery level. It must be set to a value between 0.0 and 2.0 exclusive (normally will be closer to 1.0). The battery level is being read by means of one of the ESP32's A2D (Analog to Digital) interface. This interface is known to have some limitation when reading analogic values. The resistors used to divide the voltage at the entry of that interface could also offset the value being read depending on their values. Here is the way to adjust the factor (if you are not familiar with electronics voltmeter, try to find somebody to help you):
+  1. Set the **Show Battery Level** parameter to VOLTAGE;
+  2. Return to the books directory view;
+  3. Take note of the voltage that is shown at the bottom of the screen;
+  4. Power Off the device;
+  5. Open the device cover to get access to the zone where the battery is connected. Pay attention in the way you manipulate the device;
+  6. With a DC voltmeter, read the voltage of the battery. There must be some circuit pads close to the battery connector that allow to read that voltage;
+  7. You can now compute the proper trim factor using the following formula: 
+    ```
+    Voltage read on the voltmeter divided by the Voltage displayed on the screen 
+    ```
+  
 When the form appears, the currently selected option for each item is highlighted with a small rectangle. To change an option, **TAP** the desired value.
 
 Tap the **DONE** button to close the form. The new settings are saved and applied.
@@ -181,9 +188,10 @@ As described in section 2.1, the Default Parameters form lets you set default fo
 
 The following items are displayed:
 
-- **Default Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point ≈ 1/72 inch).
+- **Default Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point = 1/72 inch).
+- **Line Height** - Options: TIGHT, MEDIUM, LARGE. Sets the line height that will be used to display the text of the books.
 - **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
-- **Default Font** - Eight fonts are supplied with the application. Fonts with a **Cond** suffix are *Condensed*; those with a **S** suffix are *Serif*. Fonts prefixed with *TeX* are bitmap fonts generated with the TeX MetaFont toolkit, tailored to the device's screen resolution.
+- **Default Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
 - **Show Images in E-books** - Controls whether images in books are rendered. Disabling images reduces memory usage and speeds up page rendering.
 
 These are default values that apply to any book parameter that has not been customized for that specific book.
@@ -200,9 +208,10 @@ As described in section 2.2, the current book parameters form lets you set font 
 
 The following items are displayed:
 
-- **Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point ≈ 1/72 inch).
+- **Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point = 1/72 inch).
+- **Line Height** - Options: TIGHT, MEDIUM, LARGE. Sets the line height that will be used to display the text of the books.
 - **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
-- **Font** - Eight fonts are supplied with the application. Fonts with a **Cond** suffix are *Condensed*; those with a **S** suffix are *Serif*. Fonts prefixed with *TeX* are bitmap fonts generated with the TeX MetaFont toolkit, tailored to the device's screen resolution.
+- **Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
 - **Show Images in E-books** - Controls whether images in the book are rendered. Disabling images reduces memory usage and speeds up page rendering.
 
 When the form opens, it shows the values currently used to render the book's pages.
@@ -252,7 +261,7 @@ For performance, fonts are loaded and kept in memory. A book that uses many font
 The following steps can help reduce memory usage:
 
 - **Convert the book** - As described above, the Calibre converter can reduce both font and image size.
-- **Use 1-bit pixels** - The frame buffer uses 240 KB at 3 bits/pixel and 60 KB at 1 bit/pixel (InkPlate-6 figures). Select pixel resolution in Main Parameters.
+- **Use 1-bit pixels** - The frame buffer uses 240 KB at 3 bits/pixel and 60 KB at 1 bit/pixel (for an Inkplate-6). Select pixel resolution in Main Parameters.
 - **Deactivate images** - In Main Parameters, you can disable image rendering.
 - **Deactivate book fonts** - In Font Parameters, you can disable fonts embedded in the book.
 
@@ -262,7 +271,7 @@ If the application encounters a memory allocation failure, it will display a mes
 
 Starting with version 1.3.0, the application uses a *stream-based* approach to render images, loading picture data incrementally from the EPub file to minimize memory usage.
 
-JPEG and PNG image types are supported, but only in their basic formats. Some books may contain images that cannot be rendered. The `adjust_size.sh` script included with the application can convert embedded images to a compatible format and resolution. See section 3.3 for details.
+JPEG, PNG, GIF, and SVG image types are supported, but only in their basic formats. Some books may contain images that cannot be rendered. The `adjust_size.sh` script included with the application can convert embedded images to a compatible format and resolution. See section 3.3 for details.
 
 ### 3.6 Moving the SD-Card from an Inkplate model to another
 
@@ -286,17 +295,7 @@ Each font in the USER group must specify normal, bold, italic, and bold-italic f
 
 The SYSTEM group is tailored to the needs of EPub-InkPlate. Modifying it may affect how the application appears.
 
-Font files must reside in the `fonts` folder on the SD-Card. The EPub-InkPlate distribution includes additional fonts not referenced in `fonts_list.xml` by default; you can add them by editing the XML file. Two font types are provided: TrueType/OpenType (`.otf`) vector fonts and bitmap fonts (`.ibmf`). The bitmap fonts were generated from the Metafont system used by TeX.
-
-Because bitmap fonts are generated for a specific screen resolution, their filenames include a *dpi* value indicating the device they target:
-
-The following are the dpi values of each Inkplate type:
-
-- Inkplate-6: 166 dpi
-- Inkplate-10: 150 dpi
-- Inkplate-6PLUS: 212 dpi
-
-To support a single `fonts_list.xml` for all InkPlate device types, the application substitutes the string `%DPI%` (uppercase) in font filenames with the appropriate dpi value for the current device. This lets you move an SD-Card between InkPlate types without modifying the configuration file. See section 3.6 for guidance on managing books when switching devices.
+Font files must reside in the `fonts` folder on the SD-Card. The EPub-InkPlate distribution includes additional fonts not referenced in `fonts_list.xml` by default; you can add them by editing the XML file. Two font types are supported: True Type Fonts (`.ttf` files) and Open Type Fonts (`.otf` files). The previous versions of tha application were also supporting the IBMF fonts, these were replaced with their equivalent Open Type Fonts. IBMF fonts are no longer supported.
 
 **Important:** If you change fonts in the USER group, previously computed page locations may become invalid because glyph dimensions may differ. Delete all `.locs` files from the `books` folder; the application will recompute page locations automatically.
 
@@ -318,8 +317,8 @@ The Inkplate devices are based on ESP32-WROVER MPU. This is a very capable chip 
 
 - *Maximum number of books:* **200**. The application must keep some information about the books to quickly build and show the directory content.
 - *Maximum single book size:* **25 Mbytes**.
-- *Font formats:* **TTF, OTF, IBMF**.
+- *Font formats:* **TTF, OTF**.
 - *Maximum memory used for application internal fonts content:* **300 Kbytes**.
 - *Maximum memory used for books' fonts content:* **800 Kbytes**. Fonts that are already loaded are kept for rendering. If the output is not appropriate, the user can disable the use of the fonts embedded with the book and use one of the fonts supplied with the application.
 - *Maximum nested HTML tags in book content:* **50**. Testing the application, the author never had to deal with books having more than 15 nested tags. This limit is to track potential nested issues that would reset the device (stack overflow).
-- *Image format types:* **subset of PNG and JPeg**. GIF and SVG are not supported. The subsets are imposed by libraries used to interpret the image file content. 
+- *Image format types:* **subset of PNG, JPeg, GIF, and SVG**. The subsets are imposed by libraries used to interpret the image file content. In particular, JPeg pictures in progressive mode are not supported. They must be transformed to static mode using some tool (like Calibre) if you want them to be displayed. 

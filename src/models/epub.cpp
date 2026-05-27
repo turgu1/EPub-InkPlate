@@ -774,7 +774,7 @@ auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
 ///   storage;
 /// - Applies configuration settings for orientation and title visibility;
 /// - Falls back to global configuration defaults for any unset parameters.
-auto EPub::updateBookFormatParams() -> void {
+auto EPub::retrieveBookFormatParams() -> void {
   constexpr int8_t default_value = -1;
 
   if (bookParams == nullptr) {
@@ -787,7 +787,8 @@ auto EPub::updateBookFormatParams() -> void {
                         .fontSize       = default_value,
                         .lineHeight     = default_value,
                         .useFontsInBook = default_value,
-                        .font           = default_value};
+                        .font           = default_value,
+                        .screenDim      = {0, 0}};
   } else {
     bookParams->get(BookParams::Ident::SHOW_PICTURES, &bookFormatParams.showPictures);
     bookParams->get(BookParams::Ident::FONT_SIZE, &bookFormatParams.fontSize);
@@ -809,6 +810,8 @@ auto EPub::updateBookFormatParams() -> void {
     config.get(Config::Ident::USE_FONTS_IN_BOOKS, &bookFormatParams.useFontsInBook);
   if (bookFormatParams.font == default_value)
     config.get(Config::Ident::DEFAULT_FONT, &bookFormatParams.font);
+
+  bookFormatParams.screenDim = Dim(Screen::getWidth(), Screen::getHeight());
 
   // if (!bookFormatParams.useFontsInBook) fonts.clear();
 }
@@ -892,7 +895,7 @@ auto EPub::open(const HimemString &epubFilename) -> bool {
 
   if (!openParams(epubFilename)) return failOpen();
 
-  updateBookFormatParams();
+  retrieveBookFormatParams();
 
   fonts.adjustDefaultFont(bookFormatParams.font);
 

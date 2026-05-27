@@ -1,6 +1,6 @@
 # EPub-InkPlate - Installation Guide
 
-**Please Note: If you are updating from a version prior to V2.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for details.**
+**Please Note: If you are updating from a version prior to V3.0.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for details.**
 
 This document describes the installation procedure for the EPub-InkPlate application, which can be adapted to suit your requirements.
 
@@ -12,7 +12,7 @@ The installation consists of
   
 The latest binaries for the InkPlate are available in release bundles on the application's GitHub project page: "https://github.com/turgu1/EPub-InkPlate/releases". This procedure describes installation using the *esptool* upload tool, which is the simplest approach because it does not require a full development environment.
 
-If you want to build the application yourself, PlatformIO is no longer used. You must install Espressif's development tool suite, including ESP-IDF and the Espressif VS Code extension, and build the project from that environment.
+If you want to build the application yourself, PlatformIO is no longer used. You must install Espressif's development tool suite, including ESP-IDF and the Espressif VS Code extension, and build the project from that environment. The following procedure uses the *esptool* instead of the Espressif's tool suite, sufficient for the need of installing a EPub-InkPlate distribution.
 
 ### Prerequisites
 
@@ -24,7 +24,7 @@ pip install esptool
 
 For more information, consult: "https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html".
 
-The InkPlate device uses a CH340 USB-to-UART converter. If your computer does not have a CH340 driver installed, you will need to install one. See the following page for the appropriate procedure: "https://soldered.com/learn/ch340-driver-installation-croduino-basic3-nova2/".
+The InkPlate device uses a CH340 USB-to-UART converter. This device is natively supported on MacOS and Linux. If your computer does not have a CH340 driver installed, you will need to install one. See the following page for the appropriate procedure: "https://learn.sparkfun.com/tutorials/how-to-install-ch340-drivers/all".
 
 Next, download the release from the GitHub repository at: "https://github.com/turgu1/EPub-InkPlate/releases". The file to download is **release-X.X.X-inkplate...zip**, found in the `Assets` section below the release description. Extract its contents — you will find two folders (`bin` and `SDCard`), along with the installation document and the user's guide in PDF format.
 
@@ -40,7 +40,7 @@ The Wi-Fi parameters allow the application to access your local network, enablin
 
 Wi-Fi is also used to synchronize the device clock with an Internet time server. A default NTP server address is pre-configured in the `ntp_server` parameter and should be sufficient for most users, but you may substitute your own. Note that clock synchronization must be started manually from within the application. See the User's Guide for details.
 
-The `tz` parameter is a specially formatted string that tells the application how to convert the internal UTC clock to local time. A file named `timezones.csv` is included with the EPub-InkPlate distribution and contains timezone values for over 400 cities worldwide. For example, the timezone value for Zagreb is `CET-1CEST,M3.5.0,M10.5.0/3`. The full format specification is documented at: "https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html".
+The `tz` parameter is a specially formatted string (called the *Posix Time Format*)that tells the application how to convert the internal UTC clock to local time. A file named `timezones.csv` is included with the EPub-InkPlate distribution and contains timezone values for 461 cities worldwide. For example, the timezone value for Zagreb is `CET-1CEST,M3.5.0,M10.5.0/3`. The full format specification is documented at: "https://sourceware.org/glibc/manual/latest/html_node/TZ-Variable.html". This table has been built from the current Ubuntu timezone database dated 2026.05.25 and may change as countries modify their way of dealing with daylight saving time. Every time a new distribution of EPub-InkPlate is generated, this file is also re-generated.
 
 `config.txt` also contains parameters that are managed through the application's menus. Do not modify these by hand. If they are deleted from the file, the application will restore them to their default values.
 

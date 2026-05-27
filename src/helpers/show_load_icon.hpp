@@ -6,4 +6,4 @@
 
 #include "global.hpp"
 
-auto showPictureLoadIcon(const Dim &imageDim) -> void;
+auto showLoadIcon(const Dim &imageDim) -> void;

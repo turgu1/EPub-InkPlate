@@ -227,7 +227,7 @@ The following are the libraries currently in use by the application:
 The following are imported C header and source files, that implement some algorithms:
 
 - [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.10.4/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
-- [PubiXML](https://pugixml.org/) (For XML parsing)
+- [PugiXML](https://pugixml.org/) (For XML parsing)
 - [STB](https://github.com/nothings/stb) (For image resizing) :
 
   - `stb_image_resize.h` resize images larger/smaller 

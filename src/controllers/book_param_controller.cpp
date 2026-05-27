@@ -23,7 +23,7 @@
   #include "eink.hpp"
   #include "esp.hpp"
   #include "esp_system.h"
-  // #include "soc/rtc.h"
+// #include "soc/rtc.h"
 #endif
 
 #include "book_param_controller.hpp"
@@ -42,10 +42,10 @@ static int8_t oldUseFontsInBook;
 static int8_t oldFont;
 static int8_t oldLineHeight;
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
 #else
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
+static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
 #endif
 
 // clang-format off
@@ -75,7 +75,7 @@ static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
                           .choiceCount = 2,
                           .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
     {.caption   = " DONE ",
      .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
      .entryType = FormEntryType::DONE}
@@ -133,7 +133,7 @@ auto BookParamController::revertToDefaults() -> void {
   bookParams->put(BookParams::Ident::FONT, defaultValue);
   bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, defaultValue);
 
-  epub->updateBookFormatParams();
+  epub->retrieveBookFormatParams();
 
   bookParams->save();
 
@@ -190,22 +190,22 @@ auto BookParamController::tocCtrl() -> void {
 auto BookParamController::wifiMode() -> void {
   pageLocs.stopControlTask();
 
-  #if EPUB_INKPLATE_BUILD
-    epub->closeFile();
-    appFonts.clear(true);
-    appFonts.clearGlyphCaches();
+#if EPUB_INKPLATE_BUILD
+  epub->closeFile();
+  appFonts.clear(true);
+  appFonts.clearGlyphCaches();
 
-    eventMgr.setStayOn(true); // DO NOT sleep
+  eventMgr.setStayOn(true); // DO NOT sleep
 
-    if (startWebServer()) {
-      bookParamController.setWaitForKeyAfterWifi();
-    }
-  #endif
+  if (startWebServer()) {
+    bookParamController.setWaitForKeyAfterWifi();
+  }
+#endif
 }
 
 auto BookParamController::powerOff() -> void {
   booksDirController.saveLastBook(bookController.getCurrentPageId(), true);
-  pageLocs.stopControlTask();
+  // pageLocs.stopControlTask();
 
   CommonActions::powerItOff();
 }
@@ -289,7 +289,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
         bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, useFontsInBook);
       }
 
-      if (bookParams->isModified()) epub->updateBookFormatParams();
+      if (bookParams->isModified()) epub->retrieveBookFormatParams();
 
       bookParams->save();
 
@@ -367,16 +367,16 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
       }
     }
   }
-  #if EPUB_INKPLATE_BUILD
+#if EPUB_INKPLATE_BUILD
   else if (waitForKeyAfterWifi) {
-      MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
-                      "The device is now restarting. Please wait.");
-      waitForKeyAfterWifi = false;
-      stopWebServer();
-      inkplate_platform.restart();
-    }
-  #endif
-    else {
+    MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
+                    "The device is now restarting. Please wait.");
+    waitForKeyAfterWifi = false;
+    stopWebServer();
+    inkplate_platform.restart();
+  }
+#endif
+  else {
     if (menuViewer->event(event)) {
       LOG_D("Returning to book controller with updated EPub...");
       bookController.becomeOwnerOfBook(std::move(epub));

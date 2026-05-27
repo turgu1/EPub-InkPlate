@@ -22,8 +22,8 @@
 
 #include <iomanip>
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
 auto MatrixBooksDirViewer::setup() -> void {
@@ -103,45 +103,45 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
                      Pos(xpos + ((BooksDir::coverDim.width - book->coverDim.width) >> 1),
                          ypos + ((BooksDir::coverDim.height - book->coverDim.height) >> 1)));
 
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      if (item_idx == currentItemIdx) {
-        page->putHighlight(Dim(BooksDir::coverDim.width + 4, BooksDir::coverDim.height + 4),
-                           Pos(xpos - 2, ypos - 2));
-        page->putHighlight(Dim(BooksDir::coverDim.width + 6, BooksDir::coverDim.height + 6),
-                           Pos(xpos - 3, ypos - 3));
+#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    if (item_idx == currentItemIdx) {
+      page->putHighlight(Dim(BooksDir::coverDim.width + 4, BooksDir::coverDim.height + 4),
+                         Pos(xpos - 2, ypos - 2));
+      page->putHighlight(Dim(BooksDir::coverDim.width + 6, BooksDir::coverDim.height + 6),
+                         Pos(xpos - 3, ypos - 3));
 
-        fmt.fontIndex = TITLE_FONT;
-        fmt.fontSize  = TITLE_FONT_SIZE;
-        fmt.fontStyle = FaceStyle::NORMAL;
+      fmt.fontIndex = TITLE_FONT;
+      fmt.fontSize  = TITLE_FONT_SIZE;
+      fmt.fontStyle = FaceStyle::NORMAL;
 
-        char title[MAX_TITLE_SIZE];
-        title[MAX_TITLE_SIZE - 1] = 0;
+      char title[MAX_TITLE_SIZE];
+      title[MAX_TITLE_SIZE - 1] = 0;
 
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wstringop-truncation"
-        strncpy(title, book->title, MAX_TITLE_SIZE - 1);
-        if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
-          strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
-        }
-        #pragma GCC diagnostic pop
-
-        page->setLimits(fmt);
-        page->newParagraph(fmt);
-        #if EPUB_INKPLATE_BUILD
-          if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
-        #endif
-        page->addText(title, fmt);
-        page->endParagraph(fmt);
-
-        fmt.fontIndex = AUTHOR_FONT;
-        fmt.fontSize  = AUTHOR_FONT_SIZE;
-        fmt.fontStyle = FaceStyle::ITALIC;
-
-        page->newParagraph(fmt);
-        page->addText(book->author, fmt);
-        page->endParagraph(fmt);
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wstringop-truncation"
+      strncpy(title, book->title, MAX_TITLE_SIZE - 1);
+      if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
+        strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
       }
-    #endif
+  #pragma GCC diagnostic pop
+
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
+  #if EPUB_INKPLATE_BUILD
+      if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
+  #endif
+      page->addText(title, fmt);
+      page->endParagraph(fmt);
+
+      fmt.fontIndex = AUTHOR_FONT;
+      fmt.fontSize  = AUTHOR_FONT_SIZE;
+      fmt.fontStyle = FaceStyle::ITALIC;
+
+      page->newParagraph(fmt);
+      page->addText(book->author, fmt);
+      page->endParagraph(fmt);
+    }
+#endif
 
     line_pos++;
 
@@ -154,13 +154,13 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
     }
   }
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    fmt.screenTop = 18;
-    page->setLimits(fmt);
-    page->newParagraph(fmt);
-    page->addText(TOUCH_AND_HOLD_STR, fmt);
-    page->endParagraph(fmt);
-  #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  fmt.screenTop = 18;
+  page->setLimits(fmt);
+  page->newParagraph(fmt);
+  page->addText(TOUCH_AND_HOLD_STR, fmt);
+  page->endParagraph(fmt);
+#endif
 
   page->putRounded(Dim(Screen::getWidth() - 20, headerHeight), Pos(10, 10));
 
@@ -248,19 +248,19 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
   char title[MAX_TITLE_SIZE];
   title[MAX_TITLE_SIZE - 1] = 0;
 
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
   strncpy(title, book->title, MAX_TITLE_SIZE - 1);
   if (strlen(book->title) > (MAX_TITLE_SIZE - 1)) {
     strcpy(&title[MAX_TITLE_SIZE - 5], " ...");
   }
-  #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 
   page->setLimits(fmt);
   page->newParagraph(fmt);
-  #if EPUB_INKPLATE_BUILD
-    if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
-  #endif
+#if EPUB_INKPLATE_BUILD
+  if (nvsMgr.idExists(book->id)) page->addText("[Reading] ", fmt);
+#endif
   page->addText(title, fmt);
   page->endParagraph(fmt);
 
@@ -317,17 +317,17 @@ auto MatrixBooksDirViewer::clearHighlight() -> void {
   page->clearRegion(Dim(Screen::getWidth() - 40, (titleFontHeight << 1) + authorFontHeight),
                     Pos(20, 20));
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    fmt.screenTop = 18;
-    page->setLimits(fmt);
-    page->newParagraph(fmt);
-    page->addText(TOUCH_AND_HOLD_STR, fmt);
-    page->endParagraph(fmt);
-  #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  fmt.screenTop = 18;
+  page->setLimits(fmt);
+  page->newParagraph(fmt);
+  page->addText(TOUCH_AND_HOLD_STR, fmt);
+  page->endParagraph(fmt);
+#endif
 
-  #if EPUB_INKPLATE_BUILD
-    BatteryViewer::show(page);
-  #endif
+#if EPUB_INKPLATE_BUILD
+  BatteryViewer::show(page);
+#endif
 
   page->paint(false);
 
@@ -361,9 +361,9 @@ auto MatrixBooksDirViewer::nextPage() -> int16_t {
     showPage(page_nbr, 0);
     currentBookIdx = page_nbr * booksPerPage;
   } else if ((page_nbr + 1) == pageCount) {
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      highlight(booksDir.getBookCount() % booksPerPage - 1);
-    #endif
+#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    highlight(booksDir.getBookCount() % booksPerPage - 1);
+#endif
     currentBookIdx = booksDir.getBookCount() - 1;
   }
   return currentBookIdx;
@@ -377,9 +377,9 @@ auto MatrixBooksDirViewer::prevPage() -> int16_t {
   if (currentPageNbr != page_nbr) {
     showPage(page_nbr, 0);
   } else {
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      highlight(0);
-    #endif
+#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    highlight(0);
+#endif
   }
   currentBookIdx = page_nbr * booksPerPage;
   return currentBookIdx;

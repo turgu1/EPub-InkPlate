@@ -42,16 +42,16 @@ public:
   static constexpr uint16_t LARGE_COVER_WIDTH  = 180;
   static constexpr uint16_t LARGE_COVER_HEIGHT = 240;
 
-  /**
-   * @brief Single EBook Record
-   *
-   * This represents the meta-data contained in the database for each epub book.
-   * These are required to present the list of books to the user.
-   * One element is not present in the structure: the list of pages location.
-   * The *get_page_locs()* method is retrieving the pages location when required
-   * by the epub class.
-   */
-  #pragma pack(push, 1)
+/**
+ * @brief Single EBook Record
+ *
+ * This represents the meta-data contained in the database for each epub book.
+ * These are required to present the list of books to the user.
+ * One element is not present in the structure: the list of pages location.
+ * The *get_page_locs()* method is retrieving the pages location when required
+ * by the epub class.
+ */
+#pragma pack(push, 1)
   class EBookRecord;
   using EBookRecordPtr = HimemUniquePtr<EBookRecord>;
 
@@ -113,7 +113,7 @@ public:
   };
   using VersionRecordPtr = HimemUniquePtr<VersionRecord>;
 
-  #pragma pack(pop)
+#pragma pack(pop)
 
 private:
   static constexpr char const *TAG            = "BooksDir";
@@ -147,8 +147,8 @@ private:
   auto setCoverSize() -> void;
   auto checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex) -> void;
   auto cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool;
-  auto loadNewBooksToDb(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex)
-      -> std::pair<bool, bool>;
+  auto loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_t &bookIndex,
+                        SortedIndex &tempIndex) -> std::pair<bool, bool>;
 
 public:
   BooksDir() : db(SimpleDB::Make()) {}
@@ -252,7 +252,7 @@ public:
 };
 
 #if __BOOKS_DIR__
-  BooksDir booksDir;
+BooksDir booksDir;
 #else
-  extern BooksDir booksDir;
+extern BooksDir booksDir;
 #endif

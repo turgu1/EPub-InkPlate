@@ -8,7 +8,7 @@
 
 #include "config.hpp"
 #include "fonts.hpp"
-#include "helpers/picture_load_icon.hpp"
+#include "helpers/show_load_icon.hpp"
 #include "picture_factory.hpp"
 #include "viewers/html_interpreter.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -187,6 +187,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
 }
 
 auto BookViewer::displayPage(const PageId &pageId) -> void {
+  // page->putRounded(Dim(Screen::getWidth() - 2, Screen::getHeight() - 2), Pos(1, 1));
   ScreenBottom::show(page, pageLocs.getPageNbr(pageId), pageLocs.getPageCountOrPercent());
   page->paint();
 }
@@ -211,7 +212,7 @@ auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
         // LOG_D("Cover filename: %s", fname);
         auto coverInfo = epub->getPicture(fname, false);
         if (coverInfo != nullptr) {
-          showPictureLoadIcon(coverInfo->getDim());
+          showLoadIcon(coverInfo->getDim());
         }
 
         auto pict = epub->getPicture(fname, true);
@@ -223,7 +224,7 @@ auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
           }
 
         } else {
-          LOG_D("Unable to retrieve cover file: %s", fname.c_str());
+          LOG_W("Unable to retrieve cover file: %s", fname.c_str());
           showFakeCover(epub);
         }
         return false;

@@ -114,7 +114,7 @@ public:
   static constexpr int STOP_TOTAL_TIMEOUT_MS = 4000; // 4 second hard limit
 private:
   static constexpr const char *TAG                = "PageLocs";
-  static constexpr const int8_t LOCS_FILE_VERSION = 3;
+  static constexpr const int8_t LOCS_FILE_VERSION = 4;
 
   bool completed{false};
   bool aborted{false};
@@ -152,15 +152,6 @@ private:
 
   EPub::ItemInfo itemInfo;
   EPub::BookFormatParams currentFormatParams;
-
-  // int32_t           currentOffset;          ///< Where we are in current item
-  // int32_t           start_of_page_offset;
-
-  // bool              start_of_paragraph;  ///< Required to manage paragraph indentation at
-  // beginning of new page.
-
-  // bool           pageEnd(Page::Format & fmt);
-  // bool  page_locs_recurse(pugi::xml_node node, Page::Format fmt, DOM::Node * dom_node);
 
   auto load(const std::string &epubFilename) -> bool; ///< load pages location from .locs file
   auto save(const std::string &epubFilename) -> bool; ///< save pages location to .locs file

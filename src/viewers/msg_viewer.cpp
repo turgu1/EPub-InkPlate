@@ -209,11 +209,11 @@ auto MsgViewer::showProgress(const char *title, ...) -> std::pair<PagePtr, Progr
       .align        = CSS::Align::CENTER,
   };
 
-  char buff[80];
+  char buff[200];
 
   va_list args;
   va_start(args, title);
-  vsnprintf(buff, 80, title, args);
+  vsnprintf(buff, 200, title, args);
   va_end(args);
 
   page->start(fmt);
@@ -233,8 +233,7 @@ auto MsgViewer::showProgress(const char *title, ...) -> std::pair<PagePtr, Progr
   // Progress zone
 
   progressData->dim = Dim(width - 100, Screen::getHeight() / 18);
-  progressData->pos =
-      Pos(((Screen::getWidth() - width) >> 1) + 50, (Screen::getHeight() >> 1) + 20);
+  progressData->pos = Pos(((Screen::getWidth() - width) >> 1) + 50, (Screen::getHeight() >> 1));
 
   progressData->previousWidth = 0;
 
@@ -250,8 +249,8 @@ auto MsgViewer::showProgress(const char *title, ...) -> std::pair<PagePtr, Progr
   return {std::move(page), std::move(progressData)};
 }
 
-auto MsgViewer::updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent)
-    -> std::pair<PagePtr, ProgressDataPtr> {
+auto MsgViewer::updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent,
+                               const char *fmtStr, ...) -> std::pair<PagePtr, ProgressDataPtr> {
 
   if (percent > 100) return {std::move(page), std::move(progressData)};
 
@@ -266,6 +265,13 @@ auto MsgViewer::updateProgress(PagePtr page, ProgressDataPtr progressData, uint1
       .align        = CSS::Align::CENTER,
   };
 
+  char buff[80];
+
+  va_list args;
+  va_start(args, fmtStr);
+  vsnprintf(buff, 80, fmtStr, args);
+  va_end(args);
+
   page->start(fmt);
 
   uint16_t progressWidth =
@@ -278,6 +284,16 @@ auto MsgViewer::updateProgress(PagePtr page, ProgressDataPtr progressData, uint1
     page->setRegion(Dim{progressWidth, progressData->dim.height},
                     Pos{static_cast<uint16_t>(progressData->pos.x + progressData->previousWidth),
                         static_cast<uint16_t>(progressData->pos.y)});
+
+    page->clearRegion(
+        Dim(width - 20, 30),
+        Pos(fmt.screenLeft + 10, progressData->pos.y + (progressData->dim.height << 1) - 25));
+
+    page->putStrAt(
+        buff,
+        Pos{static_cast<uint16_t>(progressData->pos.x + (progressData->dim.width >> 1)),
+            static_cast<uint16_t>(progressData->pos.y + (progressData->dim.height << 1))},
+        fmt);
 
     progressData->previousWidth += progressWidth;
 

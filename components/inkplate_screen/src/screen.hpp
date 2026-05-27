@@ -24,29 +24,23 @@
 
 class Screen : NonCopyable {
 public:
-  #if INKPLATE_10
-    static constexpr int8_t IDENT                 = 2;
-    static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
-    static constexpr uint16_t RESOLUTION          = 150; ///< Pixels per inch
-  #elif INKPLATE_6
-    static constexpr int8_t IDENT                 = 1;
-    static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
-    static constexpr uint16_t RESOLUTION          = 166; ///< Pixels per inch
-  #elif INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    static constexpr int8_t IDENT                  = 3;
-    static constexpr int16_t PARTIAL_COUNT_ALLOWED = 10;
-    static constexpr uint16_t RESOLUTION           = 212; ///< Pixels per inch
-  #endif
-  enum class Orientation : int8_t {
-    LEFT, RIGHT, BOTTOM, TOP
-  };
-  enum class PixelResolution : int8_t {
-    ONE_BIT, THREE_BITS
-  };
+#if INKPLATE_10
+  static constexpr int8_t IDENT                 = 2;
+  static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
+  static constexpr uint16_t RESOLUTION          = 150; ///< Pixels per inch
+#elif INKPLATE_6
+  static constexpr int8_t IDENT                 = 1;
+  static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
+  static constexpr uint16_t RESOLUTION          = 166; ///< Pixels per inch
+#elif INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  static constexpr int8_t IDENT                  = 3;
+  static constexpr int16_t PARTIAL_COUNT_ALLOWED = 10;
+  static constexpr uint16_t RESOLUTION           = 212; ///< Pixels per inch
+#endif
+  enum class Orientation : int8_t { LEFT, RIGHT, BOTTOM, TOP };
+  enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
-  enum Color {
-    WHITE = 0, BLACK = 7
-  };
+  enum Color { WHITE = 0, BLACK = 7 };
 
   auto drawPicture(PicturePtr &picture, Pos pos) -> void;
   auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
@@ -93,6 +87,8 @@ private:
 
   static uint16_t width;
   static uint16_t height;
+  static uint16_t yOffset;
+  ;
 
   static Screen singleton;
 
@@ -102,9 +98,7 @@ private:
   PixelResolution pixelResolution{PixelResolution::ONE_BIT};
   Orientation orientation{Orientation::LEFT};
 
-  enum class Corner : uint8_t {
-    TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT
-  };
+  enum class Corner : uint8_t { TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT };
 
   Screen() = default;
 
@@ -140,9 +134,9 @@ private:
   }
 
   inline auto setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-    uint8_t *temp =
-        &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
-                                       (frameBuffer1Bit->get_line_size() * row) - (col >> 3)];
+    uint8_t *temp = &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
+                                                   (frameBuffer1Bit->get_line_size() * row) -
+                                                   (col >> 3) - yOffset];
     if (color == 1)
       *temp = *temp | LUT1BIT[col & 7];
     else
@@ -203,10 +197,11 @@ public:
 
   [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
   [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
+  [[nodiscard]] inline static auto getYOffset() -> uint16_t { return yOffset; }
 };
 
 #if __SCREEN__
-  Screen &screen = Screen::getSingleton();
+Screen &screen = Screen::getSingleton();
 #else
-  extern Screen &screen;
+extern Screen &screen;
 #endif

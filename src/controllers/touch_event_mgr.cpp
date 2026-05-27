@@ -16,7 +16,9 @@
 
   #include "config.hpp"
   #include "controllers/app_controller.hpp"
+  #include "helpers/goto_deep_sleep.hpp"
   #include "logging.hpp"
+  #include "models/page_locs.hpp"
   #include "viewers/page.hpp"
 
 const char *EventMgr::eventStr[9] = {"NONE",         "TAP",         "HOLD",
@@ -628,6 +630,8 @@ auto EventMgr::loop() -> void {
       // rebooting after the user press a key.
 
       if (!stayOn) { // Unless somebody wants to keep us awake...
+        if (pageLocs.isControlTaskReadyToBeStopped()) pageLocs.stopControlTask();
+
         int8_t lightSleepDuration = 2;
         config.get(Config::Ident::TIMEOUT, &lightSleepDuration);
 
@@ -636,20 +640,8 @@ auto EventMgr::loop() -> void {
 
         if (inkplate_platform.light_sleep(lightSleepDuration, TouchScreen::INTERRUPT_PIN, 0)) {
           LOG_I("Timed out on Light Sleep. Going now to Deep Sleep");
-          screen.forceFullUpdate();
-          MsgViewer::show(
-              MsgViewer::MsgType::INFO, false, true, "Deep Sleep",
-              "Timeout period exceeded (%d minutes). The device is now "
-              "entering into Deep Sleep mode. Please press the WakeUp button to restart.",
-              lightSleepDuration);
 
-          auto screenSaver = ScreenSaver::Make();
-          screenSaver->show();
-
-          ESP::delay(5000);
-          appController.goingToDeepSleep();
-
-          inkplate_platform.deep_sleep(TouchScreen::INTERRUPT_PIN, 0);
+          gotoDeepSleep(lightSleepDuration);
         }
       }
     }

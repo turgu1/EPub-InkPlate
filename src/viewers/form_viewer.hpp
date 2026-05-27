@@ -23,7 +23,7 @@ enum class FormEntryType {
   VERTICAL,
   UINT16,
   FLOAT,
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
   DONE
 #endif
 };
@@ -134,7 +134,7 @@ public:
     }
   }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
   [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
     return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
            (x <= (fieldPos.x + fieldDim.width + 10)) && (y <= (fieldPos.y + fieldDim.height + 10));
@@ -144,6 +144,9 @@ public:
 };
 
 class FormChoiceField : public FormField {
+private:
+  constexpr static char const *TAG = "FormChoiceField";
+
 public:
   static constexpr FormChoice dirViewChoices[2] = {{"LINEAR", 0}, {"MATRIX", 1}};
 
@@ -168,7 +171,7 @@ public:
   static constexpr FormChoice rightCornerChoices[3] = {{"NONE", 0}, {"DATE TIME", 1}, {"HEAP", 2}};
 #endif
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
   static constexpr FormChoice orientationChoices[4] = {
       {"LEFT", 3}, {"RIGHT", 2}, {"TOP", 1}, {"BOTTOM", 0}};
 #else
@@ -534,7 +537,7 @@ public:
   auto computeFieldDim() -> void { font.getASCIISize("XXXXXXX", &fieldDim, FORM_FONT_SIZE); }
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
 class FormDone : public FormField {
 
 public:
@@ -594,7 +597,7 @@ public:
       return FormUInt16::Make(entry, font, page);
     case FormEntryType::FLOAT:
       return FormFloat::Make(entry, font, page);
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
     case FormEntryType::DONE:
       return FormDone::Make(entry, font, page);
 #endif

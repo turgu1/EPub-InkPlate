@@ -55,7 +55,7 @@ Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT
   }
 #else
 
-  // Jenkins96 algorithm. See: http://burtleburtle.net/bob/hash/evahash.html
+// Jenkins96 algorithm. See: http://burtleburtle.net/bob/hash/evahash.html
 
   #define mix(a, b, c)                                                                             \
     {                                                                                              \
@@ -88,69 +88,69 @@ Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT
       c = c ^ (b >> 15);                                                                           \
     }
 
-  auto generateId(const uint8_t *k, uint32_t bufferLength) -> uint32_t {
-    uint32_t a, b, c;
-    uint32_t len;
+auto generateId(const uint8_t *k, uint32_t bufferLength) -> uint32_t {
+  uint32_t a, b, c;
+  uint32_t len;
 
-    len = bufferLength;
-    a = b = 0x9e3779b9;
-    c     = 0;
+  len = bufferLength;
+  a = b = 0x9e3779b9;
+  c     = 0;
 
-    // handle most of the key
-    while (len >= 12) {
-      a = a + *((uint32_t *)&k[0]); //(k[0] + ((uint32_t)k[1] << 8) + ((uint32_t)k[ 2] << 16) +
-                                    //((uint32_t)k[ 3] << 24));
-      b = b + *((uint32_t *)&k[4]); //(k[4] + ((uint32_t)k[5] << 8) + ((uint32_t)k[ 6] << 16) +
-                                    //((uint32_t)k[ 7] << 24));
-      c = c + *((uint32_t *)&k[8]); //(k[8] + ((uint32_t)k[9] << 8) + ((uint32_t)k[10] << 16) +
-                                    //((uint32_t)k[11] << 24));
-      mix(a, b, c);
-      k = k + 12;
-      len -= 12;
-    }
-
-    /*------------------------------------- handle the last 11 bytes */
-    c = c + bufferLength;
-    switch (len) {
-    case 11:
-      c = c + ((uint32_t)k[10] << 24);
-      [[fallthrough]];
-    case 10:
-      c = c + ((uint32_t)k[9] << 16);
-      [[fallthrough]];
-    case 9:
-      c = c + ((uint32_t)k[8] << 8);
-      [[fallthrough]];
-      /* the first byte of c is reserved for the length */
-    case 8:
-      b = b + ((uint32_t)k[7] << 24);
-      [[fallthrough]];
-    case 7:
-      b = b + ((uint32_t)k[6] << 16);
-      [[fallthrough]];
-    case 6:
-      b = b + ((uint32_t)k[5] << 8);
-      [[fallthrough]];
-    case 5:
-      b = b + k[4];
-      [[fallthrough]];
-    case 4:
-      a = a + ((uint32_t)k[3] << 24);
-      [[fallthrough]];
-    case 3:
-      a = a + ((uint32_t)k[2] << 16);
-      [[fallthrough]];
-    case 2:
-      a = a + ((uint32_t)k[1] << 8);
-      [[fallthrough]];
-    case 1:
-      a = a + k[0];
-      /* case 0: nothing left to add */
-    }
+  // handle most of the key
+  while (len >= 12) {
+    a = a + *((uint32_t *)&k[0]); //(k[0] + ((uint32_t)k[1] << 8) + ((uint32_t)k[ 2] << 16) +
+                                  //((uint32_t)k[ 3] << 24));
+    b = b + *((uint32_t *)&k[4]); //(k[4] + ((uint32_t)k[5] << 8) + ((uint32_t)k[ 6] << 16) +
+                                  //((uint32_t)k[ 7] << 24));
+    c = c + *((uint32_t *)&k[8]); //(k[8] + ((uint32_t)k[9] << 8) + ((uint32_t)k[10] << 16) +
+                                  //((uint32_t)k[11] << 24));
     mix(a, b, c);
-
-    return c;
+    k = k + 12;
+    len -= 12;
   }
+
+  /*------------------------------------- handle the last 11 bytes */
+  c = c + bufferLength;
+  switch (len) {
+  case 11:
+    c = c + ((uint32_t)k[10] << 24);
+    [[fallthrough]];
+  case 10:
+    c = c + ((uint32_t)k[9] << 16);
+    [[fallthrough]];
+  case 9:
+    c = c + ((uint32_t)k[8] << 8);
+    [[fallthrough]];
+    /* the first byte of c is reserved for the length */
+  case 8:
+    b = b + ((uint32_t)k[7] << 24);
+    [[fallthrough]];
+  case 7:
+    b = b + ((uint32_t)k[6] << 16);
+    [[fallthrough]];
+  case 6:
+    b = b + ((uint32_t)k[5] << 8);
+    [[fallthrough]];
+  case 5:
+    b = b + k[4];
+    [[fallthrough]];
+  case 4:
+    a = a + ((uint32_t)k[3] << 24);
+    [[fallthrough]];
+  case 3:
+    a = a + ((uint32_t)k[2] << 16);
+    [[fallthrough]];
+  case 2:
+    a = a + ((uint32_t)k[1] << 8);
+    [[fallthrough]];
+  case 1:
+    a = a + k[0];
+    /* case 0: nothing left to add */
+  }
+  mix(a, b, c);
+
+  return c;
+}
 
 #endif
 
@@ -162,9 +162,9 @@ auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> boo
     return false;
   }
 
-  #if DEBUGGING
-    showDb();
-  #endif
+#if DEBUGGING
+  showDb();
+#endif
 
   // We first verify if the database content is of the current version
 
@@ -222,35 +222,6 @@ auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> boo
   LOG_D("Reading directory completed.");
   return true;
 }
-
-#if 0 // no more required
-template<typename POD>
-std::ostream & serialize(std::ostream & os, std::vector<POD> const & v)
-{
-    // this only works on built in data types (PODs)
-    static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
-        "Can only serialize POD types with this function");
-
-    int32_t size = v.size();
-    os.write(reinterpret_cast<char const *>(&size), sizeof(size));
-    os.write(reinterpret_cast<char const *>(v.data()), v.size() * sizeof(POD));
-    return os;
-}
-
-template<typename POD>
-std::istream & deserialize(std::istream & is, std::vector<POD> & v)
-{
-    static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
-        "Can only deserialize POD types with this function");
-
-    int32_t size;
-    is.read(reinterpret_cast<char *>(&size), sizeof(size));
-    v.resize(size);
-    // std::cout << "Size: " << size << std::endl;
-    is.read(reinterpret_cast<char *>(v.data()), v.size() * sizeof(POD));
-    return is;
-}
-#endif
 
 auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
   if (idx >= sortedIndex.size()) {
@@ -354,35 +325,14 @@ auto BooksDir::setTrackOrder(uint32_t id, int8_t pos) -> void {
   }
 
   if (!found) {
-    #if EPUB_INKPLATE_BUILD
-      noRecurse = true;
-      nvsMgr.erase(id);
-      noRecurse = false;
+#if EPUB_INKPLATE_BUILD
+    noRecurse = true;
+    nvsMgr.erase(id);
+    noRecurse = false;
 
-    #endif
-  }
-}
-
-#if 0
-auto BooksDir::getBookDataFromDbIndex(uint16_t idx) -> EBookRecordPtr {
-  db->setCurrentIdx(idx);
-
-  EBookRecordPtr book{nullptr};
-
-  size_t recordSize = db->getRecordSize();
-  if (recordSize >= sizeof(EBookRecord)) {
-    book = EBookRecord::Make(recordSize);
-    if (book && !db->getRecord(book.get(), recordSize)) {
-      LOG_E("Unable to get record for db index %d", idx);
-      book.reset();
-    }
-  } else {
-    LOG_E("Record size too small: %d", recordSize);
-  }
-
-  return book;
-}
 #endif
+  }
+}
 
 auto BooksDir::clearDb() -> void {
   db->gotoFirst();
@@ -470,15 +420,15 @@ auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedInde
       LOG_D("Title: %s", partialRecord->title);
       tempIndex[partialRecord->filename] = IndexInfo{.id = 0, .dbIndex = 0};
 
-      #if EPUB_INKPLATE_BUILD
-        int8_t pos        = nvsMgr.getPos(partialRecord->id);
-        HimemString title = " ";
-        title += partialRecord->title;
-        title.front() = (pos >= 0) ? 'a' + pos : 'z';
-      #else
-        HimemString title = "z";
-        title += partialRecord->title;
-      #endif
+#if EPUB_INKPLATE_BUILD
+      int8_t pos        = nvsMgr.getPos(partialRecord->id);
+      HimemString title = " ";
+      title += partialRecord->title;
+      title.front() = (pos >= 0) ? 'a' + pos : 'z';
+#else
+      HimemString title = "z";
+      title += partialRecord->title;
+#endif
 
       sortedIndex[title] = IndexInfo{.id = partialRecord->id, .dbIndex = db->getCurrentIdx()};
       if (bookFilename) {
@@ -571,15 +521,15 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
         }
 
         uint16_t idx = newDb->getRecordCount() - 1;
-        #if EPUB_INKPLATE_BUILD
-          int8_t pos        = nvsMgr.getPos(data->id);
-          HimemString title = " ";
-          title += data->title;
-          title.front() = (pos >= 0) ? 'a' + pos : 'z';
-        #else
-          HimemString title = "z";
-          title += data->title;
-        #endif
+#if EPUB_INKPLATE_BUILD
+        int8_t pos        = nvsMgr.getPos(data->id);
+        HimemString title = " ";
+        title += data->title;
+        title.front() = (pos >= 0) ? 'a' + pos : 'z';
+#else
+        HimemString title = "z";
+        title += data->title;
+#endif
         sortedIndex[title] = IndexInfo{.id = data->id, .dbIndex = idx};
         if (bookFilename) {
           if (strcmp(bookFilename, data->filename) == 0) bookIndex = newDb->getRecordCount() - 1;
@@ -634,7 +584,7 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
  *       properly written to storage.
  *       Resizes book covers to match coverDim dimensions while maintaining aspect ratio.
  */
-auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
+auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_t &bookIndex,
                                 BooksDir::SortedIndex &tempIndex) -> std::pair<bool, bool> {
 
   struct dirent *de = nullptr;
@@ -642,9 +592,9 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
 
   LOG_D("Looking at book files in folder %s", BOOKS_FOLDER);
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-    ESP::show_heaps_info();
-  #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  ESP::show_heaps_info();
+#endif
 
   bool someAddedRecord = false;
   bool result          = true;
@@ -668,9 +618,14 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
 
   dp = opendir(BOOKS_FOLDER);
 
+  auto [pagerPtr, progressDataPtr] =
+      MsgViewer::showProgress("%s Please wait while we retrieve e-books metadata.", theTitle);
+
+  int cptr = 0;
+
   if (dp != nullptr) {
 
-    bool first = true;
+    // bool first = true;
 
     while ((de = readdir(dp))) {
 
@@ -685,21 +640,21 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
 
           // The book is not in the database, we add it now
 
-          if (first) {
-            first = false;
-            // MsgViewer::showProgress("Computing new books pages location...");
-            if (db->getRecordCount() == 1) {
-              MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "E-books metadata retrieval",
-                              "System parameters changed requiring metadata retrieval. "
-                              "It will take between 5 and 10 seconds for each book.");
-            } else {
-              MsgViewer::show(
-                  MsgViewer::MsgType::INFO, false, true, "New e-books metadata retrieval",
-                  "New e-books have been found (%s). Please wait while we retrieve some metadata. "
-                  "It will take between 5 and 10 seconds for each e-book.",
-                  de->d_name);
-            }
-          }
+          // if (first) {
+          //   first = false;
+          //   // MsgViewer::showProgress("Computing new books pages location...");
+          //   if (db->getRecordCount() == 1) {
+          //     MsgViewer::showProgress("E-books metadata retrieval",
+          //                             "System parameters changed requiring metadata retrieval. "
+          //                             "It will take between 5 and 10 seconds for each book.");
+          //   } else {
+          //     MsgViewer::show(
+          //         MsgViewer::MsgType::INFO, false, true, "New e-books metadata retrieval",
+          //         "New e-books have been found (%s). Please wait while we retrieve some metadata.
+          //         " "It will take between 5 and 10 seconds for each e-book.", de->d_name);
+          //   }
+          // }
+
           someAddedRecord = true;
 
           LOG_D("New book found: %s", de->d_name);
@@ -783,15 +738,15 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
             }
 
             uint16_t idx = db->getRecordCount() - 1;
-            #if EPUB_INKPLATE_BUILD
-              int8_t pos        = nvsMgr.getPos(theBook->id);
-              HimemString title = " ";
-              title += theBook->title;
-              title.front() = (pos >= 0) ? 'a' + pos : 'z';
-            #else
-              HimemString title = "z";
-              title += theBook->title;
-            #endif
+#if EPUB_INKPLATE_BUILD
+            int8_t pos        = nvsMgr.getPos(theBook->id);
+            HimemString title = " ";
+            title += theBook->title;
+            title.front() = (pos >= 0) ? 'a' + pos : 'z';
+#else
+            HimemString title = "z";
+            title += theBook->title;
+#endif
             sortedIndex[title] = {.id = theBook->id, .dbIndex = idx};
 
             if (bookFilename) {
@@ -801,18 +756,34 @@ auto BooksDir::loadNewBooksToDb(char *bookFilename, int16_t &bookIndex,
 
             epub->closeFile();
 
-            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-              ESP::show_heaps_info();
-            #endif
+#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+            ESP::show_heaps_info();
+#endif
+          }
+
+          if (pagerPtr) {
+            ++cptr;
+            if (cptr <= fileCount) {
+              std::tie(pagerPtr, progressDataPtr) = MsgViewer::updateProgress(
+                  std::move(pagerPtr), std::move(progressDataPtr), (cptr * 100) / (fileCount + 1),
+                  "%d / %d", cptr, fileCount);
+            }
           }
         }
       }
+    }
+
+    if (pagerPtr) {
+      std::tie(pagerPtr, progressDataPtr) =
+          MsgViewer::updateProgress(std::move(pagerPtr), std::move(progressDataPtr), 100,
+                                    "Completing... Writing to the SD Card...");
     }
 
     closedir(dp);
   }
 
   if (someAddedRecord) {
+
     db->close(); // To ensure that data is well written on SD Card
     if (!db->open(BOOKS_DIR_FILE)) {
       LOG_E("Unable to open db file");
@@ -866,6 +837,11 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
 
   setCoverSize();
 
+  // theTitle will be used in the progress page displayed to the user
+  // during metadata retrieval. It will indicate
+  // whether we are doing a full refresh (forceInit) or just looking for new books.
+  const char *theTitle = forceInit ? "Refreshing e-books database..." : "Found new e-books...";
+
   if (forceInit) {
 
     clearDb();
@@ -888,7 +864,7 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
 
   // Find ebooks that are new since last database refresh
 
-  auto [result, someAddedRecord] = loadNewBooksToDb(bookFilename, bookIndex, tempIndex);
+  auto [result, someAddedRecord] = loadNewBooksToDb(theTitle, bookFilename, bookIndex, tempIndex);
 
   tempIndex.clear();
 
@@ -896,33 +872,33 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
 }
 
 auto BooksDir::showDb() -> void {
-  #if DEBUGGING
-    VersionRecord versionRecord;
-    EBookRecordPtr book;
+#if DEBUGGING
+  VersionRecord versionRecord;
+  EBookRecordPtr book;
 
-    if (!db->gotoFirst()) return;
+  if (!db->gotoFirst()) return;
 
-    if (!db->getRecord(&versionRecord, sizeof(VersionRecord))) return;
+  if (!db->getRecord(&versionRecord, sizeof(VersionRecord))) return;
 
-    std::cout << "DB Version: " << versionRecord.version << " app: " << versionRecord.appName
-              << " record count: " << db->getRecordCount() - 1 << std::endl;
+  std::cout << "DB Version: " << versionRecord.version << " app: " << versionRecord.appName
+            << " record count: " << db->getRecordCount() - 1 << std::endl;
 
-    while (db->gotoNext()) {
-      size_t recordSize = db->getRecordSize();
-      if (recordSize >= sizeof(EBookRecord)) {
-        book = EBookRecord::Make(recordSize);
-        if (!db->getRecord(book.get(), recordSize)) return;
-        std::cout << "Book: " << book->filename << std::endl
-                  << "  id: " << book->id << std::endl
-                  << "  title: " << book->title << std::endl
-                  << "  author: " << book->author << std::endl
-                  << "  description: " << book->description << std::endl
-                  << "  bitmap size: " << +book->coverDim.width << " " << +book->coverDim.height
-                  << std::endl;
-      } else {
-        std::cout << "Record size too small: " << recordSize << std::endl;
-        continue;
-      }
+  while (db->gotoNext()) {
+    size_t recordSize = db->getRecordSize();
+    if (recordSize >= sizeof(EBookRecord)) {
+      book = EBookRecord::Make(recordSize);
+      if (!db->getRecord(book.get(), recordSize)) return;
+      std::cout << "Book: " << book->filename << std::endl
+                << "  id: " << book->id << std::endl
+                << "  title: " << book->title << std::endl
+                << "  author: " << book->author << std::endl
+                << "  description: " << book->description << std::endl
+                << "  bitmap size: " << +book->coverDim.width << " " << +book->coverDim.height
+                << std::endl;
+    } else {
+      std::cout << "Record size too small: " << recordSize << std::endl;
+      continue;
     }
-  #endif
+  }
+#endif
 }

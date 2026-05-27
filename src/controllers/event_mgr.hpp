@@ -18,7 +18,7 @@
 
 class EventMgr {
 public:
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
   struct CalibPoint {
     uint16_t x[3], y[3];
   };
@@ -29,7 +29,7 @@ public:
 
 protected:
   volatile bool stayOn{false};
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
 
   int64_t a, b, c, d, e, f, divider;
 
@@ -48,11 +48,15 @@ protected:
 public:
   static constexpr char const *TAG = "EventMgr";
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
   // clang-format off
     enum class EventKind { NONE,        TAP,           HOLD,         SWIPE_LEFT, 
                            SWIPE_RIGHT, PINCH_ENLARGE, PINCH_REDUCE, RELEASE,
-                           WAKEUP_BUTTON};
+                           WAKEUP_BUTTON,
+#if EPUB_LINUX_BUILD
+                           NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT
+#endif
+                          };
   // clang-format on
 
   static const char *eventStr[9];

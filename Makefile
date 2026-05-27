@@ -21,9 +21,21 @@ APP_VERSION := 3.0.0
 # Debug / Release flags
 # ---------------------------------------------------------------------------
 ifdef DEBUG
-  OPT_FLAGS := -O0 -g3 -DDEBUGGING=0
+  OPT_FLAGS := -O0 -g3 -DDEBUGGING=1
 else
   OPT_FLAGS := -O2 -DDEBUGGING=0
+endif
+
+ifdef TOUCH_TRIAL
+  OPT_FLAGS += -DTOUCH_TRIAL=1
+else
+  OPT_FLAGS += -DTOUCH_TRIAL=0
+endif
+
+ifdef TOUCH_MENU
+  OPT_FLAGS += -DTOUCH_MENU=1
+else
+  OPT_FLAGS += -DTOUCH_MENU=0
 endif
 
 # ---------------------------------------------------------------------------
@@ -459,7 +471,7 @@ VALGRIND_SRC_C := \
 VALGRIND_SRC_CPP := \
   test/linux_s5_valgrind.cpp \
   test/valgrind_stubs.cpp \
-  src/helpers/picture_load_icon.cpp \
+  src/helpers/show_load_icon.cpp \
   src/models/book_params.cpp \
   src/models/css.cpp \
   src/models/dom.cpp \
