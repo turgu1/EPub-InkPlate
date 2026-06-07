@@ -23,13 +23,11 @@
 #include <utility>
 #include <vector>
 
-// clang-format off
-#define LOG_I(fmt, ...) { log('I', TAG, fmt, ##__VA_ARGS__); }
-#define LOG_D(fmt, ...) { log('D', TAG, fmt, ##__VA_ARGS__); }
-#define LOG_W(fmt, ...) { log('W', TAG, fmt, ##__VA_ARGS__); }
-#define LOG_V(fmt, ...) { log('V', TAG, fmt, ##__VA_ARGS__); }
-#define LOG_E(fmt, ...) { log('E', TAG, fmt, ##__VA_ARGS__); }
-// clang-format on
+#define LOG_I(fmt, ...) { log('I', TAG, std::format(fmt, ## __VA_ARGS__).c_str());  }
+#define LOG_D(fmt, ...) { log('D', TAG, std::format(fmt, ## __VA_ARGS__).c_str());  }
+#define LOG_W(fmt, ...) { log('W', TAG, std::format(fmt, ## __VA_ARGS__).c_str());  }
+#define LOG_V(fmt, ...) { log('V', TAG, std::format(fmt, ## __VA_ARGS__).c_str());  }
+#define LOG_E(fmt, ...) { log('E', TAG, std::format(fmt, ## __VA_ARGS__).c_str());  }
 
 void log(const char level, const char *tag, const char *fmt, ...) {
   va_list args;
@@ -43,11 +41,11 @@ void log(const char level, const char *tag, const char *fmt, ...) {
 
 static constexpr const int8_t LOCS_FILE_VERSION = 3;
 
-static constexpr const char *TAG = "PageLocsChecker";
+static constexpr const char * TAG = "PageLocsChecker";
 
 struct PageId {
-  int16_t itemrefIndex{0};
-  int32_t offset{0};
+  int16_t itemrefIndex{ 0 };
+  int32_t offset{ 0 };
   PageId(int16_t idx, int32_t off) {
     itemrefIndex = idx;
     offset       = off;
@@ -67,8 +65,8 @@ struct PageInfo {
 
 struct PageCompare {
   auto operator()(const PageId &lhs, const PageId &rhs) const -> bool {
-    if (lhs.itemrefIndex < rhs.itemrefIndex) return true;
-    if (lhs.itemrefIndex > rhs.itemrefIndex) return false;
+    if (lhs.itemrefIndex < rhs.itemrefIndex) { return true; }
+    if (lhs.itemrefIndex > rhs.itemrefIndex) { return false; }
     return lhs.offset < rhs.offset;
   }
 };
@@ -93,18 +91,18 @@ struct BookFormatParams {
 
 BookFormatParams currentFormatParams;
 
-int16_t pageCount{0};
+int16_t          pageCount{ 0 };
 
 bool readLocsFile(std::string filename) {
   std::ifstream file(filename, std::ios::in | std::ios::binary);
 
-  LOG_D("Loading pages location from file %s.", filename.c_str());
+  LOG_D("Loading pages location from file {}.", filename);
 
-  int8_t version;
+  int8_t  version;
   int16_t pgCount;
 
   if (!file.is_open()) {
-    LOG_I("Unable to open pages location file '%s': errno=%d (%s). Calculating locations...",
+    LOG_I("Unable to open pages location file '{}': errno={} ({}). Calculating locations...",
           filename.c_str(), errno, std::strerror(errno));
     return false;
   }
@@ -112,27 +110,29 @@ bool readLocsFile(std::string filename) {
   bool ok = false;
 
   while (true) {
-    if (file.read(reinterpret_cast<char *>(&version), 1).fail()) break;
-    if (version != LOCS_FILE_VERSION) break;
+    if (file.read(reinterpret_cast<char *>(&version), 1).fail()) { break; }
+    if (version != LOCS_FILE_VERSION) { break; }
 
     if (file.read(reinterpret_cast<char *>(&currentFormatParams), sizeof(currentFormatParams))
-            .fail())
+        .fail()) {
       break;
-    if (file.read(reinterpret_cast<char *>(&pgCount), sizeof(pgCount)).fail()) break;
+    }
+    if (file.read(reinterpret_cast<char *>(&pgCount), sizeof(pgCount)).fail()) { break; }
 
     pagesMap.clear();
 
     int16_t pageNbr = 0;
 
     for (int16_t i = 0; i < pgCount; ++i) {
-      PageId pageId;
+      PageId   pageId;
       PageInfo pageInfo;
 
       if (file.read(reinterpret_cast<char *>(&pageId.itemrefIndex), sizeof(pageId.itemrefIndex))
-              .fail())
+          .fail()) {
         break;
-      if (file.read(reinterpret_cast<char *>(&pageId.offset), sizeof(pageId.offset)).fail()) break;
-      if (file.read(reinterpret_cast<char *>(&pageInfo.size), sizeof(pageInfo.size)).fail()) break;
+      }
+      if (file.read(reinterpret_cast<char *>(&pageId.offset), sizeof(pageId.offset)).fail()) { break; }
+      if (file.read(reinterpret_cast<char *>(&pageInfo.size), sizeof(pageInfo.size)).fail()) { break; }
       pageInfo.pageNumber = (pageInfo.size >= 0) ? pageNbr++ : -1;
 
       //   if (pageNbr == 50) {
@@ -150,7 +150,7 @@ bool readLocsFile(std::string filename) {
   file.close();
 
   if (!ok) {
-    LOG_E("Page locations load failed for '%s' (fail=%d bad=%d eof=%d)", filename.c_str(),
+    LOG_E("Page locations load failed for '{}' (fail={} bad={} eof={})", filename,
           file.fail() ? 1 : 0, file.bad() ? 1 : 0, file.eof() ? 1 : 0);
   }
 
@@ -160,9 +160,9 @@ bool readLocsFile(std::string filename) {
 void showPagesMap() {
   LOG_I("Pages Map:");
   for (const auto &entry : pagesMap) {
-    const PageId &id     = entry.first;
+    const PageId &  id     = entry.first;
     const PageInfo &info = entry.second;
-    LOG_I("ItemrefIndex: %d, Offset: %d, Size: %d, PageNumber: %d", id.itemrefIndex, id.offset,
+    LOG_I("ItemrefIndex: {}, Offset: {}, Size: {}, PageNumber: {}", id.itemrefIndex, id.offset,
           info.size, info.pageNumber);
   }
 }
@@ -177,7 +177,7 @@ bool checkOffsetsContinuity() {
   int32_t nextOffset          = -1;
 
   for (const auto &entry : pagesMap) {
-    const PageId &id     = entry.first;
+    const PageId &  id     = entry.first;
     const PageInfo &info = entry.second;
 
     if (currentItemrefIndex != id.itemrefIndex) {
@@ -185,7 +185,7 @@ bool checkOffsetsContinuity() {
       currentItemrefIndex = id.itemrefIndex;
     } else {
       if (id.offset != nextOffset) {
-        LOG_E("Offsets are not continuous at ItemrefIndex: %d, Offset: %d. Expected offset: %d",
+        LOG_E("Offsets are not continuous at ItemrefIndex: {}, Offset: {}. Expected offset: {}",
               id.itemrefIndex, id.offset, nextOffset);
         result = false;
       }
@@ -199,12 +199,12 @@ bool checkOffsetsContinuity() {
 int main(int argc, char *argv[]) {
 
   if (argc != 2) {
-    LOG_E("Usage: %s <page_locs_file>", argv[0]);
+    LOG_E("Usage: {} <page_locs_file>", argv[0]);
     return 1;
   }
 
   if (!readLocsFile(argv[1])) {
-    LOG_E("Failed to read page locs file: %s", argv[1]);
+    LOG_E("Failed to read page locs file: {}", argv[1]);
     return 1;
   }
 

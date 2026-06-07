@@ -53,7 +53,7 @@ public:
 };
 
 #if __BOOK_PARAM_CONTROLLER__
-  BookParamController bookParamController;
+BookParamController bookParamController;
 #else
-  extern BookParamController bookParamController;
+extern BookParamController bookParamController;
 #endif

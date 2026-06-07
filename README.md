@@ -11,7 +11,7 @@ This is an overdue update of the EPub reader. A lot of changes were made interna
 - **Cover image sizes**: the book list now lets you choose between small, medium, and large cover images.
 - **Line Height**: Three line heights are available for displaying book content: Tight, Medium, and Large.
 - **Kerning and Ligatures**: Fonts and FreeType library adjusted to support kerning. A small algorithm was added for the usual ligatures.
-- **Screen Saver**: place JPEG images in a `artworks` folder on the SD card and they will be randomly displayed when the device turns off or enters deep sleep. The release package contains such a folder with 7 default images. This can be added to your existing SD card if you are updating to this new version.
+- **Screen Saver**: place JPEG images in a `artworks` folder on the SD card and they will be randomly displayed when the device turns off (deep sleep). The release package contains such a folder with 7 default images. 
 - **Battery Trim Factor**: a new `battery_trim` config value (floating point) permits adjustment of the battery voltage read from the Inkplate ADC capability.
 - **Larger menu icons**: icons in parameter and option menus are bigger and centered across multiple lines for easier navigation.
 - **Waiting indicator**: a spinner is shown on screen while a large image is being prepared.
@@ -53,10 +53,12 @@ $ . ~/.espressif/v5.5.4/esp-idf/export.sh
 Supported device names:
 
 - INKPLATE_6
+- INKPLATE_6_V2
 - INKPLATE_6PLUS
 - INKPLATE_6PLUS_V2
 - INKPLATE_6FLICK
 - INKPLATE_10
+- INKPLATE_10_V2
 
 Example:
 

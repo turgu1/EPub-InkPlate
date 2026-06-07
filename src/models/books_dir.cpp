@@ -21,7 +21,7 @@
 #endif
 
 extern "C" {
-#include <dirent.h>
+  #include <dirent.h>
 }
 
 #include "books_dir.hpp"
@@ -29,13 +29,13 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/stat.h>
 
-Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT};
+Dim BooksDir::coverDim{ BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT };
 
 #if 0
   const uint32_t CRC32_INITIAL    = 0xFFFFFFFFUL;
   const uint32_t CRC32_POLYNOMIAL = 0x1EDC6F41UL;
 
-  static uint32_t 
+  static uint32_t
   generateId(const uint8_t * buffer, uint32_t bufferLength)
   {
     uint32_t i;
@@ -58,117 +58,117 @@ Dim BooksDir::coverDim{BooksDir::SMALL_COVER_WIDTH, BooksDir::SMALL_COVER_HEIGHT
 // Jenkins96 algorithm. See: http://burtleburtle.net/bob/hash/evahash.html
 
   #define mix(a, b, c)                                                                             \
-    {                                                                                              \
-      a = a - b;                                                                                   \
-      a = a - c;                                                                                   \
-      a = a ^ (c >> 13);                                                                           \
-      b = b - c;                                                                                   \
-      b = b - a;                                                                                   \
-      b = b ^ (a << 8);                                                                            \
-      c = c - a;                                                                                   \
-      c = c - b;                                                                                   \
-      c = c ^ (b >> 13);                                                                           \
-      a = a - b;                                                                                   \
-      a = a - c;                                                                                   \
-      a = a ^ (c >> 12);                                                                           \
-      b = b - c;                                                                                   \
-      b = b - a;                                                                                   \
-      b = b ^ (a << 16);                                                                           \
-      c = c - a;                                                                                   \
-      c = c - b;                                                                                   \
-      c = c ^ (b >> 5);                                                                            \
-      a = a - b;                                                                                   \
-      a = a - c;                                                                                   \
-      a = a ^ (c >> 3);                                                                            \
-      b = b - c;                                                                                   \
-      b = b - a;                                                                                   \
-      b = b ^ (a << 10);                                                                           \
-      c = c - a;                                                                                   \
-      c = c - b;                                                                                   \
-      c = c ^ (b >> 15);                                                                           \
+          {                                                                                              \
+            a = a - b;                                                                                   \
+            a = a - c;                                                                                   \
+            a = a ^ (c >> 13);                                                                           \
+            b = b - c;                                                                                   \
+            b = b - a;                                                                                   \
+            b = b ^ (a << 8);                                                                            \
+            c = c - a;                                                                                   \
+            c = c - b;                                                                                   \
+            c = c ^ (b >> 13);                                                                           \
+            a = a - b;                                                                                   \
+            a = a - c;                                                                                   \
+            a = a ^ (c >> 12);                                                                           \
+            b = b - c;                                                                                   \
+            b = b - a;                                                                                   \
+            b = b ^ (a << 16);                                                                           \
+            c = c - a;                                                                                   \
+            c = c - b;                                                                                   \
+            c = c ^ (b >> 5);                                                                            \
+            a = a - b;                                                                                   \
+            a = a - c;                                                                                   \
+            a = a ^ (c >> 3);                                                                            \
+            b = b - c;                                                                                   \
+            b = b - a;                                                                                   \
+            b = b ^ (a << 10);                                                                           \
+            c = c - a;                                                                                   \
+            c = c - b;                                                                                   \
+            c = c ^ (b >> 15);                                                                           \
+          }
+
+  auto generateId(const uint8_t *k, uint32_t bufferLength) -> uint32_t {
+    uint32_t a, b, c;
+    uint32_t len;
+
+    len = bufferLength;
+    a = b = 0x9e3779b9;
+    c     = 0;
+
+    // handle most of the key
+    while (len >= 12) {
+      a = a + *((uint32_t *)&k[0]); //(k[0] + ((uint32_t)k[1] << 8) + ((uint32_t)k[ 2] << 16) +
+                                    //((uint32_t)k[ 3] << 24));
+      b = b + *((uint32_t *)&k[4]); //(k[4] + ((uint32_t)k[5] << 8) + ((uint32_t)k[ 6] << 16) +
+                                    //((uint32_t)k[ 7] << 24));
+      c = c + *((uint32_t *)&k[8]); //(k[8] + ((uint32_t)k[9] << 8) + ((uint32_t)k[10] << 16) +
+                                    //((uint32_t)k[11] << 24));
+      mix(a, b, c);
+      k = k + 12;
+      len -= 12;
     }
 
-auto generateId(const uint8_t *k, uint32_t bufferLength) -> uint32_t {
-  uint32_t a, b, c;
-  uint32_t len;
-
-  len = bufferLength;
-  a = b = 0x9e3779b9;
-  c     = 0;
-
-  // handle most of the key
-  while (len >= 12) {
-    a = a + *((uint32_t *)&k[0]); //(k[0] + ((uint32_t)k[1] << 8) + ((uint32_t)k[ 2] << 16) +
-                                  //((uint32_t)k[ 3] << 24));
-    b = b + *((uint32_t *)&k[4]); //(k[4] + ((uint32_t)k[5] << 8) + ((uint32_t)k[ 6] << 16) +
-                                  //((uint32_t)k[ 7] << 24));
-    c = c + *((uint32_t *)&k[8]); //(k[8] + ((uint32_t)k[9] << 8) + ((uint32_t)k[10] << 16) +
-                                  //((uint32_t)k[11] << 24));
-    mix(a, b, c);
-    k = k + 12;
-    len -= 12;
-  }
-
-  /*------------------------------------- handle the last 11 bytes */
-  c = c + bufferLength;
-  switch (len) {
-  case 11:
-    c = c + ((uint32_t)k[10] << 24);
-    [[fallthrough]];
-  case 10:
-    c = c + ((uint32_t)k[9] << 16);
-    [[fallthrough]];
-  case 9:
-    c = c + ((uint32_t)k[8] << 8);
-    [[fallthrough]];
+    /*------------------------------------- handle the last 11 bytes */
+    c = c + bufferLength;
+    switch (len) {
+    case 11:
+      c = c + ((uint32_t)k[10] << 24);
+      [[fallthrough]];
+    case 10:
+      c = c + ((uint32_t)k[9] << 16);
+      [[fallthrough]];
+    case 9:
+      c = c + ((uint32_t)k[8] << 8);
+      [[fallthrough]];
     /* the first byte of c is reserved for the length */
-  case 8:
-    b = b + ((uint32_t)k[7] << 24);
-    [[fallthrough]];
-  case 7:
-    b = b + ((uint32_t)k[6] << 16);
-    [[fallthrough]];
-  case 6:
-    b = b + ((uint32_t)k[5] << 8);
-    [[fallthrough]];
-  case 5:
-    b = b + k[4];
-    [[fallthrough]];
-  case 4:
-    a = a + ((uint32_t)k[3] << 24);
-    [[fallthrough]];
-  case 3:
-    a = a + ((uint32_t)k[2] << 16);
-    [[fallthrough]];
-  case 2:
-    a = a + ((uint32_t)k[1] << 8);
-    [[fallthrough]];
-  case 1:
-    a = a + k[0];
-    /* case 0: nothing left to add */
-  }
-  mix(a, b, c);
+    case 8:
+      b = b + ((uint32_t)k[7] << 24);
+      [[fallthrough]];
+    case 7:
+      b = b + ((uint32_t)k[6] << 16);
+      [[fallthrough]];
+    case 6:
+      b = b + ((uint32_t)k[5] << 8);
+      [[fallthrough]];
+    case 5:
+      b = b + k[4];
+      [[fallthrough]];
+    case 4:
+      a = a + ((uint32_t)k[3] << 24);
+      [[fallthrough]];
+    case 3:
+      a = a + ((uint32_t)k[2] << 16);
+      [[fallthrough]];
+    case 2:
+      a = a + ((uint32_t)k[1] << 8);
+      [[fallthrough]];
+    case 1:
+      a = a + k[0];
+      /* case 0: nothing left to add */
+    }
+    mix(a, b, c);
 
-  return c;
-}
+    return c;
+  }
 
 #endif
 
 auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> bool {
-  LOG_D("Reading books directory: %s.", BOOKS_DIR_FILE);
+  LOG_D("Reading books directory: {}.", BOOKS_DIR_FILE);
 
   if (!db->open(BOOKS_DIR_FILE)) {
-    LOG_E("Can't open database: %s", BOOKS_DIR_FILE);
+    LOG_E("Can't open database: {}", BOOKS_DIR_FILE);
     return false;
   }
 
-#if DEBUGGING
-  showDb();
-#endif
+  #if DEBUGGING
+    showDb();
+  #endif
 
   // We first verify if the database content is of the current version
 
-  bool versionOk = false;
+  bool          versionOk = false;
   VersionRecord versionRecord;
 
   if (db->getRecordCount() == 0) {
@@ -198,7 +198,7 @@ auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> boo
     LOG_I("Database is of a wrong version or doesn't exists. Initializing...");
 
     if (!db->create(BOOKS_DIR_FILE)) {
-      LOG_E("Unable to create database: %s", BOOKS_DIR_FILE);
+      LOG_E("Unable to create database: {}", BOOKS_DIR_FILE);
       return false;
     }
 
@@ -225,11 +225,11 @@ auto BooksDir::readBooksDirectory(char *bookFilename, int16_t &bookIndex) -> boo
 
 auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
   if (idx >= sortedIndex.size()) {
-    LOG_E("Idx too large: %d", idx);
+    LOG_E("Idx too large: {}", idx);
     return nullptr;
   }
 
-  int i         = 0;
+  int     i         = 0;
   int16_t index = -1;
 
   for (auto &entry : sortedIndex) {
@@ -240,24 +240,24 @@ auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
     ++i;
   }
   if (index == -1) {
-    LOG_E("Unable to find idx: %d", idx);
+    LOG_E("Unable to find idx: {}", idx);
     return nullptr;
   }
 
   db->setCurrentIdx(index);
 
-  size_t recordSize = db->getRecordSize();
+  size_t                   recordSize = db->getRecordSize();
 
-  BooksDir::EBookRecordPtr book{nullptr};
+  BooksDir::EBookRecordPtr book{ nullptr };
 
   if (recordSize >= sizeof(EBookRecord)) {
     book = EBookRecord::Make(recordSize);
     if (book && !db->getRecord(book.get(), recordSize)) {
-      LOG_E("Unable to get record at index %d", index);
+      LOG_E("Unable to get record at index {}", index);
       book.reset();
     }
   } else {
-    LOG_E("Record size too small: %d", recordSize);
+    LOG_E("Record size too small: {}", recordSize);
   }
 
   return book;
@@ -265,11 +265,11 @@ auto BooksDir::getBookData(uint16_t idx) -> EBookRecordPtr {
 
 auto BooksDir::getBookId(uint16_t idx, uint32_t &id) -> bool {
   if (idx >= sortedIndex.size()) {
-    LOG_E("Idx too large: %d", idx);
+    LOG_E("Idx too large: {}", idx);
     return false;
   }
 
-  int i      = 0;
+  int  i      = 0;
   bool found = false;
 
   for (auto &entry : sortedIndex) {
@@ -280,13 +280,13 @@ auto BooksDir::getBookId(uint16_t idx, uint32_t &id) -> bool {
     }
     ++i;
   }
-  if (!found) LOG_E("Unable to find idx: %d", idx);
+  if (!found) { LOG_E("Unable to find idx: {}", idx); }
 
   return found;
 }
 
 auto BooksDir::getBookIndex(uint32_t id, uint16_t &idx) -> bool {
-  int i      = 0;
+  int  i      = 0;
   bool found = false;
 
   for (auto &entry : sortedIndex) {
@@ -297,26 +297,26 @@ auto BooksDir::getBookIndex(uint32_t id, uint16_t &idx) -> bool {
     }
     ++i;
   }
-  if (!found) LOG_E("Unable to find id: 0x%08" PRIx32, id);
+  if (!found) { LOG_E("Unable to find id: {:#010x}", id); }
 
   return found;
 }
 
 auto BooksDir::setTrackOrder(uint32_t id, int8_t pos) -> void {
   static bool noRecurse = false;
-  if (noRecurse) return;
+  if (noRecurse) { return; }
 
-  LOG_D("-------------------------> setTrackOrder(%" PRIu32 ", %" PRIi8 ")", id, pos);
+  LOG_D("-------------------------> setTrackOrder({}, {})", id, pos);
   bool found = false;
 
   for (auto &entry : sortedIndex) {
     if (entry.second.id == id) {
       char ch = (pos >= 0) ? 'a' + pos : 'z';
-      LOG_D("Old key: %s", entry.first.c_str());
+      LOG_D("Old key: {}", entry.first);
       if (entry.first.front() != ch) {
         auto e          = sortedIndex.extract(entry.first);
         e.key().front() = ch;
-        LOG_D("New key: %s", e.key().c_str());
+        LOG_D("New key: {}", e.key());
         sortedIndex.insert(std::move(e));
       }
       found = true;
@@ -325,12 +325,12 @@ auto BooksDir::setTrackOrder(uint32_t id, int8_t pos) -> void {
   }
 
   if (!found) {
-#if EPUB_INKPLATE_BUILD
-    noRecurse = true;
-    nvsMgr.erase(id);
-    noRecurse = false;
+    #if EPUB_INKPLATE_BUILD
+      noRecurse = true;
+      nvsMgr.erase(id);
+      noRecurse = false;
 
-#endif
+    #endif
   }
 }
 
@@ -391,7 +391,7 @@ auto BooksDir::setCoverSize() -> void {
  * @see nvsMgr, db, sortedIndex, BOOKS_FOLDER, FILENAME_SIZE, TITLE_SIZE
  */
 auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedIndex &tempIndex)
-    -> void {
+-> void {
 
   auto partialRecord = PartialRecord::Make();
 
@@ -414,25 +414,25 @@ auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedInde
     // remove the database entry
     if ((stat(fname.c_str(), &statBuffer) != 0) ||
         (statBuffer.st_size != partialRecord->fileSize)) {
-      LOG_D("Book no longer available: %s", partialRecord->filename);
+      LOG_D("Book no longer available: {}", partialRecord->filename);
       db->setDeleted();
     } else {
-      LOG_D("Title: %s", partialRecord->title);
-      tempIndex[partialRecord->filename] = IndexInfo{.id = 0, .dbIndex = 0};
+      LOG_D("Title: {}", partialRecord->title);
+      tempIndex[partialRecord->filename] = IndexInfo{ .id = 0, .dbIndex = 0 };
 
-#if EPUB_INKPLATE_BUILD
-      int8_t pos        = nvsMgr.getPos(partialRecord->id);
-      HimemString title = " ";
-      title += partialRecord->title;
-      title.front() = (pos >= 0) ? 'a' + pos : 'z';
-#else
-      HimemString title = "z";
-      title += partialRecord->title;
-#endif
+      #if EPUB_INKPLATE_BUILD
+        int8_t      pos        = nvsMgr.getPos(partialRecord->id);
+        HimemString title = " ";
+        title += partialRecord->title;
+        title.front() = (pos >= 0) ? 'a' + pos : 'z';
+      #else
+        HimemString title = "z";
+        title += partialRecord->title;
+      #endif
 
-      sortedIndex[title] = IndexInfo{.id = partialRecord->id, .dbIndex = db->getCurrentIdx()};
+      sortedIndex[title] = IndexInfo{ .id = partialRecord->id, .dbIndex = db->getCurrentIdx() };
       if (bookFilename) {
-        if (strcmp(bookFilename, partialRecord->filename) == 0) bookIndex = db->getCurrentIdx();
+        if (strcmp(bookFilename, partialRecord->filename) == 0) { bookIndex = db->getCurrentIdx(); }
       }
     }
   }
@@ -483,16 +483,16 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
       if (first) {
 
         if (size < sizeof(VersionRecord)) {
-          LOG_E("Unable to get proper record size: %zu from db", size);
+          LOG_E("Unable to get proper record size: {} from db", size);
           return false;
         }
         VersionRecordPtr data = VersionRecord::Make();
         if (!data) {
-          LOG_E("Unable to allocate %zu bytes for version record", size);
+          LOG_E("Unable to allocate {} bytes for version record", size);
           return false;
         }
         if (!db->getRecord(data.get(), size)) {
-          LOG_E("Unable to get version record of size %zu from db", size);
+          LOG_E("Unable to get version record of size {} from db", size);
           return false;
         }
         if (!newDb->addRecord(data.get(), size)) {
@@ -503,16 +503,16 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
         first = false;
       } else {
         if (size < sizeof(EBookRecord)) {
-          LOG_E("Unable to get proper record size: %zu from db", size);
+          LOG_E("Unable to get proper record size: {} from db", size);
           return false;
         }
         EBookRecordPtr data = EBookRecord::Make(size);
         if (!data) {
-          LOG_E("Unable to allocate %zu bytes for ebook record", size);
+          LOG_E("Unable to allocate {} bytes for ebook record", size);
           return false;
         }
         if (!db->getRecord(data.get(), size)) {
-          LOG_E("Unable to get record of size %zu from db", size);
+          LOG_E("Unable to get record of size {} from db", size);
           return false;
         }
         if (!newDb->addRecord(data.get(), size)) {
@@ -521,18 +521,18 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
         }
 
         uint16_t idx = newDb->getRecordCount() - 1;
-#if EPUB_INKPLATE_BUILD
-        int8_t pos        = nvsMgr.getPos(data->id);
-        HimemString title = " ";
-        title += data->title;
-        title.front() = (pos >= 0) ? 'a' + pos : 'z';
-#else
-        HimemString title = "z";
-        title += data->title;
-#endif
-        sortedIndex[title] = IndexInfo{.id = data->id, .dbIndex = idx};
+        #if EPUB_INKPLATE_BUILD
+          int8_t      pos        = nvsMgr.getPos(data->id);
+          HimemString title = " ";
+          title += data->title;
+          title.front() = (pos >= 0) ? 'a' + pos : 'z';
+        #else
+          HimemString title = "z";
+          title += data->title;
+        #endif
+        sortedIndex[title] = IndexInfo{ .id = data->id, .dbIndex = idx };
         if (bookFilename) {
-          if (strcmp(bookFilename, data->filename) == 0) bookIndex = newDb->getRecordCount() - 1;
+          if (strcmp(bookFilename, data->filename) == 0) { bookIndex = newDb->getRecordCount() - 1; }
         }
       }
     } while (db->gotoNext());
@@ -588,18 +588,18 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
                                 BooksDir::SortedIndex &tempIndex) -> std::pair<bool, bool> {
 
   struct dirent *de = nullptr;
-  DIR *dp           = nullptr;
+  DIR *          dp           = nullptr;
 
-  LOG_D("Looking at book files in folder %s", BOOKS_FOLDER);
+  LOG_D("Looking at book files in folder {}", BOOKS_FOLDER);
 
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-  ESP::show_heaps_info();
-#endif
+  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    ESP::show_heaps_info();
+  #endif
 
   bool someAddedRecord = false;
   bool result          = true;
 
-  int fileCount = 0;
+  int  fileCount = 0;
   dp            = opendir(BOOKS_FOLDER);
   while ((de = readdir(dp))) {
     int16_t size = strlen(de->d_name);
@@ -610,16 +610,16 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
   }
   closedir(dp);
 
-  LOG_D("Found %d new book files in the folder.", fileCount);
+  LOG_D("Found {} new book files in the folder.", fileCount);
 
   if (fileCount == 0) {
-    return {true, false};
+    return { true, false };
   }
 
   dp = opendir(BOOKS_FOLDER);
 
   auto [pagerPtr, progressDataPtr] =
-      MsgViewer::showProgress("%s Please wait while we retrieve e-books metadata.", theTitle);
+    MsgViewer::showProgress("{} Please wait while we retrieve e-books metadata.", theTitle);
 
   int cptr = 0;
 
@@ -657,35 +657,35 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
 
           someAddedRecord = true;
 
-          LOG_D("New book found: %s", de->d_name);
+          LOG_D("New book found: {}", de->d_name);
 
           fname = BOOKS_FOLDER "/";
           fname.append(de->d_name);
 
-          int32_t fileSize = 0;
+          int32_t     fileSize = 0;
           struct stat statBuffer;
           if (stat(fname.c_str(), &statBuffer) != 0) {
-            LOG_E("Unable to get stats for file: %s", fname.c_str());
+            LOG_E("Unable to get stats for file: {}", fname);
             result = false;
             break;
           } else {
             fileSize = statBuffer.st_size;
           }
 
-          LOG_D("Opening file through the EPub class: %s", fname.c_str());
+          LOG_D("Opening file through the EPub class: {}", fname);
 
           auto epub = EPub::Make();
 
           if (epub->open(fname)) {
             HimemString filename = epub->getCoverFilename();
 
-            PicturePtr pict;
+            PicturePtr  pict;
             if (!filename.empty()) {
 
-              // LOG_D("Cover filename: %s", filename);
+              // LOG_D("Cover filename: {}", filename);
               pict = epub->getPicture(filename, true);
               if (!pict) {
-                LOG_D("Unable to retrieve cover file: %s", filename.c_str());
+                LOG_D("Unable to retrieve cover file: {}", filename);
                 pict = PictureFactory::create(defaultCoverDim, defaultCover,
                                               defaultCoverDim.width * defaultCoverDim.height);
               }
@@ -693,7 +693,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
               pict = PictureFactory::create(defaultCoverDim, defaultCover,
                                             defaultCoverDim.width * defaultCoverDim.height);
             }
-            LOG_D("Picture: width: %d height: %d", pict->getDim().width, pict->getDim().height);
+            LOG_D("Picture: width: {} height: {}", pict->getDim().width, pict->getDim().height);
 
             int32_t w = coverDim.width;
             int32_t h = pict->getDim().height * coverDim.width / pict->getDim().width;
@@ -703,13 +703,14 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
               w = pict->getDim().width * coverDim.height / pict->getDim().height;
             }
 
+            pict->convert_to_4bpp();
             pict->resize(Dim(w, h));
 
-            auto bookRecordSize    = sizeof(EBookRecord) + w * h;
+            auto           bookRecordSize    = sizeof(EBookRecord) + w * h;
             EBookRecordPtr theBook = EBookRecord::Make(bookRecordSize);
 
             if (!theBook) {
-              LOG_E("Not enough memory for new book: %d bytes required.", bookRecordSize);
+              LOG_E("Not enough memory for new book: {} bytes required.", bookRecordSize);
               result = false;
               break;
             }
@@ -726,10 +727,11 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
 
             const char *str;
 
-            if ((str = epub->getTitle())) strlcpy(theBook->title, str, TITLE_SIZE);
-            if ((str = epub->getAuthor())) strlcpy(theBook->author, str, AUTHOR_SIZE);
-            if ((str = epub->getDescription()))
+            if ((str = epub->getTitle())) { strlcpy(theBook->title, str, TITLE_SIZE); }
+            if ((str = epub->getAuthor())) { strlcpy(theBook->author, str, AUTHOR_SIZE); }
+            if ((str = epub->getDescription())) {
               strlcpy(theBook->description, str, DESCRIPTION_SIZE);
+            }
 
             if (!db->addRecord(theBook.get(), bookRecordSize)) {
               LOG_E("Unable to add a new record to DB file.");
@@ -738,35 +740,36 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
             }
 
             uint16_t idx = db->getRecordCount() - 1;
-#if EPUB_INKPLATE_BUILD
-            int8_t pos        = nvsMgr.getPos(theBook->id);
-            HimemString title = " ";
-            title += theBook->title;
-            title.front() = (pos >= 0) ? 'a' + pos : 'z';
-#else
-            HimemString title = "z";
-            title += theBook->title;
-#endif
-            sortedIndex[title] = {.id = theBook->id, .dbIndex = idx};
+            #if EPUB_INKPLATE_BUILD
+              int8_t      pos        = nvsMgr.getPos(theBook->id);
+              HimemString title = " ";
+              title += theBook->title;
+              title.front() = (pos >= 0) ? 'a' + pos : 'z';
+            #else
+              HimemString title = "z";
+              title += theBook->title;
+            #endif
+            sortedIndex[title] = { .id = theBook->id, .dbIndex = idx };
 
             if (bookFilename) {
-              if (strcmp(bookFilename, theBook->filename) == 0)
+              if (strcmp(bookFilename, theBook->filename) == 0) {
                 bookIndex = db->getRecordCount() - 1;
+              }
             }
 
             epub->closeFile();
 
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-            ESP::show_heaps_info();
-#endif
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+              ESP::show_heaps_info();
+            #endif
           }
 
           if (pagerPtr) {
             ++cptr;
             if (cptr <= fileCount) {
               std::tie(pagerPtr, progressDataPtr) = MsgViewer::updateProgress(
-                  std::move(pagerPtr), std::move(progressDataPtr), (cptr * 100) / (fileCount + 1),
-                  "%d / %d", cptr, fileCount);
+                std::move(pagerPtr), std::move(progressDataPtr), (cptr * 100) / (fileCount + 1),
+                "%d / %d", cptr, fileCount);
             }
           }
         }
@@ -775,8 +778,8 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
 
     if (pagerPtr) {
       std::tie(pagerPtr, progressDataPtr) =
-          MsgViewer::updateProgress(std::move(pagerPtr), std::move(progressDataPtr), 100,
-                                    "Completing... Writing to the SD Card...");
+        MsgViewer::updateProgress(std::move(pagerPtr), std::move(progressDataPtr), 100,
+                                  "Completing... Writing to the SD Card...");
     }
 
     closedir(dp);
@@ -791,7 +794,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
     }
   }
 
-  return {result, someAddedRecord};
+  return { result, someAddedRecord };
 }
 
 /**
@@ -872,33 +875,33 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
 }
 
 auto BooksDir::showDb() -> void {
-#if DEBUGGING
-  VersionRecord versionRecord;
-  EBookRecordPtr book;
+  #if DEBUGGING
+    VersionRecord  versionRecord;
+    EBookRecordPtr book;
 
-  if (!db->gotoFirst()) return;
+    if (!db->gotoFirst()) { return; }
 
-  if (!db->getRecord(&versionRecord, sizeof(VersionRecord))) return;
+    if (!db->getRecord(&versionRecord, sizeof(VersionRecord))) { return; }
 
-  std::cout << "DB Version: " << versionRecord.version << " app: " << versionRecord.appName
-            << " record count: " << db->getRecordCount() - 1 << std::endl;
+    std::cout << "DB Version: " << versionRecord.version << " app: " << versionRecord.appName
+              << " record count: " << db->getRecordCount() - 1 << std::endl;
 
-  while (db->gotoNext()) {
-    size_t recordSize = db->getRecordSize();
-    if (recordSize >= sizeof(EBookRecord)) {
-      book = EBookRecord::Make(recordSize);
-      if (!db->getRecord(book.get(), recordSize)) return;
-      std::cout << "Book: " << book->filename << std::endl
-                << "  id: " << book->id << std::endl
-                << "  title: " << book->title << std::endl
-                << "  author: " << book->author << std::endl
-                << "  description: " << book->description << std::endl
-                << "  bitmap size: " << +book->coverDim.width << " " << +book->coverDim.height
-                << std::endl;
-    } else {
-      std::cout << "Record size too small: " << recordSize << std::endl;
-      continue;
+    while (db->gotoNext()) {
+      size_t recordSize = db->getRecordSize();
+      if (recordSize >= sizeof(EBookRecord)) {
+        book = EBookRecord::Make(recordSize);
+        if (!db->getRecord(book.get(), recordSize)) { return; }
+        std::cout << "Book: " << book->filename << std::endl
+                  << "  id: " << book->id << std::endl
+                  << "  title: " << book->title << std::endl
+                  << "  author: " << book->author << std::endl
+                  << "  description: " << book->description << std::endl
+                  << "  bitmap size: " << +book->coverDim.width << " " << +book->coverDim.height
+                  << std::endl;
+      } else {
+        std::cout << "Record size too small: " << recordSize << std::endl;
+        continue;
+      }
     }
-  }
-#endif
+  #endif
 }

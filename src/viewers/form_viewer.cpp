@@ -6,15 +6,13 @@
 #include "viewers/form_viewer.hpp"
 
 HimemPool<FormChoiceField::Item> FormChoiceField::itemPool;
-uint8_t FormChoiceField::fontChoicesCount = 0;
+uint8_t                          FormChoiceField::fontChoicesCount = 0;
 
-// clang-format off
 
 FormChoice FormChoiceField::fontChoices[8] = {
-  {nullptr, 0}, {nullptr, 1}, {nullptr, 2}, {nullptr, 3}, 
-  {nullptr, 4}, {nullptr, 5}, {nullptr, 6}, {nullptr, 7}};
-
-// clang-format on
+  { nullptr, 0 }, { nullptr, 1 }, { nullptr, 2 },
+  { nullptr, 3 }, { nullptr, 4 }, { nullptr, 5 },
+  { nullptr, 6 }, { nullptr, 7 } };
 
 // #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 //   bool FormDone::event(const EventMgr::Event &event) {
@@ -52,7 +50,7 @@ FormChoice FormChoiceField::fontChoices[8] = {
 void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t sizeArg,
                       const char *bottomMsgArg, bool refresh) {
 
-  if (FormChoiceField::fontChoicesCount == 0) FormChoiceField::adjustFontChoices();
+  if (FormChoiceField::fontChoicesCount == 0) { FormChoiceField::adjustFontChoices(); }
 
   FontPtr &font = appFonts.getFont(1);
 
@@ -69,7 +67,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
       if (field != nullptr) {
         field->computeCaptionDim();
         field->computeFieldDim();
-        LOG_D("Field dimentions: Caption: [%d, %d] Field: [%d, %d]", field->getCaptionDim().width,
+        LOG_D("Field dimentions: Caption: [{}, {}] Field: [{}, {}]", field->getCaptionDim().width,
               field->getCaptionDim().height, field->getFieldDim().width,
               field->getFieldDim().height);
         fields.push_back(std::move(field));
@@ -82,24 +80,24 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
     for (auto &field : fields) {
       width = field->getFieldDim().width;
-      if (width > allFieldsWidth) allFieldsWidth = width;
+      if (width > allFieldsWidth) { allFieldsWidth = width; }
 
       width = field->getCaptionDim().width;
-      if (width > allCaptionsWidth) allCaptionsWidth = width;
+      if (width > allCaptionsWidth) { allCaptionsWidth = width; }
     }
 
     width                   = allCaptionsWidth + allFieldsWidth + 25;
     const int16_t rightXpos = (Screen::getWidth() >> 1) + (width >> 1);
 
-    int16_t currentYpos  = TOP_YPOS + 20;
-    int16_t captionRight = rightXpos - allFieldsWidth - 25;
-    int16_t fieldLeft    = rightXpos - allFieldsWidth - 10;
+    int16_t       currentYpos  = TOP_YPOS + 20;
+    int16_t       captionRight = rightXpos - allFieldsWidth - 25;
+    int16_t       fieldLeft    = rightXpos - allFieldsWidth - 10;
 
     for (auto &field : fields) {
       field->computeCaptionPos(Pos(captionRight, currentYpos));
       field->computeFieldPos(Pos(fieldLeft, currentYpos));
       currentYpos += field->getFieldDim().height + 20;
-      LOG_D("Field positions: Caption: [%d, %d] Field: [%d, %d]", field->getCaptionPos().x,
+      LOG_D("Field positions: Caption: [{}, {}] Field: [{}, {}]", field->getCaptionPos().x,
             field->getCaptionPos().y, field->getFieldPos().x, field->getFieldPos().y);
     }
 
@@ -109,13 +107,13 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   // Display the form
 
   Page::Format fmt = {
-      .fontSize     = FORM_FONT_SIZE + 4,
-      .marginLeft   = 5,
-      .marginRight  = 5,
-      .screenLeft   = 20,
-      .screenRight  = 20,
-      .screenTop    = TOP_YPOS,
-      .screenBottom = BOTTOM_YPOS,
+    .fontSize     = FORM_FONT_SIZE + 4,
+    .marginLeft   = 5,
+    .marginRight  = 5,
+    .screenLeft   = 20,
+    .screenRight  = 20,
+    .screenTop    = TOP_YPOS,
+    .screenBottom = BOTTOM_YPOS,
   };
 
   page->start(fmt);
@@ -127,9 +125,9 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   font->getASCIISize(title, &titleDim, FORM_FONT_SIZE + 4);
 
   page->putStrAt(
-      title,
-      Pos((Screen::getWidth() - titleDim.width) >> 1, (TOP_YPOS >> 1) + (titleDim.height >> 1)),
-      fmt);
+    title,
+    Pos((Screen::getWidth() - titleDim.width) >> 1, (TOP_YPOS >> 1) + (titleDim.height >> 1)),
+    fmt);
 
   // Page::Format fmt = {
   //     .fontSize     = FORM_FONT_SIZE,
@@ -150,8 +148,8 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   //     Pos(20, TOP_YPOS));
 
   page->putRounded(
-      Dim(Screen::getWidth() - 44, Screen::getHeight() - fmt.screenBottom - fmt.screenTop - 4),
-      Pos(22, TOP_YPOS + 2));
+    Dim(Screen::getWidth() - 44, Screen::getHeight() - fmt.screenBottom - fmt.screenTop - 4),
+    Pos(22, TOP_YPOS + 2));
 
   // Show all captions (but the last one (OK / CANCEL) or (DONE)) and choices
 
@@ -167,14 +165,14 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   if (!refresh) {
     selectingField = false;
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    currentField      = fields.end();
-    highlightingField = false;
-#else
-    currentField      = fields.begin();
-    highlightingField = true;
-    (*currentField)->showHighlighted(true);
-#endif
+    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+      currentField      = fields.end();
+      highlightingField = false;
+    #else
+      currentField      = fields.begin();
+      highlightingField = true;
+      (*currentField)->showHighlighted(true);
+    #endif
   }
 
   ScreenBottom::show(page);
@@ -186,96 +184,97 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
 
   completed = false;
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  if (currentField != fields.end()) {
-    if (!(*currentField)->event(event)) {
-      // The field releases control of future events
-      // Redraw the form
-      show(title, formEntries, size, bottomMsg, true);
-      currentField = fields.end();
-    }
-    return false; // Not completed yet
-  } else {
-    switch (event.kind) {
-    case EventMgr::EventKind::TAP:
-      currentField = findField(event.x, event.y);
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    if (currentField != fields.end()) {
+      if (!(*currentField)->event(event)) {
+        // The field releases control of future events
+        // Redraw the form
+        show(title, formEntries, size, bottomMsg, true);
+        currentField = fields.end();
+      }
+      return false; // Not completed yet
+    } else {
+      switch (event.kind) {
+      case EventMgr::EventKind::TAP:
+        currentField = findField(event.x, event.y);
 
-      if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
-        completed = true;
-      } else {
-        if (currentField != fields.end()) {
-          if ((*currentField)->event(event)) {
-            // The field needs to keep control of future events
-            // currentField is not reset for next event loop to pass
-            // control to it.
-            return false;
-          } else {
-            // The field doesn't need control of future events
-            currentField = fields.end();
+        if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
+          completed = true;
+        } else {
+          if (currentField != fields.end()) {
+            if ((*currentField)->event(event)) {
+              // The field needs to keep control of future events
+              // currentField is not reset for next event loop to pass
+              // control to it.
+              return false;
+            } else {
+              // The field doesn't need control of future events
+              currentField = fields.end();
+            }
           }
         }
-      }
-      break;
+        break;
 
-    default:
-      break;
-    }
-  }
-#else
-  Fields::iterator oldField = currentField;
-  if (highlightingField) {
-    switch (event.kind) {
-    case EventMgr::EventKind::DBL_PREV:
-    case EventMgr::EventKind::PREV:
-      if (currentField == fields.begin()) currentField = fields.end();
-      --currentField;
-      break;
-    case EventMgr::EventKind::DBL_NEXT:
-    case EventMgr::EventKind::NEXT:
-      ++currentField;
-      if (currentField == fields.end()) currentField = fields.begin();
-      break;
-    case EventMgr::EventKind::SELECT:
-      highlightingField = false;
-      selectingField    = true;
-      break;
-    case EventMgr::EventKind::NONE:
-      return false;
-    case EventMgr::EventKind::DBL_SELECT:
-      completed = true;
-      break;
-    }
-  } else {
-    bool wasInControl = (*currentField)->inEventControl();
-    if (!(*currentField)->event(event)) {
-      if ((*currentField)->formRefreshRequired()) {
-        show(title, formEntries, size, bottomMsg, true);
-      }
-      switch (event.kind) {
-      case EventMgr::EventKind::SELECT:
-        highlightingField = true;
-        oldField          = currentField;
-        ++currentField;
-        if (currentField == fields.end()) currentField = fields.begin();
-        break;
-      case EventMgr::EventKind::NONE:
-        return false;
-      case EventMgr::EventKind::DBL_SELECT:
-        if (!wasInControl)
-          completed = true;
-        else {
-          highlightingField = true;
-          oldField          = currentField;
-          ++currentField;
-          if (currentField == fields.end()) currentField = fields.begin();
-        }
-        break;
       default:
         break;
       }
     }
-  }
-#endif
+  #else
+    Fields::iterator oldField = currentField;
+    if (highlightingField) {
+      switch (event.kind) {
+      case EventMgr::EventKind::DBL_PREV:
+      case EventMgr::EventKind::PREV:
+        if (currentField == fields.begin()) { currentField = fields.end(); }
+        --currentField;
+        break;
+      case EventMgr::EventKind::DBL_NEXT:
+      case EventMgr::EventKind::NEXT:
+        ++currentField;
+        if (currentField == fields.end()) { currentField = fields.begin(); }
+        break;
+      case EventMgr::EventKind::SELECT:
+        highlightingField = false;
+        selectingField    = true;
+        break;
+      case EventMgr::EventKind::NONE:
+        return false;
+      case EventMgr::EventKind::DBL_SELECT:
+        completed = true;
+        break;
+      }
+    } else {
+      bool wasInControl = (*currentField)->inEventControl();
+      if (!(*currentField)->event(event)) {
+        if ((*currentField)->formRefreshRequired()) {
+          show(title, formEntries, size, bottomMsg, true);
+        }
+        switch (event.kind) {
+        case EventMgr::EventKind::SELECT:
+          highlightingField = true;
+          oldField          = currentField;
+          ++currentField;
+          if (currentField == fields.end()) { currentField = fields.begin(); }
+          break;
+        case EventMgr::EventKind::NONE:
+          return false;
+        case EventMgr::EventKind::DBL_SELECT:
+          if (!wasInControl) {
+            completed = true;
+          }
+          else {
+            highlightingField = true;
+            oldField          = currentField;
+            ++currentField;
+            if (currentField == fields.end()) { currentField = fields.begin(); }
+          }
+          break;
+        default:
+          break;
+        }
+      }
+    }
+  #endif
 
   if (completed) {
     for (auto &field : fields) {
@@ -285,28 +284,28 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
 
   } else {
     Page::Format fmt = {
-        .fontSize     = FORM_FONT_SIZE,
-        .screenLeft   = 20,
-        .screenRight  = 20,
-        .screenTop    = TOP_YPOS,
-        .screenBottom = BOTTOM_YPOS,
+      .fontSize     = FORM_FONT_SIZE,
+      .screenLeft   = 20,
+      .screenRight  = 20,
+      .screenTop    = TOP_YPOS,
+      .screenBottom = BOTTOM_YPOS,
     };
 
     page->start(fmt);
 
     if (highlightingField) {
-#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      (*oldField)->showSelected(false);
-      (*currentField)->showHighlighted(true);
-#endif
+      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+        (*oldField)->showSelected(false);
+        (*currentField)->showHighlighted(true);
+      #endif
     } else {
-#if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      if (selectingField) {
-        selectingField = false;
-        (*currentField)->showSelected(true);
-        (*currentField)->event(event);
-      }
-#endif
+      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+        if (selectingField) {
+          selectingField = false;
+          (*currentField)->showSelected(true);
+          (*currentField)->event(event);
+        }
+      #endif
 
       for (auto &field : fields) {
         field->updateHighlight();

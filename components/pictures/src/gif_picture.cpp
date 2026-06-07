@@ -12,42 +12,42 @@
 
 namespace {
 
-auto chooseOptions(uint32_t srcW, uint32_t srcH, Dim max) -> GifOptions {
-  int32_t scale = 1;
-  while (scale < 8 &&
-         (((srcW + scale - 1) / scale) > max.width || ((srcH + scale - 1) / scale) > max.height)) {
-    scale <<= 1;
+  auto chooseOptions(uint32_t srcW, uint32_t srcH, Dim max) -> GifOptions {
+    int32_t scale = 1;
+    while (scale < 8 &&
+           (((srcW + scale - 1) / scale) > max.width || ((srcH + scale - 1) / scale) > max.height)) {
+      scale <<= 1;
+    }
+
+    GifOptions options{};
+    if (scale >= 8) {
+      options.set(GIF_OPTION(SCALE_EIGHTH));
+    } else if (scale >= 4) {
+      options.set(GIF_OPTION(SCALE_QUARTER));
+    } else if (scale >= 2) {
+      options.set(GIF_OPTION(SCALE_HALF));
+    }
+
+    return options;
   }
 
-  GifOptions options{};
-  if (scale >= 8) {
-    options.set(GIF_OPTION(SCALE_EIGHTH));
-  } else if (scale >= 4) {
-    options.set(GIF_OPTION(SCALE_QUARTER));
-  } else if (scale >= 2) {
-    options.set(GIF_OPTION(SCALE_HALF));
+  auto onGifDraw(GifDraw *draw) -> int32_t {
+    auto *data = static_cast<GifPicture::PictureData *>(draw->pUser);
+    if (data == nullptr || data->bitmap == nullptr || draw->pPixels == nullptr) { return 0; }
+    if (draw->y < 0 || draw->y >= data->dim.height) { return 0; }
+    if (draw->x < 0 || draw->x >= data->dim.width) { return 0; }
+    if (draw->x + draw->iWidth > data->dim.width) { return 0; }
+
+    auto *dst = data->bitmap + (draw->y * data->dim.width + draw->x);
+    memcpy(dst, draw->pPixels, draw->iWidth);
+    return 1;
   }
-
-  return options;
-}
-
-auto onGifDraw(GifDraw *draw) -> int32_t {
-  auto *data = static_cast<GifPicture::PictureData *>(draw->pUser);
-  if (data == nullptr || data->bitmap == nullptr || draw->pPixels == nullptr) return 0;
-  if (draw->y < 0 || draw->y >= data->dim.height) return 0;
-  if (draw->x < 0 || draw->x >= data->dim.width) return 0;
-  if (draw->x + draw->iWidth > data->dim.width) return 0;
-
-  auto *dst = data->bitmap + (draw->y * data->dim.width + draw->x);
-  memcpy(dst, draw->pPixels, draw->iWidth);
-  return 1;
-}
 
 } // namespace
 
 GifPicture::GifPicture(const HimemString &filename, Dim max, bool loadBitmap, bool fromFile)
-    : Picture() {
-  LOG_D("Loading GIF picture file %s", filename.c_str());
+  : Picture() {
+  LOG_D("Loading GIF picture file {}", filename);
 
   if (fromFile) {
     loadFromFile(filename, max, loadBitmap);
@@ -58,11 +58,11 @@ GifPicture::GifPicture(const HimemString &filename, Dim max, bool loadBitmap, bo
 
 auto GifPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitmap) -> void {
   uint32_t encodedSize = 0;
-  if (!unzip.openStreamFile(filename.c_str(), encodedSize)) return;
+  if (!unzip.openStreamFile(filename.c_str(), encodedSize)) { return; }
 
   auto encoded = makeUniqueHimem<uint8_t[]>(encodedSize);
   if (encoded == nullptr) {
-    LOG_E("Unable to allocate GIF input buffer (%" PRIu32 " bytes)", encodedSize);
+    LOG_E("Unable to allocate GIF input buffer ({} bytes)", encodedSize);
     unzip.closeStreamFile();
     return;
   }
@@ -70,18 +70,18 @@ auto GifPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitm
   uint32_t total = 0;
   while (total < encodedSize) {
     uint32_t toRead = encodedSize - total;
-    if (toRead > 4096) toRead = 4096;
+    if (toRead > 4096) { toRead = 4096; }
 
     const uint32_t read =
-        unzip.getStreamData(reinterpret_cast<char *>(encoded.get() + total), toRead);
-    if (read == 0) break;
+      unzip.getStreamData(reinterpret_cast<char *>(encoded.get() + total), toRead);
+    if (read == 0) { break; }
     total += read;
   }
 
   unzip.closeStreamFile();
 
   if (total != encodedSize) {
-    LOG_E("Unable to fully read GIF content from zip (%" PRIu32 "/%" PRIu32 " bytes)", total,
+    LOG_E("Unable to fully read GIF content from zip ({}/{} bytes)", total,
           encodedSize);
     return;
   }
@@ -92,7 +92,7 @@ auto GifPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitm
 auto GifPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBitmap) -> void {
   FILE *f = fopen(filename.c_str(), "rb");
   if (f == nullptr) {
-    LOG_E("Unable to open GIF file: %s", filename.c_str());
+    LOG_E("Unable to open GIF file: {}", filename);
     return;
   }
 
@@ -106,9 +106,9 @@ auto GifPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
   }
 
   const uint32_t encodedSize = static_cast<uint32_t>(encodedSizeLong);
-  auto encoded               = makeUniqueHimem<uint8_t[]>(encodedSize);
+  auto           encoded               = makeUniqueHimem<uint8_t[]>(encodedSize);
   if (encoded == nullptr) {
-    LOG_E("Unable to allocate GIF input buffer (%" PRIu32 " bytes)", encodedSize);
+    LOG_E("Unable to allocate GIF input buffer ({} bytes)", encodedSize);
     fclose(f);
     return;
   }
@@ -117,7 +117,7 @@ auto GifPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
   fclose(f);
 
   if (read != encodedSize) {
-    LOG_E("Unable to fully read GIF file: %s", filename.c_str());
+    LOG_E("Unable to fully read GIF file: {}", filename);
     return;
   }
 
@@ -125,10 +125,10 @@ auto GifPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
 }
 
 auto GifPicture::decodeFromBuffer(const uint8_t *data, uint32_t dataSize, Dim max, bool loadBitmap)
-    -> void {
+-> void {
   GifDecoder decoder;
   if (!decoder.openRAM(data, static_cast<int32_t>(dataSize), onGifDraw)) {
-    LOG_E("Unable to open GIF decoder. Error: %d", static_cast<int>(decoder.getLastError()));
+    LOG_E("Unable to open GIF decoder. Error: {}", static_cast<int>(decoder.getLastError()));
     return;
   }
 
@@ -146,19 +146,19 @@ auto GifPicture::decodeFromBuffer(const uint8_t *data, uint32_t dataSize, Dim ma
     dim = Dim(decoder.getWidth(), decoder.getHeight());
   }
 
-  if (!loadBitmap) return;
+  if (!loadBitmap) { return; }
 
   bitmap = makeUniqueHimem<uint8_t[]>(dim.width * dim.height);
   if (bitmap == nullptr) {
-    LOG_E("Unable to allocate GIF bitmap (%d bytes)", dim.width * dim.height);
+    LOG_E("Unable to allocate GIF bitmap ({} bytes)", dim.width * dim.height);
     return;
   }
 
-  pictureData = {.dim = dim, .bitmap = bitmap.get()};
+  pictureData = { .dim = dim, .bitmap = bitmap.get() };
   decoder.setUserPointer(&pictureData);
 
   if (!decoder.decode(0, 0, options)) {
-    LOG_E("Unable to decode GIF. Error: %d", static_cast<int>(decoder.getLastError()));
+    LOG_E("Unable to decode GIF. Error: {}", static_cast<int>(decoder.getLastError()));
     bitmap.reset();
     dim = Dim(0, 0);
   }

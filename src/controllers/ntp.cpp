@@ -13,7 +13,7 @@
   #endif
 
   auto NTP::error(const char *msg) -> bool {
-    LOG_E("%s", msg);
+    LOG_E("{}", msg);
 
     #if EPUB_INKPLATE_BUILD
       wifi.stop();
@@ -25,14 +25,14 @@
   auto NTP::getAndSetTime() -> bool {
     #if EPUB_INKPLATE_BUILD
 
-      int sockfd;
+      int                sockfd;
 
       constexpr uint16_t NTP_PORT            = 123;
       constexpr uint64_t NTP_TIMESTAMP_DELTA = 2208988800ull;
 
-      NTPPacket packet;
+      NTPPacket          packet;
 
-      HimemString hostName;
+      HimemString        hostName;
 
       config.get(Config::Ident::NTP_SERVER, hostName);
 
@@ -45,15 +45,15 @@
         // connect to the server, send the packet, and then read in the return packet.
 
         struct sockaddr_in serverAddr; // Server address data structure.
-        struct hostent *server;        // Server data structure.
+        struct hostent *   server;     // Server data structure.
 
         sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); // Create a UDP socket.
 
-        if (sockfd < 0) return error("ERROR opening socket");
+        if (sockfd < 0) { return error("ERROR opening socket"); }
 
         server = gethostbyname(hostName.c_str()); // Convert URL to IP.
 
-        if (server == NULL) return error("ERROR, no such host");
+        if (server == NULL) { return error("ERROR, no such host"); }
 
         // Zero out the server address structure.
 
@@ -72,18 +72,21 @@
 
         // Call up the server using its IP address and port number.
 
-        if (connect(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+        if (connect(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
           return error("ERROR connecting");
+        }
 
         // Send it the NTP packet it wants. If n == -1, it failed.
 
-        if (write(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0)
+        if (write(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0) {
           return error("ERROR writing to socket");
+        }
 
         // Wait and receive the packet back from the server. If n == -1, it failed.
 
-        if (read(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0)
+        if (read(sockfd, (char *)&packet, sizeof(ntpPacket)) < 0) {
           return error("ERROR reading from socket");
+        }
 
         wifi.stop();
 
@@ -105,7 +108,7 @@
         // Print the time we got from the server, accounting for local timezone and conversion from
         // UTC time.
 
-        LOG_I("Time: %s", ctime((const time_t *)&time));
+        LOG_I("Time: {}", ctime((const time_t *)&time));
 
         Clock::setDateTime(time);
       } else {

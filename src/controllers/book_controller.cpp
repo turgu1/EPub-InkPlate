@@ -38,19 +38,19 @@ auto BookController::enter() -> void {
   if (id != nullptr) {
     currentPageId.itemrefIndex = id->itemrefIndex;
     currentPageId.offset       = id->offset;
-    // LOG_I("Showing page: itemrefIndex=%d offset=%d", currentPageId.itemrefIndex,
+    // LOG_I("Showing page: itemrefIndex={} offset={}", currentPageId.itemrefIndex,
     //       currentPageId.offset);
   } else {
     // Keep the last known reading position while page locations are recomputed.
     // Falling back to {0,0} forces the cover page and creates UI glitches.
-    LOG_W("PageLocs not ready for item=%d offset=%d, keeping current page id",
+    LOG_W("PageLocs not ready for item={} offset={}, keeping current page id",
           currentPageId.itemrefIndex, currentPageId.offset);
   }
 
   if ((currentPageId.itemrefIndex >= 0) && (currentPageId.offset >= 0)) {
     showPage(currentPageId, epub);
   } else {
-    LOG_I("Skipping showPage while waiting for valid PageId: itemref=%d offset=%" PRIi32,
+    LOG_I("Skipping showPage while waiting for valid PageId: itemref={} offset={}",
           currentPageId.itemrefIndex, currentPageId.offset);
   }
 }
@@ -91,6 +91,10 @@ auto BookController::openBook(const HimemString &bookTitle, const HimemString &b
                       "An error occurred while opening the book. Please try again.");
       return false;
     }
+  } else {
+    // Required as the screen resolution may have changed since the last time the book was shown,
+    // and the cached fonts may be too large for the new resolution. They will be reloaded when needed.
+    epub->getFonts().clear();
   }
 
   // if (epub->open(book_filename)) {
@@ -130,65 +134,39 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
           bookViewer->preparePage(*nextPageId, epub)) {
         readyForDisplayPageId = *nextPageId;
       } else {
-        readyForDisplayPageId = PageId{-1, -1};
+        readyForDisplayPageId = PageId{ -1, -1 };
       }
     }
   }
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-auto BookController::inputEvent(const EventMgr::Event &event) -> void {
+  auto BookController::inputEvent(const EventMgr::Event &event) -> void {
 
-  // LOG_I("inputEvent: kind=%d x=%d y=%d", static_cast<int>(event.kind), event.x, event.y);
+    // LOG_I("inputEvent: kind={} x={} y={}", static_cast<int>(event.kind), event.x, event.y);
 
-  const PageId *pageId;
-  switch (event.kind) {
-  case EventMgr::EventKind::SWIPE_RIGHT:
-    if (event.y < (Screen::getHeight() - 40)) {
-      pageId = pageLocs.getPrevPageId(currentPageId);
-      if (pageId != nullptr) {
-        currentPageId.itemrefIndex = pageId->itemrefIndex;
-        currentPageId.offset       = pageId->offset;
-        showPage(currentPageId, epub);
-      }
-    } else {
-      pageId = pageLocs.getPrevPageId(currentPageId, 10);
-      if (pageId != nullptr) {
-        currentPageId.itemrefIndex = pageId->itemrefIndex;
-        currentPageId.offset       = pageId->offset;
-        showPage(currentPageId, epub);
-      }
-    }
-    break;
-
-  case EventMgr::EventKind::SWIPE_LEFT:
-    if (event.y < (Screen::getHeight() - 40)) {
-      pageId = pageLocs.getNextPageId(currentPageId);
-      if (pageId != nullptr) {
-        currentPageId.itemrefIndex = pageId->itemrefIndex;
-        currentPageId.offset       = pageId->offset;
-        showPage(currentPageId, epub);
-      }
-    } else {
-      pageId = pageLocs.getNextPageId(currentPageId, 10);
-      if (pageId != nullptr) {
-        currentPageId.itemrefIndex = pageId->itemrefIndex;
-        currentPageId.offset       = pageId->offset;
-        showPage(currentPageId, epub);
-      }
-    }
-    break;
-
-  case EventMgr::EventKind::TAP:
-    if (event.y < (Screen::getHeight() - 40)) {
-      if (event.x < (Screen::getWidth() / 3)) {
+    const PageId *pageId;
+    switch (event.kind) {
+    case EventMgr::EventKind::SWIPE_RIGHT:
+      if (event.y < (Screen::getHeight() - 40)) {
         pageId = pageLocs.getPrevPageId(currentPageId);
         if (pageId != nullptr) {
           currentPageId.itemrefIndex = pageId->itemrefIndex;
           currentPageId.offset       = pageId->offset;
           showPage(currentPageId, epub);
         }
-      } else if (event.x > ((Screen::getWidth() / 3) * 2)) {
+      } else {
+        pageId = pageLocs.getPrevPageId(currentPageId, 10);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+      }
+      break;
+
+    case EventMgr::EventKind::SWIPE_LEFT:
+      if (event.y < (Screen::getHeight() - 40)) {
         pageId = pageLocs.getNextPageId(currentPageId);
         if (pageId != nullptr) {
           currentPageId.itemrefIndex = pageId->itemrefIndex;
@@ -196,83 +174,109 @@ auto BookController::inputEvent(const EventMgr::Event &event) -> void {
           showPage(currentPageId, epub);
         }
       } else {
+        pageId = pageLocs.getNextPageId(currentPageId, 10);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+      }
+      break;
+
+    case EventMgr::EventKind::TAP:
+      if (event.y < (Screen::getHeight() - 40)) {
+        if (event.x < (Screen::getWidth() / 3)) {
+          pageId = pageLocs.getPrevPageId(currentPageId);
+          if (pageId != nullptr) {
+            currentPageId.itemrefIndex = pageId->itemrefIndex;
+            currentPageId.offset       = pageId->offset;
+            showPage(currentPageId, epub);
+          }
+        } else if (event.x > ((Screen::getWidth() / 3) * 2)) {
+          pageId = pageLocs.getNextPageId(currentPageId);
+          if (pageId != nullptr) {
+            currentPageId.itemrefIndex = pageId->itemrefIndex;
+            currentPageId.offset       = pageId->offset;
+            showPage(currentPageId, epub);
+          }
+        } else {
+          bookParamController.becomeOwnerOfBook(std::move(epub));
+          appController.setController(AppController::Ctrl::PARAM);
+        }
+      } else {
         bookParamController.becomeOwnerOfBook(std::move(epub));
         appController.setController(AppController::Ctrl::PARAM);
       }
-    } else {
-      bookParamController.becomeOwnerOfBook(std::move(epub));
-      appController.setController(AppController::Ctrl::PARAM);
-    }
-    break;
+      break;
 
-  default:
-    break;
+    default:
+      break;
+    }
   }
-}
 #else
-auto BookController::inputEvent(const EventMgr::Event &event) -> void {
-  const PageId *pageId;
-  switch (event.kind) {
-  #if EXTENDED_CASE
-  case EventMgr::EventKind::DBL_PREV:
-  #else
-  case EventMgr::EventKind::PREV:
-  #endif
-    pageId = pageLocs.getPrevPageId(currentPageId);
-    if (pageId != nullptr) {
-      currentPageId.itemrefIndex = pageId->itemrefIndex;
-      currentPageId.offset       = pageId->offset;
-      showPage(currentPageId, epub);
+  auto BookController::inputEvent(const EventMgr::Event &event) -> void {
+    const PageId *pageId;
+    switch (event.kind) {
+    #if EXTENDED_CASE
+      case EventMgr::EventKind::DBL_PREV:
+    #else
+      case EventMgr::EventKind::PREV:
+        #endif
+        pageId = pageLocs.getPrevPageId(currentPageId);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+        break;
+
+        #if EXTENDED_CASE
+          case EventMgr::EventKind::PREV:
+        #else
+          case EventMgr::EventKind::DBL_PREV:
+            #endif
+            pageId = pageLocs.getPrevPageId(currentPageId, 10);
+            if (pageId != nullptr) {
+              currentPageId.itemrefIndex = pageId->itemrefIndex;
+              currentPageId.offset       = pageId->offset;
+              showPage(currentPageId, epub);
+            }
+            break;
+
+            #if EXTENDED_CASE
+              case EventMgr::EventKind::DBL_NEXT:
+            #else
+              case EventMgr::EventKind::SELECT:
+              case EventMgr::EventKind::NEXT:
+                #endif
+                pageId = pageLocs.getNextPageId(currentPageId);
+                if (pageId != nullptr) {
+                  currentPageId.itemrefIndex = pageId->itemrefIndex;
+                  currentPageId.offset       = pageId->offset;
+                  showPage(currentPageId, epub);
+                }
+                break;
+
+                #if EXTENDED_CASE
+                  case EventMgr::EventKind::NEXT:
+                #else
+                  case EventMgr::EventKind::DBL_NEXT:
+                    #endif
+                    pageId = pageLocs.getNextPageId(currentPageId, 10);
+                    if (pageId != nullptr) {
+                      currentPageId.itemrefIndex = pageId->itemrefIndex;
+                      currentPageId.offset       = pageId->offset;
+                      showPage(currentPageId, epub);
+                    }
+                    break;
+
+                  case EventMgr::EventKind::DBL_SELECT:
+                    bookParamController.becomeOwnerOfBook(std::move(epub));
+                    appController.setController(AppController::Ctrl::PARAM);
+                    break;
+
+                  case EventMgr::EventKind::NONE:
+                    break;
     }
-    break;
-
-  #if EXTENDED_CASE
-  case EventMgr::EventKind::PREV:
-  #else
-  case EventMgr::EventKind::DBL_PREV:
-  #endif
-    pageId = pageLocs.getPrevPageId(currentPageId, 10);
-    if (pageId != nullptr) {
-      currentPageId.itemrefIndex = pageId->itemrefIndex;
-      currentPageId.offset       = pageId->offset;
-      showPage(currentPageId, epub);
-    }
-    break;
-
-  #if EXTENDED_CASE
-  case EventMgr::EventKind::DBL_NEXT:
-  #else
-  case EventMgr::EventKind::NEXT:
-  #endif
-    pageId = pageLocs.getNextPageId(currentPageId);
-    if (pageId != nullptr) {
-      currentPageId.itemrefIndex = pageId->itemrefIndex;
-      currentPageId.offset       = pageId->offset;
-      showPage(currentPageId, epub);
-    }
-    break;
-
-  #if EXTENDED_CASE
-  case EventMgr::EventKind::NEXT:
-  #else
-  case EventMgr::EventKind::DBL_NEXT:
-  #endif
-    pageId = pageLocs.getNextPageId(currentPageId, 10);
-    if (pageId != nullptr) {
-      currentPageId.itemrefIndex = pageId->itemrefIndex;
-      currentPageId.offset       = pageId->offset;
-      showPage(currentPageId, epub);
-    }
-    break;
-
-  case EventMgr::EventKind::SELECT:
-  case EventMgr::EventKind::DBL_SELECT:
-    bookParamController.becomeOwnerOfBook(std::move(epub));
-    appController.setController(AppController::Ctrl::PARAM);
-    break;
-
-  case EventMgr::EventKind::NONE:
-    break;
   }
-}
 #endif

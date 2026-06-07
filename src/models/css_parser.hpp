@@ -31,1192 +31,1236 @@
 #include "css.hpp"
 
 class CSSParser {
-public:
-  CSSParser(CSS &css, const char *buffer, int32_t size) : css(css), skip(0), selNbr(0) {
-    parse(buffer, size);
-  }
+  public:
+    CSSParser(CSS &css, const char *buffer, int32_t size) : css(css), skip(0), selNbr(0) {
+      parse(buffer, size);
+    }
 
-  CSSParser(CSS &css, DOM::Tag tag, const char *buffer, int32_t size)
+    CSSParser(CSS &css, DOM::Tag tag, const char *buffer, int32_t size)
       : css(css), skip(0), selNbr(0) {
-    parse(tag, buffer, size);
-  }
+      parse(tag, buffer, size);
+    }
 
-  ~CSSParser() {}
+    ~CSSParser() {}
 
-private:
-  static constexpr char const *TAG = "CSSParser";
+  private:
+    static constexpr char const *TAG = "CSSParser";
 
-  CSS &css;
-  uint8_t skip;
-  uint8_t selNbr;
+    CSS &css;
+    uint8_t skip;
+    uint8_t selNbr;
 
-  // ---- Tokenizer ----
+    // ---- Tokenizer ----
 
-  static const int8_t IDENT_SIZE   = 60;
-  static const int8_t NAME_SIZE    = 60;
-  static const int16_t STRING_SIZE = 128;
+    static const int8_t IDENT_SIZE   = 60;
+    static const int8_t NAME_SIZE    = 60;
+    static const int16_t STRING_SIZE = 128;
 
-  // clang-format off
-  enum class Token : uint8_t {
-    ERROR,  COMMA,   CDO,        CDC,       INCLUDES,  DASHMATCH,   STRING, BAD_STRING, 
-    IDENT,  HASH,    IMPORT_SYM, PAGE_SYM,  MEDIA_SYM, CHARSET_SYM, EQUAL,  IMPORTANT_SYM, 
-    LENGTH, ANGLE,   TIME,       FREQ,      DIMENSION, PERCENTAGE,  NUMBER, NAMESPACE_SYM, 
-    URI,    BAD_URI, FUNCTION,   SEMICOLON, COLON,     WHITESPACE,  GT,     LT,
-    GE,     LE,      MINUS,      PLUS,      DOT,       STAR,        SLASH,  FONT_FACE_SYM,
-    LBRACK, RBRACK,  LBRACE,     RBRACE,    LPARENT,   RPARENT,     TILDE,  END_OF_FILE
-  };
+    enum class Token : uint8_t {
+      ERROR,  COMMA,   CDO,        CDC,       INCLUDES,  DASHMATCH,   STRING, BAD_STRING,
+      IDENT,  HASH,    IMPORT_SYM, PAGE_SYM,  MEDIA_SYM, CHARSET_SYM, EQUAL,  IMPORTANT_SYM,
+      LENGTH, ANGLE,   TIME,       FREQ,      DIMENSION, PERCENTAGE,  NUMBER, NAMESPACE_SYM,
+      URI,    BAD_URI, FUNCTION,   SEMICOLON, COLON,     WHITESPACE,  GT,     LT,
+      GE,     LE,      MINUS,      PLUS,      DOT,       STAR,        SLASH,  FONT_FACE_SYM,
+      LBRACK, RBRACK,  LBRACE,     RBRACE,    LPARENT,   RPARENT,     TILDE,  END_OF_FILE
+    };
 
-  const char *tokenNames[48] = {
-    "ERROR",  "COMMA",   "CDO",        "CDC",       "INCLUDES",  "DASHMATCH",   "STRING", "BAD_STRING",
-    "IDENT",  "HASH",    "IMPORT_SYM", "PAGE_SYM",  "MEDIA_SYM", "CHARSET_SYM", "EQUAL",  "IMPORTANT_SYM",
-    "LENGTH", "ANGLE",   "TIME",       "FREQ",      "DIMENSION", "PERCENTAGE",  "NUMBER", "NAMESPACE_SYM",
-    "URI",    "BAD_URI", "FUNCTION",   "SEMICOLON", "COLON",     "WHITESPACE",  "GT",     "LT",
-    "GE",     "LE",      "MINUS",      "PLUS",      "DOT",       "STAR",        "SLASH",  "FONT_FACE_SYM",
-    "LBRACK", "RBRACK",  "LBRACE",     "RBRACE",    "LPARENT",   "RPARENT",     "TILDE",  "END_OF_FILE"};
+    const char *tokenNames[48] = {
+      "ERROR",     "COMMA",       "CDO",        "CDC",
+      "INCLUDES",  "DASHMATCH",   "STRING",     "BAD_STRING",
+      "IDENT",     "HASH",        "IMPORT_SYM", "PAGE_SYM",
+      "MEDIA_SYM", "CHARSET_SYM", "EQUAL",      "IMPORTANT_SYM",
+      "LENGTH",    "ANGLE",       "TIME",       "FREQ",
+      "DIMENSION", "PERCENTAGE",  "NUMBER",     "NAMESPACE_SYM",
+      "URI",       "BAD_URI",     "FUNCTION",   "SEMICOLON",
+      "COLON",     "WHITESPACE",  "GT",         "LT",
+      "GE",        "LE",          "MINUS",      "PLUS",
+      "DOT",       "STAR",        "SLASH",      "FONT_FACE_SYM",
+      "LBRACK",    "RBRACK",      "LBRACE",     "RBRACE",
+      "LPARENT",   "RPARENT",     "TILDE",      "END_OF_FILE" };
 
-  // clang-format on
 
-  int32_t remains; // number of bytes remaining in the css buffer
-  const char *str; // pointer in the css buffer
-  int16_t lineNbr;
-  uint8_t ch; // next character to be processed
+    int32_t remains; // number of bytes remaining in the css buffer
+    const char *str; // pointer in the css buffer
+    int16_t lineNbr;
+    uint8_t ch; // next character to be processed
 
-  char ident[IDENT_SIZE];
-  char string[STRING_SIZE];
-  char name[NAME_SIZE];
+    char ident[IDENT_SIZE];
+    char string[STRING_SIZE];
+    char name[NAME_SIZE];
 
-  float num;
+    float num;
 
-  Token token;
+    Token token;
 
-  CSS::ValueType valueType;
+    CSS::ValueType valueType;
 
-  auto nextCh() -> void {
-    if (remains > 0) {
-      remains--;
-      ch = *str++;
-      if (ch == '\n') ++lineNbr;
-    } else
-      ch = '\0';
-  }
-
-  [[nodiscard]] inline auto isWhiteSpace() -> bool {
-    return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n') || (ch == '\f');
-  }
-
-  [[nodiscard]] inline auto isNmChar() -> bool {
-    return ((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) ||
-           ((ch >= '0') && (ch <= '9')) || (ch == '_') || (ch == '-') || (ch == '\\') ||
-           (ch >= 160);
-  }
-
-  auto isNmStart(uint8_t c) -> bool {
-    return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || (c == '_') || (c == '-') ||
-           (c == '\\') || (c >= 160);
-  }
-
-  auto skipSpaces() -> void {
-    while (isWhiteSpace()) nextCh();
-  }
-
-  auto parseUrl() -> bool {
-    int16_t idx = 0;
-    while ((ch > ' ') && (ch != ')') && (idx < (STRING_SIZE - 1))) {
-      if ((ch == '"') || (ch == '\'') || (ch == '(')) {
-        return false;
+    auto nextCh() -> void {
+      if (remains > 0) {
+        remains--;
+        ch = *str++;
+        if (ch == '\n') { ++lineNbr; }
+      } else {
+        ch = '\0';
       }
-      if (ch == '\\') {
-        nextCh();
-        if (ch == '\0') return false;
-        if (ch == '\r') {
-          string[idx++] = '\n';
+    }
+
+    [[nodiscard]] inline auto isWhiteSpace() -> bool {
+      return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n') || (ch == '\f');
+    }
+
+    [[nodiscard]] inline auto isNmChar() -> bool {
+      return ((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) ||
+             ((ch >= '0') && (ch <= '9')) || (ch == '_') || (ch == '-') || (ch == '\\') ||
+             (ch >= 160);
+    }
+
+    auto isNmStart(uint8_t c) -> bool {
+      return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || (c == '_') || (c == '-') ||
+             (c == '\\') || (c >= 160);
+    }
+
+    auto skipSpaces() -> void {
+      while (isWhiteSpace()) nextCh();
+    }
+
+    auto parseUrl() -> bool {
+      int16_t idx = 0;
+      while ((ch > ' ') && (ch != ')') && (idx < (STRING_SIZE - 1))) {
+        if ((ch == '"') || (ch == '\'') || (ch == '(')) {
+          return false;
+        }
+        if (ch == '\\') {
           nextCh();
-          if (ch == '\n') nextCh();
+          if (ch == '\0') { return false; }
+          if (ch == '\r') {
+            string[idx++] = '\n';
+            nextCh();
+            if (ch == '\n') { nextCh(); }
+          } else {
+            string[idx++] = ch;
+            nextCh();
+          }
         } else {
           string[idx++] = ch;
           nextCh();
         }
-      } else {
-        string[idx++] = ch;
-        nextCh();
       }
+      string[idx] = 0;
+      return true;
     }
-    string[idx] = 0;
-    return true;
-  }
 
-  auto parseString() -> bool {
-    char delim  = ch;
-    int16_t idx = 0;
+    auto parseString() -> bool {
+      char    delim  = ch;
+      int16_t idx = 0;
 
-    nextCh();
-    while ((ch != '\0') && (ch != delim) && (idx < (STRING_SIZE - 1))) {
-      if (ch == '\\') {
-        nextCh();
-        if (ch == '\0') return false;
-        if (ch == '\r') {
-          string[idx++] = '\n';
+      nextCh();
+      while ((ch != '\0') && (ch != delim) && (idx < (STRING_SIZE - 1))) {
+        if (ch == '\\') {
           nextCh();
-          if (ch == '\n') nextCh();
-        } else {
+          if (ch == '\0') { return false; }
+          if (ch == '\r') {
+            string[idx++] = '\n';
+            nextCh();
+            if (ch == '\n') { nextCh(); }
+          } else {
+            string[idx++] = ch;
+            nextCh();
+          }
+        } else if ((ch >= ' ') || (ch == '\t')) {
           string[idx++] = ch;
           nextCh();
+        } else {
+          nextCh();
         }
-      } else if ((ch >= ' ') || (ch == '\t')) {
-        string[idx++] = ch;
-        nextCh();
-      } else {
+      }
+      string[idx] = 0;
+      bool res    = ch == delim;
+      if (res) { nextCh(); }
+      return res;
+    }
+
+    auto parseNumber() -> void {
+      num      = 0;
+      bool neg = ch == '-';
+      if (neg) {
         nextCh();
       }
-    }
-    string[idx] = 0;
-    bool res    = ch == delim;
-    if (res) nextCh();
-    return res;
-  }
+      else if (ch == '+') {
+        nextCh();
+      }
 
-  auto parseNumber() -> void {
-    num      = 0;
-    bool neg = ch == '-';
-    if (neg)
-      nextCh();
-    else if (ch == '+')
-      nextCh();
-
-    float dec = 0.1;
-    while ((ch >= '0') && (ch <= '9')) {
-      num = (num * 10) + (ch - '0');
-      nextCh();
-    }
-    if (ch == '.') {
-      nextCh();
+      float dec = 0.1;
       while ((ch >= '0') && (ch <= '9')) {
-        num = num + (dec * (ch - '0'));
-        dec = dec * 0.1;
+        num = (num * 10) + (ch - '0');
         nextCh();
+      }
+      if (ch == '.') {
+        nextCh();
+        while ((ch >= '0') && (ch <= '9')) {
+          num = num + (dec * (ch - '0'));
+          dec = dec * 0.1;
+          nextCh();
+        }
+      }
+
+      if (neg) { num = -num; }
+
+      if (((ch == 'e') || (ch == 'E')) && ((str[0] >= '0') && (str[0] <= '9'))) {
+        float exp = 0.0;
+        nextCh();
+        neg = ch == '-';
+        if (neg) {
+          nextCh();
+        }
+        else if (ch == '+') {
+          nextCh();
+        }
+        while ((ch >= '0') && (ch <= '9')) {
+          exp = (exp * 10) + (ch - '0');
+          nextCh();
+        }
+        if (exp > 0) {
+          if (neg) { exp = -exp; }
+          num = num * pow(10.0f, exp);
+        }
       }
     }
 
-    if (neg) num = -num;
-
-    if (((ch == 'e') || (ch == 'E')) && ((str[0] >= '0') && (str[0] <= '9'))) {
-      float exp = 0.0;
-      nextCh();
-      neg = ch == '-';
-      if (neg)
-        nextCh();
-      else if (ch == '+')
-        nextCh();
-      while ((ch >= '0') && (ch <= '9')) {
-        exp = (exp * 10) + (ch - '0');
-        nextCh();
-      }
-      if (exp > 0) {
-        if (neg) exp = -exp;
-        num = num * pow(10.0f, exp);
-      }
-    }
-  }
-
-  auto parseName() -> void {
-    int8_t idx = 0;
-    while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
-      if (ch == '\\') {
-        nextCh();
-        if (ch >= ' ') {
+    auto parseName() -> void {
+      int8_t idx = 0;
+      while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
+        if (ch == '\\') {
+          nextCh();
+          if (ch >= ' ') {
+            name[idx++] = ch;
+            nextCh();
+          } else {
+            break;
+          }
+        } else {
           name[idx++] = ch;
           nextCh();
-        } else
-          break;
-      } else {
-        name[idx++] = ch;
-        nextCh();
+        }
       }
+      if (idx < NAME_SIZE) { name[idx] = 0; }
     }
-    if (idx < NAME_SIZE) name[idx] = 0;
-  }
 
-  auto parseIdent() -> void {
-    int8_t idx = 0;
-    while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
-      if (ch == '\\') {
-        nextCh();
-        if (ch >= ' ') {
+    auto parseIdent() -> void {
+      int8_t idx = 0;
+      while ((ch != '\0') && isNmChar() && (idx < (NAME_SIZE - 1))) {
+        if (ch == '\\') {
+          nextCh();
+          if (ch >= ' ') {
+            ident[idx++] = ch;
+            nextCh();
+          } else {
+            break;
+          }
+        } else {
           ident[idx++] = ch;
           nextCh();
-        } else
+        }
+      }
+      if (idx < IDENT_SIZE) { ident[idx] = 0; }
+      #if CSS_PARSER_TEST
+        std::cout << "Ident: " << ident << std::endl;
+      #endif
+    }
+
+    auto skipComment() -> bool {
+      for (;;) {
+        if ((ch == '*') && (str[0] == '/')) {
+          nextCh();
+          nextCh();
           break;
-      } else {
-        ident[idx++] = ch;
+        } else if (ch == '\0') {
+          return false;
+        }
         nextCh();
       }
+      return true;
     }
-    if (idx < IDENT_SIZE) ident[idx] = 0;
-    #if CSS_PARSER_TEST
-      std::cout << "Ident: " << ident << std::endl;
-    #endif
-  }
 
-  auto skipComment() -> bool {
-    for (;;) {
-      if ((ch == '*') && (str[0] == '/')) {
-        nextCh();
-        nextCh();
-        break;
-      } else if (ch == '\0')
-        return false;
-      nextCh();
-    }
-    return true;
-  }
-
-  auto nextToken() -> void {
-    bool done = false;
-    while (!done) {
-      if (ch == '\0')
-        token = Token::END_OF_FILE;
-      else if (isWhiteSpace()) {
-        nextCh();
-        token = Token::WHITESPACE;
-      } else if (ch == ';') {
-        nextCh();
-        token = Token::SEMICOLON;
-      } else if (ch == ':') {
-        nextCh();
-        token = Token::COLON;
-      } else if (ch == ',') {
-        nextCh();
-        token = Token::COMMA;
-      } else if (ch == '{') {
-        nextCh();
-        token = Token::LBRACE;
-      } else if (ch == '}') {
-        nextCh();
-        token = Token::RBRACE;
-      } else if (ch == '[') {
-        nextCh();
-        token = Token::LBRACK;
-      } else if (ch == ']') {
-        nextCh();
-        token = Token::RBRACK;
-      } else if (ch == '(') {
-        nextCh();
-        token = Token::LPARENT;
-      } else if (ch == ')') {
-        nextCh();
-        token = Token::RPARENT;
-      } else if (ch == '=') {
-        nextCh();
-        token = Token::EQUAL;
-      } else if (ch == '*') {
-        nextCh();
-        token = Token::STAR;
-      } else if ((ch == '\'') || (ch == '\"')) {
-        token     = parseString() ? Token::STRING : Token::BAD_STRING;
-        valueType = CSS::ValueType::STR;
-      } else if ((((ch == '-') || (ch == '+')) &&
-                  ((str[0] == '.') || ((str[0] >= '0') && (str[0] <= '9')))) ||
-                 ((ch >= '0') && (ch <= '9')) ||
-                 ((ch == '.') && ((str[0] >= '0') && (str[0] <= '9')))) {
-        parseNumber();
-        token     = Token::NUMBER;
-        valueType = CSS::ValueType::NO_TYPE;
-        if ((ch == 'e') && (str[0] == 'm')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::EM;
-        } else if ((ch == 'e') && (str[0] == 'x')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::EX;
-        } else if (ch == '%') {
-          nextCh();
-          token     = Token::PERCENTAGE;
-          valueType = CSS::ValueType::PERCENT;
-        } else if ((ch == 'p') && (str[0] == 'x')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::PX;
-        } else if ((ch == 'p') && (str[0] == 't')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::PT;
-        } else if ((ch == 'p') && (str[0] == 'c')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::PC;
-        } else if ((ch == 'c') && (str[0] == 'm')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::CM;
-        } else if ((ch == 'm') && (str[0] == 'm')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::MM;
-        } else if ((ch == 'i') && (str[0] == 'n')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::IN;
-        } else if ((ch == 'v') && (str[0] == 'h')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::VH;
-        } else if ((ch == 'v') && (str[0] == 'w')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::VW;
-        } else if ((ch == 'c') && (str[0] == 'h')) {
-          nextCh();
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::CH;
-        } else if ((ch == 'm') && (str[0] == 's')) {
-          nextCh();
-          nextCh();
-          token     = Token::TIME;
-          valueType = CSS::ValueType::MSEC;
-        } else if (ch == 's') {
-          nextCh();
-          token     = Token::TIME;
-          valueType = CSS::ValueType::SEC;
-        } else if ((ch == 'h') && (str[0] == 'z')) {
-          nextCh();
-          nextCh();
-          token     = Token::FREQ;
-          valueType = CSS::ValueType::HERTZ;
-        } else if ((ch == 'k') && (str[0] == 'h') && (str[1] == 'z')) {
-          remains -= 2;
-          str += 2;
-          nextCh();
-          token     = Token::FREQ;
-          valueType = CSS::ValueType::KHERTZ;
-        } else if ((ch == 'd') && (str[0] == 'e') && (str[1] == 'g')) {
-          remains -= 2;
-          str += 2;
-          nextCh();
-          token     = Token::ANGLE;
-          valueType = CSS::ValueType::DEG;
-        } else if ((ch == 'r') && (str[0] == 'a') && (str[1] == 'd')) {
-          remains -= 2;
-          str += 2;
-          nextCh();
-          token     = Token::ANGLE;
-          valueType = CSS::ValueType::RAD;
-        } else if ((ch == 'r') && (str[0] == 'e') && (str[1] == 'm')) {
-          remains -= 2;
-          str += 2;
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::REM;
-        } else if ((ch == 'g') && (str[0] == 'r') && (str[1] == 'a') && (str[2] == 'd')) {
-          remains -= 3;
-          str += 3;
-          nextCh();
-          token     = Token::ANGLE;
-          valueType = CSS::ValueType::GRAD;
-        } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'i') && (str[2] == 'n')) {
-          remains -= 3;
-          str += 3;
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::VMIN;
-        } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'a') && (str[2] == 'x')) {
-          remains -= 3;
-          str += 3;
-          nextCh();
-          token     = Token::LENGTH;
-          valueType = CSS::ValueType::VMAX;
-        } else if (isNmStart(ch)) {
-          parseIdent();
-          token     = Token::DIMENSION;
-          valueType = CSS::ValueType::DIMENSION;
+    auto nextToken() -> void {
+      bool done = false;
+      while (!done) {
+        if (ch == '\0') {
+          token = Token::END_OF_FILE;
         }
-      } else if ((ch == '-') && (str[0] == '-') && (str[1] == '>')) {
-        token = Token::CDC;
-        remains -= 2;
-        str += 2;
-        nextCh();
-      } else if (isNmStart(ch) || ((ch == '-') && (isNmStart(str[0])))) {
-        parseIdent();
-        token = Token::IDENT;
-        if (ch == '(') {
+        else if (isWhiteSpace()) {
           nextCh();
-          if (strcmp((char *)ident, "url") == 0) {
-            skipSpaces();
-            if ((ch == '"') || (ch == '\'')) {
-              token = parseString() ? Token::URI : Token::BAD_URI;
+          token = Token::WHITESPACE;
+        } else if (ch == ';') {
+          nextCh();
+          token = Token::SEMICOLON;
+        } else if (ch == ':') {
+          nextCh();
+          token = Token::COLON;
+        } else if (ch == ',') {
+          nextCh();
+          token = Token::COMMA;
+        } else if (ch == '{') {
+          nextCh();
+          token = Token::LBRACE;
+        } else if (ch == '}') {
+          nextCh();
+          token = Token::RBRACE;
+        } else if (ch == '[') {
+          nextCh();
+          token = Token::LBRACK;
+        } else if (ch == ']') {
+          nextCh();
+          token = Token::RBRACK;
+        } else if (ch == '(') {
+          nextCh();
+          token = Token::LPARENT;
+        } else if (ch == ')') {
+          nextCh();
+          token = Token::RPARENT;
+        } else if (ch == '=') {
+          nextCh();
+          token = Token::EQUAL;
+        } else if (ch == '*') {
+          nextCh();
+          token = Token::STAR;
+        } else if ((ch == '\'') || (ch == '\"')) {
+          token     = parseString() ? Token::STRING : Token::BAD_STRING;
+          valueType = CSS::ValueType::STR;
+        } else if ((((ch == '-') || (ch == '+')) &&
+                    ((str[0] == '.') || ((str[0] >= '0') && (str[0] <= '9')))) ||
+                   ((ch >= '0') && (ch <= '9')) ||
+                   ((ch == '.') && ((str[0] >= '0') && (str[0] <= '9')))) {
+          parseNumber();
+          token     = Token::NUMBER;
+          valueType = CSS::ValueType::NO_TYPE;
+          if ((ch == 'e') && (str[0] == 'm')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::EM;
+          } else if ((ch == 'e') && (str[0] == 'x')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::EX;
+          } else if (ch == '%') {
+            nextCh();
+            token     = Token::PERCENTAGE;
+            valueType = CSS::ValueType::PERCENT;
+          } else if ((ch == 'p') && (str[0] == 'x')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::PX;
+          } else if ((ch == 'p') && (str[0] == 't')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::PT;
+          } else if ((ch == 'p') && (str[0] == 'c')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::PC;
+          } else if ((ch == 'c') && (str[0] == 'm')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::CM;
+          } else if ((ch == 'm') && (str[0] == 'm')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::MM;
+          } else if ((ch == 'i') && (str[0] == 'n')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::IN;
+          } else if ((ch == 'v') && (str[0] == 'h')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::VH;
+          } else if ((ch == 'v') && (str[0] == 'w')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::VW;
+          } else if ((ch == 'c') && (str[0] == 'h')) {
+            nextCh();
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::CH;
+          } else if ((ch == 'm') && (str[0] == 's')) {
+            nextCh();
+            nextCh();
+            token     = Token::TIME;
+            valueType = CSS::ValueType::MSEC;
+          } else if (ch == 's') {
+            nextCh();
+            token     = Token::TIME;
+            valueType = CSS::ValueType::SEC;
+          } else if ((ch == 'h') && (str[0] == 'z')) {
+            nextCh();
+            nextCh();
+            token     = Token::FREQ;
+            valueType = CSS::ValueType::HERTZ;
+          } else if ((ch == 'k') && (str[0] == 'h') && (str[1] == 'z')) {
+            remains -= 2;
+            str += 2;
+            nextCh();
+            token     = Token::FREQ;
+            valueType = CSS::ValueType::KHERTZ;
+          } else if ((ch == 'd') && (str[0] == 'e') && (str[1] == 'g')) {
+            remains -= 2;
+            str += 2;
+            nextCh();
+            token     = Token::ANGLE;
+            valueType = CSS::ValueType::DEG;
+          } else if ((ch == 'r') && (str[0] == 'a') && (str[1] == 'd')) {
+            remains -= 2;
+            str += 2;
+            nextCh();
+            token     = Token::ANGLE;
+            valueType = CSS::ValueType::RAD;
+          } else if ((ch == 'r') && (str[0] == 'e') && (str[1] == 'm')) {
+            remains -= 2;
+            str += 2;
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::REM;
+          } else if ((ch == 'g') && (str[0] == 'r') && (str[1] == 'a') && (str[2] == 'd')) {
+            remains -= 3;
+            str += 3;
+            nextCh();
+            token     = Token::ANGLE;
+            valueType = CSS::ValueType::GRAD;
+          } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'i') && (str[2] == 'n')) {
+            remains -= 3;
+            str += 3;
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::VMIN;
+          } else if ((ch == 'v') && (str[0] == 'm') && (str[1] == 'a') && (str[2] == 'x')) {
+            remains -= 3;
+            str += 3;
+            nextCh();
+            token     = Token::LENGTH;
+            valueType = CSS::ValueType::VMAX;
+          } else if (isNmStart(ch)) {
+            parseIdent();
+            token     = Token::DIMENSION;
+            valueType = CSS::ValueType::DIMENSION;
+          }
+        } else if ((ch == '-') && (str[0] == '-') && (str[1] == '>')) {
+          token = Token::CDC;
+          remains -= 2;
+          str += 2;
+          nextCh();
+        } else if (isNmStart(ch) || ((ch == '-') && (isNmStart(str[0])))) {
+          parseIdent();
+          token = Token::IDENT;
+          if (ch == '(') {
+            nextCh();
+            if (strcmp((char *)ident, "url") == 0) {
+              skipSpaces();
+              if ((ch == '"') || (ch == '\'')) {
+                token = parseString() ? Token::URI : Token::BAD_URI;
+              } else {
+                token = parseUrl() ? Token::URI : Token::BAD_URI;
+              }
+              skipSpaces();
+              if (ch == ')') {
+                nextCh();
+              } else {
+                token = Token::BAD_URI;
+              }
             } else {
-              token = parseUrl() ? Token::URI : Token::BAD_URI;
+              token = Token::FUNCTION;
             }
-            skipSpaces();
-            if (ch == ')') {
-              nextCh();
-            } else {
-              token = Token::BAD_URI;
-            }
+          }
+        } else if ((ch == '<') && (strncmp((char *)str, "!--", 3) == 0)) {
+          token = Token::CDO;
+          remains -= 3;
+          str += 3;
+          nextCh();
+        } else if ((ch == '>') && (str[0] == '=')) {
+          nextCh();
+          nextCh();
+          token = Token::GE;
+        } else if ((ch == '<') && (str[0] == '=')) {
+          nextCh();
+          nextCh();
+          token = Token::LE;
+        } else if (ch == '+') {
+          nextCh();
+          token = Token::PLUS;
+        } else if (ch == '-') {
+          nextCh();
+          token = Token::MINUS;
+        } else if (ch == '.') {
+          nextCh();
+          token = Token::DOT;
+        } else if (ch == '>') {
+          nextCh();
+          token = Token::GT;
+        } else if (ch == '<') {
+          nextCh();
+          token = Token::LT;
+        } else if (ch == '#') {
+          nextCh();
+          parseName();
+          token = Token::HASH;
+        } else if (ch == '@') {
+          if (strncmp((char *)str, "media", 5) == 0) {
+            token = Token::MEDIA_SYM;
+            remains -= 5;
+            str += 5;
+            nextCh();
+          } else if (strncmp((char *)str, "page", 4) == 0) {
+            token = Token::PAGE_SYM;
+            remains -= 4;
+            str += 4;
+            nextCh();
+          } else if (strncmp((char *)str, "import", 6) == 0) {
+            token = Token::IMPORT_SYM;
+            remains -= 6;
+            str += 6;
+            nextCh();
+          } else if (strncmp((char *)str, "charset ", 8) == 0) {
+            token = Token::CHARSET_SYM;
+            remains -= 8;
+            str += 8;
+            nextCh();
+          } else if (strncmp((char *)str, "font-face", 9) == 0) {
+            token = Token::FONT_FACE_SYM;
+            remains -= 9;
+            str += 9;
+            nextCh();
+          } else if (strncmp((char *)str, "namespace ", 10) == 0) {
+            token = Token::NAMESPACE_SYM;
+            remains -= 10;
+            str += 10;
+            nextCh();
           } else {
-            token = Token::FUNCTION;
+            LOG_E("{}[{}]: Sym Token Unknown: @{}", css.getId(), lineNbr, str);
+            token = Token::ERROR;
+          }
+        } else if (ch == '~') {
+          nextCh();
+          if (ch == '=') {
+            nextCh();
+            token = Token::INCLUDES;
+          } else {
+            token = Token::TILDE;
+          }
+        } else if (ch == '|') {
+          nextCh();
+          if (ch == '=') {
+            nextCh();
+            token = Token::DASHMATCH;
+          } else {
+            LOG_E("{}[{}]: Unknown usage: {}", css.getId(), lineNbr, ch);
+            token = Token::ERROR;
+          }
+        } else if ((ch == '/') && (str[0] == '*')) {
+          nextCh();
+          nextCh();
+          if (!skipComment()) {
+            LOG_E("{}[{}]: Non terminated comment.", css.getId(), lineNbr);
+            token = Token::ERROR;
+          } else {
+            continue;
+          }
+        } else if (ch == '/') {
+          nextCh();
+          token = Token::SLASH;
+        } else if (ch == '!') {
+          nextCh();
+          for (;;) {
+            skipSpaces();
+            if ((ch == '/') && (str[0] == '*')) {
+              nextCh();
+              nextCh();
+              if (!skipComment()) {
+                LOG_E("{}[{}]: Non terminated comment.", css.getId(), lineNbr);
+                token = Token::ERROR;
+                done  = true;
+                break;
+              } else {
+                continue;
+              }
+            } else {
+              break;
+            }
+          }
+          if (!done && (ch == 'i') && (strncmp((char *)str, "mportant", 8) == 0)) {
+            remains -= 8;
+            str += 8;
+            nextCh();
+            token = Token::IMPORTANT_SYM;
+          } else if (!done) {
+            LOG_E("{}[{}]: '!' not followed by 'important'", css.getId(), lineNbr);
+            token = Token::ERROR;
+          }
+        } else {
+          LOG_E("{}[{}]: Unknown usage: {}", css.getId(), lineNbr, ch);
+          token = Token::ERROR;
+        }
+
+        done = true;
+      }
+
+      #if CSS_PARSER_TEST
+        std::cout << '[' << tokenNames[(int)token] << ']' << std::flush;
+      #endif
+    }
+
+    // ---- Parser ----
+
+    /**
+     * Skip all blanks
+     *
+     * On entry, the current token must point to an already parsed item.
+     * On return, the token point at the next valid token passed whitespaces.
+     */
+    auto skipBlanks() -> void {
+      if (token == Token::END_OF_FILE) { return; }
+      do nextToken();
+      while (token == Token::WHITESPACE);
+    }
+
+    /**
+     * Skip a block
+     *
+     * Called to get rid of a complete block of statements. Two kind of blocks are
+     * managed by this method, considering the first occurence of:
+     * 1) a semicolon or the end of the file: this end the skip process
+     * 2) a left brace: the stream will be skipped until a right brace is encountered.
+     *    Multiple level of braces is supported.
+     */
+    auto skipBlock() -> bool {
+
+      while ((token != Token::END_OF_FILE) && (token != Token::SEMICOLON) &&
+             (token != Token::LBRACE) && (token != Token::RBRACE))
+        nextToken();
+      if (token == Token::SEMICOLON) {
+        skipBlanks();
+      } else if (token == Token::LBRACE) {
+        skipBlanks();
+        int braceCount = 1;
+        while (braceCount > 0) {
+          if (token == Token::END_OF_FILE) { return false; }
+          if (token == Token::LBRACE) {
+            braceCount += 1;
+            skipBlanks();
+          } else if (token == Token::RBRACE) {
+            braceCount -= 1;
+            skipBlanks();
+          } else {
+            nextToken();
           }
         }
-      } else if ((ch == '<') && (strncmp((char *)str, "!--", 3) == 0)) {
-        token = Token::CDO;
-        remains -= 3;
-        str += 3;
-        nextCh();
-      } else if ((ch == '>') && (str[0] == '=')) {
-        nextCh();
-        nextCh();
-        token = Token::GE;
-      } else if ((ch == '<') && (str[0] == '=')) {
-        nextCh();
-        nextCh();
-        token = Token::LE;
-      } else if (ch == '+') {
-        nextCh();
-        token = Token::PLUS;
-      } else if (ch == '-') {
-        nextCh();
-        token = Token::MINUS;
-      } else if (ch == '.') {
-        nextCh();
-        token = Token::DOT;
-      } else if (ch == '>') {
-        nextCh();
-        token = Token::GT;
-      } else if (ch == '<') {
-        nextCh();
-        token = Token::LT;
-      } else if (ch == '#') {
-        nextCh();
-        parseName();
-        token = Token::HASH;
-      } else if (ch == '@') {
-        if (strncmp((char *)str, "media", 5) == 0) {
-          token = Token::MEDIA_SYM;
-          remains -= 5;
-          str += 5;
-          nextCh();
-        } else if (strncmp((char *)str, "page", 4) == 0) {
-          token = Token::PAGE_SYM;
-          remains -= 4;
-          str += 4;
-          nextCh();
-        } else if (strncmp((char *)str, "import", 6) == 0) {
-          token = Token::IMPORT_SYM;
-          remains -= 6;
-          str += 6;
-          nextCh();
-        } else if (strncmp((char *)str, "charset ", 8) == 0) {
-          token = Token::CHARSET_SYM;
-          remains -= 8;
-          str += 8;
-          nextCh();
-        } else if (strncmp((char *)str, "font-face", 9) == 0) {
-          token = Token::FONT_FACE_SYM;
-          remains -= 9;
-          str += 9;
-          nextCh();
-        } else if (strncmp((char *)str, "namespace ", 10) == 0) {
-          token = Token::NAMESPACE_SYM;
-          remains -= 10;
-          str += 10;
-          nextCh();
-        } else {
-          LOG_E("%s[%d]: Sym Token Unknown: @%s", css.getId().c_str(), lineNbr, str);
-          token = Token::ERROR;
+      } else if (token != Token::RBRACE) {
+        return false;
+      }
+
+      return true;
+    }
+
+    auto importStatement() -> bool {
+      skipBlanks();
+      if ((token == Token::URI) || (token == Token::STRING)) {
+        // Import a css file
+      }
+      skipBlanks();
+      if (token == Token::IDENT) {
+        skipBlanks();
+        while (token == Token::COMMA) {
+          skipBlanks();
+          if (token != Token::IDENT) { return false; }
+          skipBlanks();
         }
-      } else if (ch == '~') {
-        nextCh();
-        if (ch == '=') {
-          nextCh();
-          token = Token::INCLUDES;
-        } else {
-          token = Token::TILDE;
-        }
-      } else if (ch == '|') {
-        nextCh();
-        if (ch == '=') {
-          nextCh();
-          token = Token::DASHMATCH;
-        } else {
-          LOG_E("%s[%d]: Unknown usage: %c", css.getId().c_str(), lineNbr, ch);
-          token = Token::ERROR;
-        }
-      } else if ((ch == '/') && (str[0] == '*')) {
-        nextCh();
-        nextCh();
-        if (!skipComment()) {
-          LOG_E("%s[%d]: Non terminated comment.", css.getId().c_str(), lineNbr);
-          token = Token::ERROR;
-        } else
-          continue;
-      } else if (ch == '/') {
-        nextCh();
-        token = Token::SLASH;
-      } else if (ch == '!') {
-        nextCh();
-        for (;;) {
-          skipSpaces();
-          if ((ch == '/') && (str[0] == '*')) {
-            nextCh();
-            nextCh();
-            if (!skipComment()) {
-              LOG_E("%s[%d]: Non terminated comment.", css.getId().c_str(), lineNbr);
-              token = Token::ERROR;
-              done  = true;
-              break;
-            } else
-              continue;
-          } else
-            break;
-        }
-        if (!done && (ch == 'i') && (strncmp((char *)str, "mportant", 8) == 0)) {
-          remains -= 8;
-          str += 8;
-          nextCh();
-          token = Token::IMPORTANT_SYM;
-        } else if (!done) {
-          LOG_E("%s[%d]: '!' not followed by 'important'", css.getId().c_str(), lineNbr);
-          token = Token::ERROR;
-        }
+      }
+      if (token == Token::SEMICOLON) {
+        skipBlanks();
       } else {
-        LOG_E("%s[%d]: Unknown usage: %c", css.getId().c_str(), lineNbr, ch);
-        token = Token::ERROR;
+        return false;
       }
-
-      done = true;
+      return true;
     }
-
-    #if CSS_PARSER_TEST
-      std::cout << '[' << tokenNames[(int)token] << ']' << std::flush;
-    #endif
-  }
-
-  // ---- Parser ----
-
-  /**
-   * Skip all blanks
-   *
-   * On entry, the current token must point to an already parsed item.
-   * On return, the token point at the next valid token passed whitespaces.
-   */
-  auto skipBlanks() -> void {
-    if (token == Token::END_OF_FILE) return;
-    do nextToken();
-    while (token == Token::WHITESPACE);
-  }
-
-  /**
-   * Skip a block
-   *
-   * Called to get rid of a complete block of statements. Two kind of blocks are
-   * managed by this method, considering the first occurence of:
-   * 1) a semicolon or the end of the file: this end the skip process
-   * 2) a left brace: the stream will be skipped until a right brace is encountered.
-   *    Multiple level of braces is supported.
-   */
-  auto skipBlock() -> bool {
-
-    while ((token != Token::END_OF_FILE) && (token != Token::SEMICOLON) &&
-           (token != Token::LBRACE) && (token != Token::RBRACE))
-      nextToken();
-    if (token == Token::SEMICOLON) {
-      skipBlanks();
-    } else if (token == Token::LBRACE) {
-      skipBlanks();
-      int braceCount = 1;
-      while (braceCount > 0) {
-        if (token == Token::END_OF_FILE) return false;
-        if (token == Token::LBRACE) {
-          braceCount += 1;
-          skipBlanks();
-        } else if (token == Token::RBRACE) {
-          braceCount -= 1;
-          skipBlanks();
-        } else {
-          nextToken();
-        }
-      }
-    } else if (token != Token::RBRACE) {
-      return false;
-    }
-
-    return true;
-  }
-
-  auto importStatement() -> bool {
-    skipBlanks();
-    if ((token == Token::URI) || (token == Token::STRING)) {
-      // Import a css file
-    }
-    skipBlanks();
-    if (token == Token::IDENT) {
-      skipBlanks();
-      while (token == Token::COMMA) {
-        skipBlanks();
-        if (token != Token::IDENT) return false;
-        skipBlanks();
-      }
-    }
-    if (token == Token::SEMICOLON) {
-      skipBlanks();
-    } else
-      return false;
-    return true;
-  }
 
     #if 0
-    auto function()  -> bool{
-      skipBlanks();
-      expression();
-      if (token == Token::RPARENT) skipBlanks();
-      else return false;
+      auto function()  -> bool {
+        skipBlanks();
+        expression();
+        if (token == Token::RPARENT) { skipBlanks(); }
+        else { return false; }
+        return true;
+      }
+    #endif
+
+    auto term(bool &none, CSS::PropertyId id) -> std::pair<bool, CSS::Value> {
+      none     = false;
+      bool       neg = false;
+      CSS::Value v;
+      bool       done = false;
+      while (true) {
+        if ((token == Token::PLUS) || (token == Token::MINUS)) {
+          neg = token == Token::MINUS;
+          skipBlanks();
+        }
+        switch (token) {
+        case Token::NUMBER:
+        case Token::PERCENTAGE:
+        case Token::LENGTH:
+        case Token::ANGLE:
+        case Token::TIME:
+        case Token::DIMENSION:
+        case Token::FREQ:
+          v.valueType = valueType;
+          v.num       = neg ? -num : num;
+          if (id == CSS::PropertyId::VERTICAL_ALIGN) {
+            v.choice.verticalAlign = CSS::VerticalAlign::VALUE;
+          }
+          skipBlanks();
+          break;
+
+        case Token::STRING:
+          v.valueType = CSS::ValueType::STR;
+          v.str       = string;
+          skipBlanks();
+          break;
+        case Token::IDENT:
+          v.str       = ident;
+          v.valueType = CSS::ValueType::STR;
+          switch (id) {
+          case CSS::PropertyId::TEXT_ALIGN:
+            if (v.str.compare("left") == 0) {
+              v.choice.align = CSS::Align::LEFT;
+            }
+            else if (v.str.compare("center") == 0) {
+              v.choice.align = CSS::Align::CENTER;
+            }
+            else if (v.str.compare("right") == 0) {
+              v.choice.align = CSS::Align::RIGHT;
+            }
+            else if (v.str.compare("justify") == 0) {
+              v.choice.align = CSS::Align::JUSTIFY;
+            }
+            else if (v.str.compare("justified") == 0) {
+              v.choice.align = CSS::Align::JUSTIFY;
+            }
+            else {
+              // LOG_E("text-align not decoded: '{}' at offset: {}", v.str, (int32_t)(str -
+              // buffer_start));
+              goto end;
+            }
+            break;
+          case CSS::PropertyId::TEXT_TRANSFORM:
+            if (v.str.compare("lowercase") == 0) {
+              v.choice.textTransform = CSS::TextTransform::LOWERCASE;
+            }
+            else if (v.str.compare("uppercase") == 0) {
+              v.choice.textTransform = CSS::TextTransform::UPPERCASE;
+            }
+            else if (v.str.compare("capitalize") == 0) {
+              v.choice.textTransform = CSS::TextTransform::CAPITALIZE;
+            }
+            else if (v.str.compare("none") == 0) {
+              v.choice.textTransform = CSS::TextTransform::NONE;
+            }
+            else {
+              // LOG_E("text-transform not decoded: '{}' at offset: {}", v.str, (int32_t)(str
+              // - buffer_start));
+              goto end;
+            }
+            break;
+          case CSS::PropertyId::VERTICAL_ALIGN:
+            if (v.str.compare("sub") == 0) {
+              v.choice.verticalAlign = CSS::VerticalAlign::SUB;
+            }
+            else if (v.str.compare("super") == 0) {
+              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+            }
+            else if (v.str.compare("top") == 0) {
+              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+            }
+            else if (v.str.compare("text-top") == 0) {
+              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+            }
+            else {
+              v.choice.verticalAlign = CSS::VerticalAlign::NORMAL;
+            }
+            break;
+          case CSS::PropertyId::FONT_WEIGHT:
+            if ((v.str.compare("bold") == 0) || (v.str.compare("bolder") == 0)) {
+              v.choice.faceStyle = FaceStyle::BOLD;
+            }
+            else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0)) {
+              v.choice.faceStyle = FaceStyle::NORMAL;
+            }
+            else {
+              // LOG_E("font-weight not decoded: '{}' at offset: {}", v.str, (int32_t)(str -
+              // buffer_start));
+              goto end;
+            }
+            break;
+          case CSS::PropertyId::FONT_STYLE:
+            if ((v.str.compare("italic") == 0) || (v.str.compare("oblique") == 0)) {
+              v.choice.faceStyle = FaceStyle::ITALIC;
+            }
+            else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0)) {
+              v.choice.faceStyle = FaceStyle::NORMAL;
+            }
+            else {
+              // LOG_E("font-style not decoded: '{}' at offset: {}", w, (int32_t)(str -
+              // buffer_start));
+              goto end;
+            }
+            break;
+          case CSS::PropertyId::DISPLAY:
+            if (v.str.compare("none") == 0) {
+              v.choice.display = CSS::Display::NONE;
+            }
+            else if (v.str.compare("inline") == 0) {
+              v.choice.display = CSS::Display::INLINE;
+            }
+            else if (v.str.compare("block") == 0) {
+              v.choice.display = CSS::Display::BLOCK;
+            }
+            else if (v.str.compare("inline-block") == 0) {
+              v.choice.display = CSS::Display::INLINE_BLOCK;
+            }
+            else {
+              // LOG_E("display not decoded: '{}' at offset: {}", w, (int32_t)(str -
+              // buffer_start));
+              goto end;
+            }
+            break;
+          case CSS::PropertyId::FONT_SIZE:
+            if (v.valueType == CSS::ValueType::STR) {
+              v.valueType = CSS::ValueType::PT;
+              bool found  = false;
+              for (const auto &[key, value] : css.fontSizeMap) {
+                if (std::strcmp(key.c_str(), v.str.c_str()) == 0) {
+                  v.num = value;
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) {
+                // int8_t fontSize;
+                // config.get(Config::Ident::FONT_SIZE, &fontSize);
+                // v->num = fontSize;
+                v.num = 12;
+              }
+            } else if (v.str.compare("inherit") == 0) {
+              v.valueType = CSS::ValueType::INHERIT;
+            }
+            break;
+          default:
+            if (v.str.compare("inherit") == 0) {
+              v.valueType = CSS::ValueType::INHERIT;
+            }
+            break;
+          }
+          skipBlanks();
+          break;
+
+        case Token::URI:
+          v.str       = string;
+          v.valueType = CSS::ValueType::URL;
+          skipBlanks();
+          break;
+        case Token::FUNCTION:
+          // if (!function()) return false; // Not supported yet
+          break;
+        case Token::HASH:
+          // v->str = name;
+          skipBlanks();
+          break; // Not supported yet
+
+        default:
+          none = true;
+          break;
+        }
+
+        done = true;
+        break;
+      }
+end:
+
+      return { done, std::move(v) };
+    }
+
+    auto expression(CSS::Property &prop) -> bool {
+      bool none;
+
+      auto [hasTerm, termValue] = term(none, prop.id);
+      if (!hasTerm || none) { return false; }
+      if (!prop.addValue(std::move(termValue))) { return false; }
+
+      for (;;) {
+        if ((token == Token::SLASH) || (token == Token::COMMA)) {
+          skipBlanks();
+        }
+        auto [hasTerm, termValue] = term(none, prop.id);
+        if (!hasTerm && !none) { return false; }
+        if (none) { break; }
+        if (!prop.addValue(std::move(termValue))) { return false; }
+      }
+      prop.completed();
       return true;
     }
-  #endif
 
-  auto term(bool &none, CSS::PropertyId id) -> std::pair<bool, CSS::Value> {
-    none     = false;
-    bool neg = false;
-    CSS::Value v;
-    bool done = false;
-    while (true) {
-      if ((token == Token::PLUS) || (token == Token::MINUS)) {
-        neg = token == Token::MINUS;
-        skipBlanks();
-      }
-      switch (token) {
-      case Token::NUMBER:
-      case Token::PERCENTAGE:
-      case Token::LENGTH:
-      case Token::ANGLE:
-      case Token::TIME:
-      case Token::DIMENSION:
-      case Token::FREQ:
-        v.valueType = valueType;
-        v.num       = neg ? -num : num;
-        if (id == CSS::PropertyId::VERTICAL_ALIGN)
-          v.choice.verticalAlign = CSS::VerticalAlign::VALUE;
-        skipBlanks();
-        break;
+    auto declaration(CSS::Property &prop) -> bool {
 
-      case Token::STRING:
-        v.valueType = CSS::ValueType::STR;
-        v.str       = string;
+      bool done = false;
+      while (true) {
+        // process IDENT property
+        bool found = false;
+        for (const auto &[key, value] : css.propertyMap) {
+          if (std::strcmp(key.c_str(), ident) == 0) {
+            prop.id = value;
+            found   = true;
+            break;
+          }
+        }
+        if (!found) { break; }
         skipBlanks();
-        break;
-      case Token::IDENT:
-        v.str       = ident;
-        v.valueType = CSS::ValueType::STR;
-        switch (id) {
-        case CSS::PropertyId::TEXT_ALIGN:
-          if (v.str.compare("left") == 0)
-            v.choice.align = CSS::Align::LEFT;
-          else if (v.str.compare("center") == 0)
-            v.choice.align = CSS::Align::CENTER;
-          else if (v.str.compare("right") == 0)
-            v.choice.align = CSS::Align::RIGHT;
-          else if (v.str.compare("justify") == 0)
-            v.choice.align = CSS::Align::JUSTIFY;
-          else if (v.str.compare("justified") == 0)
-            v.choice.align = CSS::Align::JUSTIFY;
-          else {
-            // LOG_E("text-align not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str -
-            // buffer_start));
-            goto end;
-          }
-          break;
-        case CSS::PropertyId::TEXT_TRANSFORM:
-          if (v.str.compare("lowercase") == 0)
-            v.choice.textTransform = CSS::TextTransform::LOWERCASE;
-          else if (v.str.compare("uppercase") == 0)
-            v.choice.textTransform = CSS::TextTransform::UPPERCASE;
-          else if (v.str.compare("capitalize") == 0)
-            v.choice.textTransform = CSS::TextTransform::CAPITALIZE;
-          else if (v.str.compare("none") == 0)
-            v.choice.textTransform = CSS::TextTransform::NONE;
-          else {
-            // LOG_E("text-transform not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str
-            // - buffer_start));
-            goto end;
-          }
-          break;
-        case CSS::PropertyId::VERTICAL_ALIGN:
-          if (v.str.compare("sub") == 0)
-            v.choice.verticalAlign = CSS::VerticalAlign::SUB;
-          else if (v.str.compare("super") == 0)
-            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
-          else if (v.str.compare("top") == 0)
-            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
-          else if (v.str.compare("text-top") == 0)
-            v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
-          else {
-            v.choice.verticalAlign = CSS::VerticalAlign::NORMAL;
-          }
-          break;
-        case CSS::PropertyId::FONT_WEIGHT:
-          if ((v.str.compare("bold") == 0) || (v.str.compare("bolder") == 0))
-            v.choice.faceStyle = FaceStyle::BOLD;
-          else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0))
-            v.choice.faceStyle = FaceStyle::NORMAL;
-          else {
-            // LOG_E("font-weight not decoded: '%s' at offset: %d", v.str.c_str(), (int32_t)(str -
-            // buffer_start));
-            goto end;
-          }
-          break;
-        case CSS::PropertyId::FONT_STYLE:
-          if ((v.str.compare("italic") == 0) || (v.str.compare("oblique") == 0))
-            v.choice.faceStyle = FaceStyle::ITALIC;
-          else if ((v.str.compare("normal") == 0) || (v.str.compare("initial") == 0))
-            v.choice.faceStyle = FaceStyle::NORMAL;
-          else {
-            // LOG_E("font-style not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str -
-            // buffer_start));
-            goto end;
-          }
-          break;
-        case CSS::PropertyId::DISPLAY:
-          if (v.str.compare("none") == 0)
-            v.choice.display = CSS::Display::NONE;
-          else if (v.str.compare("inline") == 0)
-            v.choice.display = CSS::Display::INLINE;
-          else if (v.str.compare("block") == 0)
-            v.choice.display = CSS::Display::BLOCK;
-          else if (v.str.compare("inline-block") == 0)
-            v.choice.display = CSS::Display::INLINE_BLOCK;
-          else {
-            // LOG_E("display not decoded: '%s' at offset: %d", w.c_str(), (int32_t)(str -
-            // buffer_start));
-            goto end;
-          }
-          break;
-        case CSS::PropertyId::FONT_SIZE:
-          if (v.valueType == CSS::ValueType::STR) {
-            v.valueType = CSS::ValueType::PT;
-            bool found  = false;
-            for (const auto &[key, value] : css.fontSizeMap) {
-              if (std::strcmp(key.c_str(), v.str.c_str()) == 0) {
-                v.num = value;
-                found = true;
-                break;
-              }
-            }
-            if (!found) {
-              // int8_t fontSize;
-              // config.get(Config::Ident::FONT_SIZE, &fontSize);
-              // v->num = fontSize;
-              v.num = 12;
-            }
-          } else if (v.str.compare("inherit") == 0) {
-            v.valueType = CSS::ValueType::INHERIT;
-          }
-          break;
-        default:
-          if (v.str.compare("inherit") == 0) {
-            v.valueType = CSS::ValueType::INHERIT;
-          }
+
+        if (token == Token::COLON) {
+          skipBlanks();
+        }
+        else {
           break;
         }
-        skipBlanks();
-        break;
-
-      case Token::URI:
-        v.str       = string;
-        v.valueType = CSS::ValueType::URL;
-        skipBlanks();
-        break;
-      case Token::FUNCTION:
-        // if (!function()) return false; // Not supported yet
-        break;
-      case Token::HASH:
-        // v->str = name;
-        skipBlanks();
-        break; // Not supported yet
-
-      default:
-        none = true;
+        if (!expression(prop)) { break; }
+        if (token == Token::IMPORTANT_SYM) { skipBlanks(); }
+        if (token == Token::SEMICOLON) { skipBlanks(); } // may not be optional
+        done = true;
         break;
       }
 
-      done = true;
-      break;
-    }
-  end:
-
-    return {done, std::move(v)};
-  }
-
-  auto expression(CSS::Property &prop) -> bool {
-    bool none;
-
-    auto [hasTerm, termValue] = term(none, prop.id);
-    if (!hasTerm || none) return false;
-    if (!prop.addValue(std::move(termValue))) return false;
-
-    for (;;) {
-      if ((token == Token::SLASH) || (token == Token::COMMA)) {
-        skipBlanks();
+      if (!done) {
+        skipBlock();
       }
-      auto [hasTerm, termValue] = term(none, prop.id);
-      if (!hasTerm && !none) return false;
-      if (none) break;
-      if (!prop.addValue(std::move(termValue))) return false;
-    }
-    prop.completed();
-    return true;
-  }
 
-  auto declaration(CSS::Property &prop) -> bool {
-
-    bool done = false;
-    while (true) {
-      // process IDENT property
-      bool found = false;
-      for (const auto &[key, value] : css.propertyMap) {
-        if (std::strcmp(key.c_str(), ident) == 0) {
-          prop.id = value;
-          found   = true;
-          break;
-        }
-      }
-      if (!found) break;
-      skipBlanks();
-
-      if (token == Token::COLON)
-        skipBlanks();
-      else
-        break;
-      if (!expression(prop)) break;
-      if (token == Token::IMPORTANT_SYM) skipBlanks();
-      if (token == Token::SEMICOLON) skipBlanks(); // may not be optional
-      done = true;
-      break;
+      return done;
     }
 
-    if (!done) {
+    auto namespaceStatement() -> bool { // Not implemented yet
       skipBlock();
+      return true;
     }
 
-    return done;
-  }
-
-  auto namespaceStatement() -> bool { // Not implemented yet
-    skipBlock();
-    return true;
-  }
-
-  auto pageStatement() -> bool { // Not implemented yet
-    skipBlock();
-    return true;
+    auto pageStatement() -> bool { // Not implemented yet
+      skipBlock();
+      return true;
 
       #if 0
-      skipBlanks();
-      if (token == Token::COLON) {
-        nextToken();
-        if (token == Token::IDENT) {
+        skipBlanks();
+        if (token == Token::COLON) {
+          nextToken();
+          if (token == Token::IDENT) {
+            skipBlanks();
+          } else { return false; }
+        }
+        if (token == Token::LBRACE) {
           skipBlanks();
-        } else return false;
+          while (token == Token::IDENT) {
+            if (!declaration()) { return false; }
+          }
+          if (token == Token::RBRACE) { skipBlanks(); }
+          else { return false; }
+
+        } else { return false; }
+        return true;
+      #endif
+    }
+
+    auto fontFaceStatement() -> bool {
+      size_t oldSuiteCount = css.selectorSuites.size();
+      css.selectorSuites.pushBack(CSS::Selectors{});
+      if (css.selectorSuites.size() == oldSuiteCount) { return false; }
+      auto &            sels = css.selectorSuites.back();
+
+      CSS::Selector     sel;
+      CSS::SelectorNode node;
+      node.tag = DOM::Tag::FONT_FACE;
+      if (!sel.addSelectorNode(std::move(node))) {
+        css.selectorSuites.popBack();
+        return false;
       }
+      sel.computeSpecificity(css.getPriority());
+
+      size_t oldSelectorCount = sels.size();
+      sels.pushBack(std::move(sel));
+      if (sels.size() == oldSelectorCount) {
+        css.selectorSuites.popBack();
+        return false;
+      }
+
+      skipBlanks();
       if (token == Token::LBRACE) {
         skipBlanks();
-        while (token == Token::IDENT) {
-          if (!declaration()) return false;
+        size_t oldPropertySuiteCount = css.propertySuites.size();
+        css.propertySuites.pushBack(CSS::Properties{});
+        if (css.propertySuites.size() == oldPropertySuiteCount) {
+          css.selectorSuites.popBack();
+          return false;
         }
-        if (token == Token::RBRACE) skipBlanks();
-        else return false;
+        auto &props = css.propertySuites.back();
+        properties(props);
 
-      } else return false;
-      return true;
+        if (token == Token::RBRACE) {
+          skipBlanks();
+          return addRules(sels, props);
+        }
+        css.propertySuites.popBack();
+      }
+      css.selectorSuites.popBack();
+      return false;
+    }
+
+    #if 0 // Not supported yet
+      auto attrib()  -> bool {
+        if (token != Token::IDENT) { return false; }
+        skipBlanks();
+        if ((token == Token::EQUAL   ) ||
+            (token == Token::INCLUDES) ||
+            (token == Token::DASHMATCH)) {
+          if (token == Token::EQUAL) {
+
+          }
+          else if (token == Token::INCLUDES) {
+
+          }
+          else { // Token::DASHMATCH
+
+          }
+          skipBlanks();
+          if (token == Token::STRING) {
+
+          }
+          else if (token == Token::IDENT) {
+
+          }
+          else { return false; }
+          skipBlanks();
+        }
+        if (token != Token::RBRACK) { return false; }
+        nextToken();
+        return true;
+      }
     #endif
-  }
 
-  auto fontFaceStatement() -> bool {
-    size_t oldSuiteCount = css.selectorSuites.size();
-    css.selectorSuites.pushBack(CSS::Selectors{});
-    if (css.selectorSuites.size() == oldSuiteCount) return false;
-    auto &sels = css.selectorSuites.back();
-
-    CSS::Selector sel;
-    CSS::SelectorNode node;
-    node.tag = DOM::Tag::FONT_FACE;
-    if (!sel.addSelectorNode(std::move(node))) {
-      css.selectorSuites.popBack();
-      return false;
-    }
-    sel.computeSpecificity(css.getPriority());
-
-    size_t oldSelectorCount = sels.size();
-    sels.pushBack(std::move(sel));
-    if (sels.size() == oldSelectorCount) {
-      css.selectorSuites.popBack();
-      return false;
-    }
-
-    skipBlanks();
-    if (token == Token::LBRACE) {
-      skipBlanks();
-      size_t oldPropertySuiteCount = css.propertySuites.size();
-      css.propertySuites.pushBack(CSS::Properties{});
-      if (css.propertySuites.size() == oldPropertySuiteCount) {
-        css.selectorSuites.popBack();
-        return false;
-      }
-      auto &props = css.propertySuites.back();
-      properties(props);
-
-      if (token == Token::RBRACE) {
-        skipBlanks();
-        return addRules(sels, props);
-      }
-      css.propertySuites.popBack();
-    }
-    css.selectorSuites.popBack();
-    return false;
-  }
-    
-    #if 0  // Not supported yet
-    auto attrib()  -> bool{
-      if (token != Token::IDENT) return false;
-      skipBlanks();
-      if ((token == Token::EQUAL   ) ||
-          (token == Token::INCLUDES) ||
-          (token == Token::DASHMATCH)) {
-        if (token == Token::EQUAL) {
-
+    auto pseudo(CSS::SelectorNode &node) -> bool {
+      if (token == Token::IDENT) {
+        if (strcmp(ident, "first-child") == 0) {
+          node.qualifier = CSS::Qualifier::FIRST_CHILD;
+        } else {
+          return false; // other ident not supported
         }
-        else if (token == Token::INCLUDES) {
-
-        }
-        else { // Token::DASHMATCH
-
-        }
-        skipBlanks();
-        if (token == Token::STRING) {
-
-        }
-        else if (token == Token::IDENT) {
-
-        }
-        else return false;
-        skipBlanks();
-      }
-      if (token != Token::RBRACK) return false;
-      nextToken();
-      return true;
-    }
-  #endif
-
-  auto pseudo(CSS::SelectorNode &node) -> bool {
-    if (token == Token::IDENT) {
-      if (strcmp(ident, "first-child") == 0) {
-        node.qualifier = CSS::Qualifier::FIRST_CHILD;
-      } else
-        return false; // other ident not supported
-      nextToken();
-    } else if (token == Token::FUNCTION) {
-      return false; // Not supported
-      // skipBlanks();
-      // if (token == Token::IDENT) {
-      //   skipBlanks();
-      // }
-      // if (token != Token::RPARENT) return false;
-      // nextToken();
-    }
-    return true;
-  }
-
-  auto subSelectorNode(CSS::SelectorNode &node) -> bool {
-    for (;;) {
-      if (token == Token::HASH) {
-        node.addId(name);
         nextToken();
-      } else if (token == Token::DOT) {
-        nextToken();
-        if (token == Token::IDENT) {
-          node.addClass(ident);
-          nextToken();
-        }
-      } else if (token == Token::LBRACK) {
+      } else if (token == Token::FUNCTION) {
         return false; // Not supported
         // skipBlanks();
-        // if (!attrib()) return false;
-      } else if (token == Token::COLON) {
-        nextToken();
-        if (!pseudo(node)) return false;
-      } else
-        break;
+        // if (token == Token::IDENT) {
+        //   skipBlanks();
+        // }
+        // if (token != Token::RPARENT) return false;
+        // nextToken();
+      }
+      return true;
     }
-    return true;
-  }
 
-  auto selectorNode() -> std::pair<bool, CSS::SelectorNode> {
-    CSS::SelectorNode node;
-    bool done = false;
-    while (true) {
-      if (token == Token::IDENT) {
-        DOM::Tags::const_iterator it = DOM::tags.find(ident);
-        if (it != DOM::tags.end()) {
-          node.setTag(it->second);
+    auto subSelectorNode(CSS::SelectorNode &node) -> bool {
+      for (;;) {
+        if (token == Token::HASH) {
+          node.addId(name);
           nextToken();
-        } else
-          break;
-      } else if (token == Token::STAR) {
-        node.tag = DOM::Tag::ANY;
-        nextToken();
-      }
-      if ((token == Token::HASH) || (token == Token::DOT) || (token == Token::LBRACK) ||
-          (token == Token::COLON)) {
-        if (!subSelectorNode(node)) break;
-      }
-
-      done = true;
-      break;
-    }
-
-    return {done, std::move(node)};
-  }
-
-  auto selector(CSS::Selector &sel) -> bool {
-    bool done = false;
-    while (true) {
-      auto [hasNode, node] = selectorNode();
-      if (!hasNode) break;
-      if (!sel.addSelectorNode(std::move(node))) return false;
-      bool done2 = false;
-      while (true) {
-        if (token == Token::WHITESPACE) skipBlanks();
-        if ((token == Token::PLUS) || (token == Token::GT) || (token == Token::TILDE)) {
-          Token t = token;
-          skipBlanks();
-          auto [hasNode, node] = selectorNode();
-          if (!hasNode) break;
-          node.op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
-          if (!sel.addSelectorNode(std::move(node))) return false;
-        } else if ((token == Token::IDENT) || (token == Token::STAR) || (token == Token::HASH) ||
-                   (token == Token::DOT) || (token == Token::LBRACK) || (token == Token::COLON)) {
-          auto [hasNode, node] = selectorNode();
-          if (!hasNode) break;
-          node.op = CSS::SelOp::DESCENDANT;
-          if (!sel.addSelectorNode(std::move(node))) return false;
+        } else if (token == Token::DOT) {
+          nextToken();
+          if (token == Token::IDENT) {
+            node.addClass(ident);
+            nextToken();
+          }
+        } else if (token == Token::LBRACK) {
+          return false; // Not supported
+          // skipBlanks();
+          // if (!attrib()) return false;
+        } else if (token == Token::COLON) {
+          nextToken();
+          if (!pseudo(node)) { return false; }
         } else {
-          done2 = true;
           break;
         }
       }
-      done = done2;
-      break;
+      return true;
     }
 
-    if (done && !sel.isEmpty()) {
-      sel.computeSpecificity(css.getPriority());
-    }
-
-    return done;
-  }
-
-  auto properties(CSS::Properties &props) -> void {
-    while (token == Token::IDENT) {
-      CSS::Property prop;
-      if (declaration(prop)) {
-        size_t oldSize = props.size();
-        props.pushBack(std::move(prop));
-        if (props.size() == oldSize) {
-          skipBlock();
-          return;
-        }
-      }
-    }
-  }
-
-  auto addRules(CSS::Selectors &sels, CSS::Properties &props) -> bool {
-    if (props.empty()) {
-      sels.clear();
-      css.selectorSuites.popBack();
-      css.propertySuites.popBack();
-      return false;
-    } else {
-      for (auto &sel : sels) css.addRule(&sel, &props);
-    }
-    return true;
-  }
-
-  auto ruleset() -> bool {
-    size_t oldSelectorSuiteCount = css.selectorSuites.size();
-    css.selectorSuites.pushBack(CSS::Selectors{}); // multiple selectors per property list
-    if (css.selectorSuites.size() == oldSelectorSuiteCount) return false;
-    auto &selectors = css.selectorSuites.back();
-    // skip everything until we get th beginning of a ruleset
-    // while ((token != Token::END_OF_FILE) &&
-    //        (token != Token::IDENT      ) &&
-    //        (token != Token::HASH       ) &&
-    //        (token != Token::DOT        ) &&
-    //        (token != Token::LBRACK     ) &&
-    //        (token != Token::COLON      )) nextToken();
-    {
-      CSS::Selector sel;
-      if (selector(sel)) {
-        size_t oldSize = selectors.size();
-        selectors.pushBack(std::move(sel));
-        if (selectors.size() == oldSize) {
-          css.selectorSuites.popBack();
-          return false;
-        }
-      } else {
-        while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
+    auto selectorNode() -> std::pair<bool, CSS::SelectorNode> {
+      CSS::SelectorNode node;
+      bool              done = false;
+      while (true) {
+        if (token == Token::IDENT) {
+          DOM::Tags::const_iterator it = DOM::tags.find(ident);
+          if (it != DOM::tags.end()) {
+            node.setTag(it->second);
+            nextToken();
+          } else {
+            break;
+          }
+        } else if (token == Token::STAR) {
+          node.tag = DOM::Tag::ANY;
           nextToken();
-      }
-    }
-    while (token == Token::COMMA) {
-      skipBlanks();
-      CSS::Selector sel;
-      if (selector(sel)) {
-        size_t oldSize = selectors.size();
-        selectors.pushBack(std::move(sel));
-        if (selectors.size() == oldSize) {
-          css.selectorSuites.popBack();
-          return false;
         }
-      } else {
+        if ((token == Token::HASH) || (token == Token::DOT) || (token == Token::LBRACK) ||
+            (token == Token::COLON)) {
+          if (!subSelectorNode(node)) { break; }
+        }
 
-        while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
-          nextToken();
+        done = true;
+        break;
+      }
+
+      return { done, std::move(node) };
+    }
+
+    auto selector(CSS::Selector &sel) -> bool {
+      bool done = false;
+      while (true) {
+        auto [hasNode, node] = selectorNode();
+        if (!hasNode) { break; }
+        if (!sel.addSelectorNode(std::move(node))) { return false; }
+        bool done2 = false;
+        while (true) {
+          if (token == Token::WHITESPACE) { skipBlanks(); }
+          if ((token == Token::PLUS) || (token == Token::GT) || (token == Token::TILDE)) {
+            Token t = token;
+            skipBlanks();
+            auto [hasNode, node] = selectorNode();
+            if (!hasNode) { break; }
+            node.op = (t == Token::GT) ? CSS::SelOp::CHILD : CSS::SelOp::ADJACENT;
+            if (!sel.addSelectorNode(std::move(node))) { return false; }
+          } else if ((token == Token::IDENT) || (token == Token::STAR) || (token == Token::HASH) ||
+                     (token == Token::DOT) || (token == Token::LBRACK) || (token == Token::COLON)) {
+            auto [hasNode, node] = selectorNode();
+            if (!hasNode) { break; }
+            node.op = CSS::SelOp::DESCENDANT;
+            if (!sel.addSelectorNode(std::move(node))) { return false; }
+          } else {
+            done2 = true;
+            break;
+          }
+        }
+        done = done2;
+        break;
+      }
+
+      if (done && !sel.isEmpty()) {
+        sel.computeSpecificity(css.getPriority());
+      }
+
+      return done;
+    }
+
+    auto properties(CSS::Properties &props) -> void {
+      while (token == Token::IDENT) {
+        CSS::Property prop;
+        if (declaration(prop)) {
+          size_t oldSize = props.size();
+          props.pushBack(std::move(prop));
+          if (props.size() == oldSize) {
+            skipBlock();
+            return;
+          }
+        }
       }
     }
-    if (selectors.empty()) {
-      css.selectorSuites.popBack();
-      skipBlock();
-    } else if (token == Token::LBRACE) {
-      skipBlanks();
-      size_t oldPropertySuiteCount = css.propertySuites.size();
-      css.propertySuites.pushBack(CSS::Properties{});
-      if (css.propertySuites.size() == oldPropertySuiteCount) {
+
+    auto addRules(CSS::Selectors &sels, CSS::Properties &props) -> bool {
+      if (props.empty()) {
+        sels.clear();
         css.selectorSuites.popBack();
+        css.propertySuites.popBack();
         return false;
+      } else {
+        for (auto &sel : sels) css.addRule(&sel, &props);
       }
-      auto &props = css.propertySuites.back();
-      properties(props);
-      if (token == Token::RBRACE) {
-        skipBlanks();
-        return addRules(selectors, props);
-      }
-      css.selectorSuites.popBack();
-      css.propertySuites.popBack();
-    } else {
-      css.selectorSuites.popBack();
+      return true;
     }
-    return false;
-  }
+
+    auto ruleset() -> bool {
+      size_t oldSelectorSuiteCount = css.selectorSuites.size();
+      css.selectorSuites.pushBack(CSS::Selectors{}); // multiple selectors per property list
+      if (css.selectorSuites.size() == oldSelectorSuiteCount) { return false; }
+      auto &selectors = css.selectorSuites.back();
+      // skip everything until we get th beginning of a ruleset
+      // while ((token != Token::END_OF_FILE) &&
+      //        (token != Token::IDENT      ) &&
+      //        (token != Token::HASH       ) &&
+      //        (token != Token::DOT        ) &&
+      //        (token != Token::LBRACK     ) &&
+      //        (token != Token::COLON      )) nextToken();
+      {
+        CSS::Selector sel;
+        if (selector(sel)) {
+          size_t oldSize = selectors.size();
+          selectors.pushBack(std::move(sel));
+          if (selectors.size() == oldSize) {
+            css.selectorSuites.popBack();
+            return false;
+          }
+        } else {
+          while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
+            nextToken();
+        }
+      }
+      while (token == Token::COMMA) {
+        skipBlanks();
+        CSS::Selector sel;
+        if (selector(sel)) {
+          size_t oldSize = selectors.size();
+          selectors.pushBack(std::move(sel));
+          if (selectors.size() == oldSize) {
+            css.selectorSuites.popBack();
+            return false;
+          }
+        } else {
+
+          while ((token != Token::END_OF_FILE) && (token != Token::COMMA) && (token != Token::LBRACE))
+            nextToken();
+        }
+      }
+      if (selectors.empty()) {
+        css.selectorSuites.popBack();
+        skipBlock();
+      } else if (token == Token::LBRACE) {
+        skipBlanks();
+        size_t oldPropertySuiteCount = css.propertySuites.size();
+        css.propertySuites.pushBack(CSS::Properties{});
+        if (css.propertySuites.size() == oldPropertySuiteCount) {
+          css.selectorSuites.popBack();
+          return false;
+        }
+        auto &props = css.propertySuites.back();
+        properties(props);
+        if (token == Token::RBRACE) {
+          skipBlanks();
+          return addRules(selectors, props);
+        }
+        css.selectorSuites.popBack();
+        css.propertySuites.popBack();
+      } else {
+        css.selectorSuites.popBack();
+      }
+      return false;
+    }
 
     #if 0
       // This is a first cut of the @media statements. Not completed as I don't need it.
@@ -1225,19 +1269,19 @@ private:
       //
       // @media <media-query-list> {
       //   <group-rule-body>
-      // } 
+      // }
       //                <media-query> = <media-condition>
       //                                | [ not | only ]? <media-type> [ and <media-condition-without-or> ]?
       //                 <media-type> = <ident>
-      //            <media-condition> = <media-not> 
+      //            <media-condition> = <media-not>
       //                                | <media-in-parens> [ <media-and>* | <media-or>* ]
-      // <media-condition-without-or> = <media-not> 
+      // <media-condition-without-or> = <media-not>
       //                                | <media-in-parens> <media-and>*
       //                  <media-not> = not <media-in-parens>
       //                  <media-and> = and <media-in-parens>
       //                   <media-or> = or  <media-in-parens>
-      //            <media-in-parens> = ( <media-condition> ) 
-      //                                | <media-feature> 
+      //            <media-in-parens> = ( <media-condition> )
+      //                                | <media-feature>
       //                                | <general-enclosed>
       //
       //              <media-feature> = ( [ <mf-plain> | <mf-boolean> | <mf-range> ] )
@@ -1248,27 +1292,27 @@ private:
       //                                | <mf-value> <mf-lt> <mf-name> <mf-lt> <mf-value>
       //                                | <mf-value> <mf-gt> <mf-name> <mf-gt> <mf-value>
       //                    <mf-name> = <ident>
-      //                   <mf-value> = <number> 
-      //                                | <dimension> 
-      //                                | <ident> 
+      //                   <mf-value> = <number>
+      //                                | <dimension>
+      //                                | <ident>
       //                                | <ratio>
       //                      <mf-lt> = '<' '='?
       //                      <mf-gt> = '>' '='?
       //                      <mf-eq> = '='
-      //              <mf-comparison> = <mf-lt> 
-      //                                | <mf-gt> 
+      //              <mf-comparison> = <mf-lt>
+      //                                | <mf-gt>
       //                                | <mf-eq>
       //
-      //           <general-enclosed> = [ <function-token> <any-value> ) ] 
+      //           <general-enclosed> = [ <function-token> <any-value> ) ]
       //                                | ( <ident> <any-value> )
 
-      auto mfValue()  -> bool{
+      auto mfValue()  -> bool {
         if (token == Token::NUMBER) {
           skipBlanks();
           if (token == Token::SLASH) {
             // ratio
             skipBlanks();
-            if (token != Token::NUMBER) return false;
+            if (token != Token::NUMBER) { return false; }
             skipBlanks();
           }
         }
@@ -1278,63 +1322,63 @@ private:
         else if (token == Token::IDENT) {
           skipBlanks();
         }
-        else return false;
+        else { return false; }
 
         return true;
       }
 
-      auto isLogical()  -> bool{
-        return 
+      auto isLogical()  -> bool {
+        return
           (token == Token::GT) ||
           (token == Token::GE) ||
           (token == Token::LT) ||
           (token == Token::LE);
       }
 
-      auto isLower(Token token)  -> bool{
-        return 
+      auto isLower(Token token)  -> bool {
+        return
           (token == Token::LT) ||
           (token == Token::LE);
       }
 
-      auto isGreater(Token token)  -> bool{
-        return 
+      auto isGreater(Token token)  -> bool {
+        return
           (token == Token::GT) ||
           (token == Token::GE);
       }
 
-      auto mfRange()  -> bool{
-        if (!mfValue()) return false;
+      auto mfRange()  -> bool {
+        if (!mfValue()) { return false; }
         if (token == Token::EQUAL) {
           skipBlanks();
-          if (!mfValue()) return false;
+          if (!mfValue()) { return false; }
         }
         else if (isLogical()) {
           Token op1 = token;
           skipBlanks();
-          if (!mfValue()) return false;
+          if (!mfValue()) { return false; }
           if (isLogical()) {
             Token op2 = token;
             skipBlanks();
-            if (!mfValue()) return false;
-            if ((  isLower(op1) && isGreater(op2)) || 
+            if (!mfValue()) { return false; }
+            if ((  isLower(op1) && isGreater(op2)) ||
                 (isGreater(op1) &&   isLower(op2))) {
               return false;
             }
-          } 
+          }
         }
-        else return false;
+        else { return false; }
         return true;
       }
 
-      auto mediaInParens()  -> bool{
+      auto mediaInParens()  -> bool {
         if (token == Token::LPARENT) {
           skipBlanks();
           bool notTokenPresent = (token == Token::IDENT) && (strcmp((char *)ident, "not" ) == 0);
-          if (notTokenPresent) skipBlanks();
+          if (notTokenPresent) { skipBlanks(); }
           if ((token == Token::LPARENT) || (token == Token::FUNCTION)) {
             bool present;
-            if (!mediaCondition(notTokenPresent, &present, true)) return false;
+            if (!mediaCondition(notTokenPresent, &present, true)) { return false; }
           }
           else { // media-feature
             if (token == Token::IDENT) {
@@ -1345,16 +1389,16 @@ private:
               else if (token == Token::COLON) {
                 // mf-plain
                 skipBlanks();
-                if (!mfValue()) return false;
+                if (!mfValue()) { return false; }
               }
               else if (mfRange()) {
               }
-              else while ((token != Token::END_OF_FILE) && (token != Token::RPARENT)) {
-                // any-values
-                skipBlanks();
-              }
+              else { while ((token != Token::END_OF_FILE) && (token != Token::RPARENT)) {
+                       // any-values
+                       skipBlanks();
+                     } }
             }
-            else if (!mfRange()) return false;
+            else if (!mfRange()) { return false; }
           }
         }
         else { // Token::FUNCTION
@@ -1365,35 +1409,35 @@ private:
           }
         }
 
-        if (token == Token::RPARENT) skipBlanks();
-        else return false;
+        if (token == Token::RPARENT) { skipBlanks(); }
+        else { return false; }
 
         return true;
       }
 
-      auto mediaCondition(bool notTokenPresent, bool * present, bool withOr)  -> bool{
+      auto mediaCondition(bool notTokenPresent, bool * present, bool withOr)  -> bool {
         *present = (token == Token::LPARENT) || (token == Token::FUNCTION);
         if (*present) {
-          if (!mediaInParens()) return false;
+          if (!mediaInParens()) { return false; }
           if ((token == Token::IDENT) && (strcmp((char *)ident, "and") == 0)) {
             while ((token == Token::IDENT) && (strcmp((char *)ident, "and") == 0)) {
               skipBlanks();
-              if ((token != Token::LPARENT) && (token != Token::FUNCTION)) return false;
-              if (!mediaInParens()) return false;
+              if ((token != Token::LPARENT) && (token != Token::FUNCTION)) { return false; }
+              if (!mediaInParens()) { return false; }
             }
           }
           else if (withOr && (token == Token::IDENT) && (strcmp((char *)ident, "or") == 0)) {
             while ((token == Token::IDENT) && (strcmp((char *)ident, "or") == 0)) {
               skipBlanks();
-              if ((token != Token::LPARENT) && (token != Token::FUNCTION)) return false;
-              if (!mediaInParens()) return false;
+              if ((token != Token::LPARENT) && (token != Token::FUNCTION)) { return false; }
+              if (!mediaInParens()) { return false; }
             }
           }
         }
         return true;
       }
 
-      auto mediaQuery(bool * queryPresent)  -> bool{
+      auto mediaQuery(bool * queryPresent)  -> bool {
         *queryPresent = false;
 
         bool mediaTypePresent      = false;
@@ -1406,31 +1450,31 @@ private:
           notTokenPresent  = strcmp((char *)ident, "not" ) == 0;
           onlyTokenPresent = strcmp((char *)ident, "only") == 0;
 
-          if (notTokenPresent || onlyTokenPresent) skipBlanks();
+          if (notTokenPresent || onlyTokenPresent) { skipBlanks(); }
 
           if (token == Token::IDENT) {
             // This is a media type
             mediaTypePresent = true;
             skipBlanks();
             notTokenPresent = false;
-            if ((token == Token::IDENT) && 
+            if ((token == Token::IDENT) &&
                 (strcmp((char *)ident, "and") == 0)) {
               skipBlanks();
-              if ((token == Token::IDENT) && 
+              if ((token == Token::IDENT) &&
                   ((notTokenPresent = strcmp((char *)ident, "not") == 0))) {
                 skipBlanks();
               }
-              if (!mediaCondition(notTokenPresent, &conditionPresent, false)) return false;
-              if (!conditionPresent) return false;
+              if (!mediaCondition(notTokenPresent, &conditionPresent, false)) { return false; }
+              if (!conditionPresent) { return false; }
             }
           }
           else {
-            if (onlyTokenPresent) return false; 
-            if (!mediaCondition(notTokenPresent, &conditionPresent, true)) return false;
+            if (onlyTokenPresent) { return false; }
+            if (!mediaCondition(notTokenPresent, &conditionPresent, true)) { return false; }
           }
         }
         else if (token == Token::LPARENT) {
-          if (!mediaInParens()) return false;
+          if (!mediaInParens()) { return false; }
           mediaInParensPresent = true;
         }
 
@@ -1438,134 +1482,143 @@ private:
         return true;
       }
 
-      auto mediaStatement()  -> bool{
+      auto mediaStatement()  -> bool {
         skipBlanks();
         bool queryPresent;
-        if (!mediaQuery(&queryPresent)) return false;
+        if (!mediaQuery(&queryPresent)) { return false; }
         if (queryPresent) {
           while (token == Token::COMMA) {
             skipBlanks();
-            if (!mediaQuery(&queryPresent)) return false;
+            if (!mediaQuery(&queryPresent)) { return false; }
           }
         }
-  
+
         if (token == Token::LBRACE) {
           skipBlanks();
           while (token != Token::RBRACE) {
-            if (!ruleset()) return false;
-            if (token == Token::ERROR) return false;
+            if (!ruleset()) { return false; }
+            if (token == Token::ERROR) { return false; }
           }
           skipBlanks();
-        } else return false;
+        } else { return false; }
         return true;
       }
-  #endif
+    #endif
 
-public:
-  auto parse(const char *buffer, int32_t size) -> bool {
+  public:
+    auto parse(const char *buffer, int32_t size) -> bool {
 
-    str     = buffer;
-    remains = size;
-    skip    = 0;
-    lineNbr = 1;
+      str     = buffer;
+      remains = size;
+      skip    = 0;
+      lineNbr = 1;
 
-    nextCh();
-    nextToken();
-
-    // Skip the optional @charset statement
-    if (token == Token::CHARSET_SYM) {
+      nextCh();
       nextToken();
-      if (token == Token::STRING) {
+
+      // Skip the optional @charset statement
+      if (token == Token::CHARSET_SYM) {
         nextToken();
-        if (token == Token::SEMICOLON)
+        if (token == Token::STRING) {
           nextToken();
-        else
+          if (token == Token::SEMICOLON) {
+            nextToken();
+          }
+          else {
+            return false;
+          }
+        } else {
           return false;
-      } else
-        return false;
+        }
+      }
+
+      while ((token == Token::WHITESPACE) || (token == Token::CDO) || (token == Token::CDC)) {
+        if (token == Token::CDO) {
+          ++skip;
+        }
+        else if (token == Token::CDC) {
+          --skip;
+        }
+        nextToken();
+      }
+
+      while (token == Token::IMPORT_SYM) {
+        if (!importStatement()) { return false; }
+        while ((token == Token::CDO) || (token == Token::CDC)) {
+          if (token == Token::CDO) {
+            ++skip;
+          }
+          else if (token == Token::CDC) {
+            --skip;
+          }
+          skipBlanks();
+        }
+      }
+
+      bool done = false;
+
+      while (!done) {
+        if (token == Token::MEDIA_SYM) {
+          // if (!mediaStatement()) return false;
+          if (!skipBlock()) { return false; }
+        } else if (token == Token::PAGE_SYM) {
+          if (!pageStatement()) { return false; }
+        } else if (token == Token::FONT_FACE_SYM) {
+          if (!fontFaceStatement()) { return false; }
+        } else if (token == Token::NAMESPACE_SYM) {
+          if (!namespaceStatement()) { return false; }
+        } else if (token == Token::ERROR) {
+          LOG_E("{}[{}]: Token ERROR retrieved!", css.getId(), lineNbr);
+          return false;
+        } else {
+          ruleset();
+        }
+        while ((token == Token::CDO) || (token == Token::CDC)) {
+          if (token == Token::CDO) {
+            ++skip;
+          }
+          else if (token == Token::CDC) {
+            --skip;
+          }
+          skipBlanks();
+        }
+        if (token == Token::END_OF_FILE) { break; }
+      }
+      return true;
     }
 
-    while ((token == Token::WHITESPACE) || (token == Token::CDO) || (token == Token::CDC)) {
-      if (token == Token::CDO)
-        ++skip;
-      else if (token == Token::CDC)
-        --skip;
+    auto parse(DOM::Tag tag, const char *buffer, int32_t size) -> bool {
+
+      str     = buffer;
+      remains = size;
+      skip    = 0;
+      lineNbr = 1;
+
+      nextCh();
       nextToken();
-    }
 
-    while (token == Token::IMPORT_SYM) {
-      if (!importStatement()) return false;
-      while ((token == Token::CDO) || (token == Token::CDC)) {
-        if (token == Token::CDO)
-          ++skip;
-        else if (token == Token::CDC)
-          --skip;
-        skipBlanks();
-      }
-    }
+      size_t oldPropertySuiteCount = css.propertySuites.size();
+      css.propertySuites.pushBack(CSS::Properties{});
+      if (css.propertySuites.size() == oldPropertySuiteCount) { return false; }
+      auto &props = css.propertySuites.back();
+      properties(props);
 
-    bool done = false;
-
-    while (!done) {
-      if (token == Token::MEDIA_SYM) {
-        // if (!mediaStatement()) return false;
-        if (!skipBlock()) return false;
-      } else if (token == Token::PAGE_SYM) {
-        if (!pageStatement()) return false;
-      } else if (token == Token::FONT_FACE_SYM) {
-        if (!fontFaceStatement()) return false;
-      } else if (token == Token::NAMESPACE_SYM) {
-        if (!namespaceStatement()) return false;
-      } else if (token == Token::ERROR) {
-        LOG_E("%s[%d]: Token ERROR retrieved!", css.getId().c_str(), lineNbr);
+      CSS::Selector     sel;
+      CSS::SelectorNode node;
+      node.setTag(tag);
+      if (!sel.addSelectorNode(std::move(node))) {
+        css.propertySuites.popBack();
         return false;
-      } else {
-        ruleset();
       }
-      while ((token == Token::CDO) || (token == Token::CDC)) {
-        if (token == Token::CDO)
-          ++skip;
-        else if (token == Token::CDC)
-          --skip;
-        skipBlanks();
+      sel.computeSpecificity(css.getPriority());
+
+      size_t oldSingleCount = css.selectorSingles.size();
+      css.selectorSingles.pushBack(std::move(sel));
+      if (css.selectorSingles.size() == oldSingleCount) {
+        css.propertySuites.popBack();
+        return false;
       }
-      if (token == Token::END_OF_FILE) break;
+      css.addRule(&css.selectorSingles.back(), &props);
+      return true;
     }
-    return true;
-  }
-
-  auto parse(DOM::Tag tag, const char *buffer, int32_t size) -> bool {
-
-    str     = buffer;
-    remains = size;
-    skip    = 0;
-    lineNbr = 1;
-
-    nextCh();
-    nextToken();
-
-    size_t oldPropertySuiteCount = css.propertySuites.size();
-    css.propertySuites.pushBack(CSS::Properties{});
-    if (css.propertySuites.size() == oldPropertySuiteCount) return false;
-    auto &props = css.propertySuites.back();
-    properties(props);
-
-    CSS::Selector sel;
-    CSS::SelectorNode node;
-    node.setTag(tag);
-    if (!sel.addSelectorNode(std::move(node))) {
-      css.propertySuites.popBack();
-      return false;
-    }
-    sel.computeSpecificity(css.getPriority());
-
-    size_t oldSingleCount = css.selectorSingles.size();
-    css.selectorSingles.pushBack(std::move(sel));
-    if (css.selectorSingles.size() == oldSingleCount) {
-      css.propertySuites.popBack();
-      return false;
-    }
-    css.addRule(&css.selectorSingles.back(), &props);
-    return true;
-  }
 };

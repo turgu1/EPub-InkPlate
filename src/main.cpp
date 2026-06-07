@@ -9,7 +9,7 @@
 #define TEST_DOM 0
 
 #if EPUB_INKPLATE_BUILD
-  // InkPlate6 main function and main task
+// InkPlate6 main function and main task
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
@@ -32,6 +32,10 @@
     #include "controllers/back_lit.hpp"
   #endif
 
+  #if BLE_KEYPAD
+    #include "controllers/ble_keypad.hpp"
+  #endif
+
   #include <stdio.h>
 
   #if TESTING
@@ -51,7 +55,7 @@
 
     // esp_log_level_set("PageLocs", ESP_LOG_DEBUG);
 
-    LOG_D("EPub-Inkplate Startup. (%" PRIi64 ")", esp_timer_get_time());
+    LOG_D("EPub-Inkplate Startup. ({})", esp_timer_get_time());
 
     bool nvsMgrRes = nvsMgr.setup();
 
@@ -74,15 +78,15 @@
       }
 
     #else
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
         #define MSG "Press the WakeUp Button to restart."
-        #define INT_PIN TouchScreen::INTERRUPT_PIN
+        #define INT_PIN EInk::WAKE_UP_PIN
         #define LEVEL 0
       #else
         #define MSG "Press a key to restart."
         #if EXTENDED_CASE
           #define INT_PIN PressKeys::INTERRUPT_PIN
-        #else
+        #elif INKPLATE_6 || INKPLATE_10
           #define INT_PIN TouchKeys::INTERRUPT_PIN
         #endif
         #define LEVEL 1
@@ -99,7 +103,7 @@
       // Initialize the Config object, reading the config.txt file. If there
       // is an error reading the config file, it will be created with default values.
       bool configErr = !config.read();
-      if (configErr) LOG_E("Config Error.");
+      if (configErr) { LOG_E("Config Error."); }
       #if DATE_TIME_RTC
         else {
           // Set the time zone from config and apply it to the system.
@@ -116,7 +120,7 @@
           double batteryTrimFactor;
 
           if (config.get(Config::Ident::BATTERY_TRIM, &batteryTrimFactor)) {
-            LOG_D("Battery trim factor: %f", batteryTrimFactor);
+            LOG_D("Battery trim factor: {}", batteryTrimFactor);
             battery.set_voltage_trim(batteryTrimFactor);
           }
         }
@@ -134,10 +138,10 @@
       // instanciated inside the epub class when a book is open.
       if (appFonts.setup()) {
 
-        Screen::Orientation orientation    = Screen::Orientation::TOP;
+        Screen::Orientation     orientation    = Screen::Orientation::TOP;
         Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
 
-        config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
+        config.get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
         config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
 
         screen.setup(resolution, orientation);
@@ -171,6 +175,14 @@
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
 
+        #if BLE_KEYPAD
+          if (!bleKeypad.setup()) {
+            MsgViewer::show(
+              MsgViewer::MsgType::ALERT, false, true, "Bluetooth Problem!",
+              "Failed to initialize Bluetooth. Bluetooth features will be unavailable. " MSG);
+          }
+        #endif
+
         MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 
         booksDirController.setup();
@@ -197,43 +209,43 @@
 
   extern "C" {
 
-  void app_main(void) {
-    // printf("EPub InkPlate Reader Startup\n");
+    void app_main(void) {
+      // printf("EPub InkPlate Reader Startup\n");
 
-    /* Print chip information */
-    esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
-    printf("This is %s chip with %d CPU core(s), WiFi%s%s, ", CONFIG_IDF_TARGET, chip_info.cores,
-           (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
-           (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
+      /* Print chip information */
+      esp_chip_info_t chip_info;
+      esp_chip_info(&chip_info);
+      printf("This is %s chip with %d CPU core(s), WiFi%s%s, ", CONFIG_IDF_TARGET, chip_info.cores,
+             (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
+             (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
 
-    printf("silicon revision %d, ", chip_info.revision);
+      printf("silicon revision %d, ", chip_info.revision);
 
-    uint32_t flashChipSize;
-    esp_flash_get_size(NULL, &flashChipSize);
+      uint32_t flashChipSize;
+      esp_flash_get_size(NULL, &flashChipSize);
 
-    printf("%" PRIu32 "MB %s flash\n", flashChipSize / (1024 * 1024),
-           (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+      printf("%" PRIu32 "MB %s flash\n", flashChipSize / (1024 * 1024),
+             (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 
-    printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+      printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 
-    heap_caps_print_heap_info(MALLOC_CAP_32BIT | MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM |
-                              MALLOC_CAP_INTERNAL);
+      heap_caps_print_heap_info(MALLOC_CAP_32BIT | MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM |
+                                MALLOC_CAP_INTERNAL);
 
-    UBaseType_t stack_hwm = uxTaskGetStackHighWaterMark(NULL);
-    LOG_I("Main task stack high water mark: %u bytes", stack_hwm * sizeof(StackType_t));
+      UBaseType_t stack_hwm = uxTaskGetStackHighWaterMark(NULL);
+      LOG_I("Main task stack high water mark: {} bytes", stack_hwm * sizeof(StackType_t));
 
-    TaskHandle_t xHandle = NULL;
+      TaskHandle_t xHandle = NULL;
 
-    xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *)1, configMAX_PRIORITIES - 1, &xHandle);
-    configASSERT(xHandle);
-  }
+      xTaskCreate(mainTask, "mainTask", STACK_SIZE, (void *)1, configMAX_PRIORITIES - 1, &xHandle);
+      configASSERT(xHandle);
+    }
 
   } // extern "C"
 
 #else
 
-  // Linux main function
+// Linux main function
 
   #include "config.hpp"
   #include "controllers/app_controller.hpp"
@@ -257,7 +269,7 @@
 
   auto main(int argc, char **argv) -> int {
     bool configErr = !config.read();
-    if (configErr) LOG_E("Config Error.");
+    if (configErr) { LOG_E("Config Error."); }
 
     #if DEBUGGING
       config.show();
@@ -275,9 +287,9 @@
 
     if (appFonts.setup()) {
 
-      Screen::Orientation orientation{Screen::Orientation::RIGHT};
-      Screen::PixelResolution resolution{Screen::PixelResolution::ONE_BIT};
-      config.get(Config::Ident::ORIENTATION, (int8_t *)&orientation);
+      Screen::Orientation     orientation{ Screen::Orientation::RIGHT };
+      Screen::PixelResolution resolution{ Screen::PixelResolution::ONE_BIT };
+      config.get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
       config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
       screen.setup(resolution, orientation);
 
@@ -285,9 +297,9 @@
       booksDirController.setup();
 
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    #define MSG "the WakeUp button"
+        #define MSG "the WakeUp button"
       #else
-    #define MSG "a key"
+        #define MSG "a key"
       #endif
 
       if (configErr) {
@@ -298,7 +310,7 @@
         exit(0);
       }
 
-      // exit(0)  // Used for some Valgrind tests
+// exit(0)  // Used for some Valgrind tests
       #if TESTING
         testing::InitGoogleTest();
         return RUN_ALL_TESTS();

@@ -36,22 +36,22 @@
 
 auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::Node *domNode,
                                         int16_t level) -> bool {
-  if (level > maxLevel) maxLevel = level;
+  if (level > maxLevel) { maxLevel = level; }
 
   if (level > 50) {
     LOG_E("Too many nested tag levels (max: 50).");
     return true;
   }
 
-  if (node == nullptr) return false;
-  if (atEnd()) return true;
+  if (node == nullptr) { return false; }
+  if (atEnd()) { return true; }
 
   (void)checkIfStarted();
 
-  std::string pictureFilename;
-  const char *name;
-  const char *str           = nullptr;
-  DOM::Node *domCurrentNode = domNode;
+  std::string         pictureFilename;
+  const char *        name;
+  const char *        str           = nullptr;
+  DOM::Node *         domCurrentNode = domNode;
   DOM::Tags::iterator tagIt = DOM::tags.end();
 
   // xml node without a tag name are internal data to be processed as string of chars
@@ -67,7 +67,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       epub->toc->set(id, currentOffset);
     }
 
-    if (node.attribute("hidden")) return true;
+    if (node.attribute("hidden")) { return true; }
 
     // Do it only if we are now in the current page content
 
@@ -89,8 +89,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
         domCurrentNode = dom->body;
       }
       if (domCurrentNode != nullptr) {
-        if ((attr = node.attribute("id"))) domCurrentNode->addId(attr.value());
-        if ((attr = node.attribute("class"))) domCurrentNode->addClasses(attr.value());
+        if ((attr = node.attribute("id"))) { domCurrentNode->addId(attr.value()); }
+        if ((attr = node.attribute("class"))) { domCurrentNode->addClasses(attr.value()); }
       }
 
       switch (tagIt->second) {
@@ -99,155 +99,167 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       case DOM::Tag::SPAN:
         break;
 
-#if NO_IMAGE
-      case IMG:
-      case IMAGE:
-        break;
+        #if NO_IMAGE
+          case IMG:
+          case IMAGE:
+            break;
 
-#else
-      case DOM::Tag::IMG:
-        if (showPictures) {
-          if (started) {
-            if ((attr = node.attribute("src")))
-              pictureFilename = attr.value();
-            else
-              ++currentOffset;
-          } else
+        #else
+          case DOM::Tag::IMG:
+            if (showPictures) {
+              if (started) {
+                if ((attr = node.attribute("src"))) {
+                  pictureFilename = attr.value();
+                }
+                else {
+                  ++currentOffset;
+                }
+              } else {
+                ++currentOffset;
+              }
+            } else {
+              if ((attr = node.attribute("alt"))) {
+                str = attr.value();
+              }
+              else {
+                ++currentOffset;
+              }
+            }
+            break;
+
+          case DOM::Tag::IMAGE:
+            if (showPictures) {
+              if (started) {
+                if ((attr = node.attribute("xlink:href"))) {
+                  pictureFilename = attr.value();
+                }
+                else {
+                  ++currentOffset;
+                }
+              } else {
+                ++currentOffset;
+              }
+            }
+            break;
+
+            #endif
+          case DOM::Tag::PRE:
+            fmt.pre     = true;
+            fmt.display = CSS::Display::BLOCK;
+            break;
+
+          case DOM::Tag::BLOCKQUOTE:
+            fmt.display = CSS::Display::BLOCK;
+            break;
+
+          case DOM::Tag::LI:
+          case DOM::Tag::DIV:
+          case DOM::Tag::P:
+            fmt.display = CSS::Display::BLOCK;
+            break;
+
+          case DOM::Tag::BREAK:
+            if (started) {
+              showState("Line Break", fmt);
+              if (!page->lineBreak(fmt)) {
+                // At the end of the page
+                if (!pageEnd(fmt)) { return false; }
+                if (atEnd()) { return true; }
+                page->lineBreak(fmt);
+              }
+            }
             ++currentOffset;
-        } else {
-          if ((attr = node.attribute("alt")))
-            str = attr.value();
-          else
-            ++currentOffset;
-        }
-        break;
+            break;
 
-      case DOM::Tag::IMAGE:
-        if (showPictures) {
-          if (started) {
-            if ((attr = node.attribute("xlink:href")))
-              pictureFilename = attr.value();
-            else
-              ++currentOffset;
-          } else
-            ++currentOffset;
-        }
-        break;
+          case DOM::Tag::B:
+          case DOM::Tag::STRONG: {
+            FaceStyle style = fmt.fontStyle;
+            if (style == FaceStyle::NORMAL) {
+              style = FaceStyle::BOLD;
+            }
+            else if (style == FaceStyle::ITALIC) {
+              style = FaceStyle::BOLD_ITALIC;
+            }
+            page->resetFontIndex(fmt, style);
+          } break;
 
-#endif
-      case DOM::Tag::PRE:
-        fmt.pre     = true;
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::I:
+          case DOM::Tag::EM: {
+            FaceStyle style = fmt.fontStyle;
+            if (style == FaceStyle::NORMAL) {
+              style = FaceStyle::ITALIC;
+            }
+            else if (style == FaceStyle::BOLD) {
+              style = FaceStyle::BOLD_ITALIC;
+            }
+            page->resetFontIndex(fmt, style);
+          } break;
 
-      case DOM::Tag::BLOCKQUOTE:
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::H1:
+            fmt.fontSize = 1.25 * fmt.fontSize;
+            // fmt.lineHeightFactor = 1.25 * fmt.lineHeightFactor;
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::LI:
-      case DOM::Tag::DIV:
-      case DOM::Tag::P:
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::H2:
+            fmt.fontSize = 1.1 * fmt.fontSize;
+            // fmt.lineHeightFactor = 1.1 * fmt.lineHeightFactor;
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::BREAK:
-        if (started) {
-          showState("Line Break", fmt);
-          if (!page->lineBreak(fmt)) {
-            // At the end of the page
-            if (!pageEnd(fmt)) return false;
-            if (atEnd()) return true;
-            page->lineBreak(fmt);
-          }
-        }
-        ++currentOffset;
-        break;
+          case DOM::Tag::H3:
+            fmt.fontSize = 1.05 * fmt.fontSize;
+            // fmt.lineHeightFactor = 1.05 * fmt.lineHeightFactor;
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::B:
-      case DOM::Tag::STRONG: {
-        FaceStyle style = fmt.fontStyle;
-        if (style == FaceStyle::NORMAL)
-          style = FaceStyle::BOLD;
-        else if (style == FaceStyle::ITALIC)
-          style = FaceStyle::BOLD_ITALIC;
-        page->resetFontIndex(fmt, style);
-      } break;
+          case DOM::Tag::H4:
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::I:
-      case DOM::Tag::EM: {
-        FaceStyle style = fmt.fontStyle;
-        if (style == FaceStyle::NORMAL)
-          style = FaceStyle::ITALIC;
-        else if (style == FaceStyle::BOLD)
-          style = FaceStyle::BOLD_ITALIC;
-        page->resetFontIndex(fmt, style);
-      } break;
+          case DOM::Tag::H5:
+            fmt.fontSize = 0.8 * fmt.fontSize;
+            // fmt.lineHeightFactor = 0.8 * fmt.lineHeightFactor;
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::H1:
-        fmt.fontSize = 1.25 * fmt.fontSize;
-        // fmt.lineHeightFactor = 1.25 * fmt.lineHeightFactor;
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::H6:
+            fmt.fontSize = 0.7 * fmt.fontSize;
+            // fmt.lineHeightFactor = 0.7 * fmt.lineHeightFactor;
+            fmt.display = CSS::Display::BLOCK;
+            break;
 
-      case DOM::Tag::H2:
-        fmt.fontSize = 1.1 * fmt.fontSize;
-        // fmt.lineHeightFactor = 1.1 * fmt.lineHeightFactor;
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::SUB:
+            fmt.fontSize      = 0.75 * fmt.fontSize;
+            fmt.verticalAlign = 5;
+            break;
 
-      case DOM::Tag::H3:
-        fmt.fontSize = 1.05 * fmt.fontSize;
-        // fmt.lineHeightFactor = 1.05 * fmt.lineHeightFactor;
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::SUP:
+            fmt.fontSize      = 0.75 * fmt.fontSize;
+            fmt.verticalAlign = -5;
+            break;
 
-      case DOM::Tag::H4:
-        fmt.display = CSS::Display::BLOCK;
-        break;
+          case DOM::Tag::TABLE:
+          case DOM::Tag::COLGROUP:
+          case DOM::Tag::TR:
+          case DOM::Tag::TD:
+          case DOM::Tag::TH:
+          case DOM::Tag::TFOOT:
+          case DOM::Tag::THEAD:
+          case DOM::Tag::COL:
+          case DOM::Tag::CAPTION:
+          case DOM::Tag::TBODY:
+            // For now, we do not support tables, so we just ignore the content of the
+            // table tags and do not display them. We set the display to NONE, but we still process the
+            // content of the table tags to compute the page offsets properly.
+            fmt.display = CSS::Display::NONE;
+            break;
 
-      case DOM::Tag::H5:
-        fmt.fontSize = 0.8 * fmt.fontSize;
-        // fmt.lineHeightFactor = 0.8 * fmt.lineHeightFactor;
-        fmt.display = CSS::Display::BLOCK;
-        break;
-
-      case DOM::Tag::H6:
-        fmt.fontSize = 0.7 * fmt.fontSize;
-        // fmt.lineHeightFactor = 0.7 * fmt.lineHeightFactor;
-        fmt.display = CSS::Display::BLOCK;
-        break;
-
-      case DOM::Tag::SUB:
-        fmt.fontSize      = 0.75 * fmt.fontSize;
-        fmt.verticalAlign = 5;
-        break;
-
-      case DOM::Tag::SUP:
-        fmt.fontSize      = 0.75 * fmt.fontSize;
-        fmt.verticalAlign = -5;
-        break;
-
-      case DOM::Tag::TABLE:
-      case DOM::Tag::COLGROUP:
-      case DOM::Tag::TR:
-      case DOM::Tag::TD:
-      case DOM::Tag::TH:
-      case DOM::Tag::TFOOT:
-      case DOM::Tag::THEAD:
-      case DOM::Tag::COL:
-      case DOM::Tag::CAPTION:
-      case DOM::Tag::TBODY:
-        // For now, we do not support tables, so we just ignore the content of the
-        // table tags and do not display them. We set the display to NONE, but we still process the
-        // content of the table tags to compute the page offsets properly.
-        fmt.display = CSS::Display::NONE;
-        break;
-
-      case DOM::Tag::NONE:
-      case DOM::Tag::ANY:
-      case DOM::Tag::FONT_FACE:
-      case DOM::Tag::PAGE:
-        return true;
+          case DOM::Tag::NONE:
+          case DOM::Tag::ANY:
+          case DOM::Tag::FONT_FACE:
+          case DOM::Tag::PAGE:
+            return true;
       }
 
       // if a 'style' attribute is present, parse it's content as it will be used
@@ -257,7 +269,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       if ((attr = node.attribute("style"))) {
         const char *buffer = attr.value();
         elementCss =
-            CSS::Make("ELEMENT", tagIt->second, buffer, strlen(buffer), 99, epub->getCssPools());
+          CSS::Make("ELEMENT", tagIt->second, buffer, strlen(buffer), 99, epub->getCssPools());
       }
 
       // Adjust the tag's format styling (the fmt struct) using both the current
@@ -265,10 +277,10 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       page->adjustFormat(domCurrentNode, fmt, elementCss,
                          itemInfo.css); // Adjust format from element attributes
 
-      if (started) showState(name, fmt, domCurrentNode /*, elementCss*/); // For debugging
+      if (started) { showState(name, fmt, domCurrentNode /*, elementCss*/); } // For debugging
     }
 
-    if (fmt.display == CSS::Display::NONE) return true;
+    if (fmt.display == CSS::Display::NONE) { return true; }
     if (tagIt->second == DOM::Tag::BODY) {
       if (epub->getBookFormatParams()->useFontsInBook == 0) {
         fmt.fontSize = epub->getBookFormatParams()->fontSize;
@@ -282,16 +294,16 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       while ((iter-- > 0) && page->someDataWaiting()) {
         showState("==> End Paragraph 1 <==", fmt);
         if (!page->endParagraph(fmt)) {
-          if (!pageEnd(fmt)) return false;
-          if (atEnd()) return true;
+          if (!pageEnd(fmt)) { return false; }
+          if (atEnd()) { return true; }
           page->endParagraph(fmt);
         }
       }
 
       showState("==> New Paragraph 1 <==", fmt);
       if (!page->newParagraph(fmt)) {
-        if (!pageEnd(fmt)) return false;
-        if (atEnd()) return true;
+        if (!pageEnd(fmt)) { return false; }
+        if (atEnd()) { return true; }
         page->newParagraph(fmt);
       }
     }
@@ -300,7 +312,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     str = fmt.pre ? node.text().get() : node.value();
   }
 
-  if (atEnd()) return true;
+  if (atEnd()) { return true; }
 
   if (!pictureFilename.empty()) {
     if (showPictures) {
@@ -312,14 +324,14 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
         HimemString fname = itemInfo.filePath;
         fname.append(pictureFilename);
 
-        // LOG_I("Processing image (%s): %s at offset %d",
+        // LOG_I("Processing image ({}): {} at offset {}",
         //       page->getComputeMode() == Page::ComputeMode::DISPLAY ? "DISPLAY" : "OTHER",
-        //       pictureFilename.c_str(), currentOffset);
+        //       pictureFilename, currentOffset);
 
         if (started && (currentOffset < endOffset)) {
           const bool displayMode = page->getComputeMode() == Page::ComputeMode::DISPLAY;
 
-          auto pict = epub->getPicture(fname, displayMode);
+          auto       pict = epub->getPicture(fname, displayMode);
 
           // If the image is large, show a loading icon while it loads to avoid a
           // long wait with a blank page.
@@ -333,12 +345,12 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             bool added            = false;
             std::tie(added, pict) = page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
             if (!added) {
-              if (page->isFull() && !pageEnd(fmt)) return false;
-              if (atEnd()) return true;
+              if (page->isFull() && !pageEnd(fmt)) { return false; }
+              if (atEnd()) { return true; }
 
               page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
-              if (page->isFull() && !pageEnd(fmt)) return false;
-              if (atEnd()) return true;
+              if (page->isFull() && !pageEnd(fmt)) { return false; }
+              if (atEnd()) { return true; }
             }
             showState("After IMG", fmt);
           } else {
@@ -356,13 +368,13 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     ++currentOffset;
     xml_node sub = node.first_child();
     while (sub != nullptr) {
-      if (page->isFull() && !pageEnd(fmt)) return false;
-      if (atEnd()) break;
+      if (page->isFull() && !pageEnd(fmt)) { return false; }
+      if (atEnd()) { break; }
       Page::Format *newFmt = duplicateFmt(fmt);
       if (!buildPagesRecurse(sub, *newFmt, domCurrentNode, level + 1)) {
         releaseFmt(newFmt);
-        if (page->isFull() && !pageEnd(fmt)) return false;
-        if (atEnd()) break;
+        if (page->isFull() && !pageEnd(fmt)) { return false; }
+        if (atEnd()) { break; }
         return false;
       }
       releaseFmt(newFmt);
@@ -390,7 +402,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           if (!page->endParagraph(fmt)) {
             // The paragraph may not have been completly rendered. This means
             // that we found the end of a page
-            if (!pageEnd(fmt)) return false;
+            if (!pageEnd(fmt)) { return false; }
             page->endParagraph(fmt);
           }
         }
@@ -436,7 +448,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
               if (!page->addChar(" ", fmt)) {
                 // Unable to add the character... the page must be full
-                if (!pageEnd(fmt)) return false;
+                if (!pageEnd(fmt)) { return false; }
                 if (atEnd()) {
                   page->breakParagraph(fmt);
                   return true;
@@ -447,8 +459,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
             } else if (fmt.pre && (*str == '\n')) {
               if (!page->lineBreak(fmt, 30)) {
-                if (!pageEnd(fmt)) return false;
-                if (atEnd()) return true;
+                if (!pageEnd(fmt)) { return false; }
+                if (atEnd()) { return true; }
               }
             }
           }
@@ -456,7 +468,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           ++currentOffset; // Not an UTF-8, so it's ok...
         } else {
           const char *w = str;
-          int16_t count = 0;
+          int16_t     count = 0;
           while (uint8_t(*str) > ' ') {
             ++str;
             ++count;
@@ -469,16 +481,16 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             std::string word;
             word.assign(w, count);
 
-#if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
-            static bool first = true;
-            if (first) {
-              LOG_D("before page->addWord()");
-              ESP::show_heaps_info();
-            }
-#endif
+            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+              static bool first = true;
+              if (first) {
+                LOG_D("before page->addWord()");
+                ESP::show_heaps_info();
+              }
+            #endif
 
             if (!page->addWord(word.c_str(), fmt)) {
-              if (!pageEnd(fmt)) return false;
+              if (!pageEnd(fmt)) { return false; }
               if (atEnd()) {
                 page->breakParagraph(fmt);
                 return true;

@@ -20,10 +20,10 @@
   // rather than trying to heap_caps_malloc the full record size at once.
   static constexpr size_t DMA_BOUNCE_SIZE = 4096;
   static auto fread_dma(void *dest, size_t elemSize, size_t count, FILE *f) -> size_t {
-    if (esp_ptr_dma_capable(dest)) return fread(dest, elemSize, count, f);
+    if (esp_ptr_dma_capable(dest)) { return fread(dest, elemSize, count, f); }
     void *tmp = heap_caps_malloc(DMA_BOUNCE_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    if (tmp == nullptr) return 0;
-    size_t remaining = elemSize * count;
+    if (tmp == nullptr) { return 0; }
+    size_t   remaining = elemSize * count;
     uint8_t *d       = static_cast<uint8_t *>(dest);
     while (remaining > 0) {
       size_t chunk = remaining < DMA_BOUNCE_SIZE ? remaining : DMA_BOUNCE_SIZE;
@@ -39,10 +39,10 @@
     return count;
   }
   static auto fwrite_dma(const void *src, size_t elemSize, size_t count, FILE *f) -> size_t {
-    if (esp_ptr_dma_capable(src)) return fwrite(src, elemSize, count, f);
+    if (esp_ptr_dma_capable(src)) { return fwrite(src, elemSize, count, f); }
     void *tmp = heap_caps_malloc(DMA_BOUNCE_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    if (tmp == nullptr) return 0;
-    size_t remaining = elemSize * count;
+    if (tmp == nullptr) { return 0; }
+    size_t         remaining = elemSize * count;
     const uint8_t *s = static_cast<const uint8_t *>(src);
     while (remaining > 0) {
       size_t chunk = remaining < DMA_BOUNCE_SIZE ? remaining : DMA_BOUNCE_SIZE;
@@ -68,16 +68,16 @@
 
 auto SimpleDB::open(const HimemString &filename) -> bool {
   std::scoped_lock guard(mutex);
-  LOG_D("Opening database file: %s", filename.c_str());
+  LOG_D("Opening database file: {}", filename);
 
   if (dbIsOpen) {
     fclose(dbFile);
     dbIsOpen = false;
   }
 
-  if ((dbFile = fopen(filename.c_str(), "r+")) == nullptr) return create(filename);
+  if ((dbFile = fopen(filename.c_str(), "r+")) == nullptr) { return create(filename); }
 
-  bool done = false;
+  bool        done = false;
 
   struct stat stat_buf;
   fstat(fileno(dbFile), &stat_buf);
@@ -90,10 +90,10 @@ auto SimpleDB::open(const HimemString &filename) -> bool {
     recordOffset[idx] = offset;
     isDeleted[idx]    = false;
     uint32_t size;
-    if (fread(&size, sizeof(uint32_t), 1, dbFile) != 1) goto error;
+    if (fread(&size, sizeof(uint32_t), 1, dbFile) != 1) { goto error; }
     offset += size + sizeof(uint32_t);
-    if (offset < fileSize)
-      if (fseek(dbFile, offset, SEEK_SET)) goto error;
+    if (offset < fileSize) {
+      if (fseek(dbFile, offset, SEEK_SET)) { goto error; } }
     idx++;
   }
   done        = true;
@@ -108,20 +108,20 @@ error:
     dbIsOpen           = true;
     someRecordsDeleted = false;
     currentRecordIdx   = 0;
-    LOG_D("Record count: %d", recordCount);
+    LOG_D("Record count: {}", recordCount);
     return true;
   }
 }
 
 auto SimpleDB::create(const HimemString &filename) -> bool {
   std::scoped_lock guard(mutex);
-  LOG_D("Creating database file: %s", filename.c_str());
+  LOG_D("Creating database file: {}", filename);
   if (dbIsOpen) {
     fclose(dbFile);
     dbIsOpen = false;
   }
 
-  if ((dbFile = fopen(filename.c_str(), "w+")) == nullptr) return false;
+  if ((dbFile = fopen(filename.c_str(), "w+")) == nullptr) { return false; }
 
   dbIsOpen           = true;
   someRecordsDeleted = false;
@@ -142,14 +142,14 @@ auto SimpleDB::close() -> void {
 
 auto SimpleDB::addRecord(void *record, int32_t size) -> bool {
   std::scoped_lock guard(mutex);
-  LOG_D("Adding record of size %" PRIi32, size);
+  LOG_D("Adding record of size {}", size);
 
-  if (recordCount >= MAX_RECORD_COUNT) return false;
-  if (fseek(dbFile, 0, SEEK_END)) return false;
+  if (recordCount >= MAX_RECORD_COUNT) { return false; }
+  if (fseek(dbFile, 0, SEEK_END)) { return false; }
   recordOffset[recordCount] = ftell(dbFile);
   isDeleted[recordCount++]  = false;
-  if (fwrite(&size, sizeof(int32_t), 1, dbFile) != 1) return false;
-  if ((size != 0) && (fwrite_dma(record, size, 1, dbFile) != 1)) return false;
+  if (fwrite(&size, sizeof(int32_t), 1, dbFile) != 1) { return false; }
+  if ((size != 0) && (fwrite_dma(record, size, 1, dbFile) != 1)) { return false; }
   fflush(dbFile);
   fileSize += sizeof(int32_t) + size;
   return true;
@@ -157,22 +157,23 @@ auto SimpleDB::addRecord(void *record, int32_t size) -> bool {
 
 auto SimpleDB::getRecord(void *record, int32_t size) -> bool {
   std::scoped_lock guard(mutex);
-  // LOG_D("Reading record of size %d", size);
+  // LOG_D("Reading record of size {}", size);
 
-  if ((size <= 0) || (currentRecordIdx >= recordCount)) return false;
-  if (fseek(dbFile, recordOffset[currentRecordIdx] + sizeof(int32_t), SEEK_SET)) return false;
-  if (fread_dma(record, size, 1, dbFile) != 1) return false;
+  if ((size <= 0) || (currentRecordIdx >= recordCount)) { return false; }
+  if (fseek(dbFile, recordOffset[currentRecordIdx] + sizeof(int32_t), SEEK_SET)) { return false; }
+  if (fread_dma(record, size, 1, dbFile) != 1) { return false; }
   return true;
 }
 
 auto SimpleDB::getPartialRecord(void *record, int32_t size, int32_t offset) -> bool {
   std::scoped_lock guard(mutex);
-  // LOG_D("Reading partial record of size %d at offset %d", size, offset);
+  // LOG_D("Reading partial record of size {} at offset {}", size, offset);
 
-  if ((size <= 0) || (currentRecordIdx >= recordCount)) return false;
-  if (fseek(dbFile, recordOffset[currentRecordIdx] + sizeof(int32_t) + offset, SEEK_SET))
+  if ((size <= 0) || (currentRecordIdx >= recordCount)) { return false; }
+  if (fseek(dbFile, recordOffset[currentRecordIdx] + sizeof(int32_t) + offset, SEEK_SET)) {
     return false;
-  if (fread_dma(record, size, 1, dbFile) != 1) return false;
+  }
+  if (fread_dma(record, size, 1, dbFile) != 1) { return false; }
   return true;
 }
 

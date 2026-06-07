@@ -24,8 +24,8 @@ static auto onDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t 
   static constexpr char const *TAG = "PngPictureOnDraw";
   #pragma GCC diagnostic pop
 
-  auto data      = ((PngPicture *)mypngle_get_user_data(pngle))->getPictureData();
-  auto scale     = ((PngPicture *)mypngle_get_user_data(pngle))->getScaleFactor();
+  auto     data      = ((PngPicture *)mypngle_get_user_data(pngle))->getPictureData();
+  auto     scale     = ((PngPicture *)mypngle_get_user_data(pngle))->getScaleFactor();
   uint16_t trans = alpha; // 0: fully transparent, 255: fully opaque
 
   if (scale) {
@@ -41,7 +41,7 @@ static auto onDraw(pngle_t *pngle, uint32_t x, uint32_t y, uint8_t pix, uint8_t 
 }
 
 PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : Picture() {
-  LOG_D("Loading PNG picture file %s", filename.c_str());
+  LOG_D("Loading PNG picture file {}", filename);
 
   if (unzip.openStreamFile(filename.c_str(), fileSize)) {
 
@@ -60,7 +60,7 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
       return;
     }
 
-    bool first     = true;
+    bool     first     = true;
     uint32_t total = 0;
 
     mypngle_set_user_data(pngle, this);
@@ -81,7 +81,7 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
       if (first) {
         first = false;
 
-        if (size < 24) break;
+        if (size < 24) { break; }
         uint32_t width  = getIntBigEndian(&work[16]);
         uint32_t height = getIntBigEndian(&work[20]);
 
@@ -103,12 +103,15 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
           // if (s <= 0.125) scale = 3;
           // else if (s <=  0.25) scale = 2;
           // else if (s <=   0.5) scale = 1;
-          if (s < 0.25)
+          if (s < 0.25) {
             scale = 3;
-          else if (s < 0.5)
+          }
+          else if (s < 0.5) {
             scale = 2;
-          else
+          }
+          else {
             scale = 1;
+          }
 
           h = height >> scale;
           w = width >> scale;
@@ -117,10 +120,10 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
           w = width;
         }
 
-        LOG_D("Picture size: [%" PRIu32 ", %" PRIu32 "] %" PRIu32 " bytes.", w, h, w * h);
+        LOG_D("Picture size: [{}, {}] {} bytes.", w, h, w * h);
 
         if (loadBitmap) {
-          if ((bitmap = makeUniqueHimem<uint8_t[]>(w * h)) == nullptr) break;
+          if ((bitmap = makeUniqueHimem<uint8_t[]>(w * h)) == nullptr) { break; }
           dim = Dim(w, h);
         } else {
           dim = Dim(w, h);
@@ -131,12 +134,12 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
       int32_t res = mypngle_feed(pngle, work.get(), size);
 
       if (res < 0) {
-        LOG_E("Unable to load picture. Error msg: %s", mypngle_error(pngle));
+        LOG_E("Unable to load picture. Error msg: {}", mypngle_error(pngle));
         break;
       }
 
       total += size;
-      if (total >= fileSize) break;
+      if (total >= fileSize) { break; }
 
       size = WORK_SIZE;
     }

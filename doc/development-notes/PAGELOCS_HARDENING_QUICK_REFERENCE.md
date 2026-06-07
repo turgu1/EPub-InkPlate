@@ -101,11 +101,11 @@ uint64_t contentions = pageLocs.telemetry.mapLockContentions.load();
 
 // Detect deviations
 if (asapMismatched > 0) {
-  LOG_E("Protocol deviation: %lu mismatched ASAP replies", asapMismatched);
+  LOG_E("Protocol deviation: {} mismatched ASAP replies", asapMismatched);
 }
 
 if (contentions > mapOps / 20) {  // > 5% contention
-  LOG_W("High lock contention: %lu/%lu", contentions, mapOps);
+  LOG_W("High lock contention: {}/{}", contentions, mapOps);
 }
 ```
 

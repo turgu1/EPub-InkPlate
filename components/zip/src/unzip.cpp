@@ -22,7 +22,7 @@
   #include <iostream>
 #endif
 
-bool Unzip::alive = false;
+bool         Unzip::alive = false;
 
 static void *zipMem = nullptr;
 
@@ -30,27 +30,27 @@ static auto myZAlloc(void *opaque, size_t items, size_t size) -> void * {
   if (zipMem != nullptr) {
     return zipMem;
   } else {
-#if EPUB_INKPLATE_BUILD
-    return zipMem = heap_caps_malloc(items * size, MALLOC_CAP_SPIRAM);
-#else
-    // const char *TAG = "myZAlloc";
-    // LOG_I("Allocating %zu bytes for zlib", items * size);
-    return zipMem = malloc(items * size);
-#endif
+    #if EPUB_INKPLATE_BUILD
+      return zipMem = heap_caps_malloc(items * size, MALLOC_CAP_SPIRAM);
+    #else
+      // const char *TAG = "myZAlloc";
+      // LOG_I("Allocating {} bytes for zlib", items * size);
+      return zipMem = malloc(items * size);
+    #endif
   }
 }
 
 static void myZFree(void *opaque, void *address) {
 // Do nothing
-#if 0
-  #if EPUB_INKPLATE_BUILD
-    heap_caps_free(address);
-  #else
-    const char *TAG = "myZFree";
-    LOG_I("Freeing memory for zlib");
-    free(address);
+  #if 0
+    #if EPUB_INKPLATE_BUILD
+      heap_caps_free(address);
+    #else
+      const char *TAG = "myZFree";
+      LOG_I("Freeing memory for zlib");
+      free(address);
+    #endif
   #endif
-#endif
 }
 
 /**
@@ -96,16 +96,16 @@ auto Unzip::seekToCentralDirectory() -> bool {
   bool found                = false;
 
   auto seekAbs = [this](std::streamoff pos) -> bool {
-    file.clear();
-    file.seekg(pos, std::ios::beg);
-    return file.good();
-  };
+                   file.clear();
+                   file.seekg(pos, std::ios::beg);
+                   return file.good();
+                 };
 
   auto readExact = [this](void *dst, std::size_t size) -> bool {
-    if (size == 0) return true;
-    file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
-    return file.good();
-  };
+                     if (size == 0) { return true; }
+                     file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                     return file.good();
+                   };
 
   file.clear();
   file.seekg(0, std::ios::end);
@@ -118,7 +118,7 @@ auto Unzip::seekToCentralDirectory() -> bool {
         if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 5) && (buffer[3] == 6))) {
           // There must be a comment in the last entry. Search for the beginning of the entry
           std::streamoff endOffset = offset - 65536;
-          if (endOffset < 0) endOffset = 0;
+          if (endOffset < 0) { endOffset = 0; }
           offset -= FILE_CENTRAL_SIZE;
           while (!found && (offset > endOffset)) {
             if (seekAbs(offset) && readExact(buffer, FILE_CENTRAL_SIZE + 5)) {
@@ -215,37 +215,37 @@ auto Unzip::readFileEntries(uint32_t offset, uint16_t count) -> bool {
 
   const int FILE_ENTRY_SIZE = 42;
 
-  bool completed = false;
+  bool      completed = false;
 
-  auto seekAbs = [this](std::streamoff pos) -> bool {
-    file.clear();
-    file.seekg(pos, std::ios::beg);
-    return file.good();
-  };
+  auto      seekAbs = [this](std::streamoff pos) -> bool {
+                        file.clear();
+                        file.seekg(pos, std::ios::beg);
+                        return file.good();
+                      };
 
   auto readExact = [this](void *dst, std::size_t size) -> bool {
-    if (size == 0) return true;
-    file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
-    return file.good();
-  };
+                     if (size == 0) { return true; }
+                     file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                     return file.good();
+                   };
 
   if ((count > 0) && seekAbs(offset)) {
 
     while (true) {
-      if (!readExact(buffer, 4)) break;
+      if (!readExact(buffer, 4)) { break; }
       if (!((buffer[0] == 'P') && (buffer[1] == 'K') && (buffer[2] == 1) && (buffer[3] == 2))) {
         // End of list...
         completed = true;
         break;
       }
-      if (!readExact(buffer, FILE_ENTRY_SIZE)) break;
+      if (!readExact(buffer, FILE_ENTRY_SIZE)) { break; }
 
       uint16_t filename_size = getUint16((const unsigned char *)&buffer[24]);
       uint16_t extra_size    = getUint16((const unsigned char *)&buffer[26]);
       uint16_t comment_size  = getUint16((const unsigned char *)&buffer[28]);
 
       if (filename_size > CharPool::MAX_ALLOC - 1) {
-        LOG_E("Filename too long for CharPool: %u", filename_size);
+        LOG_E("Filename too long for CharPool: {}", filename_size);
         break;
       }
 
@@ -264,12 +264,12 @@ auto Unzip::readFileEntries(uint32_t offset, uint16_t count) -> bool {
       fe.method         = getUint16((const unsigned char *)&buffer[6]);
       ++filenameEntryCount;
       totalFilenameBytes += filename_size;
-      if (filename_size > maxFilenameSize) maxFilenameSize = filename_size;
+      if (filename_size > maxFilenameSize) { maxFilenameSize = filename_size; }
 
-      // LOG_D("File: %s %d %d %d %d", fe.filename, fe.startPos, fe.compressedSize,
+      // LOG_D("File: {} {} {} {} {}", fe.filename, fe.startPos, fe.compressedSize,
       // fe.size, fe.method);
       offset += FILE_ENTRY_SIZE + 4 + filename_size + extra_size + comment_size;
-      if (!seekAbs(offset)) break;
+      if (!seekAbs(offset)) { break; }
     }
   }
   if (!completed) {
@@ -284,13 +284,13 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
 
   // Open zip file
   if (zipFileIsOpen) {
-    if (currentFilename == zipFilename) return true;
+    if (currentFilename == zipFilename) { return true; }
     closeZipFileUnsafe();
   }
 
   file.open(zipFilename, std::ios::binary);
   if (!file.is_open()) {
-    LOG_E("Unable to open file: %s", zipFilename);
+    LOG_E("Unable to open file: {}", zipFilename);
     return false;
   }
 
@@ -309,31 +309,31 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
   currentFilename = zipFilename;
 
   bool completed =
-      seekToCentralDirectory() && readFileEntries(getUint32((const unsigned char *)&buffer[16]),
-                                                  getUint16((const unsigned char *)&buffer[10]));
+    seekToCentralDirectory() && readFileEntries(getUint32((const unsigned char *)&buffer[16]),
+                                                getUint16((const unsigned char *)&buffer[10]));
 
   if (!completed) {
     closeZipFileUnsafe();
   } else {
-    // LOG_I("ZIP entries=%u filenameBytes=%u maxFilename=%u", filenameEntryCount,
+    // LOG_I("ZIP entries={} filenameBytes={} maxFilename={}", filenameEntryCount,
     // totalFilenameBytes,
     //       maxFilenameSize);
     if (filenamePool != nullptr) {
       [[maybe_unused]] size_t allocated = filenamePool->getTotalAllocated();
       [[maybe_unused]] size_t freed     = filenamePool->getTotalFreed();
-      // LOG_I("Filename CharPool: alloc=%zu freed=%zu live=%zu", allocated, freed, allocated -
+      // LOG_I("Filename CharPool: alloc={} freed={} live={}", allocated, freed, allocated -
       // freed);
     }
     LOG_D("openZipFile completed!");
-#if DEBUGGING
-    std::cout << "---- Files available: ----" << std::endl;
-    for (auto &f : fileEntries) {
-      std::cout << "pos: " << std::setw(7) << f.startPos << " zip size: " << std::setw(7)
-                << f.compressedSize << " out size: " << std::setw(7) << f.size
-                << " method: " << std::setw(1) << f.method << " name: " << f.filename << std::endl;
-    }
-    std::cout << "[End of List]" << std::endl;
-#endif
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto &f : fileEntries) {
+        std::cout << "pos: " << std::setw(7) << f.startPos << " zip size: " << std::setw(7)
+                  << f.compressedSize << " out size: " << std::setw(7) << f.size
+                  << " method: " << std::setw(1) << f.method << " name: " << f.filename << std::endl;
+      }
+      std::cout << "[End of List]" << std::endl;
+    #endif
   }
 
   return completed;
@@ -349,8 +349,8 @@ auto Unzip::closeZipFileUnsafe() -> void {
     if (filenamePool != nullptr) {
       [[maybe_unused]] size_t allocated = filenamePool->getTotalAllocated();
       [[maybe_unused]] size_t freed     = filenamePool->getTotalFreed();
-      // LOG_I("Closing ZIP: entries=%u filenameBytes=%u maxFilename=%u pool alloc=%zu freed=%zu "
-      //       "live=%zu",
+      // LOG_I("Closing ZIP: entries={} filenameBytes={} maxFilename={} pool alloc={} freed={} "
+      //       "live={}",
       //       filenameEntryCount, totalFilenameBytes, maxFilenameSize, allocated, freed,
       //       allocated - freed);
     }
@@ -361,7 +361,7 @@ auto Unzip::closeZipFileUnsafe() -> void {
     filenameEntryCount = 0;
     totalFilenameBytes = 0;
     maxFilenameSize    = 0;
-    if (file.is_open()) file.close();
+    if (file.is_open()) { file.close(); }
     zipFileIsOpen = false;
   }
   currentFileEntry = fileEntries.end();
@@ -369,27 +369,27 @@ auto Unzip::closeZipFileUnsafe() -> void {
   streamMutexHeld = false;
   aborted         = false;
 
-#if EPUB_LINUX_BUILD
-  streamOwnerThread = std::thread::id{};
-#else
-  streamOwnerThread = nullptr;
-#endif
+  #if EPUB_LINUX_BUILD
+    streamOwnerThread = std::thread::id{};
+  #else
+    streamOwnerThread = nullptr;
+  #endif
 }
 
 auto Unzip::closeZipFile() -> void {
-#if EPUB_LINUX_BUILD
-  if (std::this_thread::get_id() == streamOwnerThread) {
-    // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
-    closeZipFileUnsafe();
-    return;
-  }
-#else
-  if (xTaskGetCurrentTaskHandle() == streamOwnerThread) {
-    // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
-    closeZipFileUnsafe();
-    return;
-  }
-#endif
+  #if EPUB_LINUX_BUILD
+    if (std::this_thread::get_id() == streamOwnerThread) {
+      // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
+      closeZipFileUnsafe();
+      return;
+    }
+  #else
+    if (xTaskGetCurrentTaskHandle() == streamOwnerThread) {
+      // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
+      closeZipFileUnsafe();
+      return;
+    }
+  #endif
 
   std::scoped_lock guard(mutex);
   closeZipFileUnsafe();
@@ -406,11 +406,11 @@ auto Unzip::closeZipFile() -> void {
  * @return char * The cleaned up filename. Must be freed after usage.
  */
 auto cleanFname(const char *filename) -> std::unique_ptr<char[]> {
-  auto str = std::make_unique<char[]>(strlen(filename) + 1);
+  auto        str = std::make_unique<char[]>(strlen(filename) + 1);
 
   const char *s = filename;
   const char *u;
-  char *t = str.get();
+  char *      t = str.get();
 
   while ((u = strstr(s, "/../")) != nullptr) {
     const char *ss = s;     // keep it for copy in target
@@ -426,7 +426,7 @@ auto cleanFname(const char *filename) -> std::unique_ptr<char[]> {
       } while ((t > str.get()) && (*t != '/'));
     }
   }
-  if ((t == str.get()) && (*s == '/')) ++s;
+  if ((t == str.get()) && (*s == '/')) { ++s; }
   while ((*t++ = *s++));
 
   return str;
@@ -436,25 +436,25 @@ auto Unzip::getFileSize(const char *filename) -> int32_t {
 
   std::scoped_lock guard(mutex);
 
-  if (!zipFileIsOpen) return 0;
+  if (!zipFileIsOpen) { return 0; }
 
   auto theFilename = cleanFname(filename);
   currentFileEntry = fileEntries.begin();
 
   while (currentFileEntry != fileEntries.end()) {
-    if (currentFileEntry->filename == theFilename.get()) break;
+    if (currentFileEntry->filename == theFilename.get()) { break; }
     ++currentFileEntry;
   }
 
   int32_t size = 0;
 
   if (currentFileEntry == fileEntries.end()) {
-    LOG_E("Unzip getFileSize: File not found: %s", theFilename.get());
-#if DEBUGGING
-    std::cout << "---- Files available: ----" << std::endl;
-    for (auto &f : fileEntries) std::cout << "  <" << f.filename << ">" << std::endl;
-    std::cout << "[End of List]" << std::endl;
-#endif
+    LOG_E("Unzip getFileSize: File not found: {}", theFilename.get());
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto &f : fileEntries) std::cout << "  <" << f.filename << ">" << std::endl;
+      std::cout << "[End of List]" << std::endl;
+    #endif
   } else {
     size = currentFileEntry->size;
   }
@@ -465,14 +465,14 @@ auto Unzip::getFileSize(const char *filename) -> int32_t {
 auto Unzip::fileExists(const char *filename) -> bool {
   std::scoped_lock guard(mutex);
 
-  if (!zipFileIsOpen) return false;
+  if (!zipFileIsOpen) { return false; }
 
-  auto theFilename = cleanFname(filename);
+  auto                         theFilename = cleanFname(filename);
 
   Unzip::FileEntries::iterator fe = fileEntries.begin();
 
   while (fe != fileEntries.end()) {
-    if (fe->filename == theFilename.get()) break;
+    if (fe->filename == theFilename.get()) { break; }
     ++fe;
   }
 
@@ -483,7 +483,7 @@ auto Unzip::openFile(const char *filename) -> bool {
 
   int err = 0;
 
-  if (!zipFileIsOpen) return false;
+  if (!zipFileIsOpen) { return false; }
   if (!file.is_open()) {
     LOG_E("Unzip openFile called with null file handle.");
     return false;
@@ -493,21 +493,21 @@ auto Unzip::openFile(const char *filename) -> bool {
   currentFileEntry = fileEntries.begin();
 
   while (currentFileEntry != fileEntries.end()) {
-    if (currentFileEntry->filename == theFilename.get()) break;
+    if (currentFileEntry->filename == theFilename.get()) { break; }
     ++currentFileEntry;
   }
 
   if (currentFileEntry == fileEntries.end()) {
-    LOG_E("Unzip Get: File not found: %s", theFilename.get());
-#if DEBUGGING
-    std::cout << "---- Files available: ----" << std::endl;
-    for (auto &f : fileEntries) std::cout << "  <" << f.filename << ">" << std::endl;
-    std::cout << "[End of List]" << std::endl;
-#endif
+    LOG_E("Unzip Get: File not found: {}", theFilename.get());
+    #if DEBUGGING
+      std::cout << "---- Files available: ----" << std::endl;
+      for (auto &f : fileEntries) std::cout << "  <" << f.filename << ">" << std::endl;
+      std::cout << "[End of List]" << std::endl;
+    #endif
     return false;
   }
   // else {
-  //   LOG_D("File: %s at pos: %d", (*fe)->filename, (*fe)->startPos);
+  //   LOG_D("File: {} at pos: {}", (*fe)->filename, (*fe)->startPos);
   // }
 
   bool completed = false;
@@ -531,23 +531,23 @@ auto Unzip::openFile(const char *filename) -> bool {
 
   const int LOCAL_HEADER_SIZE = 26;
 
-  auto seekAbs = [this](std::streamoff pos) -> bool {
-    file.clear();
-    file.seekg(pos, std::ios::beg);
-    if (!file.good()) {
-      LOG_E("Error seeking to file data at pos: %d", pos);
-    }
-    return file.good();
-  };
+  auto      seekAbs = [this](std::streamoff pos) -> bool {
+                        file.clear();
+                        file.seekg(pos, std::ios::beg);
+                        if (!file.good()) {
+                          LOG_E("Error seeking to file data at pos: {}", pos);
+                        }
+                        return file.good();
+                      };
 
   auto readExact = [this](void *dst, std::size_t size) -> bool {
-    if (size == 0) return true;
-    file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
-    if (!file.good()) {
-      LOG_E("Error reading file data at pos: %d", file.tellg());
-    }
-    return file.good();
-  };
+                     if (size == 0) { return true; }
+                     file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                     if (!file.good()) {
+                       LOG_E("Error reading file data at pos: {}", (int)file.tellg());
+                     }
+                     return file.good();
+                   };
 
   if (seekAbs(currentFileEntry->startPos) && readExact(buffer, 4)) {
 
@@ -556,8 +556,8 @@ auto Unzip::openFile(const char *filename) -> bool {
     } else if (!readExact(buffer, LOCAL_HEADER_SIZE)) {
       err = 16;
     } else {
-      uint16_t filename_size = getUint16((const unsigned char *)&buffer[22]);
-      uint16_t extra_size    = getUint16((const unsigned char *)&buffer[24]);
+      uint16_t       filename_size = getUint16((const unsigned char *)&buffer[22]);
+      uint16_t       extra_size    = getUint16((const unsigned char *)&buffer[24]);
 
       std::streamoff headerEndPos = static_cast<std::streamoff>(file.tellg());
       if (headerEndPos < 0) {
@@ -579,7 +579,7 @@ auto Unzip::openFile(const char *filename) -> bool {
     currentFileEntry->currentPos = 0;
     return true;
   } else {
-    LOG_E("Unzip openFile: Error!: %d", err);
+    LOG_E("Unzip openFile: Error!: {}", err);
     return false;
   }
 }
@@ -588,284 +588,284 @@ auto Unzip::closeFile() -> void {}
 
 #if !STB
 
-auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
+  auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
 
-  #if EPUB_LINUX_BUILD
-  if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
-    LOG_E("openStreamFile called while a stream is already open on this thread.");
-    return false;
-  }
-  #else
-  if (streamMutexHeld && (streamOwnerThread == xTaskGetCurrentTaskHandle())) {
-    LOG_E("openStreamFile called while a stream is already open on this thread.");
-    return false;
-  }
-  #endif
+    #if EPUB_LINUX_BUILD
+      if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
+        LOG_E("openStreamFile called while a stream is already open on this thread.");
+        return false;
+      }
+    #else
+      if (streamMutexHeld && (streamOwnerThread == xTaskGetCurrentTaskHandle())) {
+        LOG_E("openStreamFile called while a stream is already open on this thread.");
+        return false;
+      }
+    #endif
 
-  mutex.lock();
-  streamMutexHeld = true;
+    mutex.lock();
+    streamMutexHeld = true;
 
-  #if EPUB_LINUX_BUILD
-  streamOwnerThread = std::this_thread::get_id();
-  #else
-  streamOwnerThread = xTaskGetCurrentTaskHandle();
-  #endif
+    #if EPUB_LINUX_BUILD
+      streamOwnerThread = std::this_thread::get_id();
+    #else
+      streamOwnerThread = xTaskGetCurrentTaskHandle();
+    #endif
 
-  if (!openFile(filename)) {
-    streamMutexHeld = false;
-  #if EPUB_LINUX_BUILD
-    streamOwnerThread = std::thread::id{};
-  #else
-    streamOwnerThread = nullptr;
-  #endif
-    mutex.unlock();
-    return false;
-  }
-
-  repeat  = currentFileEntry->compressedSize / BUFFER_SIZE;
-  remains = currentFileEntry->compressedSize % BUFFER_SIZE;
-  current = 0;
-  aborted = false;
-
-  zstr.zalloc    = myZAlloc;
-  zstr.zfree     = myZFree;
-  zstr.opaque    = nullptr;
-  zstr.next_in   = nullptr;
-  zstr.next_out  = nullptr;
-  zstr.avail_in  = 0;
-  zstr.avail_out = 0;
-
-  int zret;
-
-  if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
-    LOG_E("Error initializing zlib inflate: %d", zret);
-    aborted = true;
-    closeStreamFile();
-    return false;
-  }
-  streamInflateInitialized = true;
-
-  fileSize = currentFileEntry->size;
-
-  auto readExact = [this](void *dst, std::size_t size) -> bool {
-    if (size == 0) return true;
-    file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
-    if (!file.good()) {
-      LOG_E("Error reading zip content at pos: %d", file.tellg());
-    }
-    return file.good();
-  };
-
-  uint16_t size = current < repeat ? BUFFER_SIZE : remains;
-  if (!readExact(buffer, size)) {
-    LOG_E("Error reading zip content.");
-    closeStreamFile();
-    aborted = true;
-    return false;
-  }
-
-  ++current;
-
-  zstr.avail_in = size;
-  zstr.next_in  = (unsigned char *)buffer;
-
-  return true;
-}
-
-auto Unzip::closeStreamFile() -> void {
-  if (!streamMutexHeld) return;
-
-  #if EPUB_LINUX_BUILD
-  if (streamOwnerThread != std::this_thread::get_id()) {
-    LOG_E("closeStreamFile called from a non-owner thread.");
-    return;
-  }
-  #else
-  if (streamOwnerThread != xTaskGetCurrentTaskHandle()) {
-    LOG_E("closeStreamFile called from a non-owner thread.");
-    return;
-  }
-  #endif
-
-  if (streamInflateInitialized) {
-    mz_inflateEnd(&zstr);
-    streamInflateInitialized = false;
-  }
-
-  closeFile();
-
-  streamMutexHeld = false;
-  #if EPUB_LINUX_BUILD
-  streamOwnerThread = std::thread::id{};
-  #else
-  streamOwnerThread = nullptr;
-  #endif
-  aborted = false;
-
-  mutex.unlock();
-}
-
-auto Unzip::streamSkip(uint32_t byteCount) -> bool {
-  auto tmp      = makeUniqueHimem<char[]>(byteCount);
-  uint32_t size = byteCount;
-
-  do {
-    uint32_t s = size;
-    if ((s = getStreamData(tmp.get(), s)) == 0) {
+    if (!openFile(filename)) {
+      streamMutexHeld = false;
+      #if EPUB_LINUX_BUILD
+        streamOwnerThread = std::thread::id{};
+      #else
+        streamOwnerThread = nullptr;
+      #endif
+      mutex.unlock();
       return false;
     }
-    size -= s;
-  } while (size > 0);
-  return true;
-}
 
-auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
+    repeat  = currentFileEntry->compressedSize / BUFFER_SIZE;
+    remains = currentFileEntry->compressedSize % BUFFER_SIZE;
+    current = 0;
+    aborted = false;
 
-  if (dataSize == 0) return 0;
+    zstr.zalloc    = myZAlloc;
+    zstr.zfree     = myZFree;
+    zstr.opaque    = nullptr;
+    zstr.next_in   = nullptr;
+    zstr.next_out  = nullptr;
+    zstr.avail_in  = 0;
+    zstr.avail_out = 0;
 
-  #if EPUB_LINUX_BUILD
-  if (!streamMutexHeld || (streamOwnerThread != std::this_thread::get_id()) || !file.is_open()) {
-    LOG_E("Unzip getStreamData called outside stream session.");
-    aborted = true;
-    return 0;
-  }
-  #else
-  if (!streamMutexHeld || (streamOwnerThread != xTaskGetCurrentTaskHandle()) || !file.is_open()) {
-    LOG_E("Unzip getStreamData called outside stream session.");
-    aborted = true;
-    return 0;
-  }
-  #endif
+    int zret;
 
-  auto readExact = [this](void *dst, std::size_t size) -> bool {
-    if (size == 0) return true;
-    file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
-    return file.good();
-  };
-
-  zstr.next_out  = (unsigned char *)data;
-  zstr.avail_out = dataSize;
-
-  if (currentFileEntry->method == 0) {
-    while (!aborted && (zstr.avail_out > 0)) {
-      uint16_t copy_size = zstr.avail_in <= zstr.avail_out ? zstr.avail_in : zstr.avail_out;
-      memcpy(zstr.next_out, zstr.next_in, copy_size);
-
-      zstr.next_out += copy_size;
-      zstr.next_in += copy_size;
-      zstr.avail_out -= copy_size;
-      zstr.avail_in -= copy_size;
-
-      if (zstr.avail_in == 0) {
-        if (current > repeat) break; // We are at the end
-        uint16_t size = current < repeat ? BUFFER_SIZE : remains;
-        if (!readExact(buffer, size)) {
-          LOG_E("Error reading zip content.");
-          aborted = true;
-          break;
-        }
-
-        ++current;
-
-        zstr.avail_in = size;
-        zstr.next_in  = (unsigned char *)buffer;
-      }
+    if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
+      LOG_E("Error initializing zlib inflate: {}", zret);
+      aborted = true;
+      closeStreamFile();
+      return false;
     }
-  } else if (currentFileEntry->method == 8) {
+    streamInflateInitialized = true;
 
-    while (!aborted && (zstr.avail_out == dataSize)) {
+    fileSize = currentFileEntry->size;
 
-      int zret = mz_inflate(&zstr, MZ_NO_FLUSH);
+    auto readExact = [this](void *dst, std::size_t size) -> bool {
+                       if (size == 0) { return true; }
+                       file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                       if (!file.good()) {
+                         LOG_E("Error reading zip content at pos: {}", (int)file.tellg());
+                       }
+                       return file.good();
+                     };
 
-      switch (zret) {
-      case MZ_NEED_DICT:
-      case MZ_DATA_ERROR:
-      case MZ_MEM_ERROR:
-        LOG_E("Error inflating data: %d", zret);
-        aborted = true;
-      default:;
+    uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+    if (!readExact(buffer, size)) {
+      LOG_E("Error reading zip content.");
+      closeStreamFile();
+      aborted = true;
+      return false;
+    }
+
+    ++current;
+
+    zstr.avail_in = size;
+    zstr.next_in  = (unsigned char *)buffer;
+
+    return true;
+  }
+
+  auto Unzip::closeStreamFile() -> void {
+    if (!streamMutexHeld) { return; }
+
+    #if EPUB_LINUX_BUILD
+      if (streamOwnerThread != std::this_thread::get_id()) {
+        LOG_E("closeStreamFile called from a non-owner thread.");
+        return;
       }
+    #else
+      if (streamOwnerThread != xTaskGetCurrentTaskHandle()) {
+        LOG_E("closeStreamFile called from a non-owner thread.");
+        return;
+      }
+    #endif
 
-      if (!aborted && (zstr.avail_out != 0)) {
-        if ((zstr.avail_in == 0) && (current <= repeat)) {
+    if (streamInflateInitialized) {
+      mz_inflateEnd(&zstr);
+      streamInflateInitialized = false;
+    }
+
+    closeFile();
+
+    streamMutexHeld = false;
+    #if EPUB_LINUX_BUILD
+      streamOwnerThread = std::thread::id{};
+    #else
+      streamOwnerThread = nullptr;
+    #endif
+    aborted = false;
+
+    mutex.unlock();
+  }
+
+  auto Unzip::streamSkip(uint32_t byteCount) -> bool {
+    auto     tmp      = makeUniqueHimem<char[]>(byteCount);
+    uint32_t size = byteCount;
+
+    do {
+      uint32_t s = size;
+      if ((s = getStreamData(tmp.get(), s)) == 0) {
+        return false;
+      }
+      size -= s;
+    } while (size > 0);
+    return true;
+  }
+
+  auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
+
+    if (dataSize == 0) { return 0; }
+
+    #if EPUB_LINUX_BUILD
+      if (!streamMutexHeld || (streamOwnerThread != std::this_thread::get_id()) || !file.is_open()) {
+        LOG_E("Unzip getStreamData called outside stream session.");
+        aborted = true;
+        return 0;
+      }
+    #else
+      if (!streamMutexHeld || (streamOwnerThread != xTaskGetCurrentTaskHandle()) || !file.is_open()) {
+        LOG_E("Unzip getStreamData called outside stream session.");
+        aborted = true;
+        return 0;
+      }
+    #endif
+
+    auto readExact = [this](void *dst, std::size_t size) -> bool {
+                       if (size == 0) { return true; }
+                       file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                       return file.good();
+                     };
+
+    zstr.next_out  = (unsigned char *)data;
+    zstr.avail_out = dataSize;
+
+    if (currentFileEntry->method == 0) {
+      while (!aborted && (zstr.avail_out > 0)) {
+        uint16_t copy_size = zstr.avail_in <= zstr.avail_out ? zstr.avail_in : zstr.avail_out;
+        memcpy(zstr.next_out, zstr.next_in, copy_size);
+
+        zstr.next_out += copy_size;
+        zstr.next_in += copy_size;
+        zstr.avail_out -= copy_size;
+        zstr.avail_in -= copy_size;
+
+        if (zstr.avail_in == 0) {
+          if (current > repeat) { break; } // We are at the end
           uint16_t size = current < repeat ? BUFFER_SIZE : remains;
           if (!readExact(buffer, size)) {
             LOG_E("Error reading zip content.");
             aborted = true;
-          } else {
-            ++current;
+            break;
+          }
 
-            zstr.avail_in = size;
-            zstr.next_in  = (unsigned char *)buffer;
+          ++current;
+
+          zstr.avail_in = size;
+          zstr.next_in  = (unsigned char *)buffer;
+        }
+      }
+    } else if (currentFileEntry->method == 8) {
+
+      while (!aborted && (zstr.avail_out == dataSize)) {
+
+        int zret = mz_inflate(&zstr, MZ_NO_FLUSH);
+
+        switch (zret) {
+        case MZ_NEED_DICT:
+        case MZ_DATA_ERROR:
+        case MZ_MEM_ERROR:
+          LOG_E("Error inflating data: {}", zret);
+          aborted = true;
+        default:;
+        }
+
+        if (!aborted && (zstr.avail_out != 0)) {
+          if ((zstr.avail_in == 0) && (current <= repeat)) {
+            uint16_t size = current < repeat ? BUFFER_SIZE : remains;
+            if (!readExact(buffer, size)) {
+              LOG_E("Error reading zip content.");
+              aborted = true;
+            } else {
+              ++current;
+
+              zstr.avail_in = size;
+              zstr.next_in  = (unsigned char *)buffer;
+            }
           }
         }
       }
     }
-  }
 
-  return !aborted ? dataSize - zstr.avail_out : 0;
-}
+    return !aborted ? dataSize - zstr.avail_out : 0;
+  }
 
 // Test version of getFile using stream methods
-auto Unzip::getFile(const char *filename, uint32_t &fileSize) -> FileContentPtr {
-  // LOG_D("getFile: %s", filename);
+  auto Unzip::getFile(const char *filename, uint32_t &fileSize) -> FileContentPtr {
+    // LOG_D("getFile: {}", filename);
 
-  uint32_t total = 0;
+    uint32_t       total = 0;
 
-  bool completed     = false;
-  bool stream_opened = false;
+    bool           completed     = false;
+    bool           stream_opened = false;
 
-  FileContentPtr data{nullptr};
+    FileContentPtr data{ nullptr };
 
-  if (!openStreamFile(filename, fileSize)) {
-    LOG_E("Unable to retrieve file %s", filename);
-  } else {
-    stream_opened = true;
-
-    if ((data = makeUniqueHimem<uint8_t[]>(fileSize + 1)) == nullptr) {
-  #if EPUB_INKPLATE_BUILD
-      uint32_t spiramFree    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
-      uint32_t spiramLargest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-      LOG_E("Not enough memory to retrieve file %s (need %" PRIu32 " B;"
-            " SPIRAM free=%" PRIu32 " B largest=%" PRIu32 " B)",
-            filename, fileSize, spiramFree, spiramLargest);
-  #else
-      LOG_E("Not enough memory to retrieve file %s (%" PRIu32 " bytes)", filename, fileSize);
-  #endif
+    if (!openStreamFile(filename, fileSize)) {
+      LOG_E("Unable to retrieve file {}", filename);
     } else {
-      data[fileSize] = 0;
+      stream_opened = true;
 
-      uint8_t *data_ptr = data.get();
-      uint32_t size     = fileSize;
+      if ((data = makeUniqueHimem<uint8_t[]>(fileSize + 1)) == nullptr) {
+        #if EPUB_INKPLATE_BUILD
+          uint32_t spiramFree    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+          uint32_t spiramLargest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+          LOG_E("Not enough memory to retrieve file {} (need {} B;"
+                " SPIRAM free={} B largest={} B)",
+                filename, fileSize, spiramFree, spiramLargest);
+        #else
+          LOG_E("Not enough memory to retrieve file {} ({} bytes)", filename, fileSize);
+        #endif
+      } else {
+        data[fileSize] = 0;
 
-      while (((size = getStreamData((char *)data_ptr, size)) != 0) &&
-             ((total + size) <= fileSize)) {
+        uint8_t *data_ptr = data.get();
+        uint32_t size     = fileSize;
 
-        data_ptr += size;
-        total += size;
+        while (((size = getStreamData((char *)data_ptr, size)) != 0) &&
+               ((total + size) <= fileSize)) {
 
-        LOG_D("Got %" PRIu32 " bytes...", size);
+          data_ptr += size;
+          total += size;
 
-        if (total == fileSize) break;
+          LOG_D("Got {} bytes...", size);
 
-        size = fileSize - total;
+          if (total == fileSize) { break; }
+
+          size = fileSize - total;
+        }
+
+        LOG_D("File size: {}, received: {}", fileSize, total);
+        completed = true;
       }
-
-      LOG_D("File size: %" PRIu32 ", received: %" PRIu32, fileSize, total);
-      completed = true;
     }
+
+    if (stream_opened) { closeStreamFile(); }
+
+    if (!completed) {
+      fileSize = 0;
+      return nullptr;
+    } else {
+      fileSize = total;
+    }
+
+    return data;
   }
-
-  if (stream_opened) closeStreamFile();
-
-  if (!completed) {
-    fileSize = 0;
-    return nullptr;
-  } else {
-    fileSize = total;
-  }
-
-  return data;
-}
 
 #endif

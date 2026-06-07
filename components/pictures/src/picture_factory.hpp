@@ -14,29 +14,32 @@
 #include "picture.hpp"
 #include "png_picture.hpp"
 #include "svg_picture.hpp"
+#include "bmp_picture.hpp"
 
 class PictureFactory {
 
-public:
-  static auto create(HimemString filename, Dim max, bool loadBitmap, FontPtr &font,
-                     bool fromFile = false) -> PicturePtr {
+  public:
+    static auto create(HimemString filename, Dim max, bool loadBitmap, FontPtr &font,
+                       bool fromFile = false) -> PicturePtr {
 
-    auto ext = filename.substr(filename.find_last_of(".") + 1);
+      auto ext = filename.substr(filename.find_last_of(".") + 1);
 
-    if ((ext == "png") && !fromFile) {
-      return PngPicture::Make(filename, max, loadBitmap);
-    } else if (ext == "svg") {
-      return SvgPicture::Make(filename, max, loadBitmap, font, fromFile);
-    } else if (ext == "gif") {
-      return GifPicture::Make(filename, max, loadBitmap, fromFile);
-    } else if ((ext == "jpg") || (ext == "jpeg")) {
-      return JPegPicture::Make(filename, max, loadBitmap, fromFile);
+      if ((ext == "png") && !fromFile) {
+        return PngPicture::Make(filename, max, loadBitmap);
+      } else if ((ext == "jpg") || (ext == "jpeg")) {
+        return JPegPicture::Make(filename, max, loadBitmap, fromFile);
+      } else if (ext == "bmp") {
+        return BmpPicture::Make(filename, max, loadBitmap, fromFile);
+      } else if (ext == "svg") {
+        return SvgPicture::Make(filename, max, loadBitmap, font, fromFile);
+      } else if (ext == "gif") {
+        return GifPicture::Make(filename, max, loadBitmap, fromFile);
+      }
+
+      return nullptr;
     }
 
-    return nullptr;
-  }
-
-  static auto create(Dim d, const uint8_t *b, uint32_t size) -> PicturePtr {
-    return BitmapPicture::Make(d, b, size);
-  }
+    static auto create(Dim d, const uint8_t *b, uint32_t size) -> PicturePtr {
+      return BitmapPicture::Make(d, b, size);
+    }
 };

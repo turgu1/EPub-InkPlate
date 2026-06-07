@@ -46,135 +46,135 @@
 using CharPoolPtr = HimemUniquePtr<class CharPool>;
 
 class CharPool {
-public:
-  // ---- Public constants ---------------------------------------------------
-  static constexpr std::size_t BLOCK_SIZE = 4096;       ///< PSRAM block size
-  static constexpr std::size_t MAX_ALLOC  = BLOCK_SIZE; ///< Hard cap per alloc
+  public:
+    // ---- Public constants ---------------------------------------------------
+    static constexpr std::size_t BLOCK_SIZE = 4096;     ///< PSRAM block size
+    static constexpr std::size_t MAX_ALLOC  = BLOCK_SIZE;///< Hard cap per alloc
 
-private:
-  static constexpr char const *TAG = "CharPool";
+  private:
+    static constexpr char const *TAG = "CharPool";
 
-  // ---- Size-class table ---------------------------------------------------
-  // Classes: 2^3=8, 2^4=16, …, 2^12=4096  →  10 classes, index 0..9
-  static constexpr std::size_t MIN_LOG   = 3;                     // log2(8)
-  static constexpr std::size_t MAX_LOG   = 12;                    // log2(4096)
-  static constexpr std::size_t NUM_CLASS = MAX_LOG - MIN_LOG + 1; // 10
+    // ---- Size-class table ---------------------------------------------------
+    // Classes: 2^3=8, 2^4=16, …, 2^12=4096  →  10 classes, index 0..9
+    static constexpr std::size_t MIN_LOG   = 3;                   // log2(8)
+    static constexpr std::size_t MAX_LOG   = 12;                  // log2(4096)
+    static constexpr std::size_t NUM_CLASS = MAX_LOG - MIN_LOG + 1; // 10
 
-  // Return the size-class index for a request of n bytes.
-  static constexpr std::size_t classIdx(std::size_t n) noexcept {
-    std::size_t sz  = 1u << MIN_LOG; // 8
-    std::size_t idx = 0;
-    while (sz < n && idx < NUM_CLASS - 1) {
-      sz <<= 1;
-      ++idx;
+    // Return the size-class index for a request of n bytes.
+    static constexpr std::size_t classIdx(std::size_t n) noexcept {
+      std::size_t sz  = 1u << MIN_LOG;// 8
+      std::size_t idx = 0;
+      while (sz < n && idx < NUM_CLASS - 1) {
+        sz <<= 1;
+        ++idx;
+      }
+      return idx; // 0 = 8B … 9 = 4096B
     }
-    return idx; // 0 = 8B … 9 = 4096B
-  }
 
-  // Actual slot size for class index idx.
-  static constexpr std::size_t slotBytes(std::size_t idx) noexcept { return 1u << (MIN_LOG + idx); }
+    // Actual slot size for class index idx.
+    static constexpr std::size_t slotBytes(std::size_t idx) noexcept { return 1u << (MIN_LOG + idx); }
 
-  // ---- Free lists (one per size class) ------------------------------------
-  struct FreeSlot {
-    FreeSlot *next;
-  };
-  FreeSlot *freeLists_[NUM_CLASS]{};
+    // ---- Free lists (one per size class) ------------------------------------
+    struct FreeSlot {
+      FreeSlot *next;
+    };
+    FreeSlot *freeLists_[NUM_CLASS]{};
 
-  // ---- Backing blocks (bump pointer) --------------------------------------
-  using PoolPtr = HimemUniquePtr<char[]>;
-  std::forward_list<PoolPtr> blockList_;
-  char *bump_{nullptr};
-  std::size_t bumpRemain_{0};
+    // ---- Backing blocks (bump pointer) --------------------------------------
+    using PoolPtr = HimemUniquePtr<char[]>;
+    std::forward_list<PoolPtr> blockList_;
+    char *bump_{ nullptr };
+    std::size_t bumpRemain_{ 0 };
 
-  // ---- Statistics ---------------------------------------------------------
-  std::size_t totalAllocated_{0};
-  std::size_t totalFreed_{0};
+    // ---- Statistics ---------------------------------------------------------
+    std::size_t totalAllocated_{ 0 };
+    std::size_t totalFreed_{ 0 };
 
-  // ---- Private helpers ----------------------------------------------------
-  bool newBlock() noexcept {
-    PoolPtr blk = makeUniqueHimem<char[]>(BLOCK_SIZE);
-    if (!blk) return false;
-    bump_       = blk.get();
-    bumpRemain_ = BLOCK_SIZE;
-    blockList_.push_front(std::move(blk));
-    return true;
-  }
+    // ---- Private helpers ----------------------------------------------------
+    bool newBlock() noexcept {
+      PoolPtr blk = makeUniqueHimem<char[]>(BLOCK_SIZE);
+      if (!blk) { return false; }
+      bump_       = blk.get();
+      bumpRemain_ = BLOCK_SIZE;
+      blockList_.push_front(std::move(blk));
+      return true;
+    }
 
-  CharPool() = default;
+    CharPool() = default;
 
-public:
-  ~CharPool() = default;
+  public:
+    ~CharPool() = default;
 
-  template <typename T, typename... Args>
+    template <typename T, typename ... Args>
     requires(!std::is_array_v<T>)
-  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
+    friend HimemUniquePtr<T> makeUniqueHimem(Args &&... args);
 
-  static inline auto Make() { return makeUniqueHimem<CharPool>(); }
+    static inline auto Make() { return makeUniqueHimem<CharPool>(); }
 
-  // ---- Statistics ---------------------------------------------------------
-  std::size_t getTotalAllocated() const noexcept { return totalAllocated_; }
-  std::size_t getTotalFreed() const noexcept { return totalFreed_; }
+    // ---- Statistics ---------------------------------------------------------
+    std::size_t getTotalAllocated() const noexcept { return totalAllocated_; }
+    std::size_t getTotalFreed() const noexcept { return totalFreed_; }
 
-  // Legacy accessor (kept for existing callers).
-  std::uint32_t get_total_allocated() const noexcept {
-    return static_cast<std::uint32_t>(totalAllocated_);
-  }
-
-  // ---- Core API -----------------------------------------------------------
-
-  /// Allocate at least @p n bytes. The actual slot may be larger (next
-  /// power-of-2 >= 8). Returns nullptr if n > MAX_ALLOC or OOM.
-  char *allocate(std::size_t n) noexcept {
-    if (n == 0) n = 1;
-    if (n > MAX_ALLOC) {
-      LOG_E("CharPool: requested %zu bytes exceeds MAX_ALLOC (%zu)", n, MAX_ALLOC);
-      return nullptr;
+    // Legacy accessor (kept for existing callers).
+    std::uint32_t get_total_allocated() const noexcept {
+      return static_cast<std::uint32_t>(totalAllocated_);
     }
 
-    const std::size_t idx  = classIdx(n);
-    const std::size_t slot = slotBytes(idx);
+    // ---- Core API -----------------------------------------------------------
 
-    // Reuse a freed slot when available.
-    if (freeLists_[idx]) {
-      FreeSlot *s     = freeLists_[idx];
-      freeLists_[idx] = s->next;
+    /// Allocate at least @p n bytes. The actual slot may be larger (next
+    /// power-of-2 >= 8). Returns nullptr if n > MAX_ALLOC or OOM.
+    char *allocate(std::size_t n) noexcept {
+      if (n == 0) { n = 1; }
+      if (n > MAX_ALLOC) {
+        LOG_E("CharPool: requested {} bytes exceeds MAX_ALLOC ({})", n, MAX_ALLOC);
+        return nullptr;
+      }
+
+      const std::size_t idx  = classIdx(n);
+      const std::size_t slot = slotBytes(idx);
+
+      // Reuse a freed slot when available.
+      if (freeLists_[idx]) {
+        FreeSlot *s     = freeLists_[idx];
+        freeLists_[idx] = s->next;
+        totalAllocated_ += slot;
+        return reinterpret_cast<char *>(s);
+      }
+
+      // Carve from the current block; allocate a new one if needed.
+      if (bumpRemain_ < slot) {
+        if (!newBlock()) { return nullptr; }
+      }
+
+      char *ptr = bump_;
+      bump_ += slot;
+      bumpRemain_ -= slot;
       totalAllocated_ += slot;
-      return reinterpret_cast<char *>(s);
+      return ptr;
     }
 
-    // Carve from the current block; allocate a new one if needed.
-    if (bumpRemain_ < slot) {
-      if (!newBlock()) return nullptr;
+    /// Return a slot previously obtained from allocate(@p n).
+    /// @p n must equal the value passed to allocate().
+    void deallocate(char *ptr, std::size_t n) noexcept {
+      if (!ptr || n == 0) { return; }
+      if (n > MAX_ALLOC) { return; }
+      const std::size_t idx  = classIdx(n);
+      const std::size_t slot = slotBytes(idx);
+      auto *            s                = reinterpret_cast<FreeSlot *>(ptr);
+      s->next                = freeLists_[idx];
+      freeLists_[idx]        = s;
+      totalFreed_ += slot;
     }
 
-    char *ptr = bump_;
-    bump_ += slot;
-    bumpRemain_ -= slot;
-    totalAllocated_ += slot;
-    return ptr;
-  }
-
-  /// Return a slot previously obtained from allocate(@p n).
-  /// @p n must equal the value passed to allocate().
-  void deallocate(char *ptr, std::size_t n) noexcept {
-    if (!ptr || n == 0) return;
-    if (n > MAX_ALLOC) return;
-    const std::size_t idx  = classIdx(n);
-    const std::size_t slot = slotBytes(idx);
-    auto *s                = reinterpret_cast<FreeSlot *>(ptr);
-    s->next                = freeLists_[idx];
-    freeLists_[idx]        = s;
-    totalFreed_ += slot;
-  }
-
-  /// Copy @p str into the pool and return a pointer to the null-terminated
-  /// copy. The returned pointer remains valid until the pool is destroyed.
-  char *set(const std::string &str) noexcept {
-    const std::size_t len = str.length() + 1;
-    char *p               = allocate(len);
-    if (p) std::memcpy(p, str.c_str(), len);
-    return p;
-  }
+    /// Copy @p str into the pool and return a pointer to the null-terminated
+    /// copy. The returned pointer remains valid until the pool is destroyed.
+    char *set(const std::string &str) noexcept {
+      const std::size_t len = str.length() + 1;
+      char *            p               = allocate(len);
+      if (p) { std::memcpy(p, str.c_str(), len); }
+      return p;
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -191,38 +191,38 @@ public:
 // ---------------------------------------------------------------------------
 template <typename T>
 class CharPoolAllocator {
-public:
-  using value_type                             = T;
-  using propagate_on_container_copy_assignment = std::false_type;
-  using propagate_on_container_move_assignment = std::true_type;
-  using propagate_on_container_swap            = std::true_type;
+  public:
+    using value_type                             = T;
+    using propagate_on_container_copy_assignment = std::false_type;
+    using propagate_on_container_move_assignment = std::true_type;
+    using propagate_on_container_swap            = std::true_type;
 
-  CharPool *pool{nullptr};
+    CharPool *pool{ nullptr };
 
-  explicit CharPoolAllocator(CharPool *p) noexcept : pool(p) {}
+    explicit CharPoolAllocator(CharPool *p) noexcept : pool(p) {}
 
-  // Rebind constructor required by std::allocator_traits.
-  template <typename U>
-  explicit CharPoolAllocator(const CharPoolAllocator<U> &o) noexcept : pool(o.pool) {}
+    // Rebind constructor required by std::allocator_traits.
+    template <typename U>
+    explicit CharPoolAllocator(const CharPoolAllocator<U> &o) noexcept : pool(o.pool) {}
 
-  [[nodiscard]] T *allocate(std::size_t n) {
-    void *p = pool->allocate(n * sizeof(T));
-    if (!p) return nullptr;
-    return static_cast<T *>(p);
-  }
+    [[nodiscard]] T *allocate(std::size_t n) {
+      void *p = pool->allocate(n * sizeof(T));
+      if (!p) { return nullptr; }
+      return static_cast<T *>(p);
+    }
 
-  void deallocate(T *ptr, std::size_t n) noexcept {
-    pool->deallocate(reinterpret_cast<char *>(ptr), n * sizeof(T));
-  }
+    void deallocate(T *ptr, std::size_t n) noexcept {
+      pool->deallocate(reinterpret_cast<char *>(ptr), n * sizeof(T));
+    }
 
-  template <typename U>
-  bool operator==(const CharPoolAllocator<U> &o) const noexcept {
-    return pool == o.pool;
-  }
-  template <typename U>
-  bool operator!=(const CharPoolAllocator<U> &o) const noexcept {
-    return pool != o.pool;
-  }
+    template <typename U>
+    bool operator==(const CharPoolAllocator<U> &o) const noexcept {
+      return pool == o.pool;
+    }
+    template <typename U>
+    bool operator!=(const CharPoolAllocator<U> &o) const noexcept {
+      return pool != o.pool;
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ public:
 //   PoolString s(CharPoolAllocator<char>(myPool.get()));
 //   s = "hello";  // buffer allocated from pool, freed back on destruction
 // ---------------------------------------------------------------------------
-using PoolString = std::basic_string<char, std::char_traits<char>, CharPoolAllocator<char>>;
+using PoolString = std::basic_string<char, std::char_traits<char>, CharPoolAllocator<char> >;
 
 // ---------------------------------------------------------------------------
 // PoolContext<Tag>
@@ -283,42 +283,43 @@ CharPool *PoolContext<Tag>::pool = nullptr;
 // ---------------------------------------------------------------------------
 template <typename T, typename Tag>
 class StaticPoolAllocator {
-public:
-  using value_type = T;
+  public:
+    using value_type = T;
 
-  // Stateless — all instances backed by the same static pool.
-  using is_always_equal                        = std::true_type;
-  using propagate_on_container_copy_assignment = std::true_type;
-  using propagate_on_container_move_assignment = std::true_type;
-  using propagate_on_container_swap            = std::true_type;
+    // Stateless — all instances backed by the same static pool.
+    using is_always_equal                        = std::true_type;
+    using propagate_on_container_copy_assignment = std::true_type;
+    using propagate_on_container_move_assignment = std::true_type;
+    using propagate_on_container_swap            = std::true_type;
 
-  constexpr StaticPoolAllocator() noexcept = default;
+    constexpr StaticPoolAllocator() noexcept = default;
 
-  // Rebind constructor: StaticPoolAllocator<U,Tag> → StaticPoolAllocator<T,Tag>.
-  template <typename U>
-  constexpr StaticPoolAllocator(const StaticPoolAllocator<U, Tag> &) noexcept {}
+    // Rebind constructor: StaticPoolAllocator<U,Tag> → StaticPoolAllocator<T,Tag>.
+    template <typename U>
+    constexpr StaticPoolAllocator(const StaticPoolAllocator<U, Tag> &) noexcept {}
 
-  [[nodiscard]] T *allocate(std::size_t n) {
-    CharPool *p = PoolContext<Tag>::pool;
-    if (!p) return nullptr;
-    void *mem = p->allocate(n * sizeof(T));
-    if (!mem) return nullptr;
-    return static_cast<T *>(mem);
-  }
+    [[nodiscard]] T *allocate(std::size_t n) {
+      CharPool *p = PoolContext<Tag>::pool;
+      if (!p) { return nullptr; }
+      void *mem = p->allocate(n * sizeof(T));
+      if (!mem) { return nullptr; }
+      return static_cast<T *>(mem);
+    }
 
-  void deallocate(T *ptr, std::size_t n) noexcept {
-    if (CharPool *p = PoolContext<Tag>::pool)
-      p->deallocate(reinterpret_cast<char *>(ptr), n * sizeof(T));
-    // If pool was already reset(), the deallocation is a safe no-op.
-  }
+    void deallocate(T *ptr, std::size_t n) noexcept {
+      if (CharPool *p = PoolContext<Tag>::pool) {
+        p->deallocate(reinterpret_cast<char *>(ptr), n * sizeof(T));
+      }
+      // If pool was already reset(), the deallocation is a safe no-op.
+    }
 
-  // All instances with the same Tag are equal (they share the same pool).
-  template <typename U>
-  bool operator==(const StaticPoolAllocator<U, Tag> &) const noexcept {
-    return true;
-  }
-  template <typename U>
-  bool operator!=(const StaticPoolAllocator<U, Tag> &) const noexcept {
-    return false;
-  }
+    // All instances with the same Tag are equal (they share the same pool).
+    template <typename U>
+    bool operator==(const StaticPoolAllocator<U, Tag> &) const noexcept {
+      return true;
+    }
+    template <typename U>
+    bool operator!=(const StaticPoolAllocator<U, Tag> &) const noexcept {
+      return false;
+    }
 };

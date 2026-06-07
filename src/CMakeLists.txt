@@ -34,6 +34,7 @@ set(components
     simple_db
     display_list
     simple_list
+    bt
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

@@ -32,17 +32,17 @@
 using namespace pugi;
 
 class BookViewerInterp : public HTMLInterpreter {
-public:
-  BookViewerInterp(EPubPtr &the_epub, PagePtr &the_page, DOMPtr &the_dom,
-                   Page::ComputeMode the_comp_mode, const EPub::ItemInfo &the_item)
+  public:
+    BookViewerInterp(EPubPtr &the_epub, PagePtr &the_page, DOMPtr &the_dom,
+                     Page::ComputeMode the_comp_mode, const EPub::ItemInfo &the_item)
       : HTMLInterpreter(the_epub, the_page, the_dom, the_comp_mode, the_item) {}
-  ~BookViewerInterp() {}
+    ~BookViewerInterp() {}
 
-protected:
-  auto pageEnd(const Page::Format &fmt) -> bool {
-    LOG_D("---- PAGE END ----");
-    return true;
-  }
+  protected:
+    auto pageEnd(const Page::Format &fmt) -> bool {
+      LOG_D("---- PAGE END ----");
+      return true;
+    }
 };
 
 auto BookViewer::recreatePage(Fonts &fonts) -> bool {
@@ -65,11 +65,11 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
     int16_t idx;
 
-    int8_t showTitle = 0;
+    int8_t  showTitle = 0;
     config.get(Config::Ident::SHOW_TITLE, &showTitle);
 
     uint16_t page_top             = 0;
-    int16_t title_baseline_offset = 0;
+    int16_t  title_baseline_offset = 0;
 
     if (showTitle != 0) {
       FontPtr &title_font   = epub->getFonts().getFont(TITLE_FONT);
@@ -82,22 +82,22 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     }
 
     Page::Format fmt = {
-        .lineHeightFactor = epub->getLineHeightFactor(),
-        .fontIndex        = idx,
-        .fontSize         = epub->getBookFormatParams()->fontSize,
-        .screenTop        = page_top,
-        .screenBottom     = pageBottom,
+      .lineHeightFactor = epub->getLineHeightFactor(),
+      .fontIndex        = idx,
+      .fontSize         = epub->getBookFormatParams()->fontSize,
+      .screenTop        = page_top,
+      .screenBottom     = pageBottom,
     };
 
-#if EPUB_LINUX_BUILD
-    std::this_thread::yield();
-#else
-    vTaskDelay(pdMS_TO_TICKS(1));
-#endif
+    #if EPUB_LINUX_BUILD
+      std::this_thread::yield();
+    #else
+      vTaskDelay(pdMS_TO_TICKS(1));
+    #endif
 
     const PageLocs::PageInfo *page_info = pageLocs.getPageInfo(pageId);
 
-    if (page_info == nullptr) return;
+    if (page_info == nullptr) { return; }
 
     auto dom    = DOM::Make(epub->getDomPools());
     auto interp = std::make_unique<BookViewerInterp>(epub, page, dom, Page::ComputeMode::DISPLAY,
@@ -105,22 +105,28 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     interp->setLimits(pageId.offset, pageId.offset + page_info->size,
                       epub->getBookFormatParams()->showPictures != 0);
 
-#if DEBUGGING_AID
-    interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
-    interp->checkPageToShow(pageLocs.getPageNbr(pageId));
-#endif
+    #if DEBUGGING_AID
+      interp->setPagesToShowState(PAGE_FROM, PAGE_TO);
+      interp->checkPageToShow(pageLocs.getPageNbr(pageId));
+    #endif
 
     xml_node node;
 
     if ((node = epub->getCurrentItem().child("html").child("body"))) {
 
-      page->start(fmt);
+      #if EPUB_LINUX_BUILD
+        page->start(fmt, true);
+      #else
+        page->start(fmt, (fmt.fontSize < 15) &&
+                    (screen.getOrientation() == Screen::Orientation::BOTTOM ||
+                     screen.getOrientation() == Screen::Orientation::TOP));
+      #endif
 
       Page::Format *new_fmt = interp->duplicateFmt(fmt);
 
       if (interp->buildPagesRecurse(node, *new_fmt, dom->body, 1)) {
 
-        if (page->someDataWaiting()) page->endParagraph(fmt);
+        if (page->someDataWaiting()) { page->endParagraph(fmt); }
 
         fmt.lineHeightFactor = 1.0;
         fmt.fontIndex        = TITLE_FONT;
@@ -156,16 +162,16 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
 auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
   Page::Format fmt = {
-      .fontIndex    = SYSTEM_ITALIC_FONT_INDEX,
-      .fontSize     = 14,
-      .screenTop    = 100,
-      .screenBottom = 30,
-      .fontStyle    = FaceStyle::ITALIC,
-      .align        = CSS::Align::CENTER,
+    .fontIndex    = SYSTEM_ITALIC_FONT_INDEX,
+    .fontSize     = 14,
+    .screenTop    = 100,
+    .screenBottom = 30,
+    .fontStyle    = FaceStyle::ITALIC,
+    .align        = CSS::Align::CENTER,
   };
 
-  std::string title  = epub->getTitle();
-  std::string author = epub->getAuthor();
+  std::string  title  = epub->getTitle();
+  std::string  author = epub->getAuthor();
 
   page->start(fmt);
 
@@ -194,12 +200,12 @@ auto BookViewer::displayPage(const PageId &pageId) -> void {
 
 auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
   if ((pageId.itemrefIndex < 0) || (pageId.offset < 0)) {
-    LOG_W("Ignoring invalid preparePage request: itemref=%d offset=%" PRIi32, pageId.itemrefIndex,
+    LOG_W("Ignoring invalid preparePage request: itemref={} offset={}", pageId.itemrefIndex,
           pageId.offset);
     return false;
   }
 
-  if (!recreatePage(epub->getFonts())) return false;
+  if (!recreatePage(epub->getFonts())) { return false; }
 
   current_page_id = pageId;
 
@@ -209,7 +215,7 @@ auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
     if (epub->getBookFormatParams()->showPictures != 0) {
       HimemString fname = epub->getCoverFilename();
       if (!fname.empty()) {
-        // LOG_D("Cover filename: %s", fname);
+        // LOG_D("Cover filename: {}", fname);
         auto coverInfo = epub->getPicture(fname, false);
         if (coverInfo != nullptr) {
           showLoadIcon(coverInfo->getDim());
@@ -224,7 +230,7 @@ auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
           }
 
         } else {
-          LOG_W("Unable to retrieve cover file: %s", fname.c_str());
+          LOG_W("Unable to retrieve cover file: {}", fname);
           showFakeCover(epub);
         }
         return false;

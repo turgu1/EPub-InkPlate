@@ -13,8 +13,8 @@
 #include <memory>
 
 #if EPUB_INKPLATE_BUILD
-  #include "inkplate_platform.hpp"
-  #include "nvs.h"
+#include "inkplate_platform.hpp"
+#include "nvs.h"
 #endif
 
 #define BUFFER_SIZE 250
@@ -326,18 +326,18 @@ auto MsgViewer::outOfMemory(const char *reason) -> void {
 
   screen.forceFullUpdate();
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-  #define MSG "Press the WakeUp Button to restart."
-  #define INT_PIN TouchScreen::INTERRUPT_PIN
-  #define LEVEL 0
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
+#define MSG "Press the WakeUp Button to restart."
+#define INT_PIN EInk::WAKE_UP_PIN
+#define LEVEL 0
 #else
-  #define MSG "Press a key to restart."
-  #if EXTENDED_CASE
-    #define INT_PIN PressKeys::INTERRUPT_PIN
-  #else
-    #define INT_PIN TouchKeys::INTERRUPT_PIN
-  #endif
-  #define LEVEL 1
+#define MSG "Press a key to restart."
+#if EXTENDED_CASE
+#define INT_PIN PressKeys::INTERRUPT_PIN
+#elif INKPLATE_6 || INKPLATE_10
+#define INT_PIN TouchKeys::INTERRUPT_PIN
+#endif
+#define LEVEL 1
 #endif
 
   show(ALERT, true, true, "OUT OF MEMORY!!",

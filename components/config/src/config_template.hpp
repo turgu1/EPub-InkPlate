@@ -13,58 +13,58 @@
 
 template <class IdType, int cfg_size>
 class ConfigBase {
-public:
-  using Ident = IdType;
-  enum class EntryType {
-    STRING, INT, INT64, BYTE, FONTS_DB, DOUBLE
-  };
-  struct ConfigDescr {
-    Ident ident;
-    EntryType type;
-    const char *caption;
-    void *value;
-    const void *default_value;
-    uint8_t max_size;
-  };
-  using CfgType = std::array<ConfigDescr, cfg_size>;
+  public:
+    using Ident = IdType;
+    enum class EntryType {
+      STRING, INT, INT64, BYTE, FONTS_DB, DOUBLE
+    };
+    struct ConfigDescr {
+      Ident ident;
+      EntryType type;
+      const char *caption;
+      void *value;
+      const void *default_value;
+      uint8_t max_size;
+    };
+    using CfgType = std::array<ConfigDescr, cfg_size>;
 
-private:
-  static constexpr char const *TAG = "Config";
+  private:
+    static constexpr char const *TAG = "Config";
 
-  static CfgType cfg;
-  const std::string config_filename;
+    static CfgType cfg;
+    const std::string config_filename;
 
-  bool modified;
-  bool comment;
+    bool modified;
+    bool comment;
 
-  auto parseLine(char *buff, char **caption, char **value) -> bool;
+    auto parseLine(char *buff, char **caption, char **value) -> bool;
 
-public:
-  ConfigBase(const HimemString &conf_filename, bool show_comment)
+  public:
+    ConfigBase(const HimemString &conf_filename, bool show_comment)
       : config_filename(conf_filename), modified(false), comment(show_comment) {};
 
-  ~ConfigBase() = default;
+    ~ConfigBase() = default;
 
-  auto get(IdType id, int32_t *val) -> bool;
-  auto get(IdType id, int8_t *val) -> bool;
-  auto get(IdType id, int64_t *val) -> bool;
-  auto get(IdType id, HimemString &val) -> bool;
-  auto get(IdType id, FontsDB **val) -> bool;
-  auto get(IdType id, double *val) -> bool;
-  auto put(IdType id, int32_t val) -> void;
-  auto put(IdType id, int8_t val) -> void;
-  auto put(IdType id, int64_t val) -> void;
-  auto put(IdType id, HimemString &val) -> void;
-  auto put(IdType id, double val) -> void;
+    auto get(IdType id, int32_t *val) -> bool;
+    auto get(IdType id, int8_t *val) -> bool;
+    auto get(IdType id, int64_t *val) -> bool;
+    auto get(IdType id, HimemString &val) -> bool;
+    auto get(IdType id, FontsDB **val) -> bool;
+    auto get(IdType id, double *val) -> bool;
+    auto put(IdType id, int32_t val) -> void;
+    auto put(IdType id, int8_t val) -> void;
+    auto put(IdType id, int64_t val) -> void;
+    auto put(IdType id, HimemString &val) -> void;
+    auto put(IdType id, double val) -> void;
 
-  auto read() -> bool;
-  auto save(bool force = false) -> bool;
+    auto read() -> bool;
+    auto save(bool force = false) -> bool;
 
-  [[nodiscard]] inline auto isModified() -> bool { return modified; }
+    [[nodiscard]] inline auto isModified() -> bool { return modified; }
 
-  #if DEBUGGING
-    auto show() -> void;
-  #endif
+    #if DEBUGGING
+      auto show() -> void;
+    #endif
 };
 
 // ----- get(int32_t) -----
@@ -218,28 +218,28 @@ auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **
 
   for (;;) {
     uint8_t size = strlen(buff);
-    if ((size > 0) && (buff[size - 1] == '\n')) buff[size - 1] = 0;
+    if ((size > 0) && (buff[size - 1] == '\n')) { buff[size - 1] = 0; }
 
     // Get rid of blank lines, spaces at beginning of line and comments
 
     char *str = buff;
     while (*str == ' ') ++str;
-    if ((*str == '#') || (*str == 0)) break;
+    if ((*str == '#') || (*str == 0)) { break; }
 
     // isolate caption
 
     *caption = str;
     while ((*str != 0) && (*str != ' ') && (*str != '=')) ++str;
-    if (*str == 0) break;
+    if (*str == 0) { break; }
     if (*str == '=') {
       *str++ = 0;
     } else {
       *str++ = 0;
       while (*str == ' ') ++str;
-      if (*str++ != '=') break;
+      if (*str++ != '=') { break; }
     }
     while (*str == ' ') ++str;
-    if (*str == 0) break;
+    if (*str == 0) { break; }
 
     // isolate value
 
@@ -247,10 +247,12 @@ auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **
       ++str;
       *value = str;
       while ((*str != 0) && (*str != '"')) ++str;
-      if (*str == '"')
+      if (*str == '"') {
         *str = 0;
-      else
+      }
+      else {
         break;
+      }
     } else {
       *value = str;
       while (*str != 0) ++str;
@@ -270,8 +272,8 @@ auto ConfigBase<IdType, cfg_size>::parseLine(char *buff, char **caption, char **
 template <class IdType, int cfg_size>
 auto ConfigBase<IdType, cfg_size>::read() -> bool {
   FontsDB *fontsDB     = nullptr;
-  uint8_t fontIndex    = 0;
-  int8_t *fontIndexRef = nullptr;
+  uint8_t  fontIndex    = 0;
+  int8_t * fontIndexRef = nullptr;
 
   // First, initialize all configs to default values
   for (auto &entry : cfg) {
@@ -310,14 +312,14 @@ auto ConfigBase<IdType, cfg_size>::read() -> bool {
   }
 
   std::array<char, 128> buff{};
-  char *caption;
-  char *value;
+  char *                caption;
+  char *                value;
 
   while (!file.eof()) {
     file.getline(buff.data(), buff.size());
     if (parseLine(buff.data(), &caption, &value)) {
-      LOG_D("Caption: %s, value: %s", caption, value);
-      if (*caption == '\0') continue;
+      LOG_D("Caption: {}, value: {}", caption, value);
+      if (*caption == '\0') { continue; }
       for (auto &entry : cfg) {
         if (strcmp(caption, entry.caption) == 0) {
           switch (entry.type) {
@@ -364,21 +366,21 @@ template <class IdType, int cfg_size>
 auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
   if (force || modified) {
     std::ofstream file(config_filename);
-    if (!file.is_open()) return false;
+    if (!file.is_open()) { return false; }
 
     if (comment) {
       file << "# EPub-InkPlate Config File\n"
-              "# -------------------------\n"
-              "#\n"
-              "# (This file will be reinitialized automatically)\n"
-              "#\n"
-              "# Please respect the content format:\n"
-              "#\n"
-              "# - Comments start with # (no comment on parameter lines).\n"
-              "# - Parameters are of the form 'param_name = value' or 'param_name = \"value\"'.\n"
-              "# - Blank lines are allowed.\n"
-              "# - The following parameters are recognized:\n"
-              "#\n";
+        "# -------------------------\n"
+        "#\n"
+        "# (This file will be reinitialized automatically)\n"
+        "#\n"
+        "# Please respect the content format:\n"
+        "#\n"
+        "# - Comments start with # (no comment on parameter lines).\n"
+        "# - Parameters are of the form 'param_name = value' or 'param_name = \"value\"'.\n"
+        "# - Blank lines are allowed.\n"
+        "# - The following parameters are recognized:\n"
+        "#\n";
 
       for (auto &entry : cfg) {
         if (entry.type != EntryType::FONTS_DB) {
@@ -431,22 +433,22 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
     for (auto entry : cfg) {
       switch (entry.type) {
       case EntryType::STRING:
-        LOG_D("%s = \"%s\"", entry.caption, (char *)entry.value);
+        LOG_D("{} = \"{}\"", entry.caption, (char *)entry.value);
         break;
       case EntryType::INT:
-        LOG_D("%s = %" PRIi32, entry.caption, *(int32_t *)entry.value);
+        LOG_D("{} = {}", entry.caption, *(int32_t *)entry.value);
         break;
       case EntryType::INT64:
-        LOG_D("%s = %" PRIi64, entry.caption, *(int64_t *)entry.value);
+        LOG_D("{} = {}", entry.caption, *(int64_t *)entry.value);
         break;
       case EntryType::FONTS_DB:
-        LOG_D("%s = <FontsDB>", entry.caption);
+        LOG_D("{} = <FontsDB>", entry.caption);
         break;
       case EntryType::DOUBLE:
-        LOG_D("%s = %f", entry.caption, *(double *)entry.value);
+        LOG_D("{} = {}", entry.caption, *(double *)entry.value);
         break;
       case EntryType::BYTE:
-        LOG_D("%s = %" PRIi8, entry.caption, *(int8_t *)entry.value);
+        LOG_D("{} = {}", entry.caption, *(int8_t *)entry.value);
         break;
       default:
         break;

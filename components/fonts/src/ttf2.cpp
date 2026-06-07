@@ -18,7 +18,7 @@ TTF::TTF(const FontFaceDescriptorPtr &descr, FT_Library &library) : Font() {
 
 TTF::~TTF() {
   ready = false;
-  if (face != nullptr) clearFace();
+  if (face != nullptr) { clearFace(); }
 }
 
 auto TTF::clearFace() -> void {
@@ -33,18 +33,18 @@ auto TTF::clearFace() -> void {
 }
 
 auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -> bool {
-  int error;
+  int              error;
   Glyphs::iterator git;
 
-  if (face == nullptr) return false;
+  if (face == nullptr) { return false; }
 
   if (currentFontSize != glyphSize) {
-    if (!setFontSize(glyphSize)) return false;
+    if (!setFontSize(glyphSize)) { return false; }
   }
 
-  int glyphIndex = FT_Get_Char_Index(face, charcode);
+  int glyphIndex = FT_Get_Char_Index(face, (uint32_t)charcode);
   if (glyphIndex == 0) {
-    LOG_D("Charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, charcode,
+    LOG_D("Charcode not found in face: {}, font_index: {}", (uint32_t)charcode,
           fontsCacheIndex);
     return false;
   } else {
@@ -52,7 +52,7 @@ auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -
                           glyphIndex,       /* glyph index           */
                           FT_LOAD_DEFAULT); /* load flags            */
     if (error) {
-      LOG_E("Unable to load glyph for charcode: %" PRIu32 " from face: %s", charcode,
+      LOG_E("Unable to load glyph for charcode: {} from face: {}", (uint32_t)charcode,
             face->family_name ? face->family_name : "unknown");
       return false;
     }
@@ -68,8 +68,8 @@ auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -
   if (glyphLoadMode == GlyphLoadMode::WITH_BITMAP) {
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
       const bool useMonoRender =
-          (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) &&
-          !isAntialiasingPreferred();
+        (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) &&
+        !isAntialiasingPreferred();
       if (useMonoRender) {
         error = FT_Render_Glyph(face->glyph,          // glyph slot
                                 FT_RENDER_MODE_MONO); // render mode
@@ -79,7 +79,7 @@ auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -
       }
 
       if (error) {
-        LOG_E("Unable to render glyph for charcode: %" PRIu32 " error: %d", charcode, error);
+        LOG_E("Unable to render glyph for charcode: {} error: {}", (uint32_t)charcode, error);
         return false;
       }
     }
@@ -131,25 +131,25 @@ auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -
 
 auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
 
-  int16_t kern{0};
+  int16_t kern{ 0 };
 
-  int glyphIndex = FT_Get_Char_Index(face, nextCharcode);
+  int     glyphIndex = FT_Get_Char_Index(face, nextCharcode);
   if (glyphIndex != 0) {
     FT_Vector kerning;
-    int error = FT_Get_Kerning(face, glyph.index, glyphIndex, FT_KERNING_DEFAULT, &kerning);
+    int       error = FT_Get_Kerning(face, glyph.index, glyphIndex, FT_KERNING_DEFAULT, &kerning);
     if (error) {
-      LOG_E("Unable to get kerning for charcode: %" PRIu32 " error: %d", nextCharcode, error);
+      LOG_E("Unable to get kerning for charcode: {} error: {}", (uint32_t)nextCharcode, error);
     } else {
       kern = kerning.x >> 6;
 
       // if (kerning.x != 0) {
-      //   LOG_I("Kerning between : %" PRIu32 " and : %" PRIu32 " is: %d (%d)", glyph.index,
+      //   LOG_I("Kerning between : {} and : {} is: {} ({})", glyph.index,
       //         glyphIndex, kerning.x, kern);
       // }
     }
 
   } else {
-    LOG_W("Next charcode not found in face: %" PRIu32 ", font_index: %" PRIi16, nextCharcode,
+    LOG_W("Next charcode not found in face: {}, font_index: {}", (uint32_t)nextCharcode,
           fontsCacheIndex);
   }
 
@@ -165,7 +165,7 @@ auto TTF::setFontSize(int16_t size) -> bool {
                                      Screen::RESOLUTION) // vertical device resolution
                   : FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(size));
   if (error) {
-    LOG_E("Unable to set font size Error code: %d", error);
+    LOG_E("Unable to set font size Error code: {}", error);
     return false;
   }
 
@@ -173,12 +173,12 @@ auto TTF::setFontSize(int16_t size) -> bool {
 }
 
 auto TTF::setFontFace(const FontFaceDescriptorPtr &descr, FT_Library &library) -> bool {
-  if (face != nullptr) clearFace();
+  if (face != nullptr) { clearFace(); }
 
   int error = FT_New_Memory_Face(library, (const FT_Byte *)descr->fontData.get(),
                                  descr->fontDataSize, 0, &face);
   if (error) {
-    LOG_E("The memory font format is unsupported or is broken (%d).", error);
+    LOG_E("The memory font format is unsupported or is broken ({}).", error);
     return false;
   }
 

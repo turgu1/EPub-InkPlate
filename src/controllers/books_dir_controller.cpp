@@ -38,7 +38,7 @@ auto BooksDirController::setup() -> void {
     } else {
 
       NVSMgr::NVSData nvsData;
-      uint32_t id;
+      uint32_t        id;
 
       if (nvsMgr.getLast(id, nvsData)) {
         bookPageId.itemrefIndex = nvsData.itemrefIndex;
@@ -50,21 +50,21 @@ auto BooksDirController::setup() -> void {
 
           lastReadBookIndex = currentBookIndex = idx;
 
-          // LOG_I("last book id: %" PRIu32 " page:(%d, %d) wasShown:%s", id,
+          // LOG_I("last book id: {} page:({}, {}) wasShown:{}", id,
           // bookPageId.itemrefIndex,
           //       bookPageId.offset, bookWasShown ? "yes" : "no");
 
-          LOG_D("Last book ref index: %" PRIi16, bookPageId.itemrefIndex);
-          LOG_D("Last book offset: %" PRIi32, bookPageId.offset);
-          LOG_D("Show it now: %s", bookWasShown ? "yes" : "no");
+          LOG_D("Last book ref index: {}", bookPageId.itemrefIndex);
+          LOG_D("Last book offset: {}",    bookPageId.offset);
+          LOG_D("Show it now: {}",         bookWasShown ? "yes" : "no");
         }
       }
     }
 
   #else
 
-    std::string bookFilenameBuffer;
-    char *filename = nullptr;
+    std::string   bookFilenameBuffer;
+    char *        filename = nullptr;
 
     std::ifstream f(MAIN_FOLDER "/last_book.txt");
     if (f.is_open() && std::getline(f, bookFilenameBuffer)) {
@@ -105,7 +105,7 @@ auto BooksDirController::setup() -> void {
       bookFilename      = bookFilenameBuffer;
     }
 
-    LOG_D("Book to show: idx:%d page:(%d, %d) wasShown:%s", lastReadBookIndex,
+    LOG_D("Book to show: idx:{} page:({}, {}) wasShown:{}", lastReadBookIndex,
           bookPageId.itemrefIndex, bookPageId.offset, bookWasShown ? "yes" : "no");
 
   #endif
@@ -126,17 +126,17 @@ auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
 
     if ((currentBookIndex != -1) && booksDir.getBookId(currentBookIndex, bookId)) {
 
-      NVSMgr::NVSData nvsData = {.offset       = pageId.offset,
-                                 .itemrefIndex = pageId.itemrefIndex,
-                                 .wasShown     = static_cast<uint8_t>(goingToDeepSleep ? 1 : 0),
-                                 .filler       = 0};
+      NVSMgr::NVSData nvsData = { .offset       = pageId.offset,
+                                  .itemrefIndex = pageId.itemrefIndex,
+                                  .wasShown     = static_cast<uint8_t>(goingToDeepSleep ? 1 : 0),
+                                  .filler       = 0 };
 
       if (!nvsMgr.saveLocation(bookId, nvsData)) {
         LOG_E("Unable to save current ebook location");
       }
       lastReadBookIndex = currentBookIndex = booksDir.getSortedIdxFromId(bookId);
 
-      // LOG_I("Saved last book location: id:%" PRIu32 " page:(%d, %d) wasShown:%s", bookId,
+      // LOG_I("Saved last book location: id:{} page:({}, {}) wasShown:{}", bookId,
       //       pageId.itemrefIndex, pageId.offset, goingToDeepSleep ? "yes" : "no");
     }
 
@@ -154,7 +154,7 @@ auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
 
 auto BooksDirController::showLastBook() -> void {
 
-  if (lastReadBookIndex == -1) return;
+  if (lastReadBookIndex == -1) { return; }
 
   LOG_D("===> showLastBook()...");
   static HimemString bookFilenameLocal;
@@ -168,7 +168,7 @@ auto BooksDirController::showLastBook() -> void {
     bookFilenameLocal += book->filename;
     bookTitleLocal = book->title;
 
-    // LOG_I("Showing last book: id:%" PRIu32 " page:(%d, %d) wasShown:%s", book->id,
+    // LOG_I("Showing last book: id:{} page:({}, {}) wasShown:{}", book->id,
     //       bookPageId.itemrefIndex, bookPageId.offset, bookWasShown ? "yes" : "no");
 
     if (bookController.openBook(bookTitleLocal, bookFilenameLocal, bookPageId)) {
@@ -178,12 +178,12 @@ auto BooksDirController::showLastBook() -> void {
 }
 
 auto BooksDirController::openBookFromPath(const char *bookPath, const PageId &pageId) -> bool {
-  if ((bookPath == nullptr) || (*bookPath == '\0')) return false;
+  if ((bookPath == nullptr) || (*bookPath == '\0')) { return false; }
 
   static HimemString bookFilenameLocal;
   static HimemString bookTitleLocal;
 
-  const char *filenameOnly = std::strrchr(bookPath, '/');
+  const char *       filenameOnly = std::strrchr(bookPath, '/');
   filenameOnly             = (filenameOnly != nullptr) ? (filenameOnly + 1) : bookPath;
 
   currentBookIndex  = -1;
@@ -231,7 +231,7 @@ auto BooksDirController::enter() -> void {
   if (bookWasShown && (lastReadBookIndex != -1)) {
     showLastBook();
   } else {
-    if (currentBookIndex == -1) currentBookIndex = 0;
+    if (currentBookIndex == -1) { currentBookIndex = 0; }
     currentBookIndex = booksDirViewer->showPageAndHighlight(currentBookIndex);
   }
 }
@@ -266,7 +266,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
       if ((viewerId == MATRIX_VIEWER) || (event.x < (Screen::getWidth() / 3))) {
         currentBookIndex = booksDirViewer->getIndexAt(event.x, event.y);
         if ((currentBookIndex >= 0) && (currentBookIndex < booksDir.getBookCount())) {
-          LOG_D("[TAP] Book Index: %d", currentBookIndex);
+          LOG_D("[TAP] Book Index: {}", currentBookIndex);
           auto book = booksDir.getBookData(currentBookIndex);
           if (book) {
             lastReadBookIndex = currentBookIndex;
@@ -275,12 +275,12 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
             bookTitleLocal = book->title;
             bookFilename   = book->filename;
 
-            PageId pageId = {0, 0};
+            PageId pageId = { 0, 0 };
 
             #if EPUB_INKPLATE_BUILD
               NVSMgr::NVSData nvsData;
               if (nvsMgr.getLocation(book->id, nvsData)) {
-                pageId = {nvsData.itemrefIndex, nvsData.offset};
+                pageId = { nvsData.itemrefIndex, nvsData.offset };
               }
             #endif
 
@@ -303,7 +303,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
     case EventMgr::EventKind::HOLD:
       currentBookIndex = booksDirViewer->getIndexAt(event.x, event.y);
       if ((currentBookIndex >= 0) && (currentBookIndex < booksDir.getBookCount())) {
-        LOG_D("[HOLD] Book Index: %d", currentBookIndex);
+        LOG_D("[HOLD] Book Index: {}", currentBookIndex);
         booksDirViewer->highlightBook(currentBookIndex);
       }
       break;
@@ -327,71 +327,71 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
     static HimemString bookTitleLocal;
 
     switch (event.kind) {
-      #if EXTENDED_CASE
+    #if EXTENDED_CASE || BLE_KEYPAD
       case EventMgr::EventKind::PREV:
-      #else
+    #else
       case EventMgr::EventKind::DBL_PREV:
-      #endif
-      currentBookIndex = booksDirViewer->prevColumn();
-      break;
+        #endif
+        currentBookIndex = booksDirViewer->prevColumn();
+        break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::NEXT:
-      #else
-      case EventMgr::EventKind::DBL_NEXT:
-      #endif
-      currentBookIndex = booksDirViewer->nextColumn();
-      break;
+        #if EXTENDED_CASE || BLE_KEYPAD
+          case EventMgr::EventKind::NEXT:
+        #else
+          case EventMgr::EventKind::DBL_NEXT:
+            #endif
+            currentBookIndex = booksDirViewer->nextColumn();
+            break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::DBL_PREV:
-      #else
-      case EventMgr::EventKind::PREV:
-      #endif
-      currentBookIndex = booksDirViewer->prevItem();
-      break;
+            #if EXTENDED_CASE || BLE_KEYPAD
+              case EventMgr::EventKind::DBL_PREV:
+            #else
+              case EventMgr::EventKind::PREV:
+                #endif
+                currentBookIndex = booksDirViewer->prevItem();
+                break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::DBL_NEXT:
-      #else
-      case EventMgr::EventKind::NEXT:
-      #endif
-      currentBookIndex = booksDirViewer->nextItem();
-      break;
+                #if EXTENDED_CASE || BLE_KEYPAD
+                  case EventMgr::EventKind::DBL_NEXT:
+                #else
+                  case EventMgr::EventKind::NEXT:
+                    #endif
+                    currentBookIndex = booksDirViewer->nextItem();
+                    break;
 
-    case EventMgr::EventKind::SELECT:
-      if (currentBookIndex < booksDir.getBookCount()) {
-        auto book = booksDir.getBookData(currentBookIndex);
-        if (book) {
-          lastReadBookIndex = currentBookIndex;
-          bookFilenameLocal = BOOKS_FOLDER "/";
-          bookFilenameLocal += book->filename;
-          bookTitleLocal = book->title;
-          bookFilename   = book->filename;
+                  case EventMgr::EventKind::SELECT:
+                    if (currentBookIndex < booksDir.getBookCount()) {
+                      auto book = booksDir.getBookData(currentBookIndex);
+                      if (book) {
+                        lastReadBookIndex = currentBookIndex;
+                        bookFilenameLocal = BOOKS_FOLDER "/";
+                        bookFilenameLocal += book->filename;
+                        bookTitleLocal = book->title;
+                        bookFilename   = book->filename;
 
-          PageId pageId = {0, 0};
+                        PageId pageId = { 0, 0 };
 
-          #if EPUB_INKPLATE_BUILD
-            NVSMgr::NVSData nvsData;
-            if (nvsMgr.getLocation(book->id, nvsData)) {
-              pageId.itemrefIndex = nvsData.itemrefIndex;
-              pageId.offset       = nvsData.offset;
-            }
-          #endif
+                        #if EPUB_INKPLATE_BUILD
+                          NVSMgr::NVSData nvsData;
+                          if (nvsMgr.getLocation(book->id, nvsData)) {
+                            pageId.itemrefIndex = nvsData.itemrefIndex;
+                            pageId.offset       = nvsData.offset;
+                          }
+                        #endif
 
-          if (bookController.openBook(bookTitleLocal, bookFilenameLocal, pageId)) {
-            appController.setController(AppController::Ctrl::BOOK);
-          }
-        }
-      }
-      break;
+                        if (bookController.openBook(bookTitleLocal, bookFilenameLocal, pageId)) {
+                          appController.setController(AppController::Ctrl::BOOK);
+                        }
+                      }
+                    }
+                    break;
 
-    case EventMgr::EventKind::DBL_SELECT:
-      appController.setController(AppController::Ctrl::OPTION);
-      break;
+                  case EventMgr::EventKind::DBL_SELECT:
+                    appController.setController(AppController::Ctrl::OPTION);
+                    break;
 
-    case EventMgr::EventKind::NONE:
-      break;
+                  case EventMgr::EventKind::NONE:
+                    break;
     }
   }
 #endif

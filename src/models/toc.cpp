@@ -31,16 +31,16 @@ auto TOC::load(EPubPtr &epub) -> bool {
   HimemString filename = buildFilename(epub);
   clean();
 
-  LOG_D("Reading toc: %s.", filename.c_str());
+  LOG_D("Reading toc: {}.", filename);
 
   if (!db->open(filename)) {
-    LOG_E("Can't open toc: %s", filename.c_str());
+    LOG_E("Can't open toc: {}", filename);
     return false;
   }
 
   // We first verify if the database content is of the current version
 
-  bool versionOk = false;
+  bool          versionOk = false;
   VersionRecord versionRecord;
 
   if (db->getRecordCount() > 0) {
@@ -71,7 +71,7 @@ auto TOC::load(EPubPtr &epub) -> bool {
           uint16_t idx = 0;
           while ((idx < count) && db->gotoNext()) {
             if (db->getRecordSize() == sizeof(EntryRecord)) {
-              if (!db->getRecord(&entries[idx], sizeof(EntryRecord))) break;
+              if (!db->getRecord(&entries[idx], sizeof(EntryRecord))) { break; }
               entries[idx].label = charBuffer.get() + (size_t)entries[idx].label;
               ++idx;
             } else {
@@ -80,7 +80,7 @@ auto TOC::load(EPubPtr &epub) -> bool {
             }
           }
           if (idx != count) {
-            LOG_E("The toc has been partially read: %d records.", idx);
+            LOG_E("The toc has been partially read: {} records.", idx);
           } else {
             ready = compacted = saved = true;
           }
@@ -105,7 +105,7 @@ auto TOC::load(EPubPtr &epub) -> bool {
     show();
   #endif
 
-  if (ready) LOG_I("Reading toc completed. Entry count: %d.", entries.size());
+  if (ready) { LOG_I("Reading toc completed. Entry count: {}.", entries.size()); }
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
@@ -114,11 +114,11 @@ auto TOC::load(EPubPtr &epub) -> bool {
 
 auto TOC::save(HimemString epubFilename) -> bool {
   LOG_D("save()");
-  if (saved) return true;
+  if (saved) { return true; }
 
   HimemString filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
 
-  if (!compact()) return false;
+  if (!compact()) { return false; }
 
   if (db->create(filename)) {
     VersionRecord versionRecord;
@@ -210,11 +210,11 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
     const char *label = node.child("navLabel").child("text").text().as_string();
     const char *fname = node.child("content").attribute("src").value();
 
-    xml_node n;
+    xml_node    n;
 
     EntryRecord entry;
     std::string theId;
-    char *filenameToFind;
+    char *      filenameToFind;
 
     entry.label = charPool->allocate(strlen(label) + 1);
     if (entry.label == nullptr) {
@@ -256,7 +256,7 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
         if ((n = opf->find_child(packagePred).find_child(spinePred))) {
 
           int16_t index = 0;
-          bool found    = false;
+          bool    found    = false;
 
           for (auto nn : n.children()) {
             if (strcmp(nn.attribute("idref").value(), idref) == 0) {
@@ -277,7 +277,7 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
             }
             entries.push_back(entry);
           } else {
-            LOG_E("Unable to find reference %s in spine", idref);
+            LOG_E("Unable to find reference {} in spine", idref);
             return false;
           }
         } else {
@@ -294,7 +294,7 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
     }
 
     if ((n = node.child("navPoint"))) {
-      if (!doNavPoints(n, level + 1)) return false;
+      if (!doNavPoints(n, level + 1)) { return false; }
     }
 
     node = node.next_sibling();
@@ -306,9 +306,9 @@ auto TOC::doNavPoints(pugi::xml_node &node, uint8_t level) -> bool {
 auto TOC::loadFromEpub(EPub &epub) -> bool {
   LOG_D("loadFromEpub()");
 
-  xml_node node, node2;
+  xml_node      node, node2;
   xml_attribute attr;
-  const char *filename = nullptr;
+  const char *  filename = nullptr;
 
   opf = &epub.getOpf();
 
@@ -327,27 +327,27 @@ auto TOC::loadFromEpub(EPub &epub) -> bool {
   // If filename was not found, returns gracefully. This is usually related
   // to a version 3 epub format that doesn't supply a V2 table of content.
 
-  if (filename == nullptr) return true;
+  if (filename == nullptr) { return true; }
 
   // retrieve the ncx file data
 
   uint32_t ncxSize;
-  bool result = false;
+  bool     result = false;
 
-  auto ncxData = epub.retrieveFile(filename, ncxSize);
-  if (ncxData == nullptr) return false;
+  auto     ncxData = epub.retrieveFile(filename, ncxSize);
+  if (ncxData == nullptr) { return false; }
 
   auto ncxOpf = std::make_unique<pugi::xml_document>();
-  if (ncxOpf == nullptr) return false;
+  if (ncxOpf == nullptr) { return false; }
 
   // parse xml and load navPoint entries
 
   xml_parse_result res = ncxOpf->load_buffer_inplace(ncxData.get(), ncxSize);
   if (res.status != status_ok) {
-    LOG_E("xml load error: %d", res.status);
+    LOG_E("xml load error: {}", res.description());
   } else {
     if ((node = ncxOpf->child("ncx").child("navMap").child("navPoint"))) {
-      if (!charPool) charPool = CharPool::Make();
+      if (!charPool) { charPool = CharPool::Make(); }
       if ((charPool != nullptr) && doNavPoints(node, 0)) {
         result = !entries.empty();
       } else {
@@ -367,7 +367,7 @@ auto TOC::loadFromEpub(EPub &epub) -> bool {
 auto TOC::compact() -> bool {
   LOG_D("compact()");
 
-  if (compacted) return true;
+  if (compacted) { return true; }
 
   charBuffer.reset();
   charBufferSize = 0;
@@ -383,12 +383,12 @@ auto TOC::compact() -> bool {
     }
 
     if (charBufferSize > static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
-      LOG_E("TOC compact size too large: %u", static_cast<unsigned>(charBufferSize));
+      LOG_E("TOC compact size too large: {}", static_cast<unsigned>(charBufferSize));
       return false;
     }
 
     charBuffer = makeUniqueHimem<char[]>(charBufferSize);
-    if (!charBuffer) return false;
+    if (!charBuffer) { return false; }
 
     char *buff = charBuffer.get();
     for (auto &e : entries) {
@@ -422,7 +422,7 @@ auto TOC::clean() -> void {
 
 auto TOC::set(std::string &id, int32_t currentOffset) -> void {
   auto itemrefIndex = pageLocs.getCurrentItemrefIndex();
-  if (itemrefIndex < 0) return;
+  if (itemrefIndex < 0) { return; }
 
   Infos::iterator infosIt = infos.find(std::make_pair(itemrefIndex, id));
 
@@ -433,7 +433,7 @@ auto TOC::set(std::string &id, int32_t currentOffset) -> void {
 
 auto TOC::set(int32_t currentOffset) -> void {
   auto itemrefIndex = pageLocs.getCurrentItemrefIndex();
-  if (itemrefIndex < 0) return;
+  if (itemrefIndex < 0) { return; }
   int16_t idx = -1;
 
   for (auto &e : entries) {
@@ -449,11 +449,11 @@ auto TOC::set(int32_t currentOffset) -> void {
 
 auto TOC::exists(const HimemString &epubFilename) -> bool {
   HimemString filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".toc";
-  auto db              = SimpleDB::Make();
-  if (!db->open(filename)) return false;
+  auto        db              = SimpleDB::Make();
+  if (!db->open(filename)) { return false; }
 
   VersionRecord versionRecord;
-  bool ok = false;
+  bool          ok = false;
 
   if ((db->getRecordCount() > 0) && db->gotoFirst() &&
       (db->getRecordSize() == sizeof(versionRecord)) &&

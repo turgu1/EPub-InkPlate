@@ -25,7 +25,7 @@ auto TocViewer::setup() -> void {
   currentScreenIdx = -1;
   currentEntryIdx  = -1;
 
-  LOG_D("TOC entry count: %d", epub->toc->getEntryCount());
+  LOG_D("TOC entry count: {}", epub->toc->getEntryCount());
 }
 
 auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void {
@@ -35,7 +35,7 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
   int16_t entryIdx = pageNbr * entriesPerPage;  // entry idx in the current page
   int16_t lastIdx  = entryIdx + entriesPerPage; // last entry idx in the current page
 
-  if (lastIdx > epub->toc->getEntryCount()) lastIdx = epub->toc->getEntryCount();
+  if (lastIdx > epub->toc->getEntryCount()) { lastIdx = epub->toc->getEntryCount(); }
 
   uint16_t xpos = 20;
   uint16_t ypos = titleYPos;
@@ -43,15 +43,15 @@ auto TocViewer::showPage(int16_t pageNbr, int16_t highlightedScreenIdx) -> void 
   page->setComputeMode(Page::ComputeMode::DISPLAY);
 
   Page::Format fmt = {
-      .lineHeightFactor = 0.8,
-      .fontIndex        = titleFont,
-      .fontSize         = titleFontSize,
-      .screenLeft       = xpos,
-      .screenRight      = 10,
-      .screenTop        = ypos,
-      .screenBottom     = static_cast<uint16_t>(Screen::getHeight() - (ypos + maxTitleSize + 20)),
-      .fontStyle        = FaceStyle::BOLD,
-      .align            = CSS::Align::CENTER,
+    .lineHeightFactor = 0.8,
+    .fontIndex        = titleFont,
+    .fontSize         = titleFontSize,
+    .screenLeft       = xpos,
+    .screenRight      = 10,
+    .screenTop        = ypos,
+    .screenBottom     = static_cast<uint16_t>(Screen::getHeight() - (ypos + maxTitleSize + 20)),
+    .fontStyle        = FaceStyle::BOLD,
+    .align            = CSS::Align::CENTER,
   };
 
   page->start(fmt);
@@ -103,21 +103,21 @@ auto TocViewer::highlight(int16_t screenIdx) -> void {
 
       // Clear the highlighting of the current item
 
-      int16_t entryIdx = currentPageNbr * entriesPerPage + currentScreenIdx;
+      int16_t                 entryIdx = currentPageNbr * entriesPerPage + currentScreenIdx;
 
       const TOC::EntryRecord &entry = epub->toc->getEntry(entryIdx);
 
-      uint16_t xpos = 20 + (entry.level * 20);
-      uint16_t ypos = firstEntryYPos + (currentScreenIdx * entryHeight);
+      uint16_t                xpos = 20 + (entry.level * 20);
+      uint16_t                ypos = firstEntryYPos + (currentScreenIdx * entryHeight);
 
-      Page::Format fmt = {
-          .lineHeightFactor = 0.8,
-          .fontIndex        = entryFont,
-          .fontSize         = entryFontSize,
-          .screenLeft       = xpos,
-          .screenRight      = 10,
-          .screenTop        = ypos,
-          .screenBottom = static_cast<uint16_t>(Screen::getHeight() - (ypos + entryHeight + 20)),
+      Page::Format            fmt = {
+        .lineHeightFactor = 0.8,
+        .fontIndex        = entryFont,
+        .fontSize         = entryFontSize,
+        .screenLeft       = xpos,
+        .screenRight      = 10,
+        .screenTop        = ypos,
+        .screenBottom = static_cast<uint16_t>(Screen::getHeight() - (ypos + entryHeight + 20)),
       };
 
       page->start(fmt);
@@ -162,7 +162,7 @@ auto TocViewer::showPageAndHighlight(int16_t entryIdx) -> int16_t {
   if (currentPageNbr != pageNbr) {
     showPage(pageNbr, screenIdx);
   } else {
-    if (screenIdx != currentScreenIdx) highlight(screenIdx);
+    if (screenIdx != currentScreenIdx) { highlight(screenIdx); }
   }
 
   currentEntryIdx = entryIdx;
@@ -188,7 +188,7 @@ auto TocViewer::nextItem() -> int16_t {
 
 auto TocViewer::prevItem() -> int16_t {
   int16_t entryIdx = currentEntryIdx - 1;
-  if (entryIdx < 0) entryIdx = 0;
+  if (entryIdx < 0) { entryIdx = 0; }
   return showPageAndHighlight(entryIdx);
 }
 
@@ -204,9 +204,11 @@ auto TocViewer::nextColumn() -> int16_t {
 
 auto TocViewer::prevColumn() -> int16_t {
   int16_t entryIdx = currentEntryIdx - entriesPerPage;
-  if (entryIdx < 0)
+  if (entryIdx < 0) {
     entryIdx = 0;
-  else
+  }
+  else {
     entryIdx = (entryIdx / entriesPerPage) * entriesPerPage;
+  }
   return showPageAndHighlight(entryIdx);
 }

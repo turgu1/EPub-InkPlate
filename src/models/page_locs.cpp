@@ -29,10 +29,10 @@
 #include <iostream>
 
 #if EPUB_INKPLATE_BUILD
-QueueHandle_t PageLocs::mgrQueue{nullptr};
+  QueueHandle_t PageLocs::mgrQueue{ nullptr };
 #else
   #include <mqueue.h>
-mqd_t PageLocs::mgrQueue{-1};
+  mqd_t PageLocs::mgrQueue{ -1 };
 #endif
 
 /**
@@ -48,29 +48,29 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
   controlTask = PageLocsControl::Make();
   controlTask->setup(epub->getCurrentFilename());
 
-#if EPUB_LINUX_BUILD
-  mq_unlink("/mgr");
+  #if EPUB_LINUX_BUILD
+    mq_unlink("/mgr");
 
-  mgrQueue = mq_open("/mgr", O_RDWR | O_CREAT, S_IRWXU, &mgrAttr);
-  if (mgrQueue == -1) {
-    LOG_E("Unable to open mgrQueue: %d", errno);
-    return;
-  }
+    mgrQueue = mq_open("/mgr", O_RDWR | O_CREAT, S_IRWXU, &mgrAttr);
+    if (mgrQueue == -1) {
+      LOG_E("Unable to open mgrQueue: {}", errno);
+      return;
+    }
 
-#else
-  esp_pthread_init();
+  #else
+    esp_pthread_init();
 
-  if (mgrQueue == nullptr) {
-    mgrQueue = xQueueCreate(5, sizeof(QueueData));
-  } else {
-    xQueueReset(mgrQueue);
-  }
+    if (mgrQueue == nullptr) {
+      mgrQueue = xQueueCreate(5, sizeof(QueueData));
+    } else {
+      xQueueReset(mgrQueue);
+    }
 
-#endif
+  #endif
 }
 
 // Reference-counted: >0 means at least one thread is blocking on mgrQueue
-std::atomic<int> relax{0}; // Deprecated; use correlationId instead
+std::atomic<int> relax{ 0 }; // Deprecated; use correlationId instead
 
 /**
  * Request on-demand ASAP retrieval for one itemref and wait for correlated
@@ -78,16 +78,16 @@ std::atomic<int> relax{0}; // Deprecated; use correlationId instead
  */
 auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   // Hardening #1: Use correlation IDs for safe request/response matching
-  if (!controlTask) return false;
+  if (!controlTask) { return false; }
 
   uint32_t requestId = telemetry.nextRequestId.fetch_add(1);
   telemetry.asapRequestsSubmitted.fetch_add(1);
 
-  // SHOW_IT("retrieveAsap: Sending GET_ASAP with correlationId=%u", requestId);
-  PageLocsControl::QueueData cmd{.req           = PageLocsControl::Req::GET_ASAP,
-                                 .itemrefIndex  = itemrefIndex,
-                                 .itemrefCount  = 0,
-                                 .correlationId = requestId};
+  // SHOW_IT("retrieveAsap: Sending GET_ASAP with correlationId={}", requestId);
+  PageLocsControl::QueueData cmd{ .req           = PageLocsControl::Req::GET_ASAP,
+                                  .itemrefIndex  = itemrefIndex,
+                                  .itemrefCount  = 0,
+                                  .correlationId = requestId };
 
   if (PageLocsControl::send(cmd) < 0) {
     LOG_W("retrieveAsap: failed to send GET_ASAP");
@@ -99,52 +99,52 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   // Allow retriever inserts to bypass mutex acquisition in that specific phase.
   relax.fetch_add(1, std::memory_order_relaxed);
 
-  bool gotReply = false;
-  bool matched  = false;
+  bool      gotReply = false;
+  bool      matched  = false;
   QueueData queueData;
 
-#if EPUB_LINUX_BUILD
-  timespec ts{};
-  clock_gettime(CLOCK_REALTIME, &ts);
-  constexpr int64_t ASAP_REPLY_TIMEOUT_MS = 60000;
-  const int64_t nsecTotal = static_cast<int64_t>(ts.tv_nsec) + ASAP_REPLY_TIMEOUT_MS * 1000000LL;
-  ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
-  ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
+  #if EPUB_LINUX_BUILD
+    timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    constexpr int64_t ASAP_REPLY_TIMEOUT_MS = 60000;
+    const int64_t     nsecTotal = static_cast<int64_t>(ts.tv_nsec) + ASAP_REPLY_TIMEOUT_MS * 1000000LL;
+    ts.tv_sec += static_cast<time_t>(nsecTotal / 1000000000LL);
+    ts.tv_nsec = static_cast<long>(nsecTotal % 1000000000LL);
 
-  while (mq_timedreceive(mgrQueue, (char *)&queueData, sizeof(queueData), nullptr, &ts) >= 0) {
-    if (queueData.correlationId == requestId && queueData.req == Req::ASAP_READY) {
-      gotReply = true;
-      matched  = true;
-      break;
-    } else {
-      LOG_W("retrieveAsap: mismatched reply (wanted corrId=%u, got req=%d corrId=%u itemref=%d)",
-            requestId, static_cast<int>(queueData.req), queueData.correlationId,
-            queueData.itemrefIndex);
-      telemetry.asapRepliesMismatched.fetch_add(1);
+    while (mq_timedreceive(mgrQueue, (char *)&queueData, sizeof(queueData), nullptr, &ts) >= 0) {
+      if (queueData.correlationId == requestId && queueData.req == Req::ASAP_READY) {
+        gotReply = true;
+        matched  = true;
+        break;
+      } else {
+        LOG_W("retrieveAsap: mismatched reply (wanted corrId={}, got req={} corrId={} itemref={})",
+              requestId, static_cast<int>(queueData.req), queueData.correlationId,
+              queueData.itemrefIndex);
+        telemetry.asapRepliesMismatched.fetch_add(1);
+      }
     }
-  }
-#else
-  constexpr TickType_t ASAP_REPLY_TIMEOUT = pdMS_TO_TICKS(60000);
+  #else
+    constexpr TickType_t ASAP_REPLY_TIMEOUT = pdMS_TO_TICKS(60000);
 
-  while (receive(queueData, ASAP_REPLY_TIMEOUT) == pdTRUE) {
-    if (queueData.correlationId == requestId && queueData.req == Req::ASAP_READY) {
-      gotReply = true;
-      matched  = true;
-      break;
-    } else {
-      LOG_W("retrieveAsap: mismatched reply (wanted corrId=%u, got req=%d corrId=%u itemref=%d)",
-            requestId, static_cast<int>(queueData.req), queueData.correlationId,
-            queueData.itemrefIndex);
-      telemetry.asapRepliesMismatched.fetch_add(1);
+    while (receive(queueData, ASAP_REPLY_TIMEOUT) == pdTRUE) {
+      if (queueData.correlationId == requestId && queueData.req == Req::ASAP_READY) {
+        gotReply = true;
+        matched  = true;
+        break;
+      } else {
+        LOG_W("retrieveAsap: mismatched reply (wanted corrId={}, got req={} corrId={} itemref={})",
+              requestId, static_cast<int>(queueData.req), queueData.correlationId,
+              queueData.itemrefIndex);
+        telemetry.asapRepliesMismatched.fetch_add(1);
+      }
     }
-  }
-#endif
+  #endif
 
   if (!gotReply) {
     telemetry.asapReplyTimeouts.fetch_add(1);
     LOG_W("retrieveAsap: timeout waiting for ASAP reply "
-          "(itemref=%d, corrId=%u, relax=%d, submitted=%llu matched=%llu mismatched=%llu "
-          "timeouts=%llu)",
+          "(itemref={}, corrId={}, relax={}, submitted={} matched={} mismatched={} "
+          "timeouts={})",
           itemrefIndex, requestId, relax.load(std::memory_order_relaxed),
           static_cast<unsigned long long>(telemetry.asapRequestsSubmitted.load()),
           static_cast<unsigned long long>(telemetry.asapRepliesMatched.load()),
@@ -170,7 +170,7 @@ auto PageLocs::stopControlTask() -> void {
 
   if (isRunning()) {
     LOG_D("Sending STOP");
-    if (PageLocsControl::send({.req = PageLocsControl::Req::STOP}) < 0) {
+    if (PageLocsControl::send({ .req = PageLocsControl::Req::STOP }) < 0) {
       LOG_E("stopControlTask: failed to send STOP");
       telemetry.queueSendFailures.fetch_add(1);
       telemetry.stopTaskFailures.fetch_add(1);
@@ -180,14 +180,14 @@ auto PageLocs::stopControlTask() -> void {
     }
 
     QueueData queueData;
-    bool stopped = false;
+    bool      stopped = false;
 
     // Hardening #3: Bounded wait with retries and timeout
     auto start_time = std::chrono::steady_clock::now();
-    int retry_count = 0;
+    int  retry_count = 0;
 
     while (!stopped && retry_count < STOP_MAX_RETRIES) {
-      // SHOW_IT("==> Waiting for STOPPED (retry %d/%d)... <==", retry_count + 1, STOP_MAX_RETRIES);
+      // SHOW_IT("==> Waiting for STOPPED (retry {}/{})... <==", retry_count + 1, STOP_MAX_RETRIES);
 
       // Try to receive with bounded timeout
       if (receive(queueData, STOP_RETRY_TIMEOUT_MS)) {
@@ -196,15 +196,15 @@ auto PageLocs::stopControlTask() -> void {
           LOG_D("-> STOPPED received <-");
         } else if ((queueData.req == Req::PERCENT) || (queueData.req == Req::ASAP_READY)) {
           // Expected stale manager traffic while shutting down; ignore.
-          LOG_D("Ignoring stale message type %d while waiting for STOPPED", (int)queueData.req);
+          LOG_D("Ignoring stale message type {} while waiting for STOPPED", (int)queueData.req);
         } else {
-          LOG_W("Received unexpected message type: %d, discarding and retrying",
+          LOG_W("Received unexpected message type: {}, discarding and retrying",
                 (int)queueData.req);
           telemetry.stopTaskRetries++;
         }
       } else {
         // Timeout occurred
-        LOG_W("STOP wait timeout (retry %d/%d)", retry_count + 1, STOP_MAX_RETRIES);
+        LOG_W("STOP wait timeout (retry {}/{})", retry_count + 1, STOP_MAX_RETRIES);
         telemetry.stopTaskTimeouts++;
       }
 
@@ -212,10 +212,10 @@ auto PageLocs::stopControlTask() -> void {
 
       // Check hard limit
       auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::steady_clock::now() - start_time)
-                            .count();
+        std::chrono::steady_clock::now() - start_time)
+                        .count();
       if (elapsed_ms > STOP_TOTAL_TIMEOUT_MS && !stopped) {
-        LOG_E("STOP hard timeout reached (%lld ms) - forcefully terminating", elapsed_ms);
+        LOG_E("STOP hard timeout reached ({} ms) - forcefully terminating", elapsed_ms);
         telemetry.stopTaskFailures++;
         break;
       }
@@ -223,9 +223,9 @@ auto PageLocs::stopControlTask() -> void {
 
     if (!stopped) {
       auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                            std::chrono::steady_clock::now() - start_time)
-                            .count();
-      LOG_E("Failed to receive STOPPED message after %d retries, %lld ms elapsed - forcing cleanup",
+        std::chrono::steady_clock::now() - start_time)
+                        .count();
+      LOG_E("Failed to receive STOPPED message after {} retries, {} ms elapsed - forcing cleanup",
             STOP_MAX_RETRIES, elapsed_ms);
       telemetry.stopTaskFailures++;
       // Fallback: Force exit without confirmation (recovery path)
@@ -250,33 +250,33 @@ auto PageLocs::stopControlTask() -> void {
  * current percentage from control task.
  */
 auto PageLocs::getPageCountOrPercent() -> int16_t {
-  if (isControlTaskReadyToBeStopped()) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) { stopControlTask(); }
 
-  // LOG_I("getPageCountOrPercent: completed=%d aborted=%d controlTask=%s itemsSet.size()=%d "
-  //       "itemCount=%d",
+  // LOG_I("getPageCountOrPercent: completed={} aborted={} controlTask={} itemsSet.size()={} "
+  //       "itemCount={}",
   //       completed, aborted, controlTask ? "yes" : "no", static_cast<int>(itemsSet.size()),
   //       static_cast<int>(itemCount));
 
-  if (completed) return pageCount;
+  if (completed) { return pageCount; }
 
-  if (aborted) return -1;
+  if (aborted) { return -1; }
 
-  if (!controlTask) return -1;
+  if (!controlTask) { return -1; }
 
   // Do not consume mgrQueue here while computation is in progress.
   // Navigation ASAP waits use the same queue; competing consumers can starve
   // correlated ASAP replies and cause avoidable navigation timeouts.
   {
     std::scoped_lock guard(mutex);
-    if (itemCount <= 0) return 0;
+    if (itemCount <= 0) { return 0; }
 
     int16_t percent = static_cast<int16_t>((itemsSet.size() * 100) / itemCount);
 
-    // LOG_I("Progress: %d%% (%d/%d items)", percent, static_cast<int>(itemsSet.size()),
+    // LOG_I("Progress: {}%% ({}/{} items)", percent, static_cast<int>(itemsSet.size()),
     //       static_cast<int>(itemCount));
 
-    if (percent < 0) percent = 0;
-    if (percent > 99) percent = 99;
+    if (percent < 0) { percent = 0; }
+    if (percent > 99) { percent = 99; }
     return percent;
   }
 }
@@ -295,7 +295,7 @@ auto PageLocs::startNewDocument(EPubPtr &epub, int16_t itemrefIndex) -> void {
  * Insert one computed page boundary into shared map/set under strict locking.
  */
 auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
-  // LOG_I("Inserting page: PageId{itemref=%d offset=%d} PageInfo{size=%d pageNumber=%d}",
+  // LOG_I("Inserting page: PageId{itemref={} offset={}} PageInfo{size={} pageNumber={}}",
   //       id.itemrefIndex, id.offset, info.size, info.pageNumber);
   if (controlTask && (relax.load(std::memory_order_relaxed) > 0)) {
     // A waiter is blocked in retrieveAsap() while holding PageLocs::mutex.
@@ -310,7 +310,7 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
   }
 
   bool contentious = false;
-  int attempts     = 0;
+  int  attempts     = 0;
 
   while (true) {
     if (mutex.try_lock_for(std::chrono::milliseconds(2))) {
@@ -336,11 +336,11 @@ auto PageLocs::insert(PageId &id, PageInfo &info) -> void {
  * computation is still active.
  */
 auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterator {
-  if (pageId.itemrefIndex < 0) return pagesMap.end();
+  if (pageId.itemrefIndex < 0) { return pagesMap.end(); }
 
   PagesMap::iterator it = pagesMap.find(pageId);
   if (!completed && (it == pagesMap.end())) {
-    if (retrieveAsap(pageId.itemrefIndex)) it = pagesMap.find(pageId);
+    if (retrieveAsap(pageId.itemrefIndex)) { it = pagesMap.find(pageId); }
   }
   return it;
 }
@@ -351,16 +351,16 @@ auto PageLocs::checkAndFind(const PageId &pageId) -> PageLocs::PagesMap::iterato
  */
 auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageId * {
 
-  if (isControlTaskReadyToBeStopped()) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) { stopControlTask(); }
 
   {
-    std::scoped_lock guard(mutex);
+    std::scoped_lock   guard(mutex);
     PagesMap::iterator it = checkAndFind(pageId);
     if (it == pagesMap.end()) {
       it = checkAndFind(PageId(0, 0));
     } else {
       PageId id = pageId;
-      bool done = false;
+      bool   done = false;
       for (int16_t cptr = count; cptr > 0; cptr--) {
         PagesMap::iterator prev = it;
         do {
@@ -380,7 +380,7 @@ auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageI
             }
           }
         } while (!done && (it->second.size < 0));
-        if (done) break;
+        if (done) { break; }
       }
     }
     return (it == pagesMap.end()) ? nullptr : &it->first;
@@ -393,22 +393,22 @@ auto PageLocs::getNextPageId(const PageId &pageId, int16_t count) -> const PageI
  */
 auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * {
 
-  if (isControlTaskReadyToBeStopped()) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) { stopControlTask(); }
 
   {
-    std::scoped_lock guard(mutex);
+    std::scoped_lock   guard(mutex);
 
     PagesMap::iterator it = checkAndFind(pageId);
     if (it == pagesMap.end()) {
       it = checkAndFind(PageId(0, 0));
     } else {
       PageId id           = it->first;
-      auto stepBackNoWrap = [&](PagesMap::iterator &iter, PageId &page) -> bool {
-        if (iter == pagesMap.begin()) return false;
-        iter--;
-        page = iter->first;
-        return true;
-      };
+      auto   stepBackNoWrap = [&](PagesMap::iterator &iter, PageId &page) -> bool {
+                                if (iter == pagesMap.begin()) { return false; }
+                                iter--;
+                                page = iter->first;
+                                return true;
+                              };
 
       bool done = false;
       for (int16_t cptr = count; cptr > 0; cptr--) {
@@ -418,21 +418,25 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
 
             if (targetItemref == 0) {
               if (count == 1) {
-                if (itemCount > 0)
+                if (itemCount > 0) {
                   targetItemref = itemCount - 1;
-                else
+                }
+                else {
                   done = true;
-              } else
+                }
+              } else {
                 done = true;
-            } else
+              }
+            } else {
               targetItemref--;
+            }
 
             if (!done) {
               PagesMap::iterator firstInItem = checkAndFind(PageId(targetItemref, 0));
               if ((firstInItem != pagesMap.end()) &&
                   (firstInItem->first.itemrefIndex == targetItemref)) {
                 PagesMap::iterator nextItem =
-                    pagesMap.lower_bound(PageId(static_cast<int16_t>(targetItemref + 1), 0));
+                  pagesMap.lower_bound(PageId(static_cast<int16_t>(targetItemref + 1), 0));
                 if (nextItem == pagesMap.begin()) {
                   it   = pagesMap.end();
                   done = true;
@@ -459,7 +463,7 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
           }
 
         } while (!done && (it->second.size < 0));
-        if (done) break;
+        if (done) { break; }
       }
     }
     return (it == pagesMap.end()) ? nullptr : &it->first;
@@ -471,10 +475,10 @@ auto PageLocs::getPrevPageId(const PageId &pageId, int count) -> const PageId * 
  */
 auto PageLocs::getPageId(const PageId &pageId) -> const PageId * {
 
-  if (isControlTaskReadyToBeStopped()) stopControlTask();
+  if (isControlTaskReadyToBeStopped()) { stopControlTask(); }
 
   {
-    std::scoped_lock guard(mutex);
+    std::scoped_lock   guard(mutex);
 
     PagesMap::iterator it     = checkAndFind(PageId(pageId.itemrefIndex, 0));
     PagesMap::iterator result = pagesMap.end();
@@ -500,7 +504,7 @@ auto PageLocs::computationCompleted() -> void {
   if (!completed) {
     int16_t pageNbr = 0;
     for (auto &entry : pagesMap) {
-      if (entry.second.size >= 0) entry.second.pageNumber = pageNbr++;
+      if (entry.second.size >= 0) { entry.second.pageNumber = pageNbr++; }
     }
 
     pageCount = pageNbr;
@@ -548,14 +552,14 @@ auto PageLocs::computationAborted(std::string reason) -> void {
 }
 
 #if DEBUGGING
-auto PageLocs::show() -> void {
-  std::cout << "----- Page Locations -----" << std::endl;
-  for (auto &entry : pagesMap) {
-    std::cout << " idx: " << entry.first.itemrefIndex << " off: " << entry.first.offset
-              << " siz: " << entry.second.size << " pg: " << entry.second.pageNumber << std::endl;
+  auto PageLocs::show() -> void {
+    std::cout << "----- Page Locations -----" << std::endl;
+    for (auto &entry : pagesMap) {
+      std::cout << " idx: " << entry.first.itemrefIndex << " off: " << entry.first.offset
+                << " siz: " << entry.second.size << " pg: " << entry.second.pageNumber << std::endl;
+    }
+    std::cout << "----- End Page Locations -----" << std::endl;
   }
-  std::cout << "----- End Page Locations -----" << std::endl;
-}
 #endif
 
 /**
@@ -604,18 +608,18 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
 
     currentFormatParams = *epub->getBookFormatParams();
 
-    LOG_D("Starting page locations computation for itemref index %d with format params: ident=%d, "
-          "orientation=%d, "
-          "showTitle=%d, showPictures=%d, fontSize=%d, useFontsInBook=%d, font=%d",
+    LOG_D("Starting page locations computation for itemref index {} with format params: ident={}, "
+          "orientation={}, "
+          "showTitle={}, showPictures={}, fontSize={}, useFontsInBook={}, font={}",
           itemrefIndex, currentFormatParams.ident, currentFormatParams.orientation,
           currentFormatParams.showTitle, currentFormatParams.showPictures,
           currentFormatParams.fontSize, currentFormatParams.useFontsInBook,
           currentFormatParams.font);
 
     // SHOW_IT("startNewDocument: Sending START_DOCUMENT");
-    if (PageLocsControl::send({.req          = PageLocsControl::Req::START_DOCUMENT,
-                               .itemrefIndex = itemrefIndex,
-                               .itemrefCount = epub->getItemCount()}) < 0) {
+    if (PageLocsControl::send({ .req          = PageLocsControl::Req::START_DOCUMENT,
+                                .itemrefIndex = itemrefIndex,
+                                .itemrefCount = epub->getItemCount() }) < 0) {
       LOG_E("checkForFormatChanges: failed to send START_DOCUMENT");
       telemetry.queueSendFailures.fetch_add(1);
       return;
@@ -629,29 +633,30 @@ auto PageLocs::checkForFormatChanges(EPubPtr &epub, int16_t itemrefIndex, bool f
  * Load persisted page locations and associated format metadata from .locs file.
  */
 auto PageLocs::load(const std::string &epubFilename) -> bool {
-  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".locs";
+  std::string   filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".locs";
   std::ifstream file(filename, std::ios::in | std::ios::binary);
 
-  LOG_D("Loading pages location from file %s.", filename.c_str());
+  LOG_D("Loading pages location from file {}.", filename);
 
-  int8_t version;
+  int8_t  version;
   int16_t pgCount;
 
   if (!file.is_open()) {
-    LOG_I("Unable to open pages location file '%s': errno=%d (%s). Calculating locations...",
-          filename.c_str(), errno, std::strerror(errno));
+    LOG_I("Unable to open pages location file '{}': errno{}d ({}). Calculating locations...",
+          filename, errno, std::strerror(errno));
     return false;
   }
 
   bool ok = false;
   while (true) {
-    if (file.read(reinterpret_cast<char *>(&version), 1).fail()) break;
-    if (version != LOCS_FILE_VERSION) break;
+    if (file.read(reinterpret_cast<char *>(&version), 1).fail()) { break; }
+    if (version != LOCS_FILE_VERSION) { break; }
 
     if (file.read(reinterpret_cast<char *>(&currentFormatParams), sizeof(currentFormatParams))
-            .fail())
+        .fail()) {
       break;
-    if (file.read(reinterpret_cast<char *>(&pgCount), sizeof(pgCount)).fail()) break;
+    }
+    if (file.read(reinterpret_cast<char *>(&pgCount), sizeof(pgCount)).fail()) { break; }
 
     pagesMap.clear();
     generatedPageEntryCount.store(0);
@@ -659,14 +664,15 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
     int16_t pageNbr = 0;
 
     for (int16_t i = 0; i < pgCount; ++i) {
-      PageId pageId;
+      PageId   pageId;
       PageInfo pageInfo;
 
       if (file.read(reinterpret_cast<char *>(&pageId.itemrefIndex), sizeof(pageId.itemrefIndex))
-              .fail())
+          .fail()) {
         break;
-      if (file.read(reinterpret_cast<char *>(&pageId.offset), sizeof(pageId.offset)).fail()) break;
-      if (file.read(reinterpret_cast<char *>(&pageInfo.size), sizeof(pageInfo.size)).fail()) break;
+      }
+      if (file.read(reinterpret_cast<char *>(&pageId.offset), sizeof(pageId.offset)).fail()) { break; }
+      if (file.read(reinterpret_cast<char *>(&pageInfo.size), sizeof(pageInfo.size)).fail()) { break; }
       pageInfo.pageNumber = (pageInfo.size >= 0) ? pageNbr++ : -1;
 
       pageLocs.insert(pageId, pageInfo);
@@ -680,11 +686,11 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
   file.close();
 
   if (!ok) {
-    LOG_E("Page locations load failed for '%s' (fail=%d bad=%d eof=%d)", filename.c_str(),
+    LOG_E("Page locations load failed for '{}' (fail={} bad={} eof={})", filename,
           file.fail() ? 1 : 0, file.bad() ? 1 : 0, file.eof() ? 1 : 0);
   }
 
-  LOG_D("Page locations load %s.", ok ? "Success" : "Error");
+  LOG_D("Page locations load {}.", ok ? "Success" : "Error");
 
   completed = ok;
 
@@ -695,13 +701,13 @@ auto PageLocs::load(const std::string &epubFilename) -> bool {
  * Persist current page locations and format metadata to .locs file.
  */
 auto PageLocs::save(const std::string &epubFilename) -> bool {
-  std::string filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".locs";
+  std::string   filename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".locs";
   std::ofstream file(filename, std::ios::out | std::ios::binary);
 
-  LOG_D("Saving pages location to file %s", filename.c_str());
+  LOG_D("Saving pages location to file {}", filename);
 
   if (!file.is_open()) {
-    LOG_E("Not able to open pages location file '%s': errno=%d (%s)", filename.c_str(), errno,
+    LOG_E("Not able to open pages location file '{}': errno={} ({})", filename, errno,
           std::strerror(errno));
     return false;
   }
@@ -709,27 +715,32 @@ auto PageLocs::save(const std::string &epubFilename) -> bool {
   int16_t savedPageCount = pagesMap.size();
 
   while (true) {
-    if (file.write(reinterpret_cast<const char *>(&LOCS_FILE_VERSION), 1).fail()) break;
+    if (file.write(reinterpret_cast<const char *>(&LOCS_FILE_VERSION), 1).fail()) { break; }
     if (file.write(reinterpret_cast<const char *>(&currentFormatParams),
                    sizeof(currentFormatParams))
-            .fail())
+        .fail()) {
       break;
-    if (file.write(reinterpret_cast<const char *>(&savedPageCount), sizeof(savedPageCount)).fail())
+    }
+    if (file.write(reinterpret_cast<const char *>(&savedPageCount), sizeof(savedPageCount)).fail()) {
       break;
+    }
 
     for (auto &pageMapEntry : pagesMap) {
       if (file.write(reinterpret_cast<const char *>(&pageMapEntry.first.itemrefIndex),
                      sizeof(pageMapEntry.first.itemrefIndex))
-              .fail())
+          .fail()) {
         break;
+      }
       if (file.write(reinterpret_cast<const char *>(&pageMapEntry.first.offset),
                      sizeof(pageMapEntry.first.offset))
-              .fail())
+          .fail()) {
         break;
+      }
       if (file.write(reinterpret_cast<const char *>(&pageMapEntry.second.size),
                      sizeof(pageMapEntry.second.size))
-              .fail())
+          .fail()) {
         break;
+      }
     }
 
     break;
@@ -739,11 +750,11 @@ auto PageLocs::save(const std::string &epubFilename) -> bool {
   file.close();
 
   if (!res) {
-    LOG_E("Page locations save failed for '%s' (fail=%d bad=%d eof=%d)", filename.c_str(),
+    LOG_E("Page locations save failed for '{}' (fail={} bad={} eof={})", filename,
           file.fail() ? 1 : 0, file.bad() ? 1 : 0, file.eof() ? 1 : 0);
   }
 
-  LOG_D("Page locations save %s.", res ? "Success" : "Error");
+  LOG_D("Page locations save {}.", res ? "Success" : "Error");
 
   return res;
 }

@@ -1,28 +1,28 @@
 #if EPUB_INKPLATE_BUILD
 
-  #include "goto_deep_sleep.hpp"
+#include "goto_deep_sleep.hpp"
 
-  #include "screen.hpp"
+#include "screen.hpp"
 
-  #include "controllers/app_controller.hpp"
-  #include "controllers/event_mgr.hpp"
-  #include "models/page_locs.hpp"
-  #include "viewers/msg_viewer.hpp"
-  #include "viewers/screen_saver.hpp"
+#include "controllers/app_controller.hpp"
+#include "controllers/event_mgr.hpp"
+#include "models/page_locs.hpp"
+#include "viewers/msg_viewer.hpp"
+#include "viewers/screen_saver.hpp"
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-    #define MSG "Please press the WakeUp Button to restart the device."
-    #define INT_PIN TouchScreen::INTERRUPT_PIN
-    #define LEVEL 0
-  #else
-    #define MSG "Please press a key to restart the device."
-    #define LEVEL 1
-    #if EXTENDED_CASE
-      #define INT_PIN PressKeys::INTERRUPT_PIN
-    #else
-      #define INT_PIN TouchKeys::INTERRUPT_PIN
-    #endif
-  #endif
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
+#define MSG "Please press the WakeUp Button to restart the device."
+#define INT_PIN EInk::WAKE_UP_PIN
+#define LEVEL 0
+#else
+#define MSG "Please press a key to restart the device."
+#define LEVEL 1
+#if EXTENDED_CASE
+#define INT_PIN PressKeys::INTERRUPT_PIN
+#elif INKPLATE_6 || INKPLATE_10
+#define INT_PIN TouchKeys::INTERRUPT_PIN
+#endif
+#endif
 
 void gotoDeepSleep(int8_t lightSleepDuration) {
   if (eventMgr.stayingOn()) {
@@ -30,10 +30,10 @@ void gotoDeepSleep(int8_t lightSleepDuration) {
     MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Waiting for Power OFF",
                     "Waiting for background tasks to complete before going to Deep Sleep.");
     while (eventMgr.stayingOn()) {
-  #if EPUB_INKPLATE_BUILD
+#if EPUB_INKPLATE_BUILD
       ESP::delay(5000);
       if (pageLocs.isControlTaskReadyToBeStopped()) pageLocs.stopControlTask();
-  #endif
+#endif
     }
   } else {
     if (pageLocs.isControlTaskReadyToBeStopped()) pageLocs.stopControlTask();

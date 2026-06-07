@@ -12,48 +12,48 @@
 
 namespace {
 
-auto chooseOptions(uint32_t srcW, uint32_t srcH, Dim max) -> SvgOptions {
-  int32_t scale = 1;
-  while (scale < 8 &&
-         (((srcW + scale - 1) / scale) > max.width || ((srcH + scale - 1) / scale) > max.height)) {
-    scale <<= 1;
+  auto chooseOptions(uint32_t srcW, uint32_t srcH, Dim max) -> SvgOptions {
+    int32_t scale = 1;
+    while (scale < 8 &&
+           (((srcW + scale - 1) / scale) > max.width || ((srcH + scale - 1) / scale) > max.height)) {
+      scale <<= 1;
+    }
+
+    SvgOptions options{};
+    if (scale >= 8) {
+      options.set(SVG_OPTION(SCALE_EIGHTH));
+    } else if (scale >= 4) {
+      options.set(SVG_OPTION(SCALE_QUARTER));
+    } else if (scale >= 2) {
+      options.set(SVG_OPTION(SCALE_HALF));
+    }
+
+    return options;
   }
 
-  SvgOptions options{};
-  if (scale >= 8) {
-    options.set(SVG_OPTION(SCALE_EIGHTH));
-  } else if (scale >= 4) {
-    options.set(SVG_OPTION(SCALE_QUARTER));
-  } else if (scale >= 2) {
-    options.set(SVG_OPTION(SCALE_HALF));
+  auto onSvgDraw(SvgDraw *draw) -> int32_t {
+    auto *data = static_cast<SvgPicture::PictureData *>(draw->pUser);
+    if (data == nullptr || data->bitmap == nullptr || draw->pPixels == nullptr) { return 0; }
+    if (draw->iHeight <= 0 || draw->iWidth <= 0 || draw->iBpp != 8) { return 0; }
+
+    if (draw->y < 0 || draw->y + draw->iHeight > data->dim.height) { return 0; }
+    if (draw->x < 0 || draw->x + draw->iWidth > data->dim.width) { return 0; }
+
+    for (int32_t row = 0; row < draw->iHeight; ++row) {
+      auto *dst = data->bitmap + ((draw->y + row) * data->dim.width + draw->x);
+      auto *src = draw->pPixels + (row * draw->iWidth);
+      memcpy(dst, src, static_cast<std::size_t>(draw->iWidth));
+    }
+
+    return 1;
   }
-
-  return options;
-}
-
-auto onSvgDraw(SvgDraw *draw) -> int32_t {
-  auto *data = static_cast<SvgPicture::PictureData *>(draw->pUser);
-  if (data == nullptr || data->bitmap == nullptr || draw->pPixels == nullptr) return 0;
-  if (draw->iHeight <= 0 || draw->iWidth <= 0 || draw->iBpp != 8) return 0;
-
-  if (draw->y < 0 || draw->y + draw->iHeight > data->dim.height) return 0;
-  if (draw->x < 0 || draw->x + draw->iWidth > data->dim.width) return 0;
-
-  for (int32_t row = 0; row < draw->iHeight; ++row) {
-    auto *dst = data->bitmap + ((draw->y + row) * data->dim.width + draw->x);
-    auto *src = draw->pPixels + (row * draw->iWidth);
-    memcpy(dst, src, static_cast<std::size_t>(draw->iWidth));
-  }
-
-  return 1;
-}
 
 } // namespace
 
 SvgPicture::SvgPicture(const HimemString &filename, Dim max, bool loadBitmap, FontPtr &font,
                        bool fromFile)
-    : Picture(), font(font) {
-  LOG_D("Loading SVG picture file %s", filename.c_str());
+  : Picture(), font(font) {
+  LOG_D("Loading SVG picture file {}", filename);
 
   if (fromFile) {
     loadFromFile(filename, max, loadBitmap);
@@ -64,11 +64,11 @@ SvgPicture::SvgPicture(const HimemString &filename, Dim max, bool loadBitmap, Fo
 
 auto SvgPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitmap) -> void {
   uint32_t encodedSize = 0;
-  if (!unzip.openStreamFile(filename.c_str(), encodedSize)) return;
+  if (!unzip.openStreamFile(filename.c_str(), encodedSize)) { return; }
 
   auto encoded = makeUniqueHimem<uint8_t[]>(encodedSize);
   if (encoded == nullptr) {
-    LOG_E("Unable to allocate SVG input buffer (%" PRIu32 " bytes)", encodedSize);
+    LOG_E("Unable to allocate SVG input buffer ({} bytes)", encodedSize);
     unzip.closeStreamFile();
     return;
   }
@@ -76,18 +76,18 @@ auto SvgPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitm
   uint32_t total = 0;
   while (total < encodedSize) {
     uint32_t toRead = encodedSize - total;
-    if (toRead > 4096) toRead = 4096;
+    if (toRead > 4096) { toRead = 4096; }
 
     const uint32_t read =
-        unzip.getStreamData(reinterpret_cast<char *>(encoded.get() + total), toRead);
-    if (read == 0) break;
+      unzip.getStreamData(reinterpret_cast<char *>(encoded.get() + total), toRead);
+    if (read == 0) { break; }
     total += read;
   }
 
   unzip.closeStreamFile();
 
   if (total != encodedSize) {
-    LOG_E("Unable to fully read SVG content from zip (%" PRIu32 "/%" PRIu32 " bytes)", total,
+    LOG_E("Unable to fully read SVG content from zip ({}/{} bytes)", total,
           encodedSize);
     return;
   }
@@ -98,7 +98,7 @@ auto SvgPicture::loadFromZip(const HimemString &filename, Dim max, bool loadBitm
 auto SvgPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBitmap) -> void {
   FILE *f = fopen(filename.c_str(), "rb");
   if (f == nullptr) {
-    LOG_E("Unable to open SVG file: %s", filename.c_str());
+    LOG_E("Unable to open SVG file: {}", filename);
     return;
   }
 
@@ -112,9 +112,9 @@ auto SvgPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
   }
 
   const uint32_t encodedSize = static_cast<uint32_t>(encodedSizeLong);
-  auto encoded               = makeUniqueHimem<uint8_t[]>(encodedSize);
+  auto           encoded               = makeUniqueHimem<uint8_t[]>(encodedSize);
   if (encoded == nullptr) {
-    LOG_E("Unable to allocate SVG input buffer (%" PRIu32 " bytes)", encodedSize);
+    LOG_E("Unable to allocate SVG input buffer ({} bytes)", encodedSize);
     fclose(f);
     return;
   }
@@ -123,7 +123,7 @@ auto SvgPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
   fclose(f);
 
   if (read != encodedSize) {
-    LOG_E("Unable to fully read SVG file: %s", filename.c_str());
+    LOG_E("Unable to fully read SVG file: {}", filename);
     return;
   }
 
@@ -131,10 +131,10 @@ auto SvgPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBit
 }
 
 auto SvgPicture::decodeFromBuffer(const uint8_t *data, uint32_t dataSize, Dim max, bool loadBitmap)
-    -> void {
+-> void {
   SvgDecoder decoder(font);
   if (!decoder.openRAM(data, static_cast<int32_t>(dataSize), onSvgDraw)) {
-    LOG_E("Unable to open SVG decoder. Error: %d", static_cast<int>(decoder.getLastError()));
+    LOG_E("Unable to open SVG decoder. Error: {}", static_cast<int>(decoder.getLastError()));
     return;
   }
 
@@ -152,26 +152,26 @@ auto SvgPicture::decodeFromBuffer(const uint8_t *data, uint32_t dataSize, Dim ma
     dim = Dim(decoder.getWidth(), decoder.getHeight());
   }
 
-  if (!loadBitmap) return;
+  if (!loadBitmap) { return; }
 
   bitmap = makeUniqueHimem<uint8_t[]>(dim.width * dim.height);
   if (bitmap == nullptr) {
-    LOG_E("Unable to allocate SVG bitmap (%d bytes)", dim.width * dim.height);
+    LOG_E("Unable to allocate SVG bitmap ({} bytes)", dim.width * dim.height);
     return;
   }
 
-  pictureData = {.dim = dim, .bitmap = bitmap.get()};
+  pictureData = { .dim = dim, .bitmap = bitmap.get() };
   decoder.setUserPointer(&pictureData);
 
   if (!decoder.decode(0, 0, options)) {
-    LOG_E("Unable to decode SVG. Error: %d", static_cast<int>(decoder.getLastError()));
+    LOG_E("Unable to decode SVG. Error: {}", static_cast<int>(decoder.getLastError()));
     bitmap.reset();
     dim = Dim(0, 0);
     return;
   }
 
   if (decoder.getOutputWidth() != dim.width || decoder.getOutputHeight() != dim.height) {
-    LOG_E("SVG decoder output dimensions mismatch (%d,%d) expected (%d,%d)",
+    LOG_E("SVG decoder output dimensions mismatch ({},{}) expected ({},{})",
           decoder.getOutputWidth(), decoder.getOutputHeight(), dim.width, dim.height);
     bitmap.reset();
     dim = Dim(0, 0);

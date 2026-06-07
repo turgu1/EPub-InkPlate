@@ -32,6 +32,8 @@ if [ "$3" = "0" ]; then
   case "$2" in
     "6") device="INKPLATE_6" ;;
     "10") device="INKPLATE_10" ;;
+    "6v2") device="INKPLATE_6_V2" ;;
+    "10v2") device="INKPLATE_10_V2" ;;
     "6plus") device="INKPLATE_6PLUS" ;;
     "6plusv2") device="INKPLATE_6PLUS_V2" ;;
     "6flick") device="INKPLATE_6FLICK" ;;

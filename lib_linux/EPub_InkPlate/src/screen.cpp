@@ -14,13 +14,13 @@
 
 #define BYTES_PER_PIXEL 3
 
-Screen Screen::singleton;
+Screen                    Screen::singleton;
 std::unique_ptr<guchar[]> Screen::pixels = nullptr;
 
-uint16_t Screen::width;
-uint16_t Screen::height;
+uint16_t                  Screen::width;
+uint16_t                  Screen::height;
 
-const uint8_t Screen::LUT1BIT[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+const uint8_t             Screen::LUT1BIT[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
 
 auto freePixels(guchar *pixels, gpointer data) -> void {
   if (Screen::pixels != nullptr) {
@@ -33,87 +33,130 @@ inline void setRgb(guchar *a, int row, int col, int stride, guchar color) {
   a[p] = a[p + 1] = a[p + 2] = color;
 }
 
+#define NIBBLE(k, p) static_cast<uint8_t>(((k & 1) ? (bitmapData[p] & 0x0F) : (bitmapData[p] >> 4)) << 4)
+
 auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
-  auto dim        = picture->getDim();
-  auto bitmapData = picture->getBitmap();
+  auto       dim        = picture->getDim();
+  auto       bitmapData = picture->getBitmap();
+  auto       bpp        = picture->getBitsPerPixel();
 
-  if (pos.x > width) pos.x = 0;
-  if (pos.y > height) pos.y = 0;
+  if (pos.x > width) { pos.x = 0; }
+  if (pos.y > height) { pos.y = 0; }
 
   int16_t xMax = pos.x + dim.width;
   int16_t yMax = pos.y + dim.height;
 
-  if (yMax > height) yMax = height;
-  if (xMax > width) xMax = width;
+  if (yMax > height) { yMax = height; }
+  if (xMax > width) { xMax = width; }
+
+  // LOG_I("Picture position: [{}, {}], dimensions: [{}, {}], bpp: {}", pos.x, pos.y, dim.width, dim.height, bpp);
 
   if (pixelResolution == PixelResolution::ONE_BIT) {
     static int16_t err[601];
-    int16_t error;
+    int16_t        error;
     memset(err, 0, 601 * 2);
 
-    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-      for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
-        int32_t v = bitmapData[p] + err[k + 1];
-        if (v > 128) {
-          error = (v - 255);
-          setRgb(g, j, i, pictureData.stride, 255);
-        } else {
-          error = v;
-          setRgb(g, j, i, pictureData.stride, 0);
+    if (bpp == 4) {
+      uint16_t w = (dim.width + 1) >> 1;
+      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        // LOG_I("Nibbles of line {}: {:#04x} <--> {:#04x} {:#04x}", q, NIBBLE(0, (q*w)), NIBBLE(0, ((q+1)*w)-1), NIBBLE(1, ((q+1)*w)-1));
+        for (int i = pos.x, p = q * w, k = 0; i < (xMax - 1); ++i, ++k) {
+          int32_t v = NIBBLE(k, p) + err[k + 1];
+          if (v > 128) {
+            error = (v - 255);
+            setRgb(g, j, i, pictureData.stride, 255);
+          } else {
+            error = v;
+            setRgb(g, j, i, pictureData.stride, 0);
+          }
+          if (k != 0) {
+            err[k - 1] += error / 8;
+          }
+          err[k] += 3 * error / 8;
+          err[k + 1] = error / 8;
+          err[k + 2] += 3 * error / 8;
+
+          if (k & 1) { ++p; }
         }
-        if (k != 0) {
-          err[k - 1] += error / 8;
+      }
+    } else {
+      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
+          int32_t v = bitmapData[p] + err[k + 1];
+          if (v > 128) {
+            error = (v - 255);
+            setRgb(g, j, i, pictureData.stride, 255);
+          } else {
+            error = v;
+            setRgb(g, j, i, pictureData.stride, 0);
+          }
+          if (k != 0) {
+            err[k - 1] += error / 8;
+          }
+          err[k] += 3 * error / 8;
+          err[k + 1] = error / 8;
+          err[k + 2] += 3 * error / 8;
         }
-        err[k] += 3 * error / 8;
-        err[k + 1] = error / 8;
-        err[k + 2] += 3 * error / 8;
       }
     }
-  } else {
-    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-      for (int i = pos.x, p = q * dim.width; i < xMax; ++i, ++p) {
-        setRgb(g, j, i, pictureData.stride, bitmapData[p]);
+  }
+  else {
+    if (bpp == 4) {
+      uint16_t w = (dim.width + 1) >> 1;
+      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        for (int i = pos.x, p = q * w, k = 0; i < xMax; ++i, ++k) {
+          setRgb(g, j, i, pictureData.stride, NIBBLE(k, p));
+          if (k & 1) { ++p; }
+        }
+      }
+    } else {
+      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        for (int i = pos.x, p = q * dim.width; i < xMax; ++i, ++p) {
+          setRgb(g, j, i, pictureData.stride, bitmapData[p]);
+        }
       }
     }
   }
 }
 
+#undef NIBBLE
+
 auto Screen::drawRectangle(Dim dim, Pos pos,
                            Color color) //, bool show)
-    -> void {
+-> void {
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
-  int16_t xMax = pos.x + dim.width;
-  int16_t yMax = pos.y + dim.height;
+  int16_t    xMax = pos.x + dim.width;
+  int16_t    yMax = pos.y + dim.height;
 
-  if (yMax > height) yMax = height;
-  if (xMax > width) xMax = width;
+  if (yMax > height) { yMax = height; }
+  if (xMax > width) { xMax = width; }
 
   for (int i = pos.x; i < xMax; ++i) {
-    setRgb(g, pos.y, i, pictureData.stride, color);
+    setRgb(g, pos.y,    i, pictureData.stride, color);
     setRgb(g, yMax - 1, i, pictureData.stride, color);
   }
   for (int j = pos.y; j < yMax; ++j) {
-    setRgb(g, j, pos.x, pictureData.stride, color);
+    setRgb(g, j, pos.x,    pictureData.stride, color);
     setRgb(g, j, xMax - 1, pictureData.stride, color);
   }
 }
 
 auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color)
-    -> void {
-  int16_t f    = 1 - radius;
-  int16_t ddFx = 1;
-  int16_t ddFy = -2 * radius;
-  int16_t x    = 0;
-  int16_t y    = radius;
+-> void {
+  int16_t    f    = 1 - radius;
+  int16_t    ddFx = 1;
+  int16_t    ddFy = -2 * radius;
+  int16_t    x    = 0;
+  int16_t    y    = radius;
 
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
   // Bottom middle
   //  drawPixel(xMid, yMid + radius);
@@ -163,40 +206,40 @@ auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner
 
 auto Screen::drawRoundRectangle(Dim dim, Pos pos,
                                 Color color) //, bool show)
-    -> void {
+-> void {
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
-  int16_t xMax = pos.x + dim.width;
-  int16_t yMax = pos.y + dim.height;
+  int16_t    xMax = pos.x + dim.width;
+  int16_t    yMax = pos.y + dim.height;
 
-  if (yMax > height) yMax = height;
-  if (xMax > width) xMax = width;
+  if (yMax > height) { yMax = height; }
+  if (xMax > width) { xMax = width; }
 
   for (int i = pos.x + 10; i < xMax - 10; ++i) {
-    setRgb(g, pos.y, i, pictureData.stride, color);
+    setRgb(g, pos.y,    i, pictureData.stride, color);
     setRgb(g, yMax - 1, i, pictureData.stride, color);
   }
   for (int j = pos.y + 10; j < yMax - 10; ++j) {
-    setRgb(g, j, pos.x, pictureData.stride, color);
+    setRgb(g, j, pos.x,    pictureData.stride, color);
     setRgb(g, j, xMax - 1, pictureData.stride, color);
   }
 
-  drawArc(pos.x + 10, pos.y + 10, 10, Corner::TOP_LEFT, color);
-  drawArc(pos.x + dim.width - 11, pos.y + 10, 10, Corner::TOP_RIGHT, color);
-  drawArc(pos.x + 10, pos.y + dim.height - 11, 10, Corner::LOWER_LEFT, color);
+  drawArc(pos.x + 10,             pos.y + 10,              10, Corner::TOP_LEFT,    color);
+  drawArc(pos.x + dim.width - 11, pos.y + 10,              10, Corner::TOP_RIGHT,   color);
+  drawArc(pos.x + 10,             pos.y + dim.height - 11, 10, Corner::LOWER_LEFT,  color);
   drawArc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
 }
 
 auto Screen::colorizeRegion(Dim dim, Pos pos, Color color) -> void {
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
-  int16_t xMax = pos.x + dim.width;
-  int16_t yMax = pos.y + dim.height;
+  int16_t    xMax = pos.x + dim.width;
+  int16_t    yMax = pos.y + dim.height;
 
-  if (yMax > height) yMax = height;
-  if (xMax > width) xMax = width;
+  if (yMax > height) { yMax = height; }
+  if (xMax > width) { xMax = width; }
 
   for (int j = pos.y; j < yMax; ++j) {
     for (int i = pos.x; i < xMax; ++i) {
@@ -207,13 +250,13 @@ auto Screen::colorizeRegion(Dim dim, Pos pos, Color color) -> void {
 
 auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void {
   GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *g     = gdk_pixbuf_get_pixels(pb);
+  guchar *   g     = gdk_pixbuf_get_pixels(pb);
 
-  int xMax = pos.x + dim.width;
-  int yMax = pos.y + dim.height;
+  int        xMax = pos.x + dim.width;
+  int        yMax = pos.y + dim.height;
 
-  if (yMax > height) yMax = height;
-  if (xMax > width) xMax = width;
+  if (yMax > height) { yMax = height; }
+  if (xMax > width) { xMax = width; }
 
   if (pixelResolution == PixelResolution::ONE_BIT) {
     for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
@@ -224,7 +267,7 @@ auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16
         //   setRgb(g, j, i, pictureData.stride, v);
         // }
         uint8_t v = bitmapData[p >> 3] & LUT1BIT[p & 7];
-        if (v) setRgb(g, j, i, pictureData.stride, 0);
+        if (v) { setRgb(g, j, i, pictureData.stride, 0); }
       }
     }
   } else {
@@ -236,7 +279,7 @@ auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16
         //   setRgb(g, j, i, pictureData.stride, v);
         // }
         uint8_t v = (255 - bitmapData[p]) & 0xE0;
-        if (v != 0xE0) setRgb(g, j, i, pictureData.stride, v);
+        if (v != 0xE0) { setRgb(g, j, i, pictureData.stride, v); }
       }
     }
   }
@@ -258,7 +301,7 @@ auto Screen::test() -> void {
 
   for (int r = 0; r < pictureData.rows; ++r)
     for (int c = 0; c < pictureData.cols; ++c)
-      if ((r + N) / 20 % 2 && (c + N) / 20 % 2) setRgb(g, r, c, pictureData.stride, 0);
+      if ((r + N) / 20 % 2 && (c + N) / 20 % 2) { setRgb(g, r, c, pictureData.stride, 0); }
 
   N = (N + 1) % 100;
 
@@ -314,7 +357,7 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
                                            pictureData.stride, // rowstride
                                            freePixels,         // destroy_fn
                                            nullptr             // destroy_fn_data
-  );
+                                           );
 
   pictureData.picture = GTK_IMAGE(gtk_image_new_from_pixbuf(pb));
   // g_object_unref(
@@ -348,13 +391,13 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
     selectButton = gtk_button_new_with_label("Select");
     homeButton   = gtk_button_new_with_label("DClick-Select");
 
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(upButton), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(leftButton), FALSE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(rightButton), FALSE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(downButton), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(selectButton), TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(homeButton), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(upButton),     FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(leftButton),   FALSE, TRUE,  0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(rightButton),  FALSE, TRUE,  0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(downButton),   FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(selectButton), TRUE,  TRUE,  0);
+    gtk_box_pack_start(GTK_BOX(hbox1), GTK_WIDGET(homeButton),   FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox1), GTK_WIDGET(hbox1),        FALSE, FALSE, 0);
   #endif
 
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(vbox1));

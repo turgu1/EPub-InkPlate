@@ -79,11 +79,11 @@
       "-Wno-psabi",
       "-c",
       "-o",
-      "build_linux/src/viewers/book_viewer.o",
-      "src/viewers/book_viewer.cpp"
+      "build_linux/components/pictures/src/bmp_picture.o",
+      "components/pictures/src/bmp_picture.cpp"
     ],
     "directory": "/home/turgu1/Dev/EPub-InkPlate",
-    "file": "/home/turgu1/Dev/EPub-InkPlate/src/viewers/book_viewer.cpp",
-    "output": "/home/turgu1/Dev/EPub-InkPlate/build_linux/src/viewers/book_viewer.o"
+    "file": "/home/turgu1/Dev/EPub-InkPlate/components/pictures/src/bmp_picture.cpp",
+    "output": "/home/turgu1/Dev/EPub-InkPlate/build_linux/components/pictures/src/bmp_picture.o"
   }
 ]

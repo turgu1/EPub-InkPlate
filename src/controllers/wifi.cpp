@@ -18,8 +18,8 @@
   #include "wifi.hpp"
 
   static EventGroupHandle_t wifiEventGroup = nullptr;
-  static bool wifiFirstStart               = true;
-  static bool wifiStopRequested            = false;
+  static bool               wifiFirstStart               = true;
+  static bool               wifiStopRequested            = false;
 
   // ----- wifi_sta_event_handler() -----
 
@@ -35,21 +35,21 @@
   void wifi_ap_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id,
                              void *event_data) {
     static constexpr char const *TAG = "WiFi AP Event Handler";
-    LOG_I("AP Event, Base: %p, Event: %" PRIi32 ".", (void *)event_base, event_id);
+    LOG_I("AP Event, Base: {}, Event: {}.", (void *)event_base, event_id);
 
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
       wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
-      ESP_LOGI(TAG, "station " MACSTR " join, AID=%d", MAC2STR(event->mac), event->aid);
+      ESP_LOGI(TAG, "station " MACSTR " join, AID={}", MAC2STR(event->mac), event->aid);
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
       wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
-      ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d", MAC2STR(event->mac), event->aid);
+      ESP_LOGI(TAG, "station " MACSTR " leave, AID={}", MAC2STR(event->mac), event->aid);
     }
   }
 
   void wifi_sta_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id,
                               void *event_data) {
     static constexpr char const *TAG = "WiFi STA Event Handler";
-    LOG_I("STA Event, Base: %p, Event: %" PRIi32 ".", (void *)event_base, event_id);
+    LOG_I("STA Event, Base: {}, Event: {}.", (void *)event_base, event_id);
 
     static int retryCount = 0;
 
@@ -93,14 +93,14 @@
   }
 
   auto WIFI::startSta(void) -> bool {
-    if (staRunning) return true;
-    if (apRunning) return false;
+    if (staRunning) { return true; }
+    if (apRunning) { return false; }
 
     bool connected    = false;
     wifiStopRequested = false;
     wifiFirstStart    = true;
 
-    if (wifiEventGroup == nullptr) wifiEventGroup = xEventGroupCreate();
+    if (wifiEventGroup == nullptr) { wifiEventGroup = xEventGroupCreate(); }
 
     ESP_ERROR_CHECK(esp_netif_init());
 
@@ -111,16 +111,16 @@
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     ESP_ERROR_CHECK(
-        esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_event_handler, NULL));
+      esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_sta_event_handler, NULL));
     ESP_ERROR_CHECK(
-        esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_event_handler, NULL));
+      esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_sta_event_handler, NULL));
 
     HimemString wifiSsid;
     HimemString wifiPassword;
     HimemString dnsName;
 
-    config.get(Config::Ident::SSID, wifiSsid);
-    config.get(Config::Ident::PWD, wifiPassword);
+    config.get(Config::Ident::SSID,     wifiSsid);
+    config.get(Config::Ident::PWD,      wifiPassword);
     config.get(Config::Ident::DNS_NAME, dnsName);
 
     wifi_config_t wifi_config{};
@@ -132,19 +132,19 @@
 
     const size_t staSsidMax = sizeof(wifi_config.sta.ssid);
     if (wifiSsid.length() >= staSsidMax) {
-      LOG_E("Configured SSID is too long (%u >= %u)", static_cast<unsigned>(wifiSsid.length()),
+      LOG_E("Configured SSID is too long ({} >= {})", static_cast<unsigned>(wifiSsid.length()),
             static_cast<unsigned>(staSsidMax));
       return false;
     }
 
     const size_t staPasswordMax = sizeof(wifi_config.sta.password);
     if (wifiPassword.length() >= staPasswordMax) {
-      LOG_E("Configured password is too long (%u >= %u)",
+      LOG_E("Configured password is too long ({} >= {})",
             static_cast<unsigned>(wifiPassword.length()), static_cast<unsigned>(staPasswordMax));
       return false;
     }
 
-    memcpy(wifi_config.sta.ssid, wifiSsid.c_str(), wifiSsid.length() + 1);
+    memcpy(wifi_config.sta.ssid,     wifiSsid.c_str(),     wifiSsid.length() + 1);
     memcpy(wifi_config.sta.password, wifiPassword.c_str(), wifiPassword.length() + 1);
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -161,11 +161,11 @@
                                            pdFALSE, pdFALSE, portMAX_DELAY);
 
     if (bits & WIFI_CONNECTED_BIT) {
-      LOG_I("connected to ap SSID:%s password:%s", wifiSsid.c_str(), wifiPassword.c_str());
+      LOG_I("connected to ap SSID:{} password:{}", wifiSsid, wifiPassword);
       startMdnsService(dnsName);
       connected = true;
     } else if (bits & WIFI_FAIL_BIT) {
-      LOG_E("Failed to connect to SSID:%s, password:%s", wifiSsid.c_str(), wifiPassword.c_str());
+      LOG_E("Failed to connect to SSID:{}, password:{}", wifiSsid, wifiPassword);
     } else {
       LOG_E("UNEXPECTED EVENT");
     }
@@ -203,8 +203,8 @@
   }
 
   auto WIFI::startAp(void) -> bool {
-    if (apRunning) return true;
-    if (staRunning) return false;
+    if (apRunning) { return true; }
+    if (staRunning) { return false; }
 
     wifiStopRequested = false;
 
@@ -222,26 +222,26 @@
     HimemString apPassword;
     HimemString dnsName;
 
-    config.get(Config::Ident::SSID, apSsid);
-    config.get(Config::Ident::PWD, apPassword);
+    config.get(Config::Ident::SSID,     apSsid);
+    config.get(Config::Ident::PWD,      apPassword);
     config.get(Config::Ident::DNS_NAME, dnsName);
 
     wifi_config_t wifi_config{};
 
-    const size_t apSsidMax = sizeof(wifi_config.ap.ssid);
+    const size_t  apSsidMax = sizeof(wifi_config.ap.ssid);
     if ((apSsid.length() == 0) || (apSsid.length() >= apSsidMax)) {
-      LOG_E("Configured AP SSID length is invalid: %u", static_cast<unsigned>(apSsid.length()));
+      LOG_E("Configured AP SSID length is invalid: {}", static_cast<unsigned>(apSsid.length()));
       return false;
     }
 
     const size_t apPasswordMax = sizeof(wifi_config.ap.password);
     if ((apPassword.length() < 8) || (apPassword.length() >= apPasswordMax)) {
-      LOG_E("Configured AP password length is invalid: %u",
+      LOG_E("Configured AP password length is invalid: {}",
             static_cast<unsigned>(apPassword.length()));
       return false;
     }
 
-    memcpy(wifi_config.ap.ssid, apSsid.c_str(), apSsid.length() + 1);
+    memcpy(wifi_config.ap.ssid,     apSsid.c_str(),     apSsid.length() + 1);
     memcpy(wifi_config.ap.password, apPassword.c_str(), apPassword.length() + 1);
 
     wifi_config.ap.ssid_len         = static_cast<uint8_t>(apSsid.length());

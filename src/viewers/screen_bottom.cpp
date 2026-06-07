@@ -9,22 +9,22 @@
 #include <ctime>
 #include <iomanip>
 
-const std::string ScreenBottom::dw[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+const std::string ScreenBottom::dw[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
 auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> void {
-  FontPtr &font = appFonts.getFont(FONT);
+  FontPtr &    font = appFonts.getFont(FONT);
 
   Page::Format fmt = {
-      .fontIndex = FONT,
-      .fontSize  = FONT_SIZE,
-      .align     = CSS::Align::CENTER,
+    .fontIndex = FONT,
+    .fontSize  = FONT_SIZE,
+    .align     = CSS::Align::CENTER,
   };
 
   page->setLimits(fmt);
 
   std::ostringstream ostr;
 
-  int8_t showHeap = 0;
+  int8_t             showHeap = 0;
 
   #if EPUB_INKPLATE_BUILD
     config.get(Config::Ident::SHOW_HEAP, &showHeap);
@@ -32,7 +32,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
 
   uint16_t h = font->getCharsHeight(FONT_SIZE) + 10;
 
-  LOG_D("Dim [%u, %u], Pos[%u, %u]", Screen::getWidth(), h, 0, Screen::getHeight() - h);
+  LOG_D("Dim [{}, {}], Pos[{}, {}]", Screen::getWidth(), h, 0, Screen::getHeight() - h);
 
   page->clearRegion(Dim(Screen::getWidth(), h), Pos(0, Screen::getHeight() - h));
 
@@ -81,7 +81,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
     if (showRtc != 0) {
       struct tm time;
 
-      time_t epoch;
+      time_t    epoch;
       Clock::getDateTime(epoch);
       localtime_r(&epoch, &time);
 
