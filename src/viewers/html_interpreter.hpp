@@ -54,7 +54,7 @@ class HTMLInterpreter {
     // the end of a page has been detected (the page.isFull() method returns true or
     // the process reached the pageEnd offset). This is specific for each of the book_viewer
     // and the page location computation processes.
-    virtual auto pageEnd(const Page::Format &fmt) -> bool = 0;
+    virtual auto pageEndProcessing(const Page::Format &fmt) -> bool = 0;
 
   public:
     HTMLInterpreter(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom, Page::ComputeMode theCompMode,
@@ -113,7 +113,7 @@ class HTMLInterpreter {
       return started;
     }
 
-    [[nodiscard]] inline auto atEnd() -> bool { return currentOffset >= endOffset; }
+    [[nodiscard]] inline auto atEndOfPageOffset() -> bool { return currentOffset >= endOffset; }
 
     [[nodiscard]] inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
       Page::Format *newFmt = fmtPool.allocate();

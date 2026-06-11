@@ -6,6 +6,8 @@
 
 #include "alloc.hpp"
 #include "screen.hpp"
+#include "config.hpp"
+
 #include "viewers/msg_viewer.hpp"
 #include "viewers/page.hpp"
 
@@ -408,7 +410,8 @@ auto Page::putCharAt(char ch, Pos pos, const Format &fmt) -> void {
 
 auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
   if (!doIt) {
-    if ((displayList->empty()) || (computeMode != ComputeMode::DISPLAY)) { return; } }
+    if ((displayList->empty()) || (computeMode != ComputeMode::DISPLAY)) { return; }
+  }
 
   // displayList->show("DISPLAY LIST");
 
@@ -461,23 +464,27 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
   screen.update(noFull);
 }
 
-auto Page::start(const Format &fmt, bool twoColums) -> void {
+auto Page::start(const Format &fmt, int8_t colCount) -> void {
 
-  twoColumsMode = twoColums;
-
-  pos.x = fmt.screenLeft;
-  pos.y = fmt.screenTop;
+  columnCount = colCount;
+  multiColumnMode = (columnCount > 1) && (columnCount <= 4);
 
   minY = fmt.screenTop;
   maxY = Screen::getHeight() - fmt.screenBottom;
+
   minX = fmt.screenLeft;
 
-  if (twoColumsMode) {
+  if (multiColumnMode) {
     currentColumn = 1;
-    maxX = (Screen::getWidth() >> 1) - fmt.screenRight;
+    columnWidth = ((Screen::getWidth() - fmt.screenLeft - fmt.screenRight) -
+                   (20 * (columnCount - 1))) / columnCount;
+    maxX = minX + columnWidth;
   } else {
     maxX = Screen::getWidth() - fmt.screenRight;
   }
+
+  pos.x = minX;
+  pos.y = minY;
 
   paraMinX = minX;
   paraMaxX = maxX;
@@ -497,12 +504,19 @@ auto Page::start(const Format &fmt, bool twoColums) -> void {
 }
 
 auto Page::setLimits(const Format &fmt) -> void {
-  pos.x = pos.y = 0;
-
   minY = fmt.screenTop;
-  maxX = Screen::getWidth() - fmt.screenRight;
   maxY = Screen::getHeight() - fmt.screenBottom;
-  minX = fmt.screenLeft;
+
+  if (multiColumnMode) {
+    minX = fmt.screenLeft + ((10 + columnWidth) * (currentColumn - 1));
+    maxX = minX + columnWidth;
+  } else {
+    maxX = Screen::getWidth() - fmt.screenRight;
+    minX = fmt.screenLeft;
+  }
+
+  pos.x = minX;
+  pos.y = minY;
 
   screenIsFull = false;
 
@@ -531,11 +545,7 @@ auto Page::lineBreak(const Format &fmt, int8_t indentNextLine) -> bool {
 auto Page::newParagraph(const Format &fmt, bool recover) -> bool {
   FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-  if (pos.y == fmt.marginTop) {
-    lineHeightFactor = fmt.lineHeightFactor;
-  } else {
-    lineHeightFactor = fmt.lineHeightFactor * 1.5;
-  }
+  lineHeightFactor = (pos.y == minY) ? fmt.lineHeightFactor : fmt.lineHeightFactor * 1.5;
 
   // Check if there is enough room for the first line of the paragraph.
   if (!recover) {
@@ -594,6 +604,10 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
   if (pos.x < minX) { pos.x = minX; }
   int16_t lineHeight = glyphsHeight * lineHeightFactor;
   pos.y += topMargin + lineHeight; // (lineHeight >> 1) + (glyphsHeight >> 1);
+
+  if (pos.y > maxY) {
+    LOG_E("We got a problem!");
+  }
 
   // #if DEBUGGING_AID
   //   if (show_location) {
@@ -696,23 +710,23 @@ inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bo
     if (glyphsHeight < glyph->lineHeight) { glyphsHeight = glyph->lineHeight; }
     if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
     lineWidth += glyph->advance;
-    pageEmpty = false;
-    return;
+  } else {
+    DisplayListEntry *entry = lineList->getNewEntry();
+    if (entry == nullptr) { return; }
+
+    entry->command = DisplayListCommand::GLYPH;
+    entry->v       = GlyphEntry{ glyph, glyph->advance, isSpace };
+    entry->pos     = { (uint16_t)(isSpace ? glyph->advance : 0), 0 };
+
+    if (glyphsHeight < glyph->lineHeight) { glyphsHeight = glyph->lineHeight; }
+    if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+
+    lineWidth += (glyph->advance);
+
+    lineList->pushBack(entry);
   }
 
-  DisplayListEntry *entry = lineList->getNewEntry();
-  if (entry == nullptr) { return; }
-
-  entry->command = DisplayListCommand::GLYPH;
-  entry->v       = GlyphEntry{ glyph, glyph->advance, isSpace };
-  entry->pos     = { (uint16_t)(isSpace ? glyph->advance : 0), 0 };
-
-  if (glyphsHeight < glyph->lineHeight) { glyphsHeight = glyph->lineHeight; }
-  if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-
-  lineWidth += (glyph->advance);
-
-  lineList->pushBack(entry);
+  pageEmpty = false;
 }
 
 auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &fmt) -> void {
@@ -721,58 +735,65 @@ auto Page::addPictureToLine(PicturePtr picture, int16_t advance, const Format &f
     if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
     if (glyphsHeight < dim.height) { glyphsHeight = dim.height / lineHeightFactor; }
     lineWidth += advance;
-    pageEmpty = false;
-    return;
+  } else {
+
+    DisplayListEntry *entry = lineList->getNewEntry();
+    if (entry == nullptr) { return; }
+
+    auto dim = picture->getDim();
+
+    entry->command = DisplayListCommand::PICTURE;
+    entry->v       = PictureEntry{ std::move(picture), advance };
+    entry->pos     = { 0, 0 };
+
+    if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+    if (glyphsHeight < dim.height) { glyphsHeight = dim.height / lineHeightFactor; }
+
+    lineWidth += advance;
+
+    // LOG_D(
+    //   "Picture added to line: w:%d h:%d a:%d",
+    //   picture.width, picture.height,
+    //   entry->kind.picture_entry.advance
+    // );
+
+    lineList->pushBack(entry);
   }
 
-  DisplayListEntry *entry = lineList->getNewEntry();
-  if (entry == nullptr) { return; }
-
-  auto dim = picture->getDim();
-
-  entry->command = DisplayListCommand::PICTURE;
-  entry->v       = PictureEntry{ std::move(picture), advance };
-
-  entry->pos = { 0, 0 };
-
-  if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-  if (glyphsHeight < dim.height) { glyphsHeight = dim.height / lineHeightFactor; }
-
-  lineWidth += advance;
-
-  // LOG_D(
-  //   "Picture added to line: w:%d h:%d a:%d",
-  //   picture.width, picture.height,
-  //   entry->kind.picture_entry.advance
-  // );
-
-  lineList->pushBack(entry);
+  pageEmpty = false;
 }
 
 #define NEXT_LINE_REQUIRED_SPACE static_cast<uint16_t>                                     \
-        ((fmt.lineHeightFactor * font->getLineHeight(fmt.fontSize)))
+        ((lineHeightFactor * font->getLineHeight(fmt.fontSize)))
 
 auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSizeNeeded) -> bool {
 
   if (screenIsFull) { return true; }
 
+  if (lineHeightFactor == 0) { lineHeightFactor = fmt.lineHeightFactor; }
+
   auto yPos = (pos.y + (verticalSizeNeeded != 0 ? verticalSizeNeeded : NEXT_LINE_REQUIRED_SPACE));
-  bool notEnough =  yPos > maxY;
+  bool notEnoughRoom =  yPos > maxY;
 
-  LOG_D("theScreenIsFull = {}, YPos = {}, maxY = {}", notEnough ? "Yes" : "No", yPos, maxY);
+  LOG_D("theColunIsFull = {}, YPos = {}, maxY = {}", notEnoughRoom ? "Yes" : "No", yPos, maxY);
 
-  if (notEnough) {
-    if (twoColumsMode && (currentColumn == 1)) {
-      currentColumn = 2;
-
-      paraMinX = (paraMinX - minX) + maxX + 20;
-      paraMaxX = (paraMaxX - maxX) + Screen::getWidth() - fmt.screenRight;
+  if (notEnoughRoom) {
+    if (multiColumnMode && (currentColumn < columnCount)) {
+      ++currentColumn;
 
       minX = maxX + 20;
-      maxX = Screen::getWidth() - fmt.screenRight;
+      maxX = minX + columnWidth;
+
+      paraMinX = minX;
+      paraMaxX = maxX;
 
       pos.x = minX;
       pos.y = fmt.screenTop;
+
+      // In case the last line in preceeding column that
+      // cause a changing of column was the beginning of
+      // a paragraph.
+      lineHeightFactor = fmt.lineHeightFactor;
     } else {
       screenIsFull = true;
       return true;
@@ -788,15 +809,10 @@ auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSi
 auto Page::addWord(const char *word, const Format &fmt) -> bool {
   FontPtr &font = fonts.getFont(fmt.fontIndex);
 
-  if (lineList->empty()) {
-    // We are about to start a new line. Check if it will fit on the page.
-    if (theScreenIsFull(fmt, font)) { return false; }
-  }
-
   if (computeMode != ComputeMode::DISPLAY) {
     const char *str = word;
     int16_t     height  = font->getLineHeight(fmt.fontSize);
-    int16_t     width   = 0;
+    int16_t     wordWidth  = 0;
     bool        first      = true;
 
     while (*str) {
@@ -822,15 +838,15 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
       }
 
       if (glyph != nullptr) {
-        width += advance;
+        wordWidth += advance;
         first = false;
+        pageEmpty = false;
       }
-      pageEmpty = false;
     }
 
     uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
 
-    if (width >= availableWidth) {
+    if (wordWidth >= availableWidth) {
       if (strncasecmp(word, "http", 4) == 0) {
         pageEmpty = false;
         return addWord("[URL removed]", fmt);
@@ -839,22 +855,27 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
       }
     }
 
-    if ((lineWidth + width) >= availableWidth) {
+    if ((lineWidth + wordWidth) >= availableWidth) {
       addLine(fmt, true);
       if (theScreenIsFull(fmt, font)) { return false; }
     }
 
     if (glyphsHeight < height) { glyphsHeight = height; }
     if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-    lineWidth += width;
+    lineWidth += wordWidth;
 
     return true;
+  }
+
+  if (lineList->empty()) {
+    // We are about to start a new line. Check if it will fit on the page.
+    if (theScreenIsFull(fmt, font)) { return false; }
   }
 
   auto        lineEntries = DisplayList::Make(displayListPool);
   const char *str  = word;
   int16_t     height   = font->getLineHeight(fmt.fontSize);
-  int16_t     width    = 0;
+  int16_t     wordWidth    = 0;
   bool        first       = true;
 
   while (*str) {
@@ -880,8 +901,9 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
     }
 
     if (glyph != nullptr) {
-      width += advance;
+      wordWidth += advance;
       first = false;
+      pageEmpty = false;
 
       DisplayListEntry *entry = lineEntries->getNewEntry();
       if (entry == nullptr) { return false; }
@@ -896,7 +918,7 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
 
   uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
 
-  if (width >= availableWidth) {
+  if (wordWidth >= availableWidth) {
     if (strncasecmp(word, "http", 4) == 0) {
       return addWord("[URL removed]", fmt);
     } else {
@@ -904,7 +926,7 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
     }
   }
 
-  if ((lineWidth + width) >= availableWidth) {
+  if ((lineWidth + wordWidth) >= availableWidth) {
     addLine(fmt, true);
     if (theScreenIsFull(fmt, font)) { return false; }
   }
@@ -913,7 +935,7 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
 
   if (glyphsHeight < height) { glyphsHeight = height; }
   if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-  lineWidth += width;
+  lineWidth += wordWidth;
 
   return true;
 }
@@ -1551,7 +1573,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::HEIGHT))) {
     fmt.height =
-      getPixelValue(vals->front(), fmt, Screen::getHeight() - fmt.screenTop - fmt.screenBottom);
+      getPixelValue(vals->front(), fmt, heightRef);
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_TRANSFORM))) {

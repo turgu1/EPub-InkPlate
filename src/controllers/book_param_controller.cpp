@@ -35,17 +35,19 @@ static int8_t useFontsInBook;
 static int8_t font;
 static int8_t doneRes;
 static int8_t lineHeight;
+static int8_t columnCount;
 
 static int8_t oldFontSize;
 static int8_t oldShowPictures;
 static int8_t oldUseFontsInBook;
 static int8_t oldFont;
 static int8_t oldLineHeight;
+static int8_t oldColumnCount;
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
+  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 7;
 #else
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
+  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
 #endif
 
 // *INDENT-OFF*
@@ -73,6 +75,11 @@ static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
                           .choiceCount = 2,
                           .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
+    {.caption   = "Column Count in Landscape:",
+     .u         = {.ch = {.value       = &columnCount,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::columnCountChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
     {.caption   = " DONE ",
      .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
@@ -92,18 +99,21 @@ auto BookParamController::bookParameters() -> void {
   bookParams->get(BookParams::Ident::LINE_HEIGHT,       &lineHeight);
   bookParams->get(BookParams::Ident::USE_FONTS_IN_BOOK, &useFontsInBook);
   bookParams->get(BookParams::Ident::FONT,              &font);
+  bookParams->get(BookParams::Ident::COLUMN_COUNT,      &columnCount);
 
   if (showPictures == -1) { config.get(Config::Ident::SHOW_PICTURES, &showPictures); }
   if (fontSize == -1) { config.get(Config::Ident::FONT_SIZE, &fontSize); }
   if (lineHeight == -1) { config.get(Config::Ident::LINE_HEIGHT, &lineHeight); }
   if (useFontsInBook == -1) { config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBook); }
   if (font == -1) { config.get(Config::Ident::DEFAULT_FONT, &font); }
+  if (columnCount == -1) { config.get(Config::Ident::COLUMN_COUNT, &columnCount); }
 
   oldShowPictures   = showPictures;
   oldUseFontsInBook = useFontsInBook;
   oldFont           = font;
   oldFontSize       = fontSize;
   oldLineHeight     = lineHeight;
+  oldColumnCount    = columnCount;
   doneRes           = 1;
 
   formViewer->show(BOOK_PARAMS_CAPTION, bookParamsFormEntries, BOOK_PARAMS_FORM_SIZE,
@@ -119,9 +129,12 @@ auto BookParamController::revertToDefaults() -> void {
 
   BookParams *            bookParams = epub->getBookParams();
 
+  oldShowPictures   = bookFormatParams->showPictures;
+  oldFontSize       = bookFormatParams->fontSize;
   oldUseFontsInBook = bookFormatParams->useFontsInBook;
   oldFont           = bookFormatParams->font;
   oldLineHeight     = bookFormatParams->lineHeight;
+  oldColumnCount    = bookFormatParams->columnCount;
 
   constexpr int8_t defaultValue = -1;
 
@@ -129,6 +142,7 @@ auto BookParamController::revertToDefaults() -> void {
   bookParams->put(BookParams::Ident::FONT_SIZE,         defaultValue);
   bookParams->put(BookParams::Ident::LINE_HEIGHT,       defaultValue);
   bookParams->put(BookParams::Ident::FONT,              defaultValue);
+  bookParams->put(BookParams::Ident::COLUMN_COUNT,      defaultValue);
   bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, defaultValue);
 
   epub->retrieveBookFormatParams();
@@ -154,6 +168,12 @@ auto BookParamController::revertToDefaults() -> void {
   }
 
   if (oldLineHeight != bookFormatParams->lineHeight) {
+    pageLocs.stopControlTask();
+  }
+
+  if ((oldColumnCount != columnCount) &&
+      ((screen.getOrientation() == Screen::Orientation::BOTTOM) ||
+       (screen.getOrientation() == Screen::Orientation::TOP))) {
     pageLocs.stopControlTask();
   }
 }
@@ -281,6 +301,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
       if (fontSize != oldFontSize) { bookParams->put(BookParams::Ident::FONT_SIZE, fontSize); }
       if (lineHeight != oldLineHeight) { bookParams->put(BookParams::Ident::LINE_HEIGHT, lineHeight); }
       if (font != oldFont) { bookParams->put(BookParams::Ident::FONT, font); }
+      if (columnCount != oldColumnCount) { bookParams->put(BookParams::Ident::COLUMN_COUNT, columnCount); }
       if (useFontsInBook != oldUseFontsInBook) {
         bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, useFontsInBook);
       }

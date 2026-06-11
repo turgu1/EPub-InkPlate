@@ -14,7 +14,7 @@
 // MemoryPool<Page::Format> HTMLInterpreter::fmtPool;
 
 // This method process a single xml node and recurse for the associated children.
-// The method calls the pageEnd() method when it reachs the end of the page as
+// The method calls the pageEndProcessing() method when it reachs the end of the page as
 // defined by the endOffset variable, or when the page class indicated that the page
 // is full (through the page_full() method or false value returned by some of its methods).
 //
@@ -44,7 +44,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
   }
 
   if (node == nullptr) { return false; }
-  if (atEnd()) { return true; }
+  if (atEndOfPageOffset()) { return true; }
 
   (void)checkIfStarted();
 
@@ -163,8 +163,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               showState("Line Break", fmt);
               if (!page->lineBreak(fmt)) {
                 // At the end of the page
-                if (!pageEnd(fmt)) { return false; }
-                if (atEnd()) { return true; }
+                if (!pageEndProcessing(fmt)) { return false; }
+                if (atEndOfPageOffset()) { return true; }
                 page->lineBreak(fmt);
               }
             }
@@ -294,16 +294,16 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       while ((iter-- > 0) && page->someDataWaiting()) {
         showState("==> End Paragraph 1 <==", fmt);
         if (!page->endParagraph(fmt)) {
-          if (!pageEnd(fmt)) { return false; }
-          if (atEnd()) { return true; }
+          if (!pageEndProcessing(fmt)) { return false; }
+          if (atEndOfPageOffset()) { return true; }
           page->endParagraph(fmt);
         }
       }
 
       showState("==> New Paragraph 1 <==", fmt);
       if (!page->newParagraph(fmt)) {
-        if (!pageEnd(fmt)) { return false; }
-        if (atEnd()) { return true; }
+        if (!pageEndProcessing(fmt)) { return false; }
+        if (atEndOfPageOffset()) { return true; }
         page->newParagraph(fmt);
       }
     }
@@ -312,7 +312,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     str = fmt.pre ? node.text().get() : node.value();
   }
 
-  if (atEnd()) { return true; }
+  if (atEndOfPageOffset()) { return true; }
 
   if (!pictureFilename.empty()) {
     if (showPictures) {
@@ -345,12 +345,12 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             bool added            = false;
             std::tie(added, pict) = page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
             if (!added) {
-              if (page->isFull() && !pageEnd(fmt)) { return false; }
-              if (atEnd()) { return true; }
+              if (page->isFull() && !pageEndProcessing(fmt)) { return false; }
+              if (atEndOfPageOffset()) { return true; }
 
               page->addPicture(std::move(pict), fmt /*, beginning_of_page */);
-              if (page->isFull() && !pageEnd(fmt)) { return false; }
-              if (atEnd()) { return true; }
+              if (page->isFull() && !pageEndProcessing(fmt)) { return false; }
+              if (atEndOfPageOffset()) { return true; }
             }
             showState("After IMG", fmt);
           } else {
@@ -368,13 +368,13 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     ++currentOffset;
     xml_node sub = node.first_child();
     while (sub != nullptr) {
-      if (page->isFull() && !pageEnd(fmt)) { return false; }
-      if (atEnd()) { break; }
+      if (page->isFull() && !pageEndProcessing(fmt)) { return false; }
+      if (atEndOfPageOffset()) { break; }
       Page::Format *newFmt = duplicateFmt(fmt);
       if (!buildPagesRecurse(sub, *newFmt, domCurrentNode, level + 1)) {
         releaseFmt(newFmt);
-        if (page->isFull() && !pageEnd(fmt)) { return false; }
-        if (atEnd()) { break; }
+        if (page->isFull() && !pageEndProcessing(fmt)) { return false; }
+        if (atEndOfPageOffset()) { break; }
         return false;
       }
       releaseFmt(newFmt);
@@ -402,7 +402,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           if (!page->endParagraph(fmt)) {
             // The paragraph may not have been completly rendered. This means
             // that we found the end of a page
-            if (!pageEnd(fmt)) { return false; }
+            if (!pageEndProcessing(fmt)) { return false; }
             page->endParagraph(fmt);
           }
         }
@@ -448,8 +448,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
               if (!page->addChar(" ", fmt)) {
                 // Unable to add the character... the page must be full
-                if (!pageEnd(fmt)) { return false; }
-                if (atEnd()) {
+                if (!pageEndProcessing(fmt)) { return false; }
+                if (atEndOfPageOffset()) {
                   page->breakParagraph(fmt);
                   return true;
                 }
@@ -459,8 +459,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
             } else if (fmt.pre && (*str == '\n')) {
               if (!page->lineBreak(fmt, 30)) {
-                if (!pageEnd(fmt)) { return false; }
-                if (atEnd()) { return true; }
+                if (!pageEndProcessing(fmt)) { return false; }
+                if (atEndOfPageOffset()) { return true; }
               }
             }
           }
@@ -490,8 +490,8 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             #endif
 
             if (!page->addWord(word.c_str(), fmt)) {
-              if (!pageEnd(fmt)) { return false; }
-              if (atEnd()) {
+              if (!pageEndProcessing(fmt)) { return false; }
+              if (atEndOfPageOffset()) {
                 page->breakParagraph(fmt);
                 return true;
               }
@@ -504,7 +504,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           currentOffset += count;
         }
 
-        if (atEnd()) {
+        if (atEndOfPageOffset()) {
           if (*str) {
             showState("==> Before Break Paragraph 1 <==", fmt);
             page->breakParagraph(fmt);

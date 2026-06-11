@@ -29,12 +29,12 @@ auto Font::getOrCreateGlyph(char32_t charcode, int16_t glyphSize) -> Glyph * {
   auto it = cache.find(key);
   if (it == cache.end()) {
     Glyphs glyphs(0, std::hash<uint32_t>{}, std::equal_to<uint32_t>{},
-                  GlyphsAlloc{glyphsMapPool.get()});
+                  GlyphsAlloc{ glyphsMapPool.get() });
     it = cache.emplace(key, std::move(glyphs)).first;
   }
 
   auto git = it->second.find(charcode);
-  if (git != it->second.end()) return git->second;
+  if (git != it->second.end()) { return git->second; }
 
   Glyph *glyph = it->second.emplace(charcode, bitmapGlyphPool.allocate()).first->second;
 
@@ -100,10 +100,10 @@ auto Font::getGlyph(char32_t charcode, int16_t glyphSize) -> Glyph * {
 }
 
 auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
-    -> std::tuple<Glyph *, int16_t, bool> {
+-> std::tuple<Glyph *, int16_t, bool> {
 
-  bool ignoreNext = false;
-  int16_t kern    = 0;
+  bool     ignoreNext = false;
+  int16_t  kern    = 0;
 
   char32_t resultCharcode = charcode;
 
@@ -113,7 +113,7 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
       const Ligature &lig = ligatures[i];
 
       // ligatures are sorted by firstChar, so we can stop searching
-      if (lig.firstChar > charcode) break;
+      if (lig.firstChar > charcode) { break; }
 
       if ((lig.firstChar == charcode) && (lig.nextChar == nextCharcode)) {
         resultCharcode = lig.replacement;
@@ -138,12 +138,14 @@ auto Font::getGlyph(char32_t charcode, char32_t nextCharcode, int16_t glyphSize)
 }
 
 // Only used for ASCII chars
-auto Font::getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void {
+auto Font::getASCIISize(const char *str, int16_t glyphSize) -> Dim {
+
+  Dim     dim;
 
   int16_t maxUp   = 0;
   int16_t maxDown = 0;
 
-  dim->width = 0;
+  dim.width = 0;
 
   // if (str == nullptr) {
   //   dim->height = 0;
@@ -153,15 +155,17 @@ auto Font::getASCIISize(const char *str, Dim *dim, int16_t glyphSize) -> void {
   while (*str) {
     Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
     if (glyph != nullptr) {
-      dim->width += glyph->advance;
+      dim.width += glyph->advance;
 
       int16_t up   = -glyph->yoff;
       int16_t down = glyph->dim.height + glyph->yoff;
 
-      if (up > maxUp) maxUp = up;
-      if (down > maxDown) maxDown = down;
+      if (up > maxUp) { maxUp = up; }
+      if (down > maxDown) { maxDown = down; }
     }
   }
 
-  dim->height = maxUp + maxDown;
+  dim.height = maxUp + maxDown;
+
+  return dim;
 }

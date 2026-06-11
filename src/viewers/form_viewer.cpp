@@ -122,7 +122,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
   Dim titleDim;
 
-  font->getASCIISize(title, &titleDim, FORM_FONT_SIZE + 4);
+  titleDim = font->getASCIISize(title, FORM_FONT_SIZE + 4);
 
   page->putStrAt(
     title,

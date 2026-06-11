@@ -44,6 +44,7 @@ static int8_t                  showTitle;
 static int8_t                  dirView;
 static int8_t                  coverSize;
 static int8_t                  done;
+static int8_t                  columnCount;
 
 static double                  batteryTrim;
 
@@ -57,6 +58,7 @@ static int8_t                  oldDefaultFont;
 static int8_t                  oldShowTitle;
 static int8_t                  oldDirView;
 static int8_t                  oldCoverSize;
+static int8_t                  oldColumnCount;
 
 static double                  oldBatteryTrim;
 
@@ -135,9 +137,9 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
-  static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 6;
+  static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 7;
 #else
-  static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 5;
+  static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 6;
 #endif
 static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
   { .caption   = "Default Font Size:",
@@ -164,6 +166,11 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
     .u         = { .ch = { .value       = &showPictures,
                            .choiceCount = 2,
                            .choices     = FormChoiceField::yesNoChoices } },
+    .entryType = FormEntryType::HORIZONTAL },
+  { .caption   = "Column Count in Landscape:",
+    .u         = { .ch = { .value       = &columnCount,
+                           .choiceCount = 4,
+                           .choices     = FormChoiceField::columnCountChoices } },
     .entryType = FormEntryType::HORIZONTAL },
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
     { .caption   = " DONE ",
@@ -255,12 +262,14 @@ auto OptionController::defaultParameters() -> void {
   config.get(Config::Ident::LINE_HEIGHT,        &lineHeight);
   config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBooks);
   config.get(Config::Ident::DEFAULT_FONT,       &defaultFont);
+  config.get(Config::Ident::COLUMN_COUNT,       &columnCount);
 
   oldShowPictures    = showPictures;
   oldUseFontsInBooks = useFontsInBooks;
   oldDefaultFont     = defaultFont;
   oldFontSize        = fontSize;
   oldLineHeight      = lineHeight;
+  oldColumnCount     = columnCount;
   done               = 1;
 
   formViewer->show(BOOK_DEFAULTS_CAPTION, defaultParametersFormEntries,
@@ -562,6 +571,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       config.put(Config::Ident::LINE_HEIGHT,        lineHeight);
       config.put(Config::Ident::DEFAULT_FONT,       defaultFont);
       config.put(Config::Ident::USE_FONTS_IN_BOOKS, useFontsInBooks);
+      config.put(Config::Ident::COLUMN_COUNT,       columnCount);
       config.save();
 
       // if ((oldShowPictures != showPictures) || (oldFontSize != fontSize) ||

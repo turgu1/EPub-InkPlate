@@ -39,7 +39,7 @@ class BookViewerInterp : public HTMLInterpreter {
     ~BookViewerInterp() {}
 
   protected:
-    auto pageEnd(const Page::Format &fmt) -> bool {
+    auto pageEndProcessing(const Page::Format &fmt) -> bool {
       LOG_D("---- PAGE END ----");
       return true;
     }
@@ -59,7 +59,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
   LOG_D("buildPageAt()");
 
   FontPtr &font = epub->getFonts().getFont(ScreenBottom::FONT);
-  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
+  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 10;
 
   if (epub->getItemAtIndex(pageId.itemrefIndex)) {
 
@@ -114,13 +114,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
     if ((node = epub->getCurrentItem().child("html").child("body"))) {
 
-      #if EPUB_LINUX_BUILD
-        page->start(fmt, true);
-      #else
-        page->start(fmt, (fmt.fontSize < 15) &&
-                    (screen.getOrientation() == Screen::Orientation::BOTTOM ||
-                     screen.getOrientation() == Screen::Orientation::TOP));
-      #endif
+      page->start(fmt, epub->getBookFormatParams()->columnCount);
 
       Page::Format *new_fmt = interp->duplicateFmt(fmt);
 

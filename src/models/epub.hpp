@@ -64,6 +64,7 @@ class EPub {
       int8_t lineHeight;
       int8_t useFontsInBook;
       int8_t font;
+      int8_t columnCount;
       Dim screenDim;
     };
     #pragma pack(pop)

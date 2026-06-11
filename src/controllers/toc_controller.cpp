@@ -59,7 +59,7 @@ auto TocController::enter() -> void {
 }
 
 auto TocController::leave(bool goingToDeepSleep) -> void {
-  if (tocViewer) tocViewer.reset();
+  if (tocViewer) { tocViewer.reset(); }
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
@@ -101,55 +101,55 @@ auto TocController::leave(bool goingToDeepSleep) -> void {
 #else
   auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
-      #if EXTENDED_CASE
+    #if EXTENDED_CASE || BLE_KEYPAD
       case EventMgr::EventKind::PREV:
-      #else
+    #else
       case EventMgr::EventKind::DBL_PREV:
-      #endif
-      currentEntryIndex = tocViewer->prevColumn();
-      break;
+        #endif
+        currentEntryIndex = tocViewer->prevColumn();
+        break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::NEXT:
-      #else
-      case EventMgr::EventKind::DBL_NEXT:
-      #endif
-      currentEntryIndex = tocViewer->nextColumn();
-      break;
+        #if EXTENDED_CASE || BLE_KEYPAD
+          case EventMgr::EventKind::NEXT:
+        #else
+          case EventMgr::EventKind::DBL_NEXT:
+            #endif
+            currentEntryIndex = tocViewer->nextColumn();
+            break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::DBL_PREV:
-      #else
-      case EventMgr::EventKind::PREV:
-      #endif
-      currentEntryIndex = tocViewer->prevItem();
-      break;
+            #if EXTENDED_CASE || BLE_KEYPAD
+              case EventMgr::EventKind::DBL_PREV:
+            #else
+              case EventMgr::EventKind::PREV:
+                #endif
+                currentEntryIndex = tocViewer->prevItem();
+                break;
 
-      #if EXTENDED_CASE
-      case EventMgr::EventKind::DBL_NEXT:
-      #else
-      case EventMgr::EventKind::NEXT:
-      #endif
-      currentEntryIndex = tocViewer->nextItem();
-      break;
+                #if EXTENDED_CASE || BLE_KEYPAD
+                  case EventMgr::EventKind::DBL_NEXT:
+                #else
+                  case EventMgr::EventKind::NEXT:
+                    #endif
+                    currentEntryIndex = tocViewer->nextItem();
+                    break;
 
-    case EventMgr::EventKind::SELECT:
-      if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
-        if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
-          bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
-          bookController.becomeOwnerOfBook(std::move(epub));
-          appController.setController(AppController::Ctrl::BOOK);
-        }
-      }
-      break;
+                  case EventMgr::EventKind::SELECT:
+                    if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
+                      if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
+                        bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+                        bookController.becomeOwnerOfBook(std::move(epub));
+                        appController.setController(AppController::Ctrl::BOOK);
+                      }
+                    }
+                    break;
 
-    case EventMgr::EventKind::DBL_SELECT:
-      bookController.becomeOwnerOfBook(std::move(epub));
-      appController.setController(AppController::Ctrl::BOOK);
-      break;
+                  case EventMgr::EventKind::DBL_SELECT:
+                    bookController.becomeOwnerOfBook(std::move(epub));
+                    appController.setController(AppController::Ctrl::BOOK);
+                    break;
 
-    case EventMgr::EventKind::NONE:
-      break;
+                  case EventMgr::EventKind::NONE:
+                    break;
     }
   }
 #endif

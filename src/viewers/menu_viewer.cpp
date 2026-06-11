@@ -22,8 +22,7 @@ auto MenuViewer::showCaption(std::string caption, Page::Format &fmt) -> void {
   fmt.fontSize  = CAPTION_SIZE;
 
   FontPtr &font = appFonts.getFont(1);
-  Dim      captionDim;
-  font->getASCIISize(caption.c_str(), &captionDim, CAPTION_SIZE);
+  Dim      captionDim = font->getASCIISize(caption.c_str(), CAPTION_SIZE);
   page->putStrAt(caption, Pos{ (uint16_t)((Screen::getWidth() - captionDim.width) >> 1), textYPos },
                  fmt);
 }

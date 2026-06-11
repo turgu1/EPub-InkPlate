@@ -28,15 +28,15 @@
 
 auto MatrixBooksDirViewer::setup() -> void {
   FontPtr &font   = appFonts.getFont(TITLE_FONT);
-  titleFontHeight = font->getLineHeight(TITLE_FONT_SIZE) * 0.8 + 5;
+  titleFontHeight = (font->getLineHeight(TITLE_FONT_SIZE) * 0.9 + 5);
 
   FontPtr &authorFont = appFonts.getFont(AUTHOR_FONT);
-  authorFontHeight    = authorFont->getLineHeight(AUTHOR_FONT_SIZE) * 0.8;
+  authorFontHeight    = authorFont->getLineHeight(AUTHOR_FONT_SIZE) * 0.9 + 5;
 
   FontPtr &pageNbrFont = appFonts.getFont(ScreenBottom::FONT);
   pagenbrFontHeight    = pageNbrFont->getLineHeight(ScreenBottom::FONT_SIZE) + 10;
 
-  firstEntryYpos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 25;
+  firstEntryYpos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 30;
   headerHeight   = firstEntryYpos - 20;
 
   lineCount = (Screen::getHeight() - firstEntryYpos - pagenbrFontHeight - SPACE_ABOVE_PAGENBR +

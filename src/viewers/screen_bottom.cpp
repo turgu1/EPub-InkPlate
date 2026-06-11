@@ -17,7 +17,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
   Page::Format fmt = {
     .fontIndex = FONT,
     .fontSize  = FONT_SIZE,
-    .align     = CSS::Align::CENTER,
+    .align     = CSS::Align::LEFT,
   };
 
   page->setLimits(fmt);
@@ -43,15 +43,19 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
     if (pageNbr != -1) {
       ostr << pageNbr + 1 << " / " << pageCount;
 
+      Dim dim = font->getASCIISize(ostr.str().c_str(), FONT_SIZE);
+
       page->putStrAt(ostr.str(),
-                     Pos(Page::HORIZONTAL_CENTER,
+                     Pos((Screen::getWidth() >> 1) - (dim.width >> 1),
                          Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
                      fmt);
     } else if (pageCount != -1) {
       ostr << "PgCalc... " << pageCount << "%";
 
+      Dim dim = font->getASCIISize(ostr.str().c_str(), FONT_SIZE);
+
       page->putStrAt(ostr.str(),
-                     Pos(Page::HORIZONTAL_CENTER,
+                     Pos((Screen::getWidth() >> 1) - (dim.width >> 1),
                          Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
                      fmt);
     }
@@ -64,9 +68,11 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
       ostr << uxTaskGetStackHighWaterMark(nullptr) << " / "
            << heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) << " / "
            << heap_caps_get_free_size(MALLOC_CAP_8BIT);
-      fmt.align = CSS::Align::RIGHT;
+
+      Dim dim = font->getASCIISize(ostr.str().c_str(), FONT_SIZE);
+
       page->putStrAt(ostr.str(),
-                     Pos(Page::HORIZONTAL_CENTER,
+                     Pos(Screen::getWidth() - 10 - dim.width,
                          Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
                      fmt);
     }
@@ -90,9 +96,10 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
            << +(time.tm_mon + 1) << '/' << std::setw(2) << +time.tm_mday << ' ' << std::setw(2)
            << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
 
-      fmt.align = CSS::Align::RIGHT;
+      Dim dim = font->getASCIISize(ostr.str().c_str(), FONT_SIZE);
+
       page->putStrAt(ostr.str(),
-                     Pos(Page::HORIZONTAL_CENTER,
+                     Pos(Screen::getWidth() - 10 - dim.width,
                          Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
                      fmt);
     }

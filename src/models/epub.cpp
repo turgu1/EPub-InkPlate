@@ -674,9 +674,7 @@ auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
 
   xml_node      node, node2;
   xml_attribute attr;
-
   const char *  id = itemref.attribute("idref").value();
-
   bool          completed = false;
 
   while (!completed) {
@@ -803,6 +801,7 @@ auto EPub::retrieveBookFormatParams() -> void {
                          .lineHeight     = default_value,
                          .useFontsInBook = default_value,
                          .font           = default_value,
+                         .columnCount    = default_value,
                          .screenDim      = { 0, 0 } };
   } else {
     bookParams->get(BookParams::Ident::SHOW_PICTURES,     &bookFormatParams.showPictures);
@@ -810,6 +809,7 @@ auto EPub::retrieveBookFormatParams() -> void {
     bookParams->get(BookParams::Ident::LINE_HEIGHT,       &bookFormatParams.lineHeight);
     bookParams->get(BookParams::Ident::USE_FONTS_IN_BOOK, &bookFormatParams.useFontsInBook);
     bookParams->get(BookParams::Ident::FONT,              &bookFormatParams.font);
+    bookParams->get(BookParams::Ident::COLUMN_COUNT,      &bookFormatParams.columnCount);
   }
 
   config.get(Config::Ident::ORIENTATION, &bookFormatParams.orientation);
@@ -829,6 +829,9 @@ auto EPub::retrieveBookFormatParams() -> void {
   }
   if (bookFormatParams.font == default_value) {
     config.get(Config::Ident::DEFAULT_FONT, &bookFormatParams.font);
+  }
+  if (bookFormatParams.columnCount == default_value) {
+    config.get(Config::Ident::COLUMN_COUNT, &bookFormatParams.columnCount);
   }
 
   bookFormatParams.screenDim = Dim(Screen::getWidth(), Screen::getHeight());

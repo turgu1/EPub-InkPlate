@@ -23,7 +23,7 @@ class PageLocsInterpreter : public HTMLInterpreter {
                         Page::ComputeMode theCompMode, const EPub::ItemInfo &theItem,
                         const std::atomic<bool> &abortFlag, PendingRequestCheck pendingRequestCheck,
                         void *pendingRequestContext)
-      : HTMLInterpreter(theEpub, thePage, theDom, theCompMode, theItem), itemInfo(theItem),
+      : HTMLInterpreter(theEpub, thePage, theDom, theCompMode, theItem), epub(theEpub), itemInfo(theItem),
       abortFlag(abortFlag), pendingRequestCheck(pendingRequestCheck),
       pendingRequestContext(pendingRequestContext) {}
 
@@ -43,16 +43,17 @@ class PageLocsInterpreter : public HTMLInterpreter {
                                                   pendingRequestContext);
     }
 
-    auto inline docEnd(const Page::Format &fmt) -> void { pageEnd(fmt); }
+    auto inline docEnd(const Page::Format &fmt) -> void { pageEndProcessing(fmt); }
 
   private:
+    EPubPtr &epub;
     const EPub::ItemInfo &itemInfo;
     const std::atomic<bool> &abortFlag;
     PendingRequestCheck pendingRequestCheck;
     void *pendingRequestContext;
 
   protected:
-    [[nodiscard]] inline auto pageEnd(const Page::Format &fmt) -> bool {
+    [[nodiscard]] inline auto pageEndProcessing(const Page::Format &fmt) -> bool {
       bool               res = true;
 
       PageId             pageId = PageId(itemInfo.itemrefIndex, startOffset);
@@ -83,7 +84,8 @@ class PageLocsInterpreter : public HTMLInterpreter {
         #endif
       }
 
-// Gives the chance to book_viewer to show a page if required
+      // Gives the chance to book_viewer to show a page if required
+
       #if EPUB_LINUX_BUILD
         std::this_thread::yield();
       #else
@@ -92,7 +94,7 @@ class PageLocsInterpreter : public HTMLInterpreter {
 
       startOffset = currentOffset;
 
-      page->start(fmt); // Start a new page
+      page->start(fmt, epub->getBookFormatParams()->columnCount); // Start a new page
 
       // Abort at page boundaries when control has signalled an interrupt or when a queued
       // retriever request (typically GET_ASAP or STOP) is waiting to be handled next.

@@ -90,8 +90,10 @@ class Page {
   private:
     static constexpr char const *TAG = "Page";
 
-    bool twoColumsMode{ false };
+    bool multiColumnMode{ false };
     uint8_t currentColumn{ 1 };
+    uint8_t columnCount{ 1 };
+    uint16_t columnWidth{ 0 };
 
     using EntityString =
       std::basic_string<char, std::char_traits<char>, StaticPoolAllocator<char, EntityStringTag> >;
@@ -144,9 +146,8 @@ class Page {
      * drawn.
      *
      * @param fmt Formatting parameters.
-     * @param twoColumns Format the page in twoColumns.
      */
-    auto start(const Format &fmt, bool twoColums = false) -> void;
+    auto start(const Format &fmt, int8_t colCount = 1) -> void;
 
     /**
      * @brief Set the writing limits on a page without erasing

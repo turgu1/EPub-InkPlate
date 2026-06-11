@@ -84,11 +84,15 @@ class FormField {
     [[nodiscard]] inline auto getType() -> FormEntryType { return formEntry.entryType; }
 
     auto computeCaptionDim() -> void {
-      if (formEntry.caption != nullptr) {
-        font.getASCIISize(formEntry.caption, &captionDim, FORM_FONT_SIZE);
-      } else {
-        captionDim = Dim(0, 0);
-      }
+      #pragma GCC diagnostic push
+      #pragma GCC diagnostic ignored "-Wsequence-point"
+
+      captionDim = (formEntry.caption != nullptr) ?
+                   font.getASCIISize(formEntry.caption, FORM_FONT_SIZE) :
+                   captionDim = Dim(0, 0);
+
+      #pragma GCC diagnostic pop
+
     }
 
     virtual auto formRefreshRequired() -> bool { return false; }
@@ -162,6 +166,8 @@ class FormChoiceField : public FormField {
 
     static constexpr FormChoice timeoutChoices[3] = { { "5", 5 }, { "15", 15 }, { "30", 30 } };
 
+    static constexpr FormChoice columnCountChoices[4] = { { "1", 1 }, { "2", 2 }, { "3", 3 }, { "4", 4 } };
+
     static constexpr FormChoice batteryVisualChoices[4] = {
       { "NONE", 0 }, { "PERCENT", 1 }, { "VOLTAGE", 2 }, { "ICON", 3 } };
 
@@ -186,7 +192,7 @@ class FormChoiceField : public FormField {
       for (int8_t i = 0; i < formEntry.u.ch.choiceCount; ++i) {
         Item *item = itemPool.newElement();
         items.push_back(item);
-        font.getASCIISize(formEntry.u.ch.choices[i].caption, &item->dim, FORM_FONT_SIZE);
+        item->dim = font.getASCIISize(formEntry.u.ch.choices[i].caption, FORM_FONT_SIZE);
         item->idx = i;
       }
 
@@ -461,7 +467,7 @@ class FormUInt16 : public FormField {
 
     auto saveValue() -> void {}
 
-    auto computeFieldDim() -> void { font.getASCIISize("XXXXX", &fieldDim, FORM_FONT_SIZE); }
+    auto computeFieldDim() -> void { fieldDim = font.getASCIISize("XXXXX", FORM_FONT_SIZE); }
 };
 
 using FormFloatPtr = HimemUniquePtr<class FormFloat>;
@@ -534,7 +540,7 @@ class FormFloat : public FormField {
 
     auto saveValue() -> void {}
 
-    auto computeFieldDim() -> void { font.getASCIISize("XXXXXXX", &fieldDim, FORM_FONT_SIZE); }
+    auto computeFieldDim() -> void { fieldDim = font.getASCIISize("XXXXXXX", FORM_FONT_SIZE); }
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
@@ -564,7 +570,7 @@ class FormFloat : public FormField {
       }
 
       auto computeFieldDim() -> void {
-        font.getASCIISize(formEntry.caption, &fieldDim, FORM_FONT_SIZE);
+        fieldDim = font.getASCIISize(formEntry.caption, FORM_FONT_SIZE);
       }
 
       auto computeFieldPos(Pos fromPos) -> void {

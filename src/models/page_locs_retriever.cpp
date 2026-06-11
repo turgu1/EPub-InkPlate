@@ -304,8 +304,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
   Fonts &  fonts = epub->getFonts();
 
   FontPtr &font = fonts.getFont(ScreenBottom::FONT);
-  pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) +
-                  (font->getLineHeight(ScreenBottom::FONT_SIZE) >> 1);
+  pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) + 10;
 
   bool           resultOk = false;
 
@@ -357,7 +356,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
     if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
 
-      pageOut->start(fmt);
+      pageOut->start(fmt, epub->getBookFormatParams()->columnCount);
 
       // newFmt is required to be able to modify the format in the recursive calls without
       // interfering with the original one used for page start

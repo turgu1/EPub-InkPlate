@@ -17,20 +17,20 @@ enum class ConfigIdent {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER,
   #endif
-  FONTS_DB, BATTERY_TRIM
+  FONTS_DB, BATTERY_TRIM, COLUMN_COUNT, BT_KEYPAD_MAC
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 33>;
+    using Config = ConfigBase<ConfigIdent, 35>;
   #else
-    using Config = ConfigBase<ConfigIdent, 30>;
+    using Config = ConfigBase<ConfigIdent, 32>;
   #endif
 #else
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 26>;
+    using Config = ConfigBase<ConfigIdent, 28>;
   #else
-    using Config = ConfigBase<ConfigIdent, 23>;
+    using Config = ConfigBase<ConfigIdent, 25>;
   #endif
 #endif
 
@@ -45,6 +45,7 @@ enum class ConfigIdent {
   static char              dnsName[32];
   static char              apSsid[32];
   static char              apPwd[32];
+  static char              btKeypadMac[20];
   static int32_t           port;
   static int8_t            battery;
   static int8_t            orientation;
@@ -61,6 +62,7 @@ enum class ConfigIdent {
   static int8_t            coverSize;
   static double            batteryTrim;
   static int8_t            lineHeight;
+  static int8_t            columnCount;
 
   #if DATE_TIME_RTC
     static int8_t showRtc;
@@ -91,7 +93,8 @@ enum class ConfigIdent {
   static const int8_t  theVersion             =  1;
   static const int8_t  defaultShowRtc         =  0;
   static const double  defaultBatteryTrim     = 4.086 / 4.26;
-  static const int8_t  defaultLineHeight      =  1;// 0 = TIGHT, 1 = MEDIUM, 2 = LARGE
+  static const int8_t  defaultLineHeight      =  1; // 0 = TIGHT, 1 = MEDIUM, 2 = LARGE
+  static const int8_t  defaultColumnCount     =  1; // 1 to 4
 
   template <>
   Config::CfgType Config::cfg = { {
@@ -135,6 +138,8 @@ enum class ConfigIdent {
     { Config::Ident::FONTS_DB,           Config::EntryType::FONTS_DB, "",                   &fontsDB,         &defaultFont,             0 },
     { Config::Ident::BATTERY_TRIM,       Config::EntryType::DOUBLE,   "battery_trim",       &batteryTrim,     &defaultBatteryTrim,      0 },
     { Config::Ident::LINE_HEIGHT,        Config::EntryType::BYTE,     "line_height",        &lineHeight,      &defaultLineHeight,       0 },
+    { Config::Ident::COLUMN_COUNT,       Config::EntryType::BYTE,     "column_count",       &columnCount,     &defaultColumnCount,      0 },
+    { Config::Ident::BT_KEYPAD_MAC,      Config::EntryType::STRING,   "bt_keypad_mac",      &btKeypadMac,     "00:00:00:00:00:00",     20 },
   } };
 
 

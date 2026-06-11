@@ -35,6 +35,8 @@
 #      tz
 #      battery_trim
 #      line_height
+#      column_count
+#      bt_keypad_mac
 # ---
 
 version = 1
@@ -56,9 +58,11 @@ show_heap = 0
 show_title = 1
 front_light = 15
 dir_view = 1
-cover_size = 1
+cover_size = 2
 show_rtc = 1
 ntp_server = "pool.ntp.org"
 tz = "EST5EDT,M3.2.0,M11.1.0"
 battery_trim = 0.6
 line_height = 1
+column_count = 1
+bt_keypad_mac = "00:00:00:00:00:00"
