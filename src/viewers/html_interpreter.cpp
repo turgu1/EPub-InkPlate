@@ -473,13 +473,20 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             ++str;
             ++count;
           }
+
+          if (!started && ((currentOffset + count) > startOffset)) {
+            w += (startOffset - currentOffset);
+            count -= (startOffset - currentOffset);
+            currentOffset = startOffset;
+          }
+
           if (checkIfStarted()) {
             if (toBeStarted) {
               toBeStarted = false;
               page->newParagraph(fmt, true);
             }
-            std::string word;
-            word.assign(w, count);
+
+            std::string word(w, count);
 
             #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               static bool first = true;
@@ -489,7 +496,11 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               }
             #endif
 
-            if (!page->addWord(word.c_str(), fmt)) {
+            // addWord() returns nullptr if the whole word was
+            // added to the page, or a pointer inside the word if
+            // a part of it or none of it was entered.
+            if ((w = page->addWord(word.c_str(), fmt)) != nullptr) {
+              currentOffset += (w - word.c_str());
               if (!pageEndProcessing(fmt)) { return false; }
               if (atEndOfPageOffset()) {
                 page->breakParagraph(fmt);
@@ -498,10 +509,15 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
               showState("==> New Paragraph 3 <==", fmt);
               page->newParagraph(fmt, true);
               showState("==> After New Paragraph 3 <==", fmt);
-              page->addWord(word.c_str(), fmt);
+              if (w != word.c_str()) { word = word.erase(0, w - word.c_str()); }
+              w = page->addWord(word.c_str(), fmt);
+              currentOffset += (w == nullptr) ? word.size() : w - word.c_str();
+            } else {
+              currentOffset += count;
             }
+          } else {
+            currentOffset += count;
           }
-          currentOffset += count;
         }
 
         if (atEndOfPageOffset()) {

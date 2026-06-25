@@ -59,7 +59,7 @@ auto AppController::setController(Ctrl newCtrl) -> void {
 
 auto AppController::launch() -> void {
   #if EPUB_LINUX_BUILD
-    if (nextCtrl == Ctrl::NONE) return;
+    if (nextCtrl == Ctrl::NONE) { return; }
   #endif
 
   Ctrl theCtrl = nextCtrl;
@@ -123,7 +123,7 @@ auto AppController::launch() -> void {
 }
 
 auto AppController::inputEvent(const EventMgr::Event &event) -> void {
-  if (nextCtrl != Ctrl::NONE) launch();
+  if (nextCtrl != Ctrl::NONE) { launch(); }
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     if (event.kind == EventMgr::EventKind::PINCH_ENLARGE) {
@@ -161,12 +161,14 @@ auto AppController::inputEvent(const EventMgr::Event &event) -> void {
 }
 
 auto AppController::goingToDeepSleep() -> void {
-  if (nextCtrl != Ctrl::NONE) launch();
+  if (nextCtrl != Ctrl::NONE) { launch(); }
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     backLit.turnOff();
     touch_screen.shutdown();
   #endif
+
+  bool bookControllerLeft = false;
 
   switch (currentCtrl) {
   case Ctrl::DIR:
@@ -174,6 +176,7 @@ auto AppController::goingToDeepSleep() -> void {
     break;
   case Ctrl::BOOK:
     bookController.leave(true);
+    bookControllerLeft = true;
     break;
   case Ctrl::PARAM:
     bookParamController.leave(true);
@@ -188,4 +191,10 @@ auto AppController::goingToDeepSleep() -> void {
   case Ctrl::LAST:
     break;
   }
+
+  if (!bookControllerLeft) {
+    bookController.leave(true);
+  }
+
+  appFonts.clear();
 }

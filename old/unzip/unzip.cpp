@@ -22,13 +22,6 @@
   #include <iostream>
 #endif
 
-#if EPUB_LINUX_BUILD
-  #include <thread>
-#else
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
-#endif
-
 bool         Unzip::alive = false;
 
 static void *zipMem = nullptr;
@@ -297,7 +290,7 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
 
   file.open(zipFilename, std::ios::binary);
   if (!file.is_open()) {
-    LOG_E("openZipFile: Unable to open file: {}", zipFilename);
+    LOG_E("Unable to open file: {}", zipFilename);
     return false;
   }
 
@@ -347,47 +340,61 @@ auto Unzip::openZipFile(const char *zipFilename) -> bool {
 }
 
 auto Unzip::closeZipFileUnsafe() -> void {
-  // 1. Clean up any active stream session that might still be open
-  if (activeSession != nullptr) {
-    if (activeSession->streamInflateInitialized) {
-      mz_inflateEnd(&activeSession->zstr);
-    }
-    activeSession.reset(); // Free the memory allocated for the session
+  if (streamInflateInitialized) {
+    mz_inflateEnd(&zstr);
+    streamInflateInitialized = false;
   }
 
-  // Clear out lock ownership if held
-  if (streamLock.owns_lock()) {
-    streamLock.unlock();
-  }
-
-  // 2. Tear down the ZIP file structures
   if (zipFileIsOpen) {
     if (filenamePool != nullptr) {
       [[maybe_unused]] size_t allocated = filenamePool->getTotalAllocated();
       [[maybe_unused]] size_t freed     = filenamePool->getTotalFreed();
-      // LOG_I("Closing ZIP: entries={} filenameBytes={}", filenameEntryCount, totalFilenameBytes);
+      // LOG_I("Closing ZIP: entries={} filenameBytes={} maxFilename={} pool alloc={} freed={} "
+      //       "live={}",
+      //       filenameEntryCount, totalFilenameBytes, maxFilenameSize, allocated, freed,
+      //       allocated - freed);
     }
 
     fileEntries.clear();
     PoolContext<FilenamePoolTag>::reset();
     filenamePool.reset();
-
     filenameEntryCount = 0;
     totalFilenameBytes = 0;
     maxFilenameSize    = 0;
-
-    if (file.is_open()) {
-      file.close();
-    }
+    if (file.is_open()) { file.close(); }
     zipFileIsOpen = false;
   }
-
-  // 3. Reset internal state iterators and cache names
   currentFileEntry = fileEntries.end();
   currentFilename.clear();
+  streamMutexHeld = false;
+  aborted         = false;
 
-  // NOTE: All old streamOwnerThread, streamMutexHeld, and aborted assignments
-  // are completely removed since they are now handled by activeSession or the mutex!
+  #if EPUB_LINUX_BUILD
+    streamOwnerThread = std::thread::id{};
+  #else
+    streamOwnerThread = nullptr;
+  #endif
+}
+
+auto Unzip::closeZipFile() -> void {
+  #if EPUB_LINUX_BUILD
+    if (std::this_thread::get_id() == streamOwnerThread) {
+      // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
+      closeZipFileUnsafe();
+      return;
+    }
+  #else
+    if (xTaskGetCurrentTaskHandle() == streamOwnerThread) {
+      // If the current thread is the stream owner, avoid locking the mutex again to prevent deadlock.
+      closeZipFileUnsafe();
+      return;
+    }
+  #endif
+
+  std::scoped_lock guard(mutex);
+  closeZipFileUnsafe();
+
+  // LOG_D("Zip file closed.");
 }
 
 /**
@@ -429,10 +436,7 @@ auto Unzip::getFileSize(const char *filename) -> int32_t {
 
   std::scoped_lock guard(mutex);
 
-  if (!zipFileIsOpen) {
-    LOG_E("getFileSize: Zip file is not open.");
-    return 0;
-  }
+  if (!zipFileIsOpen) { return 0; }
 
   auto theFilename = cleanFname(filename);
   currentFileEntry = fileEntries.begin();
@@ -459,32 +463,27 @@ auto Unzip::getFileSize(const char *filename) -> int32_t {
 }
 
 auto Unzip::fileExists(const char *filename) -> bool {
-  std::scoped_lock guard(mutex); // Safe reentrant protection
+  std::scoped_lock guard(mutex);
+
   if (!zipFileIsOpen) { return false; }
 
   auto                         theFilename = cleanFname(filename);
+
   Unzip::FileEntries::iterator fe = fileEntries.begin();
 
   while (fe != fileEntries.end()) {
     if (fe->filename == theFilename.get()) { break; }
     ++fe;
   }
-  return fe != fileEntries.end();
-}
 
-auto Unzip::closeZipFile() -> void {
-  std::scoped_lock guard(mutex); // Automatically avoids deadlocks on thread deletion hooks
-  closeZipFileUnsafe();
+  return fe != fileEntries.end();
 }
 
 auto Unzip::openFile(const char *filename) -> bool {
 
   int err = 0;
 
-  if (!zipFileIsOpen) {
-    LOG_E("Zip file is not open.");
-    return false;
-  }
+  if (!zipFileIsOpen) { return false; }
   if (!file.is_open()) {
     LOG_E("Unzip openFile called with null file handle.");
     return false;
@@ -576,7 +575,6 @@ auto Unzip::openFile(const char *filename) -> bool {
   } else {
     err = 13;
   }
-
   if (completed) {
     currentFileEntry->currentPos = 0;
     return true;
@@ -591,95 +589,121 @@ auto Unzip::closeFile() -> void {}
 #if !STB
 
   auto Unzip::openStreamFile(const char *filename, uint32_t &fileSize) -> bool {
-    // 1. Acquire the lock safely using a standard transparent retry loop
-    std::unique_lock<std::recursive_mutex> localLock(mutex, std::defer_lock);
-    while (true) {
-      if (localLock.try_lock()) {
-        break;
-      }
-      #if EPUB_LINUX_BUILD
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
-      #else
-        vTaskDelay(pdMS_TO_TICKS(2));
-      #endif
-    }
 
-    // 2. Enforce stream exclusivity
-    if (activeSession != nullptr) {
-      LOG_E("openStreamFile called while a stream is already open.");
-      return false; // localLock goes out of scope and unlocks automatically!
-    }
+    #if EPUB_LINUX_BUILD
+      if (streamMutexHeld && (streamOwnerThread == std::this_thread::get_id())) {
+        LOG_E("openStreamFile called while a stream is already open on this thread.");
+        return false;
+      }
+    #else
+      if (streamMutexHeld && (streamOwnerThread == xTaskGetCurrentTaskHandle())) {
+        LOG_E("openStreamFile called while a stream is already open on this thread.");
+        return false;
+      }
+    #endif
+
+    mutex.lock();
+    streamMutexHeld = true;
+
+    #if EPUB_LINUX_BUILD
+      streamOwnerThread = std::this_thread::get_id();
+    #else
+      streamOwnerThread = xTaskGetCurrentTaskHandle();
+    #endif
 
     if (!openFile(filename)) {
-      return false; // localLock goes out of scope and unlocks automatically!
-    }
-
-    // 3. Move the ownership of the active lock to our class variable
-    streamLock = std::move(localLock);
-
-    // 4. Set up the active session
-    activeSession = std::make_unique<StreamSession>();
-    activeSession->repeat  = currentFileEntry->compressedSize / BUFFER_SIZE;
-    activeSession->remains = currentFileEntry->compressedSize % BUFFER_SIZE;
-    activeSession->current = 0;
-    activeSession->aborted = false;
-
-    activeSession->zstr.zalloc    = myZAlloc;
-    activeSession->zstr.zfree     = myZFree;
-    activeSession->zstr.opaque    = nullptr;
-    activeSession->zstr.next_in   = nullptr;
-    activeSession->zstr.next_out  = nullptr;
-    activeSession->zstr.avail_in  = 0;
-    activeSession->zstr.avail_out = 0;
-
-    int zret;
-    if ((zret = mz_inflateInit2(&activeSession->zstr, -15)) != MZ_OK) {
-      LOG_E("Error initializing zlib inflate: {}", zret);
-      activeSession.reset();
-      streamLock.unlock(); // Safely drop the saved class lock
+      streamMutexHeld = false;
+      #if EPUB_LINUX_BUILD
+        streamOwnerThread = std::thread::id{};
+      #else
+        streamOwnerThread = nullptr;
+      #endif
+      mutex.unlock();
       return false;
     }
-    activeSession->streamInflateInitialized = true;
+
+    repeat  = currentFileEntry->compressedSize / BUFFER_SIZE;
+    remains = currentFileEntry->compressedSize % BUFFER_SIZE;
+    current = 0;
+    aborted = false;
+
+    zstr.zalloc    = myZAlloc;
+    zstr.zfree     = myZFree;
+    zstr.opaque    = nullptr;
+    zstr.next_in   = nullptr;
+    zstr.next_out  = nullptr;
+    zstr.avail_in  = 0;
+    zstr.avail_out = 0;
+
+    int zret;
+
+    if ((zret = mz_inflateInit2(&zstr, -15)) != MZ_OK) {
+      LOG_E("Error initializing zlib inflate: {}", zret);
+      aborted = true;
+      closeStreamFile();
+      return false;
+    }
+    streamInflateInitialized = true;
+
     fileSize = currentFileEntry->size;
 
     auto readExact = [this](void *dst, std::size_t size) -> bool {
                        if (size == 0) { return true; }
                        file.read(static_cast<char *>(dst), static_cast<std::streamsize>(size));
+                       if (!file.good()) {
+                         LOG_E("Error reading zip content at pos: {}", (int)file.tellg());
+                       }
                        return file.good();
                      };
 
-    uint16_t size = activeSession->current < activeSession->repeat ? BUFFER_SIZE : activeSession->remains;
+    uint16_t size = current < repeat ? BUFFER_SIZE : remains;
     if (!readExact(buffer, size)) {
       LOG_E("Error reading zip content.");
-      mz_inflateEnd(&activeSession->zstr);
-      activeSession.reset();
-      streamLock.unlock(); // Safely drop the saved class lock
+      closeStreamFile();
+      aborted = true;
       return false;
     }
 
-    ++activeSession->current;
-    activeSession->zstr.avail_in = size;
-    activeSession->zstr.next_in  = (unsigned char *)buffer;
+    ++current;
+
+    zstr.avail_in = size;
+    zstr.next_in  = (unsigned char *)buffer;
 
     return true;
   }
 
   auto Unzip::closeStreamFile() -> void {
-    if (activeSession == nullptr) { return; }
+    if (!streamMutexHeld) { return; }
 
-    if (activeSession->streamInflateInitialized) {
-      mz_inflateEnd(&activeSession->zstr);
+    #if EPUB_LINUX_BUILD
+      if (streamOwnerThread != std::this_thread::get_id()) {
+        LOG_E("closeStreamFile called from a non-owner thread.");
+        return;
+      }
+    #else
+      if (streamOwnerThread != xTaskGetCurrentTaskHandle()) {
+        LOG_E("closeStreamFile called from a non-owner thread.");
+        return;
+      }
+    #endif
+
+    if (streamInflateInitialized) {
+      mz_inflateEnd(&zstr);
+      streamInflateInitialized = false;
     }
 
     closeFile();
-    activeSession.reset();
 
-    // 5. Explicitly release the lock context safely via RAII out of scope rules
-    if (streamLock.owns_lock()) {
-      streamLock.unlock();
-    }
+    streamMutexHeld = false;
+    #if EPUB_LINUX_BUILD
+      streamOwnerThread = std::thread::id{};
+    #else
+      streamOwnerThread = nullptr;
+    #endif
+    aborted = false;
+
+    mutex.unlock();
   }
-
 
   auto Unzip::streamSkip(uint32_t byteCount) -> bool {
     auto     tmp      = makeUniqueHimem<char[]>(byteCount);
@@ -696,11 +720,22 @@ auto Unzip::closeFile() -> void {}
   }
 
   auto Unzip::getStreamData(char *data, uint32_t dataSize) -> uint32_t {
+
     if (dataSize == 0) { return 0; }
-    if (activeSession == nullptr || !file.is_open()) {
-      LOG_E("Unzip getStreamData called outside stream session.");
-      return 0;
-    }
+
+    #if EPUB_LINUX_BUILD
+      if (!streamMutexHeld || (streamOwnerThread != std::this_thread::get_id()) || !file.is_open()) {
+        LOG_E("Unzip getStreamData called outside stream session.");
+        aborted = true;
+        return 0;
+      }
+    #else
+      if (!streamMutexHeld || (streamOwnerThread != xTaskGetCurrentTaskHandle()) || !file.is_open()) {
+        LOG_E("Unzip getStreamData called outside stream session.");
+        aborted = true;
+        return 0;
+      }
+    #endif
 
     auto readExact = [this](void *dst, std::size_t size) -> bool {
                        if (size == 0) { return true; }
@@ -708,93 +743,95 @@ auto Unzip::closeFile() -> void {}
                        return file.good();
                      };
 
-    activeSession->zstr.next_out  = (unsigned char *)data;
-    activeSession->zstr.avail_out = dataSize;
+    zstr.next_out  = (unsigned char *)data;
+    zstr.avail_out = dataSize;
 
     if (currentFileEntry->method == 0) {
-      while (!activeSession->aborted && (activeSession->zstr.avail_out > 0)) {
-        uint16_t copy_size = activeSession->zstr.avail_in <= activeSession->zstr.avail_out ? activeSession->zstr.avail_in : activeSession->zstr.avail_out;
-        memcpy(activeSession->zstr.next_out, activeSession->zstr.next_in, copy_size);
+      while (!aborted && (zstr.avail_out > 0)) {
+        uint16_t copy_size = zstr.avail_in <= zstr.avail_out ? zstr.avail_in : zstr.avail_out;
+        memcpy(zstr.next_out, zstr.next_in, copy_size);
 
-        activeSession->zstr.next_out += copy_size;
-        activeSession->zstr.next_in += copy_size;
-        activeSession->zstr.avail_out -= copy_size;
-        activeSession->zstr.avail_in -= copy_size;
+        zstr.next_out += copy_size;
+        zstr.next_in += copy_size;
+        zstr.avail_out -= copy_size;
+        zstr.avail_in -= copy_size;
 
-        if (activeSession->zstr.avail_in == 0) {
-          if (activeSession->current > activeSession->repeat) { break; }
-          uint16_t size = activeSession->current < activeSession->repeat ? BUFFER_SIZE : activeSession->remains;
+        if (zstr.avail_in == 0) {
+          if (current > repeat) { break; } // We are at the end
+          uint16_t size = current < repeat ? BUFFER_SIZE : remains;
           if (!readExact(buffer, size)) {
             LOG_E("Error reading zip content.");
-            activeSession->aborted = true;
+            aborted = true;
             break;
           }
-          ++activeSession->current;
-          activeSession->zstr.avail_in = size;
-          activeSession->zstr.next_in  = (unsigned char *)buffer;
+
+          ++current;
+
+          zstr.avail_in = size;
+          zstr.next_in  = (unsigned char *)buffer;
         }
       }
     } else if (currentFileEntry->method == 8) {
-      while (!activeSession->aborted && (activeSession->zstr.avail_out == dataSize)) {
-        int zret = mz_inflate(&activeSession->zstr, MZ_NO_FLUSH);
-        if (zret < 0) {
+
+      while (!aborted && (zstr.avail_out == dataSize)) {
+
+        int zret = mz_inflate(&zstr, MZ_NO_FLUSH);
+
+        switch (zret) {
+        case MZ_NEED_DICT:
+        case MZ_DATA_ERROR:
+        case MZ_MEM_ERROR:
           LOG_E("Error inflating data: {}", zret);
-          activeSession->aborted = true;
+          aborted = true;
+        default:;
         }
 
-        if (!activeSession->aborted && (activeSession->zstr.avail_out != 0)) {
-          if ((activeSession->zstr.avail_in == 0) && (activeSession->current <= activeSession->repeat)) {
-            uint16_t size = activeSession->current < activeSession->repeat ? BUFFER_SIZE : activeSession->remains;
+        if (!aborted && (zstr.avail_out != 0)) {
+          if ((zstr.avail_in == 0) && (current <= repeat)) {
+            uint16_t size = current < repeat ? BUFFER_SIZE : remains;
             if (!readExact(buffer, size)) {
               LOG_E("Error reading zip content.");
-              activeSession->aborted = true;
+              aborted = true;
             } else {
-              ++activeSession->current;
-              activeSession->zstr.avail_in = size;
-              activeSession->zstr.next_in  = (unsigned char *)buffer;
+              ++current;
+
+              zstr.avail_in = size;
+              zstr.next_in  = (unsigned char *)buffer;
             }
           }
         }
       }
     }
 
-    return !activeSession->aborted ? dataSize - activeSession->zstr.avail_out : 0;
+    return !aborted ? dataSize - zstr.avail_out : 0;
   }
 
+// Test version of getFile using stream methods
   auto Unzip::getFile(const char *filename, uint32_t &fileSize) -> FileContentPtr {
-    // 1. Transparent Retry Loop
-    // Loop indefinitely (or you can add a counter if you want a safety timeout)
-    while (true) {
-      if (mutex.try_lock()) {
-        break; // Successfully acquired the lock! Exit the retry loop.
-      }
+    // LOG_D("getFile: {}", filename);
 
-      // If we couldn't get the lock, the other thread is busy.
-      // Yield or sleep briefly to let the other thread finish its chunk.
-      #if EPUB_LINUX_BUILD
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));
-      #else
-        // FreeRTOS equivalent: delay for 2 ticks (usually 2ms depending on configTICK_RATE_HZ)
-        vTaskDelay(pdMS_TO_TICKS(2));
-      #endif
-    }
-
-    // 2. Resource Protection Guarantee
-    // Wrap the manually acquired mutex in a lock_guard with std::adopt_lock.
-    // This guarantees that if this function exits early (due to errors or memory issues),
-    // the mutex is automatically unlocked via RAII.
-    std::lock_guard<std::recursive_mutex> lock(mutex, std::adopt_lock);
-
-    // 3. Original Data Retrieval Logic (Now fully safe)
     uint32_t       total = 0;
-    bool           completed = false;
+
+    bool           completed     = false;
+    bool           stream_opened = false;
+
     FileContentPtr data{ nullptr };
 
     if (!openStreamFile(filename, fileSize)) {
       LOG_E("Unable to retrieve file {}", filename);
     } else {
+      stream_opened = true;
+
       if ((data = makeUniqueHimem<uint8_t[]>(fileSize + 1)) == nullptr) {
-        LOG_E("Not enough memory to retrieve file {} ({} bytes)", filename, fileSize);
+        #if EPUB_INKPLATE_BUILD
+          uint32_t spiramFree    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+          uint32_t spiramLargest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+          LOG_E("Not enough memory to retrieve file {} (need {} B;"
+                " SPIRAM free={} B largest={} B)",
+                filename, fileSize, spiramFree, spiramLargest);
+        #else
+          LOG_E("Not enough memory to retrieve file {} ({} bytes)", filename, fileSize);
+        #endif
       } else {
         data[fileSize] = 0;
 
@@ -807,13 +844,19 @@ auto Unzip::closeFile() -> void {}
           data_ptr += size;
           total += size;
 
+          LOG_D("Got {} bytes...", size);
+
           if (total == fileSize) { break; }
+
           size = fileSize - total;
         }
+
+        LOG_D("File size: {}, received: {}", fileSize, total);
         completed = true;
       }
-      closeStreamFile(); // This internally resets activeSession but leaves our global mutex locked
     }
+
+    if (stream_opened) { closeStreamFile(); }
 
     if (!completed) {
       fileSize = 0;
@@ -823,8 +866,6 @@ auto Unzip::closeFile() -> void {}
     }
 
     return data;
-    // 'lock' goes out of scope here -> mutex is safely and automatically unlocked!
   }
-
 
 #endif

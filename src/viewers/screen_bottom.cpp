@@ -39,7 +39,9 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
   // page->putHighlight(Dim(Screen::getWidth(), h ),
   //                    Pos(0, Screen::getHeight() - h));
 
-  if (showHeap == 0) {
+  if ((showHeap == 0) ||
+      (screen.getOrientation() == Screen::Orientation::TOP) ||
+      (screen.getOrientation() == Screen::Orientation::BOTTOM)) {
     if (pageNbr != -1) {
       ostr << pageNbr + 1 << " / " << pageCount;
 

@@ -56,7 +56,13 @@ auto BookViewer::recreatePage(Fonts &fonts) -> bool {
 }
 
 auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
-  LOG_D("buildPageAt()");
+
+  #if LINE_POS_TRACING
+    if ((pageId.itemrefIndex == 5)) {
+      page->setTracing(true);
+      LOG_I("buildPageAt(): {} {}", pageId.itemrefIndex, pageId.offset);
+    }
+  #endif
 
   FontPtr &font = epub->getFonts().getFont(ScreenBottom::FONT);
   pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 10;
@@ -114,6 +120,12 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
     if ((node = epub->getCurrentItem().child("html").child("body"))) {
 
+      #if LINE_POS_TRACING
+        if ((pageId.itemrefIndex == 5)) {
+          page->showFmt(fmt, "");
+        }
+      #endif
+
       page->start(fmt, epub->getBookFormatParams()->columnCount);
 
       Page::Format *new_fmt = interp->duplicateFmt(fmt);
@@ -151,6 +163,11 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
     interp->checkForCompletion();
   }
+
+  #if LINE_POS_TRACING
+    page->setTracing(false);
+  #endif
+
   LOG_D("end of buildPageAt()");
 }
 

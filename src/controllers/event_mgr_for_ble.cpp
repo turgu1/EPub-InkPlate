@@ -47,8 +47,8 @@
 
   void getEventTask(void *param) {
     EventMgr::Event event;
-    uint32_t        ioNum;
-    uint8_t         pads;
+    // uint32_t        ioNum;
+    // uint8_t         pads;
 
     while (true) {
 
@@ -56,6 +56,7 @@
 
       // In BLE_KEYPAD mode, events are generated in the BLE GAP callback and sent to the same queue.
       xQueueReceive(bleKeypadEventQueue, &event, portMAX_DELAY);
+
       if (event.kind != EventMgr::EventKind::NONE) {
         xQueueSend(touchpadEventQueue, &event, 0);
       }
@@ -70,9 +71,15 @@
 
   auto EventMgr::getEvent() -> const EventMgr::Event & {
     static Event event;
-    if (!xQueueReceive(touchpadEventQueue, &event, pdMS_TO_TICKS(15E3))) {
-      event.kind = EventKind::NONE;
+    int8_t       timeOutDuration = 5;
+    config.get(Config::Ident::TIMEOUT, &timeOutDuration);
+    if (!xQueueReceive(touchpadEventQueue, &event, pdMS_TO_TICKS(timeOutDuration * 60000))) {
+      LOG_D("Timed out on BLE event reading. Going now to Deep Sleep");
+
+      // Will not return
+      gotoDeepSleep(timeOutDuration);
     }
+
     return event;
   }
 
@@ -81,41 +88,10 @@
     while (1) {
       const EventMgr::Event &event = getEvent();
 
-      if (event.kind != EventKind::NONE) {
-        LOG_D("Got event {}", (int)event.kind);
-        appController.inputEvent(event);
-        ESP::show_heaps_info();
-        return;
-      } else {
-        // Nothing received in 15 seconds, put the device in Light Sleep Mode.
-        // After some delay, the device will then be put in Deep Sleep Mode,
-        // rebooting after the user press a key.
-
-        if (!stayOn) {   // Unless somebody wants to keep us awake...
-          if (pageLocs.isControlTaskReadyToBeStopped()) { pageLocs.stopControlTask(); }
-          #if BLE_KEYPAD
-          #else
-            int8_t lightSleepDuration = 5;
-            config.get(Config::Ident::TIMEOUT, &lightSleepDuration);
-
-            LOG_I("Light Sleep for {} minutes...", lightSleepDuration);
-            ESP::delay(500);
-
-            #if EXTENDED_CASE
-              #define INT_PIN PressKeys::INTERRUPT_PIN
-            #else
-              #define INT_PIN TouchKeys::INTERRUPT_PIN
-            #endif
-
-            if (inkplate_platform.light_sleep(lightSleepDuration, INT_PIN, 1)) {
-
-              LOG_D("Timed out on Light Sleep. Going now to Deep Sleep");
-
-              gotoDeepSleep(lightSleepDuration);
-            }
-          #endif
-        }
-      }
+      LOG_D("Got event {}", (int)event.kind);
+      appController.inputEvent(event);
+      ESP::show_heaps_info();
+      return;
     }
   }
 
@@ -130,12 +106,14 @@
 
     gpio_config(&io_conf);
 
-    touchpadIsrQueue   = xQueueCreate(  // create a queue to handle gpio event from isr
-      10, sizeof(uint32_t));
-    touchpadEventQueue = xQueueCreate(   // create a queue to handle key event from task
-      10, sizeof(EventMgr::Event));
-    bleKeypadEventQueue = xQueueCreate(     // create a queue to handle key event from BLE GAP callback
-      10, sizeof(EventMgr::Event));
+    // create a queue to handle gpio event from isr
+    touchpadIsrQueue   = xQueueCreate(10, sizeof(uint32_t));
+
+    // create a queue to handle key event from task
+    touchpadEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
+
+    // create a queue to handle key event from BLE GAP callback
+    bleKeypadEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
 
     TaskHandle_t xHandle = nullptr;
     xTaskCreate(getEventTask, "GetEvent", 2000, nullptr, 2 | portPRIVILEGE_BIT, &xHandle);

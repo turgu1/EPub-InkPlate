@@ -270,6 +270,7 @@ TEST_SRC_CPP := \
   components/fonts/src/font.cpp \
   components/fonts/src/ttf2.cpp \
   components/pictures/src/mypngle.cpp \
+  components/pictures/src/bmp_picture.cpp \
   components/pictures/src/jpeg_decoder.cpp \
   components/pictures/src/gif_decoder.cpp \
   components/pictures/src/gif_picture.cpp \
@@ -495,6 +496,7 @@ VALGRIND_SRC_CPP := \
   components/pictures/src/jpeg_decoder.cpp \
   components/pictures/src/tjpgdec.cpp \
   components/pictures/src/picture.cpp \
+  components/pictures/src/bmp_picture.cpp \
   components/pictures/src/gif_decoder.cpp \
   components/pictures/src/gif_picture.cpp \
   components/pictures/src/svg_decoder.cpp \

@@ -160,9 +160,9 @@ class EPub {
     auto decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void;
 
     [[nodiscard]] inline auto getLineHeightFactor() const -> float {
-      int8_t lineHeight = bookFormatParams.lineHeight;
-      if ((lineHeight < 0) || (lineHeight > 2)) { lineHeight = 1; } // default
-      return lineHeightFactors[lineHeight];
+      int8_t lineHeightIndex = bookFormatParams.lineHeight;
+      if ((lineHeightIndex < 0) || (lineHeightIndex > 2)) { lineHeightIndex = 1; } // default
+      return lineHeightFactors[lineHeightIndex];
     }
 
     /**

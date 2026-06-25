@@ -75,7 +75,7 @@ static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
                           .choiceCount = 2,
                           .choices     = FormChoiceField::yesNoChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-    {.caption   = "Column Count in Landscape:",
+    {.caption   = "Column Count:",
      .u         = {.ch = {.value       = &columnCount,
                           .choiceCount = 4,
                           .choices     = FormChoiceField::columnCountChoices}},
@@ -372,6 +372,7 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
             }
 
             int16_t refreshIndex;
+            pageLocs.stopControlTask();
             booksDir.refresh(nullptr, refreshIndex, false);
 
             appController.setController(AppController::Ctrl::DIR);

@@ -60,6 +60,8 @@ auto BookController::leave(bool goingToDeepSleep) -> void {
 
   booksDirController.saveLastBook(currentPageId, goingToDeepSleep);
   bookViewer.reset();
+
+  if (goingToDeepSleep && (epub != nullptr)) { epub.reset(); }
 }
 
 auto BookController::openBook(const HimemString &bookTitle, const HimemString &bookFilename,
@@ -216,12 +218,14 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
 #else
   auto BookController::inputEvent(const EventMgr::Event &event) -> void {
     const PageId *pageId;
+
+    // *INDENT-OFF*
     switch (event.kind) {
     #if EXTENDED_CASE
       case EventMgr::EventKind::DBL_PREV:
     #else
       case EventMgr::EventKind::PREV:
-        #endif
+    #endif
         pageId = pageLocs.getPrevPageId(currentPageId);
         if (pageId != nullptr) {
           currentPageId.itemrefIndex = pageId->itemrefIndex;
@@ -230,53 +234,55 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
         }
         break;
 
-        #if EXTENDED_CASE
-          case EventMgr::EventKind::PREV:
-        #else
-          case EventMgr::EventKind::DBL_PREV:
-            #endif
-            pageId = pageLocs.getPrevPageId(currentPageId, 10);
-            if (pageId != nullptr) {
-              currentPageId.itemrefIndex = pageId->itemrefIndex;
-              currentPageId.offset       = pageId->offset;
-              showPage(currentPageId, epub);
-            }
-            break;
+    #if EXTENDED_CASE
+      case EventMgr::EventKind::PREV:
+    #else
+      case EventMgr::EventKind::DBL_PREV:
+    #endif
+        pageId = pageLocs.getPrevPageId(currentPageId, 10);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+        break;
 
-            #if EXTENDED_CASE
-              case EventMgr::EventKind::DBL_NEXT:
-            #else
-              case EventMgr::EventKind::SELECT:
-              case EventMgr::EventKind::NEXT:
-                #endif
-                pageId = pageLocs.getNextPageId(currentPageId);
-                if (pageId != nullptr) {
-                  currentPageId.itemrefIndex = pageId->itemrefIndex;
-                  currentPageId.offset       = pageId->offset;
-                  showPage(currentPageId, epub);
-                }
-                break;
+    #if EXTENDED_CASE
+      case EventMgr::EventKind::DBL_NEXT:
+    #else
+      case EventMgr::EventKind::SELECT:
+      case EventMgr::EventKind::NEXT:
+    #endif
+        pageId = pageLocs.getNextPageId(currentPageId);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+        break;
 
-                #if EXTENDED_CASE
-                  case EventMgr::EventKind::NEXT:
-                #else
-                  case EventMgr::EventKind::DBL_NEXT:
-                    #endif
-                    pageId = pageLocs.getNextPageId(currentPageId, 10);
-                    if (pageId != nullptr) {
-                      currentPageId.itemrefIndex = pageId->itemrefIndex;
-                      currentPageId.offset       = pageId->offset;
-                      showPage(currentPageId, epub);
-                    }
-                    break;
+    #if EXTENDED_CASE
+      case EventMgr::EventKind::NEXT:
+    #else
+      case EventMgr::EventKind::DBL_NEXT:
+    #endif
+        pageId = pageLocs.getNextPageId(currentPageId, 10);
+        if (pageId != nullptr) {
+          currentPageId.itemrefIndex = pageId->itemrefIndex;
+          currentPageId.offset       = pageId->offset;
+          showPage(currentPageId, epub);
+        }
+        break;
 
-                  case EventMgr::EventKind::DBL_SELECT:
-                    bookParamController.becomeOwnerOfBook(std::move(epub));
-                    appController.setController(AppController::Ctrl::PARAM);
-                    break;
+      case EventMgr::EventKind::DBL_SELECT:
+        bookParamController.becomeOwnerOfBook(std::move(epub));
+        appController.setController(AppController::Ctrl::PARAM);
+        break;
 
-                  case EventMgr::EventKind::NONE:
-                    break;
+      case EventMgr::EventKind::NONE:
+        break;
     }
+
+    // *INDENT-ON*
   }
 #endif

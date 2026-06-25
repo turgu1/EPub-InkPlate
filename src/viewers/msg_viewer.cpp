@@ -37,17 +37,18 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   va_end(args);
 
   Page::Format fmt = {
-    .fontIndex    = ICONS_FONT_INDEX,
-    .fontSize     = 24,
-    .marginLeft   = 10,
-    .marginRight  = 10,
-    .marginTop    = 30,
-    .marginBottom = 10,
-    .screenLeft   = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
-    .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
-    .screenTop    = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
-    .screenBottom = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
-    .align        = CSS::Align::CENTER,
+    .lineHeightFactor = 1.0,
+    .fontIndex        = ICONS_FONT_INDEX,
+    .fontSize         = 24,
+    .marginLeft       = 10,
+    .marginRight      = 10,
+    .marginTop        = 30,
+    .marginBottom     = 10,
+    .screenLeft       = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+    .screenRight      = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+    .screenTop        = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+    .screenBottom     = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+    .align            = CSS::Align::CENTER,
   };
 
   page->setComputeMode(Page::ComputeMode::DISPLAY);
@@ -106,8 +107,8 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
       } else {
         FontPtr &font = appFonts.getFont(1);
 
-        Dim dim font->getASCIISize("CANCEL", 10);
-        Dim okDim = font->getASCIISize("OK", 10);
+        Dim      dim = font->getASCIISize("CANCEL", 10);
+        Dim      okDim = font->getASCIISize("OK", 10);
 
         confirmData->buttonsDim = Dim(dim.width + 20, dim.height + 20);
         confirmData->okPos =

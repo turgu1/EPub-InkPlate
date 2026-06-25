@@ -10,6 +10,7 @@
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/event_mgr.hpp"
 #include "models/books_dir.hpp"
+#include "models/page_locs.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_saver.hpp"
@@ -32,35 +33,36 @@ auto CommonActions::showLastBook() -> void { booksDirController.showLastBook(); 
 auto CommonActions::refreshBooksDir() -> void {
   int16_t temp;
 
+  pageLocs.stopControlTask();
   booksDir.refresh(nullptr, temp, true);
   appController.setController(AppController::Ctrl::DIR);
 }
 
 auto CommonActions::powerItOff() -> void {
 
-#if EPUB_INKPLATE_BUILD
-  gotoDeepSleep(-1);
-#else
-  extern void exitApp();
-  exitApp();
-  exit(0);
-#endif
+  #if EPUB_INKPLATE_BUILD
+    gotoDeepSleep(-1);
+  #else
+    extern void exitApp();
+    exitApp();
+    exit(0);
+  #endif
 }
 
 auto CommonActions::about() -> void {
-#if EPUB_INKPLATE_BUILD
-  const esp_app_desc_t *descr = esp_app_get_description();
+  #if EPUB_INKPLATE_BUILD
+    const esp_app_desc_t *descr = esp_app_get_description();
 
-  // menu_viewer.clearHighlight();
-  MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
-                  "EPub EBook Reader Version [%s] for the InkPlate e-paper display devices. "
-                  "This application was made by Guy Turcotte, Quebec, QC, Canada, "
-                  "with great support from Soldered.",
-                  descr == nullptr ? APP_VERSION : descr->version);
-#else
-  MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
-                  "EPub EBook Reader Version [%s] for Linux. This application was made by Guy "
-                  "Turcotte, Quebec, QC, Canada.",
-                  APP_VERSION);
-#endif
+    // menu_viewer.clearHighlight();
+    MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
+                    "EPub EBook Reader Version [%s] for the InkPlate e-paper display devices. "
+                    "This application was made by Guy Turcotte, Quebec, QC, Canada, "
+                    "with great support from Soldered.",
+                    descr == nullptr ? APP_VERSION : descr->version);
+  #else
+    MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "About EPub-InkPlate",
+                    "EPub EBook Reader Version [%s] for Linux. This application was made by Guy "
+                    "Turcotte, Quebec, QC, Canada.",
+                    APP_VERSION);
+  #endif
 }

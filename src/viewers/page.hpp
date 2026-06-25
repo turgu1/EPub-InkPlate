@@ -18,6 +18,8 @@
 #include "display_list.hpp"
 #include "models/css.hpp"
 
+#define LINE_POS_TRACING 0
+
 /**
  * @brief Page preparation
  *
@@ -104,6 +106,10 @@ class Page {
 
     static Entities entities;
 
+    #if LINE_POS_TRACING
+      bool tracing{ false };
+    #endif
+
     /**
      * @brief Book Compute Mode
      *
@@ -137,6 +143,10 @@ class Page {
 
   public:
     auto clean() -> void;
+
+    #if LINE_POS_TRACING
+      auto setTracing(bool value) -> void { tracing = value; }
+    #endif
 
     /**
      * @brief Start a new page
@@ -209,10 +219,11 @@ class Page {
      *
      * @param word The word to be added to the paragraph.
      * @param fmt Formatting parameters.
-     * @return true The word has been added to the paragraph.
-     * @return false There is not enough space to add the word on page.
+     * @return nullptr: The word has completely been added to the paragraph.
+     * @return not nullptr: The internal word start address that was not put on page.
+     *                      This is required has hyphen management has been added.
      */
-    auto addWord(const char *word, const Format &fmt) -> bool;
+    auto addWord(const char *word, const Format &fmt) -> const char *;
 
     /**
      * @brief Add a UTF-8 character to the paragraph.
@@ -285,15 +296,15 @@ class Page {
 
     auto showFmt(const Format &fmt, const char *spaces) -> void const {
 
-      #if DEBUGGING
-        std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
-                  << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
-                  << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
-                  << " m:" << fmt.marginBottom << "," << fmt.marginLeft << "," << fmt.marginRight << ","
-                  << fmt.marginTop << " s:" << fmt.screenBottom << "," << fmt.screenLeft << ","
-                  << fmt.screenRight << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
-                  << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
-      #endif
+      //#if DEBUGGING
+      std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
+                << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
+                << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
+                << " m:" << fmt.marginBottom << "," << fmt.marginLeft << "," << fmt.marginRight << ","
+                << fmt.marginTop << " s:" << fmt.screenBottom << "," << fmt.screenLeft << ","
+                << fmt.screenRight << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
+                << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
+      //#endif
     }
 
     auto showCover(PicturePtr &pict) -> bool;

@@ -24,30 +24,30 @@ SUBS=(Regular Roman Bold BoldItalic Italic Medium MediumItalic Oblique BoldObliq
 mkdir $FOLDER_OUT/woff
 mkdir $FOLDER_OUT/otf
 
-for name in ${FONTS[@]}; do
-  echo $name ...
-  for sub in ${SUBS[@]}; do
-    font_name="$name-$sub"
-    if [ -f $FOLDER_IN/$font_name.ttf ]; then
-      echo $font_name
-      ext="ttf"
-    else
-      if [ -f $FOLDER_IN/$font_name.otf ]; then
-        echo $font_name
-        ext="otf"
-      else
-        echo "Hum... nothing found for $name-$sub"
-        ext="none"
-      fi
-    fi
-    if [ -f $FOLDER_IN/$font_name.$ext ]; then
-      pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/woff/$font_name.woff" --flavor=woff --layout-features='kern','gpos' --unicodes="$LATIN1"
-      ./woff2otf.py "$FOLDER_OUT/woff/$font_name.woff" "$FOLDER_OUT/otf/$font_name.otf"
-    fi
-  done
-done
+# for name in ${FONTS[@]}; do
+#   echo $name ...
+#   for sub in ${SUBS[@]}; do
+#     font_name="$name-$sub"
+#     if [ -f $FOLDER_IN/$font_name.ttf ]; then
+#       echo $font_name
+#       ext="ttf"
+#     else
+#       if [ -f $FOLDER_IN/$font_name.otf ]; then
+#         echo $font_name
+#         ext="otf"
+#       else
+#         echo "Hum... nothing found for $name-$sub"
+#         ext="none"
+#       fi
+#     fi
+#     if [ -f $FOLDER_IN/$font_name.$ext ]; then
+#       pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/woff/$font_name.woff" --flavor=woff --layout-features='kern','gpos' --unicodes="$LATIN1"
+#       ./woff2otf.py "$FOLDER_OUT/woff/$font_name.woff" "$FOLDER_OUT/otf/$font_name.otf"
+#     fi
+#   done
+# done
 
-# pyftsubset "$FOLDER_IN/drawings.ttf" --output-file="$FOLDER_OUT/woff/drawings.woff" --flavor=woff --layout-features='' --unicodes='*'
-# ./woff2otf.py "$FOLDER_OUT/woff/drawings.woff" "$FOLDER_OUT/otf/drawings.otf"
+pyftsubset "$FOLDER_IN/drawings.ttf" --output-file="$FOLDER_OUT/woff/drawings.woff" --flavor=woff --layout-features='' --unicodes='*'
+./woff2otf.py "$FOLDER_OUT/woff/drawings.woff" "$FOLDER_OUT/otf/drawings.otf"
 
 # rm "$FOLDER_OUT/woff/*"

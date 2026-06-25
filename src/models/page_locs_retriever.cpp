@@ -304,7 +304,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
   Fonts &  fonts = epub->getFonts();
 
   FontPtr &font = fonts.getFont(ScreenBottom::FONT);
-  pageBottom    = font->getLineHeight(ScreenBottom::FONT_SIZE) + 10;
+  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 10;
 
   bool           resultOk = false;
 
@@ -356,6 +356,14 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
 
     if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
 
+      #if LINE_POS_TRACING
+        if (itemrefIndex == 5) {
+          pageOut->setTracing(true);
+          LOG_I("buildPageAt(): {} {}", itemrefIndex, 0);
+          pageOut->showFmt(fmt, "");
+        }
+      #endif
+
       pageOut->start(fmt, epub->getBookFormatParams()->columnCount);
 
       // newFmt is required to be able to modify the format in the recursive calls without
@@ -379,6 +387,10 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     } else {
       LOG_D("No <body>");
     }
+
+    #if LINE_POS_TRACING
+      pageOut->setTracing(false);
+    #endif
   }
 
   return resultOk;

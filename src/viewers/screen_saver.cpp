@@ -38,7 +38,10 @@
 
     LOG_D("Found {} pictures.", picture_filenames.size());
     if (picture_filenames.size() > 0) {
-      screen.setOrientation(Screen::Orientation::LEFT);
+      if ((screen.getOrientation() != Screen::Orientation::LEFT) &&
+          (screen.getOrientation() != Screen::Orientation::RIGHT)) {
+        screen.setOrientation(Screen::Orientation::LEFT);
+      }
       return true;
     } else {
       return false;

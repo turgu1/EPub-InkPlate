@@ -602,12 +602,17 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
 
   pos.x = paraMinX + paraIndent;
   if (pos.x < minX) { pos.x = minX; }
+
+  #if LINE_POS_TRACING
+    if (tracing) { LOG_I("Line at [{}, {}]", pos.x, pos.y); }
+  #endif
+
   int16_t lineHeight = glyphsHeight * lineHeightFactor;
   pos.y += topMargin + lineHeight; // (lineHeight >> 1) + (glyphsHeight >> 1);
 
-  if (pos.y > maxY) {
-    LOG_E("We got a problem!");
-  }
+  // if (pos.y > maxY) {
+  //   LOG_E("We got a problem!");
+  // }
 
   // #if DEBUGGING_AID
   //   if (show_location) {
@@ -775,7 +780,7 @@ auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSi
   auto yPos = (pos.y + (verticalSizeNeeded != 0 ? verticalSizeNeeded : NEXT_LINE_REQUIRED_SPACE));
   bool notEnoughRoom =  yPos > maxY;
 
-  LOG_D("theColunIsFull = {}, YPos = {}, maxY = {}", notEnoughRoom ? "Yes" : "No", yPos, maxY);
+  LOG_D("theColumnIsFull = {}, YPos = {}, maxY = {}", notEnoughRoom ? "Yes" : "No", yPos, maxY);
 
   if (notEnoughRoom) {
     if (multiColumnMode && (currentColumn < columnCount)) {
@@ -788,7 +793,7 @@ auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSi
       paraMaxX = maxX;
 
       pos.x = minX;
-      pos.y = fmt.screenTop;
+      pos.y = minY;
 
       // In case the last line in preceeding column that
       // cause a changing of column was the beginning of
@@ -806,18 +811,42 @@ auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSi
 
 #undef NEXT_LINE_REQUIRED_SPACE
 
-auto Page::addWord(const char *word, const Format &fmt) -> bool {
-  FontPtr &font = fonts.getFont(fmt.fontIndex);
+auto Page::addWord(const char *word, const Format &fmt) -> const char * {
+  FontPtr &   font = fonts.getFont(fmt.fontIndex);
+
+  const char *str         = word;
+  int16_t     height      = font->getLineHeight(fmt.fontSize);
+  int16_t     wordWidth   = 0;
+  bool        first       = true;
+  uint16_t    availableWidth = paraMaxX - paraMinX - paraIndent;
+
+  // The following are required when a word is too large to fit alone
+  // on a line, to split it at the last fitting part of the word.
+  // If there is hyphens part of the word, they will be used to
+  // cut it properly. If not, the cut will be done to the point where
+  // enough characters fit on the line. Managing an hyphen database would
+  // be too prohibitive for this device architecture.
+
+  const char *hyphenLoc      = nullptr;
+  const char *newHyphenLoc   = nullptr;
+  const char *charM0         = nullptr;
+  const char *charM1         = nullptr;
+
+  // if (strncmp(word, "coin", 4) == 0) {
+  //   LOG_I("Found it!");
+  // }
 
   if (computeMode != ComputeMode::DISPLAY) {
-    const char *str = word;
-    int16_t     height  = font->getLineHeight(fmt.fontSize);
-    int16_t     wordWidth  = 0;
-    bool        first      = true;
 
     while (*str) {
       const char *str1, *str2;
       uint32_t    uc1, uc2;
+
+      charM1 = charM0;
+      charM0 = str;
+
+      hyphenLoc = newHyphenLoc;
+      newHyphenLoc = (*str == '-') ? str : nullptr;
 
       uc1 = toUnicode(str, fmt.textTransform, first, &str1);
       uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
@@ -839,48 +868,51 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
 
       if (glyph != nullptr) {
         wordWidth += advance;
+        if (wordWidth >= availableWidth) {
+          if (hyphenLoc != nullptr) {
+            std::string tempStr(word, hyphenLoc + 1);
+            addWord(tempStr.c_str(), fmt);
+            return addWord(hyphenLoc + 1, fmt);
+          } else {
+            std::string tempStr(word, charM1);
+            tempStr += '-';
+            addWord(tempStr.c_str(), fmt);
+            return addWord(charM1, fmt);
+          }
+        }
         first = false;
         pageEmpty = false;
       }
     }
 
-    uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
-
-    if (wordWidth >= availableWidth) {
-      if (strncasecmp(word, "http", 4) == 0) {
-        pageEmpty = false;
-        return addWord("[URL removed]", fmt);
-      } else {
-        LOG_E("WORD TOO LARGE!! '{}'", word);
-      }
-    }
-
     if ((lineWidth + wordWidth) >= availableWidth) {
       addLine(fmt, true);
-      if (theScreenIsFull(fmt, font)) { return false; }
+      if (theScreenIsFull(fmt, font)) { return word; }
     }
 
     if (glyphsHeight < height) { glyphsHeight = height; }
     if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
     lineWidth += wordWidth;
 
-    return true;
+    return nullptr;
   }
 
   if (lineList->empty()) {
     // We are about to start a new line. Check if it will fit on the page.
-    if (theScreenIsFull(fmt, font)) { return false; }
+    if (theScreenIsFull(fmt, font)) { return word; }
   }
 
-  auto        lineEntries = DisplayList::Make(displayListPool);
-  const char *str  = word;
-  int16_t     height   = font->getLineHeight(fmt.fontSize);
-  int16_t     wordWidth    = 0;
-  bool        first       = true;
+  auto wordEntries = DisplayList::Make(displayListPool);
 
   while (*str) {
     const char *str1, *str2;
     char32_t    uc1, uc2;
+
+    charM1 = charM0;
+    charM0 = str;
+
+    hyphenLoc = newHyphenLoc;
+    newHyphenLoc = (*str == '-') ? str : nullptr;
 
     uc1 = toUnicode(str, fmt.textTransform, first, &str1);
     uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
@@ -902,42 +934,44 @@ auto Page::addWord(const char *word, const Format &fmt) -> bool {
 
     if (glyph != nullptr) {
       wordWidth += advance;
+      if (wordWidth >= availableWidth) {
+        if (hyphenLoc != nullptr) {
+          std::string tempStr(word, hyphenLoc + 1);
+          addWord(tempStr.c_str(), fmt);
+          return addWord(hyphenLoc + 1, fmt);
+        } else {
+          std::string tempStr(word, charM1);
+          tempStr += '-';
+          addWord(tempStr.c_str(), fmt);
+          return addWord(charM1, fmt);
+        }
+      }
       first = false;
       pageEmpty = false;
 
-      DisplayListEntry *entry = lineEntries->getNewEntry();
-      if (entry == nullptr) { return false; }
+      DisplayListEntry *entry = wordEntries->getNewEntry();
+      if (entry == nullptr) { return word; }
 
       entry->command = DisplayListCommand::GLYPH;
       entry->v       = GlyphEntry{ glyph, advance, false };
       entry->pos     = { 0, fmt.verticalAlign };
 
-      lineEntries->pushBack(entry);
-    }
-  }
-
-  uint16_t availableWidth = paraMaxX - paraMinX - paraIndent;
-
-  if (wordWidth >= availableWidth) {
-    if (strncasecmp(word, "http", 4) == 0) {
-      return addWord("[URL removed]", fmt);
-    } else {
-      LOG_E("WORD TOO LARGE!! '{}'", word);
+      wordEntries->pushBack(entry);
     }
   }
 
   if ((lineWidth + wordWidth) >= availableWidth) {
     addLine(fmt, true);
-    if (theScreenIsFull(fmt, font)) { return false; }
+    if (theScreenIsFull(fmt, font)) { return word; }
   }
 
-  lineList->merge(*lineEntries.get());
+  lineList->merge(*wordEntries.get());
 
   if (glyphsHeight < height) { glyphsHeight = height; }
   if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
   lineWidth += wordWidth;
 
-  return true;
+  return nullptr;
 }
 
 auto Page::addChar(const char *ch, const Format &fmt) -> bool {
@@ -1133,7 +1167,7 @@ auto Page::addText(const std::string &str, const Format &fmt) -> void {
         buff[count++] = *s++;
       }
       buff[count] = 0;
-      if (!addWord(buff.get(), myfmt)) { break; }
+      if (addWord(buff.get(), myfmt) != nullptr) { break; }
     }
   }
 }
@@ -1515,9 +1549,9 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
     }
   }
 
-  if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::LINE_HEIGHT))) {
-    fmt.lineHeightFactor = getFactorValue(vals->front(), fmt, fmt.lineHeightFactor);
-  }
+  // if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::LINE_HEIGHT))) {
+  //   fmt.lineHeightFactor = getFactorValue(vals->front(), fmt, fmt.lineHeightFactor);
+  // }
 
   int16_t widthRef  = Screen::getWidth() - fmt.screenLeft - fmt.screenRight;
   int16_t heightRef = Screen::getHeight() - fmt.screenTop - fmt.screenBottom;

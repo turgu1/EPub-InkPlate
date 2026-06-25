@@ -619,7 +619,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
   dp = opendir(BOOKS_FOLDER);
 
   auto [pagerPtr, progressDataPtr] =
-    MsgViewer::showProgress("{} Please wait while we retrieve e-books metadata.", theTitle);
+    MsgViewer::showProgress("%s Please wait while we retrieve e-books metadata.", theTitle);
 
   int cptr = 0;
 

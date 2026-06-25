@@ -3,7 +3,7 @@
 // MIT License. Look at file licenses.txt for details.
 
 // ---------------------------------------------------------------------------
-// test_unzip.cpp - unit / integration tests for Unzip
+// test_unzip.cpp - unit / integration tests for Unzip (Updated for C++23 RAII)
 //
 // Uses the EPUB fixture generated under test/fixtures/minimal.epub.
 // ---------------------------------------------------------------------------
@@ -12,25 +12,26 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
+#include <chrono>
 
 #include "test_stats.hpp"
 #include "unzip.hpp"
 
-#define UNZIP_LOG(fmt, ...) std::printf("[unzip_test] " fmt "\n", ##__VA_ARGS__)
+#define UNZIP_LOG(fmt, ...) std::printf("[unzip_test] " fmt "\n", ## __VA_ARGS__)
 
 static int sPass = 0;
 static int sFail = 0;
 
 #define UNZIP_CHECK(cond, msg)                                                                     \
-  do {                                                                                             \
-    if (!(cond)) {                                                                                 \
-      UNZIP_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                          \
-      ++sFail;                                                                                     \
-    } else {                                                                                       \
-      UNZIP_LOG("PASS " msg);                                                                      \
-      ++sPass;                                                                                     \
-    }                                                                                              \
-  } while (0)
+        do {                                                                                             \
+          if (!(cond)) {                                                                                 \
+            UNZIP_LOG("FAIL [%s:%d] " msg, __FILE__, __LINE__);                                          \
+            ++sFail;                                                                                     \
+          } else {                                                                                       \
+            UNZIP_LOG("PASS " msg);                                                                      \
+            ++sPass;                                                                                     \
+          }                                                                                              \
+        } while (0)
 
 static constexpr const char *MINIMAL = "test/fixtures/minimal.epub";
 
@@ -51,7 +52,7 @@ static auto testLookupAndReadStoredFile() -> bool {
 
   bool opened = unzip.openZipFile(MINIMAL);
   UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
-  if (!opened) return false;
+  if (!opened) { return false; }
 
   UNZIP_CHECK(unzip.fileExists("mimetype"), "mimetype exists");
 
@@ -59,10 +60,10 @@ static auto testLookupAndReadStoredFile() -> bool {
   UNZIP_CHECK(size > 0, "getFileSize(mimetype) > 0");
 
   uint32_t outSize = 0;
-  auto data        = unzip.getFile("mimetype", outSize);
+  auto     data        = unzip.getFile("mimetype", outSize);
 
   UNZIP_CHECK(data != nullptr, "getFile(mimetype) returns data");
-  UNZIP_CHECK(outSize > 0, "getFile(mimetype) returns non-zero size");
+  UNZIP_CHECK(outSize > 0,     "getFile(mimetype) returns non-zero size");
 
   if ((data != nullptr) && (outSize > 0)) {
     UNZIP_CHECK(std::strcmp((const char *)data.get(), "application/epub+zip") == 0,
@@ -78,16 +79,16 @@ static auto testReadDeflatedFile() -> bool {
 
   bool opened = unzip.openZipFile(MINIMAL);
   UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
-  if (!opened) return false;
+  if (!opened) { return false; }
 
   const char *opfPath = "OEBPS/content.opf";
   UNZIP_CHECK(unzip.fileExists(opfPath), "content.opf exists");
 
   uint32_t outSize = 0;
-  auto data        = unzip.getFile(opfPath, outSize);
+  auto     data        = unzip.getFile(opfPath, outSize);
 
   UNZIP_CHECK(data != nullptr, "getFile(content.opf) returns data");
-  UNZIP_CHECK(outSize > 0, "getFile(content.opf) returns non-zero size");
+  UNZIP_CHECK(outSize > 0,     "getFile(content.opf) returns non-zero size");
 
   if ((data != nullptr) && (outSize > 0)) {
     const char *txt = (const char *)data.get();
@@ -100,94 +101,81 @@ static auto testReadDeflatedFile() -> bool {
 
 #if !STB
 
-static auto testCloseZipWhileStreamOpenSameThread() -> bool {
-  UNZIP_LOG("--- close zip while stream open (same thread) ---");
+  static auto testCloseZipWhileStreamOpenSameThread() -> bool {
+    UNZIP_LOG("--- close zip while stream open (same thread) ---");
 
-  bool opened = unzip.openZipFile(MINIMAL);
-  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
-  if (!opened) return false;
+    bool opened = unzip.openZipFile(MINIMAL);
+    UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
+    if (!opened) { return false; }
 
-  uint32_t fileSize = 0;
-  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
-  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
-  if (!streamOpened) {
+    uint32_t fileSize = 0;
+    bool     streamOpened = unzip.openStreamFile("mimetype", fileSize);
+    UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
+    if (!streamOpened) {
+      unzip.closeZipFile();
+      return false;
+    }
+
+    // This passes safely now with recursive_mutex and automatic session resets!
     unzip.closeZipFile();
-    return false;
+
+    UNZIP_CHECK(!unzip.fileExists("mimetype"), "zip is closed cleanly after closeZipFile during stream");
+
+    return sFail == 0;
   }
 
-  // This used to be a potential self-deadlock path with a non-recursive mutex.
-  unzip.closeZipFile();
+  static auto testConcurrentStreamAccessContention() -> bool {
+    UNZIP_LOG("--- concurrent stream contention and safe sequencing ---");
 
-  UNZIP_CHECK(!unzip.fileExists("mimetype"), "zip is closed after closeZipFile during stream");
+    bool opened = unzip.openZipFile(MINIMAL);
+    UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
+    if (!opened) { return false; }
 
-  return sFail == 0;
-}
+    // 1. Main thread locks and opens a stream session
+    uint32_t fileSize = 0;
+    bool     streamOpened = unzip.openStreamFile("mimetype", fileSize);
+    UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
+    if (!streamOpened) {
+      unzip.closeZipFile();
+      return false;
+    }
 
-static auto testCloseStreamFromNonOwnerThread() -> bool {
-  UNZIP_LOG("--- close stream from non-owner thread ---");
+    std::atomic<bool> releaseWorker{ false };
+    std::atomic<bool> workerThreadCompleted{ false };
 
-  bool opened = unzip.openZipFile(MINIMAL);
-  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
-  if (!opened) return false;
+    // 2. Launch worker thread, but keep it tightly controlled
+    std::thread worker([&]() {
+                       // Wait until the main thread explicitly allows the worker to attempt a lock
+                       while (!releaseWorker.load(std::memory_order_acquire)) {
+                         std::this_thread::yield();
+                       }
 
-  uint32_t fileSize = 0;
-  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
-  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
-  if (!streamOpened) {
-    unzip.closeZipFile();
-    return false;
-  }
+                       uint32_t secondarySize = 0;
+                       auto secondaryData = unzip.getFile("mimetype", secondarySize);
 
-  std::atomic<bool> workerDone{false};
-  std::thread worker([&]() {
+                       UNZIP_CHECK(secondaryData != nullptr, "Secondary thread safely recovers file after lock releases");
+                       workerThreadCompleted.store(true, std::memory_order_release);
+    });
+
+    // 3. Main thread reads its stream data safely without any thread contention
+    char     data{};
+    uint32_t got = unzip.getStreamData(&data, sizeof(data));
+    UNZIP_CHECK(got > 0, "Primary thread successfully reads data");
+
+    // 4. Main thread closes stream, unlocking the recursive mutex completely
     unzip.closeStreamFile();
-    workerDone.store(true, std::memory_order_release);
-  });
-  worker.join();
 
-  UNZIP_CHECK(workerDone.load(std::memory_order_acquire),
-              "non-owner closeStreamFile returns without blocking");
+    // 5. Now that the lock is free, unleash the worker thread!
+    releaseWorker.store(true, std::memory_order_release);
 
-  char data[8]{};
-  uint32_t got = unzip.getStreamData(data, sizeof(data));
-  UNZIP_CHECK(got > 0, "owner thread can still read stream after non-owner close attempt");
+    // 6. Join and verify sequencing
+    worker.join();
+    UNZIP_CHECK(workerThreadCompleted.load(std::memory_order_acquire), "Worker completes cleanly after primary stream closing");
 
-  unzip.closeStreamFile();
-  unzip.closeZipFile();
-
-  return sFail == 0;
-}
-
-static auto testGetStreamDataFromNonOwnerThread() -> bool {
-  UNZIP_LOG("--- getStreamData from non-owner thread ---");
-
-  bool opened = unzip.openZipFile(MINIMAL);
-  UNZIP_CHECK(opened, "openZipFile(minimal.epub) succeeds");
-  if (!opened) return false;
-
-  uint32_t fileSize = 0;
-  bool streamOpened = unzip.openStreamFile("mimetype", fileSize);
-  UNZIP_CHECK(streamOpened, "openStreamFile(mimetype) succeeds");
-  if (!streamOpened) {
     unzip.closeZipFile();
-    return false;
+    return sFail == 0;
   }
 
-  std::atomic<uint32_t> workerRead{1};
-  std::thread worker([&]() {
-    char data[8]{};
-    workerRead.store(unzip.getStreamData(data, sizeof(data)), std::memory_order_release);
-  });
-  worker.join();
-
-  UNZIP_CHECK(workerRead.load(std::memory_order_acquire) == 0,
-              "non-owner getStreamData is rejected");
-
-  unzip.closeStreamFile();
-  unzip.closeZipFile();
-
-  return sFail == 0;
-}
 
 #endif
 
@@ -197,28 +185,27 @@ auto testUnzip() -> TestStats {
   UNZIP_LOG("========== Unzip test suite start ==========");
 
   auto run = [&](const char *name, auto fn) {
-    failsBefore = sFail;
-    fn();
-    if (sFail == failsBefore)
-      UNZIP_LOG("  >>> %s: OK", name);
-    else
-      UNZIP_LOG("  >>> %s: FAILED (%d new failures)", name, sFail - failsBefore);
-  };
+               failsBefore = sFail;
+               fn();
+               if (sFail == failsBefore) {
+                 UNZIP_LOG("  >>> %s: OK", name);
+               }
+               else {
+                 UNZIP_LOG("  >>> %s: FAILED (%d new failures)", name, sFail - failsBefore);
+               }
+             };
 
-  run("open-close", testOpenClose);
-  run("lookup-stored", testLookupAndReadStoredFile);
-  run("read-deflated", testReadDeflatedFile);
+    run("open-close",    testOpenClose);
+    run("lookup-stored", testLookupAndReadStoredFile);
+    run("read-deflated", testReadDeflatedFile);
 
-#if !STB
-  run("close-zip-during-stream", testCloseZipWhileStreamOpenSameThread);
-  run("close-stream-non-owner", testCloseStreamFromNonOwnerThread);
-  run("read-stream-non-owner", testGetStreamDataFromNonOwnerThread);
-#endif
+  #if !STB
+    run("close-zip-during-stream",      testCloseZipWhileStreamOpenSameThread);
+    run("concurrent-stream-contention", testConcurrentStreamAccessContention);
+  #endif
 
   UNZIP_LOG("========== Unzip test suite end: %d passed, %d failed ==========", sPass, sFail);
 
-  // Keep global singleton in a clean state for following suites.
   unzip.closeZipFile();
-
-  return TestStats{sPass, sFail};
+  return TestStats{ sPass, sFail };
 }

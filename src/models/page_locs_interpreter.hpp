@@ -79,8 +79,8 @@ class PageLocsInterpreter : public HTMLInterpreter {
         pageLocs.insert(pageId, pageInfo);
 
         #if DEBUGGING
-          std::cout << pageId.offset << '|' << pageId.offset + pageInfo.size << ", "
-                    << pageInfo.pageNumber << ", " << pageInfo.size << std::endl;
+          LOG_D("Begin {}, End {}, PageNbr {}, Size {}",
+                pageId.offset, pageId.offset + pageInfo.size, pageInfo.pageNumber, pageInfo.size);
         #endif
       }
 
@@ -93,6 +93,13 @@ class PageLocsInterpreter : public HTMLInterpreter {
       #endif
 
       startOffset = currentOffset;
+
+      #if LINE_POS_TRACING
+        if (pageId.itemrefIndex == 5) {
+          LOG_I("buildPageAt(): {} {}", pageId.itemrefIndex, startOffset);
+          page->showFmt(fmt, "");
+        }
+      #endif
 
       page->start(fmt, epub->getBookFormatParams()->columnCount); // Start a new page
 

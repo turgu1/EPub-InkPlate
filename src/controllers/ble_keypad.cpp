@@ -193,7 +193,7 @@
       if (param->scan_start_cmpl.status == ESP_BT_STATUS_SUCCESS) {
         LOG_W("=== BLE SCANNER RUNNING ===");
       } else {
-        LOG_E("Scan start failed: {}", param->scan_start_cmpl.status);
+        LOG_E("Scan start failed: {}", (int)param->scan_start_cmpl.status);
       }
       break;
 
@@ -232,7 +232,7 @@
 
     case ESP_GATTC_OPEN_EVT:
       if (param->open.status != ESP_GATT_OK) {
-        LOG_E("Failed to map GATT channel, error status: {}", param->open.status);
+        LOG_E("Failed to map GATT channel, error status: {}", (int)param->open.status);
         is_connecting = false;
       } else {
         gl_conn_id = param->open.conn_id;

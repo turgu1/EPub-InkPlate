@@ -167,7 +167,7 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
                            .choiceCount = 2,
                            .choices     = FormChoiceField::yesNoChoices } },
     .entryType = FormEntryType::HORIZONTAL },
-  { .caption   = "Column Count in Landscape:",
+  { .caption   = "Column Count:",
     .u         = { .ch = { .value       = &columnCount,
                            .choiceCount = 4,
                            .choices     = FormChoiceField::columnCountChoices } },
@@ -535,6 +535,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
 
       if (oldCoverSize != coverSize) {
         int16_t dummy;
+        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
         menuViewer->show(menu, 2, true);
       }
@@ -619,6 +620,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       if (booksRefreshNeeded) {
         booksRefreshNeeded = false;
         int16_t dummy;
+        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
       }
       inkplate_platform.restart();
@@ -639,6 +641,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       if (booksRefreshNeeded) {
         booksRefreshNeeded = false;
         int16_t dummy;
+        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
       }
       appController.setController(AppController::Ctrl::LAST);
