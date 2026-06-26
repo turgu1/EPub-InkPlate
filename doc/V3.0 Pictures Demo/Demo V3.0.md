@@ -1,74 +1,80 @@
-## EPub-Inkplate V3.0.0 Demo Pictures
+## EPub-Inkplate V3.0.0 Demo Gallery
 
-The followings are pictures taken from an Inkplate-6FLICK running version 3.0.0 of the EPub-Inkplate application taylored for Inkplate devices. The demo is limited to the specific UI modifications made to version 3 so some of the functionalities of the application are not shown.
+The following images demonstrate version 3.0.0 of the EPub-Inkplate application, running on an Inkplate-6COLOR device. This preview focuses specifically on the user interface enhancements introduced in version 3.0.0, meaning some core application functionalities are not pictured.
 
-The pictures were taken using an iPad camera and geometrically modified to only keep the Inkplate screen as a corrected rectangle using the Gimp application under Linux. Beyond that, the pictures have not been modified, so, for some of them, you will see phantom images pertaining to the eInk display. As the application is refreshing the eInk after every 10 screen updates, the phantom images then disappear.
+All photos were captured using an iPad camera and perspective-corrected into standard rectangles using GIMP on Linux. No other alterations have been made. Consequently, slight e-Ink ghosting may be visible in some images; the application triggers a full screen refresh every 10 page turns to clear these artifacts.
 
-Beyond the UI modifications, the application was extensively updated to get a solid foundation for the future updates that are being planned. The code has been modernized to use some of the latest C++ capabilities available.
+Beyond the UI overhaul, the application's core architecture was extensively refactored to establish a robust foundation for future updates. The codebase has been modernized to leverage contemporary C++ capabilities.
 
-### 1. Artwork display on deep-sleep
+### 1. Deep-Sleep Artwork Display
 
-The new app permits to display artworks that are located in the new `artworks/` folder on the SD card. 7 files are supplied with the distribution package and are randomly selected by the application when deep-sleep is required. You can put there your own images as long as they are JPEG images.
+The updated application now supports custom artwork during deep-sleep, loaded from the new `artworks/` folder on the SD card. Seven default images are included in the distribution package, which the application selects at random when entering deep-sleep. Users can add their own custom JPEG images to this folder.
 
 <img src="./IMG_3102.jpeg" alt="picture" width="400"/>
 
-### 2. E-Books directory
+### 2. E-Book Library Directory
 
-The standard e-books linear directory as per all version of the application.
+The standard linear e-book directory structure remains available, consistent with previous versions of the application.
 
 <img src="./IMG_3104.jpeg" alt="picture" width="400"/>
 
-### 3. Main application menu
+### 3. Main Application Menu
 
-The menu shows the new UI approach to display menus, easier to select items on a tactile display.
+This menu showcases the redesigned UI framework. The new layout features larger touch targets, making navigation significantly easier on touchscreens.
 
 <img src="./IMG_3105.jpeg" alt="picture" width="400"/>
 
-### 4. Application settings
+### 4. Application Settings
 
-The form shows the new parameters: 
+The settings panel introduces several new configuration options: 
 
-- The Books Cover Size: 3 sizes are available. The directory is refreshed after selecting a new size (See picture #5).
-- The Battery Trim Factor: A linear adjustment factor to present a battery voltage closer to its real value.
+- **Book Cover Size**: Users can choose from three distinct sizes. Changing this setting automatically triggers a directory refresh (see image 5).
+- **Battery Trim Factor**: A linear calibration adjustment used to align the displayed battery voltage more closely with the actual physical voltage.
 
 <img src="./IMG_3106.jpeg" alt="picture" width="400"/>
 
-### 5. e-books Database refresh
+### 5. Library Database Refresh
 
-As some parameter has been modified, the directory is being refreshed. A new panel shows how well the refresh is advancing.
+When settings are modified, the directory updates automatically. A new progress panel keeps the user informed of the background refresh status.
 
 <img src="./IMG_3107.jpeg" alt="picture" width="400"/>
 
 
-### 6. Medium size covers
+### 6. Medium Cover View
 
-As the refresh is completed, here is how the e-book list appears with medium size covers.
+Once the database refresh completes, the library view updates to display the e-book list with medium-sized covers.
 
 <img src="./IMG_3108.jpeg" alt="picture" width="400"/>
 
-### 7. A single e-book page
+### 7. E-Book Reading View
 
-Once a book is selected to be viewed, it is opened by the application and the page shown is where the user was reading the last time.
+When a book is opened, the application immediately restores the reader to their last saved reading position.
 
 <img src="./IMG_3117.jpeg" alt="picture" width="400"/>
 
-### 8. Current e-book parameters
+### 8. Document Settings
 
-The form shows the parameters for the e-book currently being read. Some of the new parameters are:
+This panel manages formatting settings for the active e-book. Notable new additions include:
 
-- Line Height Factor: Permits to have a different line height than the normal one.
-- Column Count: Select the number of columns to use to display the e-book.
+- **Line Height Factor**: Allows readers to adjust line spacing beyond the document's default layout.
+- **Column Count**: Allows readers to choose the number of text columns displayed on screen.
 
 <img src="./IMG_3111.jpeg" alt="picture" width="400"/>
 
-### 9. e-book page with large line height
+### 9. Increased Line Spacing Example
+
+An example of the e-book reader view utilizing an expanded line height setting.
 
 <img src="./IMG_3116.jpeg" alt="picture" width="400"/>
 
-### 10. A 2 columns page display
+### 10. Two-Column Layout
+
+An example of the reader view configured for a two-column text layout.
 
 <img src="./IMG_3109.jpeg" alt="picture" width="400"/>
 
-### 11. A 3 columns page display
+### 11. Three-Column Layout
+
+An example of the reader view configured for a three-column text layout.
 
 <img src="./IMG_3113.jpeg" alt="picture" width="600"/>
