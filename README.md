@@ -2,23 +2,47 @@
 
 ## Last news
 
-(Updated 2026.05.04)
+(Updated 2026.06.26)
 
-### Version 3.0.0
+### Version 3.0.0 - What's New in This Release
 
-This is an overdue update of the EPub reader. A lot of changes were made internally to make the application more solid. Also, some changes to the user interface were done to make the application easier to use.
+This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
 
-- **Cover image sizes**: the book list now lets you choose between small, medium, and large cover images.
-- **Line Height**: Three line heights are available for displaying book content: Tight, Medium, and Large.
-- **Kerning and Ligatures**: Fonts and FreeType library adjusted to support kerning. A small algorithm was added for the usual ligatures.
-- **Screen Saver**: place JPEG images in a `artworks` folder on the SD card and they will be randomly displayed when the device turns off (deep sleep). The release package contains such a folder with 7 default images. 
-- **Battery Trim Factor**: a new `battery_trim` config value (floating point) permits adjustment of the battery voltage read from the Inkplate ADC capability.
-- **Larger menu icons**: icons in parameter and option menus are bigger and centered across multiple lines for easier navigation.
-- **Waiting indicator**: a spinner is shown on screen while a large image is being prepared.
-- **Bug fix**: the reading position was not correctly restored after waking from deep sleep.
-- **Dependency updates**: ESP-IDF v5.5.4, PugiXML 1.15, FreeType 2.14.3 (with improved OTF support).
+A Demonstration Gallery has been prepared to showcase the major UI enhancements. You can access it [here](./doc/V3.0%20Pictures%20Demo/).
 
-See [CHANGES.md](CHANGES.md) for a complete list of changes including internal improvements.
+#### User Interface & Navigation
+
+- **Variable Cover Image Sizes**: The book library directory now supports small, medium, and large cover images.
+
+- **Multi-Column Rendering**: Readers can now choose to render e-book pages across 1 to 4 columns.
+
+- **Adjustable Line Spacing**: Added three distinct line height settings for text display: Tight, Medium, and Large.
+  
+- **Touch-Optimized Menus**: Icons within parameter and option menus are now larger and vertically centered across lines for more precise navigation.
+
+- **Processing Indicator**: Added a visual waiting spinner that displays on-screen while large image files are being processed.
+
+#### Core Enhancements & Hardware Control
+
+- **Deep-Sleep Screensavers**: Supports custom JPEG images placed within the artworks/ folder on the SD card, which are randomly displayed when the device powers down into deep sleep. The default release package includes 7 pre-loaded images.
+
+- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures and minimal line-break hyphenation.
+
+- **Battery Calibration**: Introduced a floating-point battery_trim configuration value, allowing users to linearly adjust and calibrate the battery voltage read by the Inkplate ADC.
+
+- **Bluetooth support**: Upcoming capability for Inkplate devices without any input hardware support. A short demonstration on the Soldered InkPlate-10 V2 using a BLE mini keypad is available [Here](https://www.youtube.com/shorts/Jre9zbq_AkM).
+
+### Bug Fixes & Under-the-Hood
+
+- **Stability Enhancements**: Resolved numerous minor bugs and optimization issues throughout the codebase.
+
+- **Updated Toolchains & Dependencies**:
+
+  - **ESP-IDF** upgraded to v5.5.4
+  - **PugiXML** upgraded to v1.15
+  - **FreeType** upgraded to v2.14.3 (featuring significantly improved OTF font support)
+
+See [CHANGES.md](CHANGES.md) for a list of changes including internal improvements.
 
 For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
 [doc/TESTING_TOOLS_GUIDE.md](doc/TESTING_TOOLS_GUIDE.md).
@@ -160,10 +184,6 @@ Some pictures from the InkPlate-6 version:
 
 <img src="doc/pictures/IMG_1377.JPG" alt="picture" width="300"/><img src="doc/pictures/IMG_1378.JPG" alt="picture" width="300"/>
 <img src="doc/pictures/IMG_1381.JPG" alt="picture" width="300"/>
-
-Some pictures from the Linux version:
-
-<img src="doc/pictures/books_select.png" alt="drawing" width="300"/><img src="doc/pictures/book_page.png" alt="drawing" width="300"/>
 
 A picture of the Web Server in a browser:
 

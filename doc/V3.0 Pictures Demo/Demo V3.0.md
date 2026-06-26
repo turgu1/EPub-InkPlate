@@ -1,6 +1,8 @@
 ## EPub-Inkplate V3.0.0 Demo Gallery
 
-The following images demonstrate version 3.0.0 of the EPub-Inkplate application, running on an Inkplate-6COLOR device. This preview focuses specifically on the user interface enhancements introduced in version 3.0.0, meaning some core application functionalities are not pictured.
+(2026.06.26)
+
+The following images demonstrate version 3.0.0 of the EPub-Inkplate application, running on an Inkplate-6FLICK device. This preview focuses specifically on the user interface enhancements introduced in version 3.0.0, meaning some core application functionalities are not pictured.
 
 All photos were captured using an iPad camera and perspective-corrected into standard rectangles using GIMP on Linux. No other alterations have been made. Consequently, slight e-Ink ghosting may be visible in some images; the application triggers a full screen refresh every 10 page turns to clear these artifacts.
 
