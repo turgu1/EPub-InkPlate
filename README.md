@@ -36,6 +36,8 @@ To streamline our GitHub release page, distributions for all supported devices a
 |6 V2|Soldered|TBA (Bluetooth keypad)|
 |10 V2|Soldered|TBA (Bluetooth keypad)|
 
+Note: **TBA** is **To Be Announced**
+
 Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
 
 |Inkplate device|From|Release filename|
