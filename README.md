@@ -33,8 +33,15 @@ To streamline our GitHub release page, distributions for all supported devices a
 |10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
 |6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
 |6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
-|6 V2|Soldered|TBA|
-|10 V2|Soldered|TBA|
+|6 V2|Soldered|TBA (Bluetooth keypad)|
+|10 V2|Soldered|TBA (Bluetooth keypad)|
+
+Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_6.zip|
+|10|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_10.zip|
 
 ### Enhancements
 
@@ -152,7 +159,7 @@ The `bld_release.sh` script requires three parameters and one optional parameter
 - **First parameter**: version number (e.g., `3.0.0-BETA` or `3.0.0`)
 - **Second parameter**: device type — `6`, `10`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
 - **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
-- **Fourth parameter** (optional): optimization mode
+- **Fourth parameter** (optional, may not work anymore... need testing): optimization mode
   - If omitted: the build folder is cleared, and the script aborts if a release zip already exists
   - If `1`: build folder is cleared and rebuilt; no release file is created
   - If `2`: build folder is kept and rebuilt; no release file is created
@@ -167,46 +174,8 @@ This generates `release-v3.0.0-inkplate_6plusv2.zip`.
 
 ------
 
-(Updated 2022.5.01)
 
-Update to version 2.0.1
-
-- For Inkplate-6PLUS and Inkplate-10: The ESP-IDF-Inkplate library has been updated (v0.9.6) to support some of these devices to be delivered without a second MCP chip onboard. The presence of the second MCP is now dynamically detected by the software.
-
-- For all Inkplates: Now using ESP-IDF framework v4.3.2
-
-## Unresolved issue
-
-[ ] A device reset may happen reading a book, and changing the current font as the background process is computing pages location. 
-
----
-
-This is an EPub reader for the e-Radionica made Inkplate devices.
-
-Here are the main characterics:
-
-- TTF, and OTF embedded fonts support.
-- Normal, Bold, Italic, Bold+Italic face types.
-- Bitmap images dithering display (JPEG, PNG).
-- EPub (V2, V3) book format subset.
-- UTF-8 characters (supplied fonts limited to latin1).
-- Inkplate tactile keys (single and double click to get six buttons).
-- Screen orientation (portrait / landscape).
-- Left, center, right, and justify text alignments.
-- Font size.
-- Indentation.
-- Some basic parameters and options.
-- Limited CSS formatting.
-- WiFi-based documents download (Web server based).
-- Battery state and power management (light, deep sleep, battery level display).
-- Table of content.
-- Multiple fonts choices selectable by the user.
-- Linear and matrix view of book list.
-- Real-Time clock.
-- Inkplate-6PLUS touch screen and backlit.
-- Keeps location of the last 10 books being read.
-
-Some vidos are  available on YouTube:
+Some other older videos are  available on YouTube:
 
 - The first working version of the EPub-InkPlate application [Here](https://www.youtube.com/watch?v=VnTLMhEgsqA).
 - Demostration on the InkPlate-10 [Here](https://www.youtube.com/watch?v=qNAjbnEax8k).
@@ -280,7 +249,7 @@ The following are the libraries currently in use by the application:
 
 The following are imported C header and source files, that implement some algorithms:
 
-- [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.10.4/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
+- [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.14.3/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
 - [PugiXML](https://pugixml.org/) (For XML parsing)
 - [STB](https://github.com/nothings/stb) (For image resizing) :
 
