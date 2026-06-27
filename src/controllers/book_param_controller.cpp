@@ -372,7 +372,6 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
             }
 
             int16_t refreshIndex;
-            pageLocs.stopControlTask();
             booksDir.refresh(nullptr, refreshIndex, false);
 
             appController.setController(AppController::Ctrl::DIR);

@@ -8,12 +8,44 @@
 
 This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
 
+#### Important Installation Requirements
+
+Because this is a major release, you must re-initialize and re-install your storage card.
+
+- Initialize your SD card.
+  
+- Re-install the system files using the contents of the **SDCard** folder provided in this distribution package.
+  
+- For detailed steps, please consult the included **Installation Manual**.
+  
+#### Beta Testing & Feedback
+
+This is a BETA release. If you encounter any bugs or unexpected behaviour, please submit an issue on our GitHub repository so we can address it promptly. If no critical issues are reported within the next two weeks, we will launch the final, stable Version 3.0.0.
+
+#### Unified Distribution Files
+
+To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **Version 3.0.0 BETA**. Please download the specific .zip file that matches your target device:
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-BETA-inkplate_6.zip|
+|6PLUS|e-Radionica|release-v3.0.0-BETA-inkplate_6plus.zip|
+|10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
+|6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
+|6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
+|6 V2|Soldered|TBA|
+|10 V2|Soldered|TBA|
+
+### Enhancements
+
 A Demonstration Gallery has been prepared to showcase the major UI enhancements. You can access it [here](./doc/V3.0%20Pictures%20Demo/Demo%20V3.0.md).
 
 #### User Interface & Navigation
 
 - **Variable Cover Image Sizes**: The book library directory now supports small, medium, and large cover images.
 
+- **New Image Types**: GIF, SVG, and BMP image types are now supported with some limitations.
+ 
 - **Multi-Column Rendering**: Readers can now choose to render e-book pages across 1 to 4 columns.
 
 - **Adjustable Line Spacing**: Added three distinct line height settings for text display: Tight, Medium, and Large.
@@ -45,7 +77,7 @@ A Demonstration Gallery has been prepared to showcase the major UI enhancements.
 See [CHANGES.md](CHANGES.md) for a list of changes including internal improvements.
 
 For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
-[doc/TESTING_TOOLS_GUIDE.md](doc/TESTING_TOOLS_GUIDE.md).
+[TESTING_TOOLS_GUIDE.md](doc/development-notes/TESTING_TOOLS_GUIDE.md).
 
 ### Building the application image
 
@@ -108,7 +140,7 @@ The `bld_all.sh` script requires one parameter: the release version number.
 Example:
 
 ```bash
-$ ./bld_all.sh 2.1.0-BETA
+$ ./bld_all.sh 3.0.0-BETA
 ```
 
 This generates release files named `release-v<version>-inkplate_<XXX>.zip` in the main project folder.
@@ -118,7 +150,7 @@ This generates release files named `release-v<version>-inkplate_<XXX>.zip` in th
 The `bld_release.sh` script requires three parameters and one optional parameter:
 
 - **First parameter**: version number (e.g., `3.0.0-BETA` or `3.0.0`)
-- **Second parameter**: device type — `6`, `10`, `6plus`, `6plusv2`, or `6flick`
+- **Second parameter**: device type — `6`, `10`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
 - **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
 - **Fourth parameter** (optional): optimization mode
   - If omitted: the build folder is cleared, and the script aborts if a release zip already exists

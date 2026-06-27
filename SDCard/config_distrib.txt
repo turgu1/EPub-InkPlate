@@ -32,6 +32,10 @@
 #      show_rtc
 #      ntp_server
 #      tz
+#      battery_trim
+#      line_height
+#      column_count
+#      bt_keypad_mac
 # ---
 
 version = 1
@@ -56,3 +60,7 @@ dir_view = 0
 show_rtc = 0
 ntp_server = "pool.ntp.org"
 tz = ""
+battery_trim = 0.93
+line_height = 1
+column_count = 1
+bt_keypad_mac = "00:00:00:00:00:00"

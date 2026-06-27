@@ -7,15 +7,17 @@ For the installation process, please consult the `INSTALL.pdf` document.
 Here are the main characteristics of the application:
 
 - TTF and OTF embedded fonts support
-- Bitmap fonts support in a specific IBMF font format
 - Normal, Bold, Italic, Bold+Italic face types
-- Bitmap images dithering display (JPEG, PNG, GIF, SVG)
+- Kerning, ligature, and minimal hyphenation
+- Multi-column page rendering (1 to 4 columns)
+- Bitmap images dithering display (JPEG, PNG, GIF, SVG, BMP)
 - EPub (V2, V3) book format subset
 - UTF-8 characters
 - InkPlate tactile keys to interact with the device (single and double `click` to get six buttons)
 - Screen orientation (buttons located to the left, right, down positions from the screen)
 - Linear and Matrix view of books directory
 - Three size cover pictures user's selectable
+- Three size line height user's selectable
 - Up to 200 books are allowed in the directory
 - Left, center, right, and justify text alignments
 - Indentation
@@ -108,7 +110,7 @@ The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons can be used to move:
 - ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - Erases all reading progress information (current position in each book and their priority placement at the top of the book list). The books themselves are not deleted.
 - ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - Opens a form to set the local date and time manually.
 - ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** - Starts the Wi-Fi connection and retrieves the current time from an NTP server. The server address can be set in `config.txt`; the default is `pool.ntp.org`. Once the time is retrieved, press any button to restart the device.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a box with the application version number and developer name.
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a box with the application version number and developer's name.
 - ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press any button to restart.
 
 The **NEXT** and **PREVIOUS** buttons move the cursor between options. Press **SELECT** to execute the highlighted option. **DOUBLE-SELECT** closes the options list and returns to the book list (equivalent to selecting the first entry).
@@ -130,7 +132,7 @@ As in the book list, **DOUBLE-SELECT** opens a list of options (**SELECT** does 
 - ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** - Resets all editable book formatting parameters to their default values.
 - ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** - Removes the current book and all its associated files from the device. A confirmation dialog is shown — press **SELECT** to confirm or any other button to cancel. After deletion, the book list is displayed.
 - ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - Starts the Wi-Fi connection and a web server, allowing you to manage the book list on the SD-Card from a web browser — uploading, downloading, and removing books. Once started, pressing any key stops the server, closes the Wi-Fi connection, and restarts the device. Note that while the web server is running, power-saving features (deep sleep and light sleep) are disabled.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a message box with the application version number and developer name.
+- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a message box with the application version number and developer's name.
 - ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press any button to restart.
 
 The **NEXT** and **PREVIOUS** buttons move the cursor between options. Press **SELECT** to execute the highlighted option. **DOUBLE-SELECT** closes the options list and returns to the book list (equivalent to selecting the first entry).
@@ -187,6 +189,7 @@ The following items are displayed:
 - **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
 - **Default Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
 - **Show Images in E-books** - Controls whether images in books are rendered. Disabling images reduces memory usage and speeds up page rendering.
+- **Column Count** - Choose to render e-book pages across 1 to 4 columns.
 
 These are default values that apply to any book parameter that has not been customized for that specific book.
 
@@ -202,11 +205,18 @@ The following items are displayed:
 - **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
 - **Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
 - **Show Images in E-books** - Controls whether images in the book are rendered. Disabling images reduces memory usage and speeds up page rendering.
+- **Column Count** - Choose to render e-book pages across 1 to 4 columns.
 
 When the form opens, it shows the values currently used to render the book's pages.
 
 Parameters that the user has not explicitly set will show the value from the Default Parameters form. Once you change a parameter here, it is stored for this book. If you leave a parameter at its default, it will continue to track the value in the Default Parameters form — so updating the default will also update that book's presentation.
-   
+
+### 2.6 The Screen Saver
+
+The V3 application now supports custom artwork being displayed during deep-sleep, loaded from the `artworks/` folder on the SD card. Seven default images are included in the distribution package, which the application selects at random when entering deep-sleep. Users can add their own custom JPEG images to this folder.
+
+Use images that are of the same size as your device screen.
+
 ## 3. Additional information
 
 ### 3.1 The books database
@@ -256,7 +266,7 @@ If an internal problem related to memory allocation is found by the application,
 
 Starting with version 1.3.0, the application is using a new *stream-based* approach to render images that are part of a book. This approach optimizes the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
 
-JPEG, PNG, GIF, and SVG image types are supported. Only basic formats of both types are recognized. For some books, image rendering may not be possible. The `adjust_size.sh` script supplied with the application can transform the resolution of embedded images and convert them to a format compatible with the application. See section 3.3 for details on how to run the script. 
+JPEG, PNG, GIF, SVG, and BMP image types are supported. Only basic formats of both types are recognized. For some books, image rendering may not be possible. The `adjust_size.sh` script supplied with the application can transform the resolution of embedded images and convert them to a format compatible with the application. See section 3.3 for details on how to run the script. 
 
 ### 3.6 Moving the SD-Card from an Inkplate model to another
 
@@ -308,4 +318,4 @@ The Inkplate devices are based on ESP32-WROVER MPU. This is a very capable chip 
 - *Maximum memory used for application internal fonts content:* **300 Kbytes**.
 - *Maximum memory used for books' fonts content:* **800 Kbytes**. Fonts that are already loaded are kept for rendering. If the output is not appropriate, the user can disable the use of the fonts embedded with the book and use one of the fonts supplied with the application.
 - *Maximum nested HTML tags in book content:* **50**. Testing the application, the author never had to deal with books having more than 15 nested tags. This limit is to track potential nested issues that would reset the device (stack overflow).
-- *Image format types:* **subset of PNG, JPeg, GIF, and SVG**. The subsets are imposed by libraries used to interpret the image file content. In particular, JPeg pictures in progressive mode are not supported. They must be transformed to static mode using some tool (like Calibre) if you want them to be displayed. 
+- *Image format types:* **subset of PNG, JPeg, GIF, SVG, and BMP**. The subsets are imposed by libraries used to interpret the image file content. In particular, JPeg pictures in progressive mode are not supported. They must be transformed to static mode using some tool (like Calibre) if you want them to be displayed. SVG support is very basic and will be enhanced in a future version. 

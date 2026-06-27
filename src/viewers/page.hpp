@@ -296,15 +296,15 @@ class Page {
 
     auto showFmt(const Format &fmt, const char *spaces) -> void const {
 
-      //#if DEBUGGING
-      std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
-                << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
-                << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
-                << " m:" << fmt.marginBottom << "," << fmt.marginLeft << "," << fmt.marginRight << ","
-                << fmt.marginTop << " s:" << fmt.screenBottom << "," << fmt.screenLeft << ","
-                << fmt.screenRight << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
-                << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
-      //#endif
+      #if DEBUGGING
+        std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
+                  << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
+                  << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
+                  << " m:" << fmt.marginBottom << "," << fmt.marginLeft << "," << fmt.marginRight << ","
+                  << fmt.marginTop << " s:" << fmt.screenBottom << "," << fmt.screenLeft << ","
+                  << fmt.screenRight << "," << fmt.screenTop << " tr:" << fmt.trim << " pr:" << fmt.pre
+                  << " tt:" << (int)fmt.textTransform << " di:" << (int)fmt.display << std::endl;
+      #endif
     }
 
     auto showCover(PicturePtr &pict) -> bool;

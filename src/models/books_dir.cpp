@@ -9,8 +9,10 @@
 #include "models/books_dir.hpp"
 
 #include "config.hpp"
+#include "controllers/book_controller.hpp"
 #include "models/default_cover.hpp"
 #include "models/epub.hpp"
+#include "models/page_locs.hpp"
 #include "picture_factory.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
@@ -833,6 +835,9 @@ auto BooksDir::refresh(char *bookFilename, int16_t &bookIndex, bool forceInit) -
   //  Build a list of filenames for next step.
 
   LOG_D("Refreshing database content");
+
+  pageLocs.stopControlTask();
+  bookController.leave(true); // true -> reset epub
 
   SortedIndex tempIndex;
 

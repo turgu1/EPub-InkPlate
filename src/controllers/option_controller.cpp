@@ -535,7 +535,6 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
 
       if (oldCoverSize != coverSize) {
         int16_t dummy;
-        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
         menuViewer->show(menu, 2, true);
       }
@@ -620,7 +619,6 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       if (booksRefreshNeeded) {
         booksRefreshNeeded = false;
         int16_t dummy;
-        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
       }
       inkplate_platform.restart();
@@ -641,7 +639,6 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
       if (booksRefreshNeeded) {
         booksRefreshNeeded = false;
         int16_t dummy;
-        pageLocs.stopControlTask();
         booksDir.refresh(nullptr, dummy, true);
       }
       appController.setController(AppController::Ctrl::LAST);

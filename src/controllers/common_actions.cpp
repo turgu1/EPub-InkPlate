@@ -10,7 +10,6 @@
 #include "controllers/books_dir_controller.hpp"
 #include "controllers/event_mgr.hpp"
 #include "models/books_dir.hpp"
-#include "models/page_locs.hpp"
 #include "viewers/menu_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_saver.hpp"
@@ -33,7 +32,6 @@ auto CommonActions::showLastBook() -> void { booksDirController.showLastBook(); 
 auto CommonActions::refreshBooksDir() -> void {
   int16_t temp;
 
-  pageLocs.stopControlTask();
   booksDir.refresh(nullptr, temp, true);
   appController.setController(AppController::Ctrl::DIR);
 }
