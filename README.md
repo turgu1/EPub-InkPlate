@@ -24,7 +24,7 @@ This is a BETA release. If you encounter any bugs or unexpected behaviour, pleas
 
 #### Unified Distribution Files
 
-To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **Version 3.0.0 BETA**. Please download the specific .zip file that matches your target device:
+To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **V3.0.0-BETA Release of the EPub-InkPlate Application**. Please download the specific .zip file that matches your target device:
 
 |Inkplate device|From|Release filename|
 |:-------------:|:--:|----------------|
