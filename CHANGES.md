@@ -1,6 +1,79 @@
 # EPub-InkPlate An EPub Reader for InkPlate devices
 
-## Last news
+## Last News
+
+(Updated 2026.05.04)
+
+Update to version 3.0.0
+
+**Frameworks and dependencies**
+
+- ESP-IDF framework updated to version 5.5.4
+- PugiXML updated to version 1.15
+- FreeType updated to version 2.14.3 (including OTF support correction)
+- C++ standard updated to gnu++23 (as supported by ESP-IDF)
+
+**User-visible changes**
+
+- All GUI has been revisited and polished.
+- Book list cover images can now be displayed in three sizes: small, medium, and large.
+- Adjustable Line Height for books content display: Thigh, Medium and Large.
+- Menu icons are larger and icon lists are centered on screen over multiple lines.
+- A waiting icon is now displayed on screen when a large image is being prepared.
+- Screen Saver: a `artworks` folder on the SD Card, if present, must contain JPEG images that will be randomly chosen to display when the device is turned off or enters deep sleep.
+- A new `battery_trim` config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability. It is modifyable through the `Main Parameters` form.
+- Bug fix: bad page location restored when returning from deep sleep.
+- Bug fix: bad field highlighting when the keypad is shown over its location on screen.
+
+**Page locations (PageLocs) architecture**
+
+- The PageLocs subsystem has been completely rebuilt for better coherence and multithreading robustness. It is now split into dedicated task classes: `PageLocs`, `PageLocsInterpreter`, `PageLocsRetriever`, and `PageLocsControl`.
+- PageLocs now manages its own internal EPub instance, removing shared-state coupling with the active reader.
+- SPI bus access between the display driver and SD card is now protected by a mutex, preventing conflicts during concurrent access.
+- Bug fix in HTMLInterpreter: byte offset was not correctly adjusted when inserting non-text content (e.g. images), which could cause incorrect page break positions.
+
+**Fonts**
+
+- Font caches are now associated with individual EPub instances rather than being global.
+- The global fonts instance has been renamed `appFonts` for clarity.
+- A new `FontsDB` database is populated by the Config class at startup, allowing cleaner font selection logic.
+- Font presence checks are now more robust, validating the index against the actual cache size.
+- Added support for kerning and ligature.
+
+**Memory management**
+
+- `MemoryPool` replaced by the new `HimemPool` class for more efficient PSRAM-backed allocation and deallocation.
+- `std::forward_list` node allocations now use `HimemPool`.
+- More data structures pushed to PSRAM through Himem templates.
+- `std::string` replaced with `HimemString` for many variables and parameters throughout the codebase.
+- CSS and DOM structures optimized considering the memory constaints of the devices.
+
+**Component restructuring**
+
+- `DisplayList` is now a separate component, faster than `std::forward_list` and better adapted to the needs of the `Page` class. No need to reverse entries anymore.
+- New `SimpleList` component: a lightweight linked list usable in both application code and tests.
+- `BooksDir` class significantly restructured.
+- The `image` component renamed to `pictures`; `Image` → `Picture`, `ImageFactory` → `PictureFactory`.
+- `simple_db` component moved from `src/helpers` to `components/simple_db`.
+- `Page::Format` struct now carries default field values; all call sites only pass parameters that differ from the defaults.
+- A new floating point value support added to the `FormViewer` and `KeypadViewer` used to permit the edition of the `battery_trim` option.
+
+**Code quality**
+
+- All methods and variables renamed from snake_case to CamelCase.
+- All methods converted to the `auto` return-type declaration syntax.
+- `[[nodiscard]]` applied to all inline methods that return a value.
+- Raw pointers replaced with smart pointers throughout; `stdio` replaced with `std::iostream`.
+- EPub ownership transfer between controllers corrected.
+- Complete list of HTML named character references added to the CSS/HTML parser.
+- Several small CSS parser bugs fixed; new CSS tokens added.
+- Issue with UINT16 form field that highlight the field before showing the keypad corrected.
+
+**Testing and validation**
+
+- A Linux build target is still available for rapid development and debugging without requiring physical hardware.
+- Valgrind integration for the Linux build: a dedicated test binary and stubs allow full leak analysis under Valgrind.
+- An ESP32 regression test suite (`esp32_regression_loop`) is included, covering 7 scenarios (book open/close, TOC load, cover images, page-location recomputation, concurrent navigation, WiFi/NTP, and web server). It can be enabled at build time.
 
 (Updated 2026.01.20)
 

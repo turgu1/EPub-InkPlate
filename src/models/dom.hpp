@@ -3,143 +3,135 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
-#include <iostream>
 #include <fstream>
-#include <forward_list>
-#include <map>
-#include <sstream>
+#include <iostream>
 #include <iterator>
+#include <map>
 
-#include "memory_pool.hpp"
+#include "himem_pool.hpp"
+#include "simple_list.hpp"
 
-class DOM 
-{
+using DOMPtr = HimemUniquePtr<class DOM>;
+class DOM {
   public:
-    /** 
+    /**
      * @brief HTML tags supported by the application
      *
      * These are the tags required by the application. They will be used to limit the retrieval of
      * rules to the one that uses only these tags.
      *
-     * The pseudo tags NONE and ANY are for selector definition, when no tag is identified 
+     * The pseudo tags NONE and ANY are for selector definition, when no tag is identified
      * in the selector or the '*' selector is used. The pseudo tag FONT_FACE is to grab
      * @font-face definitions in the rules-set. Same for @page vs PAGE.
      */
-    enum class Tag : uint8_t { NONE, BODY, P, LI, BREAK, H1, H2, H3, H4, H5, H6, 
-                               B, I, A, IMG, IMAGE, EM, DIV, SPAN, PRE,
-                               BLOCKQUOTE, STRONG, ANY, FONT_FACE, PAGE,
-                               SUB, SUP };
+    // Tag used to isolate DOM allocator bindings from other subsystems.
+    struct ScopedListPoolTag;
 
-    typedef std::map<std::string, Tag> Tags;
+    class DOMPools;
+    class PoolsGuard;
+
+    /**
+     * @brief A SimpleList backed by a per-instance bound PSRAM pool.
+     */
+    template <typename T, std::size_t BlockSize>
+    using SimpleListSinglePool =
+      SimpleList<T, ScopedHimemPoolAllocator<T, ScopedListPoolTag, BlockSize> >;
+
+
+    enum class Tag : uint8_t {
+      NONE,  BODY, P,   LI,    BREAK,    H1,  H2,   H3,  H4,         H5,     H6,  B,
+      I,     A,    IMG, IMAGE, EM,       DIV, SPAN, PRE, BLOCKQUOTE, STRONG, ANY, FONT_FACE,
+      PAGE,  SUB,  SUP, TABLE, COLGROUP, TR,  TD,   TH,  TFOOT,      THEAD,  COL, CAPTION,
+      TBODY
+    };
+
+
+    using Tags = std::map<std::string, Tag>;
 
     static Tags tags;
 
-    struct Node;
+    class Node {
+      public:
+        using ClassList = SimpleListSinglePool<HimemString, 256>;
+        using NodeList  = SimpleListSinglePool<Node *, 512>;
 
-    typedef std::forward_list<std::string> ClassList;
-    typedef std::forward_list<Node *>      NodeList;
+        Node *father;
+        Node *predecessor;
+        NodeList children;
+        ClassList classList;
+        HimemString id;
+        Tag tag;
+        bool firstChild;
 
-    struct Node {
-      Node *      father;
-      Node *      predecessor;
-      NodeList    children;
-      ClassList   class_list;
-      std::string id;
-      Tag         tag;
-      bool        first_child;
+        Node(Node *theFather, Tag theTag);
+        ~Node();
 
-      Node(Node * the_father, Tag the_tag) {
-        father = the_father;
-        tag    = the_tag;
-        if (father != nullptr) {
-          first_child = father->children.empty();
-          predecessor = first_child ? nullptr : father->children.front();
-          father->children.push_front(this);    
-        }
-        else first_child = true;
-      };
-
-      ~Node() {
-        for (auto * node : children) node_pool->deleteElement(node);
-        children.clear();
-      }
-
-      Node * add_child(Tag the_tag) {
-        return node_pool->newElement(this, the_tag);
-      }
-
-      Node * add_class(std::string the_class) {
-        class_list.push_front(the_class);
-        return this;
-      }
-
-      Node * add_classes(std::string the_classes) {
-        std::istringstream iss(the_classes);
-        std::string item;
-        while (std::getline(iss, item, ' ')) {
-          if (!item.empty()) class_list.push_front(item);
-        }
-        return this;
-      }
-
-      Node * add_id(const std::string & the_id) {
-        id = the_id;
-        return this;
-      }
-
-      void show_children(NodeList::const_iterator node_it, int8_t lev) const {
-        #if DEBUGGING
-          if (node_it != children.end()) {
-            NodeList::const_iterator next_node_it = node_it;
-            show_children(++next_node_it, lev);
-            (*node_it)->show(lev);
-          }
-        #endif
-      }
-
-      void show(uint8_t level) const {
-        #if DEBUGGING
-          std::cout << std::string(level * 2, ' ');
-          for (auto & t : tags) {
-            if (t.second == tag) { std::cout << t.first; break; }
-          }
-          std::cout << " ";
-          if (!id.empty()) std::cout << "#" << id;
-          for (auto & c : class_list) std::cout << '.' << c;
-          if (first_child) std::cout << ":first_child";
-          std::cout << std::endl;
-
-          show_children(children.cbegin(), level + 1); 
-        #endif
-      }
+        auto addClass(const char *theClass) -> Node *;
+        auto addClasses(const char *theClasses) -> Node *;
+        auto addId(const char *theId) -> Node *;
+        auto showChildren(NodeList::ConstIterator nodeIt, int8_t lev) -> void const;
+        auto show(uint8_t level) -> void const;
     };
 
-    Node * body;
+  private:
+    DOMPools *pools{ nullptr };
+    PoolsGuard *guard{ nullptr };
 
-    DOM() {
-      if (node_pool == nullptr) node_pool = new MemoryPool<Node>;
-      body = node_pool->newElement(nullptr, Tag::BODY);
+    SimpleListSinglePool<Node, 100> nodeList{};
+
+    DOM(DOMPools &poolsRef);
+
+  public:
+    class DOMPools {
+      public:
+        using NodeClassListNode = Node::ClassList::Node;
+        using NodeNodeListNode  = Node::NodeList::Node;
+        using DomNodeListNode   = SimpleListSinglePool<Node, 100>::Node;
+
+        HimemPool<NodeClassListNode> nodeClassListPool{ 256 };
+        HimemPool<NodeNodeListNode> nodeNodeListPool{ 512 };
+        HimemPool<DomNodeListNode> domNodeListPool{ 100 };
+    };
+
+    class PoolsGuard {
+      public:
+        explicit PoolsGuard(DOMPools &poolsRef);
+        ~PoolsGuard();
+
+      private:
+        DOMPools &poolsRef;
+    };
+
+    ~DOM();
+
+    template <typename T, typename ... Args>
+    requires(!std::is_array_v<T>)
+    friend HimemUniquePtr<T> makeUniqueHimem(Args &&... args);
+
+    static inline auto Make(DOMPools &poolsRef) { return makeUniqueHimem<DOM>(poolsRef); }
+    static inline auto Make() { return makeUniqueHimem<DOM>(defaultPools()); }
+
+    static auto defaultPools() -> DOMPools &;
+
+    Node *body{ nullptr };
+
+    auto addChild(Node *parentNode, Tag theTag) -> Node * {
+      return nodeList.emplaceFront(parentNode, theTag);
     }
 
-    ~DOM() {
-      node_pool->deleteElement(body);
-    }
-
-    void show() {
+    auto show() -> void {
       #if DEBUGGING
         std::cout << "DOM:" << std::endl;
-        body->show(1);
+        if (body != nullptr) { body->show(1); }
         std::cout << "[END DOM]" << std::endl;
       #endif
     }
 
-    static void delete_pool() {
-      delete node_pool;
-      node_pool = nullptr;
-    }
-
   private:
-    static MemoryPool<Node> * node_pool;
+    static auto bindPools(DOMPools &poolsRef) -> void;
+    static auto unbindPools() -> void;
 };

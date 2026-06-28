@@ -3,154 +3,213 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
+#include "himem.hpp"
+#include "picture.hpp"
 #include "pugixml.hpp"
+#include "unzip.hpp"
 
-#include "models/css.hpp"
 #include "models/book_params.hpp"
+#include "models/css.hpp"
 #include "viewers/page.hpp"
-#include "models/image.hpp"
 
-#include <list>
 #include <forward_list>
+#include <list>
 #include <map>
-#include <mutex>
+#include <memory>
 
-class EPub
-{
+class TOC;
+class EPub;
+
+using EPubPtr = HimemUniquePtr<class EPub>;
+class EPub {
+
   public:
-    enum class       MediaType : uint8_t { XML, JPEG, PNG, GIF, BMP };
+    enum class MediaType : uint8_t { XML, JPEG, PNG, GIF, BMP };
+
     enum class ObfuscationType : uint8_t { NONE, ADOBE, IDPF, UNKNOWN };
-    typedef std::list<CSS *> CSSList;
+
+    using CSSList    = std::list<CSSPtr>;
+    using CSSRefList = std::list<std::reference_wrapper<CSS> >;
+
     struct ItemInfo {
-      std::string        file_path;
-      int16_t            itemref_index;
-      pugi::xml_document xml_doc;
-      CSSList            css_cache;   ///< style attributes part of the current processed item are kept here. They will be destroyed when the item is no longer required.
-      CSSList            css_list;    ///< List of css sources for the current item file shown. Those are indexes inside css_cache.
-      CSS *              css;         ///< Ghost CSS created through merging css suites from css_list and css_cache.
-      char *             data;
-      MediaType          media_type;
+      HimemString filePath{};
+      int16_t itemrefIndex{};
+      pugi::xml_document xmlDoc{};
+      CSSList cssCache; ///< style attributes part of the current processed item are kept here. They
+                        ///< will be destroyed when the item is no longer required.
+      CSSRefList cssList; ///< List of css sources for the current item file shown. Those are indexes
+                          ///< inside cssCache.
+      CSSPtr css{};     ///< Ghost CSS created through merging css suites from cssList and cssCache.
+      FileContentPtr data{};
+      MediaType mediaType{};
+
+      ItemInfo()  = default;
+      ~ItemInfo() = default;
     };
 
-    // This struct contains the current parameters that influence
-    // the rendering of e-book pages. Its content is constructed from
-    // both the e-book's specific parameters and default configuration options.
+// This struct contains the current parameters that influence
+// the rendering of e-book pages. Its content is constructed from
+// both the e-book's specific parameters and default configuration options.
     #pragma pack(push, 1)
     struct BookFormatParams {
-      int8_t ident;        ///< Device identity (screen.hpp IDENT constant)
-      int8_t orientation;  ///< Config option only
-      int8_t show_title;
-      int8_t show_images;      
-      int8_t font_size;        
-      int8_t use_fonts_in_book;
-      int8_t font;             
+      int8_t ident;     ///< Device identity (screen.hpp IDENT constant)
+      int8_t orientation; ///< Config option only
+      int8_t showTitle;
+      int8_t showPictures;
+      int8_t fontSize;
+      int8_t lineHeight;
+      int8_t useFontsInBook;
+      int8_t font;
+      int8_t columnCount;
+      Dim screenDim;
     };
     #pragma pack(pop)
 
-    typedef uint8_t BinUUID[16];
-    typedef uint8_t ShaUUID[20];
-    
+    using BinUUID = uint8_t[16];
+    using ShaUUID = uint8_t[20];
+
+    HimemUniquePtr<TOC> toc;
+
   private:
-    static constexpr char const * TAG = "EPub";
+    static constexpr char const *TAG = "EPub";
 
-    std::recursive_timed_mutex mutex;
+    static constexpr float lineHeightFactors[3] = { 0.75, 0.9, 1.2 };
 
-    pugi::xml_document opf;    ///< The OPF document description.
+    pugi::xml_document opf; ///< The OPF document description.
     pugi::xml_document encryption;
-    pugi::xml_node     current_itemref;
+    pugi::xml_node currentItemRef{ pugi::xml_node(nullptr) };
 
-    BinUUID            bin_uuid;
-    ShaUUID            sha_uuid;
+    BinUUID binUuid{};
+    ShaUUID shaUuid{};
 
-    char *             opf_data;
-    char *             encryption_data;
-    std::string        current_filename;
-    std::string        opf_base_path;
+    FileContentPtr opfData{ nullptr };
+    FileContentPtr encryptionData{ nullptr };
+    HimemString currentFilename{ "" };
+    HimemString opfBasePath{ "" };
 
-    ItemInfo           current_item_info;
-    BookParams       * book_params;
-    BookFormatParams   book_format_params;
+    ItemInfo currentItemInfo{};
+    std::unique_ptr<BookParams> bookParams{ nullptr };
+    BookFormatParams bookFormatParams{};
 
-    CSSList            css_cache;             ///< All css files in the ebook are maintained here.
-  
-    bool               file_is_open;
-    bool               encryption_present;
-    bool               fonts_size_too_large;
-    int32_t            fonts_size;
+    Fonts fonts; ///< Fonts loaded from the e-book. They are used in priority to the default
+                 ///< application fonts when the "use fonts in book" option is enabled. They are
+                 ///< cleared when a new book is loaded.
 
-    const char *             get_meta(const std::string    & name         );
-    bool                      get_opf(std::string          & filename     );
-    bool               check_mimetype();
-    bool             get_opf_filename(std::string          & filename     );
-    void      retrieve_fonts_from_css(CSS                  & css          );
-    bool           get_encryption_xml();
-    void                         sha1(const std::string    & data         );
+    CSS::CSSPools cssPools;
+    DOM::DOMPools domPools;
+
+    CSSList cssCache; ///< All css files in the ebook are maintained here.
+
+    bool fileIsOpen{ false };
+    bool encryptionPresent{ false };
+    bool fontsSizeTooLarge{ false };
+    int32_t fontsSize{ 0 };
+    bool pageLocsInstance{ false };
+
+    auto getMeta(const std::string &name) -> const char *;
+    auto getOpf(std::string &filename) -> bool;
+    auto checkMimetype() -> bool;
+    auto getOpfFilename(std::string &filename) -> bool;
+    auto getEncryptionXml() -> bool;
+    auto retrieveFontsFromCss(CSSPtr &css) -> void;
+    auto sha1(const std::string &data) -> void;
+
+
+    EPub() {
+      fonts.setup();
+    };
 
   public:
-    EPub();
-   ~EPub();
+    ~EPub();
 
-    void                 retrieve_css(ItemInfo             & item         );
-    void                   load_fonts();
-    void              clear_item_data(ItemInfo             & item         );
-    void                  open_params(const std::string    & epub_filename);
-    bool                    open_file(const std::string    & epub_filename);
-    bool                   close_file();
-    Image *                 get_image(std::string          & fname,
-                                      bool                   load         );
-    char*               retrieve_file(const char           * fname, 
-                                      uint32_t             & size         );
-    bool                     get_item(pugi::xml_node         itemref, 
-                                      ItemInfo             & item         );
-    bool            get_item_at_index(int16_t                itemref_index);
-    bool            get_item_at_index(int16_t                itemref_index,
-                                      ItemInfo             & item         );
-    std::string get_unique_identifier();
-    bool                     get_keys();
-    std::string       filename_locate(const char           * fname        );
-    int16_t            get_item_count();
-    void    update_book_format_params();
-    ObfuscationType get_file_obfuscation(const char        * filename     );
-    void                      decrypt(void                 * buffer, 
-                                      const uint32_t         size,
-                                      ObfuscationType        obf_type     );
-    bool                    load_font(const std::string      filename, 
-                                      const std::string      font_family, 
-                                      const Fonts::FaceStyle style        );
+    template <typename T, typename ... Args>
+    requires(!std::is_array_v<T>)
+    friend HimemUniquePtr<T> makeUniqueHimem(Args &&... args);
+
+    static inline auto Make() {
+      return makeUniqueHimem<EPub>();
+    }
+
+    auto open(const HimemString &epubFilename) -> bool;
+    auto closeFile() -> bool;
+    auto getPicture(HimemString &fname, bool load) -> PicturePtr;
+    auto retrieveFile(const char *fname, uint32_t &size) -> HimemUniquePtr<uint8_t[]>;
+    auto getItem(pugi::xml_node itemref, ItemInfo &item) -> bool;
+    auto getItemAtIndex(int16_t itemrefIndex) -> bool;
+    auto getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool;
+    auto getUniqueIdentifier() -> std::string;
+    auto getKeys() -> bool;
+    auto filenameLocate(const char *fname) -> HimemString;
+    auto getItemCount() -> int16_t;
+    auto getFileObfuscation(const char *filename) -> ObfuscationType;
+    auto getFonts() -> Fonts & { return fonts; }
+    auto getCssPools() -> CSS::CSSPools & { return cssPools; }
+    auto getDomPools() -> DOM::DOMPools & { return domPools; }
+    auto loadFont(const HimemString &filename, const HimemString &fontFamily, const FaceStyle style)
+    -> bool;
+
+    auto retrieveCss(ItemInfo &item) -> void;
+    auto loadFonts() -> void;
+    auto clearItemData(ItemInfo &item) -> void;
+    auto openParams(const HimemString &epubFilename) -> bool;
+    auto retrieveBookFormatParams() -> void;
+    auto decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void;
+
+    [[nodiscard]] inline auto getLineHeightFactor() const -> float {
+      int8_t lineHeightIndex = bookFormatParams.lineHeight;
+      if ((lineHeightIndex < 0) || (lineHeightIndex > 2)) { lineHeightIndex = 1; } // default
+      return lineHeightFactors[lineHeightIndex];
+    }
+
     /**
      * @brief Retrieve cover's filename
      *
      * Look inside the opf file to grab the cover filename. First search in the
      * metadata. If not found, search in the manifest for an entry with type
-     * cover-image
+     * cover-picture
      *
      * @return char * filename, or nullptr if not found
      */
-    const char* get_cover_filename();
+    auto getCoverFilename() -> const char *;
 
-    inline const CSSList &                   get_css_cache() const { return css_cache;                       }
-    inline CSS *                      get_current_item_css() const { return current_item_info.css;           }
-    inline const ItemInfo &          get_current_item_info() const { return current_item_info; }
-    inline const std::string &  get_current_item_file_path() const { return current_item_info.file_path;     }
-    inline int16_t                       get_itemref_index() const { return current_item_info.itemref_index; }
-    inline const char *                          get_title()       { return get_meta("dc:title");            }
-    inline const char *                         get_author()       { return get_meta("dc:creator");          }
-    inline const char *                    get_description()       { return get_meta("dc:description");      }
-    inline const pugi::xml_document &     get_current_item() const { return current_item_info.xml_doc;       }
-    inline std::string                get_current_filename()       { return current_filename;                }
-    inline bool                          filename_is_empty()       { return current_filename.empty();        }
-    inline BookParams *                    get_book_params()       { return book_params;                     }
-    inline BookFormatParams *       get_book_format_params()       { return &book_format_params;             }
-    inline const std::string &           get_opf_base_path() const { return opf_base_path;                   }
-    inline const pugi::xml_document &              get_opf()       { return opf;                             }
-    inline bool                      encryption_is_present() const { return encryption_present;              }
-    inline const BinUUID &                    get_bin_uuid() const { return bin_uuid;                        }
-  };
+    [[nodiscard]] inline auto getCssCache() const -> const CSSList & { return cssCache; }
+    inline auto clearCssCache() -> void { cssCache.clear(); }
+    [[nodiscard]] inline auto getCurrentItemCss() const -> const CSSPtr & {
+      return currentItemInfo.css;
+    }
+    [[nodiscard]] inline auto getCurrentItemInfo() const -> const ItemInfo & {
+      return currentItemInfo;
+    }
+    [[nodiscard]] inline auto getCurrentItemFilePath() const -> const HimemString & {
+      return currentItemInfo.filePath;
+    }
+    [[nodiscard]] inline auto getItemrefIndex() const -> int16_t {
+      return currentItemInfo.itemrefIndex;
+    }
+    [[nodiscard]] inline auto getTitle() -> const char * { return getMeta("dc:title"); }
+    [[nodiscard]] inline auto getAuthor() -> const char * { return getMeta("dc:creator"); }
+    [[nodiscard]] inline auto getDescription() -> const char * { return getMeta("dc:description"); }
+    [[nodiscard]] inline auto getCurrentItem() const -> const pugi::xml_document & {
+      return currentItemInfo.xmlDoc;
+    }
+    [[nodiscard]] inline auto getCurrentFilename() const -> const HimemString & {
+      return currentFilename;
+    }
+    [[nodiscard]] inline auto filenameIsEmpty() -> bool { return currentFilename.empty(); }
+    [[nodiscard]] inline auto getBookParams() -> BookParams * { return bookParams.get(); }
+    [[nodiscard]] inline auto getBookFormatParams() -> BookFormatParams * {
+      return &bookFormatParams;
+    }
+    [[nodiscard]] inline auto getOpfBasePath() const -> const HimemString & { return opfBasePath; }
+    [[nodiscard]] inline auto getOpf() -> const pugi::xml_document & { return opf; }
+    [[nodiscard]] inline auto encryptionIsPresent() const -> bool { return encryptionPresent; }
+    [[nodiscard]] inline auto getBinUuid() const -> const BinUUID & { return binUuid; }
 
-#if __EPUB__
-  EPub epub;
-#else
-  extern EPub epub;
-#endif
+    inline auto setPageLocsInstance(bool val) -> void { pageLocsInstance = val; }
+};
+
+#include "models/toc.hpp"

@@ -5,465 +5,541 @@
 #pragma once
 
 #include "global.hpp"
-#include "controllers/event_mgr.hpp"
-#include "viewers/page.hpp"
-#include "models/fonts.hpp"
 
-class KeypadViewer
-{
+#include "himem.hpp"
+
+#include "controllers/event_mgr.hpp"
+#include "fonts.hpp"
+#include "viewers/page.hpp"
+
+using KeypadViewerPtr = HimemUniquePtr<class KeypadViewer>;
+
+class KeypadViewer {
+  private:
+    KeypadViewer() = default;
+    PagePtr page{ Page::Make(appFonts) };
+
   public:
-    uint16_t get_value() { return client_value; }
+    auto getIntValue() -> uint16_t { return clientUIntValue; }
+    auto getFloatValue() -> double { return clientFloatValue; }
+
+    template <typename T, typename ... Args>
+    requires(!std::is_array_v<T>)
+    friend auto makeUniqueHimem(Args &&... args)->HimemUniquePtr<T>;
+
+    static inline auto Make() { return makeUniqueHimem<KeypadViewer>(); }
+    ~KeypadViewer() = default;
 
   private:
-    static constexpr char const * TAG = "KeypadViewer";
-     
-    static const uint8_t MAX_DIGITS       =  4;
-    static const uint8_t KEY_COUNT        = 14;
-    static const uint8_t FONT_SIZE        =  9;
+    static constexpr char const *TAG = "KeypadViewer";
 
-    struct KeyLocation {
-      Pos     pos;
-      int8_t  value; // 0-9 => value, -1 => cancel, -2 => OK, -3 => BackSpace, -4 => Clear
+    enum class Layout {
+      INT, FLOAT,
     };
 
+    Layout layout{ Layout::INT };
+
+    static const uint8_t MAX_INT_SIZE            = 4;
+    static const uint8_t MAX_FLOAT_FRACTION_SIZE = 3;
+    static const uint8_t MAX_FLOAT_INTEGER_SIZE  = 1;
+    static const uint8_t MAX_FLOAT_SIZE = MAX_FLOAT_INTEGER_SIZE + 1 + MAX_FLOAT_FRACTION_SIZE;
+    static const uint8_t KEY_COUNT      = 14;
+    static const uint8_t FONT_SIZE      = 9;
+
+    static const uint8_t NUMBER_STR_SIZE = MAX_FLOAT_SIZE + 1;
+
+    struct KeyLocation {
+      Pos pos;
+      int8_t value; // 0-9 => value, -1 => cancel, -2 => OK, -3 => BackSpace, -4 => Clear
+    };
 
     static const uint8_t KEY_ADDED_WIDTH  = 50;
     static const uint8_t KEY_ADDED_HEIGHT = 30;
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      KeyLocation * matrix[5][3];
-      KeyLocation * current_key;
-      KeyLocation * previous_key;
-      uint8_t  line, col;
+      KeyLocation *matrix[5][3];
+      KeyLocation *currentKey;
+      KeyLocation *previousKey;
+      uint8_t line, col;
     #endif
 
-    KeyLocation   key_locs[KEY_COUNT];
-    Dim           keypad_dim;
-    Pos           keypad_pos;
-    Dim           key_dim, key_dim2;
-    char          digits[MAX_DIGITS + 1];
-    uint8_t       digits_count;
-    Pos           field_pos;    // Where to put the number on screen
-    uint16_t      client_value; // Computed value
-    Page::Format  fmt;
-    Font *        font;
-    Font::Glyph * glyph;
+    KeyLocation keyLocs[KEY_COUNT];
+    Dim keypadDim;
+    Pos keypadPos;
+    Dim keyDim, keyDim2;
+    char numberStr[NUMBER_STR_SIZE];
+    uint8_t numberStrCount;
+    Pos fieldPos;           // Where to put the number on screen
+    uint16_t clientUIntValue; // Computed value
+    double clientFloatValue; // Computed value
+    Page::Format fmt;
+    Glyph *glyph;
 
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      int8_t get_key_val(uint16_t x, uint16_t y) {
+      auto getKeyVal(uint16_t x, uint16_t y) -> int8_t {
         for (int i = 0; i < (KEY_COUNT - 1); i++) {
-          if ((x >= key_locs[i].pos.x) &&
-              (x <= key_locs[i].pos.x + key_dim.width) &&
-              (y >= key_locs[i].pos.y) &&
-              (y <= key_locs[i].pos.y + key_dim.height)) {
-            return key_locs[i].value;
+          if ((x >= keyLocs[i].pos.x) && (x <= keyLocs[i].pos.x + keyDim.width) &&
+              (y >= keyLocs[i].pos.y) && (y <= keyLocs[i].pos.y + keyDim.height)) {
+            return keyLocs[i].value;
           }
         }
-        if ((x >= key_locs[KEY_COUNT - 1].pos.x) &&
-            (x <= key_locs[KEY_COUNT - 1].pos.x + key_dim2.width) &&
-            (y >= key_locs[KEY_COUNT - 1].pos.y) &&
-            (y <= key_locs[KEY_COUNT - 1].pos.y + key_dim2.height)) {
-          return key_locs[KEY_COUNT - 1].value;
+        if ((x >= keyLocs[KEY_COUNT - 1].pos.x) &&
+            (x <= keyLocs[KEY_COUNT - 1].pos.x + keyDim2.width) &&
+            (y >= keyLocs[KEY_COUNT - 1].pos.y) &&
+            (y <= keyLocs[KEY_COUNT - 1].pos.y + keyDim2.height)) {
+          return keyLocs[KEY_COUNT - 1].value;
         }
         return 99; // Not found
       }
     #endif
 
-    void update_value() {
-      page.clear_region(Dim(keypad_dim.width - 6, key_dim.height - 6),
-                        Pos(field_pos.x + 3, field_pos.y + 3));
-      page.put_str_at(digits, 
-                      Pos(field_pos.x + (keypad_dim.width >> 1), 
-                          field_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)),
-                      fmt);
+    auto updateValue() -> void {
+      page->clearRegion(Dim(keypadDim.width - 6, keyDim.height - 6),
+                        Pos(fieldPos.x + 3, fieldPos.y + 3));
+      page->putStrAt(numberStr,
+                     Pos(fieldPos.x + (keypadDim.width >> 1),
+                         fieldPos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                     fmt);
     }
 
-    void add_digit(uint8_t d) {
-      if ((digits_count == 1) && (digits[0] == '0')) {
-        digits[0] = '0' + d;
-      }
-      else if (digits_count < MAX_DIGITS) {
-        digits[digits_count++] = '0' + d;
-        digits[digits_count  ] = 0;
+    auto addDigit(uint8_t d) -> void {
+      switch (layout) {
+      case Layout::INT:
+        if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+          numberStr[0] = '0' + d;
+        } else if (numberStrCount < MAX_INT_SIZE) {
+          numberStr[numberStrCount++] = '0' + d;
+          numberStr[numberStrCount]   = 0;
+        }
+        break;
+      case Layout::FLOAT:
+        if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+          numberStr[0]   = '0' + d;
+          numberStr[1]   = '.';
+          numberStr[2]   = 0;
+          numberStrCount = 2;
+        } else if (numberStrCount < MAX_FLOAT_SIZE) {
+          numberStr[numberStrCount++] = '0' + d;
+          numberStr[numberStrCount]   = 0;
+        }
+        break;
       }
     }
 
-    void clear_digits() {
-      digits[0] = '0';
-      digits[1] =  0;
-      digits_count = 1;
+    auto clearDigits() -> void {
+      numberStr[0]   = '0';
+      numberStr[1]   = 0;
+      numberStrCount = 1;
     }
 
-    void remove_digit() {
-      if (digits_count == 1) {
-        digits[0] = '0';
-      }
-      else {
-        digits[--digits_count] = 0;
+    auto removeDigit() -> void {
+      switch (layout) {
+      case Layout::INT:
+        if (numberStrCount == 1) {
+          numberStr[0] = '0';
+        } else {
+          numberStr[--numberStrCount] = 0;
+        }
+        break;
+      case Layout::FLOAT:
+        if (numberStrCount <= (MAX_FLOAT_INTEGER_SIZE + 1)) {
+          numberStr[0]   = '0';
+          numberStr[1]   = 0;
+          numberStrCount = 1;
+        } else {
+          numberStr[--numberStrCount] = 0;
+        }
+        break;
       }
     }
 
     #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-      void update_highlight() {
-        if (previous_key != current_key) {
-          if (previous_key != nullptr) {
-            if (previous_key->value == -1) { // Cancel key
-              page.clear_highlight(Dim(key_dim2.width      - 2, key_dim2.height     - 2), 
-                                   Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
-              page.clear_highlight(Dim(key_dim2.width      - 4, key_dim2.height     - 4), 
-                                   Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
-              page.clear_highlight(Dim(key_dim2.width      - 6, key_dim2.height     - 6), 
-                                   Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
-            }
-            else {
-              page.clear_highlight(Dim(key_dim.width       - 2, key_dim.height      - 2), 
-                                   Pos(previous_key->pos.x + 1, previous_key->pos.y + 1));
-              page.clear_highlight(Dim(key_dim.width       - 4, key_dim.height      - 4), 
-                                   Pos(previous_key->pos.x + 2, previous_key->pos.y + 2));
-              page.clear_highlight(Dim(key_dim.width       - 6, key_dim.height      - 6), 
-                                   Pos(previous_key->pos.x + 3, previous_key->pos.y + 3));
+      auto updateHighlight() -> void {
+        if (previousKey != currentKey) {
+          if (previousKey != nullptr) {
+            if (previousKey->value == -1) { // Cancel key
+              page->clearHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
+                                   Pos(previousKey->pos.x + 1, previousKey->pos.y + 1));
+              page->clearHighlight(Dim(keyDim2.width - 4, keyDim2.height - 4),
+                                   Pos(previousKey->pos.x + 2, previousKey->pos.y + 2));
+              page->clearHighlight(Dim(keyDim2.width - 6, keyDim2.height - 6),
+                                   Pos(previousKey->pos.x + 3, previousKey->pos.y + 3));
+            } else {
+              page->clearHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
+                                   Pos(previousKey->pos.x + 1, previousKey->pos.y + 1));
+              page->clearHighlight(Dim(keyDim.width - 4, keyDim.height - 4),
+                                   Pos(previousKey->pos.x + 2, previousKey->pos.y + 2));
+              page->clearHighlight(Dim(keyDim.width - 6, keyDim.height - 6),
+                                   Pos(previousKey->pos.x + 3, previousKey->pos.y + 3));
             }
           }
-          if (current_key->value == -1) { // Cancel key
-            page.put_highlight(Dim(key_dim2.width     - 2, key_dim2.height    - 2), 
-                               Pos(current_key->pos.x + 1, current_key->pos.y + 1));
-            page.put_highlight(Dim(key_dim2.width     - 4, key_dim2.height    - 4), 
-                               Pos(current_key->pos.x + 2, current_key->pos.y + 2));
-            page.put_highlight(Dim(key_dim2.width     - 6, key_dim2.height    - 6), 
-                               Pos(current_key->pos.x + 3, current_key->pos.y + 3));
-          }
-          else {
-            page.put_highlight(Dim(key_dim.width      - 2, key_dim.height     - 2), 
-                               Pos(current_key->pos.x + 1, current_key->pos.y + 1));
-            page.put_highlight(Dim(key_dim.width      - 4, key_dim.height     - 4), 
-                               Pos(current_key->pos.x + 2, current_key->pos.y + 2));
-            page.put_highlight(Dim(key_dim.width      - 6, key_dim.height     - 6), 
-                               Pos(current_key->pos.x + 3, current_key->pos.y + 3));
+          if (currentKey->value == -1) { // Cancel key
+            page->putHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
+                               Pos(currentKey->pos.x + 1, currentKey->pos.y + 1));
+            page->putHighlight(Dim(keyDim2.width - 4, keyDim2.height - 4),
+                               Pos(currentKey->pos.x + 2, currentKey->pos.y + 2));
+            page->putHighlight(Dim(keyDim2.width - 6, keyDim2.height - 6),
+                               Pos(currentKey->pos.x + 3, currentKey->pos.y + 3));
+          } else {
+            page->putHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
+                               Pos(currentKey->pos.x + 1, currentKey->pos.y + 1));
+            page->putHighlight(Dim(keyDim.width - 4, keyDim.height - 4),
+                               Pos(currentKey->pos.x + 2, currentKey->pos.y + 2));
+            page->putHighlight(Dim(keyDim.width - 6, keyDim.height - 6),
+                               Pos(currentKey->pos.x + 3, currentKey->pos.y + 3));
           }
         }
       }
     #endif
 
   public:
+    auto display(const char *caption) -> void {
+      FontPtr &font = appFonts.getFont(1);
+      glyph         = font->getGlyph('0', FONT_SIZE);
 
-    void show(uint16_t value, const char * caption) {
+      keyDim  = Dim(glyph->dim.width + KEY_ADDED_WIDTH, glyph->dim.height + KEY_ADDED_HEIGHT);
+      keyDim2 = Dim((keyDim.width << 1) + 2, keyDim.height);
 
-      client_value = value;
-      if (client_value > 9999) client_value = 9999;
-      
-      int_to_str(client_value, digits, 5);
+      LOG_D("Key Dim: [{}, {}], Dim2: [{}, {}]", keyDim.width, keyDim.height, keyDim2.width,
+            keyDim2.height);
 
-      digits_count = strlen(digits);
+      keypadDim = Dim(((keyDim.width + 2) * 3) - 2, (keyDim.height + 2) * 7);
 
-      //LOG_I("Digits: %s", digits);
+      keypadPos = Pos((Screen::getWidth() >> 1) - (keypadDim.width >> 1),
+                      (Screen::getHeight() >> 1) - (keypadDim.height >> 1));
 
-      font         =  fonts.get(1);
-      glyph        =  font->get_glyph('0', FONT_SIZE);
+      fieldPos = Pos(keypadPos.x, keypadPos.y + keyDim.height + 2);
 
-      key_dim  = Dim(glyph->dim.width  + KEY_ADDED_WIDTH, 
-                     glyph->dim.height + KEY_ADDED_HEIGHT);
-      key_dim2 = Dim((key_dim.width << 1) + 2, 
-                      key_dim.height);
-
-      LOG_D("Key Dim: [%d, %d], Dim2: [%d, %d]",
-            key_dim.width,  key_dim.height,
-            key_dim2.width, key_dim2.height);
-
-      keypad_dim = Dim(((key_dim.width + 2) * 3) - 2, (key_dim.height + 2) * 7);
-
-      keypad_pos = Pos((Screen::get_width()  >> 1) - (keypad_dim.width  >> 1), 
-                       (Screen::get_height() >> 1) - (keypad_dim.height >> 1));
-
-      field_pos = Pos(keypad_pos.x, keypad_pos.y + key_dim.height + 2);
-
-      LOG_D("Keypad Dim: [%d, %d], Pos: [%d, %d]",
-        keypad_dim.width, keypad_dim.height,
-        keypad_pos.x,     keypad_pos.y);
+      LOG_D("Keypad Dim: [{}, {}], Pos: [{}, {}]", keypadDim.width, keypadDim.height, keypadPos.x,
+            keypadPos.y);
 
       // Show keypad on screen
 
       fmt = {
-        .line_height_factor =   1.0,
-        .font_index         =     1,
-        .font_size          = FONT_SIZE,
-        .indent             =     0,
-        .margin_left        =     5,
-        .margin_right       =     5,
-        .margin_top         =     0,
-        .margin_bottom      =     0,
-        .screen_left        =    20,
-        .screen_right       =    20,
-        .screen_top         =     0,
-        .screen_bottom      =     0,
-        .width              =     0,
-        .height             =     0,
-        .vertical_align     =     0,
-        .trim               =  true,
-        .pre                = false,
-        .font_style         = Fonts::FaceStyle::NORMAL,
-        .align              = CSS::Align::CENTER,
-        .text_transform     = CSS::TextTransform::NONE,
-        .display            = CSS::Display::INLINE
+        .fontSize     = FONT_SIZE,
+        .marginLeft   = 5,
+        .marginRight  = 5,
+        .screenLeft   = 20,
+        .screenRight  = 20,
+        .screenTop    = 0,
+        .screenBottom = 0,
+        .align        = CSS::Align::CENTER,
       };
 
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-        page.start(fmt);
+      #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+        page->start(fmt);
       #endif
 
       // The large rectangle into which the keypad will be drawn
 
-      page.clear_region(
-        Dim(keypad_dim.width + 26, keypad_dim.height + 26),
-        Pos(keypad_pos.x     - 13, keypad_pos.y      - 13));
-      page.put_highlight(
-        Dim(keypad_dim.width + 20, keypad_dim.height + 20),
-        Pos(keypad_pos.x     - 10, keypad_pos.y      - 10));
+      page->clearRegion(Dim(keypadDim.width + 26, keypadDim.height + 26),
+                        Pos(keypadPos.x - 13, keypadPos.y - 13));
+      page->putHighlight(Dim(keypadDim.width + 20, keypadDim.height + 20),
+                         Pos(keypadPos.x - 10, keypadPos.y - 10));
 
-      constexpr int8_t values[14] = {
-        7, 8, 9, 4, 5, 6, 1, 2, 3, -4, 0, -3, -2, -1
-      };
-      constexpr char labels[12] = "789456123 0";
+      constexpr int8_t values[14] = { 7, 8, 9, 4, 5, 6, 1, 2, 3, -4, 0, -3, -2, -1 };
+      constexpr char   labels[12]   = "789456123 0";
 
-      page.put_str_at(caption, 
-                      Pos(Screen::get_width() >> 1, 
-                          keypad_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
-                      fmt);
+      page->putStrAt(
+        caption,
+        Pos(Screen::getWidth() >> 1, keypadPos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+        fmt);
 
-      page.put_highlight(
-        Dim(keypad_dim.width, key_dim.height),
-        Pos(field_pos.x,      field_pos.y   ));
-      page.put_highlight(
-        Dim(keypad_dim.width - 2, key_dim.height - 2),
-        Pos(field_pos.x + 1,      field_pos.y + 1   ));
-      page.put_highlight(
-        Dim(keypad_dim.width - 4, key_dim.height - 4),
-        Pos(field_pos.x + 2,      field_pos.y + 2   ));
+      page->putHighlight(Dim(keypadDim.width, keyDim.height), Pos(fieldPos.x, fieldPos.y));
+      page->putHighlight(Dim(keypadDim.width - 2, keyDim.height - 2),
+                         Pos(fieldPos.x + 1, fieldPos.y + 1));
+      page->putHighlight(Dim(keypadDim.width - 4, keyDim.height - 4),
+                         Pos(fieldPos.x + 2, fieldPos.y + 2));
 
-      update_value();
+      updateValue();
 
-      Pos the_pos = Pos(keypad_pos.x, keypad_pos.y + (key_dim.height << 1) + 4);
+      Pos the_pos = Pos(keypadPos.x, keypadPos.y + (keyDim.height << 1) + 4);
 
       #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
         line = col = 0;
       #endif
 
       for (int i = 0; i < 14; i++) {
-        key_locs[i] = { .pos = the_pos, .value = values[i] };
+        keyLocs[i] = { .pos = the_pos, .value = values[i] };
 
         #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-          matrix[line][col] = &key_locs[i];
+          matrix[line][col] = &keyLocs[i];
           if (++col >= 3) {
             col = 0;
             line++;
           }
         #endif
 
-        LOG_D("Key %d pos: [%d, %d]", i, the_pos.x, the_pos.y);
+        LOG_D("Key {} pos: [{}, {}]", i, the_pos.x, the_pos.y);
 
         switch (values[i]) {
-          case 0:
-          case 1: 
-          case 2: 
-          case 3: 
-          case 4: 
-          case 5: 
-          case 6: 
-          case 7: 
-          case 8: 
-          case 9:
-            page.put_highlight(key_dim, the_pos);
-            page.put_char_at(labels[i], 
-                             Pos(the_pos.x + (key_dim.width     >> 1) - (glyph->dim.width >> 1), 
-                                 the_pos.y + (glyph->dim.height >> 1) + (key_dim.height   >> 1)), 
-                             fmt);
-            break;
-          case -1: // Cancel
-            page.put_highlight(key_dim2, the_pos);
-            #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-              page.put_highlight(Dim(key_dim2.width - 2, key_dim2.height - 2), 
-                                 Pos(the_pos.x      + 1, the_pos.y       + 1));
-            #endif
-            page.put_str_at("CANCEL", 
-                            Pos(the_pos.x + (key_dim2.width    >> 1), 
-                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
-                            fmt);
-            break;
-          case -2: // OK
-            page.put_highlight(key_dim, the_pos);
-            #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-              page.put_highlight(Dim(key_dim.width - 2, key_dim.height - 2), 
-                                 Pos(the_pos.x     + 1, the_pos.y      + 1));
-            #endif
-            page.put_str_at("OK", 
-                            Pos(the_pos.x + (key_dim.width     >> 1), 
-                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
-                            fmt);
-            break;
-          case -3: // Backspace
-            page.put_highlight(key_dim, the_pos);
-            page.put_str_at("BSP", 
-                            Pos(the_pos.x + (key_dim.width     >> 1), 
-                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
-                            fmt);
-            break;
-          case -4: // Clear
-            page.put_highlight(key_dim, the_pos);
-            page.put_str_at("CLR", 
-                            Pos(the_pos.x + (key_dim.width     >> 1), 
-                                the_pos.y + (glyph->dim.height >> 1) + (key_dim.height >> 1)), 
-                            fmt);
-            break;
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+          page->putHighlight(keyDim, the_pos);
+          page->putCharAt(labels[i],
+                          Pos(the_pos.x + (keyDim.width >> 1) - (glyph->dim.width >> 1),
+                              the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                          fmt);
+          break;
+        case -1: // Cancel
+          page->  putHighlight(keyDim2, the_pos);
+          #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+            page->putHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
+                               Pos(the_pos.x + 1, the_pos.y + 1));
+          #endif
+          page->putStrAt("CANCEL",
+                         Pos(the_pos.x + (keyDim2.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                         fmt);
+          break;
+        case -2: // OK
+          page->  putHighlight(keyDim, the_pos);
+          #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+            page->putHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
+                               Pos(the_pos.x + 1, the_pos.y + 1));
+          #endif
+          page->putStrAt("OK",
+                         Pos(the_pos.x + (keyDim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                         fmt);
+          break;
+        case -3: // Delete
+          page->putHighlight(keyDim, the_pos);
+          page->putStrAt("DEL",
+                         Pos(the_pos.x + (keyDim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                         fmt);
+          break;
+        case -4: // Clear
+          page->putHighlight(keyDim, the_pos);
+          page->putStrAt("CLR",
+                         Pos(the_pos.x + (keyDim.width >> 1),
+                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
+                         fmt);
+          break;
         }
         if (((i + 1) % 3) == 0) {
-          the_pos.x = keypad_pos.x;
-          the_pos.y += key_dim.height + 2;
-        }
-        else {
-          the_pos.x += key_dim.width + 2;
+          the_pos.x = keypadPos.x;
+          the_pos.y += keyDim.height + 2;
+        } else {
+          the_pos.x += keyDim.width + 2;
         }
       }
 
       #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
-        matrix[4][2] = matrix[4][1]; 
-        line = col = 1;
-        previous_key = nullptr;
-        current_key = matrix[1][1];
-        update_highlight();
-        previous_key = current_key;
+        matrix[4][2] = matrix[4][1];
+        line = col  = 1;
+        previousKey = nullptr;
+        currentKey  = matrix[1][1];
+        updateHighlight();
+        previousKey = currentKey;
       #endif
 
-      update_value();
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-        page.paint(false);
+      updateValue();
+
+      #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+        page->paint(false);
       #endif
+    }
+
+    auto show(uint16_t value, const char *caption) -> void {
+
+      layout = Layout::INT;
+
+      clientUIntValue = value;
+      if (clientUIntValue > 9999) { clientUIntValue = 9999; }
+
+      int_to_str(clientUIntValue, numberStr, 5);
+
+      numberStrCount = strlen(numberStr);
+
+      // LOG_I("Digits: {}", numberStr);
+
+      display(caption);
+    }
+
+    // BE AWARE THAT this is used only for the battery trim field, which is a float between 0.0
+    // and 2.0, with 3 digits after the dot, so we can use a fixed size string of 6 chars (1 for the
+    // integer part, 1 for the dot, and 3 for the fraction part, plus the null terminator)
+    auto show(double value, const char *caption) -> void {
+
+      layout = Layout::FLOAT;
+
+      clientFloatValue = value;
+      if ((clientFloatValue >= 2.0) || (clientFloatValue <= 0.0)) { clientFloatValue = 1.0; }
+
+      float_to_str(clientFloatValue, numberStr, 6, 3);
+
+      numberStrCount = strlen(numberStr);
+
+      // LOG_I("Digits: {}", numberStr);
+
+      display(caption);
     }
 
     /**
      * @brief Event processing
-     * 
+     *
      * @param event Event coming from the user interaction
      * @return true The Keypad must keep control of events
      * @return false Events processing is complete
      */
-    bool event(const EventMgr::Event & event) {
+    auto event(const EventMgr::Event &event) -> bool {
 
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
         if (event.kind == EventMgr::EventKind::TAP) {
-          int8_t value = get_key_val(event.x, event.y);
+          int8_t value = getKeyVal(event.x, event.y);
           if (value != 99) {
-            if (value >= 0) add_digit(value);
-            else if (value == -1) return false;
-            else if (value == -2) {
-              client_value = atoi(digits);
+            if (value >= 0) {
+              addDigit(value);
+            }
+            else if (value == -1) {
               return false;
             }
-            else if (value == -3) remove_digit();
-            else if (value == -4) clear_digits();
+            else if (value == -2) {
+              if (layout == Layout::INT) {
+                clientUIntValue = atoi(numberStr);
+              } else {
+                clientFloatValue = atof(numberStr);
+              }
+              return false;
+            } else if (value == -3) {
+              removeDigit();
+            }
+            else if (value == -4) {
+              clearDigits();
+            }
           }
         }
-        page.start(fmt);
-        update_value();
-        page.paint(false);
+        page->start(fmt);
+        updateValue();
+        page->paint(false);
 
         return true;
       #else
         switch (event.kind) {
-          #if EXTENDED_CASE
-            case EventMgr::EventKind::PREV:
-          #else
-            case EventMgr::EventKind::DBL_PREV:
-          #endif
-            col = (col == 0) ? 2 : col - 1;
-            current_key = matrix[line][col];
+        #if EXTENDED_CASE
+          case EventMgr::EventKind::PREV:
+        #else
+          case EventMgr::EventKind::DBL_PREV:
+            #endif
+            col        = (col == 0) ? 2 : col - 1;
+            currentKey = matrix[line][col];
             break;
 
-          #if EXTENDED_CASE
-            case EventMgr::EventKind::NEXT:
-          #else
-            case EventMgr::EventKind::DBL_NEXT:
-          #endif
-            col = (col == 2) ? 0 : col + 1;
-            current_key = matrix[line][col];
-            break;
+            #if EXTENDED_CASE
+              case EventMgr::EventKind::NEXT:
+            #else
+              case EventMgr::EventKind::DBL_NEXT:
+                #endif
+                col        = (col == 2) ? 0 : col + 1;
+                currentKey = matrix[line][col];
+                break;
 
-          #if EXTENDED_CASE
-            case EventMgr::EventKind::DBL_PREV:
-          #else
-            case EventMgr::EventKind::PREV:
-          #endif
-            line = (line == 0) ? 4 : line - 1;
-            current_key = matrix[line][col];
-            break;
+                #if EXTENDED_CASE
+                  case EventMgr::EventKind::DBL_PREV:
+                #else
+                  case EventMgr::EventKind::PREV:
+                    #endif
+                    line       = (line == 0) ? 4 : line - 1;
+                    currentKey = matrix[line][col];
+                    break;
 
-          #if EXTENDED_CASE
-            case EventMgr::EventKind::DBL_NEXT:
-          #else
-            case EventMgr::EventKind::NEXT:
-          #endif
-            line = (line == 4) ? 0 : line + 1;
-            current_key = matrix[line][col];
-            break;
+                    #if EXTENDED_CASE
+                      case EventMgr::EventKind::DBL_NEXT:
+                    #else
+                      case EventMgr::EventKind::NEXT:
+                        #endif
+                        line       = (line == 4) ? 0 : line + 1;
+                        currentKey = matrix[line][col];
+                        break;
 
-          case EventMgr::EventKind::SELECT:
-          {
-              int8_t value = current_key->value;
-              if (value != 99) {
-                if (value >= 0) add_digit(value);
-                else if (value == -1) return false;
-                else if (value == -2) {
-                  client_value = atoi(digits);
-                  return false;
-                }
-                else if (value == -3) remove_digit();
-                else if (value == -4) clear_digits();
-              }
-            }
-            break;
+                      case EventMgr::EventKind::SELECT: {
+                        int8_t value = currentKey->value;
+                        if (value != 99) {
+                          if (value >= 0) {
+                            addDigit(value);
+                          }
+                          else if (value == -1) {
+                            return false;
+                          }
+                          else if (value == -2) {
+                            if (layout == Layout::INT) {
+                              clientUIntValue = atoi(numberStr);
+                            } else {
+                              clientFloatValue = atof(numberStr);
+                            }
+                            return false;
+                          } else if (value == -3) {
+                            removeDigit();
+                          }
+                          else if (value == -4) {
+                            clearDigits();
+                          }
+                        }
+                      } break;
 
-          case EventMgr::EventKind::DBL_SELECT:
-            return false;
-            break;
+                      case EventMgr::EventKind::DBL_SELECT:
+                        return false;
+                        break;
 
-          default:
-            break;
-        }      
+                      default:
+                        break;
+        }
 
-        page.start(fmt);
-        update_value();
-        update_highlight();
-        previous_key = current_key;
-        page.paint(false);
+        page->start(fmt);
+        updateValue();
+        updateHighlight();
+        previousKey = currentKey;
+        page->paint(false);
 
         return true;
       #endif
     }
-    
 };
-
-#if __KEYPAD_VIEWER__
-  KeypadViewer keypad_viewer;
-#else
-  extern KeypadViewer keypad_viewer;
-#endif
 
 #if 0
 
-Keypad:
+Keypads:
 
-   +-----------------+
-   |     Caption     |
-   +-----------------+
-   |      Value      |
-   +-----+-----+-----+
-   |  7  |  8  |  9  |
-   +-----+-----+-----+
-   |  4  |  5  |  6  |
-   +-----+-----+-----+
-   |  1  |  2  |  3  |
-   +-----+-----+-----+
-   | CLR |  0  | BSP |
-   +-----+-----+-----+
-   | OK  |  CANCEL   |
-   +-----+-----------+
+  +----------------- +
+  |     Caption     |
+  +----------------- +
+  |    Int Value    |
+  +----- +----- +----- +
+  |  7  |  8  |  9  |
+  +----- +----- +----- +
+  |  4  |  5  |  6  |
+  +----- +----- +----- +
+  |  1  |  2  |  3  |
+  +----- +----- +----- +
+  | CLR |  0  | DEL |
+  +----- +----- +----- +
+  | OK  |  CANCEL   |
+  +----- +----------- +
+
+  +----------------- +
+  |     Caption     |
+  +----------------- +
+  |   Float Value   |
+  +----- +----- +----- +
+  |  7  |  8  |  9  |
+  +----- +----- +----- +
+  |  4  |  5  |  6  |
+  +----- +----- +----- +
+  |  1  |  2  |  3  |
+  +----- +----- +----- +
+  |.|  0  | DEL |
+  +----- +----- +----- +
+  | OK  |  CANCEL   |
+  +----- +----------- +
 
 #endif

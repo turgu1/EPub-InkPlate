@@ -1,0 +1,182 @@
+---
+# See also: https://releases.llvm.org/13.0.0/tools/clang/tools/extra/docs/clang-tidy
+
+# Enable Bugprone checks
+#   bugprone-*,
+# This check is kinda dumb IMO -- it means you can't have two arguments of the
+# same type in a function call, which happens a lot
+#   -bugprone-easily-swappable-parameters,
+# This is also a good check, but we also have a lot of narrowing conversions
+# especially related to display stuff since Adafruit GFX uses uint16_t a lot.
+#   -bugprone-narrowing-conversions,
+
+# Enable Cert checks
+#   cert-*,
+# static_assert(0) instead of assert(0) doesn't seem to compile
+#   -cert-dcl03-c,
+
+# Enable Clang static analysis
+#   clang-analyzer-*,
+
+# Enable CPP Core Guidelines checks
+#   cppcoreguidelines-*,
+# But we like c arrays
+#   -cppcoreguidelines-avoid-c-arrays,
+# Sure, magic number are bad
+#   -cppcoreguidelines-avoid-magic-numbers,
+# We have a lot of global variables that aren't const
+#   -cppcoreguidelines-avoid-non-const-global-variables,
+# This is one we could consider turning back on since it has a good autofixer.
+# Though we already get warnings for using unitialized variables so I don't think it's necessary
+#   -cppcoreguidelines-init-variables,
+# C'mon macros are fine
+#   -cppcoreguidelines-macro-usage,
+# This is a good check, but we have a lot of narrowing conversions
+#   -cppcoreguidelines-narrowing-conversions,
+# This would be good to cleanup probably. Malloc/free are used in the bmp class
+#   -cppcoreguidelines-no-malloc,
+# We use protected a lot. Is that bad?
+#   -cppcoreguidelines-non-private-member-variables-in-classes,
+# This will be a non-issue once we get rid of all our new/delete
+#   -cppcoreguidelines-owning-memory,
+# Probably not overall bad, and could be fixed by casting to the array type
+#   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+# Similar to the std::array stuff, we'd need to move a lot of things out of c-arrays
+#   -cppcoreguidelines-pro-bounds-constant-array-index,
+# Also probably a good one but we have a lot of pointer arithmetic right now
+#   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+# Yeah yeah we shouldn't const_cast, but sometimes it's practical
+#   -cppcoreguidelines-pro-type-const-cast,
+# reinterpret-cast is fine IMO
+#   -cppcoreguidelines-pro-type-reinterpret-cast,
+# I don't understand why unions are bad
+#   -cppcoreguidelines-pro-type-union-access,
+# But sometimes we want to vararg
+#   -cppcoreguidelines-pro-type-vararg,
+# I don't want to have to always define all special member functions
+#   -cppcoreguidelines-special-member-functions,
+
+# This does a decent job of replacing c-style casts and is the only google check that made sense as of clang-tidy 15
+#   google-readability-casting,
+
+# Enable Misc checks
+#   misc-*,
+#   -misc-const-correctness,
+# Probably a good one but I couldn't figure it out
+#   -misc-misplaced-const,
+#   -misc-no-recursion,
+#   -misc-non-private-member-variables-in-classes,
+#   -misc-static-assert,
+#   -misc-unused-parameters,
+
+# Enable modernize checks
+#   modernize-*,
+# This is probably a good check, but we have a _lot_ of c arrays and it's
+# non-trivial to replace them.
+#   -modernize-avoid-c-arrays,
+#   -modernize-macro-to-enum,
+# Except for replacing `typedef` with `using`. It doesn't compile.
+#   -modernize-use-using,
+
+# Enable performance checks
+#   performance-*,
+
+# Enable Readability checks
+#   -readability-avoid-const-params-in-decls,
+#   -readability-convert-member-functions-to-static,
+#   -readability-else-after-return,
+#   -readability-function-cognitive-complexity,
+#   -readability-identifier-length,
+#   -readability-implicit-bool-conversion,
+#   -readability-isolate-declaration,
+#   -readability-magic-numbers,
+#   -readability-named-parameter,
+#   -readability-non-const-parameter,
+#   -readability-qualified-auto,
+#   -readability-simplify-boolean-expr,
+#   -readability-string-compare,
+#   -readability-uppercase-literal-suffix,
+#   -readability-use-anyofallof,
+
+Checks: >-
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  cert-*,
+  -cert-dcl03-c,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-no-malloc,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-special-member-functions,
+  google-readability-casting,
+  misc-*,
+  -misc-const-correctness,
+  -misc-misplaced-const,
+  -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes,
+  -misc-static-assert,
+  -misc-unused-parameters,
+  modernize-*,
+  -modernize-avoid-c-arrays,
+  -modernize-macro-to-enum,
+  -modernize-use-using,
+  performance-*,
+  readability-*,
+  -readability-avoid-const-params-in-decls,
+  -readability-convert-member-functions-to-static,
+  -readability-else-after-return,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion,
+  -readability-isolate-declaration,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+  -readability-non-const-parameter,
+  -readability-qualified-auto,
+  -readability-simplify-boolean-expr,
+  -readability-string-compare,
+  -readability-uppercase-literal-suffix,
+  -readability-use-anyofallof,
+  -readability-identifier-naming,
+
+FormatStyle: file
+UseColor: true
+# WarningsAsErrors: '*'
+#CheckOptions:
+#  - { key: readability-identifier-naming.NamespaceCase, value: lower_case }
+#  - { key: readability-identifier-naming.ClassCase, value: CamelCase }
+#  - { key: readability-identifier-naming.PrivateMemberCase, value: camelBack }
+#  - { key: readability-identifier-naming.PrivateMemberSuffix, value: _ }
+#  - { key: readability-identifier-naming.ProtectedMemberCase, value: camelBack }
+#  - { key: readability-identifier-naming.ProtectedMemberSuffix, value: _ }
+#  - { key: readability-identifier-naming.MemberCase, value: camelBack }
+#  - { key: readability-identifier-naming.StructCase, value: CamelCase }
+#  - { key: readability-identifier-naming.FunctionCase, value: camelBack }
+#  - { key: readability-identifier-naming.GlobalFunctionCase, value: CamelCase }
+#  - { key: readability-identifier-naming.VariableCase, value: camelBack }
+#  - { key: readability-identifier-naming.ParameterCase, value: camelBack }
+#  - { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }
+#  - {
+#      key: readability-identifier-naming.TemplateParameterCase,
+#      value: UPPER_CASE,
+#    }
+#  # Fix spurious `invalid case style for template parameter 'expr-type'` errors
+#  - {
+#      key: readability-identifier-naming.TypeTemplateParameterIgnoredRegexp,
+#      value: expr-type,
+#    }

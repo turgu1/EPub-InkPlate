@@ -1,0 +1,190 @@
+/*
+ * test.css — CSS parser exercise fixture
+ *
+ * This file is designed to exercise every path in CSSParser:
+ *   - Comments (this header)
+ *   - @import (silently skipped)
+ *   - @namespace (silently skipped)
+ *   - @page (silently skipped)
+ *   - @font-face
+ *   - @media (silently skipped / block consumed)
+ *   - Element, class, id, universal, and compound selectors
+ *   - Descendant, child (>), adjacent (+) combinators
+ *   - Multi-selector comma lists
+ *   - :first-child pseudo-class
+ *   - !important
+ *   - All supported properties with various value types
+ *   - All CSS length / percentage / string / url / inherit units
+ */
+
+/* ── silently-skipped at-rules ──────────────────────────────────────────── */
+
+@import url("other.css");
+@namespace url("http://www.w3.org/1999/xhtml");
+@page { margin: 2cm; }
+@media screen { body { color: red; } }
+
+/* ── @font-face ─────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "TestFont";
+  font-style:  normal;
+  font-weight: bold;
+  src:         url("fonts/test.ttf");
+}
+
+/* ── element selector ───────────────────────────────────────────────────── */
+
+p {
+  font-family:    serif;
+  font-size:      12px;
+  font-style:     italic;
+  font-weight:    bold;
+  text-align:     justify;
+  text-indent:    1em;
+  text-transform: uppercase;
+  line-height:    1.5em;
+  margin:         10px 20px;
+  width:          80%;
+  height:         200px;
+  display:        block;
+  vertical-align: sub;
+}
+
+/* ── class selector ─────────────────────────────────────────────────────── */
+
+.highlight {
+  font-size:   1.2em;
+  text-align:  center;
+  display:     inline;
+}
+
+/* ── id selector ─────────────────────────────────────────────────────────  */
+
+#main {
+  font-size:   2rem;
+  text-align:  right;
+  display:     inline-block;
+}
+
+/* ── universal selector ─────────────────────────────────────────────────── */
+
+* {
+  margin-top:    0px;
+  margin-bottom: 0px;
+  margin-left:   0px;
+  margin-right:  0px;
+}
+
+/* ── compound: element + class ──────────────────────────────────────────── */
+
+span.highlight {
+  font-style:  normal;
+  font-weight: normal;
+}
+
+/* ── compound: element + id ─────────────────────────────────────────────── */
+
+div#main {
+  font-size: 18pt;
+}
+
+/* ── descendant combinator ──────────────────────────────────────────────── */
+
+body p {
+  text-indent: 2em;
+}
+
+/* ── child combinator (>) ───────────────────────────────────────────────── */
+
+div > p {
+  margin-left: 5%;
+}
+
+/* ── adjacent combinator (+) ────────────────────────────────────────────── */
+
+h1 + p {
+  text-transform: capitalize;
+}
+
+/* ── :first-child pseudo-class ──────────────────────────────────────────── */
+
+p:first-child {
+  text-indent: 0em;
+}
+
+/* ── multi-selector comma list ──────────────────────────────────────────── */
+
+h1, h2, h3 {
+  font-weight: bold;
+  line-height: 120%;
+}
+
+/* ── all individual margin properties ───────────────────────────────────── */
+
+blockquote {
+  margin-top:    10px;
+  margin-bottom: 10px;
+  margin-left:   20px;
+  margin-right:  20px;
+}
+
+/* ── display: none ──────────────────────────────────────────────────────── */
+
+.hidden {
+  display: none;
+}
+
+/* ── text-transform: lowercase ──────────────────────────────────────────── */
+
+.lower {
+  text-transform: lowercase;
+}
+
+/* ── text-transform: none ───────────────────────────────────────────────── */
+
+.no-transform {
+  text-transform: none;
+}
+
+/* ── text-align: left ───────────────────────────────────────────────────── */
+
+.left-align {
+  text-align: left;
+}
+
+/* ── vertical-align: super ──────────────────────────────────────────────── */
+
+sup {
+  vertical-align: super;
+}
+
+/* ── inherit ────────────────────────────────────────────────────────────── */
+
+em {
+  line-height: inherit;
+}
+
+/* ── other length units: cm, mm, in, pt, pc, ch, vh, vw, vmin, vmax ─────── */
+
+.units-test {
+  width:   2cm;
+  height:  15mm;
+  margin-left:  0.5in;
+  font-size: 14pt;
+  text-indent: 1pc;
+}
+
+/* ── !important (parsed without error, stored as normal value) ───────────── */
+
+.important-test {
+  font-weight: bold !important;
+  font-size:   16px !important;
+}
+
+/* ── border property ────────────────────────────────────────────────────── */
+
+pre {
+  border: 1px;
+}
+

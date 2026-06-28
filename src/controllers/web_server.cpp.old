@@ -8,7 +8,7 @@
 #if EPUB_INKPLATE_BUILD
 
 #include "viewers/msg_viewer.hpp"
-#include "models/config.hpp"
+#include "config.hpp"
 #include "models/page_locs.hpp"
 
 #include <stdio.h>
@@ -36,7 +36,7 @@ extern "C" {
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#include "models/config.hpp"
+#include "config.hpp"
 
 static constexpr char const * TAG = "WebServer";
 
@@ -92,7 +92,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   struct dirent * entry;
   struct stat entry_stat;
 
-  LOG_D("Opening dir: %s.", dirpath);
+  LOG_D("Opening dir: {}.", dirpath);
 
   const size_t dirpath_len = strlen(dirpath);
 
@@ -103,7 +103,7 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
   entrypath.append("/");
 
   if (dir == nullptr) {
-    LOG_E("Failed to stat dir : %s (%s)", dirpath, strerror(errno));
+    LOG_E("Failed to stat dir : {} ({})", dirpath, strerror(errno));
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "Directory does not exist");
     return ESP_FAIL;
   }
@@ -174,11 +174,11 @@ http_resp_dir_html(httpd_req_t *req, const char * dirpath)
     entrypath.append(entry->d_name);
 
     if (stat(entrypath.c_str(), &entry_stat) == -1) {
-      LOG_E("Failed to stat %s : %s", entrytype, entry->d_name);
+      LOG_E("Failed to stat {} : {}", entrytype, entry->d_name);
       continue;
     }
     itoa(entry_stat.st_size, entrysize, 10);
-    LOG_I("Found %s : %s (%s bytes)", entrytype, entry->d_name, entrysize);
+    LOG_I("Found {} : {} ({} bytes)", entrytype, entry->d_name, entrysize);
 
     std::string the_size;
     uint8_t     length       = strlen(entrysize);
@@ -276,7 +276,7 @@ get_path_from_uri(std::string & dest, const char * base_path, const char * uri)
 static esp_err_t
 download_handler(httpd_req_t * req)
 {
-  LOG_D("download_handler(%s)", req->uri);
+  LOG_D("download_handler({})", req->uri);
 
   FILE * fd = NULL;
   struct stat file_stat;
@@ -291,7 +291,7 @@ download_handler(httpd_req_t * req)
   }
 
   if (stat(filepath.c_str(), &file_stat) == -1) {
-    LOG_D("Filename: %s", filename.c_str());
+    LOG_D("Filename: {}", filename);
       /* If file not present check if URL
         * corresponds to one of the hardcoded paths */
     if (filename.compare("/index.html") == 0) {
@@ -299,19 +299,19 @@ download_handler(httpd_req_t * req)
     } else if (filename.compare("/favicon.ico") == 0) {
       return favicon_get_handler(req);
     }
-    LOG_E("Failed to stat file : %s", filepath.c_str());
+    LOG_E("Failed to stat file : {}", filepath);
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
     return ESP_FAIL;
   }
 
   fd = fopen(filepath.c_str(), "r");
   if (!fd) {
-    LOG_E("Failed to read existing file : %s", filepath.c_str());
+    LOG_E("Failed to read existing file : {}", filepath);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
     return ESP_FAIL;
   }
 
-  LOG_I("Sending file : %s (%ld bytes)...", filename.c_str(), file_stat.st_size);
+  LOG_I("Sending file : {} ({} bytes)...", filename, file_stat.st_size);
   set_content_type_from_file(req, filename);
 
   // Retrieve the pointer to scratch buffer for temporary storage
@@ -344,7 +344,7 @@ download_handler(httpd_req_t * req)
 static esp_err_t 
 upload_handler(httpd_req_t * req)
 {
-  LOG_D("upload_handler(%s)", req->uri);
+  LOG_D("upload_handler({})", req->uri);
 
   FILE *fd = NULL;
   struct stat file_stat;
@@ -356,19 +356,19 @@ upload_handler(httpd_req_t * req)
                                            ((FileServerData *)req->user_ctx)->base_path,
                                            req->uri + sizeof("/upload") - 1);
   if (filename[filename.size() - 1] == '/') {
-    LOG_E("Invalid filename : %s", filename.c_str());
+    LOG_E("Invalid filename : {}", filename);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
   if (stat(filepath.c_str(), &file_stat) == 0) {
-    LOG_E("File already exists : %s", filepath.c_str());
+    LOG_E("File already exists : {}", filepath);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File already exists");
     return ESP_FAIL;
   }
 
   if (req->content_len > MAX_FILE_SIZE) {
-    LOG_E("File too large : %d bytes", req->content_len);
+    LOG_E("File too large : {} bytes", req->content_len);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
                         "File size must be less than "
                         MAX_FILE_SIZE_STR "!");
@@ -377,12 +377,12 @@ upload_handler(httpd_req_t * req)
 
   fd = fopen(filepath.c_str(), "w");
   if (!fd) {
-    LOG_E("Failed to create file : %s", filepath.c_str());
+    LOG_E("Failed to create file : {}", filepath);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to create file");
     return ESP_FAIL;
   }
 
-  LOG_I("Receiving file : %s...", filename.c_str());
+  LOG_I("Receiving file : {}...", filename);
 
   /* Retrieve the pointer to scratch buffer for temporary storage */
   char *buf = ((FileServerData *) req->user_ctx)->scratch;
@@ -394,7 +394,7 @@ upload_handler(httpd_req_t * req)
 
   while (remaining > 0) {
 
-    LOG_I("Remaining size : %d", remaining);
+    LOG_I("Remaining size : {}", remaining);
     if ((received = httpd_req_recv(req, buf, MIN(remaining, SCRATCH_BUFSIZE))) <= 0) {
       if (received == HTTPD_SOCK_ERR_TIMEOUT) {
         continue;
@@ -437,7 +437,7 @@ upload_handler(httpd_req_t * req)
 static esp_err_t 
 delete_handler(httpd_req_t * req)
 {
-  LOG_D("delete_handler(%s)", req->uri);
+  LOG_D("delete_handler({})", req->uri);
 
   struct stat file_stat;
 
@@ -448,18 +448,18 @@ delete_handler(httpd_req_t * req)
                                            ((FileServerData *)req->user_ctx)->base_path,
                                            req->uri  + sizeof("/delete") - 1);
   if (filename[filename.size() - 1] == '/') {
-    LOG_E("Invalid filename : %s", filename.c_str());
+    LOG_E("Invalid filename : {}", filename);
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid filename");
     return ESP_FAIL;
   }
 
   if (stat(filepath.c_str(), &file_stat) == -1) {
-    LOG_E("File does not exist : %s", filepath.c_str());
+    LOG_E("File does not exist : {}", filepath);
     httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "File does not exist");
     return ESP_FAIL;
   }
 
-  LOG_I("Deleting file : %s", filepath.c_str());
+  LOG_I("Deleting file : {}", filepath);
   unlink(filepath.c_str());
 
   int pos = filepath.size() - 5;
@@ -467,21 +467,21 @@ delete_handler(httpd_req_t * req)
     filepath.replace(pos, 5, ".pars");
 
     if (stat(filepath.c_str(), &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath.c_str());
+      LOG_I("Deleting file : {}", filepath);
       unlink(filepath.c_str());
     }
 
     filepath.replace(pos, 5, ".locs");
 
     if (stat(filepath.c_str(), &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath.c_str());
+      LOG_I("Deleting file : {}", filepath);
       unlink(filepath.c_str());
     }
 
     filepath.replace(pos, 5, ".toc");
 
     if (stat(filepath.c_str(), &file_stat) != -1) {
-      LOG_I("Deleting file : %s", filepath.c_str());
+      LOG_I("Deleting file : {}", filepath);
       unlink(filepath.c_str());
     }
   }
@@ -523,7 +523,7 @@ http_server_start()
   LOG_I("Starting HTTP Server");
   esp_err_t res = httpd_start(&server, &httpd_config);
   if (res != ESP_OK) {
-    LOG_E("Failed to start file server (%s)!", esp_err_to_name(res));
+    LOG_E("Failed to start file server ({})!", esp_err_to_name(res));
     return ESP_FAIL;
   }
 
@@ -589,7 +589,7 @@ static void sta_event_handler(void            * arg,
                               int32_t           event_id, 
                               void            * event_data)
 {
-  LOG_I("STA Event, Base: %08x, Event: %d.", (unsigned int) event_base, event_id);
+  LOG_I("STA Event, Base: {:#10x}, Event: {}.", (unsigned int) event_base, event_id);
 
   if (event_base == WIFI_EVENT) {
     if (event_id == WIFI_EVENT_STA_START) {
@@ -692,13 +692,13 @@ wifi_start(void)
     portMAX_DELAY);
 
   if (bits & WIFI_CONNECTED_BIT) {
-    LOG_I("connected to ap SSID:%s password:%s",
-             wifi_ssid.c_str(), wifi_pwd.c_str());
+    LOG_I("connected to ap SSID:{} password:{}",
+             wifi_ssid, wifi_pwd);
     connected = true;
   } 
   else if (bits & WIFI_FAIL_BIT) {
-    LOG_E("Failed to connect to SSID:%s, password:%s",
-             wifi_ssid.c_str(), wifi_pwd.c_str());
+    LOG_E("Failed to connect to SSID:{}, password:{}",
+             wifi_ssid, wifi_pwd);
   }
   else {
     LOG_E("UNEXPECTED EVENT");

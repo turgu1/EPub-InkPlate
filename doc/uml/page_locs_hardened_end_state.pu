@@ -1,0 +1,108 @@
+@startuml PageLocs_Hardened_End_State
+  title Target End-State (Hardened): BookController - PageLocs - Control - Retriever
+
+  participant BookController
+  participant "PageLocs API" as PageLocs
+  participant "PageLocs ManagerLoop\n(single consumer)" as Manager
+  participant "PageLocsControl" as Control
+  participant "PageLocsRetriever" as Retriever
+  database "PagesMap/ItemsSet\n(strict mutex policy)" as Map
+
+  note over PageLocs,Manager
+    Hardened principles:
+    1) Single manager-loop consumes manager events.
+    2) Correlation IDs for request/response matching.
+    3) No lock elision for Map writes/reads.
+    4) Bounded waits with timeout + recovery path.
+    5) Critical queue sends checked and retried.
+    6) State flags synchronized consistently.
+  end note
+
+  == Startup / New Document ==
+  BookController -> PageLocs : openBook(...)
+  activate PageLocs
+  PageLocs -> Manager : StartManagerLoop if needed
+  activate Manager
+  PageLocs -> Control : setup(epubFilename)
+  activate Control
+  Control -> Retriever : setup(epubFilename)
+  activate Retriever
+
+  alt setup failed at Control or Retriever
+    Control --> PageLocs : setupFailed(reason)
+    PageLocs --> BookController : fail openBook with explicit error
+    deactivate Retriever
+    deactivate Control
+    deactivate Manager
+    deactivate PageLocs
+  else setup succeeded
+    PageLocs -> Control : START_DOCUMENT(itemrefStart,itemrefCount)
+    Control -> Retriever : RETRIEVE_ITEM(first)
+  end
+
+  == Background Sequential Computation ==
+  loop until complete
+    Retriever -> Map : lock + insert(PageId, PageInfo) + unlock
+    Retriever -> Control : ITEM_READY(item)
+    Control -> Control : update bitset/itemsDoneCount
+    Control -> Retriever : RETRIEVE_ITEM(next)
+  end
+  Control -> Retriever : COMPLETED
+  Control -> Manager : EVT_COMPLETED
+  Manager -> PageLocs : onCompleted(set synchronized flags)
+
+  == Navigation Request (ASAP path) ==
+  BookController -> PageLocs : getNextPageId/getPrevPageId/getPageId
+  activate PageLocs
+
+  PageLocs -> Map : lock + lookup + unlock
+  alt page already present
+    PageLocs --> BookController : return PageId
+  else page missing
+    PageLocs -> Manager : submit ASAP request(reqId,itemref)
+    Manager -> Control : GET_ASAP(reqId,itemref)
+
+    alt item already done
+      Control -> Manager : EVT_ASAP_READY(reqId,itemref)
+    else item running and different
+      Control -> Retriever : GET_ASAP(reqId,itemref)
+      Retriever -> Control : ITEM_INTERRUPTED(prevItem)
+      Control -> Control : defer prevItem
+      Control -> Retriever : GET_ASAP(reqId,itemref)
+      Retriever -> Map : lock + insert(...) + unlock
+      Retriever -> Control : ASAP_READY(reqId,itemref)
+      Control -> Manager : EVT_ASAP_READY(reqId,itemref)
+      Control -> Retriever : RETRIEVE_ITEM(prevItem)
+    else same item already running
+      Control -> Control : register waiter(reqId) for current item
+      Control -> Manager : EVT_ASAP_READY(reqId,itemref) on ITEM_READY
+    end
+
+    Manager -> PageLocs : complete request(reqId,status)
+    PageLocs -> Map : lock + lookup retry + unlock
+    PageLocs --> BookController : return PageId or controlled miss
+  end
+  deactivate PageLocs
+
+  == Percent Query ==
+  BookController -> PageLocs : getPageCountOrPercent()
+  PageLocs -> Manager : submit PERCENT request(reqId)
+  Manager -> Control : PERCENT(reqId)
+  Control -> Manager : EVT_PERCENT(reqId,value)
+  Manager -> PageLocs : complete(reqId,value)
+  PageLocs --> BookController : percent
+
+  == Stop / Book Switch ==
+  BookController -> PageLocs : stopControlTask()
+  activate PageLocs
+  PageLocs -> Manager : submit STOP request(reqId)
+  Manager -> Control : STOP(reqId)
+  Control -> Retriever : requestStop + STOP
+  Retriever --> Control : exited
+  Control -> Manager : EVT_STOPPED(reqId)
+  Manager -> PageLocs : stopped(reqId)
+  PageLocs -> PageLocs : bounded wait, timeout fallback, diagnostics on failure
+  PageLocs -> PageLocs : persist .locs if pendingSave
+  deactivate PageLocs
+
+@enduml

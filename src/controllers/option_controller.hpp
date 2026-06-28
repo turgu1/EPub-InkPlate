@@ -6,68 +6,82 @@
 #include "global.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "viewers/form_viewer.hpp"
+#include "viewers/menu_viewer.hpp"
 
-class OptionController
-{
-  private:
-    static constexpr char const * TAG = "OptionController";
+class OptionController {
+private:
+  static constexpr char const *TAG = "OptionController";
 
-    bool main_form_is_shown;
-    bool font_form_is_shown;
-    bool books_refresh_needed;
+  bool mainFormIsShown{false};
+  bool fontFormIsShown{false};
+  bool booksRefreshNeeded{false};
 
+  #if DATE_TIME_RTC
+    bool dateTimeFormIsShown{false};
+  #endif
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    bool calibrationIsShown{false};
+  #endif
+
+  bool waitForKeyAfterWifi{false};
+  bool webServerWasStarted{false};
+
+  MenuViewerPtr menuViewer;
+  FormViewerPtr formViewer;
+
+public:
+  OptionController()  = default;
+  ~OptionController() = default;
+
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
+  auto setFontCount(uint8_t count) -> void;
+
+  inline auto setMainFormIsShown() -> void { mainFormIsShown = true; }
+  inline auto setFontFormIsShown() -> void { fontFormIsShown = true; }
+
+  #if DATE_TIME_RTC
+    inline auto setDateTimeFormIsShown() -> void { dateTimeFormIsShown = true; }
+  #endif
+
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    inline auto setCalibrationIsShown() -> void { calibrationIsShown = true; }
+  #endif
+
+  inline auto setWaitForKeyAfterWifi(bool webServerStarted = false) -> void {
+    waitForKeyAfterWifi = true;
+    webServerWasStarted = webServerStarted;
+    mainFormIsShown     = false;
+    fontFormIsShown     = false;
     #if DATE_TIME_RTC
-      bool date_time_form_is_shown;
+      dateTimeFormIsShown = false;
     #endif
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      bool calibration_is_shown;
+      calibrationIsShown = false;
     #endif
+  }
 
-    bool wait_for_key_after_wifi;
-
-  public:
-    OptionController() : main_form_is_shown(false), 
-                         font_form_is_shown(false),
-                         books_refresh_needed(false), 
-                         #if DATE_TIME_RTC
-                           date_time_form_is_shown(false),
-                         #endif
-                         #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-                           calibration_is_shown(false),
-                         #endif
-                         wait_for_key_after_wifi(false) { };
-                         
-    void    input_event(const EventMgr::Event & event);
-    void          enter();
-    void          leave(bool going_to_deep_sleep = false);
-    void set_font_count(uint8_t count);
-     
-    inline void        set_main_form_is_shown() { main_form_is_shown      = true; }
-    inline void        set_font_form_is_shown() { font_form_is_shown      = true; }
-
-    #if DATE_TIME_RTC
-      inline void set_date_time_form_is_shown() { date_time_form_is_shown = true; }
-    #endif
-
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      inline void    set_calibration_is_shown() { calibration_is_shown    = true; }
-    #endif
-
-    inline void set_wait_for_key_after_wifi() { 
-      wait_for_key_after_wifi   = true; 
-      main_form_is_shown        = false;
-      font_form_is_shown        = false;
-      #if DATE_TIME_RTC
-        date_time_form_is_shown = false;
-      #endif
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        calibration_is_shown    = false;
-      #endif
-    }
+  auto mainParameters() -> void;
+  auto defaultParameters() -> void;
+  auto wifiMode() -> void;
+  auto initNvs() -> void;
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    auto calibrate() -> void;
+  #endif
+  #if DATE_TIME_RTC
+    auto clockAdjustForm() -> void;
+    auto setClock() -> void;
+    auto ntpClockAdjust() -> void;
+  #endif
+  #if DEBUGGING
+    auto debugging() -> void;
+  #endif
 };
 
 #if __OPTION_CONTROLLER__
-  OptionController option_controller;
+  OptionController optionController;
 #else
-  extern OptionController option_controller;
+  extern OptionController optionController;
 #endif

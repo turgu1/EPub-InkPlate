@@ -9,41 +9,48 @@
 #include "models/epub.hpp"
 #include "models/page_locs.hpp"
 #include "viewers/books_dir_viewer.hpp"
+#include "viewers/linear_books_dir_viewer.hpp"
+#include "viewers/matrix_books_dir_viewer.hpp"
 
-class BooksDirController
-{
-  private:
-    static constexpr char const * TAG = "BooksDirController";
+class BooksDirController {
+private:
+  static constexpr char const *TAG = "BooksDirController";
 
-    const uint8_t LINEAR_VIEWER = 0;
-    const uint8_t MATRIX_VIEWER = 1;
+  const uint8_t LINEAR_VIEWER = 0;
+  const uint8_t MATRIX_VIEWER = 1;
 
-    int32_t     book_offset;
-    int16_t     current_book_index;
-    int16_t     last_read_book_index;
-    std::string book_filename;
-    bool        book_was_shown;
+  int32_t bookOffset{0};
+  int16_t currentBookIndex{0};
+  int16_t lastReadBookIndex{0};
+  std::string bookFilename;
+  bool bookWasShown{false};
 
-    PageLocs::PageId book_page_id;
-    BooksDirViewer * books_dir_viewer;
-    int8_t viewer_id;
+  PageId bookPageId{0, 0};
+  BooksDirViewerPtr booksDirViewer{nullptr};
 
-  public:
-    BooksDirController() {};
-    void setup();
-    void input_event(const EventMgr::Event & event);
-    void enter();
-    void leave(bool going_to_deep_sleep = false);
-    void save_last_book(const PageLocs::PageId & page_id, bool going_to_deep_sleep);
-    void show_last_book();
-    void new_orientation() { if (books_dir_viewer != nullptr) books_dir_viewer->setup(); }
+  int8_t viewerId{0};
 
-    inline int16_t get_current_book_index() { return current_book_index; }
-    inline void    set_current_book_index(int16_t idx) { current_book_index = idx; }
+public:
+  BooksDirController()  = default;
+  ~BooksDirController() = default;
+
+  auto setup() -> void;
+  auto inputEvent(const EventMgr::Event &event) -> void;
+  auto enter() -> void;
+  auto leave(bool goingToDeepSleep = false) -> void;
+  auto openBookFromPath(const char *bookPath, const PageId &pageId = {0, 0}) -> bool;
+  auto saveLastBook(const PageId &pageId, bool goingToDeepSleep) -> void;
+  auto showLastBook() -> void;
+  auto newOrientation() -> void {
+    if (booksDirViewer != nullptr) booksDirViewer->setup();
+  }
+
+  [[nodiscard]] inline auto getCurrentBookIndex() -> int16_t { return currentBookIndex; }
+  inline auto setCurrentBookIndex(int16_t idx) -> void { currentBookIndex = idx; }
 };
 
 #if __BOOKS_DIR_CONTROLLER__
-  BooksDirController books_dir_controller;
+  BooksDirController booksDirController;
 #else
-  extern BooksDirController books_dir_controller;
+  extern BooksDirController booksDirController;
 #endif

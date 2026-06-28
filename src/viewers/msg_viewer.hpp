@@ -4,63 +4,85 @@
 
 #pragma once
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "controllers/event_mgr.hpp"
-
 #include "screen.hpp"
+#include "viewers/page.hpp"
 
 /**
  * @brief Message presentation class
- * 
+ *
  * This class supply simple alert/info messages presentation to the user.
- * 
+ *
  */
 class MsgViewer {
 
-  private:
-    static constexpr char const * TAG = "MsgViewer";
+private:
+  static constexpr char const *TAG  = "MsgViewer";
+  static constexpr uint16_t HEIGHT  = 300;
+  static constexpr uint16_t HEIGHT2 = 450;
 
-    uint16_t width;
-    static constexpr uint16_t HEIGHT  = 300;
-    static constexpr uint16_t HEIGHT2 = 450;
+public:
+  enum MsgType { INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM };
+  static constexpr char iconChar[7] = {'I', '!', 'H', 'E', 'S', 'Y', '!'};
 
-    struct DotsZone {
-      Pos pos;
-      Dim dim;
-      int16_t max_dot_count;
-      int16_t dots_per_line;
-    } dot_zone;
-
-    int16_t dot_count;
-
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      Pos ok_pos, cancel_pos;
-      Dim buttons_dim;
-      bool confirmation_required;
-    #endif
-
+  class ConfirmData {
   public:
-    MsgViewer() {};
-
-    enum MsgType { INFO, ALERT, BUG, BOOK, WIFI, NTP_CLOCK, CONFIRM };
-    static char icon_char[7];
-
-    void show(
-      MsgType msg_type, 
-      bool press_a_key, 
-      bool clear_screen,
-      const char * title, 
-      const char * fmt_str, ...);
-    
-    bool confirm(const EventMgr::Event & event, bool & ok);
-
-    //void show_progress(const char * title, ...);
-    //void add_dot();
-    void out_of_memory(const char * raison);
-};
-
-#if __MSG_VIEWER__
-  MsgViewer msg_viewer;
-#else
-  extern MsgViewer msg_viewer;
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    Pos okPos, cancelPos;
+    Dim buttonsDim;
 #endif
+    bool ok{false};
+
+    ConfirmData()  = default;
+    ~ConfirmData() = default;
+
+    static inline auto Make() { return makeUniqueHimem<ConfirmData>(); }
+  };
+  using ConfirmDataPtr = HimemUniquePtr<class ConfirmData>;
+
+  class ProgressData {
+  public:
+    Dim dim{0, 0};
+    Pos pos{0, 0};
+    uint16_t previousWidth{0};
+    ProgressData()  = default;
+    ~ProgressData() = default;
+    static inline auto Make() { return makeUniqueHimem<ProgressData>(); }
+  };
+  using ProgressDataPtr = HimemUniquePtr<class ProgressData>;
+
+  static auto show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
+                   const char *fmtStr, ...) -> ConfirmDataPtr;
+
+  /**
+   * @brief Process a user input event for a confirmation dialog.
+   *
+   * For touch targets, this checks whether the event falls inside the OK or
+   * CANCEL button rectangles. For key-based targets, SELECT is treated as OK.
+   *
+   * @param event Input event to evaluate.
+   * @param confirmData Dialog state returned by show().
+   * @return Pair containing:
+   * - first: true when the dialog decision is complete, false otherwise.
+   * - second: updated confirmation state (including the selected OK/CANCEL value).
+   */
+  static auto confirm(const EventMgr::Event &event, const ConfirmDataPtr confirmData)
+      -> std::pair<bool, ConfirmDataPtr>;
+
+  static auto showProgress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr>;
+  static auto updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent,
+                             const char *fmtStr, ...) -> std::pair<PagePtr, ProgressDataPtr>;
+
+  /**
+   * @brief Handle an unrecoverable out-of-memory condition.
+   *
+   * The method shows a blocking alert to the user, performs platform-specific
+   * cleanup, and then powers down (device build) or terminates (Linux build).
+   * This call does not return.
+   *
+   * @param reason Short description of the allocation failure cause.
+   */
+  static auto outOfMemory(const char *reason) -> void;
+};

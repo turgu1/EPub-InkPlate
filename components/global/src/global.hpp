@@ -5,22 +5,19 @@
 #pragma once
 
 #include <cstdint>
-#include <cstddef>
-#include <iostream>
-#include <unordered_map>
-#include <string>
-#include <cstring>
 
+#include <number_to_str.hpp>
 #include <strlcpy.hpp>
-#include <int_to_str.hpp>
 
-//#pragma GCC diagnostic error "-Wframe-larger-than=10"
+#include "himem.hpp"
+
+// #pragma GCC diagnostic error "-Wframe-larger-than=10"
 
 #ifndef APP_VERSION
-  #define APP_VERSION "2.1.0"
+  #define APP_VERSION "3.0.0"
 #endif
 
-#if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD) 
+#if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD)
   #error "BUILD_TYPE Not Set."
 #else
   #if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD)
@@ -28,14 +25,19 @@
   #endif
 #endif
 
-#define USE_EPUB_FONTS 1  ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
+#define USE_EPUB_FONTS                                                                             \
+  1 ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
 
 #if EPUB_LINUX_BUILD
-  #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
+  #ifndef MAIN_FOLDER
+    #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
+  #endif
 #endif
 
 #if EPUB_INKPLATE_BUILD
-  #define MAIN_FOLDER "/sdcard"
+  #ifndef MAIN_FOLDER
+    #define MAIN_FOLDER "/sdcard"
+  #endif
   #define LOG_LOCAL_LEVEL EPUB_LOG_LEVEL
 #endif
 
@@ -54,67 +56,109 @@
 // in a book being tested. The problems are often reflected through bad offsets
 // computation for the beginning or/and end of pages.
 //
-// To get good results for the user, pages location offsets computed and put in the books 
-// database must be the same as the one found when the book is being displayed. 
-// If not, lines at the beginning or the end of a page can be duplicated or 
+// To get good results for the user, pages location offsets computed and put in the books
+// database must be the same as the one found when the book is being displayed.
+// If not, lines at the beginning or the end of a page can be duplicated or
 // part of a paragraph can be lost.
 //
-// To use, set DEBUGGING_AID to 1 and select the page number (0 = first page), 
+// To use, set DEBUGGING_AID to 1 and select the page number (0 = first page),
 // setting the PAGE_TO_SHOW_LOCATION. At
-// pages location refresh time (done by the book_dir class at start time), 
+// pages location refresh time (done by the book_dir class at start time),
 // a lot of data will be output on the terminal. Then, opening the book,
-// and going to the selected page, some similar information will be sent to 
+// and going to the selected page, some similar information will be sent to
 // the terminal. You can then compare the results and find the differences.
 //
-// To be used, only one book must be in the books folder and the books_dir.db 
+// To be used, only one book must be in the books folder and the books_dir.db
 // file must be deleted before any trial.
 
-#define DEBUGGING_AID 0  ///< 1: Allow for specific page debugging output
+#define DEBUGGING_AID 0 ///< 1: Allow for specific page debugging output
 
 #if DEBUGGING_AID
-  #define PAGE_FROM  6
-  #define PAGE_TO    6 //PAGE_FROM
+  #define PAGE_FROM 6
+  #define PAGE_TO 6 // PAGE_FROM
 #endif
 
-// The following data definitions are here for laziness... 
+// The following data definitions are here for laziness...
 // ToDo: Move them to the appropriate location
 
-struct Dim { 
-  uint16_t width; 
-  uint16_t height; 
-  Dim(uint16_t w, uint16_t h) { 
-    width  = w; 
+struct Dim {
+  uint16_t width{0};
+  uint16_t height{0};
+
+  Dim() = default;
+  constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
+
+  constexpr auto getWidth() const -> uint16_t { return width; }
+  constexpr auto getHeight() const -> uint16_t { return height; }
+};
+
+struct Pos {
+  uint16_t x{0};
+  uint16_t y{0};
+  Pos(uint16_t xpos, uint16_t ypos) {
+    x = xpos;
+    y = ypos;
+  }
+  Pos() = default;
+};
+
+struct Dim8 {
+  uint8_t width{0};
+  uint8_t height{0};
+  Dim8(uint8_t w, uint8_t h) {
+    width  = w;
     height = h;
   }
-  Dim() {}
+  Dim8() = default;
 };
 
-struct Pos { 
-  uint16_t x; 
-  uint16_t y; 
-  Pos(uint16_t xpos, uint16_t ypos) { 
-    x = xpos; 
-    y = ypos; 
+struct Pos8 {
+  uint8_t x{0};
+  uint8_t y{0};
+  Pos8(uint8_t xpos, uint8_t ypos) {
+    x = xpos;
+    y = ypos;
   }
-  Pos() {}
+  Pos8() = default;
 };
 
-struct Dim8 { 
-  uint8_t width; 
-  uint8_t height; 
-  Dim8(uint8_t w, uint8_t h) { 
-    width  = w; 
-    height = h;
+struct Glyph {
+  Dim dim{0, 0};
+  int16_t xoff{0}, yoff{0};
+  int16_t advance{0};
+  int16_t pitch{0};
+  int16_t lineHeight{0};
+  uint16_t index{0};
+  uint8_t *buffer{nullptr};
+  auto clear() -> void {
+    dim.height = dim.width = 0;
+    xoff = yoff = 0;
+    advance = pitch = lineHeight = 0;
+    index                        = 0;
+    buffer                       = nullptr;
   }
-  Dim8() {}
+  Glyph()  = default;
+  ~Glyph() = default;
 };
 
-struct Pos8 { 
-  uint8_t x; 
-  uint8_t y; 
-  Pos8(uint8_t xpos, uint8_t ypos) { 
-    x = xpos; 
-    y = ypos; 
+struct PageId {
+  int16_t itemrefIndex{-1};
+  int32_t offset{-1};
+  PageId(int16_t idx, int32_t off) {
+    itemrefIndex = idx;
+    offset       = off;
   }
-  Pos8() {}
+  PageId() = default;
+  bool operator==(const PageId &other) const {
+    return (itemrefIndex == other.itemrefIndex) && (offset == other.offset);
+  }
+  bool firstPage() const { return (itemrefIndex == 0) && (offset == 0); }
+  void reset() {
+    itemrefIndex = -1;
+    offset       = -1;
+  }
 };
+
+enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
+
+using FileContentPtr = HimemUniquePtr<uint8_t[]>;

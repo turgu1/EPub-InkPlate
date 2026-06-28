@@ -1,8 +1,26 @@
 cmake_minimum_required(VERSION 3.16)
 
+# set(DEVICE "INKPLATE_6")
+# set(DEVICE "INKPLATE_6_EXTENDED")
+# set(DEVICE "INKPLATE_6_BLUETOOTH")
+# set(DEVICE "INKPLATE_6_V2") # Not supported yet
+# set(DEVICE "INKPLATE_10")
+# set(DEVICE "INKPLATE_10_EXTENDED")
+# set(DEVICE "INKPLATE_10_V2")
+set(DEVICE "INKPLATE_6FLICK")
+# set(DEVICE "INKPLATE_6PLUS")
+# set(DEVICE "INKPLATE_6PLUS_V2")
+
+# set(DEBUGGING 1)
+# set(REGRESSION_TEST 1)
+
+set(APP_VERSION "3.0.0")
+
 set(IDF_TARGET esp32)
 
 set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-ignored-qualifiers")
 
 add_compile_definitions(
     EPUB_LOG_LEVEL=ESP_LOG_DEBUG
@@ -16,6 +34,22 @@ if(DEVICE MATCHES "^INKPLATE_6$")
     set(DEVICE_NAME "I6")
     add_compile_definitions(
         INKPLATE_6=1 
+        MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_6_EXTENDED$")
+    message("INKPLATE 6 EXTENDED defined")
+    set(DEVICE_NAME "I6E")
+    add_compile_definitions(
+        INKPLATE_6=1
+        EXTENDED_CASE=1
+        BLE_KEYPAD=1
+        MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_6_BLUETOOTH$") # For testing only
+    message("INKPLATE 6 BLUETOOTH defined")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
+    set(DEVICE_NAME "I6BT")
+    add_compile_definitions(
+        INKPLATE_6=1
+        BLE_KEYPAD=1
         MCP23017=1)
 elseif(DEVICE MATCHES  "^INKPLATE_6PLUS$")
     message("INKPLATE 6PLUS defined")
@@ -39,20 +73,39 @@ elseif(DEVICE MATCHES "^INKPLATE_10$")
     message("INKPLATE 10 defined")
     set(DEVICE_NAME "I10")
     add_compile_definitions(
-        INKPLATE_10=1 
+        INKPLATE_10=1
+        MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
+    message("INKPLATE 10 EXTENDED defined")
+    set(DEVICE_NAME "I10E")
+    add_compile_definitions(
+        INKPLATE_10_EXTENDED=1
+        EXTENDED_CASE=1
         MCP23017=1)
 elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
     message("INKPLATE 6 V2 defined")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
     set(DEVICE_NAME "I6V2")
     add_compile_definitions(
-        INKPLATE_6_V2=1 
+        INKPLATE_6_V2=1
         PCAL6416=1)
+elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
+    message("INKPLATE 10 V2 defined")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
+    set(DEVICE_NAME "I10V2")
+    add_compile_definitions(
+        INKPLATE_10_V2=1
+        DMA_ENABLE=0
+        BLE_KEYPAD=1
+        PCAL6416=1)
+
 else()
-    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=2.1.0")
+    message(FATAL_ERROR "DEVICE NOT defined!!\nExample call: idf.py build -DDEVICE=INKPLATE_6 -DAPP_VERSION=3.0.0")
 endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 
     src 
+    ../ESP-IDF-InkPlate
 )
 
 string(TIMESTAMP THE_TIME "%Y%m%d-%H%MZ" UTC)

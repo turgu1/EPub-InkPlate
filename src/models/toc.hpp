@@ -7,162 +7,168 @@
 // Table of content class
 
 #include "global.hpp"
-#include "logging.hpp"
+#include "himem.hpp"
+
 #include "alloc.hpp"
+#include "char_pool.hpp"
+#include "logging.hpp"
 #include "pugixml.hpp"
+#include "simple_db.hpp"
 
-#include "models/page_locs.hpp"
-#include "helpers/char_pool.hpp"
-#include "helpers/simple_db.hpp"
+#include "models/epub.hpp"
 
+#include <cstring>
 #include <forward_list>
-#include <map>
+#include <limits>
 #include <utility>
 
-class TOC
-{
-  public:
-    TOC() : 
-             char_pool(nullptr), 
-           char_buffer(nullptr), 
-      char_buffer_size(0),
-               ncx_opf(nullptr),
-              ncx_data(nullptr),
-                 ready(false),
-             compacted(false),
-                 saved(false),
-              some_ids(false) {}
-   ~TOC() { 
-      if (char_pool   != nullptr) delete char_pool;
-      if (char_buffer != nullptr) free(char_buffer); 
-    };
+using TOCPtr = HimemUniquePtr<class TOC>;
+class TOC {
+private:
+  TOC() : db(SimpleDB::Make()) {}
 
-    #pragma pack(push, 1)
-    struct EntryRecord {
-      char             * label;
-      PageLocs::PageId   page_id;
-      uint8_t            level;
-      EntryRecord() {
-        label = nullptr;
-        level = 0;
-      }
-    };
+public:
+  ~TOC() = default;
 
-    struct VersionRecord {
-      uint16_t version;
-      char     app_name[32];
-      VersionRecord() {
-        version = 0;
-        memset(app_name, 0, 32);
-      }
-    };
-    #pragma pack(pop)
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-    typedef std::map<std::pair<int16_t, std::string>, uint16_t> Infos;
-    typedef std::vector<EntryRecord> Entries;
+  static inline auto Make() { return makeUniqueHimem<TOC>(); }
 
-    const Entries &          get_entries()            { return entries;         }
-    inline bool                 is_ready()            { return ready;           }
-    inline bool                 is_empty()            { return entries.empty(); }
-    inline bool        there_is_some_ids()            { return some_ids;        }
-    inline int16_t       get_entry_count()            { return entries.size();  }
-    inline const EntryRecord & get_entry(int16_t idx) { return entries[idx];    }
-    
-    /**
-     * @brief Load table of content from a file.
-     * 
-     * This is used to load the table of content related to the current
-     * ePub book. The file is a complete table with labels and page_ids. The filename is
-     * the same as for the e-book, with extension .toc
-     * 
-     * @return True if loading the file was successfull
-     */
-    bool load();
+  #pragma pack(push, 1)
+  struct PackedPageId {
+    int16_t itemrefIndex;
+    int16_t dummy;
+    int32_t offset;
 
-    /**
-     * @brief Save constructed table of content to a file.
-     * 
-     * This method will save the table of content once it has been
-     * constructed by the PageLocs class. The filename is
-     * the same as for the e-book, with extension .toc
-     * 
-     * @return True if saving was successfull.
-     */
-    bool save();
+    PackedPageId() : itemrefIndex(0), dummy(0), offset(0) {}
+    PackedPageId(int16_t idx, int32_t off) : itemrefIndex(idx), dummy(0), offset(off) {}
 
-    /**
-     * @brief Load table of content from ePub file.
-     * 
-     * This is used to prepare the construction of a table of
-     * content. This method will load the  *.ncx* file, retrieving
-     * ids, filenames and labels for each entry in the table of content.
-     * The PageLocs class will then interact with the TOC class to complete
-     * the information with the PageId related to each entry,
-     * 
-     * @return True if the information has been retrieved successfully.
-     */
-    bool load_from_epub();
+    auto operator=(const PageId &pageIdValue) -> PackedPageId & {
+      itemrefIndex = pageIdValue.itemrefIndex;
+      dummy        = 0;
+      offset       = pageIdValue.offset;
+      return *this;
+    }
 
-    /**
-     * @brief Compact the char strings to a single buffer.
-     * 
-     * This is used to retrieve all char strings in a single buffer
-     * in preparation to be saved to a file.
-     * 
-     * @return True if the compaction was successfull.
-     */
-    bool compact();
+    [[nodiscard]] operator PageId() const { return PageId(itemrefIndex, offset); }
+  };
 
-    /**
-     * @brief set table of content entry with page id
-     * 
-     * If the id correspond to an entry of the table
-     * of content, its location will be set with the
-     * page_id received.
-     * 
-     * @param id HTML id attribute that is part of an item.
-     * @param current_offset The location offset of the id in the item
-     */
-    void set(std::string & id, int32_t current_offset);
-    void set(int32_t current_offset);
-    
-  private:
-    static constexpr char const * TAG            = "TOC";
-    static constexpr char const * TOC_NAME       = "EPUB_INKPLATE_TOC";
-    static const uint16_t         TOC_DB_VERSION = 1;
+  struct EntryRecord {
+    char *label;
+    PackedPageId pageId;
+    uint8_t level;
+    EntryRecord() : label(nullptr), pageId(0, -1), level(0) {}
+  };
 
-    Entries    entries;
-    Infos      infos;
+  struct VersionRecord {
+    uint16_t version;
+    char appName[32];
+    VersionRecord() {
+      version = 0;
+      memset(appName, 0, 32);
+    }
+  };
+  #pragma pack(pop)
 
-    SimpleDB   db;                       ///< The SimpleDB table
+  using Infos   = HimemMap<std::pair<int16_t, std::string>, uint16_t>;
+  using Entries = HimemVector<EntryRecord>;
 
-    CharPool * char_pool;
-    char     * char_buffer;
-    uint16_t   char_buffer_size;
+  const Entries &getEntries() { return entries; }
+  [[nodiscard]] inline auto isReady() -> bool { return ready && !entries.empty(); }
+  [[nodiscard]] inline auto thereIsSomeIds() -> bool { return someIds; }
+  [[nodiscard]] inline auto getEntryCount() -> int16_t { return entries.size(); }
+  [[nodiscard]] inline auto getEntry(int16_t idx) -> const EntryRecord & { return entries[idx]; }
 
-    pugi::xml_document * ncx_opf;
-    char               * ncx_data;
+  /**
+   * @brief Load table of content from a file.
+   *
+   * This is used to load the table of content related to the current
+   * ePub book. The file is a complete table with labels and page_ids. The filename is
+   * the same as for the e-book, with extension .toc
+   *
+   * @return True if loading the file was successfull
+   */
+  auto load(EPubPtr &epub) -> bool;
 
-    const pugi::xml_document * opf;
+  /**
+   * @brief Save constructed table of content to a file.
+   *
+   * This method will save the table of content once it has been
+   * constructed by the PageLocs class. The filename is
+   * the same as for the e-book, with extension .toc
+   *
+   * @return True if saving was successfull.
+   */
+  auto save(HimemString epubFilename) -> bool;
 
-    volatile bool ready; // true if the table of content has been populated
-    bool compacted;
-    bool saved;
-    bool some_ids;
+  /**
+   * @brief Load table of content from ePub file.
+   *
+   * This is used to prepare the construction of a table of
+   * content. This method will load the  *.ncx* file, retrieving
+   * ids, filenames and labels for each entry in the table of content.
+   * The PageLocs class will then interact with the TOC class to complete
+   * the information with the PageId related to each entry,
+   *
+   * @return True if the information has been retrieved successfully.
+   */
+  auto loadFromEpub(EPub &epub) -> bool;
 
-    void        clean();
-    void        clean_filename(char * fname);
-    std::string build_filename();
-    bool        do_nav_points(pugi::xml_node & node, uint8_t level);
+  /**
+   * @brief Compact the char strings to a single buffer.
+   *
+   * This is used to retrieve all char strings in a single buffer
+   * in preparation to be saved to a file.
+   *
+   * @return True if the compaction was successfull.
+   */
+  auto compact() -> bool;
 
-    #if DEBUGGING
-      void      show();
-      void      show_info();
-    #endif
+  /**
+   * @brief set table of content entry with page id
+   *
+   * If the id correspond to an entry of the table
+   * of content, its location will be set with the
+   * pageId received.
+   *
+   * @param id HTML id attribute that is part of an item.
+   * @param currentOffset The location offset of the id in the item
+   */
+  auto set(std::string &id, int32_t currentOffset) -> void;
+  auto set(int32_t currentOffset) -> void;
+
+  static auto exists(const HimemString &epubFilename) -> bool;
+
+private:
+  static constexpr char const *TAG      = "TOC";
+  static constexpr char const *TOC_NAME = "EPUB_INKPLATE_TOC";
+  static const uint16_t TOC_DB_VERSION  = 1;
+
+  Entries entries;
+  Infos infos;
+
+  SimpleDBPtr db; ///< The SimpleDB table
+
+  CharPoolPtr charPool{nullptr};
+  HimemUniquePtr<char[]> charBuffer{nullptr};
+  size_t charBufferSize{0};
+
+  const pugi::xml_document *opf{nullptr};
+
+  volatile bool ready{false}; // true if the table of content has been populated
+  bool compacted{false};
+  bool saved{false};
+  bool someIds{false};
+
+  auto clean() -> void;
+  auto cleanFilename(char *fname) -> void;
+  auto buildFilename(EPubPtr &epub) -> HimemString;
+  auto doNavPoints(pugi::xml_node &node, uint8_t level) -> bool;
+
+  #if DEBUGGING
+    auto show() -> void;
+    auto showInfo() -> void;
+  #endif
 };
-
-#if __TOC__
-  TOC toc;
-#else
-  extern TOC toc;
-#endif

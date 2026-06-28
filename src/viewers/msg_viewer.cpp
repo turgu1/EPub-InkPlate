@@ -5,372 +5,349 @@
 #define __MSG_VIEWER__ 1
 #include "viewers/msg_viewer.hpp"
 
+#include "screen.hpp"
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
-#include "screen.hpp"
 
 #include <cstdarg>
+#include <memory>
 
 #if EPUB_INKPLATE_BUILD
-  #include "nvs.h"
   #include "inkplate_platform.hpp"
+  #include "nvs.h"
 #endif
 
-char MsgViewer::icon_char[7] = { 'I',  '!', 'H', 'E', 'S', 'Y', '!' };
+#define BUFFER_SIZE 250
 
-void MsgViewer::show(
-  MsgType msg_type, 
-  bool press_a_key, 
-  bool clear_screen,
-  const char * title, 
-  const char * fmt_str, ...)
-{
-  char buff[250];
+auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const char *title,
+                     const char *fmtStr, ...) -> ConfirmDataPtr {
+  HimemUniquePtr<char[]> buff = makeUniqueHimem<char[]>(BUFFER_SIZE);
+  auto                   page                   = Page::Make(appFonts);
+  auto                   confirmData            = ConfirmData::Make();
 
-  width = Screen::get_width() - 60;
+  uint16_t               width = Screen::getWidth() - 60;
 
-  if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return; // Cannot be used durint location computation
+  if (page->getComputeMode() == Page::ComputeMode::LOCATION) {
+    return nullptr; // Cannot be used durint location computation
 
+  }
   va_list args;
-  va_start(args, fmt_str);
-  vsnprintf(buff, 250, fmt_str, args);
+  va_start(args, fmtStr);
+  vsnprintf(buff.get(), BUFFER_SIZE, fmtStr, args);
   va_end(args);
 
   Page::Format fmt = {
-    .line_height_factor = 1.0,
-    .font_index         =   0,
-    .font_size          =  24,
-    .indent             =   0,
-    .margin_left        =  10,
-    .margin_right       =  10,
-    .margin_top         =  30,
-    .margin_bottom      =  10,
-    .screen_left        =   0,
-    .screen_right       =   0,
-    .screen_top         =   0,
-    .screen_bottom      =   0,
-    .width              =   0,
-    .height             =   0,
-    .vertical_align     =   0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::CENTER,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
+    .lineHeightFactor = 1.0,
+    .fontIndex        = ICONS_FONT_INDEX,
+    .fontSize         = 24,
+    .marginLeft       = 10,
+    .marginRight      = 10,
+    .marginTop        = 30,
+    .marginBottom     = 10,
+    .screenLeft       = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+    .screenRight      = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+    .screenTop        = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+    .screenBottom     = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+    .align            = CSS::Align::CENTER,
   };
 
-  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
+  page->setComputeMode(Page::ComputeMode::DISPLAY);
 
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
-  
-  page.start(fmt);
+  page->start(fmt);
 
-  page.clear_region(
-    Dim(width, HEIGHT), 
-    Pos((Screen::get_width()  - width ) >> 1, (Screen::get_height() - HEIGHT) >> 1));
+  page->clearRegion(Dim(width, HEIGHT), Pos(fmt.screenLeft, fmt.screenTop));
 
-  page.put_highlight(
-    Dim(width - 4, HEIGHT - 4), 
-    Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
+  page->putRounded(Dim(width - 4, HEIGHT - 4), Pos(fmt.screenLeft + 2, fmt.screenTop + 2));
 
-  Font * font = fonts.get(0);
+  FontPtr &iconFont = appFonts.getFont(0);
 
-  if (font == nullptr) {
-    LOG_E("Internal error (Drawings Font not available!");
-    return;
-  }
+  Glyph *  glyph = iconFont->getGlyph(iconChar[msgType], 24);
 
-  Font::Glyph * glyph = font->get_glyph(icon_char[msg_type], 24);
-  
   if (glyph != nullptr) {
-    page.put_char_at(
-      icon_char[msg_type], 
-      Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
-      fmt);
+    page->putCharAt(
+      iconChar[msgType],
+      Pos(fmt.screenLeft + 50 - (glyph->dim.width >> 1), (Screen::getHeight() >> 1) + 20), fmt);
   }
 
-  fmt.font_index =  1;
-  fmt.font_size  = 10;
+  fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
+  fmt.fontSize  = 10;
 
   // Title
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
-  std::string buffer = title;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+  page->setLimits(fmt);
+  page->newParagraph(fmt);
+  page->addText(title, fmt);
+  page->endParagraph(fmt);
 
   // Message
 
-  fmt.align       = CSS::Align::LEFT;
-  fmt.margin_top  = 80;
-  fmt.margin_left = 100;
+  fmt.align      = CSS::Align::LEFT;
+  fmt.marginTop  = 80;
+  fmt.marginLeft = 100;
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
-  buffer = buff;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+  page->setLimits(fmt);
+  page->newParagraph(fmt);
+  page->addText(buff.get(), fmt);
+  page->endParagraph(fmt);
 
   // Press a Key option
 
-  if (press_a_key) {
+  if (pressAKey) {
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      if (msg_type != MsgType::CONFIRM) {
-        fmt.align       = CSS::Align::CENTER;
-        fmt.font_size   =                  9;
-        fmt.margin_left =                 10;
-        fmt.margin_top  =                200;
+      if (msgType != MsgType::CONFIRM) {
+        fmt.align      = CSS::Align::CENTER;
+        fmt.fontSize   = 9;
+        fmt.marginLeft = 10;
+        fmt.marginTop  = 200;
 
-        page.set_limits(fmt);
-        page.new_paragraph(fmt);
-        buffer = "[Please TAP the screen]";
-        page.add_text(buffer, fmt);
-        page.end_paragraph(fmt);
-      } 
-      else {
-        font = fonts.get(1);
+        page->setLimits(fmt);
+        page->newParagraph(fmt);
+        page->addText("[Please TAP the screen]", fmt);
+        page->endParagraph(fmt);
+      } else {
+        FontPtr &font = appFonts.getFont(1);
 
-        if (font == nullptr) {
-          LOG_E("Internal error (Main Font not available!");
-          return;
-        }
+        Dim      dim = font->getASCIISize("CANCEL", 10);
+        Dim      okDim = font->getASCIISize("OK", 10);
 
-        Dim dim, ok_dim;
-        font->get_size("CANCEL", &dim,    10); 
-        font->get_size("OK",     &ok_dim, 10); 
-        buttons_dim = Dim(dim.width + 20, dim.height + 20);
-        ok_pos = Pos((Screen::get_width() >> 1) - 20 - buttons_dim.width, fmt.screen_top + 220);
-        cancel_pos = Pos((Screen::get_width() >> 1) + 20, fmt.screen_top + 220);
+        confirmData->buttonsDim = Dim(dim.width + 20, dim.height + 20);
+        confirmData->okPos =
+          Pos((Screen::getWidth() >> 1) - 20 - confirmData->buttonsDim.width, fmt.screenTop + 220);
+        confirmData->cancelPos = Pos((Screen::getWidth() >> 1) + 20, fmt.screenTop + 220);
 
-        page.put_rounded(buttons_dim, ok_pos);
-        page.put_rounded(Dim(buttons_dim.width + 2, buttons_dim.height + 2),
-                         Pos(ok_pos.x - 1,          ok_pos.y - 1));
-        page.put_rounded(Dim(buttons_dim.width + 4, buttons_dim.height + 4),
-                         Pos(ok_pos.x - 2,          ok_pos.y - 2));
+        page->putRounded(confirmData->buttonsDim, confirmData->okPos);
+        page->putRounded(Dim(confirmData->buttonsDim.width + 2, confirmData->buttonsDim.height + 2),
+                         Pos(confirmData->okPos.x - 1, confirmData->okPos.y - 1));
+        page->putRounded(Dim(confirmData->buttonsDim.width + 4, confirmData->buttonsDim.height + 4),
+                         Pos(confirmData->okPos.x - 2, confirmData->okPos.y - 2));
 
-        page.put_str_at("OK", Pos(ok_pos.x + (buttons_dim.width  >> 1) - (ok_dim.width  >> 1),
-                                  ok_pos.y + (buttons_dim.height >> 1) + (ok_dim.height >> 1)), fmt);
+        page->putStrAt(
+          "OK",
+          Pos(confirmData->okPos.x + (confirmData->buttonsDim.width >> 1) - (okDim.width >> 1),
+              confirmData->okPos.y + (confirmData->buttonsDim.height >> 1) + (okDim.height >> 1)),
+          fmt);
 
-        page.put_rounded(buttons_dim, cancel_pos);
-        page.put_rounded(Dim(buttons_dim.width + 2, buttons_dim.height + 2),
-                         Pos(cancel_pos.x - 1,      cancel_pos.y - 1));
-        page.put_rounded(Dim(buttons_dim.width + 4, buttons_dim.height + 4),
-                         Pos(cancel_pos.x - 2,      cancel_pos.y - 2));
+        page->putRounded(confirmData->buttonsDim, confirmData->cancelPos);
+        page->putRounded(Dim(confirmData->buttonsDim.width + 2, confirmData->buttonsDim.height + 2),
+                         Pos(confirmData->cancelPos.x - 1, confirmData->cancelPos.y - 1));
+        page->putRounded(Dim(confirmData->buttonsDim.width + 4, confirmData->buttonsDim.height + 4),
+                         Pos(confirmData->cancelPos.x - 2, confirmData->cancelPos.y - 2));
 
-        page.put_str_at("CANCEL", Pos(cancel_pos.x + (buttons_dim.width  >> 1) - (dim.width  >> 1),
-                                      cancel_pos.y + (buttons_dim.height >> 1) + (dim.height >> 1)), fmt);
+        page->putStrAt(
+          "CANCEL",
+          Pos(confirmData->cancelPos.x + (confirmData->buttonsDim.width >> 1) - (dim.width >> 1),
+              confirmData->cancelPos.y + (confirmData->buttonsDim.height >> 1) + (dim.height >> 1)),
+          fmt);
       }
     #else
-      fmt.align       = CSS::Align::CENTER;
-      fmt.font_size   =                  9;
-      fmt.margin_left =                 10;
-      fmt.margin_top  =                200;
+      fmt.align      = CSS::Align::CENTER;
+      fmt.fontSize   = 9;
+      fmt.marginLeft = 10;
+      fmt.marginTop  = 200;
 
-      page.set_limits(fmt);
-      page.new_paragraph(fmt);
-      buffer = msg_type == MsgType::CONFIRM ? "[Press SELECT to Confirm]" : "[Press any key]";
-      page.add_text(buffer, fmt);
-      page.end_paragraph(fmt);
+      page->setLimits(fmt);
+      page->newParagraph(fmt);
+      page->addText(msgType == MsgType::CONFIRM ? "[Press SELECT to Confirm]" : "[Press any key]",
+                    fmt);
+      page->endParagraph(fmt);
     #endif
   }
 
-  page.paint(clear_screen, !clear_screen, true);
+  page->paint(clearScreen, !clearScreen, true);
+
+  return confirmData;
 }
 
-bool MsgViewer::confirm(const EventMgr::Event & event, bool & ok)
-{
+/**
+ * @brief Evaluate confirmation input and update dialog state.
+ *
+ * Returns completion status together with the same confirmation payload,
+ * updated with the chosen result when a valid action is detected.
+ */
+auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData)
+-> std::pair<bool, ConfirmDataPtr> {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
 
     if (event.kind == EventMgr::EventKind::TAP) {
-      if ((event.x >= ok_pos.x) && (event.x <= (ok_pos.x + buttons_dim.width )) &&
-          (event.y >= ok_pos.y) && (event.y <= (ok_pos.y + buttons_dim.height))) {
-        ok = true;
-        return true;
-      }
-      else if ((event.x >= cancel_pos.x) && (event.x <= (cancel_pos.x + buttons_dim.width )) &&
-               (event.y >= cancel_pos.y) && (event.y <= (cancel_pos.y + buttons_dim.height))) {
-        ok = false;
-        return true;
+      if ((event.x >= confirmData->okPos.x) &&
+          (event.x <= (confirmData->okPos.x + confirmData->buttonsDim.width)) &&
+          (event.y >= confirmData->okPos.y) &&
+          (event.y <= (confirmData->okPos.y + confirmData->buttonsDim.height))) {
+        confirmData->ok = true;
+        return { true, std::move(confirmData) };
+      } else if ((event.x >= confirmData->cancelPos.x) &&
+                 (event.x <= (confirmData->cancelPos.x + confirmData->buttonsDim.width)) &&
+                 (event.y >= confirmData->cancelPos.y) &&
+                 (event.y <= (confirmData->cancelPos.y + confirmData->buttonsDim.height))) {
+        confirmData->ok = false;
+        return { true, std::move(confirmData) };
       }
     }
-    return false;
-  #else 
-    ok = event.kind == EventMgr::EventKind::SELECT;
-    return true;
+    return { false, std::move(confirmData) };
+  #else
+    confirmData->ok = event.kind == EventMgr::EventKind::SELECT;
+    return { true, std::move(confirmData) };
   #endif
-
 }
 
-#if 0
-void MsgViewer::show_progress(const char * title, ...)
-{
-  width = Screen::get_width() - 60;
+#if 1
+  auto MsgViewer::showProgress(const char *title, ...) -> std::pair<PagePtr, ProgressDataPtr> {
 
-  Page::Format fmt = {
-    .line_height_factor = 1.0,
-    .font_index         =   1,
-    .font_size          =  10,
-    .indent             =   0,
-    .margin_left        =  10,
-    .margin_right       =  10,
-    .margin_top         =  30, // 70,
-    .margin_bottom      =  10,
-    .screen_left        =   0,
-    .screen_right       =   0,
-    .screen_top         =   0,
-    .screen_bottom      =   0,
-    .width              =   0,
-    .height             =   0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::CENTER,
-    .vertical_align     = 0,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
-  };
+    auto         page         = Page::Make(appFonts);
+    auto         progressData = ProgressData::Make();
 
-  fmt.screen_left        = (Screen::get_width()  - width  ) >> 1;
-  fmt.screen_right       = (Screen::get_width()  - width  ) >> 1;
-  fmt.screen_top         = (Screen::get_height() - HEIGHT2) >> 1;
-  fmt.screen_bottom      = (Screen::get_height() - HEIGHT2) >> 1;
+    uint16_t     width = Screen::getWidth() - 60;
 
-  char buff[80];
+    Page::Format fmt = {
+      .indent       = 0,
+      .marginLeft   = 10,
+      .marginRight  = 10,
+      .marginTop    = 30, // 70,
+      .marginBottom = 10,
+      .screenLeft   = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+      .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+      .screenTop    = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+      .screenBottom = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+      .align        = CSS::Align::CENTER,
+    };
 
-  va_list args;
-  va_start(args, title);
-  vsnprintf(buff, 80, title, args);
-  va_end(args);
+    char         buff[200];
 
-  page.start(fmt);
+    va_list      args;
+    va_start(args, title);
+    vsnprintf(buff, 200, title, args);
+    va_end(args);
 
-  page.clear_region(
-    Dim(width, HEIGHT2), 
-    Pos((Screen::get_width()  - width  ) >> 1, (Screen::get_height() - HEIGHT2) >> 1));
+    page->start(fmt);
 
-  page.put_highlight(
-    Dim(width - 4, HEIGHT2 - 4), 
-    Pos(((Screen::get_width() - width  ) >> 1) + 2, ((Screen::get_height() - HEIGHT2) >> 1) + 2));
+    page->clearRegion(Dim(width, HEIGHT), Pos(fmt.screenLeft, fmt.screenTop));
 
-  // Title
+    page->putRounded(Dim(width - 4, HEIGHT - 4), Pos(fmt.screenLeft + 2, fmt.screenTop + 2));
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
-  std::string buffer = buff;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+    // Title
 
-  // Progress zone
+    page->setLimits(fmt);
+    page->newParagraph(fmt);
+    std::string buffer = buff;
+    page->addText(buffer, fmt);
+    page->endParagraph(fmt);
 
-  page.put_highlight(
-    Dim(width - 42, HEIGHT2 - 100), 
-    Pos(((Screen::get_width() - width) >> 1) +  23, (Screen::get_height() >> 1) - 120)
-  );
+    // Progress zone
 
-  dot_zone.dim  = Dim(width -  46, HEIGHT2 - 104);
-  dot_zone.pos  = Pos(((Screen::get_width() - width) >> 1) +  25, (Screen::get_height() >> 1) - 118);
-  dot_zone.dots_per_line = (dot_zone.dim.width + 1) / 9;
-  dot_zone.max_dot_count = dot_zone.dots_per_line * ((dot_zone.dim.height + 1) / 9);
-  dot_count = 0;
+    progressData->dim = Dim(width - 100, Screen::getHeight() / 18);
+    progressData->pos = Pos(((Screen::getWidth() - width) >> 1) + 50, (Screen::getHeight() >> 1));
 
-  page.paint(false);
-}
+    progressData->previousWidth = 0;
 
-void MsgViewer::add_dot()
-{
-  width = Screen::get_width() - 60;
+    page->putHighlight(progressData->dim, progressData->pos);
 
-  Page::Format fmt = {
-    .line_height_factor = 1.0,
-    .font_index         =   1,
-    .font_size          =  10,
-    .indent             =   0,
-    .margin_left        =  10,
-    .margin_right       =  10,
-    .margin_top         =  30, // 70,
-    .margin_bottom      =  10,
-    .screen_left        =   0,
-    .screen_right       =   0,
-    .screen_top         =   0,
-    .screen_bottom      =   0,
-    .width              =   0,
-    .height             =   0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::CENTER,
-    .vertical_align     = 0,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
-  };
+    progressData->dim.width -= 10;
+    progressData->dim.height -= 10;
+    progressData->pos.x += 5;
+    progressData->pos.y += 5;
 
-  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
+    page->paint(false);
 
-  page.start(fmt);
-
-  if (dot_count >= dot_zone.max_dot_count) {
-    page.clear_region(dot_zone.dim, dot_zone.pos);
-    dot_count = 0;
+    return { std::move(page), std::move(progressData) };
   }
 
-  Pos pos(dot_zone.pos.x + (dot_count % dot_zone.dots_per_line) * 9,
-          dot_zone.pos.y + (dot_count / dot_zone.dots_per_line) * 9);
+  auto MsgViewer::updateProgress(PagePtr page, ProgressDataPtr progressData, uint16_t percent,
+                                 const char *fmtStr, ...) -> std::pair<PagePtr, ProgressDataPtr> {
 
-  page.set_region(Dim{ 8, 8 }, pos);
+    if (percent > 100) { return { std::move(page), std::move(progressData) }; }
 
-  dot_count++;
+    uint16_t     width = Screen::getWidth() - 60;
 
-  page.paint(false, true, true);
-}
+    Page::Format fmt = {
+      .marginTop    = 30, // 70,
+      .screenLeft   = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+      .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
+      .screenTop    = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+      .screenBottom = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
+      .align        = CSS::Align::CENTER,
+    };
+
+    char         buff[80];
+
+    va_list      args;
+    va_start(args, fmtStr);
+    vsnprintf(buff, 80, fmtStr, args);
+    va_end(args);
+
+    page->start(fmt);
+
+    uint16_t progressWidth =
+      percent >= 100
+          ? progressData->dim.width
+          : static_cast<uint16_t>(static_cast<uint32_t>(progressData->dim.width * percent) / 100);
+
+    if (progressWidth > progressData->previousWidth) {
+      progressWidth -= progressData->previousWidth;
+      page->setRegion(Dim{ progressWidth, progressData->dim.height },
+                      Pos{ static_cast<uint16_t>(progressData->pos.x + progressData->previousWidth),
+                           static_cast<uint16_t>(progressData->pos.y) });
+
+      page->clearRegion(
+        Dim(width - 20, 30),
+        Pos(fmt.screenLeft + 10, progressData->pos.y + (progressData->dim.height << 1) - 25));
+
+      page->putStrAt(
+        buff,
+        Pos{ static_cast<uint16_t>(progressData->pos.x + (progressData->dim.width >> 1)),
+             static_cast<uint16_t>(progressData->pos.y + (progressData->dim.height << 1)) },
+        fmt);
+
+      progressData->previousWidth += progressWidth;
+
+      page->paint(false, false, true);
+    }
+
+    return { std::move(page), std::move(progressData) };
+  }
 #endif
 
-void 
-MsgViewer::out_of_memory(const char * raison)
-{
+/**
+ * @brief Last-resort OOM handler.
+ *
+ * Clears persistent state on embedded builds, forces a full refresh so the
+ * alert is visible, displays a restart instruction, and finally deep-sleeps
+ * (embedded) or exits (Linux).
+ */
+auto MsgViewer::outOfMemory(const char *reason) -> void {
   #if EPUB_INKPLATE_BUILD
-    nvs_handle_t nvs_handle;
+    nvs_handle_t nvsHandle;
     esp_err_t    err;
 
-    if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvs_handle)) == ESP_OK) {
-      if (nvs_erase_all(nvs_handle) == ESP_OK) {
-        nvs_commit(nvs_handle);
+    if ((err = nvs_open("EPUB-InkPlate", NVS_READWRITE, &nvsHandle)) == ESP_OK) {
+      if (nvs_erase_all(nvsHandle) == ESP_OK) {
+        nvs_commit(nvsHandle);
       }
-      nvs_close(nvs_handle);
+      nvs_close(nvsHandle);
     }
   #endif
 
-  screen.force_full_update();
+  screen.forceFullUpdate();
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
     #define MSG "Press the WakeUp Button to restart."
-    #define INT_PIN TouchScreen::INTERRUPT_PIN
+    #define INT_PIN EInk::WAKE_UP_PIN
     #define LEVEL 0
   #else
     #define MSG "Press a key to restart."
     #if EXTENDED_CASE
       #define INT_PIN PressKeys::INTERRUPT_PIN
-    #else
+    #elif INKPLATE_6 || INKPLATE_10
       #define INT_PIN TouchKeys::INTERRUPT_PIN
     #endif
     #define LEVEL 1
   #endif
-  
+
   show(ALERT, true, true, "OUT OF MEMORY!!",
-    "It's a bit sad that the device is now out of "
-    "memory to continue. The reason: %s. "
-    "The device is now entering into Deep Sleep. "
-    MSG,
-    raison
-  );
- 
+       "It's a bit sad that the device is now out of "
+       "memory to continue. The reason: %s. "
+       "The device is now entering into Deep Sleep. " MSG,
+       reason);
+
   #undef MSG
 
   #if EPUB_INKPLATE_BUILD

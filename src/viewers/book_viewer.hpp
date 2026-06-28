@@ -3,69 +3,81 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
-#include "global.hpp"
 
-#include <mutex>
+#include "global.hpp"
+#include "himem.hpp"
+
 #include <unordered_map>
 
 #if EPUB_LINUX_BUILD
 #else
   #include "freertos/FreeRTOS.h"
-  #include "freertos/task.h"
   #include "freertos/semphr.h"
+  #include "freertos/task.h"
 #endif
 
-#include "pugixml.hpp"
-#include "viewers/page.hpp"
+#include "fonts.hpp"
+#include "models/css.hpp"
+#include "models/dom.hpp"
 #include "models/epub.hpp"
 #include "models/page_locs.hpp"
-#include "models/css.hpp"
-#include "models/fonts.hpp"
-#include "models/dom.hpp"
+#include "pugixml.hpp"
+#include "viewers/page.hpp"
 
 using namespace pugi;
 
-class BookViewer
-{
-  public:
-    const int16_t TITLE_FONT      = 2;
-    const int16_t TITLE_FONT_SIZE = 8;
+using BookViewerPtr = HimemUniquePtr<class BookViewer>;
 
-  private:
-    static constexpr char const * TAG = "BookViewer";
+class BookViewer {
+public:
+  static constexpr char const *TAG = "BookViewer";
 
-    std::mutex        mutex;
-    int16_t           page_bottom;
-    PageLocs::PageId  current_page_id;
+private:
+  BookViewer(Fonts &fonts) : page(Page::Make(fonts)) {};
 
-    void build_page_at(const PageLocs::PageId & page_id);
+  uint16_t pageBottom;
+  PageId current_page_id{-1, -1};
 
-    struct PageEnd {
-      bool operator()(Page::Format & fmt) const {
-        return false;
-      }
-    };
+  PagePtr page{nullptr};
 
-  public:
+  auto recreatePage(Fonts &fonts) -> bool;
+  auto buildPageAt(const PageId &pageId, EPubPtr &epub) -> void;
 
-    BookViewer() { }
-   ~BookViewer() { }
+  struct PageEnd {
+    bool operator()(Page::Format &fmt) const { return false; }
+  };
 
-    void                     init() { current_page_id = PageLocs::PageId(-1, -1); }
-    inline std::mutex & get_mutex() { return mutex; }
+public:
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
 
-    /**
-     * @brief Show a page on the display.
-     * 
-     * @param page_nbr The page number to show (First ebook page = 0, cover = -1)
-     */
-    void show_page(const PageLocs::PageId & page_id);
+  static inline auto Make(Fonts &fonts) { return makeUniqueHimem<BookViewer>(fonts); }
 
-    void show_fake_cover();
+  ~BookViewer() = default;
+
+  /**
+   * @brief Prepare a page for display.
+   *
+   * @param pageId The ID of the page to prepare.
+   * @param epub The EPUB instance.
+   * @return true if the page was successfully prepared but not displayed, false otherwise.
+   * This can happen if the page is a cover page or if there was an error preparing the page.
+   */
+  auto preparePage(const PageId &pageId, EPubPtr &epub) -> bool;
+
+  /**
+   * @brief Display a prepared page.
+   *
+   * This function assumes that the page has already been prepared using preparePage().
+   * It will handle the actual rendering of the page on the screen.
+   * If the page was not prepared or if there was an error during preparation,
+   * this function may not display anything or may display an error message.
+   */
+  auto displayPage(const PageId &pageId) -> void;
+
+  auto showFakeCover(EPubPtr &epub) -> void;
+
+  static constexpr int16_t TITLE_FONT      = 2;
+  static constexpr int16_t TITLE_FONT_SIZE = 8;
 };
-
-#if __BOOK_VIEWER__
-  BookViewer book_viewer;
-#else
-  extern BookViewer book_viewer;
-#endif

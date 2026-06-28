@@ -5,308 +5,399 @@
 #define __BOOK_PARAM_CONTROLLER__ 1
 #include "controllers/book_param_controller.hpp"
 
+#include "config.hpp"
 #include "controllers/app_controller.hpp"
-#include "controllers/common_actions.hpp"
-#include "controllers/books_dir_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
+#include "controllers/common_actions.hpp"
+#include "controllers/toc_controller.hpp"
 #include "controllers/web_server.hpp"
+#include "fonts.hpp"
+#include "fonts_db.hpp"
 #include "models/books_dir.hpp"
 #include "models/epub.hpp"
-#include "models/config.hpp"
 #include "models/page_locs.hpp"
-#include "models/toc.hpp"
-#include "viewers/menu_viewer.hpp"
-#include "viewers/form_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include "esp_system.h"
   #include "eink.hpp"
   #include "esp.hpp"
-  #include "soc/rtc.h"
+  #include "esp_system.h"
+// #include "soc/rtc.h"
 #endif
 
+#include "book_param_controller.hpp"
 #include <sys/stat.h>
 
-static int8_t show_images;
-static int8_t font_size;
-static int8_t use_fonts_in_book;
+static int8_t showPictures;
+static int8_t fontSize;
+static int8_t useFontsInBook;
 static int8_t font;
-static int8_t done_res;
+static int8_t doneRes;
+static int8_t lineHeight;
+static int8_t columnCount;
 
-static int8_t old_font_size;
-static int8_t old_show_images;
-static int8_t old_use_fonts_in_book;
-static int8_t old_font;
+static int8_t oldFontSize;
+static int8_t oldShowPictures;
+static int8_t oldUseFontsInBook;
+static int8_t oldFont;
+static int8_t oldLineHeight;
+static int8_t oldColumnCount;
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 5;
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 7;
 #else
-  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 4;
+  static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
 #endif
-static FormEntry book_params_form_entries[BOOK_PARAMS_FORM_SIZE] = {
-  { .caption = "Font Size:",           .u = { .ch = { .value = &font_size,          .choice_count = 4, .choices = FormChoiceField::font_size_choices } }, .entry_type = FormEntryType::HORIZONTAL },
-  { .caption = "Use fonts in book:",   .u = { .ch = { .value = &use_fonts_in_book,  .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
-  { .caption = "Font:",                .u = { .ch = { .value = &font,               .choice_count = 8, .choices = FormChoiceField::font_choices      } }, .entry_type = FormEntryType::VERTICAL   },
-  { .caption = "Show Images in book:", .u = { .ch = { .value = &show_images,        .choice_count = 2, .choices = FormChoiceField::yes_no_choices    } }, .entry_type = FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-    { .caption = " DONE ",             .u = { .ch = { .value = &done_res,           .choice_count = 0, .choices = nullptr                            } }, .entry_type = FormEntryType::DONE       }
-  #endif
+
+// *INDENT-OFF*
+static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
+    {.caption   = "Font Size:",
+     .u         = {.ch = {.value       = &fontSize,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::fontSizeChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+    {.caption   = "Line Height Factor:",
+     .u         = {.ch = {.value       = &lineHeight,
+                          .choiceCount = 3,
+                          .choices     = FormChoiceField::lineHeightChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+    {.caption   = "Use fonts in book:",
+     .u         = {.ch = {.value       = &useFontsInBook,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+    {.caption = "Font:",
+     .u       = {.ch = {.value = &font, .choiceCount = 8, .choices = FormChoiceField::fontChoices}},
+     .entryType = FormEntryType::VERTICAL},
+    {.caption   = "Show Images in book:",
+     .u         = {.ch = {.value       = &showPictures,
+                          .choiceCount = 2,
+                          .choices     = FormChoiceField::yesNoChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+    {.caption   = "Column Count:",
+     .u         = {.ch = {.value       = &columnCount,
+                          .choiceCount = 4,
+                          .choices     = FormChoiceField::columnCountChoices}},
+     .entryType = FormEntryType::HORIZONTAL},
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    {.caption   = " DONE ",
+     .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
+     .entryType = FormEntryType::DONE}
+#endif
 };
 
-static void
-book_parameters()
-{
-  BookParams * book_params = epub.get_book_params();
+// *INDENT-ON*
 
-  book_params->get(BookParams::Ident::SHOW_IMAGES,        &show_images      );
-  book_params->get(BookParams::Ident::FONT_SIZE,          &font_size        );
-  book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK,  &use_fonts_in_book);
-  book_params->get(BookParams::Ident::FONT,               &font             );
-  
-  if (show_images       == -1) config.get(Config::Ident::SHOW_IMAGES,        &show_images      );
-  if (font_size         == -1) config.get(Config::Ident::FONT_SIZE,          &font_size        );
-  if (use_fonts_in_book == -1) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &use_fonts_in_book);
-  if (font              == -1) config.get(Config::Ident::DEFAULT_FONT,       &font             );
-  
-  old_show_images        = show_images;
-  old_use_fonts_in_book  = use_fonts_in_book;
-  old_font               = font;
-  old_font_size          = font_size;
-  done_res               = 1;
+static constexpr char const *BOOK_PARAMS_CAPTION = "Current e-book parameters";
 
-  form_viewer.show(
-    book_params_form_entries, 
-    BOOK_PARAMS_FORM_SIZE, 
-    "(Any item change will trigger book refresh)");
+auto BookParamController::bookParameters() -> void {
+  BookParams *bookParams = epub->getBookParams();
 
-  book_param_controller.set_book_params_form_is_shown();
+  bookParams->get(BookParams::Ident::SHOW_PICTURES,     &showPictures);
+  bookParams->get(BookParams::Ident::FONT_SIZE,         &fontSize);
+  bookParams->get(BookParams::Ident::LINE_HEIGHT,       &lineHeight);
+  bookParams->get(BookParams::Ident::USE_FONTS_IN_BOOK, &useFontsInBook);
+  bookParams->get(BookParams::Ident::FONT,              &font);
+  bookParams->get(BookParams::Ident::COLUMN_COUNT,      &columnCount);
+
+  if (showPictures == -1) { config.get(Config::Ident::SHOW_PICTURES, &showPictures); }
+  if (fontSize == -1) { config.get(Config::Ident::FONT_SIZE, &fontSize); }
+  if (lineHeight == -1) { config.get(Config::Ident::LINE_HEIGHT, &lineHeight); }
+  if (useFontsInBook == -1) { config.get(Config::Ident::USE_FONTS_IN_BOOKS, &useFontsInBook); }
+  if (font == -1) { config.get(Config::Ident::DEFAULT_FONT, &font); }
+  if (columnCount == -1) { config.get(Config::Ident::COLUMN_COUNT, &columnCount); }
+
+  oldShowPictures   = showPictures;
+  oldUseFontsInBook = useFontsInBook;
+  oldFont           = font;
+  oldFontSize       = fontSize;
+  oldLineHeight     = lineHeight;
+  oldColumnCount    = columnCount;
+  doneRes           = 1;
+
+  formViewer->show(BOOK_PARAMS_CAPTION, bookParamsFormEntries, BOOK_PARAMS_FORM_SIZE,
+                   "(Any item change will trigger book refresh)");
+
+  bookParamController.setBookParamsFormIsShown();
 }
 
-static void
-revert_to_defaults()
-{
-  page_locs.stop_document();
-  
-  EPub::BookFormatParams * book_format_params = epub.get_book_format_params();
+auto BookParamController::revertToDefaults() -> void {
+  pageLocs.stopControlTask();
 
-  BookParams * book_params = epub.get_book_params();
+  EPub::BookFormatParams *bookFormatParams = epub->getBookFormatParams();
 
-  old_use_fonts_in_book = book_format_params->use_fonts_in_book;
-  old_font              = book_format_params->font;
+  BookParams *            bookParams = epub->getBookParams();
 
-  constexpr int8_t default_value = -1;
+  oldShowPictures   = bookFormatParams->showPictures;
+  oldFontSize       = bookFormatParams->fontSize;
+  oldUseFontsInBook = bookFormatParams->useFontsInBook;
+  oldFont           = bookFormatParams->font;
+  oldLineHeight     = bookFormatParams->lineHeight;
+  oldColumnCount    = bookFormatParams->columnCount;
 
-  book_params->put(BookParams::Ident::SHOW_IMAGES,       default_value);
-  book_params->put(BookParams::Ident::FONT_SIZE,         default_value);
-  book_params->put(BookParams::Ident::FONT,              default_value);
-  book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK, default_value);
-  
-  epub.update_book_format_params();
+  constexpr int8_t defaultValue = -1;
 
-  book_params->save();
+  bookParams->put(BookParams::Ident::SHOW_PICTURES,     defaultValue);
+  bookParams->put(BookParams::Ident::FONT_SIZE,         defaultValue);
+  bookParams->put(BookParams::Ident::LINE_HEIGHT,       defaultValue);
+  bookParams->put(BookParams::Ident::FONT,              defaultValue);
+  bookParams->put(BookParams::Ident::COLUMN_COUNT,      defaultValue);
+  bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, defaultValue);
 
-  msg_viewer.show(MsgViewer::MsgType::INFO, 
-                  false, false, 
-                  "E-book parameters reverted", 
+  epub->retrieveBookFormatParams();
+
+  bookParams->save();
+
+  MsgViewer::show(MsgViewer::MsgType::INFO, false, false, "E-book parameters reverted",
                   "E-book parameters reverted to default values.");
 
-  if (old_use_fonts_in_book != book_format_params->use_fonts_in_book) {
-    if (book_format_params->use_fonts_in_book) {
-      epub.load_fonts();
-    }
-    else {
-      fonts.clear();
-      fonts.clear_glyph_caches();
+  if (oldUseFontsInBook != bookFormatParams->useFontsInBook) {
+    pageLocs.stopControlTask();
+    if (bookFormatParams->useFontsInBook) {
+      epub->loadFonts();
+    } else {
+      epub->getFonts().clear();
+      epub->getFonts().clearGlyphCaches();
     }
   }
 
-  if (old_font != book_format_params->font) {
-    fonts.adjust_default_font(book_format_params->font);
+  if (oldFont != bookFormatParams->font) {
+    pageLocs.stopControlTask();
+    epub->getFonts().adjustDefaultFont(bookFormatParams->font);
+  }
+
+  if (oldLineHeight != bookFormatParams->lineHeight) {
+    pageLocs.stopControlTask();
+  }
+
+  if ((oldColumnCount != columnCount) &&
+      ((screen.getOrientation() == Screen::Orientation::BOTTOM) ||
+       (screen.getOrientation() == Screen::Orientation::TOP))) {
+    pageLocs.stopControlTask();
   }
 }
 
-static void 
-books_list()
-{
-  app_controller.set_controller(AppController::Ctrl::DIR);
+auto BookParamController::booksList() -> void {
+  // As the DirController will take control, the next
+  // time a book will be selected will have the BookControler
+  // pointing at the current epub. So we can release the ownership
+  // of the current book to the BookController before giving
+  // control to the DirController.
+  bookController.becomeOwnerOfBook(std::move(epub));
+  appController.setController(AppController::Ctrl::DIR);
 }
 
-static void
-delete_book()
-{
-  msg_viewer.show(MsgViewer::MsgType::CONFIRM, true, false,
-                  "Delete e-book", 
-                  "The e-book \"%s\" will be deleted. Are you sure?", 
-                  epub.get_title());
-  book_param_controller.set_delete_current_book();
+auto BookParamController::deleteBook() -> void {
+  confirmData =
+    MsgViewer::show(MsgViewer::MsgType::CONFIRM, true, false, "Delete e-book",
+                    "The e-book \"%s\" will be deleted. Are you sure?", epub->getTitle());
+  bookParamController.setDeleteCurrentBook();
 }
 
-static void 
-toc_ctrl()
-{
-  app_controller.set_controller(AppController::Ctrl::TOC);
+auto BookParamController::returnToBook() -> void {
+  bookController.becomeOwnerOfBook(std::move(epub));
+  appController.setController(AppController::Ctrl::BOOK);
 }
 
-static void
-wifi_mode()
-{
+auto BookParamController::tocCtrl() -> void {
+  tocController.becomeOwnerOfBook(std::move(epub));
+  appController.setController(AppController::Ctrl::TOC);
+}
+
+auto BookParamController::wifiMode() -> void {
+  pageLocs.stopControlTask();
+
   #if EPUB_INKPLATE_BUILD
-    epub.close_file();
-    fonts.clear(true);
-    fonts.clear_glyph_caches();
-    
-    event_mgr.set_stay_on(true); // DO NOT sleep
+    epub->closeFile();
+    appFonts.clear(true);
+    appFonts.clearGlyphCaches();
 
-    if (start_web_server()) {
-      book_param_controller.set_wait_for_key_after_wifi();
+    eventMgr.setStayOn(true); // DO NOT sleep
+
+    if (startWebServer()) {
+      bookParamController.setWaitForKeyAfterWifi();
     }
   #endif
 }
 
-static void
-power_off()
-{
-  books_dir_controller.save_last_book(book_controller.get_current_page_id(), true); 
-  
-  CommonActions::power_it_off();
+auto BookParamController::powerOff() -> void {
+  booksDirController.saveLastBook(bookController.getCurrentPageId(), true);
+  // pageLocs.stopControlTask();
+
+  CommonActions::powerItOff();
 }
 
 // IMPORTANT!!
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
 static MenuViewer::MenuEntry menu[10] = {
-  { MenuViewer::Icon::RETURN,      "Return to the e-books reader",         CommonActions::return_to_last, true , true },
-  { MenuViewer::Icon::TOC,         "Table of Content",                     toc_ctrl                     , false, true },
-  { MenuViewer::Icon::BOOK_LIST,   "E-Books list",                         books_list                   , true , true },
-  { MenuViewer::Icon::FONT_PARAMS, "Current e-book parameters",            book_parameters              , true , true },
-  { MenuViewer::Icon::REVERT,      "Revert e-book parameters to "
-                                   "default values",                       revert_to_defaults           , true , true },  
-  { MenuViewer::Icon::DELETE,      "Delete the current e-book",            delete_book                  , true , true },
-  { MenuViewer::Icon::WIFI,        "WiFi Access to the e-books folder",    wifi_mode                    , true , true },
-  { MenuViewer::Icon::INFO,        "About the EPub-InkPlate application",  CommonActions::about         , true , true },
-  { MenuViewer::Icon::POWEROFF,    "Power OFF (Deep Sleep)",               power_off                    , true , true },
-  { MenuViewer::Icon::END_MENU,    nullptr,                                nullptr                      , false, true }
-}; 
+  { MenuViewer::Icon::RETURN,      true,  true, nullptr, "Return to the e-books reader"               },
+  { MenuViewer::Icon::TOC,         false, true, nullptr, "Table of Content"                           },
+  { MenuViewer::Icon::BOOK_LIST,   true,  true, nullptr, "E-Books list"                               },
+  { MenuViewer::Icon::FONT_PARAMS, true,  true, nullptr, BOOK_PARAMS_CAPTION                          },
+  { MenuViewer::Icon::REVERT,      true,  true, nullptr, "Revert e-book parameters to default values" },
+  { MenuViewer::Icon::DELETE,      true,  true, nullptr, "Delete the current e-book"                  },
+  { MenuViewer::Icon::WIFI,        true,  true, nullptr, "WiFi Access to the e-books folder"          },
+  { MenuViewer::Icon::INFO,        true,  true, nullptr, "About the EPub-InkPlate application"        },
+  // This entry must be the last one before END_MENU and MUST ALWAYS BE VISIBLE!!
+  { MenuViewer::Icon::POWEROFF,    true,  true, nullptr, "Power OFF (Deep Sleep)"                     },
+  { MenuViewer::Icon::END_MENU,    false, true, nullptr, nullptr                                      } };
 
-void
-BookParamController::set_font_count(uint8_t count)
-{
-  book_params_form_entries[2].u.ch.choice_count = count;
+auto BookParamController::setFontCount(uint8_t count) -> void {
+  // Caution: The index is hard coded. Must be updated when the
+  // form entries are changed.
+  bookParamsFormEntries[3].u.ch.choiceCount = count;
 }
 
-void 
-BookParamController::enter()
-{
-  menu[1].visible = toc.is_ready() && !toc.is_empty();
-  menu_viewer.show(menu);
-  book_params_form_is_shown = false;
-}
+auto BookParamController::enter() -> void {
+  // Check if the TOC file exists for the current book.
+  // If it doesn't, the TOC menu entry will not be shown.
+  auto        filePath = epub->getCurrentFilename();
+  struct stat fileStat;
+  auto        dotPos = filePath.find_last_of('.');
+  filePath.replace(dotPos, 5, ".toc");
+  menu[1].visible = stat(filePath.c_str(), &fileStat) != -1;
 
-void 
-BookParamController::leave(bool going_to_deep_sleep)
-{
+  FontsDB *fontsDB{ nullptr };
+  config.get(Config::Ident::FONTS_DB, &fontsDB);
+  setFontCount(fontsDB ? fontsDB->getStandardFontCount() : 0);
 
-}
+  menuViewer = MenuViewer::Make();
+  formViewer = FormViewer::Make();
 
-void 
-BookParamController::input_event(const EventMgr::Event & event)
-{
-  if (book_params_form_is_shown) {
-    if (form_viewer.event(event)) {
-      book_params_form_is_shown = false;
-      // if (ok) {
-        BookParams * book_params = epub.get_book_params();
+  if (menuViewer) {
+    menu[0].func = [this]() { this->returnToBook(); };
+    menu[1].func = [this]() { this->tocCtrl(); };
+    menu[2].func = [this]() { this->booksList(); };
+    menu[3].func = [this]() { this->bookParameters(); };
+    menu[4].func = [this]() { this->revertToDefaults(); };
+    menu[5].func = [this]() { this->deleteBook(); };
+    menu[6].func = [this]() { this->wifiMode(); };
+    menu[7].func = CommonActions::about;
+    menu[8].func = [this]() { this->powerOff(); };
 
-        if (show_images       !=       old_show_images) book_params->put(BookParams::Ident::SHOW_IMAGES,        show_images      );
-        if (font_size         !=         old_font_size) book_params->put(BookParams::Ident::FONT_SIZE,          font_size        );
-        if (font              !=              old_font) book_params->put(BookParams::Ident::FONT,               font             );
-        if (use_fonts_in_book != old_use_fonts_in_book) book_params->put(BookParams::Ident::USE_FONTS_IN_BOOK,  use_fonts_in_book);
-        
-        if (book_params->is_modified()) epub.update_book_format_params();
-
-        book_params->save();
-
-        if (old_use_fonts_in_book != use_fonts_in_book) {
-          if (use_fonts_in_book) {
-            epub.load_fonts();
-          }
-          else {
-            fonts.clear();
-            fonts.clear_glyph_caches();
-          }
-        }
- 
-        if (old_font != font) {
-          fonts.adjust_default_font(font);
-        }
-     // }
-      menu_viewer.clear_highlight();
-    }
+    menuViewer->show(menu);
   }
-  else if (delete_current_book) {
-    bool ok;
-    if (msg_viewer.confirm(event, ok)) {
-      if (ok) {
-        std::string filepath = epub.get_current_filename();
-        struct stat file_stat;
+  bookParamsFormIsShown = false;
+}
 
-        if (stat(filepath.c_str(), &file_stat) != -1) {
-          LOG_I("Deleting %s...", filepath.c_str());
+auto BookParamController::leave(bool goingToDeepSleep) -> void {
+  confirmData.reset();
+  menuViewer.reset();
+  formViewer.reset();
+}
 
-          epub.close_file();
-          unlink(filepath.c_str());
+auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
+  if (bookParamsFormIsShown) {
+    if (formViewer->event(event)) {
+      bookParamsFormIsShown = false;
+      // if (ok) {
+      BookParams *bookParams = epub->getBookParams();
 
-          int16_t pos = filepath.find_last_of('.');
+      if (showPictures != oldShowPictures) {
+        bookParams->put(BookParams::Ident::SHOW_PICTURES, showPictures);
+      }
+      if (fontSize != oldFontSize) { bookParams->put(BookParams::Ident::FONT_SIZE, fontSize); }
+      if (lineHeight != oldLineHeight) { bookParams->put(BookParams::Ident::LINE_HEIGHT, lineHeight); }
+      if (font != oldFont) { bookParams->put(BookParams::Ident::FONT, font); }
+      if (columnCount != oldColumnCount) { bookParams->put(BookParams::Ident::COLUMN_COUNT, columnCount); }
+      if (useFontsInBook != oldUseFontsInBook) {
+        bookParams->put(BookParams::Ident::USE_FONTS_IN_BOOK, useFontsInBook);
+      }
 
-          filepath.replace(pos, 5, ".pars");
+      if (bookParams->isModified()) { epub->retrieveBookFormatParams(); }
 
-          if (stat(filepath.c_str(), &file_stat) != -1) {
-            LOG_I("Deleting file : %s", filepath.c_str());
-            unlink(filepath.c_str());
-          }
+      bookParams->save();
 
-          filepath.replace(pos, 5, ".locs");
-
-          if (stat(filepath.c_str(), &file_stat) != -1) {
-            LOG_I("Deleting file : %s", filepath.c_str());
-            unlink(filepath.c_str());
-          }
-
-          filepath.replace(pos, 5, ".toc");
-
-          if (stat(filepath.c_str(), &file_stat) != -1) {
-            LOG_I("Deleting file : %s", filepath.c_str());
-            unlink(filepath.c_str());
-          }
-
-          int16_t dummy;
-          books_dir.refresh(nullptr, dummy, false);
-
-          app_controller.set_controller(AppController::Ctrl::DIR);
+      if (oldUseFontsInBook != useFontsInBook) {
+        pageLocs.stopControlTask();
+        if (useFontsInBook) {
+          epub->loadFonts();
+        } else {
+          epub->getFonts().clear();
+          epub->getFonts().clearGlyphCaches();
         }
       }
-      else {
-        msg_viewer.show(MsgViewer::MsgType::INFO, false, false, 
-                        "Canceled", "The e-book was not deleted.");
+
+      if (oldFont != font) {
+        pageLocs.stopControlTask();
+        epub->getFonts().adjustDefaultFont(font);
       }
-      delete_current_book = false;
+      // }
+      // menuViewer.clearHighlight();
+      menuViewer->show(menu, 3, true);
+    }
+  } else if (deleteCurrentBook) {
+    if (confirmData) {
+
+      bool result;
+      std::tie(result, confirmData) = MsgViewer::confirm(event, std::move(confirmData));
+      if (result) {
+        if (confirmData->ok) {
+          const HimemString filePath = epub->getCurrentFilename();
+          struct stat       fileStat;
+
+          if (stat(filePath.c_str(), &fileStat) != -1) {
+            LOG_I("Deleting {}...", filePath);
+
+            pageLocs.stopControlTask();
+            epub.reset();
+            unlink(filePath.c_str());
+
+            int16_t     dotPos = filePath.find_last_of('.');
+
+            HimemString paramsFilePath = filePath;
+            paramsFilePath.replace(dotPos, 5, ".pars");
+
+            if (stat(paramsFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : {}", paramsFilePath);
+              unlink(paramsFilePath.c_str());
+            }
+
+            HimemString locsFilePath = filePath;
+            locsFilePath.replace(dotPos, 5, ".locs");
+
+            if (stat(locsFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : {}", locsFilePath);
+              unlink(locsFilePath.c_str());
+            }
+
+            HimemString tocFilePath = filePath;
+            tocFilePath.replace(dotPos, 5, ".toc");
+
+            if (stat(tocFilePath.c_str(), &fileStat) != -1) {
+              LOG_I("Deleting file : {}", tocFilePath);
+              unlink(tocFilePath.c_str());
+            }
+
+            int16_t refreshIndex;
+            booksDir.refresh(nullptr, refreshIndex, false);
+
+            appController.setController(AppController::Ctrl::DIR);
+          }
+        } else {
+          MsgViewer::show(MsgViewer::MsgType::INFO, false, false, "Canceled",
+                          "The e-book was not deleted.");
+        }
+        deleteCurrentBook = false;
+      }
     }
   }
   #if EPUB_INKPLATE_BUILD
-    else if (wait_for_key_after_wifi) {
-      msg_viewer.show(MsgViewer::MsgType::INFO, 
-                      false, true, 
-                      "Restarting", 
+    else if (waitForKeyAfterWifi) {
+      MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
                       "The device is now restarting. Please wait.");
-      wait_for_key_after_wifi = false;
-      stop_web_server();
-      esp_restart();
+      waitForKeyAfterWifi = false;
+      stopWebServer();
+      inkplate_platform.restart();
     }
   #endif
   else {
-    if (menu_viewer.event(event)) {
-      app_controller.set_controller(AppController::Ctrl::LAST);
+    if (menuViewer->event(event)) {
+      LOG_D("Returning to book controller with updated EPub...");
+      bookController.becomeOwnerOfBook(std::move(epub));
+      appController.setController(AppController::Ctrl::BOOK);
     }
   }
 }

@@ -6,116 +6,92 @@
 
 // Not ready yet
 
-#define __KEYBOARD_VIEWER__ 1
+  #define __KEYBOARD_VIEWER__ 1
 #include "viewers/keyboard_viewer.hpp"
 
 #if EPUB_INKPLATE_BUILD
-  #include "nvs.h"
   #include "inkplate_platform.hpp"
+  #include "nvs.h"
 #endif
 
-bool 
-KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
+auto KeyboardViewer::getAlfanum(char * str, uint16_t len, UpdateHandler handler) -> bool
 {
-  width           = Screen::get_width() - 60;
+  width           = Screen::getWidth() - 60;
   current_kb_type = KBType::ALFA;
 
-  if (page.get_compute_mode() == Page::ComputeMode::LOCATION) return false; // Cannot be used durint location computation
+  if (page.getComputeMode() == Page::ComputeMode::LOCATION) return false; // Cannot be used durint location computation
 
   fmt = {
-    .line_height_factor = 1.0,
-    .font_index         =   0,
-    .font_size          =  24,
-    .indent             =   0,
-    .margin_left        =  10,
-    .margin_right       =  10,
-    .margin_top         =  30,
-    .margin_bottom      =  10,
-    .screen_left        =   0,
-    .screen_right       =   0,
-    .screen_top         =   0,
-    .screen_bottom      =   0,
-    .width              =   0,
-    .height             =   0,
-    .vertical_align     =   0,
-    .trim               = true,
-    .pre                = false,
-    .font_style         = Fonts::FaceStyle::NORMAL,
-    .align              = CSS::Align::CENTER,
-    .text_transform     = CSS::TextTransform::NONE,
-    .display            = CSS::Display::INLINE
+    .fontIndex         =  ICONS_FONT_INDEX,
+    .fontSize          =  24,
+    .marginTop         =  30,
+    .screenLeft        =  (Screen::getWidth()  - width ) >> 1,
+    .screenRight       =  (Screen::getWidth()  - width ) >> 1,
+    .screenTop         =  (Screen::getHeight() - HEIGHT) >> 1,
+    .screenBottom      =  (Screen::getHeight() - HEIGHT) >> 1,
+    .align              =  CSS::Align::CENTER,
   };
 
-  fmt.screen_left        = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_right       = (Screen::get_width()  - width ) >> 1;
-  fmt.screen_top         = (Screen::get_height() - HEIGHT) >> 1;
-  fmt.screen_bottom      = (Screen::get_height() - HEIGHT) >> 1;
-
-  page.set_compute_mode(Page::ComputeMode::DISPLAY);
+  page.setComputeMode(Page::ComputeMode::DISPLAY);
   
   page.start(fmt);
 
 #if 0
-  page.clear_region(
+  page.clearRegion(
     Dim(width, HEIGHT), 
-    Pos((Screen::get_width()  - width ) >> 1, (Screen::get_height() - HEIGHT) >> 1));
+    Pos((Screen::getWidth()  - width ) >> 1, (Screen::getHeight() - HEIGHT) >> 1));
 
-  page.put_highlight(
+  page.putHighlight(
     Dim(width - 4, HEIGHT - 4), 
-    Pos(((Screen::get_width() - width ) >> 1) + 2, ((Screen::get_height() - HEIGHT) >> 1) + 2));
+    Pos(((Screen::getWidth() - width ) >> 1) + 2, ((Screen::getHeight() - HEIGHT) >> 1) + 2));
 
-  TTF * font = fonts.get(0);
+  FontPtr &font = appFonts.getFont(0);
 
-  if (font == nullptr) {
-    LOG_E("Internal error (Drawings Font not available!");
-    return;
-  }
-
-  Font::Glyph * glyph = font->get_glyph(icon_char[severity], 24);
+  Glyph * glyph = font->getGlyph(icon_char[severity], 24);
 
   if (glyph != nullptr) {
-    page.put_char_at(
+    page.putCharAt(
       icon_char[severity], 
-      Pos(((Screen::get_width()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::get_height() >> 1) + 20),
+      Pos(((Screen::getWidth()  - width ) >> 1) + 50 - (glyph->dim.width >> 1), ( Screen::getHeight() >> 1) + 20),
       fmt);
   }
   
-  fmt.font_index =  1;
-  fmt.font_size  = 10;
+  fmt.fontIndex =  SYSTEM_REGULAR_FONT_INDEX;
+  fmt.fontSize  = 10;
 
   // Title
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
+  page.setLimits(fmt);
+  page.newParagraph(fmt);
   std::string buffer = title;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+  page.addText(buffer, fmt);
+  page.endParagraph(fmt);
 
   // Message
 
   fmt.align       = CSS::Align::LEFT;
-  fmt.margin_top  = 80;
-  fmt.margin_left = 90;
+  fmt.marginTop  = 80;
+  fmt.marginLeft = 90;
 
-  page.set_limits(fmt);
-  page.new_paragraph(fmt);
+  page.setLimits(fmt);
+  page.newParagraph(fmt);
   buffer = buff;
-  page.add_text(buffer, fmt);
-  page.end_paragraph(fmt);
+  page.addText(buffer, fmt);
+  page.endParagraph(fmt);
 
   // Press a Key option
 
   if (press_a_key) {
     fmt.align = CSS::Align::CENTER;
-    fmt.font_size   =   9;
-    fmt.margin_left =  10;
-    fmt.margin_top  = 200;
+    fmt.fontSize   =   9;
+    fmt.marginLeft =  10;
+    fmt.marginTop  = 200;
 
-    page.set_limits(fmt);
-    page.new_paragraph(fmt);
+    page.setLimits(fmt);
+    page.newParagraph(fmt);
     buffer = "[Press a key]";
-    page.add_text(buffer, fmt);
-    page.end_paragraph(fmt);
+    page.addText(buffer, fmt);
+    page.endParagraph(fmt);
   }
 #endif
 
@@ -125,49 +101,49 @@ KeyboardViewer::get_alfanum(char * str, uint16_t len, UpdateHandler handler)
 }
 
 void
-KeyboardViewer::show_kb(KBType kb_type)
+KeyboardViewer::showKb(KBType kbType)
 {
   uint16_t x, y;
 
-  switch (kb_type) {
+  switch (kbType) {
     case KBType::ALFA:
-      show_line(alfa_line_1_low, x, y);
-      show_line(alfa_line_2_low, x, y);
-      show_line(alfa_line_3_low, x, y);
-      show_line(alfa_line_4, x, y);
+      showLine(alfa_line_1_low, x, y);
+      showLine(alfa_line_2_low, x, y);
+      showLine(alfa_line_3_low, x, y);
+      showLine(alfa_line_4, x, y);
       break;
 
     case KBType::ALFA_SHIFTED:
-      show_line(alfa_line_1_upp, x, y);
-      show_line(alfa_line_2_upp, x, y);
-      show_line(alfa_line_3_upp, x, y);
-      show_line(alfa_line_4, x, y);
+      showLine(alfa_line_1_upp, x, y);
+      showLine(alfa_line_2_upp, x, y);
+      showLine(alfa_line_3_upp, x, y);
+      showLine(alfa_line_4, x, y);
       break;
     
     case KBType::NUMBERS:
-      show_line(num_line_1, x, y);
-      show_line(num_line_2, x, y);
-      show_line(num_line_3, x, y);
-      show_line(num_line_4, x, y);
+      showLine(num_line_1, x, y);
+      showLine(num_line_2, x, y);
+      showLine(num_line_3, x, y);
+      showLine(num_line_4, x, y);
       break;
       
     case KBType::SPECIAL:
-      show_line(special_line_1, x, y);
-      show_line(special_line_2, x, y);
-      show_line(special_line_3, x, y);
-      show_line(special_line_4, x, y);
+      showLine(special_line_1, x, y);
+      showLine(special_line_2, x, y);
+      showLine(special_line_3, x, y);
+      showLine(special_line_4, x, y);
       break;
   }
 }
 
 void 
-KeyboardViewer::show_line(const char * line, uint16_t & x, uint16_t y)
+KeyboardViewer::showLine(const char * line, uint16_t & x, uint16_t y)
 {
 
 }
 
 void 
-KeyboardViewer::show_char(char ch, uint16_t & x, uint16_t y)
+KeyboardViewer::showChar(char ch, uint16_t & x, uint16_t y)
 {
 
 }

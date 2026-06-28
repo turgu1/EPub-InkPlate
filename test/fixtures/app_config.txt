@@ -1,0 +1,30 @@
+# EPub-InkPlate Config File — test fixture
+# -----------------------------------------
+#
+# This hand-crafted file exercises every entry type (STRING, INT, INT64, BYTE)
+# and is used by test_app_config.cpp to verify that the application-level
+# Config singleton reads all fields correctly.
+#
+# All values deliberately differ from their compiled-in defaults so that the
+# test can confirm the file was actually read.
+
+version = 1
+wifi_ssid = "TestSSID"
+wifi_pwd = "TestPWD"
+dns_name = "testplate"
+ap_wifi_ssid = "testplate-ap"
+ap_wifi_pwd = "ap-secret"
+http_port = 8080
+battery = 1
+timeout = 30
+font_size = 10
+default_font = 0
+use_fonts_in_books = 0
+show_images = 1
+orientation = 0
+resolution = 1
+show_heap = 1
+show_title = 0
+front_light = 32
+dir_view = 1
+cover_size = 1

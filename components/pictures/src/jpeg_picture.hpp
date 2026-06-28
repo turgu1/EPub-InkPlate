@@ -1,0 +1,39 @@
+// Copyright (c) 2020 Guy Turcotte
+//
+// MIT License. Look at file licenses.txt for details.
+
+#pragma once
+#include "global.hpp"
+
+#include "himem.hpp"
+#include "picture.hpp"
+
+using JPegPicturePtr = HimemUniquePtr<class JPegPicture>;
+
+class JPegPicture : public Picture {
+
+private:
+  static constexpr char const *TAG  = "JPegPicture";
+  static constexpr size_t WORK_SIZE = 20 * 1024;
+
+  JPegPicture(const HimemString &filename, Dim max, bool loadBitmap, bool fromFile = false);
+
+  auto loadFromFile(const HimemString &filename, Dim max, bool loadBitmap) -> void;
+
+public:
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend HimemUniquePtr<T> makeUniqueHimem(Args &&...args);
+
+  static inline auto Make(const HimemString &filename, Dim max, bool loadBitmap,
+                          bool fromFile = false) {
+    return makeUniqueHimem<JPegPicture>(filename, max, loadBitmap, fromFile);
+  }
+
+  ~JPegPicture() override = default;
+
+  struct PictureData {
+    Dim dim{0, 0};
+    uint8_t *bitmap{nullptr};
+  } pictureData;
+};

@@ -8,9 +8,12 @@
 
 #include <cstdint>
 
-enum class WebServerMode : uint8_t { STA, AP };
+enum class WebServerMode : uint8_t {
+  STA, AP
+};
 
-PUBLIC bool start_web_server(WebServerMode server_mode = WebServerMode::STA);
-PUBLIC void stop_web_server();
+PUBLIC auto startWebServer(WebServerMode serverMode = WebServerMode::STA) -> bool;
+PUBLIC auto startWebServerHeadless(WebServerMode serverMode = WebServerMode::STA) -> bool;
+PUBLIC void stopWebServer();
 
 #undef PUBLIC

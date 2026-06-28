@@ -5,11 +5,12 @@
 #define __TOC_CONTROLLER__ 1
 #include "controllers/toc_controller.hpp"
 
+#include "config.hpp"
 #include "controllers/app_controller.hpp"
-#include "controllers/books_dir_controller.hpp"
 #include "controllers/book_controller.hpp"
+#include "controllers/book_param_controller.hpp"
+#include "controllers/books_dir_controller.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
 #include "models/toc.hpp"
 
 #if EPUB_INKPLATE_BUILD
@@ -18,109 +19,137 @@
 
 #include <string>
 
-void 
-TocController::enter()
-{
-  toc_viewer.setup();
-  
-  if ((current_entry_index == -1) || 
-      (current_book_index != books_dir_controller.get_current_book_index())) {
-    current_entry_index = 0;
+auto TocController::enter() -> void {
+  if (!epub) {
+    MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                    "No book is loaded. Cannot display the table of content.");
+    bookParamController.becomeOwnerOfBook(std::move(epub));
+    appController.setController(AppController::Ctrl::PARAM);
+    return;
   }
 
-  current_book_index  = books_dir_controller.get_current_book_index();
-  current_entry_index = toc_viewer.show_page_and_highlight(current_entry_index);
+  if (epub->toc == nullptr) {
+    epub->toc = TOC::Make();
+    if (epub->toc && !(epub->toc->load(epub) && epub->toc->isReady())) {
+      MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                      "The table of content for the current book is not available yet.");
+      bookParamController.becomeOwnerOfBook(std::move(epub));
+      appController.setController(AppController::Ctrl::PARAM);
+      return;
+    }
+  }
+
+  tocViewer = TocViewer::Make(epub);
+  if (!tocViewer) {
+    MsgViewer::show(MsgViewer::MsgType::ALERT, false, false, "Error",
+                    "Unable to display the table of content for the current book.");
+    bookParamController.becomeOwnerOfBook(std::move(epub));
+    appController.setController(AppController::Ctrl::PARAM);
+    return;
+  }
+
+  tocViewer->setup();
+
+  if ((currentEntryIndex == -1) || (currentBookIndex != booksDirController.getCurrentBookIndex())) {
+    currentEntryIndex = 0;
+  }
+
+  currentBookIndex  = booksDirController.getCurrentBookIndex();
+  currentEntryIndex = tocViewer->showPageAndHighlight(currentEntryIndex);
+}
+
+auto TocController::leave(bool goingToDeepSleep) -> void {
+  if (tocViewer) { tocViewer.reset(); }
 }
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-  void 
-  TocController::input_event(const EventMgr::Event & event)
-  {
+  auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
-      case EventMgr::EventKind::SWIPE_RIGHT:
-        current_entry_index = toc_viewer.prev_page();   
-        break;
+    case EventMgr::EventKind::SWIPE_RIGHT:
+      currentEntryIndex = tocViewer->prevPage();
+      break;
 
-      case EventMgr::EventKind::SWIPE_LEFT:
-        current_entry_index = toc_viewer.next_page();   
-        break;
+    case EventMgr::EventKind::SWIPE_LEFT:
+      currentEntryIndex = tocViewer->nextPage();
+      break;
 
-      case EventMgr::EventKind::TAP:
-        current_entry_index = toc_viewer.get_index_at(event.x, event.y);
-        if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
-          if(toc.get_entry(current_entry_index).page_id.offset >= 0) {
-            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-            app_controller.set_controller(AppController::Ctrl::BOOK);
-          }
+    case EventMgr::EventKind::TAP:
+      currentEntryIndex = tocViewer->getIndexAt(event.x, event.y);
+      if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
+        if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
+          bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+          bookController.becomeOwnerOfBook(std::move(epub));
+          appController.setController(AppController::Ctrl::BOOK);
         }
-        else {
-          app_controller.set_controller(AppController::Ctrl::BOOK);
-        }
-        break;
+      } else {
+        bookController.becomeOwnerOfBook(std::move(epub));
+        appController.setController(AppController::Ctrl::BOOK);
+      }
+      break;
 
-      case EventMgr::EventKind::HOLD:
-        break;
+    case EventMgr::EventKind::HOLD:
+      break;
 
-      case EventMgr::EventKind::RELEASE:
-        toc_viewer.clear_highlight();
-        break;
+    case EventMgr::EventKind::RELEASE:
+      tocViewer->clearHighlight();
+      break;
 
-      default:
-        break;
+    default:
+      break;
     }
   }
 #else
-  void 
-  TocController::input_event(const EventMgr::Event & event)
-  {
+  auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
-      #if EXTENDED_CASE
-        case EventMgr::EventKind::PREV:
-      #else
-        case EventMgr::EventKind::DBL_PREV:
-      #endif
-        current_entry_index = toc_viewer.prev_column();   
+    #if EXTENDED_CASE || BLE_KEYPAD
+      case EventMgr::EventKind::PREV:
+    #else
+      case EventMgr::EventKind::DBL_PREV:
+        #endif
+        currentEntryIndex = tocViewer->prevColumn();
         break;
 
-      #if EXTENDED_CASE
-        case EventMgr::EventKind::NEXT:
-      #else
-        case EventMgr::EventKind::DBL_NEXT:
-      #endif
-        current_entry_index = toc_viewer.next_column();
-        break;
+        #if EXTENDED_CASE || BLE_KEYPAD
+          case EventMgr::EventKind::NEXT:
+        #else
+          case EventMgr::EventKind::DBL_NEXT:
+            #endif
+            currentEntryIndex = tocViewer->nextColumn();
+            break;
 
-      #if EXTENDED_CASE
-        case EventMgr::EventKind::DBL_PREV:
-      #else
-        case EventMgr::EventKind::PREV:
-      #endif
-        current_entry_index = toc_viewer.prev_item();
-        break;
+            #if EXTENDED_CASE || BLE_KEYPAD
+              case EventMgr::EventKind::DBL_PREV:
+            #else
+              case EventMgr::EventKind::PREV:
+                #endif
+                currentEntryIndex = tocViewer->prevItem();
+                break;
 
-      #if EXTENDED_CASE
-        case EventMgr::EventKind::DBL_NEXT:
-      #else
-        case EventMgr::EventKind::NEXT:
-      #endif
-        current_entry_index = toc_viewer.next_item();
-        break;
+                #if EXTENDED_CASE || BLE_KEYPAD
+                  case EventMgr::EventKind::DBL_NEXT:
+                #else
+                  case EventMgr::EventKind::NEXT:
+                    #endif
+                    currentEntryIndex = tocViewer->nextItem();
+                    break;
 
-      case EventMgr::EventKind::SELECT:
-        if ((current_entry_index >= 0) && (current_entry_index < toc.get_entry_count())) {
-          if (toc.get_entry(current_entry_index).page_id.offset >= 0) {
-            book_controller.set_current_page_id(toc.get_entry(current_entry_index).page_id);
-            app_controller.set_controller(AppController::Ctrl::BOOK);
-          }
-        }
-        break;
+                  case EventMgr::EventKind::SELECT:
+                    if ((currentEntryIndex >= 0) && (currentEntryIndex < epub->toc->getEntryCount())) {
+                      if (epub->toc->getEntry(currentEntryIndex).pageId.offset >= 0) {
+                        bookController.setCurrentPageId(epub->toc->getEntry(currentEntryIndex).pageId);
+                        bookController.becomeOwnerOfBook(std::move(epub));
+                        appController.setController(AppController::Ctrl::BOOK);
+                      }
+                    }
+                    break;
 
-      case EventMgr::EventKind::DBL_SELECT:
-        app_controller.set_controller(AppController::Ctrl::BOOK);
-        break;
-        
-      case EventMgr::EventKind::NONE:
-        break;
+                  case EventMgr::EventKind::DBL_SELECT:
+                    bookController.becomeOwnerOfBook(std::move(epub));
+                    appController.setController(AppController::Ctrl::BOOK);
+                    break;
+
+                  case EventMgr::EventKind::NONE:
+                    break;
     }
   }
 #endif

@@ -1,0 +1,6 @@
+#pragma once
+
+#include <cinttypes>
+
+extern char *int_to_str(int v, char *buffer, int8_t size);
+extern char *float_to_str(double v, char *buffer, int8_t size, uint8_t precision);

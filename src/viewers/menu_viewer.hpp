@@ -3,70 +3,96 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "controllers/event_mgr.hpp"
+#include "viewers/page.hpp"
 
-class MenuViewer
-{
-  public:
-    static constexpr uint8_t MAX_MENU_ENTRY = 15;
+#include <functional>
 
-    enum class Icon { RETURN,      CLR_HISTORY, REFRESH,   BOOK,   BOOK_LIST, MAIN_PARAMS, 
-                      FONT_PARAMS, POWEROFF,    WIFI,      INFO,   TOC,       DEBUG, 
-                      DELETE,      CLOCK,       NTP_CLOCK, CALIB,  PREV_MENU, NEXT_MENU, REVERT, END_MENU };
-    char icon_char[19] = { 
-                      '@',         'T',         'R',       'E',    'F',       'C', 
-                      'A',         'Z',         'S',       'I',    'L',       'H', 
-                      'K',         'N',         'Y',       'M',    'O',       'P',   'U' };
-    struct MenuEntry {
-      Icon icon;
-      const char * caption;
-      void (*func)();
-      bool visible;
-      bool highlight;
-    };
-    void  show(MenuEntry * the_menu, uint8_t entry_index = 0, bool clear_screen = false);
-    bool event(const EventMgr::Event & event);
-    void clear_highlight();
-    
-  private:
-    static constexpr char const * TAG = "MenuViewer";
+using MenuViewerPtr = HimemUniquePtr<class MenuViewer>;
 
-    static const int16_t ICON_SIZE           = 15;
-    static const int16_t CAPTION_SIZE        = 12;
+class MenuViewer {
+private:
+  static constexpr char const *TAG = "MenuViewer";
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      static const int16_t SPACE_BETWEEN_ICONS = 70;
-      static const int16_t ICONS_LEFT_OFFSET   = 20;
-    #else
-      static const int16_t SPACE_BETWEEN_ICONS = 50;
-      static const int16_t ICONS_LEFT_OFFSET   = 10;
-    #endif
+  MenuViewer() = default;
 
-    uint8_t  current_entry_index;
-    uint8_t  max_index;
-    uint16_t icon_height, 
-             text_height, 
-             line_height,
-             region_height;
-    uint16_t icon_ypos,
-             text_ypos;
+  PagePtr page = Page::Make(appFonts);
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-      bool    hint_shown;
-      uint8_t find_index(uint16_t x, uint16_t y);
-    #endif
+public:
+  ~MenuViewer() = default; // { LOG_I("MenuViewer destructor called"); }
 
-    struct EntryLoc {
-      Pos pos;
-      Dim dim;
-    } entry_locs[MAX_MENU_ENTRY];
-    MenuEntry * menu;
-};
+  template <typename T, typename... Args>
+    requires(!std::is_array_v<T>)
+  friend auto makeUniqueHimem(Args &&...args) -> HimemUniquePtr<T>;
 
-#if __MENU_VIEWER__
-  MenuViewer menu_viewer;
-#else
-  extern MenuViewer menu_viewer;
+  static inline auto Make() { return makeUniqueHimem<MenuViewer>(); }
+
+  enum class Icon {
+    RETURN,
+    CLR_HISTORY,
+    REFRESH,
+    BOOK,
+    BOOK_LIST,
+    MAIN_PARAMS,
+    FONT_PARAMS,
+    POWEROFF,
+    WIFI,
+    INFO,
+    TOC,
+    DEBUG,
+    DELETE,
+    CLOCK,
+    NTP_CLOCK,
+    CALIB,
+    REVERT,
+    END_MENU
+  };
+  static constexpr char iconChar[17] = {'@', 'T', 'R', 'E', 'F', 'C', 'A', 'Z', 'S',
+                                        'I', 'L', 'H', 'K', 'N', 'Y', 'M', 'U'};
+  struct MenuEntry {
+    Icon icon;
+    bool visible;
+    bool highlight;
+    std::function<void()> func;
+    const char *caption;
+
+    template <typename T>
+    auto bind(T *instance, void (T::*method)()) -> void {
+      func = [instance, method]() -> auto { (instance->*method)(); };
+    }
+  };
+
+  auto showCaption(std::string caption, Page::Format &fmt) -> void;
+  auto show(MenuEntry *theMenu, uint8_t entryIndex = 0, bool clearScreen = false) -> void;
+  auto event(const EventMgr::Event &event) -> bool;
+  auto clearHighlight() -> void;
+
+private:
+  static constexpr int16_t ICON_SIZE    = 24;
+  static constexpr int16_t CAPTION_SIZE = 10;
+
+  uint8_t currentEntryIndex{0};
+  uint8_t menuEntryCount{0};
+  uint16_t visibleEntryCount{0};
+  uint16_t textHeight{0}, lineHeight{0}, regionHeight{0}, textYPos{0};
+
+#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  bool hintShown{false};
+  auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
 #endif
+
+  struct EntryLoc {
+    Pos pos;
+    Dim dim;
+  };
+
+  using EntryLocPtr = std::unique_ptr<EntryLoc[]>;
+
+  EntryLocPtr entryLocs;
+
+  MenuEntry *menu{nullptr};
+};

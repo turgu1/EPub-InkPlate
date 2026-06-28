@@ -3,12 +3,14 @@
 // MIT License. Look at file licenses.txt for details.
 
 #pragma once
+
 #include "global.hpp"
+#include "himem.hpp"
 
 #include "models/dom.hpp"
 #include "models/epub.hpp"
-#include "viewers/page.hpp"
 #include "pugixml.hpp"
+#include "viewers/page.hpp"
 
 using namespace pugi;
 
@@ -16,151 +18,110 @@ using namespace pugi;
 // preparing it for display through the BookViewer class or page location computation through
 // the PageLocs class.
 //
-// Tags that are understood are used to create a partial DOM structure that is then passed through the
-// CSS match algorithm to transform the viewing parameters as gathered in a Page::Format struc.
+// Tags that are understood are used to create a partial DOM structure that is then passed through
+// the CSS match algorithm to transform the viewing parameters as gathered in a Page::Format struc.
 
-class HTMLInterpreter
-{
+class HTMLInterpreter {
   protected:
-    static constexpr char const * TAG = "HTMLInterpreter";
+    static constexpr char const *TAG = "HTMLInterpreter";
 
-    Page &                 page;
-    DOM  &                 dom;
-    Page::ComputeMode      compute_mode;
-    const EPub::ItemInfo & item_info;
+    EPubPtr &epub;
+    PagePtr &page;
+    DOMPtr &dom;
+    Page::ComputeMode computeMode;
+    const EPub::ItemInfo &itemInfo;
 
-    int32_t current_offset;   ///< Where we are in current item
-    int32_t start_offset;
-    int32_t end_offset;
+    int32_t currentOffset{ 0 }; ///< Where we are in current item
+    int32_t startOffset{ 0 };
+    int32_t endOffset{ 0 };
 
-    bool show_images;
-    bool started;
-    //bool beginning_of_page;
+    ///< This is used to adjust the offset when we need to add content that is not part of the
+    ///< original text, such as images. It is added to the currentOffset when checking for page
+    ///< limits.
+    int32_t offsetAdjustment{ 0 };
 
-    bool show_the_state;
-    int16_t from_page, to_page;
-    int16_t max_level;
+    bool showPictures{ false };
+    bool started{ false };
+    // bool beginning_of_page;
 
-    static MemoryPool<Page::Format> fmt_pool;
+    bool showTheState{ false };
+    int16_t fromPage{ -1 }, toPage{ -1 };
+    int16_t maxLevel{ 0 };
 
-    // The page_end method is responsible of doing post-processing once
-    // the end of a page has been detected (the page.is_full() method returns true or
-    // the process reached the page_end offset). This is specific for each of the book_viewer
+    HimemPool<Page::Format> fmtPool;
+
+    // The pageEnd method is responsible of doing post-processing once
+    // the end of a page has been detected (the page.isFull() method returns true or
+    // the process reached the pageEnd offset). This is specific for each of the book_viewer
     // and the page location computation processes.
-    virtual bool page_end(const Page::Format & fmt) = 0;
+    virtual auto pageEndProcessing(const Page::Format &fmt) -> bool = 0;
 
   public:
-    HTMLInterpreter(Page & the_page, DOM & the_dom, Page::ComputeMode the_comp_mode, const EPub::ItemInfo & the_item) 
-      :           page(the_page), 
-                   dom(the_dom),
-          compute_mode(the_comp_mode), 
-             item_info(the_item),
-        current_offset(0),
-          start_offset(0),
-            end_offset(0),
-           show_images(false),
-               started(false),
-        show_the_state(false), 
-             from_page(-1), 
-               to_page(-1),
-            max_level(0) {}
+    HTMLInterpreter(EPubPtr &theEpub, PagePtr &thePage, DOMPtr &theDom, Page::ComputeMode theCompMode,
+                    const EPub::ItemInfo &theItem)
+      : epub(theEpub), page(thePage), dom(theDom), computeMode(theCompMode), itemInfo(theItem) {}
 
     virtual ~HTMLInterpreter() {}
 
-    void set_limits(int32_t start, int32_t end, bool show_imgs) {
-      started            = false;
-      //beginning_of_page  = false;
-      current_offset     = 0;
-      start_offset       = start;
-      end_offset         = end;
-      show_images        = show_imgs;
-      page.set_compute_mode(Page::ComputeMode::MOVE);
+    auto setLimits(int32_t start, int32_t end, bool showImgs) -> void {
+      started = false;
+      // beginning_of_page  = false;
+      currentOffset = 0;
+      startOffset   = start;
+      endOffset     = end;
+      showPictures  = showImgs;
+      page->setComputeMode(Page::ComputeMode::MOVE);
     }
 
-    bool build_pages_recurse(xml_node node, Page::Format & fmt, DOM::Node * dom_node, int16_t level);
+    auto buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::Node *domNode, int16_t level)
+    -> bool;
 
-    void check_for_completion() {
-      if (current_offset != end_offset) {
-        LOG_E("Current page offset and end of page offset differ: %" PRIi32 " vs %" PRIi32, 
-              current_offset, end_offset);
+    auto checkForCompletion() -> void {
+      if (currentOffset != endOffset) {
+        LOG_E("Current page offset and end of page offset differ: {} vs {}",
+              currentOffset, endOffset);
       }
     }
 
-    void show_state(const char         * caption, 
-                    const Page::Format & fmt, 
-                    DOM::Node          * dom_current_node = nullptr, 
-                    CSS                * element_css      = nullptr) {
-      if (show_the_state) {
-        std::cout << caption << " Offset:" << current_offset << " ";
-        page.show_controls("  ");
+    auto showState(const char *caption, const Page::Format &fmt,
+                   DOM::Node *domCurrentNode = nullptr /*, CSSPtr elementCss = nullptr*/) -> void {
+      if (showTheState) {
+        std::cout << caption << " Offset:" << currentOffset << " ";
+        page->showControls("  ");
         std::cout << "     ";
-        page.show_fmt(fmt, "  ");
-        // if (item_info.css != nullptr) item_info.css->show();
-        // std::cout << "--> Element CSS:" << std::endl;
-        // if (element_css != nullptr) element_css->show();
-        // std::cout << "[end show]" << std::endl;
-        //CSS::RulesMap rules;
-
-        // item_info.css->show();
-        // std::cout << "======" << std::endl;
-        // if (element_css != nullptr) element_css->show();
-        // std::cout << "------" << std::endl;
-        // dom_current_node->show(1);
-
-        // if ((dom_current_node != nullptr) && (item_info.css != nullptr)) {
-        //   item_info.css->match(dom_current_node, rules);
-        //   if (!rules.empty()) {
-            // std::cout << "--> Item CSS match:" << std::endl;
-            // item_info.css->show(rules);
-          // }
-          // else {
-            //std::cout << "--> NO Item CSS match..." << std::endl;
-        //   }
-        // }
-        // else {
-          //std::cout << "--> No Item CSS..." << std::endl;
-        // }
-
-        // if (element_css != nullptr) {
-          // std::cout << "--> Element style:" << std::endl;
-          // element_css->show();
-        // }
-        // else {
-          //std::cout << "--> NO Element Style..." << std::endl;
-        // }
-        //std::cout << "[end show]" << std::endl;
+        page->showFmt(fmt, "  ");
       }
     }
 
-    void set_pages_to_show_state(int16_t from, int16_t to) {
-      from_page = from;
-      to_page   = to;
+    auto setPagesToShowState(int16_t from, int16_t to) -> void {
+      fromPage = from;
+      toPage   = to;
     }
 
-    void check_page_to_show(int16_t page) {
-      show_the_state = (from_page <= page) && ( page <= to_page);
+    auto checkPageToShow(int16_t page) -> void {
+      showTheState = (fromPage <= page) && (page <= toPage);
     }
 
-    inline bool check_if_started() {
+    [[nodiscard]] inline auto checkIfStarted() -> bool {
       if (!started) {
-        if ((started = (current_offset >= start_offset))) {
-          page.set_compute_mode(compute_mode);
-          page.clean();
+        if ((started = (currentOffset >= startOffset))) {
+          page->setComputeMode(computeMode);
+          page->clean();
           LOG_D("---- PAGE START ----");
         }
       }
       return started;
     }
 
-    inline bool at_end() { return current_offset >= end_offset; }
+    [[nodiscard]] inline auto atEndOfPageOffset() -> bool { return currentOffset >= endOffset; }
 
-    inline Page::Format * duplicate_fmt(const Page::Format & fmt) {
-      Page::Format * new_fmt = fmt_pool.allocate();
-      *new_fmt = fmt;
-      return new_fmt;
+    [[nodiscard]] inline auto duplicateFmt(const Page::Format &fmt) -> Page::Format * {
+      Page::Format *newFmt = fmtPool.allocate();
+      *newFmt              = fmt;
+      return newFmt;
     }
 
-    inline void release_fmt(Page::Format * fmt) { fmt_pool.deallocate(fmt); }
+    inline auto releaseFmt(Page::Format *fmt) -> void { fmtPool.deallocate(fmt); }
 
-    inline void show_stat() { LOG_D("Max Level: %d", max_level); }
+    inline auto showStat() -> void { LOG_D("Max Level: {}", maxLevel); }
 };

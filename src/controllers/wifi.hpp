@@ -4,46 +4,42 @@
 
 #if EPUB_INKPLATE_BUILD
 
-#include "models/config.hpp"
+  #include "config.hpp"
 
-#include "esp_wifi.h"
+  #include "esp_wifi.h"
 
-class WIFI
-{
+  class WIFI {
   protected:
-    static constexpr char const * TAG = "WiFi";
+    static constexpr char const *TAG = "WiFi";
 
-    friend void wifi_sta_event_handler(void            * arg, 
-                                       esp_event_base_t  event_base,
-                                       int32_t           event_id, 
-                                       void            * event_data);
+    friend void wifi_sta_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id,
+                                       void *event_data);
 
-    friend void wifi_ap_event_handler(void            * arg, 
-                                       esp_event_base_t  event_base,
-                                       int32_t           event_id, 
-                                       void            * event_data);
-    esp_ip4_addr_t ip_address;
-    bool sta_running{false};
-    bool ap_running{false};
-    bool mdns_running{false};
+    friend void wifi_ap_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id,
+                                      void *event_data);
+    esp_ip4_addr_t ipAddress;
+    bool staRunning{false};
+    bool apRunning{false};
+    bool mdnsRunning{false};
 
-    void start_mdns_service(const std::string &hostname);
-    inline void set_ip_address(esp_ip4_addr_t addr) { ip_address = addr; }
+    auto startMdnsService(const HimemString &hostname) -> void;
+    inline auto setIpAddress(esp_ip4_addr_t addr) -> void { ipAddress = addr; }
 
   public:
-    WIFI() {}
-    
-    bool start_sta();
-    bool start_ap();
-    void stop();
+    WIFI()  = default;
+    ~WIFI() = default;
 
-    inline esp_ip4_addr_t get_ip_address() { return ip_address; }
-};
+    auto startSta() -> bool;
+    auto startAp() -> bool;
+    auto stop() -> void;
 
-#if __WIFI__
-  WIFI wifi;
-#else
-  extern WIFI wifi;
-#endif
+    inline esp_ip4_addr_t getIpAddress() { return ipAddress; }
+  };
+
+  #if __WIFI__
+    WIFI wifi;
+  #else
+    extern WIFI wifi;
+  #endif
 
 #endif

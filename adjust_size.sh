@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Adjust the size of EPub embedded images to grayscale
+# Adjust the size of EPub embedded pictures to grayscale
 # with maximum geometry of 600x800.
 #
 # Guy Turcotte, December 2020

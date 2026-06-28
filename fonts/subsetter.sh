@@ -10,20 +10,22 @@
 #
 # Guy Turcotte, November 2020
 
-LATIN1="U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+LATIN1="U+0000-00FF,U+0131,U+0152-0153,U+0160-0161,U+0178,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FB00-FB4F,U+FEFF,U+FFFD"
 
 FOLDER_IN=orig
 FOLDER_OUT=subset-latin1
 
-# FONTS=(Asap AsapCondensed Caladea CrimsonPro DejaVuSans DejaVuSansCondensed DejaVuSerif DejaVuSerifCondensed RedHatDisplay)
-# FONTS=(Roboto RobotoCondensed OpenSans OpenSans_Condensed Bitter IbarraRealNova CrimsonPro)
+# FONTS=(Asap AsapCondensed Bitter Caladea Cuprum DejaVuSans DejaVuSansCondensed DejaVuSerif DejaVuSerifCondensed RedHatDisplay Roboto RobotoCondensed OpenSans OpenSans_Condensed IbarraRealNova NewCMMono10 NewCMSans10 NewCM10 CrimsonPro CMUConcrete CMUSerif CMUSansSerif CMUTypewriter)
+# FONTS=(CMUConcrete CMUSerif CMUSansSerif CMUTypewriter)
 # FONTS=(Cuprum)
-# SUBS=(Regular Bold BoldItalic Italic Medium MediumItalic)
+FONTS=(FiraSans)
+SUBS=(Regular Roman Bold BoldItalic Italic Medium MediumItalic Oblique BoldOblique)
 
-# mkdir $FOLDER_OUT/woff
-# mkdir $FOLDER_OUT/otf
+mkdir $FOLDER_OUT/woff
+mkdir $FOLDER_OUT/otf
 
 # for name in ${FONTS[@]}; do
+#   echo $name ...
 #   for sub in ${SUBS[@]}; do
 #     font_name="$name-$sub"
 #     if [ -f $FOLDER_IN/$font_name.ttf ]; then
@@ -39,7 +41,7 @@ FOLDER_OUT=subset-latin1
 #       fi
 #     fi
 #     if [ -f $FOLDER_IN/$font_name.$ext ]; then
-#       pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/woff/$font_name.woff" --flavor=woff --layout-features='' --unicodes="$LATIN1"
+#       pyftsubset "$FOLDER_IN/$font_name.$ext" --output-file="$FOLDER_OUT/woff/$font_name.woff" --flavor=woff --layout-features='kern','gpos' --unicodes="$LATIN1"
 #       ./woff2otf.py "$FOLDER_OUT/woff/$font_name.woff" "$FOLDER_OUT/otf/$font_name.otf"
 #     fi
 #   done
@@ -48,4 +50,4 @@ FOLDER_OUT=subset-latin1
 pyftsubset "$FOLDER_IN/drawings.ttf" --output-file="$FOLDER_OUT/woff/drawings.woff" --flavor=woff --layout-features='' --unicodes='*'
 ./woff2otf.py "$FOLDER_OUT/woff/drawings.woff" "$FOLDER_OUT/otf/drawings.otf"
 
-rm "$FOLDER_OUT/woff/*"
+# rm "$FOLDER_OUT/woff/*"

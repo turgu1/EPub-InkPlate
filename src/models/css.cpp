@@ -5,16 +5,10 @@
 #include "models/css.hpp"
 #include "models/css_parser.hpp"
 
-MemoryPool<CSS::Value>        CSS::value_pool;
-MemoryPool<CSS::Property>     CSS::property_pool;
-MemoryPool<CSS::Properties>   CSS::properties_pool;
-MemoryPool<CSS::SelectorNode> CSS::selector_node_pool;
-MemoryPool<CSS::Selector>     CSS::selector_pool;
-
-CSS::PropertyMap CSS::property_map = {
+CSS::PropertyMap CSS::propertyMap = {
   { "not-used",       CSS::PropertyId::NOT_USED       },
-  { "font-family",    CSS::PropertyId::FONT_FAMILY    }, 
-  { "font-size",      CSS::PropertyId::FONT_SIZE      }, 
+  { "font-family",    CSS::PropertyId::FONT_FAMILY    },
+  { "font-size",      CSS::PropertyId::FONT_SIZE      },
   { "font-style",     CSS::PropertyId::FONT_STYLE     },
   { "font-weight",    CSS::PropertyId::FONT_WEIGHT    },
   { "text-align",     CSS::PropertyId::TEXT_ALIGN     },
@@ -31,152 +25,168 @@ CSS::PropertyMap CSS::property_map = {
   { "height",         CSS::PropertyId::HEIGHT         },
   { "display",        CSS::PropertyId::DISPLAY        },
   { "border",         CSS::PropertyId::BORDER         },
-  { "vertical-align", CSS::PropertyId::VERTICAL_ALIGN }
-};
+  { "vertical-align", CSS::PropertyId::VERTICAL_ALIGN } };
 
-CSS::FontSizeMap CSS::font_size_map = {
-  { "xx-small",  6 },
-  { "x-small",   7 },
-  { "smaller",   9 },
-  { "small",    10 },
-  { "medium",   12 },
-  { "large",    14 },
-  { "larger",   15 },
-  { "x-large",  18 },
-  { "xx-large", 24 }
-};
+CSS::FontSizeMap CSS::fontSizeMap = {
+  { "xx-small", 6 }, { "x-small",  7 }, { "smaller",   9 },
+  { "small",   10 }, { "medium",  12 }, { "large",    14 },
+  { "larger",  15 }, { "x-large", 18 }, { "xx-large", 24 } };
 
-const char * CSS::value_type_str[25] = {
-  "",     "em",  "ex", "%",   "",   "px",   "cm",   "mm",  "in",  "pt",
-  "pc",   "vh",  "vw", "rem", "ch", "vmin", "vmax", "deg", "rad", "grad",
-  "msec", "sec", "hz", "khz", "url"
-};
 
-CSS::CSS(const char * css_id,
-         const char * file_folder_path, 
-         const char * buffer, 
-         int32_t      size,
-         uint8_t      prio)  
-{
-  id          = css_id;
-  folder_path = file_folder_path;
-  ghost       = false;
-  priority    = prio;
+const char *CSS::valueTypeStr[25] = {
+  "",    "em", "ex",   "%",    "",    "px",  "cm",   "mm",   "in",  "pt", "pc",  "vh", "vw",
+  "rem", "ch", "vmin", "vmax", "deg", "rad", "grad", "msec", "sec", "hz", "khz", "url" };
 
-  CSSParser * parser = new CSSParser(*this, buffer, size);
-  delete parser;
+auto CSS::defaultPools() -> CSSPools & {
+  static CSSPools pools;
+  return pools;
 }
 
-CSS::CSS(const char * css_id,
-         DOM::Tag     tag,
-         const char * buffer, 
-         int32_t      size,
-         uint8_t      prio)
-{
-  id          = css_id;
-  folder_path = "";
-  ghost       = false;
-  priority    = prio;
-
-  CSSParser * parser = new CSSParser(*this, tag, buffer, size);
-  delete parser;
+auto CSS::bindPools(CSSPools &poolsRef) -> void {
+  using Tag                                                       = ScopedListPoolTag;
+  ScopedHimemPoolBinding<CSSPools::ClassListNode, Tag, 256>::pool = &poolsRef.classListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorNodeListNode, Tag, 512>::pool =
+    &poolsRef.selectorNodeListPool;
+  ScopedHimemPoolBinding<CSSPools::ValuesNode, Tag, 512>::pool     = &poolsRef.valuesPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorsNode, Tag, 256>::pool  = &poolsRef.selectorsPool;
+  ScopedHimemPoolBinding<CSSPools::PropertiesNode, Tag, 256>::pool = &poolsRef.propertiesPool;
+  ScopedHimemPoolBinding<CSSPools::PropertySuiteListNode, Tag, 128>::pool =
+    &poolsRef.propertySuiteListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorSuiteListNode, Tag, 128>::pool =
+    &poolsRef.selectorSuiteListPool;
+  ScopedHimemPoolBinding<CSSPools::SelectorSingleListNode, Tag, 128>::pool =
+    &poolsRef.selectorSingleListPool;
 }
 
-CSS::~CSS()
-{
-  if (ghost) {
-    rules_map.clear();
-  }
-  else {
-    for (auto * props : suites) {
-      for (auto * prop : *props) {
-        property_pool.deleteElement(prop);
-      }
-      properties_pool.deleteElement(props);
-    }
-    suites.clear();
-
-    for (auto & rule : rules_map) {
-      selector_pool.deleteElement(rule.first);
-    }
-    rules_map.clear();
-  }
+auto CSS::unbindPools() -> void {
+  using Tag                                                                = ScopedListPoolTag;
+  ScopedHimemPoolBinding<CSSPools::ClassListNode, Tag, 256>::pool          = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorNodeListNode, Tag, 512>::pool   = nullptr;
+  ScopedHimemPoolBinding<CSSPools::ValuesNode, Tag, 512>::pool             = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorsNode, Tag, 256>::pool          = nullptr;
+  ScopedHimemPoolBinding<CSSPools::PropertiesNode, Tag, 256>::pool         = nullptr;
+  ScopedHimemPoolBinding<CSSPools::PropertySuiteListNode, Tag, 128>::pool  = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorSuiteListNode, Tag, 128>::pool  = nullptr;
+  ScopedHimemPoolBinding<CSSPools::SelectorSingleListNode, Tag, 128>::pool = nullptr;
 }
 
-bool 
-CSS::match_simple_selector(DOM::Node & node, SelectorNode & simple_sel) 
-{
-  if (simple_sel.class_count > 0) {
-    for (auto & sel_class : simple_sel.class_list) {
+CSS::PoolsGuard::PoolsGuard(CSSPools &poolsRef) : poolsRef(poolsRef) { bindPools(poolsRef); }
+
+CSS::PoolsGuard::~PoolsGuard() { unbindPools(); }
+
+CSS::CSS(const char *cssId, const char *fileFolderPath, const char *buffer, int32_t size,
+         uint8_t prio, CSSPools &poolsRef)
+  : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
+  id         = cssId;
+  folderPath = fileFolderPath;
+  ghost      = false;
+  priority   = prio;
+
+  CSSParser parser(*this, buffer, size);
+}
+
+CSS::CSS(const char *cssId, DOM::Tag tag, const char *buffer, int32_t size, uint8_t prio,
+         CSSPools &poolsRef)
+  : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
+  id         = cssId;
+  folderPath = "";
+  ghost      = false;
+  priority   = prio;
+
+  CSSParser parser(*this, tag, buffer, size);
+}
+
+CSS::CSS(const char *cssId, CSSPools &poolsRef)
+  : pools(&poolsRef), guard(new PoolsGuard(poolsRef)) {
+
+  id         = cssId;
+  folderPath = "";
+  ghost      = true;
+  priority   = 0;
+}
+
+CSS::~CSS() {
+  rulesMap.clear();
+  selectorSuites.clear();
+  selectorSingles.clear();
+  propertySuites.clear();
+
+  delete guard;
+  guard = nullptr;
+}
+
+auto CSS::matchSimpleSelector(DOM::Node &node, SelectorNode &simpleSel) -> bool {
+  if (simpleSel.classCount > 0) {
+    for (auto &selClass : simpleSel.classList) {
       bool found = false;
-      for (auto & node_class : node.class_list) {
-        if (sel_class.compare(node_class) == 0) {
+      for (auto &nodeClass : node.classList) {
+        if (selClass.compare(nodeClass.c_str()) == 0) {
           found = true;
           break;
         }
       }
-      if (!found) return false;
+      if (!found) { return false; }
     }
   }
-  if ((simple_sel.tag != DOM::Tag::NONE) && (simple_sel.tag != DOM::Tag::ANY) && (simple_sel.tag != node.tag)) return false;
-  if ((simple_sel.id_count > 0) && (simple_sel.id.compare(node.id) != 0)) return false;
-  if ((simple_sel.qualifier == Qualifier::FIRST_CHILD) && !node.first_child) return false;
+  if ((simpleSel.tag != DOM::Tag::NONE) && (simpleSel.tag != DOM::Tag::ANY) &&
+      (simpleSel.tag != node.tag)) {
+    return false;
+  }
+  if ((simpleSel.idCount > 0) && (simpleSel.id.compare(node.id.c_str()) != 0)) { return false; }
+  if ((simpleSel.qualifier == Qualifier::FIRST_CHILD) && !node.firstChild) { return false; }
   return true;
 }
 
-bool 
-CSS::match_selector(DOM::Node * node, Selector & sel) 
-{
-  SelOp op = SelOp::NONE;
-  DOM::Node * the_node = node;
-  // The selector_node_list is already in a reverse order, so we process selectors from right to left
-  for (auto * sel_node : sel.selector_node_list) {
+auto CSS::matchSelector(DOM::Node *node, Selector &sel) -> bool {
+  SelOp      op           = SelOp::NONE;
+  DOM::Node *theNode = node;
+  // The selectorNodeList is already in a reverse order, so we process selectors from right to
+  // left
+  for (auto &selNode : sel.selectorNodeList) {
     switch (op) {
-      case SelOp::NONE:
-        if (!match_simple_selector(*the_node, *sel_node)) return false;
-        break;
-      case SelOp::ADJACENT:
-        the_node = the_node->predecessor;
-        if ((the_node == nullptr) || !match_simple_selector(*the_node, *sel_node)) return false;
-        break;
-      case SelOp::CHILD:
-        the_node = the_node->father;
-        if ((the_node == nullptr) || !match_simple_selector(*the_node, *sel_node)) return false;
-        break;
-      case SelOp::DESCENDANT:
-        the_node = the_node->father;
-        while (the_node != nullptr) {
-          if (match_simple_selector(*the_node, *sel_node)) break;
-          the_node = the_node->father;
-        }
-        if (the_node == nullptr) return false;
-        break;
+    case SelOp::NONE:
+      if (!matchSimpleSelector(*theNode, selNode)) { return false; }
+      break;
+    case SelOp::ADJACENT:
+      theNode = theNode->predecessor;
+      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, selNode)) { return false; }
+      break;
+    case SelOp::CHILD:
+      theNode = theNode->father;
+      if ((theNode == nullptr) || !matchSimpleSelector(*theNode, selNode)) { return false; }
+      break;
+    case SelOp::DESCENDANT:
+      theNode = theNode->father;
+      while (theNode != nullptr) {
+        if (matchSimpleSelector(*theNode, selNode)) { break; }
+        theNode = theNode->father;
+      }
+      if (theNode == nullptr) { return false; }
+      break;
     }
-    op = sel_node->op;
+    op = selNode.op;
   }
   return true;
 }
 
-void 
-CSS::match(DOM::Node * node, RulesMap & to_rules) 
-{
-  for (auto & rule : rules_map) {
-    if (match_selector(node, *rule.first)) {
-      to_rules.insert(std::pair<Selector *, Properties *>(rule.first, rule.second));
+auto CSS::match(DOM::Node *node, RulesMap &toRules) -> void {
+  for (auto &rule : rulesMap) {
+    if (matchSelector(node, *rule.first)) {
+      toRules.insert(std::pair<Selector *, Properties *>(rule.first, rule.second));
     }
   }
 }
 
-void
-CSS::show(RulesMap & the_rules_map) 
-{
+auto CSS::show(RulesMap &theRulesMap) -> void {
   #if DEBUGGING
     std::cout << "------ Rules Map: -----" << std::endl;
-    for (auto & rule : the_rules_map) {
+    for (auto &rule : theRulesMap) {
       rule.first->show();
       std::cout << " {" << std::endl;
-      for (auto * prop : *rule.second) {
-        prop->show();
+      for (auto &prop : *rule.second) {
+        prop.show();
       }
       std::cout << "}" << std::endl;
     }

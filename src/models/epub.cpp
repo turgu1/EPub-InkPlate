@@ -2,398 +2,334 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
-#define __EPUB__ 1
 #include "models/epub.hpp"
 
-#include "models/fonts.hpp"
+#include "config.hpp"
+#include "fonts.hpp"
 #include "models/books_dir.hpp"
-#include "models/config.hpp"
-#include "models/page_locs.hpp"
-#include "models/image_factory.hpp"
-#include "viewers/msg_viewer.hpp"
 #include "viewers/book_viewer.hpp"
-#include "helpers/unzip.hpp"
+#include "viewers/msg_viewer.hpp"
+
+#include "picture_factory.hpp"
+#include "unzip.hpp"
 
 #include "logging.hpp"
 #if EPUB_INKPLATE_BUILD
   #include "esp_heap_caps.h"
+#else
+  #include <openssl/sha.h>
 #endif
 
-#include <iostream>
-#include <iomanip>
-#include <iterator>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <new>
+#include <sys/stat.h>
 
 using namespace pugi;
 
-const char * TAG = "EPUB";
+const char *TAG = "EPUB";
 
-bool 
-package_pred(xml_node node)
-{
+auto packagePred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "package") == 0) || (strcmp(node.name(), "opf:package") == 0);
-  LOG_D("package() result: %d", res);
+  LOG_D("package() result: {}", res);
   return res;
-} 
+}
 
-bool 
-metadata_pred(xml_node node)
-{
+auto metadataPred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "metadata") == 0) || (strcmp(node.name(), "opf:metadata") == 0);
-  LOG_D("metadata() result: %d", res);
+  LOG_D("metadata() result: {}", res);
   return res;
-} 
+}
 
-bool 
-manifest_pred(xml_node node)
-{
+auto manifestPred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "manifest") == 0) || (strcmp(node.name(), "opf:manifest") == 0);
-  LOG_D("manifest() result: %d", res);
+  LOG_D("manifest() result: {}", res);
   return res;
-} 
+}
 
-bool 
-item_pred(xml_node node)
-{
+auto itemPred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "item") == 0) || (strcmp(node.name(), "opf:item") == 0);
-  LOG_D("item() result: %d", res);
+  LOG_D("item() result: {}", res);
   return res;
-} 
+}
 
-bool 
-spine_pred(xml_node node)
-{
+auto spinePred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "spine") == 0) || (strcmp(node.name(), "opf:spine") == 0);
-  LOG_D("spine() result: %d", res);
+  LOG_D("spine() result: {}", res);
   return res;
-} 
+}
 
-bool 
-itemref_pred(xml_node node)
-{
+auto itemrefPred(xml_node node) -> bool {
   bool res = (strcmp(node.name(), "itemref") == 0) || (strcmp(node.name(), "opf:itemref") == 0);
-  LOG_D("itemref() result: %d", res);
+  LOG_D("itemref() result: {}", res);
   return res;
 }
 
-bool
-xmlns_pred(xml_attribute attr)
-{
+auto xmlnsPred(xml_attribute attr) -> bool {
   bool res = (strcmp(attr.name(), "xmlns") == 0) || (strcmp(attr.name(), "xmlns:opf") == 0);
-  LOG_D("xmlns() result: %d", res);
+  LOG_D("xmlns() result: {}", res);
   return res;
 }
 
-xml_node one_by_attr(xml_node n, const char * name1, const char * name2, const char * attr, const char * value)
-{
+auto oneByAttr(xml_node n, const char *name1, const char *name2, const char *attr,
+               const char *value) -> xml_node {
   xml_node res;
-  
+
   if (!(res = n.find_child_by_attribute(name1, attr, value))) {
     if ((res = n.find_child_by_attribute(name2, attr, value))) {
-      LOG_D("one by attr: %s Found", name2);
+      LOG_D("one by attr: {} Found", name2);
+    } else {
+      LOG_D("one by attr: {} NOT Found", name2);
     }
-    else LOG_D("one by attr: %s NOT Found", name2);
+  } else {
+    LOG_D("one by attr: {} Found", name1);
   }
-  else LOG_D("one by attr: %s Found", name1);
 
   return res;
 }
 
-EPub::EPub()
-{
-  opf_data               = nullptr;
-  encryption_data        = nullptr;
-  current_item_info.data = nullptr;
-  file_is_open           = false;
-  fonts_size_too_large   = false;
-  fonts_size             = 0;
-  current_itemref        = xml_node(NULL);
-  opf_base_path.clear();
-  current_filename.clear();
+EPub::~EPub() {
+  closeFile();
 }
 
-EPub::~EPub()
-{
-  close_file();
-}
-
-void
-extract_path(const char * fname, std::string & path)
-{
+void extractPath(const char *fname, HimemString &path) {
   path.clear();
   int i = strlen(fname) - 1;
   while ((i > 0) && (fname[i] != '/')) i--;
-  if (i > 0) path.assign(fname, ++i);
+  if (i > 0) { path.assign(fname, ++i); }
 }
 
-bool
-EPub::check_mimetype()
-{
-  char   * data;
-  uint32_t size;
+auto EPub::checkMimetype() -> bool {
+  FileContentPtr data;
+  uint32_t       size;
 
   // A file named 'mimetype' must be present and must contain the
   // string 'application/epub+zip'
 
   LOG_D("Check mimetype.");
-  if (!(data = unzip.get_file("mimetype", size))) return false;
-  if (strncmp(data, "application/epub+zip", 20)) {
+  if (!(data = unzip.getFile("mimetype", size))) { return false; }
+  if (strncmp(reinterpret_cast<const char *>(data.get()), "application/epub+zip", 20)) {
     LOG_E("This is not an EPUB ebook format.");
-    free(data);
     return false;
   }
 
-  free(data);
   return true;
 }
 
-#define ERR(e) { err = e; break; }
+#define ERR(e)                                                                                     \
+        {                                                                                                \
+          err = e;                                                                                       \
+          break;                                                                                         \
+        }
 
-EPub::ObfuscationType
-EPub::get_file_obfuscation(const char * filename)
-{
-  ObfuscationType obf_type = ObfuscationType::NONE;
+auto EPub::getFileObfuscation(const char *filename) -> ObfuscationType {
+  ObfuscationType obfType = ObfuscationType::NONE;
 
-  if (encryption_is_present()) {
-    for (auto & n : encryption.child("encryption").children("enc:EncryptedData")) {
-      if (strcmp(n.child("enc:CipherData")
-                  .child("enc:CipherReference")
-                  .attribute("URI")
-                  .value(), filename) == 0) {
+  if (encryptionIsPresent()) {
+    for (auto &n : encryption.child("encryption").children("enc:EncryptedData")) {
+      if (strcmp(n.child("enc:CipherData").child("enc:CipherReference").attribute("URI").value(),
+                 filename) == 0) {
         xml_attribute attr = n.child("enc:EncryptionMethod").attribute("Algorithm");
         if (strcmp(attr.value(), "http://ns.adobe.com/pdf/enc#RC") == 0) {
-          obf_type = ObfuscationType::ADOBE;
-        } 
-        else if (strcmp(attr.value(), "http://www.idpf.org/2008/embedding") == 0) {
-          obf_type = ObfuscationType::IDPF;
-        } 
-        else obf_type = ObfuscationType::UNKNOWN;
+          obfType = ObfuscationType::ADOBE;
+        } else if (strcmp(attr.value(), "http://www.idpf.org/2008/embedding") == 0) {
+          obfType = ObfuscationType::IDPF;
+        } else {
+          obfType = ObfuscationType::UNKNOWN;
+        }
         break;
       }
     }
   }
-  
-  return obf_type;
+
+  return obfType;
 }
 
-bool
-EPub::get_encryption_xml()
-{
-  static constexpr const char * fname = "META-INF/encryption.xml";
+auto EPub::getEncryptionXml() -> bool {
+  static constexpr const char *fname = "META-INF/encryption.xml";
 
-  uint32_t size;
+  uint32_t                     size;
 
-  encryption_present = false;
+  encryptionPresent = false;
 
-  if ((unzip.file_exists(fname) && 
-      (encryption_data = unzip.get_file(fname, size)) != nullptr)) {
-    xml_parse_result res = encryption.load_buffer_inplace(encryption_data, size);
+  if ((unzip.fileExists(fname) && (encryptionData = unzip.getFile(fname, size)) != nullptr)) {
+    xml_parse_result res = encryption.load_buffer_inplace(encryptionData.get(), size);
     if (res.status != status_ok) {
-      LOG_E("encryption.xml load error: %d", res.status);
-      free(encryption_data);
-      encryption_data = nullptr;
+      LOG_E("encryption.xml load error: {}", res.description());
       return false;
     }
 
-    if ((strcmp(encryption.child("encryption")
-                          .attribute("xmlns")
-                          .value(), 
+    if ((strcmp(encryption.child("encryption").attribute("xmlns").value(),
                 "urn:oasis:names:tc:opendocument:xmlns:container") != 0) ||
-        (strcmp(encryption.child("encryption")
-                          .attribute("xmlns:enc")
-                          .value(), 
+        (strcmp(encryption.child("encryption").attribute("xmlns:enc").value(),
                 "http://www.w3.org/2001/04/xmlenc#") != 0)) {
 
       LOG_E("encryption.xml file format not supported.");
 
       encryption.reset();
-      free(encryption_data);
-      encryption_data    = nullptr;
-
       return false;
     }
-    get_keys();
-    encryption_present = true;
+    getKeys();
+    encryptionPresent = true;
   }
 
   return true;
 }
 
-bool
-EPub::get_opf_filename(std::string & filename)
-{
-  int          err = 0;
-  char       * data;
-  uint32_t     size;
+auto EPub::getOpfFilename(std::string &filename) -> bool {
+  int      err = 0;
+  uint32_t size;
 
   // A file named 'META-INF/container.xml' must be present and point to the OPF file
   LOG_D("Check container.xml.");
-  if (!(data = unzip.get_file("META-INF/container.xml", size))) return false;
-  
-  xml_document    doc;
-  xml_node        node;
-  xml_attribute   attr;
+  auto data = unzip.getFile("META-INF/container.xml", size);
 
-  xml_parse_result res = doc.load_buffer_inplace(data, size);
+  if (!data) { return false; }
+
+  xml_document     doc;
+  xml_node         node;
+  xml_attribute    attr;
+
+  xml_parse_result res = doc.load_buffer_inplace(data.get(), size);
   if (res.status != status_ok) {
-    LOG_E("xml load error: %d", res.status);
-    free(data);
+    LOG_E("xml load error: {}", res.description());
     return false;
   }
 
   bool completed = false;
   while (!completed) {
-    if (!(node = doc.child("container"))) ERR(1);
-    if (!((attr = node.attribute("version")) && (strcmp(attr.value(), "1.0") == 0))) ERR(2);
+    if (!(node = doc.child("container"))) { ERR(1); }
+    if (!((attr = node.attribute("version")) && (strcmp(attr.value(), "1.0") == 0))) { ERR(2); }
     if (!(attr = node.child("rootfiles")
-                     .find_child_by_attribute("rootfile", "media-type", "application/oebps-package+xml")
-                     .attribute("full-path"))) ERR(3);
+                 .find_child_by_attribute("rootfile", "media-type",
+                                          "application/oebps-package+xml")
+                 .attribute("full-path"))) {
+      ERR(3);
+    }
 
     filename.assign(attr.value());
     completed = true;
   }
 
   if (!completed) {
-    LOG_E("EPub get_opf error: %d", err);
+    LOG_E("EPub getOpf error: {}", err);
   }
 
-  doc.reset(); 
-  free(data);
+  doc.reset();
 
   return completed;
 }
 
-std::string
-EPub::get_unique_identifier()
-{
+auto EPub::getUniqueIdentifier() -> std::string {
   xml_attribute attr;
   xml_node      node, node2;
-  const char  * id;
+  const char *  id;
 
-  if ((node  = opf.find_child(package_pred)) &&
-      (id    = node.attribute("unique-identifier").value()) &&
-      (node2 = node.find_child(metadata_pred)) &&
+  if ((node = opf.find_child(packagePred)) && (id = node.attribute("unique-identifier").value()) &&
+      (node2 = node.find_child(metadataPred)) &&
       (node2.find_child_by_attribute("dc:identifier", "id", id))) {
     return node2.text().get();
   }
   return "";
 }
 
-uint8_t 
-hex_to_bin(char ch)
-{
-  if ((ch >= '0') && (ch <= '9')) return ch - '0';
-  if ((ch >= 'A') && (ch <= 'F')) return ch - 'A' + 10;
-  if ((ch >= 'a') && (ch <= 'f')) return ch - 'a' + 10;
+auto hexToBin(char ch) -> uint8_t {
+  if ((ch >= '0') && (ch <= '9')) { return ch - '0'; }
+  if ((ch >= 'A') && (ch <= 'F')) { return ch - 'A' + 10; }
+  if ((ch >= 'a') && (ch <= 'f')) { return ch - 'a' + 10; }
   return 0;
 }
 
-inline bool 
-valid_hex(char ch) 
-{
-  return (((ch >= '0') && (ch <= '9')) ||
-          ((ch >= 'A') && (ch <= 'F')) ||
+inline auto validHex(char ch) -> bool {
+  return (((ch >= '0') && (ch <= '9')) || ((ch >= 'A') && (ch <= 'F')) ||
           ((ch >= 'a') && (ch <= 'f')));
 }
 
-inline bool
-to_bin(const char * from, uint8_t * to) 
-{
-  if (valid_hex(from[0]) && valid_hex(from[1])) {
-    *to = (hex_to_bin(from[0]) << 4) + hex_to_bin(from[1]);
+inline auto toBin(const char *from, uint8_t *to) -> bool {
+  if (validHex(from[0]) && validHex(from[1])) {
+    *to = (hexToBin(from[0]) << 4) + hexToBin(from[1]);
     return true;
+  } else {
+    return false;
   }
-  else return false;
 }
 
 #if EPUB_INKPLATE_BUILD
   #include "mbedtls/md.h"
 
-  void
-  EPub::sha1(const std::string & data) 
-  {
+  auto EPub::sha1(const std::string &data) -> void {
     mbedtls_md_context_t ctx;
-    mbedtls_md_type_t md_type = MBEDTLS_MD_SHA1;
-  
-    mbedtls_md_init  (&ctx);
-    mbedtls_md_setup (&ctx, mbedtls_md_info_from_type(md_type), 0);
+    mbedtls_md_type_t    md_type = MBEDTLS_MD_SHA1;
+
+    mbedtls_md_init(&ctx);
+    mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
     mbedtls_md_starts(&ctx);
     mbedtls_md_update(&ctx, (unsigned char *)data.c_str(), data.length());
-    mbedtls_md_finish(&ctx, (unsigned char *)&sha_uuid);
-    mbedtls_md_free  (&ctx);
+    mbedtls_md_finish(&ctx, (unsigned char *)&shaUuid);
+    mbedtls_md_free(&ctx);
   }
 #else
   #include <openssl/sha.h>
 
-  void
-  EPub::sha1(const std::string & data)
-  {
-    SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&sha_uuid);
+  auto EPub::sha1(const std::string &data) -> void {
+    SHA1((unsigned char *)data.c_str(), data.length(), (uint8_t *)&shaUuid);
   }
 #endif
 
-bool
-EPub::get_keys()
-{
-  std::string  unique_id = get_unique_identifier();
-  const char * str       = unique_id.c_str();
+auto EPub::getKeys() -> bool {
+  std::string unique_id = getUniqueIdentifier();
+  const char *str       = unique_id.c_str();
 
-  if (unique_id.empty()) return false;
+  if (unique_id.empty()) { return false; }
   uint8_t pos = (unique_id.substr(0, 9) == "urn:uuid:") ? 9 : 0;
 
   // Basic validity checks
-  if ((unique_id.length() == (pos + 36)) &&
-      (str[pos +  8] == '-') &&
-      (str[pos + 13] == '-') &&
-      (str[pos + 18] == '-') &&
-      (str[pos + 23] == '-')) {
+  if ((unique_id.length() == (size_t)(pos + 36)) && (str[pos + 8] == '-') &&
+      (str[pos + 13] == '-') && (str[pos + 18] == '-') && (str[pos + 23] == '-')) {
 
     // Convert it to binary big-endien version
     static const uint8_t idxs[16] = { 0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34 };
-    for (uint8_t idx = 0; idx < 16; idx++) {
-      if (!to_bin(&str[pos + idxs[idx]], &bin_uuid[idx])) return false;
+    for (uint8_t idx = 0; idx < 16; ++idx) {
+      if (!toBin(&str[pos + idxs[idx]], &binUuid[idx])) { return false; }
     }
   }
 
-  unique_id.erase(std::remove_if(unique_id.begin(), unique_id.end(), ::isspace), unique_id.end()); 
+  unique_id.erase(std::remove_if(unique_id.begin(), unique_id.end(), ::isspace), unique_id.end());
   sha1(unique_id);
 
   return true;
 }
 
-bool 
-EPub::get_opf(std::string & filename)
-{
-  int err = 0;
-  uint32_t size;
+auto EPub::getOpf(std::string &filename) -> bool {
+  int           err = 0;
+  uint32_t      size;
 
   xml_node      node;
   xml_attribute attr;
 
-  bool completed = false;
+  bool          completed = false;
   while (!completed) {
-    extract_path(filename.c_str(), opf_base_path);
-    LOG_D("opf_base_path: %s", opf_base_path.c_str());
+    extractPath(filename.c_str(), opfBasePath);
+    LOG_D("opfBasePath: {}", opfBasePath);
 
-    if (!(opf_data = unzip.get_file(filename.c_str(), size))) ERR(6);
+    if (!(opfData = unzip.getFile(filename.c_str(), size))) { ERR(6); }
 
-    xml_parse_result res = opf.load_buffer_inplace(opf_data, size);
+    xml_parse_result res = opf.load_buffer_inplace(opfData.get(), size);
     if (res.status != status_ok) {
-      LOG_E("xml load error: %d", res.status);
+      LOG_E("xml load error: {}", res.description());
       opf.reset();
-      free(opf_data);
-      opf_data = nullptr;
+      opfData.reset();
       return false;
     }
 
     // Verifie that the OPF is of one of the version understood by this application
-    if (!((node = opf.find_child(package_pred)) && 
-          (attr = node.find_attribute(xmlns_pred)) &&
+    if (!((node = opf.find_child(packagePred)) && (attr = node.find_attribute(xmlnsPred)) &&
           (strcmp(attr.value(), "http://www.idpf.org/2007/opf") == 0) &&
           (attr = node.attribute("version")) &&
-          ((strcmp(attr.value(), "1.0") == 0) || 
-           (strcmp(attr.value(), "2.0") == 0) || 
+          ((strcmp(attr.value(), "1.0") == 0) || (strcmp(attr.value(), "2.0") == 0) ||
            (strcmp(attr.value(), "3.0") == 0)))) {
       LOG_E("This book is not compatible with this software.");
       break;
@@ -403,142 +339,124 @@ EPub::get_opf(std::string & filename)
   }
 
   if (!completed) {
-    LOG_E("EPub get_opf error: %d", err);
+    LOG_E("EPub getOpf error: {}", err);
     opf.reset();
-    free(opf_data);
+    opfData.reset();
   }
- 
-  LOG_D("get_opf() completed.");
+
+  LOG_D("getOpf() completed.");
 
   return completed;
 }
 
-std::string 
-EPub::filename_locate(const char * fname)
-{
-  char name[256];
-  uint8_t idx = 0;
-  const char * s = fname;
+auto EPub::filenameLocate(const char *fname) -> HimemString {
+  char        name[256];
+  uint8_t     idx   = 0;
+  const char *s = fname;
   while ((idx < 255) && (*s != 0)) {
     if (*s == '%') {
-      name[idx++] = (hex_to_bin(s[1]) << 4) + hex_to_bin(s[2]);
+      name[idx++] = (hexToBin(s[1]) << 4) + hexToBin(s[2]);
       s += 3;
-    }
-    else if ((*s == '/') && (s[1] == '.') && (s[2] == '.') && (s[3] == '/')) {
+    } else if ((*s == '/') && (s[1] == '.') && (s[2] == '.') && (s[3] == '/')) {
       while (idx > 0) {
         idx -= 1;
-        if (name[idx] == '/') break;
+        if (name[idx] == '/') { break; }
       }
       s += idx > 0 ? 3 : 4;
-    }
-    else {
+    } else {
       name[idx++] = *s++;
     }
   }
   name[idx] = 0;
 
-  std::string filename = opf_base_path;
+  HimemString filename = opfBasePath;
   filename.append(name);
 
   return filename;
 }
 
-char *
-EPub::retrieve_file(const char * fname, uint32_t & size)
-{
+auto EPub::retrieveFile(const char *fname, uint32_t &size) -> FileContentPtr {
   // Cleanup the filename that can contain characters as hexadecimal values
   // stating with '%' and relative folder change using '../'
 
-  LOG_D("Retrieving file %s", fname);
-  
-  std::string filename = filename_locate(fname);
+  LOG_D("Retrieving file {}", fname);
 
-  // LOG_D("Retrieving file %s", filename.c_str());
+  HimemString filename = filenameLocate(fname);
 
-  char * str = unzip.get_file(filename.c_str(), size);
+  // LOG_D("Retrieving file {}", filename);
+
+  auto str = unzip.getFile(filename.c_str(), size);
 
   return str;
 }
 
-void
-EPub::load_fonts()
-{
-  for (auto * css: css_cache) {
-    retrieve_fonts_from_css(*css);
+auto EPub::loadFonts() -> void {
+  for (auto &css : cssCache) {
+    retrieveFontsFromCss(css);
   }
 }
 
-void
-EPub::decrypt(void * buffer, const uint32_t size, ObfuscationType obf_type)
-{
-  uint16_t decrypt_length;
-  uint8_t * key;
-  uint8_t   key_size;
+auto EPub::decrypt(void *buffer, const uint32_t size, ObfuscationType obfType) -> void {
+  uint16_t decryptLength;
+  uint8_t *key;
+  uint8_t  keySize;
 
-  if (obf_type == ObfuscationType::ADOBE) {
-    decrypt_length = 1024;
-    key_size       = 16;
-    key            = (uint8_t *) &bin_uuid;
+  if (obfType == ObfuscationType::ADOBE) {
+    decryptLength = 1024;
+    keySize       = 16;
+    key           = (uint8_t *)&binUuid;
+  } else if (obfType == ObfuscationType::IDPF) {
+    decryptLength = 1040;
+    keySize       = 20;
+    key           = (uint8_t *)&shaUuid;
+  } else {
+    return;
   }
-  else if (obf_type == ObfuscationType::IDPF) {
-    decrypt_length = 1040;
-    key_size       = 20;
-    key            = (uint8_t *) &sha_uuid;
-  }
-  else return;
 
-  uint16_t  length = (size > decrypt_length) ? decrypt_length : size;
-  uint8_t  key_idx = 0;
-  uint8_t    * str = (uint8_t *) buffer;
+  uint16_t length = (size > decryptLength) ? decryptLength : size;
+  uint8_t  keyIdx  = 0;
+  uint8_t *str    = (uint8_t *)buffer;
 
   while (length--) {
-    *str++ ^= key[key_idx++];
-    if (key_idx >= key_size) key_idx = 0;
+    *str++ ^= key[keyIdx++];
+    if (keyIdx >= keySize) { keyIdx = 0; }
   }
 }
 
-bool
-EPub::load_font(const std::string      filename, 
-                const std::string      font_family, 
-                const Fonts::FaceStyle style)
-{
+auto EPub::loadFont(const HimemString &filename, const HimemString &fontFamily,
+                    const FaceStyle style) -> bool {
   uint32_t size;
-  LOG_D("Font file name: %s", filename.c_str());
-  if ((size = unzip.get_file_size(filename.c_str())) > 0) {
-    if ((fonts_size + size) > 800000) {
-      fonts_size_too_large = true;
+  LOG_D("Font file name: {}", filename);
+  if ((size = unzip.getFileSize(filename.c_str())) > 0) {
+    if ((fontsSize + size) > 800000) {
+      fontsSizeTooLarge = true;
       LOG_E("Fonts are using too much space (max 800K). Kept the first fonts read.");
-    }
-    else {
-      unsigned char * buffer;
-      ObfuscationType obf_type = get_file_obfuscation(filename.c_str());
-      if (obf_type != ObfuscationType::NONE) {
-        if (obf_type != ObfuscationType::UNKNOWN) {
-          buffer = (unsigned char *) unzip.get_file(filename.c_str(), size);
+    } else {
+      FileContentPtr  buffer;
+      ObfuscationType obfType = getFileObfuscation(filename.c_str());
+      if (obfType != ObfuscationType::NONE) {
+        if (obfType != ObfuscationType::UNKNOWN) {
+          buffer = unzip.getFile(filename.c_str(), size);
           if (buffer == nullptr) {
-            LOG_E("Unable to retrieve font file: %s", filename.c_str());
-          }
-          else {
-            decrypt(buffer, size, obf_type);
+            LOG_E("Unable to retrieve font file: {}", filename);
+          } else {
+            decrypt(buffer.get(), size, obfType);
 
-            if (fonts.add(font_family, style, buffer, size, filename)) {
-              fonts_size += size;
+            if (fonts.add(fontFamily, style, std::move(buffer), size, filename)) {
+              fontsSize += size;
               return true;
             }
-          }   
+          }
+        } else {
+          LOG_E("Font {} obfuscated with an unknown algorithm.", filename);
         }
-        else {
-          LOG_E("Font %s obfuscated with an unknown algorithm.", filename.c_str());
-        }
-      }
-      else {
-        buffer = (unsigned char *) unzip.get_file(filename.c_str(), size);
+      } else {
+        buffer = unzip.getFile(filename.c_str(), size);
         if (buffer == nullptr) {
-          LOG_E("Unable to retrieve font file: %s", filename.c_str());
-        }
-        else {
-          if (fonts.add(font_family, style, buffer, size, filename)) {
-            fonts_size += size;
+          LOG_E("Unable to retrieve font file: {}", filename);
+        } else {
+          if (fonts.add(fontFamily, style, std::move(buffer), size, filename)) {
+            fontsSize += size;
             return true;
           }
         }
@@ -549,144 +467,150 @@ EPub::load_font(const std::string      filename,
   return false;
 }
 
-void
-EPub::retrieve_fonts_from_css(CSS & css)
-{
-  LOG_D("retrieve_fonts_from_css()");
+auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
+  LOG_D("retrieveFontsFromCss()");
+
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
+
   #if USE_EPUB_FONTS
 
-    if ((book_format_params.use_fonts_in_book == 0) ||
-        (fonts_size_too_large)) return;
-    
+    if ((bookFormatParams.useFontsInBook == 0) || (fontsSizeTooLarge)) { return; }
+
     CSS::RulesMap font_rules;
-    DOM * dom = new DOM;
-    DOM::Node * ff = dom->body->add_child(DOM::Tag::FONT_FACE);
 
-    css.match(ff, font_rules);
+    auto          dom = DOM::Make(domPools);
+    if (dom == nullptr) {
+      LOG_E("Failed to allocate DOM object for font extraction");
+      return;
+    }
 
-    delete dom;
-    dom = nullptr;
-    
-    if (font_rules.empty()) return;
+    auto ff = dom->addChild(dom->body, DOM::Tag::FONT_FACE);
+    if (ff == nullptr) {
+      LOG_E("Failed to add FONT_FACE child to DOM");
+      dom.reset();
+      return;
+    }
+
+    css->match(ff, font_rules);
+
+    dom.reset();
+
+    if (font_rules.empty()) { return; }
 
     bool first = true;
 
-    for (auto & rule : font_rules) {
-      const CSS::Values * values;
-      if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
+    for (auto &rule : font_rules) {
+      const CSS::Values *values;
+      if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_FAMILY))) {
 
-        Fonts::FaceStyle style       = Fonts::FaceStyle::NORMAL;
-        Fonts::FaceStyle font_weight = Fonts::FaceStyle::NORMAL;
-        Fonts::FaceStyle font_style  = Fonts::FaceStyle::NORMAL;
-        std::string      font_family = values->front()->str;
+        FaceStyle   style        = FaceStyle::NORMAL;
+        FaceStyle   font_weight  = FaceStyle::NORMAL;
+        FaceStyle   font_style   = FaceStyle::NORMAL;
+        HimemString fontFamily = values->front().str;
 
-        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_STYLE))) {
-          font_style = (Fonts::FaceStyle) values->front()->choice.face_style;
+        if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_STYLE))) {
+          font_style = (FaceStyle)values->front().choice.faceStyle;
         }
-        if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
-          font_weight = (Fonts::FaceStyle) values->front()->choice.face_style;
+        if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::FONT_WEIGHT))) {
+          font_weight = (FaceStyle)values->front().choice.faceStyle;
         }
-        style = fonts.adjust_font_style(style, font_style, font_weight);
-        // LOG_D("Style: %d text-style: %d text-weight: %d", style, font_style, font_weight);
+        style = fonts.adjustFontStyle(style, font_style, font_weight);
+        // LOG_D("Style: {} text-style: {} text-weight: {}", style, font_style, font_weight);
 
-        if (fonts.get_index(font_family.c_str(), style) == -1) { // If not already loaded
-          if ((values = css.get_values_from_props(*rule.second, CSS::PropertyId::SRC)) &&
-              (!values->empty()) &&
-              (values->front()->value_type == CSS::ValueType::URL)) {
+        if (fonts.getFontIndex(fontFamily.c_str(), style) == -1) { // If not already loaded
+          if ((values = css->getValuesFromProps(*rule.second, CSS::PropertyId::SRC)) &&
+              (!values->empty()) && (values->front().valueType == CSS::ValueType::URL)) {
 
-            if (first) {
-              first = false;
-              LOG_D("Displaying font loading msg.");
-              msg_viewer.show(
-                MsgViewer::MsgType::INFO, 
-                false, false, 
-                "Retrieving Font(s)", 
-                "The application is retrieving font(s) from the EPub file. Please wait."
-              );
+            if (!pageLocsInstance) {
+              if (first) {
+                first = false;
+                LOG_D("Displaying font loading msg.");
+                MsgViewer::show(
+                  MsgViewer::MsgType::INFO, false, false, "Retrieving Font(s)",
+                  "The application is retrieving font(s) from the EPub file. Please wait.");
+              }
             }
 
-            std::string filename = css.get_folder_path() + values->front()->str;
-            filename = filename_locate(filename.c_str());
+            HimemString filename = css->getFolderPath() + values->front().str;
+            filename             = filenameLocate(filename.c_str());
 
-            load_font(filename, font_family, style);
-            if (fonts_size_too_large) break;
+            loadFont(filename, fontFamily, style);
+            if (fontsSizeTooLarge) { break; }
           }
         }
       }
     }
   #endif
-  LOG_D("end of retrieve_fonts_from_css()");
+
+  LOG_D("end of retrieveFontsFromCss()");
+
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 }
 
-void
-EPub::retrieve_css(ItemInfo & item)
-{
+auto EPub::retrieveCss(ItemInfo &item) -> void {
 
-  // Retrieve css files, puting them in the css_cache vector (as a cache).
+  // Retrieve css files, puting them in the cssCache vector (as a cache).
   // The properties are then merged into the current_css map for the item
   // being processed.
 
-  LOG_D("retrieve_css()");
+  LOG_D("retrieveCss()");
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 
   xml_node      node;
   xml_attribute attr;
-  
-  if ((node = item.xml_doc.child("html").child("head").child("link"))) {
+
+  if ((node = item.xmlDoc.child("html").child("head").child("link"))) {
     do {
-      if ((attr = node.attribute("type")) &&
-          (strcmp(attr.value(), "text/css") == 0) &&
+      if ((attr = node.attribute("type")) && (strcmp(attr.value(), "text/css") == 0) &&
           (attr = node.attribute("href"))) {
 
         std::string css_id = attr.value(); // uses href as id
 
         // search the list of css files to see if it already been parsed
-        int16_t idx = 0;
-        CSSList::iterator css_cache_it = css_cache.begin();
+        int16_t idx       = 0;
+        auto    css_cache_it = cssCache.begin();
 
-        while (css_cache_it != css_cache.end()) {
-          if ((*css_cache_it)->get_id().compare(css_id) == 0) break;
-          css_cache_it++;
-          idx++;
+        while (css_cache_it != cssCache.end()) {
+          if ((*css_cache_it)->getId().compare(css_id) == 0) { break; }
+          ++css_cache_it;
+          ++idx;
         }
-        if (css_cache_it == css_cache.end()) {
+        if (css_cache_it == cssCache.end()) {
 
           // The css file was not found. Load it in the cache.
-          uint32_t size;
-          std::string fname = item.file_path;
+          uint32_t    size;
+          HimemString fname = item.filePath;
           fname.append(css_id.c_str());
-          char * data = retrieve_file(fname.c_str(), size);
+          auto data = retrieveFile(fname.c_str(), size);
 
           if (data != nullptr) {
             #if COMPUTE_SIZE
               memory_used += size;
             #endif
-            LOG_D("CSS Filename: %s", fname.c_str());
-            std::string path;
-            extract_path(fname.c_str(), path);
-            CSS * css_tmp = new CSS(css_id.c_str(), path.c_str(), data, size, 0);
-            if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-            free(data);
+            LOG_D("CSS Filename: {}", fname);
+            HimemString path;
+            extractPath(fname.c_str(), path);
+            auto css_tmp =
+              CSS::Make(css_id.c_str(), path.c_str(), (char *)data.get(), size, 0, cssPools);
+            if (css_tmp == nullptr) { MsgViewer::outOfMemory("css temp allocation"); }
 
             // #if DEBUGGING
             //   css_tmp->show();
             // #endif
 
-            retrieve_fonts_from_css(*css_tmp);
-                css_cache.push_back(css_tmp);
-            item.css_list.push_back(css_tmp);
+            retrieveFontsFromCss(css_tmp);
+            cssCache.push_back(std::move(css_tmp));
+            item.cssList.push_back(*cssCache.back());
           }
-        } 
-        else {
-          item.css_list.push_back(*css_cache_it);
+        } else {
+          item.cssList.push_back(**css_cache_it); // The css file was found in the cache. Just add
+                                                  // it to the list of css for the current item.
         }
       }
     } while ((node = node.next_sibling("link")));
@@ -695,304 +619,416 @@ EPub::retrieve_css(ItemInfo & item)
   // Now look at <style> tags presents in the <html><head>, creating a temporary
   // css object for each of them.
 
-  if ((node = item.xml_doc.child("html").child("head" ).child("style"))) {
+  if ((node = item.xmlDoc.child("html").child("head").child("style"))) {
     do {
-      xml_node sub = node.first_child();
-      const char * buffer;
+      xml_node    sub = node.first_child();
+      const char *buffer;
       if (sub != nullptr) {
         buffer = sub.value();
-      }
-      else {
+      } else {
         buffer = node.child_value();
       }
-      CSS * css_tmp = new CSS("current-item", item.file_path.c_str(), buffer, strlen(buffer), 1);
-      if (css_tmp == nullptr) msg_viewer.out_of_memory("css temp allocation");
-      retrieve_fonts_from_css(*css_tmp);
+      auto css_tmp =
+        CSS::Make("current-item", item.filePath.c_str(), buffer, strlen(buffer), 1, cssPools);
+      if (!css_tmp) { MsgViewer::outOfMemory("css temp allocation"); }
+      retrieveFontsFromCss(css_tmp);
       // css_tmp->show();
-      item.css_cache.push_back(css_tmp);
+      item.cssCache.push_back(std::move(css_tmp));
     } while ((node = node.next_sibling("style")));
   }
 
   // Populate the current item css structure with property suites present in
   // the identified css files in the <meta> portion of the html file.
 
-  if (item.css != nullptr) delete item.css;
-  if ((item.css = new CSS("MergedForItem")) == nullptr) {
-    msg_viewer.out_of_memory("css allocation");
+  if (!item.cssList.empty() || !item.cssCache.empty()) {
+    if (!(item.css = CSS::Make("MergedForItem", cssPools))) {
+      MsgViewer::outOfMemory("css allocation");
+    }
+    for (auto &css : item.cssList) item.css->retrieveDataFromCss(css);
+    for (auto &css : item.cssCache) item.css->retrieveDataFromCss(*css.get());
+  } else {
+    item.css.reset();
   }
-  for (auto * css : item.css_list ) item.css->retrieve_data_from_css(*css);
-  for (auto * css : item.css_cache) item.css->retrieve_data_from_css(*css);
 
   // item.css->show();
-  LOG_D("end of retrieve_css()");
+  LOG_D("end of retrieveCss()");
   #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 }
 
-
-bool 
-EPub::get_item(pugi::xml_node itemref, 
-               ItemInfo &     item)
-{
+auto EPub::getItem(pugi::xml_node itemref, ItemInfo &item) -> bool {
   int err = 0;
-  #define ERR(e) { err = e; break; }
+  #define ERR(e)                                                                                     \
+          {                                                                                                \
+            err = e;                                                                                       \
+            break;                                                                                         \
+          }
 
-  if (!file_is_open) return false;
+  if (!fileIsOpen) { return false; }
 
-  // if ((item.data != nullptr) && (current_itemref == itemref))
+  // if ((item.data != nullptr) && (currentItemRef == itemref))
   // return true;
 
-  clear_item_data(item);
+  clearItemData(item);
 
   xml_node      node, node2;
   xml_attribute attr;
-
-  const char * id = itemref.attribute("idref").value();
-
-  bool completed = false;
+  const char *  id = itemref.attribute("idref").value();
+  bool          completed = false;
 
   while (!completed) {
-    if (!((node = opf.find_child(package_pred).find_child(manifest_pred)) &&
-          (node = one_by_attr(node, "item", "opf:item", "id", id)))) ERR(1);
+    if (!((node = opf.find_child(packagePred).find_child(manifestPred)) &&
+          (node = oneByAttr(node, "item", "opf:item", "id", id)))) {
+      ERR(1);
+    }
 
-    if (!(attr = node.attribute("media-type"))) ERR(2);
-    const char* media_type = attr.value();
+    if (!(attr = node.attribute("media-type"))) { ERR(2); }
+    const char *mediaType = attr.value();
 
-    if      (strcmp(media_type, "application/xhtml+xml") == 0) item.media_type = MediaType::XML;
-    else if (strcmp(media_type, "image/jpeg"           ) == 0) item.media_type = MediaType::JPEG;
-    else if (strcmp(media_type, "image/png"            ) == 0) item.media_type = MediaType::PNG;
-    else if (strcmp(media_type, "image/bmp"            ) == 0) item.media_type = MediaType::BMP;
-    else if (strcmp(media_type, "image/gif"            ) == 0) item.media_type = MediaType::GIF;
-    else ERR(3);
+    if (strcmp(mediaType, "application/xhtml+xml") == 0) {
+      item.mediaType = MediaType::XML;
+    }
+    else if (strcmp(mediaType, "picture/jpeg") == 0) {
+      item.mediaType = MediaType::JPEG;
+    }
+    else if (strcmp(mediaType, "picture/png") == 0) {
+      item.mediaType = MediaType::PNG;
+    }
+    else if (strcmp(mediaType, "picture/bmp") == 0) {
+      item.mediaType = MediaType::BMP;
+    }
+    else if (strcmp(mediaType, "picture/gif") == 0) {
+      item.mediaType = MediaType::GIF;
+    }
+    else {
+      ERR(3);
+    }
 
-    if (!(attr = node.attribute("href"))) ERR(5);
+    if (!(attr = node.attribute("href"))) { ERR(5); }
 
-    LOG_D("Retrieving file %s", attr.value());
+    LOG_D("Retrieving file {}", attr.value());
 
     uint32_t size;
-    extract_path(attr.value(), item.file_path);
+    extractPath(attr.value(), item.filePath);
 
-    // LOG_D("item.file_path: %s.", item.file_path.c_str());
+    // LOG_D("item.filePath: {}.", item.filePath);
 
-    if ((item.data = retrieve_file(attr.value(), size)) == nullptr) ERR(6);
+    if ((item.data = retrieveFile(attr.value(), size)) == nullptr) { ERR(6); }
 
-    if (item.media_type == MediaType::XML) {
+    if (item.mediaType == MediaType::XML) {
 
-      char * str;
-      while ((str = strstr(item.data, "/*<![CDATA[*/")) != nullptr) {
+      char *str;
+      while ((str = strstr((char *)item.data.get(), "/*<![CDATA[*/")) != nullptr) {
         *str++ = ' ';
         *str   = ' ';
-        str   +=  10;
-        *str++ = ' ';
-        *str   = ' ';
-      }
-      while ((str = strstr(item.data, "/*]]>*/")) != nullptr) {
-        *str++ = ' ';
-        *str   = ' ';
-        str   +=   4;
+        str += 10;
         *str++ = ' ';
         *str   = ' ';
       }
-      LOG_D("Reading file %s", attr.value());
+      while ((str = strstr((char *)item.data.get(), "/*]]>*/")) != nullptr) {
+        *str++ = ' ';
+        *str   = ' ';
+        str += 4;
+        *str++ = ' ';
+        *str   = ' ';
+      }
+      LOG_D("Reading file {}", attr.value());
 
-      xml_parse_result res = item.xml_doc.load_buffer_inplace(item.data, size);
+      xml_parse_result res = item.xmlDoc.load_buffer_inplace(item.data.get(), size);
       if (res.status != status_ok) {
-        LOG_E("item_doc xml load error: %d", res.status);
+        LOG_E("item_doc xml load error: {}", res.description());
         // msg_viewer.show(
-        //   MsgViewer::MsgType::ALERT, 
-        //   true, false, 
-        //   "XML Error in eBook.", 
+        //   MsgViewer::MsgType::ALERT,
+        //   true, false,
+        //   "XML Error in eBook.",
         //   "File %s contains XHTML errors and cannot be loaded.",
         //   attr.value()
         // );
-        item.xml_doc.reset();
+        item.xmlDoc.reset();
         if (item.data != nullptr) {
-          free(item.data);
-          item.data = nullptr;
+          item.data.reset();
         }
         return false;
       }
 
       // current_item.parse<0>(current_item_data);
 
-      // if (css.size() > 0) css.clear();
+      // if (css->size() > 0) css->clear();
 
-     retrieve_css(item);
+      retrieveCss(item);
     }
 
     completed = true;
   }
 
   if (!completed) {
-    LOG_E("EPub get_current_item error: %d", err);
-    clear_item_data(item);
+    LOG_E("EPub getCurrentItem error: {}", err);
+    clearItemData(item);
   }
   return completed;
 }
 
-void 
-EPub::update_book_format_params()
-{
+/// Updates the book format parameters by loading them from persistent storage or applying defaults.
+///
+/// The book parameters (*bookParams*) are the parameters that are specific to the book. They are
+/// stored in a file with the same name as the book and the extension .pars.
+///
+/// The book format parameters (*bookFormatParams*) are the parameters that are used to format the
+/// book. They are adjusted based on the book parameters and the global configuration parameters.
+/// When a parameter value is -1, the corresponding global configuration value is used. The book
+/// format parameters are used to format the book when it is displayed.
+///
+/// This method performs the following:
+/// - Validates the book parameters version for compatibility;
+/// - Initializes book format parameters with default values if no persistent storage exists or
+///   if the version is incompatible;
+/// - Retrieves stored parameters (pictures, font size, line height, fonts, font selection) from
+///   storage;
+/// - Applies configuration settings for orientation and title visibility;
+/// - Falls back to global configuration defaults for any unset parameters.
+auto EPub::retrieveBookFormatParams() -> void {
   constexpr int8_t default_value = -1;
 
-  if (book_params == nullptr) {
-    book_format_params = {
-      .ident             = Screen::IDENT,
-      .orientation       =  0,  // Get de compiler happy (no warning). Will be set below...
-      .show_title        =  0,  // ... idem ...
-      .show_images       = default_value,
-      .font_size         = default_value,
-      .use_fonts_in_book = default_value,
-      .font              = default_value
-    };
+  if (bookParams == nullptr) {
+
+    bookFormatParams = { .ident = Screen::IDENT,
+                         .orientation =
+                           0,  // Get the compiler happy (no warning). Will be set below...
+                         .showTitle      = 0,// ... idem ...
+                         .showPictures   = default_value,
+                         .fontSize       = default_value,
+                         .lineHeight     = default_value,
+                         .useFontsInBook = default_value,
+                         .font           = default_value,
+                         .columnCount    = default_value,
+                         .screenDim      = { 0, 0 } };
+  } else {
+    bookParams->get(BookParams::Ident::SHOW_PICTURES,     &bookFormatParams.showPictures);
+    bookParams->get(BookParams::Ident::FONT_SIZE,         &bookFormatParams.fontSize);
+    bookParams->get(BookParams::Ident::LINE_HEIGHT,       &bookFormatParams.lineHeight);
+    bookParams->get(BookParams::Ident::USE_FONTS_IN_BOOK, &bookFormatParams.useFontsInBook);
+    bookParams->get(BookParams::Ident::FONT,              &bookFormatParams.font);
+    bookParams->get(BookParams::Ident::COLUMN_COUNT,      &bookFormatParams.columnCount);
   }
-  else {
-    book_params->get(BookParams::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
-    book_params->get(BookParams::Ident::FONT_SIZE,          &book_format_params.font_size        );
-    book_params->get(BookParams::Ident::USE_FONTS_IN_BOOK,  &book_format_params.use_fonts_in_book);
-    book_params->get(BookParams::Ident::FONT,               &book_format_params.font             );
+
+  config.get(Config::Ident::ORIENTATION, &bookFormatParams.orientation);
+  config.get(Config::Ident::SHOW_TITLE,  &bookFormatParams.showTitle);
+
+  if (bookFormatParams.showPictures == default_value) {
+    config.get(Config::Ident::SHOW_PICTURES, &bookFormatParams.showPictures);
+  }
+  if (bookFormatParams.fontSize == default_value) {
+    config.get(Config::Ident::FONT_SIZE, &bookFormatParams.fontSize);
+  }
+  if (bookFormatParams.lineHeight == default_value) {
+    config.get(Config::Ident::LINE_HEIGHT, &bookFormatParams.lineHeight);
+  }
+  if (bookFormatParams.useFontsInBook == default_value) {
+    config.get(Config::Ident::USE_FONTS_IN_BOOKS, &bookFormatParams.useFontsInBook);
+  }
+  if (bookFormatParams.font == default_value) {
+    config.get(Config::Ident::DEFAULT_FONT, &bookFormatParams.font);
+  }
+  if (bookFormatParams.columnCount == default_value) {
+    config.get(Config::Ident::COLUMN_COUNT, &bookFormatParams.columnCount);
   }
 
-  config.get(Config::Ident::ORIENTATION, &book_format_params.orientation);
-  config.get(Config::Ident::SHOW_TITLE,  &book_format_params.show_title );
+  bookFormatParams.screenDim = Dim(Screen::getWidth(), Screen::getHeight());
 
-  if (book_format_params.show_images       == default_value) config.get(Config::Ident::SHOW_IMAGES,        &book_format_params.show_images      );
-  if (book_format_params.font_size         == default_value) config.get(Config::Ident::FONT_SIZE,          &book_format_params.font_size        );
-  if (book_format_params.use_fonts_in_book == default_value) config.get(Config::Ident::USE_FONTS_IN_BOOKS, &book_format_params.use_fonts_in_book);
-  if (book_format_params.font              == default_value) config.get(Config::Ident::DEFAULT_FONT,       &book_format_params.font             );
-
-  //if (!book_format_params.use_fonts_in_book) fonts.clear();
+  // if (!bookFormatParams.useFontsInBook) fonts.clear();
 }
 
-void
-EPub::open_params(const std::string & epub_filename)
-{
-  std::string params_filename = epub_filename.substr(0, epub_filename.find_last_of('.')) + ".pars";
-  book_params = new BookParams(params_filename, false);
-  if (book_params != nullptr) {
-    book_params->read();
+auto EPub::openParams(const HimemString &epubFilename) -> bool {
+  HimemString paramsFilename = epubFilename.substr(0, epubFilename.find_last_of('.')) + ".pars";
+  bookParams.reset(new (std::nothrow) BookParams(paramsFilename, false));
+  if (bookParams != nullptr) {
+    bookParams->read();
+
+    int8_t version = 0;
+
+    bookParams->get(BookParams::Ident::VERSION, &version);
+    if ((version != BOOK_PARAMS_VERSION)) {
+      unlink(paramsFilename.c_str());
+      bookParams->read();
+    }
+  } else {
+    LOG_E("Unable to allocate memory for book parameters.");
+    return false;
   }
+
+  return true;
 }
 
-bool 
-EPub::open_file(const std::string & epub_filename)
-{
-  if (file_is_open && (current_filename == epub_filename)) return true;
-  if (file_is_open) close_file();
+auto EPub::open(const HimemString &epubFilename) -> bool {
+  if (fileIsOpen && (currentFilename == epubFilename)) { return true; }
+  if (fileIsOpen) { closeFile(); }
 
-  page_locs.clear();
-  
+  auto failOpen = [&]() -> bool {
+                    clearItemData(currentItemInfo);
+
+                    if (opfData) {
+                      opf.reset();
+                      opfData.reset();
+                    }
+                    opfBasePath.clear();
+
+                    if (encryptionData) {
+                      encryption.reset();
+                      encryptionData.reset();
+                    }
+
+                    // Unzip is shared for pageLocs instances; only the owner closes it.
+                    if (!pageLocsInstance) {
+                      unzip.closeZipFile();
+                    }
+
+                    fonts.clear();
+                    cssCache.clear();
+                    encryptionPresent = false;
+                    currentFilename.clear();
+
+                    if (bookParams != nullptr) { bookParams.reset(); }
+
+                    return false;
+                  };
+
   #if COMPUTE_SIZE
     memory_used = 0;
   #endif
 
   LOG_D("Opening EPub file through unzip...");
-  if (!unzip.open_zip_file(epub_filename.c_str())) {
-    LOG_E("EPub open_file: Unable to open zip file: %s", epub_filename.c_str());
+  if (!unzip.openZipFile(epubFilename.c_str())) {
+    LOG_E("EPub open_file: Unable to open zip file: {}", epubFilename);
     return false;
   }
 
-  if (!check_mimetype()) return false;
+  if (!checkMimetype()) { return failOpen(); }
 
   LOG_D("Getting the OPF file");
   std::string filename;
-  if (!get_opf_filename(filename)) return false;
+  if (!getOpfFilename(filename)) { return failOpen(); }
 
-  if (!get_opf(filename)) {
-    LOG_E("EPub open_file: Unable to get opf of %s", epub_filename.c_str());
-    unzip.close_zip_file();
-    return false;
+  if (!getOpf(filename)) {
+    LOG_E("EPub open_file: Unable to get opf of {}", epubFilename);
+    return failOpen();
   }
 
-  get_encryption_xml();
+  getEncryptionXml();
 
-  open_params(epub_filename);
-  update_book_format_params();
+  if (!openParams(epubFilename)) { return failOpen(); }
 
-  fonts.adjust_default_font(book_format_params.font);
+  retrieveBookFormatParams();
 
-  clear_item_data(current_item_info);
+  fonts.adjustDefaultFont(bookFormatParams.font);
 
-  current_filename     = epub_filename;
-  file_is_open         = true;
-  fonts_size_too_large = false;
-  fonts_size           = 0;
+  clearItemData(currentItemInfo);
+
+  if (pageLocsInstance) {
+    // PageLocs will regenerate the table of content. Remove the existing TOC file and
+    // prepare the TOC object for that.
+    toc = TOC::Make();
+    if (toc == nullptr) {
+      LOG_E("Unable to allocate memory for the book table of content.");
+      return failOpen();
+    }
+
+    toc->loadFromEpub(*this);
+
+    auto filePath = epubFilename;
+    auto dotPos   = filePath.find_last_of('.');
+
+    if (dotPos != std::string::npos) {
+      filePath.replace(dotPos, 5, ".toc");
+
+      struct stat fileStat;
+      if (stat(filePath.c_str(), &fileStat) != -1) {
+        LOG_D("Deleting file : {}", filePath);
+        unlink(filePath.c_str());
+      }
+    }
+  }
+
+  currentFilename   = epubFilename;
+  fileIsOpen        = true;
+  fontsSizeTooLarge = false;
+  fontsSize         = 0;
 
   LOG_D("EPub file is now open.");
 
   return true;
 }
 
-void
-EPub::clear_item_data(ItemInfo & item)
-{
-  item.xml_doc.reset();
+auto EPub::clearItemData(ItemInfo &item) -> void {
+  item.xmlDoc.reset();
   if (item.data != nullptr) {
-    free(item.data);
-    item.data = nullptr;
+    item.data.reset();
   }
 
   // for (auto * css : current_item_css_list) {
   //   delete css;
   // }
-  item.css_list.clear();
+  item.cssList.clear();
+  item.cssCache.clear();
 
-  for (auto * css : item.css_cache) delete css;
-  item.css_cache.clear();
+  // Reset ghost CSS after clearing its source CSS objects to avoid dangling pointers
+  // in the rulesMap between clearItemData() and the next retrieveCss() call.
+  item.css.reset();
 
-  item.itemref_index = -1;
+  item.itemrefIndex = -1;
 }
 
-bool 
-EPub::close_file()
-{
-  if (!file_is_open) return true;
+auto EPub::closeFile() -> bool {
+  if (!fileIsOpen) { return true; }
 
-  clear_item_data(current_item_info);
+  if (!pageLocsInstance) {
+    pageLocs.stopControlTask();
+  }
 
-  if (opf_data) {
+  clearItemData(currentItemInfo);
+
+  if (opfData) {
     opf.reset();
-    free(opf_data);
-    opf_data = nullptr;
+    opfData.reset();
   }
 
-  opf_base_path.clear();
+  opfBasePath.clear();
 
-  if (encryption_data) {
+  if (encryptionData) {
     encryption.reset();
-    free(encryption_data);
-    encryption_data = nullptr;
+    encryptionData.reset();
   }
 
-  unzip.close_zip_file();
+  // Unzip is shared across EPub instances: pageLocsInstance must not close it.
+  if (!pageLocsInstance) {
+    if (Unzip::isAlive()) {
+      unzip.closeZipFile();
+    }
+  }
 
-  for (auto * css : css_cache) delete css;
-
-  css_cache.clear();
+  // Fonts are EPub-instance-owned and must always be released.
   fonts.clear();
 
-  file_is_open = false;
-  encryption_present = false;
-  current_filename.clear();
+  cssCache.clear();
 
-  if (book_params != nullptr) {
-    book_params->save();
-    delete book_params;
-    book_params = nullptr;
+  fileIsOpen        = false;
+  encryptionPresent = false;
+  currentFilename.clear();
+
+  if (bookParams != nullptr) {
+    bookParams->save();
+    bookParams.reset();
   }
 
   return true;
 }
 
-const char * 
-EPub::get_meta(const std::string & name)
-{
-  if (!file_is_open) return nullptr;
+auto EPub::getMeta(const std::string &name) -> const char * {
+  if (!fileIsOpen) { return nullptr; }
 
   xml_node node;
-  
-  if ((node = opf.find_child(package_pred).find_child(metadata_pred))) {
+
+  if ((node = opf.find_child(packagePred).find_child(metadataPred))) {
     return node.child_value(name.c_str());
   }
   return nullptr;
@@ -1003,28 +1039,25 @@ EPub::get_meta(const std::string & name)
   // return node == nullptr ? nullptr : node.child_value(name.c_str());
 }
 
-const char *
-EPub::get_cover_filename()
-{
-  if (!file_is_open) return nullptr;
+auto EPub::getCoverFilename() -> const char * {
+  if (!fileIsOpen) { return nullptr; }
 
   xml_node      node;
   xml_attribute attr;
 
-  const char * itemref = nullptr;
-  const char * filename = nullptr;
+  const char *  itemref  = nullptr;
+  const char *  filename = nullptr;
 
   // First, try to find its from metadata
 
-  if ((node = opf.find_child(package_pred)
-                 .find_child(metadata_pred)) &&
-      (node = one_by_attr(node, "meta", "opf:meta", "name", "cover")) &&
+  if ((node = opf.find_child(packagePred).find_child(metadataPred)) &&
+      (node = oneByAttr(node, "meta", "opf:meta", "name", "cover")) &&
       (itemref = node.attribute("content").value())) {
 
-    for (auto n : opf.find_child(package_pred).find_child(manifest_pred).children()) {
+    for (auto n : opf.find_child(packagePred).find_child(manifestPred).children()) {
       if ((strcmp(n.name(), "item") == 0) || (strcmp(n.name(), "opf:item") == 0)) {
-        if ((((attr = n.attribute("id"        )) && (strcmp(attr.value(), itemref) == 0)) ||
-            ((attr = n.attribute("properties")) && (strcmp(attr.value(), itemref) == 0))) &&
+        if ((((attr = n.attribute("id")) && (strcmp(attr.value(), itemref) == 0)) ||
+             ((attr = n.attribute("properties")) && (strcmp(attr.value(), itemref) == 0))) &&
             (attr = n.attribute("href"))) {
           filename = attr.value();
           break;
@@ -1035,11 +1068,11 @@ EPub::get_cover_filename()
 
   if (filename == nullptr) {
     // Look inside manifest
-    for (auto n : opf.find_child(package_pred).find_child(manifest_pred).children()) {
+    for (auto n : opf.find_child(packagePred).find_child(manifestPred).children()) {
       if ((strcmp(n.name(), "item") == 0) || (strcmp(n.name(), "opf:item") == 0)) {
-        if ((attr = n.attribute("id")) && 
-            ((strcmp(attr.value(), "cover-image") == 0) || 
-             (strcmp(attr.value(), "cover"      ) == 0)) && 
+        if ((attr = n.attribute("id")) &&
+            ((strcmp(attr.value(), "cover-picture") == 0) ||
+             (strcmp(attr.value(), "cover") == 0)) &&
             (attr = n.attribute("href"))) {
           filename = attr.value();
           break;
@@ -1051,45 +1084,51 @@ EPub::get_cover_filename()
   return filename == nullptr ? "" : filename;
 }
 
-int16_t 
-EPub::get_item_count()
-{
-  if (!file_is_open) return 0;
+/// @brief Get the number of items in the spine of the book.
+///
+/// This is used to know how many pages the book has, and to be able to retrieve the page location
+/// information for each page in the spine. The page location information is used to be able to jump
+/// to a specific page in the book, and to be able to display the page number in the book viewer.
+///
+/// @return The number of items in the spine.
+auto EPub::getItemCount() -> int16_t {
+  if (!fileIsOpen) { return 0; }
 
-  auto it = opf.find_child(package_pred).find_child(spine_pred).children("itemref");
+  auto    it       = opf.find_child(packagePred).find_child(spinePred).children("itemref");
   int16_t count = std::distance(it.begin(), it.end());
-  
+
   if (count == 0) {
-    it = opf.find_child(package_pred).find_child(spine_pred).children("opf:itemref");
+    it    = opf.find_child(packagePred).find_child(spinePred).children("opf:itemref");
     count = std::distance(it.begin(), it.end());
   }
 
-  LOG_D("Item count: %d", count);
+  LOG_D("Item count: {}", count);
   return count;
 }
 
-bool 
-EPub::get_item_at_index(int16_t itemref_index)
-{
-  if (!file_is_open) return false;
+auto EPub::getItemAtIndex(int16_t itemrefIndex) -> bool {
+  if (!fileIsOpen) { return false; }
 
-  if (current_item_info.itemref_index == itemref_index) return true;
-  
-  xml_node node  = xml_node();
+  if (currentItemInfo.itemrefIndex == itemrefIndex) { return true; }
+
+  xml_node node = xml_node();
   int16_t  index = 0;
 
-  for (auto n : opf.find_child(package_pred).find_child(spine_pred).children()) {
-    if (index == itemref_index) { node = n; break; }
-    index++;
+  for (auto n : opf.find_child(packagePred).find_child(spinePred).children()) {
+    if (index == itemrefIndex) {
+      node = n;
+      break;
+    }
+    ++index;
   }
 
-  if (node == nullptr) return false;
+  if (node == nullptr) { return false; }
 
   bool res = false;
 
-  if ((current_item_info.data == nullptr) || (current_itemref != node)) {
-    if ((res = get_item(node, current_item_info))) current_itemref = node;
-    current_item_info.itemref_index = itemref_index;
+  if ((currentItemInfo.data == nullptr) || (currentItemRef != node)) {
+    if ((res = getItem(node, currentItemInfo))) { currentItemRef = node; }
+    currentItemInfo.itemrefIndex = itemrefIndex;
   }
   return res;
 }
@@ -1097,64 +1136,49 @@ EPub::get_item_at_index(int16_t itemref_index)
 // This is in support of the pages location retrieval mechanism. The ItemInfo
 // is being used to retrieve asynchroniously the book page numbers without
 // interfering with the main book viewer thread.
-bool 
-EPub::get_item_at_index(int16_t    itemref_index, 
-                        ItemInfo & item)
-{
-  if (!file_is_open) return false;
+auto EPub::getItemAtIndex(int16_t itemrefIndex, ItemInfo &item) -> bool {
+  if (!fileIsOpen) { return false; }
 
-  LOG_D("Mutex lock...");
-  
-  { std::scoped_lock guard(mutex);
-    
-    xml_node node = xml_node();
-    int16_t index = 0;
+  xml_node node = xml_node();
+  int16_t  index = 0;
 
-    for (auto n : opf.find_child(package_pred).find_child(spine_pred).children()) {
-      if (index == itemref_index) { node = n; break; }
-      index++;
+  for (auto n : opf.find_child(packagePred).find_child(spinePred).children()) {
+    if (index == itemrefIndex) {
+      node = n;
+      break;
     }
-
-    bool res = false;
-
-    if (node) {
-      res = get_item(node, item);
-      item.itemref_index = itemref_index;
-    }
-
-    LOG_D("Mutex unlocked...");
-    return res;
+    ++index;
   }
+
+  bool res = false;
+
+  if (node) {
+    res               = getItem(node, item);
+    item.itemrefIndex = itemrefIndex;
+  }
+
+  return res;
 }
 
-Image *
-EPub::get_image(std::string & fname, bool load)
-{
-  LOG_D("Mutex lock...");
+auto EPub::getPicture(HimemString &fname, bool load) -> PicturePtr {
 
-  { std::scoped_lock guard(mutex);
+  HimemString filename = filenameLocate(fname.c_str());
+  auto        pict = PictureFactory::create(filename, Dim(Screen::getWidth(), Screen::getHeight()), load,
+                                            fonts.getFont(SYSTEM_REGULAR_FONT_INDEX));
 
-    std::string filename = filename_locate(fname.c_str());
-    Image * img = ImageFactory::create(filename, 
-                                       Dim(Screen::get_width(), Screen::get_height()), 
-                                       load);
-
-    if ((img == nullptr) || 
-        (load && (img->get_bitmap() == nullptr)) ||
-        (img->get_dim().height == 0) ||
-        (img->get_dim().width  == 0)) {
-      if (img != nullptr) delete img;
-      img = nullptr;
-    }
-
-    // if (img->get_bitmap() != nullptr) {
-    //   std::cout << "----- Image content -----" << std::endl;
-    //   for (int i = 0; i < 200; i++) {
-    //     std::cout << std::hex << std::setw(2) << +img->get_bitmap()[i];
-    //   }
-    //   std::cout << std::endl << "-----" << std::endl;
-    // }
-    LOG_D("Mutex unlocked...");
-    return img;
+  if ((pict == nullptr) || (load && (pict->getBitmap() == nullptr)) ||
+      (pict->getDim().height == 0) || (pict->getDim().width == 0)) {
+    if (pict != nullptr) { pict.reset(); }
+    pict = nullptr;
   }
+
+  // if (pict->getBitmap() != nullptr) {
+  //   std::cout << "----- Picture content -----" << std::endl;
+  //   for (int i = 0; i < 200; ++i) {
+  //     std::cout << std::hex << std::setw(2) << +pict->getBitmap()[i];
+  //   }
+  //   std::cout << std::endl << "-----" << std::endl;
+  // }
+
+  return pict;
 }

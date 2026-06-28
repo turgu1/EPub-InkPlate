@@ -16,7 +16,7 @@ fi
 
 if [ "$3" = "" ]; then
   echo "Usage: $0 version_nbr type extended_case [build_only]"
-  echo "type = 6, 10, 6plus, 6plusv2, 6flick"
+  echo "type = 6, 10, 6v2, 10v2, 6plus, 6plusv2, 6flick"
   echo "extended_case = 0, 1"
   echo "   0 = no extended case"
   echo "   1 = with extended case"
@@ -32,6 +32,8 @@ if [ "$3" = "0" ]; then
   case "$2" in
     "6") device="INKPLATE_6" ;;
     "10") device="INKPLATE_10" ;;
+    "6v2") device="INKPLATE_6_V2" ;;
+    "10v2") device="INKPLATE_10_V2" ;;
     "6plus") device="INKPLATE_6PLUS" ;;
     "6plusv2") device="INKPLATE_6PLUS_V2" ;;
     "6flick") device="INKPLATE_6FLICK" ;;
@@ -80,6 +82,7 @@ cp -r bin "$folder"
 mkdir "$folder/SDCard"
 mkdir "$folder/SDCard/fonts"
 mkdir "$folder/SDCard/books"
+mkdir "$folder/SDCard/artworks"
 
 cp SDCard/config_distrib.txt $folder/SDCard/config.txt
 cp SDCard/fonts_list.xml $folder/SDCard/fonts_list.xml
@@ -87,6 +90,18 @@ cp SDCard/fonts_list_orig.xml $folder/SDCard/fonts_list_orig.xml
 cp SDCard/fonts/* $folder/SDCard/fonts
 cp SDCard/books/Austen*.epub $folder/SDCard/books
 cp doc/timezones.csv $folder
+
+case "$2" in
+  "6") geometry="600x800" ;;
+  "10") geometry="825x1200" ;;
+  "6v2") geometry="600x800" ;;
+  "10v2") geometry="825x1200" ;;
+  "6plus") geometry="758x1024" ;;
+  "6plusv2") geometry="758x1024" ;;
+  "6flick") geometry="758x1024" ;;
+esac
+
+cp screen_saver/$geometry/* $folder/SDCard/artworks
 
 if [ "$3" = "0" ]; then
   case "$2" in

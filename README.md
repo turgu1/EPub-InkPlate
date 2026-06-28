@@ -15,22 +15,93 @@ Guy
 
 (Updated 2026.01.20)
 
-Update to version 2.1.0
+### Version 3.0.0 - What's New in This Release
 
-- Now using ESP-IDF framework v5.5.2
-- No longer using PlatformIO. Using cmake through idf.py to build applications
+This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
 
-- Added support through the ESP-IDF-InkPlace v0.9.8 project:
-  - Support for new devices Inkplace-6PLUS-V2, Inkplace-6FLICK
-  - Added support for PCAL GPIO chip (Soldered devices)
-  - Added support for Cypress touchscreen (6FLICK)
-  - Added support for SD Card power control (Soldered devices)
+#### Important Installation Requirements
+
+Because this is a major release, you must re-initialize and re-install your storage card.
+
+- Initialize your SD card.
+  
+- Re-install the system files using the contents of the **SDCard** folder provided in this distribution package.
+  
+- For detailed steps, please consult the included **Installation Manual**.
+  
+#### Beta Testing & Feedback
+
+This is a BETA release. If you encounter any bugs or unexpected behaviour, please submit an issue on our GitHub repository so we can address it promptly. If no critical issues are reported within the next two weeks, we will launch the final, stable Version 3.0.0.
+
+#### Unified Distribution Files
+
+To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **Version 3.0.0 BETA**. Please download the specific .zip file that matches your target device:
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-BETA-inkplate_6.zip|
+|6PLUS|e-Radionica|release-v3.0.0-BETA-inkplate_6plus.zip|
+|10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
+|6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
+|6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
+|6 V2|Soldered|TBA (Bluetooth keypad)|
+|10 V2|Soldered|TBA (Bluetooth keypad)|
+
+Note: **TBA** is **To Be Announced**
+
+Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_6.zip|
+|10|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_10.zip|
+
+### Enhancements
+
+A Demonstration Gallery has been prepared to showcase the major UI enhancements. You can access it [here](./doc/V3.0%20Pictures%20Demo/Demo%20V3.0.md).
+
+#### User Interface & Navigation
+
+- **Variable Cover Image Sizes**: The book library directory now supports small, medium, and large cover images.
+
+- **New Image Types**: GIF, SVG, and BMP image types are now supported with some limitations.
+ 
+- **Multi-Column Rendering**: Readers can now choose to render e-book pages across 1 to 4 columns.
+
+- **Adjustable Line Spacing**: Added three distinct line height settings for text display: Tight, Medium, and Large.
+  
+- **Touch-Optimized Menus**: Icons within parameter and option menus are now larger and vertically centered across lines for more precise navigation.
+
+- **Processing Indicator**: Added a visual waiting spinner that displays on-screen while large image files are being processed.
+
+#### Core Enhancements & Hardware Control
+
+- **Deep-Sleep Screensavers**: Supports custom JPEG images placed within the artworks/ folder on the SD card, which are randomly displayed when the device powers down into deep sleep. The default release package includes 7 pre-loaded images.
+
+- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures and minimal line-break hyphenation.
+
+- **Battery Calibration**: Introduced a floating-point battery_trim configuration value, allowing users to linearly adjust and calibrate the battery voltage read by the Inkplate ADC.
+
+- **Bluetooth support**: Upcoming capability for Inkplate devices without any input hardware support. A short demonstration on the Soldered InkPlate-10 V2 using a BLE mini keypad is available [Here](https://www.youtube.com/shorts/Jre9zbq_AkM).
+
+### Bug Fixes & Under-the-Hood
+
+- **Stability Enhancements**: Resolved numerous minor bugs and optimization issues throughout the codebase.
+
+- **Updated Toolchains & Dependencies**:
+
+  - **ESP-IDF** upgraded to v5.5.4
+  - **PugiXML** upgraded to v1.15
+  - **FreeType** upgraded to v2.14.3 (featuring significantly improved OTF font support)
+
+See [CHANGES.md](CHANGES.md) for a list of changes including internal improvements.
+
+For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
+[TESTING_TOOLS_GUIDE.md](doc/development-notes/TESTING_TOOLS_GUIDE.md).
 
 ### Building the application image
 
-As the building process no longer uses PlatformIO, here is some explanation on how to get a new image ready to be uploaded.
-
-You must first install ESP-IDF framework v5.5.2. There are two ways to do this: using an IDE like VSCode or manually. Refer to the [ESP-IDF framework installation documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/). This guide assumes the framework is installed in `~/esp/v5.5.2`.
+The project is built with ESP-IDF, using CMake through `idf.py`. To build a new image, first install ESP-IDF v5.5.4 together with Espressif's tool suite. The recommended setup is Visual Studio Code with the Espressif IDF extension, although a command-line installation also works. Refer to the [ESP-IDF framework installation documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/). This guide assumes the framework is installed in `~/.espressif/v5.5.4`.
 
 Clone this project locally using `git`, and be sure to include submodules:
 
@@ -44,29 +115,31 @@ $ git clone --recursive https://github.com/turgu1/EPub-InkPlate.git
 $ cd ~/EPub-InkPlate
 ```
 
-2. In a terminal, source the ESP-IDF environment script. This must be done each time you open a new terminal (or once before launching your IDE):
+2. If you are building from the command line, source the ESP-IDF environment script. This must be done each time you open a new terminal. If you are using Visual Studio Code with the Espressif extension, the extension can manage the environment for you:
 
 ```bash
-$ . ~/esp/v5.5.2/esp-idf/export.sh
+$ . ~/.espressif/v5.5.4/esp-idf/export.sh
 ```
 
 3. To build an image for a specific device, use the `idf.py build` command with two mandatory parameters:
 
 - `-DDEVICE=INKPLATE_XXX` — the target device
-- `-DAPP_VERSION=2.1.0-BETA` — the version number (example: `2.1.0-BETA`)
+- `-DAPP_VERSION=3.0.0` — the version number (example: `3.0.0`)
 
 Supported device names:
 
 - INKPLATE_6
+- INKPLATE_6_V2
 - INKPLATE_6PLUS
 - INKPLATE_6PLUS_V2
 - INKPLATE_6FLICK
 - INKPLATE_10
+- INKPLATE_10_V2
 
 Example:
 
 ```bash
-$ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=2.1.0-BETA
+$ idf.py build -DDEVICE=INKPLATE_6PLUS_V2 -DAPP_VERSION=3.0.0
 ```
 
 Once completed without errors, the application image will be located at `build/EPub-InkPlate.bin`.
@@ -87,7 +160,7 @@ The `bld_all.sh` script requires one parameter: the release version number.
 Example:
 
 ```bash
-$ ./bld_all.sh 2.1.0-BETA
+$ ./bld_all.sh 3.0.0-BETA
 ```
 
 This generates release files named `release-v<version>-inkplate_<XXX>.zip` in the main project folder.
@@ -96,10 +169,10 @@ This generates release files named `release-v<version>-inkplate_<XXX>.zip` in th
 
 The `bld_release.sh` script requires three parameters and one optional parameter:
 
-- **First parameter**: version number (e.g., `2.1.0-BETA` or `2.1.0`)
-- **Second parameter**: device type — `6`, `10`, `6plus`, `6plusv2`, or `6flick`
+- **First parameter**: version number (e.g., `3.0.0-BETA` or `3.0.0`)
+- **Second parameter**: device type — `6`, `10`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
 - **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
-- **Fourth parameter** (optional): optimization mode
+- **Fourth parameter** (optional, may not work anymore... need testing): optimization mode
   - If omitted: the build folder is cleared, and the script aborts if a release zip already exists
   - If `1`: build folder is cleared and rebuilt; no release file is created
   - If `2`: build folder is kept and rebuilt; no release file is created
@@ -107,53 +180,15 @@ The `bld_release.sh` script requires three parameters and one optional parameter
 Example:
 
 ```bash
-$ ./bld_release.sh 2.1.0-BETA 6plusv2 0
+$ ./bld_release.sh 3.0.0 6plusv2 0
 ```
 
-This generates `release-v2.1.0-BETA-inkplate_6plusv2.zip`.
+This generates `release-v3.0.0-inkplate_6plusv2.zip`.
 
 ------
 
-(Updated 2022.5.01)
 
-Update to version 2.0.1
-
-- For Inkplate-6PLUS and Inkplate-10: The ESP-IDF-Inkplate library has been updated (v0.9.6) to support some of these devices to be delivered without a second MCP chip onboard. The presence of the second MCP is now dynamically detected by the software.
-
-- For all Inkplates: Now using ESP-IDF framework v4.3.2
-
-## Unresolved issue
-
-[ ] A device reset may happen reading a book, and changing the current font as the background process is computing pages location. 
-
----
-
-This is an EPub reader for the e-Radionica made Inkplate devices.
-
-Here are the main characterics:
-
-- TTF, and OTF embedded fonts support.
-- Normal, Bold, Italic, Bold+Italic face types.
-- Bitmap images dithering display (JPEG, PNG).
-- EPub (V2, V3) book format subset.
-- UTF-8 characters (supplied fonts limited to latin1).
-- Inkplate tactile keys (single and double click to get six buttons).
-- Screen orientation (portrait / landscape).
-- Left, center, right, and justify text alignments.
-- Font size.
-- Indentation.
-- Some basic parameters and options.
-- Limited CSS formatting.
-- WiFi-based documents download (Web server based).
-- Battery state and power management (light, deep sleep, battery level display).
-- Table of content.
-- Multiple fonts choices selectable by the user.
-- Linear and matrix view of book list.
-- Real-Time clock.
-- Inkplate-6PLUS touch screen and backlit.
-- Keeps location of the last 10 books being read.
-
-Some vidos are  available on YouTube:
+Some other older videos are  available on YouTube:
 
 - The first working version of the EPub-InkPlate application [Here](https://www.youtube.com/watch?v=VnTLMhEgsqA).
 - Demostration on the InkPlate-10 [Here](https://www.youtube.com/watch?v=qNAjbnEax8k).
@@ -164,17 +199,13 @@ Some pictures from the InkPlate-6 version:
 <img src="doc/pictures/IMG_1377.JPG" alt="picture" width="300"/><img src="doc/pictures/IMG_1378.JPG" alt="picture" width="300"/>
 <img src="doc/pictures/IMG_1381.JPG" alt="picture" width="300"/>
 
-Some pictures from the Linux version:
-
-<img src="doc/pictures/books_select.png" alt="drawing" width="300"/><img src="doc/pictures/book_page.png" alt="drawing" width="300"/>
-
 A picture of the Web Server in a browser:
 
 <img src="doc/pictures/web_server.png" alt="drawing" width="500"/>
 
 Books Directory List: Linear vs Matrix View:
 
-<img src="doc/pictures/linear_view_6.png" alt="picture" width="300"/><img src="doc/pictures/matrix_view_6.png" alt="picture" width="300"/>
+<img src="doc/pictures/linear-view-6PLUS_small.png" alt="picture" width="300"/><img src="doc/pictures/matrix-view-6PLUS_small.png" alt="picture" width="300"/>
 
 
 ### Runtime environment
@@ -206,16 +237,16 @@ After that, all fonts in the `subset-latin1/otf` folder must be copied back in t
 
 ## Development environment
 
-[Visual Studio Code](https://code.visualstudio.com/) is the code editor I'm using. The [PlatformIO](https://platformio.org/) extension is used to manage application configuration for both Linux and the ESP32.
+[Visual Studio Code](https://code.visualstudio.com/) is the editor used for development. For the ESP32 build, use the [Espressif IDF extension](https://marketplace.visualstudio.com/items?itemName=espressif.esp-idf-extension), which manages the ESP-IDF environment, build tasks, flashing, and menuconfig integration.
 
 All source code is located in various folders:
 
-- Source code used by both Linux and InkPlate is located in the `include` and `src` folders
-- Source code in support of Linux only is located in the `lib_linux` folder
-- Source code in support of the InkPlate device (ESP32) only are located in the `lib_esp32` folder
-- The FreeType library for ESP32 is in folder `lib_freetype`
+- Source code shared by the application is located in the `src` folder
+- ESP32-specific components are located in the `components` folder
+- Linux support code is located in the `lib_linux` folder
+- The bundled FreeType material used for the ESP32 build is located in `components/freetype` and `freetype-distrib`
 
-The file `platformio.ini` contains the configuration options required to compile both Linux and InkPlate applications.
+The top-level `CMakeLists.txt`, together with the component `CMakeLists.txt` files and `sdkconfig.defaults`, contains the configuration needed to build the application with ESP-IDF.
 
 Note that source code located in folders `old` and `test` is not used. It will be deleted from the project when the application development will be completed.
 
@@ -231,8 +262,8 @@ The following are the libraries currently in use by the application:
 
 The following are imported C header and source files, that implement some algorithms:
 
-- [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.10.4/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
-- [PubiXML](https://pugixml.org/) (For XML parsing)
+- [FreeType](https://www.freetype.org) (Parse, decode, and rasterize characters from TrueType fonts) A version of the library has been loaded in folder `freetype-2.14.3/` and compiled with specific options for the ESP32. See sub-section **FreeType library compilation for ESP32** below for further explanations.
+- [PugiXML](https://pugixml.org/) (For XML parsing)
 - [STB](https://github.com/nothings/stb) (For image resizing) :
 
   - `stb_image_resize.h` resize images larger/smaller 
@@ -262,14 +293,14 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
 2. The ESP-IDF SDK must be installed in the main user folder. Usually, it is in folder ~/esp. The following location documents the installation procedure: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html . Look at Steps 1 to 4 (Setting Up Development Environment). This is important as the configuration setup below will access ESP32 related compilation tools.
 
-3. The files `freetype-2.10.4/modules.cfg` and `freetype-2.10.4/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
+3. The files `freetype-2.14.3/modules.cfg` and `freetype-2.14.3/include/freetype/config/ftoption.h` are modified to only keep the capabilities required to support TrueType and OpenType fonts. The original files have been saved in `*.orig` files.
 
-4. A file named `freetype-2.10.4/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
+4. A file named `freetype-2.14.3/myconf.sh` is created to simplify the configuration of the makefile structure. The `--prefix` option may require some modification to take into account the location where the EPub-InkPlate source code has been put. The `--prefix` must point to the `lib_freetype` folder.
 
 5. The following commands are executed:
 
    ``` bash
-   $ cd freetype-2.10.4
+   $ cd freetype-distrib/freetype-2.14.3
    $ bash myconf.sh
    $ make
    $ make install
@@ -277,8 +308,10 @@ The FreeType library is using a complex makefile structure to simplify (!) the c
 
    This will have created several files in the folder `lib_freetype`.
 
-6. Edit file named `lib_freetype/lib/pkgconfig/freetype2.pc` and remove the entire line that contains `harfbuzz` reference.
-7. Voilà...
+6. In the `components/freetype` folder, remove the `include`, `lib`, and `share` folders.
+
+7. Copy the three folders `include`, `lib`, and `share` to the `components/freetype` folder.
+8. Voilà...
 
 ### ESP-IDF configuration specifics
 
@@ -286,7 +319,7 @@ The EPub-InkPlate application requires some functionalities to be properly set u
 
 The following is not required to be done as the file `sdkconfig.defaults` contains the changes that will trigger the generation of the suitable `sdkconfig.<project_name>` file related to the project being compiled.
 
-The current release of PlatformIO allow for editing the `sdkconfig` through the PlatformIO's `Run Menuconfig` command located in the Project Tasks. 
+If you need to inspect or modify the configuration interactively, use `idf.py menuconfig` from the command line, or the equivalent menuconfig command exposed by the Espressif VS Code extension.
 
 The application will show a list of configuration aspects. 
 
@@ -302,12 +335,7 @@ The following elements have been done (No need to do it again as they are define
 
   Leave the other options as they are. 
 
-- **ESP32 processor speed**: The processor must be run at 240MHz. The following line in `platformio.ini` request this speed:
-
-    ```
-    board_build.f_cpu = 240000000L
-    ```
-  You can also select the speed in the sdkconfig file:
+- **ESP32 processor speed**: The processor must be run at 240MHz. This can be verified or adjusted in `sdkconfig`:
 
   - Select `Component config` > `ESP32-Specific` > `CPU frequency` > `240 Mhz`
 
@@ -328,7 +356,7 @@ The following elements have been done (No need to do it again as they are define
 
 The following is not configured through *menuconfig:*
 
-- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The factory partition has been set to be ~2.4MB in size (OTA is not possible as the application is too large to accomodate this feature; the OTA related partitions have been commented out...). In the `platformio.ini` file, the line `board_build.partitions=...` is directing the use of these partitions configuration.
+- **Flash memory partitioning**: the file `partitions.csv` contains the table of partitions required to support the application in the 4MB flash memory. The factory partition has been set to be ~2.4MB in size (OTA is not possible as the application is too large to accommodate this feature; the OTA-related partitions have been commented out). The ESP-IDF build system is configured to use this partition table through the project's CMake and configuration files.
     
 ## In Memoriam
 

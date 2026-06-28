@@ -1,0 +1,44 @@
+@startuml PageLocs_Hardened_Lifecycle_States
+  title PageLocs Hardened Lifecycle State Machine
+
+  state Idle
+  state Starting
+  state Running
+  state Draining
+  state Stopped
+  state Failed
+
+  [*] --> Idle
+  Idle --> Starting : openBook()
+  Starting --> Running : setup succeeded
+  Starting --> Failed : setup failed
+  Running --> Draining : stopControlTask()
+  Running --> Failed : fatal error (queue, thread, map)
+  Draining --> Stopped : STOPPED received
+  Draining --> Failed : timeout or unrecoverable error
+  Stopped --> Idle : openBook() (new doc)
+  Failed --> Idle : recover/reset
+
+  Running --> Running : navigation, ASAP, percent queries
+  Running --> Running : background computation
+  Running --> Failed : queue full, send/recv error, map corruption
+
+  note right of Starting
+    - Allocates queues, threads, map
+    - Handles setup errors
+  end note
+  note right of Running
+    - Accepts navigation, ASAP, percent
+    - Handles background computation
+    - All map access under strict mutex
+    - All requests have correlation IDs
+  end note
+  note right of Draining
+    - Sends STOP, waits for STOPPED
+    - Bounded wait, diagnostics on timeout
+  end note
+  note right of Failed
+    - All API calls return error
+    - Only recover/reset allowed
+  end note
+@enduml

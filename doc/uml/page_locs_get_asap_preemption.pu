@@ -1,0 +1,49 @@
+@startuml PageLocs_GET_ASAP_Preemption
+  title Focused Flow: GET_ASAP Preemption and Resume
+
+  participant BookController
+  participant PageLocs
+  participant PageLocsControl
+  participant PageLocsRetriever
+
+  == Navigation hits missing page ==
+  BookController -> PageLocs : getNextPageId()/getPrevPageId()/getPageId()
+  activate PageLocs
+  PageLocs -> PageLocs : checkAndFind(target)
+  PageLocs -> PageLocsControl : GET_ASAP(targetItem)
+
+  alt Target already computed
+    PageLocsControl -> PageLocs : ASAP_READY(targetItem)
+    PageLocs --> BookController : return PageId immediately
+  else Target not computed and another item is running
+    PageLocsControl -> PageLocsRetriever : queue GET_ASAP(targetItem)
+    note right of PageLocsRetriever
+      Retriever polls pending queue
+      at page boundaries.
+    end note
+
+    PageLocsRetriever -> PageLocsRetriever : abortCurrentItem = true
+    PageLocsRetriever -> PageLocsControl : ITEM_INTERRUPTED(previousItem)
+
+    PageLocsControl -> PageLocsControl : waitingForItemref = -1
+    PageLocsControl -> PageLocsControl : nextItemrefToGet = previousItem
+    PageLocsControl -> PageLocsRetriever : GET_ASAP(targetItem)
+
+    PageLocsRetriever -> PageLocs : insert(PageId, PageInfo) for target item
+    PageLocsRetriever -> PageLocsControl : ASAP_READY(targetItem)
+    PageLocsControl -> PageLocs : ASAP_READY(targetItem)
+
+    PageLocs -> PageLocs : retry map lookup
+    PageLocs --> BookController : return resolved PageId
+
+    == Resume deferred work ==
+    PageLocsControl -> PageLocsRetriever : RETRIEVE_ITEM(previousItem)
+  else Target equals currently running item
+    PageLocsControl -> PageLocsControl : mark asapItemref = targetItem
+    PageLocsRetriever -> PageLocsControl : ITEM_READY(targetItem)
+    PageLocsControl -> PageLocs : ASAP_READY(targetItem)
+    PageLocs --> BookController : return PageId
+  end
+
+  deactivate PageLocs
+@enduml

@@ -7,28 +7,35 @@
 
 #include "config_template.hpp"
 
-enum class Param {
-  VERSION, SHOW_IMAGES, FONT_SIZE, USE_FONTS_IN_BOOK, FONT
-};
 
-typedef ConfigBase<Param, 5> BookParams;
+enum class Param { VERSION, SHOW_PICTURES, FONT_SIZE, USE_FONTS_IN_BOOK, FONT, LINE_HEIGHT, COLUMN_COUNT };
+
+
+#define BOOK_PARAMS_VERSION 2
+
+using BookParams = ConfigBase<Param, 7>;
 
 #if __BOOK_PARAMS__
   static int8_t version;
-  static int8_t show_images;         ///< -1: uses default, 0/1 bool value
-  static int8_t font_size;           ///< -1: uses default, >0 font size in points
-  static int8_t use_fonts_in_book;   ///< -1: uses default, 0/1 bool value
-  static int8_t font;                ///< -1: uses default, >= 0 font index
+  static int8_t showPictures;   ///< -1: uses default, 0/1 bool value
+  static int8_t fontSize;       ///< -1: uses default, >0 font size in points
+  static int8_t lineHeight;     ///< -1: uses default, 0/1/2 line height factor
+  static int8_t useFontsInBook; ///< -1: uses default, 0/1 bool value
+  static int8_t font;           ///< -1: uses default, >= 0 font index
+  static int8_t columnCount;    ///< -1: uses default, 1..4
 
-  static int8_t the_version    =  1;
-  static int8_t default_value  = -1;
+  static int8_t theVersion   = BOOK_PARAMS_VERSION;
+  static int8_t defaultValue = -1;
 
-  template<>
-  BookParams::CfgType BookParams::cfg = {{
-    { Param::VERSION,           BookParams::EntryType::BYTE, "version",           &version,           &the_version,   0 },
-    { Param::SHOW_IMAGES,       BookParams::EntryType::BYTE, "show_images",       &show_images,       &default_value, 0 },
-    { Param::FONT_SIZE,         BookParams::EntryType::BYTE, "font_size",         &font_size,         &default_value, 0 },
-    { Param::USE_FONTS_IN_BOOK, BookParams::EntryType::BYTE, "use_fonts_in_book", &use_fonts_in_book, &default_value, 0 },
-    { Param::FONT,              BookParams::EntryType::BYTE, "font",              &font,              &default_value, 0 },
-  }};
+  template <>
+  BookParams::CfgType BookParams::cfg = { {
+    { Param::VERSION,           BookParams::EntryType::BYTE, "version",        &version,        &theVersion,   0 },
+    { Param::SHOW_PICTURES,     BookParams::EntryType::BYTE, "showPictures",   &showPictures,   &defaultValue, 0 },
+    { Param::FONT_SIZE,         BookParams::EntryType::BYTE, "fontSize",       &fontSize,       &defaultValue, 0 },
+    { Param::LINE_HEIGHT,       BookParams::EntryType::BYTE, "lineHeight",     &lineHeight,     &defaultValue, 0 },
+    { Param::USE_FONTS_IN_BOOK, BookParams::EntryType::BYTE, "useFontsInBook", &useFontsInBook, &defaultValue, 0 },
+    { Param::FONT,              BookParams::EntryType::BYTE, "font",           &font,           &defaultValue, 0 },
+    { Param::COLUMN_COUNT,      BookParams::EntryType::BYTE, "columnCount",    &columnCount,    &defaultValue, 0 },
+  } };
+
 #endif
