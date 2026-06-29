@@ -85,7 +85,7 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
     .screenRight      = 20,
     .screenTop        = 18,
     .screenBottom     = 100,
-    .align            = CSS::Align::CENTER,
+    .align            = HAlign::CENTER,
   };
 
   page->start(fmt);
@@ -182,7 +182,7 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
     .screenRight      = 15,
     .screenTop        = 18,
     .screenBottom     = 100,
-    .align            = CSS::Align::CENTER,
+    .align            = HAlign::CENTER,
   };
 
   page->setComputeMode(Page::ComputeMode::DISPLAY);

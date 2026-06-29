@@ -2,14 +2,13 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+#include "page.hpp"
+
 #include "picture.hpp"
 
 #include "alloc.hpp"
 #include "screen.hpp"
 #include "config.hpp"
-
-#include "viewers/msg_viewer.hpp"
-#include "viewers/page.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -17,7 +16,6 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include "page.hpp"
 
 static CharPoolPtr entitiesMapPool = CharPool::Make();
 static bool        entitiesMapPoolInited =
@@ -176,7 +174,7 @@ auto hexValue(uint8_t c) -> char32_t {
   return 0;
 }
 
-auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
+auto Page::toUnicode(const char *str, TextTransform transform, bool first,
                      const char **str2) const -> char32_t {
 
   const uint8_t *c    = reinterpret_cast<const uint8_t *>(str);
@@ -262,14 +260,14 @@ auto Page::toUnicode(const char *str, CSS::TextTransform transform, bool first,
 
   *str2 = reinterpret_cast<const char *>(c);
 
-  if (done && (u <= 0x7F) && (transform != CSS::TextTransform::NONE)) {
-    if (transform == CSS::TextTransform::UPPERCASE) {
+  if (done && (u <= 0x7F) && (transform != TextTransform::NONE)) {
+    if (transform == TextTransform::UPPERCASE) {
       u = toupper(static_cast<unsigned char>(u));
     }
-    else if (transform == CSS::TextTransform::LOWERCASE) {
+    else if (transform == TextTransform::LOWERCASE) {
       u = tolower(static_cast<unsigned char>(u));
     }
-    else if (first && (transform == CSS::TextTransform::CAPITALIZE)) {
+    else if (first && (transform == TextTransform::CAPITALIZE)) {
       u = toupper(static_cast<unsigned char>(u));
     }
   }
@@ -283,7 +281,7 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
   FontPtr &   font = fonts.getFont(fmt.fontIndex);
 
   const char *s = str.c_str();
-  if (fmt.align == CSS::Align::LEFT) {
+  if (fmt.align == HAlign::LEFT) {
     bool first = true;
     while (*s) {
       const char *s1;
@@ -329,14 +327,14 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
     int16_t x;
 
     if (pos.x == HORIZONTAL_CENTER) {
-      if (fmt.align == CSS::Align::CENTER) {
+      if (fmt.align == HAlign::CENTER) {
         x = (screen.getWidth() >> 1) - (size >> 1);
         // x = minX + ((maxX - minX) >> 1) - (size >> 1);
       } else { // RIGHT
         x = maxX - size;
       }
     } else {
-      if (fmt.align == CSS::Align::CENTER) {
+      if (fmt.align == HAlign::CENTER) {
         x = pos.x - (size >> 1);
       } else { // RIGHT
         x = pos.x - size;
@@ -636,7 +634,7 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
 
   if (!lineList->empty() && (computeMode == ComputeMode::DISPLAY)) {
 
-    if ((fmt.align == CSS::Align::JUSTIFY) && justifyable) {
+    if ((fmt.align == HAlign::JUSTIFY) && justifyable) {
       int16_t targetWidth = (paraMaxX - paraMinX - paraIndent);
       int16_t loopCount   = 0;
       while ((lineWidth < targetWidth) && (++loopCount < 50)) {
@@ -654,9 +652,9 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
         for (auto *entry : *lineList) entry->pos.x = 0;
       }
     } else {
-      if (fmt.align == CSS::Align::RIGHT) {
+      if (fmt.align == HAlign::RIGHT) {
         pos.x = paraMaxX - lineWidth;
-      } else if (fmt.align == CSS::Align::CENTER) {
+      } else if (fmt.align == HAlign::CENTER) {
         pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
       }
     }
@@ -669,7 +667,7 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
       entry->pos.y += pos.y + std::get<GlyphEntry>(entry->v).glyph->yoff;
       pos.x += (x == 0) ? std::get<GlyphEntry>(entry->v).kern : x;
     } else if (entry->command == DisplayListCommand::PICTURE) {
-      if (fmt.align == CSS::Align::CENTER) {
+      if (fmt.align == HAlign::CENTER) {
         entry->pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
       } else {
         entry->pos.x = pos.x;
@@ -1141,7 +1139,7 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
  *            (font, size, color, trim behavior, etc.).
  *
  * @note The method allocates a temporary 100-byte buffer for word processing.
- *       If allocation fails, a message is sent via msg_viewer.outOfMemory().
+ *       If allocation fails, a message is sent through the logger.
  *       Processing stops if addChar() or addWord() returns false.
  *
  * @see addWord()
@@ -1152,7 +1150,8 @@ auto Page::addText(const std::string &str, const Format &fmt) -> void {
 
   std::unique_ptr<char[]> buff = std::make_unique<char[]>(100);
 
-  if (buff == nullptr) { MsgViewer::outOfMemory("temp buffer allocation"); }
+  if (buff == nullptr) { LOG_E("addText(): Not enough memory!"); return; }
+
   const char *s = str.c_str();
   while (*s) {
     if (uint8_t(*s) <= ' ') {
@@ -1535,7 +1534,7 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_ALIGN))) {
-    fmt.align = (CSS::Align)vals->front().choice.align;
+    fmt.align = (HAlign)vals->front().choice.hAlign;
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::TEXT_INDENT))) {
@@ -1615,13 +1614,13 @@ auto Page::adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> voi
   }
 
   if ((vals = CSS::getValuesFromRules(rules, CSS::PropertyId::VERTICAL_ALIGN))) {
-    if (vals->front().choice.verticalAlign == CSS::VerticalAlign::NORMAL) {
+    if (vals->front().choice.vAlign == VAlign::NORMAL) {
       fmt.verticalAlign = 0;
-    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::SUB) {
+    } else if (vals->front().choice.vAlign == VAlign::SUB) {
       fmt.verticalAlign = 5;
-    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::SUPER) {
+    } else if (vals->front().choice.vAlign == VAlign::SUPER) {
       fmt.verticalAlign = -5;
-    } else if (vals->front().choice.verticalAlign == CSS::VerticalAlign::VALUE) {
+    } else if (vals->front().choice.vAlign == VAlign::VALUE) {
       FontPtr &font = fonts.getFont(fmt.fontIndex);
 
       fmt.verticalAlign = -getPixelValue(vals->front(), fmt, font->getLineHeight(fmt.fontSize));

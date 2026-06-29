@@ -4,6 +4,10 @@
 
   #include "global.hpp"
 
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/queue.h"
+  #include "freertos/task.h"
+
   #include "esp_bt.h"
   #include "esp_bt_main.h"
   #include "esp_gap_ble_api.h"
@@ -13,10 +17,19 @@
   #define TRACING_BLE_KEYPAD 0
 
   class BLEKeypad {
+
+
     private:
       static constexpr const char *TAG = "BLEKeypad";
 
       static BLEKeypad *instance;
+
+      enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+      struct Event {
+        EventKind kind;
+      };
+
+      QueueHandle_t bleEventQueue{};
 
       static constexpr uint8_t TARGET_MAC_ADDRESS[] = { 0x2a, 0x07, 0x98, 0x74, 0x8a, 0x1b };
 
@@ -84,7 +97,7 @@
       BLEKeypad()  = default;
       ~BLEKeypad() = default;
 
-      auto setup() -> bool;
+      auto setup(QueueHandle_t eventQueue) -> bool;
   };
 
   #if __BLE_KEYPAD__

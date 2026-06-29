@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
+if (NOT DEFINED DEVICE)
 # set(DEVICE "INKPLATE_6")
-# set(DEVICE "INKPLATE_6_EXTENDED")
+set(DEVICE "INKPLATE_6_EXTENDED")
 # set(DEVICE "INKPLATE_6_BLUETOOTH")
 # set(DEVICE "INKPLATE_6_V2") # Not supported yet
 # set(DEVICE "INKPLATE_10")
@@ -13,6 +14,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # set(DEBUGGING 1)
 # set(REGRESSION_TEST 1)
+endif()
 
 set(APP_VERSION "3.0.0")
 
@@ -41,7 +43,6 @@ elseif(DEVICE MATCHES "^INKPLATE_6_EXTENDED$")
     add_compile_definitions(
         INKPLATE_6=1
         EXTENDED_CASE=1
-        BLE_KEYPAD=1
         MCP23017=1)
 elseif(DEVICE MATCHES "^INKPLATE_6_BLUETOOTH$") # For testing only
     message("INKPLATE 6 BLUETOOTH defined")
@@ -79,7 +80,7 @@ elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
     message("INKPLATE 10 EXTENDED defined")
     set(DEVICE_NAME "I10E")
     add_compile_definitions(
-        INKPLATE_10_EXTENDED=1
+        INKPLATE_10=1
         EXTENDED_CASE=1
         MCP23017=1)
 elseif(DEVICE MATCHES "^INKPLATE_6_V2$")

@@ -4,7 +4,7 @@
 //
 // This is the event manageer for devices that uses the extended keypad.
 
-#if INKPLATE_6_EXTENDED || INKPLATE_10_EXTENDED
+#if EXTENDED_CASE && (INKPLATE_6 || INKPLATE_10)
 
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"
@@ -13,7 +13,6 @@
   #include "controllers/app_controller.hpp"
 
   #include <iostream>
-
 
   #include "driver/gpio.h"
   #include "freertos/FreeRTOS.h"

@@ -45,6 +45,14 @@ if [ "$3" = "0" ]; then
 else
   folder="release-v$1-inkplate_extended_case_$2"
   environment="inkplate_$2_extended_case_release"
+  case "$2" in
+    "6") device="INKPLATE_6_EXTENDED" ;;
+    "10") device="INKPLATE_10_EXTENDED" ;;
+    *) echo "UNKNOWN DEVICE NAME. ABORTING!"
+       return 1
+       ;;
+  esac
+  echo "Device is ${device}"
 fi
 
 if [ "$4" = "" ]; then

@@ -48,7 +48,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
     .screenRight      = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
     .screenTop        = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
     .screenBottom     = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
-    .align            = CSS::Align::CENTER,
+    .align            = HAlign::CENTER,
   };
 
   page->setComputeMode(Page::ComputeMode::DISPLAY);
@@ -81,7 +81,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
 
   // Message
 
-  fmt.align      = CSS::Align::LEFT;
+  fmt.align      = HAlign::LEFT;
   fmt.marginTop  = 80;
   fmt.marginLeft = 100;
 
@@ -95,7 +95,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   if (pressAKey) {
     #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
       if (msgType != MsgType::CONFIRM) {
-        fmt.align      = CSS::Align::CENTER;
+        fmt.align      = HAlign::CENTER;
         fmt.fontSize   = 9;
         fmt.marginLeft = 10;
         fmt.marginTop  = 200;
@@ -140,7 +140,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
           fmt);
       }
     #else
-      fmt.align      = CSS::Align::CENTER;
+      fmt.align      = HAlign::CENTER;
       fmt.fontSize   = 9;
       fmt.marginLeft = 10;
       fmt.marginTop  = 200;
@@ -208,7 +208,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
       .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
       .screenTop    = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
       .screenBottom = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
-      .align        = CSS::Align::CENTER,
+      .align        = HAlign::CENTER,
     };
 
     char         buff[200];
@@ -264,7 +264,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
       .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
       .screenTop    = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
       .screenBottom = static_cast<uint16_t>((Screen::getHeight() - HEIGHT) >> 1),
-      .align        = CSS::Align::CENTER,
+      .align        = HAlign::CENTER,
     };
 
     char         buff[80];

@@ -5,7 +5,7 @@
             "includePath": [
                 "${default}"
             ],
-            "defines": [],
+            "defines": ["EXTENDED_CASE=1", "INKPLATE_6=1"],
             "cStandard": "c23",
             "cppStandard": "c++23",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json"

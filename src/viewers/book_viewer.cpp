@@ -138,7 +138,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
         fmt.fontIndex        = TITLE_FONT;
         fmt.fontSize         = TITLE_FONT_SIZE;
         fmt.fontStyle        = FaceStyle::ITALIC;
-        fmt.align            = CSS::Align::CENTER;
+        fmt.align            = HAlign::CENTER;
 
         std::ostringstream ostr;
         if (showTitle != 0) {
@@ -178,7 +178,7 @@ auto BookViewer::showFakeCover(EPubPtr &epub) -> void {
     .screenTop    = 100,
     .screenBottom = 30,
     .fontStyle    = FaceStyle::ITALIC,
-    .align        = CSS::Align::CENTER,
+    .align        = HAlign::CENTER,
   };
 
   std::string  title  = epub->getTitle();

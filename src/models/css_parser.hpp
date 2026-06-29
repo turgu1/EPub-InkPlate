@@ -723,7 +723,7 @@ class CSSParser {
           v.valueType = valueType;
           v.num       = neg ? -num : num;
           if (id == CSS::PropertyId::VERTICAL_ALIGN) {
-            v.choice.verticalAlign = CSS::VerticalAlign::VALUE;
+            v.choice.vAlign = VAlign::VALUE;
           }
           skipBlanks();
           break;
@@ -739,19 +739,19 @@ class CSSParser {
           switch (id) {
           case CSS::PropertyId::TEXT_ALIGN:
             if (v.str.compare("left") == 0) {
-              v.choice.align = CSS::Align::LEFT;
+              v.choice.hAlign = HAlign::LEFT;
             }
             else if (v.str.compare("center") == 0) {
-              v.choice.align = CSS::Align::CENTER;
+              v.choice.hAlign = HAlign::CENTER;
             }
             else if (v.str.compare("right") == 0) {
-              v.choice.align = CSS::Align::RIGHT;
+              v.choice.hAlign = HAlign::RIGHT;
             }
             else if (v.str.compare("justify") == 0) {
-              v.choice.align = CSS::Align::JUSTIFY;
+              v.choice.hAlign = HAlign::JUSTIFY;
             }
             else if (v.str.compare("justified") == 0) {
-              v.choice.align = CSS::Align::JUSTIFY;
+              v.choice.hAlign = HAlign::JUSTIFY;
             }
             else {
               // LOG_E("text-align not decoded: '{}' at offset: {}", v.str, (int32_t)(str -
@@ -761,16 +761,16 @@ class CSSParser {
             break;
           case CSS::PropertyId::TEXT_TRANSFORM:
             if (v.str.compare("lowercase") == 0) {
-              v.choice.textTransform = CSS::TextTransform::LOWERCASE;
+              v.choice.textTransform = TextTransform::LOWERCASE;
             }
             else if (v.str.compare("uppercase") == 0) {
-              v.choice.textTransform = CSS::TextTransform::UPPERCASE;
+              v.choice.textTransform = TextTransform::UPPERCASE;
             }
             else if (v.str.compare("capitalize") == 0) {
-              v.choice.textTransform = CSS::TextTransform::CAPITALIZE;
+              v.choice.textTransform = TextTransform::CAPITALIZE;
             }
             else if (v.str.compare("none") == 0) {
-              v.choice.textTransform = CSS::TextTransform::NONE;
+              v.choice.textTransform = TextTransform::NONE;
             }
             else {
               // LOG_E("text-transform not decoded: '{}' at offset: {}", v.str, (int32_t)(str
@@ -780,19 +780,19 @@ class CSSParser {
             break;
           case CSS::PropertyId::VERTICAL_ALIGN:
             if (v.str.compare("sub") == 0) {
-              v.choice.verticalAlign = CSS::VerticalAlign::SUB;
+              v.choice.vAlign = VAlign::SUB;
             }
             else if (v.str.compare("super") == 0) {
-              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+              v.choice.vAlign = VAlign::SUPER;
             }
             else if (v.str.compare("top") == 0) {
-              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+              v.choice.vAlign = VAlign::SUPER;
             }
             else if (v.str.compare("text-top") == 0) {
-              v.choice.verticalAlign = CSS::VerticalAlign::SUPER;
+              v.choice.vAlign = VAlign::SUPER;
             }
             else {
-              v.choice.verticalAlign = CSS::VerticalAlign::NORMAL;
+              v.choice.vAlign = VAlign::NORMAL;
             }
             break;
           case CSS::PropertyId::FONT_WEIGHT:
@@ -823,16 +823,16 @@ class CSSParser {
             break;
           case CSS::PropertyId::DISPLAY:
             if (v.str.compare("none") == 0) {
-              v.choice.display = CSS::Display::NONE;
+              v.choice.display = Display::NONE;
             }
             else if (v.str.compare("inline") == 0) {
-              v.choice.display = CSS::Display::INLINE;
+              v.choice.display = Display::INLINE;
             }
             else if (v.str.compare("block") == 0) {
-              v.choice.display = CSS::Display::BLOCK;
+              v.choice.display = Display::BLOCK;
             }
             else if (v.str.compare("inline-block") == 0) {
-              v.choice.display = CSS::Display::INLINE_BLOCK;
+              v.choice.display = Display::INLINE_BLOCK;
             }
             else {
               // LOG_E("display not decoded: '{}' at offset: {}", w, (int32_t)(str -

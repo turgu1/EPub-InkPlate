@@ -281,7 +281,7 @@
       .screenRight  = 20,
       .screenTop    = 0,
       .screenBottom = 0,
-      .align        = CSS::Align::CENTER,
+      .align        = HAlign::CENTER,
     };
 
     page->putStrAt("Touch Sensor Calibration",

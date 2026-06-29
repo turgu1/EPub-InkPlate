@@ -11,12 +11,13 @@
 #include "picture.hpp"
 #include "pugixml.hpp"
 
+#include "models/css.hpp"
+
 #include <cstdint>
 #include <string>
 #include <utility>
 
 #include "display_list.hpp"
-#include "models/css.hpp"
 
 #define LINE_POS_TRACING 0
 
@@ -51,27 +52,27 @@ class Page {
     static const uint16_t HORIZONTAL_CENTER = 9999;
 
     struct Format {
-      float lineHeightFactor           = 0.8; ///< In EMs
-      int16_t fontIndex                = SYSTEM_REGULAR_FONT_INDEX;
-      int16_t fontSize                 =  10; ///< In pixels
-      int16_t indent                   =   0; ///< In pixels
-      uint16_t marginLeft              =   0; ///< In pixels
-      uint16_t marginRight             =   0; ///< In pixels
-      uint16_t marginTop               =   0; ///< In pixels
-      uint16_t marginBottom            =   0; ///< In pixels
-      uint16_t screenLeft              =  10; ///< In pixels
-      uint16_t screenRight             =  10; ///< In pixels
-      uint16_t screenTop               =  10; ///< In pixels
-      uint16_t screenBottom            =  10; ///< In pixels
-      uint16_t width                   =  0; ///< In pixels
-      uint16_t height                  =  0; ///< In pixels
-      uint16_t verticalAlign           =  0; ///< In pixels
-      bool trim                        = true;
-      bool pre                         = false;
-      FaceStyle fontStyle              = FaceStyle::NORMAL;
-      CSS::Align align                 = CSS::Align::LEFT;
-      CSS::TextTransform textTransform = CSS::TextTransform::NONE;
-      CSS::Display display             = CSS::Display::INLINE;
+      float lineHeightFactor      = 0.8; ///< In EMs
+      int16_t fontIndex           = SYSTEM_REGULAR_FONT_INDEX;
+      int16_t fontSize            =  10; ///< In pixels
+      int16_t indent              =   0; ///< In pixels
+      uint16_t marginLeft         =   0; ///< In pixels
+      uint16_t marginRight        =   0; ///< In pixels
+      uint16_t marginTop          =   0; ///< In pixels
+      uint16_t marginBottom       =   0; ///< In pixels
+      uint16_t screenLeft         =  10; ///< In pixels
+      uint16_t screenRight        =  10; ///< In pixels
+      uint16_t screenTop          =  10; ///< In pixels
+      uint16_t screenBottom       =  10; ///< In pixels
+      uint16_t width              =  0; ///< In pixels
+      uint16_t height             =  0; ///< In pixels
+      uint16_t verticalAlign      =  0; ///< In pixels
+      bool trim                   = true;
+      bool pre                    = false;
+      FaceStyle fontStyle         = FaceStyle::NORMAL;
+      HAlign align                = HAlign::LEFT;
+      TextTransform textTransform = TextTransform::NONE;
+      Display display             = Display::INLINE;
     };
 
     /**
@@ -325,7 +326,7 @@ class Page {
       #endif
     }
 
-    auto toUnicode(const char *str, CSS::TextTransform transform, bool first, const char **str2) const
+    auto toUnicode(const char *str, TextTransform transform, bool first, const char **str2) const
     -> char32_t;
 
     inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
@@ -338,14 +339,6 @@ class Page {
     [[nodiscard]] inline auto getDisplayList() const -> const DisplayList & { return *displayList; }
     [[nodiscard]] inline auto getLineList() const -> const DisplayList & { return *lineList; }
     [[nodiscard]] inline auto getPosY() const -> int16_t { return pos.y; }
-
-    auto getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical = false)
-    -> int16_t;
-    auto getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref) -> int16_t;
-    auto getFactorValue(const CSS::Value &value, const Format &fmt, float ref) -> float;
-    void adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
-                      const CSSPtr &itemCss);
-    auto adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void;
 
     inline auto resetFontIndex(Format &fmt, FaceStyle style) -> void {
       if (style != fmt.fontStyle) {
@@ -363,4 +356,12 @@ class Page {
         }
       }
     }
+
+    auto getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref, bool vertical = false)
+    -> int16_t;
+    auto getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref) -> int16_t;
+    auto getFactorValue(const CSS::Value &value, const Format &fmt, float ref) -> float;
+    void adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
+                      const CSSPtr &itemCss);
+    auto adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void;
 };

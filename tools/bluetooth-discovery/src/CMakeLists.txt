@@ -14,6 +14,8 @@ if(DEFINED REGRESSION_TEST AND REGRESSION_TEST)
   message(STATUS "Regression loop test ENABLED")
 endif()
 
+# Even if we don't use all of them, easier to get them all and let the linker do it's job...
+
 set(components
     global
     config
@@ -34,11 +36,9 @@ set(components
     simple_db
     display_list
     simple_list
-    ble_keypad
+    bt
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})
 
-target_add_binary_data(${COMPONENT_TARGET} "embed/favicon.ico" BINARY)
-target_add_binary_data(${COMPONENT_TARGET} "embed/upload_script.html" TEXT)
-
+target_add_binary_data(${COMPONENT_TARGET} "embed/RobotoCondensed-Regular.otf" BINARY)

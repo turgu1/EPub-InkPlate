@@ -96,7 +96,7 @@
     ]
   },
   "cmake.configureOnOpen": false,
-  "C_Cpp.dimInactiveRegions": false,
+  "C_Cpp.dimInactiveRegions": true,
   "idf.adapterTargetName": "esp32",
   "idf.pythonInstallPath": "/usr/bin/python3",
   "idf.cmakeCompilerArgs": [

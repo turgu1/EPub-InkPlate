@@ -26,7 +26,7 @@
 #endif
 
 #define USE_EPUB_FONTS                                                                             \
-  1 ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
+        1 ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
 
 #if EPUB_LINUX_BUILD
   #ifndef MAIN_FOLDER
@@ -82,8 +82,8 @@
 // ToDo: Move them to the appropriate location
 
 struct Dim {
-  uint16_t width{0};
-  uint16_t height{0};
+  uint16_t width{ 0 };
+  uint16_t height{ 0 };
 
   Dim() = default;
   constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
@@ -93,8 +93,8 @@ struct Dim {
 };
 
 struct Pos {
-  uint16_t x{0};
-  uint16_t y{0};
+  uint16_t x{ 0 };
+  uint16_t y{ 0 };
   Pos(uint16_t xpos, uint16_t ypos) {
     x = xpos;
     y = ypos;
@@ -103,8 +103,8 @@ struct Pos {
 };
 
 struct Dim8 {
-  uint8_t width{0};
-  uint8_t height{0};
+  uint8_t width{ 0 };
+  uint8_t height{ 0 };
   Dim8(uint8_t w, uint8_t h) {
     width  = w;
     height = h;
@@ -113,8 +113,8 @@ struct Dim8 {
 };
 
 struct Pos8 {
-  uint8_t x{0};
-  uint8_t y{0};
+  uint8_t x{ 0 };
+  uint8_t y{ 0 };
   Pos8(uint8_t xpos, uint8_t ypos) {
     x = xpos;
     y = ypos;
@@ -123,13 +123,13 @@ struct Pos8 {
 };
 
 struct Glyph {
-  Dim dim{0, 0};
-  int16_t xoff{0}, yoff{0};
-  int16_t advance{0};
-  int16_t pitch{0};
-  int16_t lineHeight{0};
-  uint16_t index{0};
-  uint8_t *buffer{nullptr};
+  Dim dim{ 0, 0 };
+  int16_t xoff{ 0 }, yoff{ 0 };
+  int16_t advance{ 0 };
+  int16_t pitch{ 0 };
+  int16_t lineHeight{ 0 };
+  uint16_t index{ 0 };
+  uint8_t *buffer{ nullptr };
   auto clear() -> void {
     dim.height = dim.width = 0;
     xoff = yoff = 0;
@@ -142,8 +142,8 @@ struct Glyph {
 };
 
 struct PageId {
-  int16_t itemrefIndex{-1};
-  int32_t offset{-1};
+  int16_t itemrefIndex{ -1 };
+  int32_t offset{ -1 };
   PageId(int16_t idx, int32_t off) {
     itemrefIndex = idx;
     offset       = off;
@@ -159,6 +159,10 @@ struct PageId {
   }
 };
 
-enum class FaceStyle : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
+enum class FaceStyle     : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
+enum class HAlign        : uint8_t { LEFT, CENTER, RIGHT, JUSTIFY };
+enum class VAlign        : uint8_t { NORMAL, SUB, SUPER, VALUE };
+enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE };
+enum class Display       : uint8_t { NONE, INLINE, BLOCK, INLINE_BLOCK };
 
 using FileContentPtr = HimemUniquePtr<uint8_t[]>;

@@ -38,7 +38,7 @@ Evidence:
 - src/viewers/html_interpreter.cpp (switch over DOM::Tag and block/inline paragraph behavior)
 
 ### 2) CSS property/display model
-- CSS::Display currently supports: NONE, INLINE, BLOCK, INLINE_BLOCK.
+- Display currently supports: NONE, INLINE, BLOCK, INLINE_BLOCK.
 - CSS parser maps display to only these values.
 - No dedicated properties for table layout behavior are actively modeled in PropertyId (aside from a comment mention of table-layout in docs text).
 
@@ -111,7 +111,7 @@ Likely missing/partial properties relevant for tables:
 - min-content/max-content style constraints (if desired later)
 
 Impact:
-- Extend CSS::Display enum and parser decoding.
+- Extend Display enum and parser decoding.
 - Add PropertyId entries and parsing for table-related properties.
 - Extend adjustFormatFromRules semantics; may require a table-specific style structure beyond Page::Format.
 

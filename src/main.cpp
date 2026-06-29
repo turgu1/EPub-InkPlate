@@ -32,10 +32,6 @@
     #include "controllers/back_lit.hpp"
   #endif
 
-  #if BLE_KEYPAD
-    #include "controllers/ble_keypad.hpp"
-  #endif
-
   #include <stdio.h>
 
   #if TESTING
@@ -174,14 +170,6 @@
           ESP::delay(500);
           inkplate_platform.deep_sleep(INT_PIN, LEVEL);
         }
-
-        #if BLE_KEYPAD
-          if (!bleKeypad.setup()) {
-            MsgViewer::show(
-              MsgViewer::MsgType::ALERT, false, true, "Bluetooth Problem!",
-              "Failed to initialize Bluetooth. Bluetooth features will be unavailable. " MSG);
-          }
-        #endif
 
         MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 

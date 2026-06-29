@@ -17,7 +17,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
   Page::Format fmt = {
     .fontIndex = FONT,
     .fontSize  = FONT_SIZE,
-    .align     = CSS::Align::LEFT,
+    .align     = HAlign::LEFT,
   };
 
   page->setLimits(fmt);

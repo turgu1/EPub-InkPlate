@@ -249,6 +249,7 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
 
     #if EXTENDED_CASE
       case EventMgr::EventKind::DBL_NEXT:
+      case EventMgr::EventKind::SELECT:
     #else
       case EventMgr::EventKind::SELECT:
       case EventMgr::EventKind::NEXT:

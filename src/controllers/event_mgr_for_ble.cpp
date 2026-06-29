@@ -27,6 +27,8 @@
   #include "viewers/screen_saver.hpp"
   #include "wire.hpp"
 
+  #include "ble_keypad.hpp"
+
   static QueueHandle_t touchpadIsrQueue   = NULL;
   static QueueHandle_t touchpadEventQueue = NULL;
 
@@ -114,6 +116,12 @@
 
     // create a queue to handle key event from BLE GAP callback
     bleKeypadEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
+
+    if (!bleKeypad.setup(bleKeypadEventQueue)) {
+      MsgViewer::show(
+        MsgViewer::MsgType::ALERT, false, true, "Bluetooth Problem!",
+        "Failed to initialize Bluetooth. Bluetooth features will be unavailable. ");
+    }
 
     TaskHandle_t xHandle = nullptr;
     xTaskCreate(getEventTask, "GetEvent", 2000, nullptr, 2 | portPRIVILEGE_BIT, &xHandle);

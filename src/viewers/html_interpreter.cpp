@@ -6,9 +6,9 @@
 
 #include "config.hpp"
 #include "fonts.hpp"
-#include "helpers/show_load_icon.hpp"
 #include "screen.hpp"
 
+#include "helpers/show_load_icon.hpp"
 #include "controllers/event_mgr.hpp"
 
 // MemoryPool<Page::Format> HTMLInterpreter::fmtPool;
@@ -71,7 +71,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
 
     // Do it only if we are now in the current page content
 
-    fmt.display      = CSS::Display::INLINE;
+    fmt.display      = Display::INLINE;
     fmt.marginBottom = 0;
     fmt.marginLeft   = 0;
     fmt.marginRight  = 0;
@@ -145,17 +145,17 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             #endif
           case DOM::Tag::PRE:
             fmt.pre     = true;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::BLOCKQUOTE:
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::LI:
           case DOM::Tag::DIV:
           case DOM::Tag::P:
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::BREAK:
@@ -198,35 +198,35 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
           case DOM::Tag::H1:
             fmt.fontSize = 1.25 * fmt.fontSize;
             // fmt.lineHeightFactor = 1.25 * fmt.lineHeightFactor;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::H2:
             fmt.fontSize = 1.1 * fmt.fontSize;
             // fmt.lineHeightFactor = 1.1 * fmt.lineHeightFactor;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::H3:
             fmt.fontSize = 1.05 * fmt.fontSize;
             // fmt.lineHeightFactor = 1.05 * fmt.lineHeightFactor;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::H4:
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::H5:
             fmt.fontSize = 0.8 * fmt.fontSize;
             // fmt.lineHeightFactor = 0.8 * fmt.lineHeightFactor;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::H6:
             fmt.fontSize = 0.7 * fmt.fontSize;
             // fmt.lineHeightFactor = 0.7 * fmt.lineHeightFactor;
-            fmt.display = CSS::Display::BLOCK;
+            fmt.display = Display::BLOCK;
             break;
 
           case DOM::Tag::SUB:
@@ -252,7 +252,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
             // For now, we do not support tables, so we just ignore the content of the
             // table tags and do not display them. We set the display to NONE, but we still process the
             // content of the table tags to compute the page offsets properly.
-            fmt.display = CSS::Display::NONE;
+            fmt.display = Display::NONE;
             break;
 
           case DOM::Tag::NONE:
@@ -280,7 +280,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       if (started) { showState(name, fmt, domCurrentNode /*, elementCss*/); } // For debugging
     }
 
-    if (fmt.display == CSS::Display::NONE) { return true; }
+    if (fmt.display == Display::NONE) { return true; }
     if (tagIt->second == DOM::Tag::BODY) {
       if (epub->getBookFormatParams()->useFontsInBook == 0) {
         fmt.fontSize = epub->getBookFormatParams()->fontSize;
@@ -288,7 +288,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
       }
     }
 
-    if (started && (fmt.display == CSS::Display::BLOCK)) {
+    if (started && (fmt.display == Display::BLOCK)) {
 
       int8_t iter = 5; // Allow for a paragraph taking at most 5 pages
       while ((iter-- > 0) && page->someDataWaiting()) {
@@ -384,7 +384,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
     // The sub-nodes have been processed. Complete the block if not Inline and check
     // for remaining data if it's the head of the hierarchy ('body' tag)
     if (checkIfStarted()) {
-      if (fmt.display == CSS::Display::BLOCK) {
+      if (fmt.display == Display::BLOCK) {
         if ((currentOffset != startOffset) || page->someDataWaiting()) {
           showState("==> End Paragraph 2 <==", fmt);
           page->endParagraph(fmt);

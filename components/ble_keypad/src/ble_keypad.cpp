@@ -4,11 +4,6 @@
   #include "ble_keypad.hpp"
 
   #include "esp_timer.h" // Required for microsecond uptime tracking
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/queue.h"
-  #include "freertos/task.h"
-
-  #include "controllers/event_mgr.hpp"
 
   BLEKeypad *BLEKeypad::instance = nullptr;
 
@@ -56,7 +51,7 @@
                          isVerticalPressed     = false;
                        };
 
-    EventMgr::Event event = { EventMgr::EventKind::NONE };
+    Event event = { EventKind::NONE };
 
     #if TRACING_BLE_KEYPAD
       LOG_I("---- [handleIncomingPacket] ----");
@@ -73,7 +68,7 @@
         uint8_t clickValue = data[1];
 
         if ((reportId == 1 || reportId == 2) && clickValue == 0) {
-          event.kind = EventMgr::EventKind::DBL_SELECT;
+          event.kind = EventKind::DBL_SELECT;
           // action     = "Double Click";
           reset_state();
           break;
@@ -117,7 +112,7 @@
 
         // A. Left Arrow: Decodes immediately on 00 E0 06 50 06
         if (deltaX == (int8_t)0xE0 && deltaY == 6) {
-          event.kind = EventMgr::EventKind::PREV;
+          event.kind = EventKind::PREV;
           // action     = "Left Click";
           reset_state();
           break;
@@ -125,7 +120,7 @@
 
         // B. Right Arrow: Decodes immediately on 00 78 00 50 06
         if (deltaX == 0x78 && deltaY == 0) {
-          event.kind = EventMgr::EventKind::NEXT;
+          event.kind = EventKind::NEXT;
           // action     = "Right Click";
           reset_state();
           break;
@@ -136,10 +131,10 @@
           if (!isVerticalPressed) {
             isVerticalPressed = true; // Lock the execution frame state against duplicate burst frames
             if (pendingVerticalIntent == VerticalIntent::INTENT_UP) {
-              event.kind = EventMgr::EventKind::DBL_PREV;
+              event.kind = EventKind::DBL_PREV;
               // action     = "Up Click";
             } else if (pendingVerticalIntent == VerticalIntent::INTENT_DOWN) {
-              event.kind = EventMgr::EventKind::DBL_NEXT;
+              event.kind = EventKind::DBL_NEXT;
               // action     = "Down Click";
             }
             reset_state();
@@ -158,7 +153,7 @@
         uint8_t targetByte = data[1];
         if (targetByte == 0xF4) {
           // action     = "Center Click";
-          event.kind = EventMgr::EventKind::SELECT;
+          event.kind = EventKind::SELECT;
         }
       }
 
@@ -170,13 +165,12 @@
       LOG_I("-------------------------------");
     #endif
 
-    if (event.kind != EventMgr::EventKind::NONE) {
-      auto queue = eventMgr.getBLEKeypadEventQueue();
-      if (queue) {
+    if (event.kind != EventKind::NONE) {
+      if (bleEventQueue) {
         // Non-blocking queue dispatch safely integrated into the FreeRTOS engine
-        xQueueSend(queue, &event, 0);
+        xQueueSend(bleEventQueue, &event, 0);
       } else {
-        LOG_E("Event queue not initialized. Unable to send event.");
+        LOG_E("Event bleEventQueue not initialized. Unable to send event.");
       }
     }
   }
@@ -338,9 +332,11 @@
             return false;                                                                                  \
           }
 
-  auto BLEKeypad::setup() -> bool {
+  auto BLEKeypad::setup(QueueHandle_t eventQueue) -> bool {
 
     instance = this;
+
+    bleEventQueue = eventQueue;
 
     CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 

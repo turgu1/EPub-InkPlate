@@ -223,7 +223,7 @@ class KeypadViewer {
         .screenRight  = 20,
         .screenTop    = 0,
         .screenBottom = 0,
-        .align        = CSS::Align::CENTER,
+        .align        = HAlign::CENTER,
       };
 
       #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
