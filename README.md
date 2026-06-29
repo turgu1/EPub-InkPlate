@@ -2,7 +2,7 @@
 
 ## Last news
 
-(Uodated 2026.06.29)
+(Updated 2026.06.29)
 
 I had to rebuild all releases. An issue with the building process.
 
