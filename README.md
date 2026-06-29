@@ -2,6 +2,10 @@
 
 ## Last news
 
+(Uodated 2026.06.29)
+
+I had to rebuild all releases. An issue with the building process.
+
 (Updated 2026.06.27)
 
 ### Version 3.0.0 - What's New in This Release
