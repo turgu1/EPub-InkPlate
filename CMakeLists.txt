@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.16)
 
 if (NOT DEFINED DEVICE)
 # set(DEVICE "INKPLATE_6")
-set(DEVICE "INKPLATE_6_EXTENDED")
+# set(DEVICE "INKPLATE_6_EXTENDED")
 # set(DEVICE "INKPLATE_6_BLUETOOTH")
 # set(DEVICE "INKPLATE_6_V2") # Not supported yet
 # set(DEVICE "INKPLATE_10")
 # set(DEVICE "INKPLATE_10_EXTENDED")
-# set(DEVICE "INKPLATE_10_V2")
+set(DEVICE "INKPLATE_10_V2")
 # set(DEVICE "INKPLATE_6FLICK")
 # set(DEVICE "INKPLATE_6PLUS")
 # set(DEVICE "INKPLATE_6PLUS_V2")
@@ -89,6 +89,7 @@ elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
     set(DEVICE_NAME "I6V2")
     add_compile_definitions(
         INKPLATE_6_V2=1
+        BLE_KEYPAD=1
         PCAL6416=1)
 elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
     message("INKPLATE 10 V2 defined")
