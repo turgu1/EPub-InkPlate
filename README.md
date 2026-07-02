@@ -4,7 +4,12 @@
 
 (Updated 2026.07.02)
 
-Here are some pictures showcasing some of the new features available in V3.0.0:
+Here are pictures showcasing some of the new features available in V3.0.0:
+
+- larger e-book covers (three sizes available as options);
+- Artworks folder used when deep sleep occurs;
+- 2 columns output (1, 2, 3, 4 columns available as options), and a picture of the Bluetooth Mini Keypad;
+- 4 columns output.
 
 <img src="doc/pictures/IMG_3151.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
 
