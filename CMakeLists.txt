@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 
 if (NOT DEFINED DEVICE)
+# set(DEVICE "INKPLATE_5_V2")
 # set(DEVICE "INKPLATE_6")
+# set(DEVICE "INKPLATE_6_BLE")
 # set(DEVICE "INKPLATE_6_EXTENDED")
 # set(DEVICE "INKPLATE_6_BLUETOOTH")
-# set(DEVICE "INKPLATE_6_V2") # Not supported yet
+# set(DEVICE "INKPLATE_6_V2")
 # set(DEVICE "INKPLATE_10")
+# set(DEVICE "INKPLATE_10_BLE")
 # set(DEVICE "INKPLATE_10_EXTENDED")
 set(DEVICE "INKPLATE_10_V2")
 # set(DEVICE "INKPLATE_6FLICK")
@@ -31,26 +34,34 @@ add_compile_definitions(
     PNGLE_NO_GAMMA_CORRECTION=1
 )
 
-if(DEVICE MATCHES "^INKPLATE_6$")
+if(DEVICE MATCHES "^INKPLATE_5_V2$")
+    message("INKPLATE 5 V2 defined")
+    set(DEVICE_NAME "I5V2B")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
+    add_compile_definitions(
+        INKPLATE_5_V2=1 
+        PCAL6416=1
+        BLE_KEYPAD=1)
+elseif(DEVICE MATCHES "^INKPLATE_6$")
     message("INKPLATE 6 defined")
     set(DEVICE_NAME "I6")
     add_compile_definitions(
         INKPLATE_6=1 
         MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_6_BLE$")
+    message("INKPLATE 6 BLE defined")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
+    set(DEVICE_NAME "I6B")
+    add_compile_definitions(
+        INKPLATE_6=1 
+        MCP23017=1
+        BLE_KEYPAD=1)
 elseif(DEVICE MATCHES "^INKPLATE_6_EXTENDED$")
     message("INKPLATE 6 EXTENDED defined")
     set(DEVICE_NAME "I6E")
     add_compile_definitions(
         INKPLATE_6=1
         EXTENDED_CASE=1
-        MCP23017=1)
-elseif(DEVICE MATCHES "^INKPLATE_6_BLUETOOTH$") # For testing only
-    message("INKPLATE 6 BLUETOOTH defined")
-    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I6BT")
-    add_compile_definitions(
-        INKPLATE_6=1
-        BLE_KEYPAD=1
         MCP23017=1)
 elseif(DEVICE MATCHES  "^INKPLATE_6PLUS$")
     message("INKPLATE 6PLUS defined")
@@ -76,6 +87,14 @@ elseif(DEVICE MATCHES "^INKPLATE_10$")
     add_compile_definitions(
         INKPLATE_10=1
         MCP23017=1)
+elseif(DEVICE MATCHES "^INKPLATE_10_BLE$")
+    message("INKPLATE 10 defined")
+    set(DEVICE_NAME "I10B")
+    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
+    add_compile_definitions(
+        INKPLATE_10=1
+        MCP23017=1
+        BLE_KEYPAD=1)
 elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
     message("INKPLATE 10 EXTENDED defined")
     set(DEVICE_NAME "I10E")
@@ -86,7 +105,7 @@ elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
 elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
     message("INKPLATE 6 V2 defined")
     set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I6V2")
+    set(DEVICE_NAME "I6V2B")
     add_compile_definitions(
         INKPLATE_6_V2=1
         BLE_KEYPAD=1
@@ -94,7 +113,7 @@ elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
 elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
     message("INKPLATE 10 V2 defined")
     set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I10V2")
+    set(DEVICE_NAME "I10V2B")
     add_compile_definitions(
         INKPLATE_10_V2=1
         DMA_ENABLE=0

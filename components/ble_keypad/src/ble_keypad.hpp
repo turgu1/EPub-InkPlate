@@ -32,7 +32,7 @@
 
       QueueHandle_t bleEventQueue{};
 
-      static constexpr uint8_t TARGET_MAC_ADDRESS[] = { 0x2a, 0x07, 0x98, 0x74, 0x8a, 0x1b };
+      uint8_t target_mac_address[6]{};
 
       uint8_t macAddress[6];
       uint8_t keysMapping[6][5]{};
@@ -55,8 +55,7 @@
       bool isVerticalPressed{ false };
 
       auto hexToInt(const char c) const -> uint8_t;
-      auto parseHexStringToBytes(const char *hexStr, uint8_t *byteArray, size_t byteArraySize,
-                                 char separator) const -> void;
+      auto parseMacAddr(const std::string& macStr, uint8_t mac[6]) -> bool;
 
       auto handleIncomingPacket(uint8_t *data, size_t length) -> void;
 

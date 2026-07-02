@@ -3,8 +3,9 @@
   #define __BLE_KEYPAD__ 1
   #include "ble_keypad.hpp"
 
+  #include "config.hpp"
+
   #include "esp_timer.h"
-//   #include "nvs_flash.h"
   #include "esp_log.h"
   #include "nimble/nimble_port.h"
   #include "nimble/nimble_port_freertos.h"
@@ -16,21 +17,37 @@
     if (c >= 'a' && c <= 'f') { return c - 'a' + 10; }
     if (c >= 'A' && c <= 'F') { return c - 'A' + 10; }
     if (c >= '0' && c <= '9') { return c - '0'; }
-    return 0;
+    return -1;
   }
 
-  auto BLEKeypad::parseHexStringToBytes(const char *hexStr, uint8_t *byteArray, size_t byteArraySize,
-                                        char separator) const -> void {
-    for (size_t i = 0; i < byteArraySize; i++) {
-      byteArray[i] = 0;
-      while (*hexStr && *hexStr != separator) {
-        byteArray[i] = (byteArray[i] << 4) | hexToInt(*hexStr);
-        hexStr++;
-      }
-      if (*hexStr == separator) {
-        hexStr++;
-      }
+  auto BLEKeypad::parseMacAddr(const std::string& macStr, uint8_t mac[6]) -> bool {
+    // A standard MAC address (xx:xx:xx:xx:xx:xx) must be exactly 17 characters long
+    if (macStr.length() != 17) {
+      return false;
     }
+
+    for (int i = 0; i < 6; ++i) {
+      int strIdx = i * 3;
+
+      // Extract high and low nibbles for the current byte
+      int highNibble = hexToInt(macStr[strIdx]);
+      int lowNibble = hexToInt(macStr[strIdx + 1]);
+
+      // Fail if either character is an invalid hex digit
+      if (highNibble == -1 || lowNibble == -1) {
+        return false;
+      }
+
+      // Validate the delimiter between bytes (except after the final byte)
+      if (i < 5 && macStr[strIdx + 2] != ':') {
+        return false;
+      }
+
+      // Combine nibbles into a single byte using bitwise shifting
+      mac[i] = static_cast<uint8_t>((highNibble << 4) | lowNibble);
+    }
+
+    return true;
   }
 
   // The handleIncomingPacket is taylored to the specific packet structures emitted by the TikTok Remote
@@ -189,41 +206,70 @@
     int rc;
 
     switch (event->type) {
-    // Replaces legacy Bluedroid: ESP_GAP_BLE_SCAN_RESULT_EVT
+
     case BLE_GAP_EVENT_DISC: {
-      // Safe, unrolled manual byte matching evaluating NimBLE LSB order
+      // if (event->disc.length_data > 0) {
+      //   LOG_I("Data Info: {:<{}}", (char *)(event->disc.data), event->disc.length_data);
+      // }
       bool match = true;
+
       for (int i = 0; i < 6; i++) {
-        // Compare forward target elements against backward NimBLE values
-        if (event->disc.addr.val[5 - i] != TARGET_MAC_ADDRESS[i]) {
+        if (event->disc.addr.val[5 - i] != target_mac_address[i]) {
           match = false;
           break;
         }
       }
 
-      if (match) {
-        if (!is_connecting) {
-          is_connecting = true;
-          LOG_W("TARGET MAC MATCHED! Terminating scan and establishing connection...");
+      if (!match) {
+        std::string_view data{ reinterpret_cast<const char *>(event->disc.data),
+                               event->disc.length_data };
+        match = data.contains("Beauty-R1");
 
-          ble_gap_disc_cancel();
+        if (match) {
+          LOG_I("Found Beauty-R1!");
 
-          rc = ble_gap_connect(BLE_OWN_ADDR_PUBLIC, &event->disc.addr, 30000,
-                               nullptr, BLEKeypad::gapEventStub, nullptr);
-          if (rc != 0) {
-            LOG_E("Failed to initiate device pairing connection; rc={}", rc);
-            is_connecting = false;
-            startScanning();
-          }
+          const uint8_t * d = event->disc.addr.val;
+          HimemString     mac_addr = std::format("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+                                                 d[5], d[4], d[3], d[2], d[1], d[0]).c_str();
+          LOG_I("MAC Address: {}", mac_addr);
+          config.put(Config::Ident::BT_KEYPAD_MAC, mac_addr);
+          config.save();
+        }
+      }
+
+      if (match && !is_connecting) {
+        is_connecting = true;
+        LOG_W("TARGET MAC MATCHED! Terminating scan and establishing connection...");
+
+        ble_gap_disc_cancel();
+
+        // FIX 1: Provide explicit connection configuration parameters
+        struct ble_gap_conn_params conn_params;
+        memset(&conn_params, 0, sizeof(conn_params));
+        conn_params.scan_itvl = 0x0010;
+        conn_params.scan_window = 0x0010;
+        conn_params.itvl_min = 24;            // 30ms interval minimum
+        conn_params.itvl_max = 40;            // 50ms interval maximum
+        conn_params.latency = 0;
+        conn_params.supervision_timeout = 512;   // Give it 5.12 seconds buffer to prevent dropouts
+
+        // FIX 2: Pass &conn_params instead of nullptr as the 4th argument
+        rc = ble_gap_connect(BLE_OWN_ADDR_PUBLIC, &event->disc.addr, 30000,
+                             &conn_params, BLEKeypad::gapEventStub, nullptr);
+        if (rc != 0) {
+          LOG_E("Failed to initiate device pairing connection; rc={}", rc);
+          is_connecting = false;
+          startScanning();
         }
       }
       return 0;
     }
 
+
     // Replaces legacy Bluedroid: ESP_GATTC_CONNECT_EVT & ESP_GATTC_OPEN_EVT
     case BLE_GAP_EVENT_CONNECT: {
       if (event->connect.status == 0) {
-        LOG_I("GATT Channel Active! Pulling internal service maps...");
+        LOG_D("GATT Channel Active! Pulling internal service maps...");
         gl_conn_id = event->connect.conn_handle;
         is_connecting = false;
 
@@ -261,7 +307,7 @@
       if (event->notify_rx.conn_handle == gl_conn_id) {
 
         #if TRACING_BLE_KEYPAD
-          LOG_I("Notification received on attribute handle {}", event->notify_rx.attr_handle);
+          LOG_D("Notification received on attribute handle {}", event->notify_rx.attr_handle);
         #endif
 
         // Forward the raw memory payload straight into your static C++ bridging stub
@@ -269,6 +315,17 @@
                                 event->notify_rx.attr_handle,
                                 event->notify_rx.om,
                                 nullptr);
+      }
+      return 0;
+    }
+
+    case BLE_GAP_EVENT_ENC_CHANGE: {
+      if (event->enc_change.status == 0) {
+        LOG_D("Security Encryption established successfully! Device is now secured & bonded.");
+      } else {
+        LOG_E("Security encryption negotiation failed; status={}", event->enc_change.status);
+        // If security fails, force a connection reset to clear bad state
+        ble_gap_terminate(gl_conn_id, BLE_ERR_REM_USER_CONN_TERM);
       }
       return 0;
     }
@@ -287,7 +344,7 @@
       uint16_t cccd_handle = chr->val_handle + 1;
       uint8_t  value[] = { 0x01, 0x00 };
 
-      LOG_I("Writing CCCD descriptor to subscribe to notifications...");
+      LOG_D("Writing CCCD descriptor to subscribe to notifications...");
 
       // FIX: Use subscriptionStub here to handle the write confirmation event safely
       int rc = ble_gattc_write_flat(gl_conn_id, cccd_handle, value, sizeof(value),
@@ -301,7 +358,7 @@
   // --- NOTIFICATION REGISTRATION TRACKER ---
   auto BLEKeypad::handleSubscription(int status, uint16_t attr_handle) -> void {
     if (status == 0) {
-      LOG_I("CCCD descriptor written successfully. Handle {} subscribed!", attr_handle);
+      LOG_D("CCCD descriptor written successfully. Handle {} subscribed!", attr_handle);
 
       // REMOVED: The recursive ble_gattc_disc_chrs_by_uuid call.
       // The stream is already live. Doing nothing here breaks the infinite query loop!
@@ -310,36 +367,25 @@
     }
   }
 
-  // auto BLEKeypad::handleSubscription(int status, uint16_t attr_handle) -> void {
-  //   if (status == 0) {
-  //     LOG_I("CCCD descriptor written successfully. Device subscribed!");
-
-  //     // C++ COMPATIBLE RESOLUTION: Explicit stack object allocation
-  //     ble_uuid16_t hid_uuid = {
-  //       .u = { .type = BLE_UUID_TYPE_16 },
-  //       .value = HID_REPORT_CHAR_UUID
-  //     };
-
-  //     // Provide the clean type-casted address pointer natively
-  //     ble_gattc_disc_chrs_by_uuid(gl_conn_id, 1, 0xffff, &hid_uuid.u,
-  //                                 nullptr, nullptr);
-  //   } else {
-  //     LOG_E("Descriptor subscription mapping error returned; status={}", status);
-  //   }
-  // }
-
   // --- HARDWARE STACK INITIALIZER ---
   auto BLEKeypad::setup(QueueHandle_t eventQueue) -> bool {
     instance      = this;
     bleEventQueue = eventQueue;
 
-    // 1. Initialize NVS (NimBLE requires NVS for store/bonding data tracking structures)
-    // esp_err_t ret = nvs_flash_init();
-    // if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    //   if (esp_nvs_flash_erase() != ESP_OK) { return false; }
-    //   ret = nvs_flash_init();
-    // }
-    // if (ret != ESP_OK) { return false; }
+    // Retrieved the BLE mac address saved in the config file
+    HimemString mac_addr;
+    config.get(Config::Ident::BT_KEYPAD_MAC, mac_addr);
+    if (mac_addr.length() == 17) {
+      if (parseMacAddr(mac_addr.c_str(), target_mac_address)) {
+        LOG_I("BLE Keypad MAC address: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+              target_mac_address[0],
+              target_mac_address[1],
+              target_mac_address[2],
+              target_mac_address[3],
+              target_mac_address[4],
+              target_mac_address[5]);
+      }
+    }
 
     // 2. Initialize NimBLE platform controller driver configurations
     if (nimble_port_init() != ESP_OK) {

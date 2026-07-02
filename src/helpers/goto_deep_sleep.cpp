@@ -10,7 +10,7 @@
   #include "viewers/msg_viewer.hpp"
   #include "viewers/screen_saver.hpp"
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
+  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2 || INKPLATE_5_V2
     #define MSG "Please press the WakeUp Button to restart the device."
     #define INT_PIN EInk::WAKE_UP_PIN
     #define LEVEL 0

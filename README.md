@@ -2,6 +2,14 @@
 
 ## Last news
 
+(Updated 2026.07.02)
+
+Here are some pictures showcasing some of the new features available in V3.0.0:
+
+<img src="doc/pictures/IMG_3151.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
+
+<img src="doc/pictures/IMG_3152.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3150.jpeg" alt="picture" width="300"/>
+
 (Updated 2026.06.29)
 
 I had to rebuild all releases. An issue with the building process.

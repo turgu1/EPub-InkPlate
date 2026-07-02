@@ -74,7 +74,7 @@
       }
 
     #else
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2
+      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2 || INKPLATE_5_V2
         #define MSG "Press the WakeUp Button to restart."
         #define INT_PIN EInk::WAKE_UP_PIN
         #define LEVEL 0

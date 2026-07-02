@@ -5,7 +5,7 @@
 // This is the event manageer for all kind of devices that use a BLE Keypad.
 // For now, only the 6_V2 and the 10_V2 are supported.
 
-#if (INKPLATE_6_V2 || INKPLATE_10_V2) && BLE_KEYPAD
+#if (INKPLATE_6 || INKPLATE_10 || INKPLATE_5_V2 || INKPLATE_6_V2 || INKPLATE_10_V2) && BLE_KEYPAD
 
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"
