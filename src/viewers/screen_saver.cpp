@@ -61,6 +61,7 @@
                                            appFonts.getFont(1), true);
         if (pict && (pict->getBitmap() != nullptr)) {
           // pict->show();
+          screen.forceFullUpdate();
           page->showCover(pict);
         } else {
           LOG_E("Unable to load picture file {}", picture_filenames[index]);
