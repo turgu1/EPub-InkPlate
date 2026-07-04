@@ -1,416 +1,588 @@
 # EPub-InkPlate - User's Guide - Version 3.0.0
 
-The EPub-InkPlate is an EPub reader application built specifically for the InkPlate ESP32-based devices.
+### EPub-InkPlate: An EPub Reader for InkPlate Devices
 
-For the installation process, please consult the `INSTALL.pdf` document.
+This manual provides a comprehensive operational overview, configuration guide, and troubleshooting framework for **EPub-InkPlate**, a dedicated e-reader application engineered specifically for low-power, ESP32-WROVER-based InkPlate e-paper devices. The document details how the software balances the strict hardware constraints of microcontrollers (featuring a 4.5 MB total RAM budget) with advanced rendering capabilities to deliver a polished, distraction-free typography layout.
 
-Here are the main characteristics of the application:
+### Key Architectural and Operational Components Covered:
 
-- TTF and OTF embedded fonts support
-- Normal, Bold, Italic, Bold+Italic face types
-- Kerning, ligature, and minimal hyphenation
-- Multi-column page rendering (1 to 4 columns)
-- Bitmap images dithering display (JPEG, PNG, GIF, SVG, BMP)
-- EPub (V2, V3) book format subset
-- UTF-8 characters
-- Screen orientation (buttons located to the left, right, down positions from the screen)
-- Linear and Matrix view of books directory
-- Three size cover pictures user's selectable
-- Three size line height user's selectable
-- Up to 200 books are allowed in the directory
-- Left, center, right, and justify text alignments
-- Indentation
-- Some basic parameters and options
-- Limited CSS formatting
-- WiFi-based documents download
-- Battery state and power management (light, deep sleep, battery level display)
-- Real-Time clock (All devices, but the Inkplate-6)
+* **System Capabilities:** Full support for standard TrueType (`.ttf`) and OpenType (`.otf`) fonts, dynamic 1-to-4 column page rendering, baseline image decoding across five major formats (JPEG, PNG, GIF, SVG, BMP), and granular power-saving state management (light and deep sleep tracking).
+* **Hardware Interactivity Mapping:** A complete navigation matrix tracking how the software's functional commands (**HOME**, **SELECT**, **NEXT**, **PREVIOUS**) adapt across diverse InkPlate hardware interfaces, including the original e-Radionica tactile buttons, touchscreen gesture layers, 6-key physical extension boards, and external Bluetooth Low Energy (BLE) mini-keypads.
+* **Interface Mechanics:** Step-by-step guidance on navigating the dual-mode ecosystem, which switches between a Library Catalog (supporting Linear or Grid/Matrix views with active reading history tracking) and the active Book Reader mode. 
+* **Global and Local Parameterization:** Instruction on using the Main, Default, and Current Book Parameter forms, highlighting the application's configuration inheritance structure where individual books can maintain custom formatting overrides or dynamically track global typography layouts.
+* **Optimization and Maintenance Protocols:** Actionable asset management workflows using open-source tools like **Calibre** and the bundled `adjust_size.sh` script to subset memory-heavy embedded fonts and downscale artwork to true grayscale for faster e-paper refreshes. 
+* **Troubleshooting and System Limits:** Clear operational constraints—such as a 200-book directory ceiling, an 800 KB e-book font allocation budget, and a 50-level HTML tag nesting threshold to prevent stack overflows—alongside emergency touchscreen calibration bypasses and real-time USB serial debugging procedures using standard `8N1` terminal configurations.
+
+For detailed installation instructions, please refer to the `INSTALL.pdf` document.
+
+#### Key Features & Technical Specifications
+
+* **Advanced Typography:** Full support for embedded TTF and OTF fonts with normal, bold, italic, and bold-italic styles. Features built-in kerning, ligatures, and minimal hyphenation for an optimal reading experience.
+* **Flexible Page Layouts:** Supports dynamic multi-column page rendering (from 1 to 4 columns) alongside left, centered, right, and fully justified text alignments with paragraph indentation.
+* **Image Rendering:** Displays dithered bitmap images across multiple formats, including JPEG, PNG, GIF, SVG, and BMP.
+* **Format Compatibility:** Reads a subset of the EPub (V2 and V3) book format and supports complete UTF-8 character encoding.
+* **Dynamic Screen Orientation:** Configurable screen rotation optimized for left, right, or bottom physical button layouts.
+* **Library Management:** Organizes a directory of up to 200 books with choices between a linear or matrix layout, three user-selectable book cover sizes, and three adjustable line-height settings.
+* **Connectivity & Downloads:** Features built-in Wi-Fi for wireless document downloads and Bluetooth support for a BLE mini keypad to enable remote interaction.
+* **Power & Time Management:** Includes a real-time clock (available on all devices except the Inkplate-6) alongside advanced power management, tracking battery levels, light sleep, and deep sleep modes.
+* **Layout Styling:** Offers customizable basic parameters, option menus, and support for limited CSS formatting.
 
 ## 1. Input Capabilities
 
-There are four variation of input capability to interact with the device:
+The application supports four hardware input configurations to accommodate different device models:
 
-- **Original InkPlate 6 and 10**: Those devices were made by e-Radionica and possess three tactical buttons. Single and Double press on the keys are used by the application to get the equivalent of six different input *keys*.
-- **Inkplate 6PLUS, 6PLUSV2, and 6FLICK**: Those are using a tactical (or *touch*) screen and permit different actions when touching the screen with your fingers. A wake-up key is available to get the device back working after it was put in sleep mode.
-- **Inkplate 6V2, 10V2, and 5V2**: Those devices do not have any hardware input capability beyond the wake-up key.
-- **Original Inkplate 6 and 10 using an extension board**: A small extension board can be hooked to the InkPlate 6 and 10 to get 6 mechanical keys.
+* **Original InkPlate 6 and 10:** Manufactured by e-Radionica, these devices feature three tactile hardware buttons. The application registers both single and double presses on these keys to provide six distinct input commands. These models can also be expanded using a Bluetooth BLE mini-keypad or an add-on physical extension board that uses 6 mechanical keys.
+* **Inkplate 6PLUS, 6PLUSV2, and 6FLICK:** These models utilize a touchscreen interface for gesture-based navigation and control. They also include a dedicated hardware wake-up key to resume operation from sleep mode.
+* **Inkplate 5V2, 6V2, and 10V2:** These devices lack built-in physical navigation buttons or touchscreen capabilities, relying solely on a hardware wake-up key. They require a connected Bluetooth BLE mini-keypad for full user interaction.
 
-In this manual, the following action names are used to identify each function done when using the keys or interacting with the tactical screen. Please note that there are some function that are not accessible by all device, depending on their input capabilities. Some key also may be used for more than one function, depending on the current application context. They are:
+The following table summarizes the available hardware input configurations:
 
-- **HOME**
-- **SELECT**
-- **NEXT**
-- **PREVIOUS**
-- **NEXT-2** or **DOWN**
-- **PREVIOUS-2** or **UP**
-- **UP**
-- **DOWN**
+| Input Method | Supported Devices |
+| :--- | :--- |
+| **Tactile Buttons** | Inkplate 6, 10 |
+| **Add-On Extension** | Inkplate 6, 10 |
+| **Touchscreen Interface** | Inkplate 6PLUS, 6PLUSV2, 6FLICK |
+| **Bluetooth Mini-Keypad** | Inkplate 6, 10, 5V2, 6V2, 10V2 |
 
-For the 6PLUS, 6PLUSV2 and 6FLICK devices:
+Various application distributions are supplied to support each of the input configuration variants:
 
-- **TAP**
-- **TOUCH-AND-HOLD**
-- **SWIPE-LEFT**
-- **SWIPE-RIGHT**
-- **PINCH-IN**
-- **PINCH-OUT**
+|Inkplate device|Input Configuration|Release filename|
+|:-------------:|:--:|----------------|
+|6|Tactile Buttons|release-v3.0.0-BETA-inkplate_6.zip|
+|6|BLE Mini Keypad|release-v3.0.0-BETA-inkplate_6_bt.zip|
+|6|Extension Board|release-v3.0.0-BETA-inkplate_6_extension.zip|
+|10|Tactile Buttons|release-v3.0.0-BETA-inkplate_10.zip|
+|10|BLE Mini Keypad|release-v3.0.0-BETA-inkplate_10_bt.zip|
+|10|Extension Board|release-v3.0.0-BETA-inkplate_10_extension.zip|
+|6PLUS|Touchscreen|release-v3.0.0-BETA-inkplate_6plus.zip|
+|6PLUS V2|Touchscreen|release-v3.0.0-BETA-inkplate_6plusv2.zip|
+|6FLICK|Touchscreen|release-v3.0.0-BETA-inkplate_6flick.zip|
+|5 V2|BLE Mini Keypad|release-v3.0.0-BETA-inkplate_5v2.zip|
+|6 V2|BLE Mini Keypad|release-v3.0.0-BETA-inkplate_6v2.zip|
+|10 V2|BLE Mini Keypad|release-v3.0.0-BETA-inkplate_10v2.zip|
 
-In the following text, the functions are also being called buttons.
+### Core Functions and Gestures
 
-The following sub-sections describe each of the device's input capabilities in greather details:
+This manual uses standardized action names to describe how physical inputs map to software functions. Please note that certain features may be unavailable on specific models due to hardware limitations. Additionally, some inputs change contextually depending on the active screen or menu.
 
-### 1.1 Original InkPlate 6 and 10
+#### Button-Mapped Actions
 
-InkPlate devices have three tactile keys used to interact with the application. On the device, they are labeled 1, 2, and 3. The screen orientation can be selected in the parameters form. Depending on the orientation, the function of each key changes as follows:
+* **HOME**
+* **SELECT**
+* **NEXT**
+* **PREVIOUS**
+* **NEXT-2** / **DOWN**
+* **PREVIOUS-2** / **UP**
+* **UP**
+* **DOWN**
 
-- When the keys are on the **Bottom** side of the screen:
+#### Touchscreen Gestures (6PLUS, 6PLUSV2, and 6FLICK only)
 
-  - Key **1** is the **SELECT** function. Double-click on that key will trigger the **HOME** function.
-  - Key **2** is the **PREVIOUS** function. Double-click on that key will trigger the **PREVIOUS-2** (or **UP**) function.
-  - Key **3** is the **NEXT** function. Double-click on that key will trigger the **NEXT-2** (or **DOWN**) function.
+* **TAP**
+* **TOUCH-AND-HOLD**
+* **SWIPE-LEFT**
+* **SWIPE-RIGHT**
+* **PINCH-IN**
+* **PINCH-OUT**
 
-- When the keys are on the **Left** side of the screen:
+*(Note: For clarity, functional action names and touch gestures may occasionally be referred to as "buttons" throughout the remaining text.)*
 
-  - Key **3** is the **SELECT** function. Double-click on that key will trigger the **HOME** function.
-  - Key **1** is the **PREVIOUS** function. Double-click on that key will trigger the **PREVIOUS-2** (or **UP**) function.
-  - Key **2** is the **NEXT** function. Double-click on that key will trigger the **NEXT-2** (or **DOWN**) function.
-
-- When the keys are on the **Right** side of the screen:
-
-  - Key **1** is the **SELECT** function. Double-click on that key will trigger the **HOME** function.
-  - Key **3** is the **PREVIOUS** function. Double-click on that key will trigger the **PREVIOUS-2** (or **UP**) function.
-  - Key **2** is the **NEXT** function. Double-click on that key will trigger the **NEXT-2** (or **DOWN**) function.
-
-### 1.2 Inkplate 6PLUS, 6PLUSV2, and 6FLICK
-
-Those devices provide a touch screen interface for interacting with the application. The following gestures are supported:
-
-- **TAP** ![TAP](pictures/icon-tap.png){ width=4% }: You briefly touch the screen surface with your fingertip. This is used in the following contexts:
-
-- **TOUCH-AND-HOLD** ![TOUCH-AND-HOLD](pictures/icon-touch-and-hold.png){ width=5% }: You touch the surface with your fingertip and hold position for an extended period of time. This is used to get access to descriptive texts in menus, or to get the author/title information of a book when displaying the list of books in the matrix view.
-
-- **SWIPE-LEFT** and **SWIPE-RIGHT** ![SWIPE-LEFT and SWIPE-RIGHT](pictures/icon-swipe.png){ width=9% }: Move your fingertip across the screen from right to left, or from left to right, respectively. Used to change pages when reading a book or browsing the book list.
-
-- **PINCH-IN** and **PINCH-OUT** ![PINCH-IN and PINCH-OUT](pictures/icon-pinch.png){ width=11% }: Touch the screen with two fingers and move them together or apart, respectively. Used to decrease or increase the screen backlight brightness.
-
-### 1.3 Inkplate 6V2, 10V2, and 5V2
-
-### 1.4 Original Inkplate 6 and 10 using an extension board
-
-Extended InkPlate devices have six mechanical buttons used to interact with the application. The screen orientation can be selected in the parameters form. Depending on the orientation, the function of each key changes as follows:
-
-- When the keys are on the **Bottom** side of the screen, from left to right:
-
-  - The **HOME** function
-  - The **LEFT** function
-  - The **PREVIOUS-2** (or **UP**) and **NEXT-2** (or **DOWN**) function
-  - The **RIGHT** function
-  - The **SELECT** function
-
-- When the keys are on the **Left** side of the screen, from top to bottom:
-
-  - The **SELECT** function
-  - The **PREVIOUS-2** (or **UP**) function
-  - The **LEFT** and **RIGHT** function
-  - The **NEXT-2** (or **DOWN**) function
-  - The **HOME** function
-
-- When the keys are on the **Right** side of the screen, from top to bottom:
-
-  - The **SELECT** function
-  - The **PREVIOUS-2** (or **UP**) function
-  - The **LEFT** and **RIGHT** function
-  - The **NEXT-2** (or **DOWN**) function
-  - The **HOME** function
+The following sub-sections describe each configuration and its respective mapping layout in greater detail:
 
 
-## 2. Application startup
+### 1.1 Tactile Buttons
 
-When the device turns ON, the application executes the following tasks:
+The InkPlate 6 and 10 devices feature three hardware tactile keys, labeled 1, 2, and 3, to interact with the application. Screen orientation can be adjusted in the settings menu. Because the physical positions of the keys rotate with the screen, their functional mappings adjust automatically based on the chosen layout:
 
-- Loads configuration information from the `config.txt` file located in the main SD-Card folder. 
-- Loads fonts definition as defined in the `fonts_list.xml` file located in the main SD-Card folder. Fonts must be located in the `fonts` folder on the SD-Card.
-- Verifies the presence of books on the SD-Card, and updates its database if required. The books must be located in the `books` folder on the SD-Card, be in the EPub V2 or V3 format, and have a filename ending with the `.epub` extension in lowercase.
-- Presents the list of books to the user. If a book was previously in progress, it will be opened at the last-read page.
+#### Keys at the Bottom
+
+* **Key 1:** **SELECT** (Single-click) / **HOME** (Double-click)
+* **Key 2:** **PREVIOUS** (Single-click) / **PREVIOUS-2** / **UP** (Double-click)
+* **Key 3:** **NEXT** (Single-click) / **NEXT-2** / **DOWN** (Double-click)
+
+#### Keys on the Left
+
+* **Key 3:** **SELECT** (Single-click) / **HOME** (Double-click)
+* **Key 1:** **PREVIOUS** (Single-click) / **PREVIOUS-2** / **UP** (Double-click)
+* **Key 2:** **NEXT** (Single-click) / **NEXT-2** / **DOWN** (Double-click)
+
+#### Keys on the Right
+
+* **Key 1:** **SELECT** (Single-click) / **HOME** (Double-click)
+* **Key 3:** **PREVIOUS** (Single-click) / **PREVIOUS-2** / **UP** (Double-click)
+* **Key 2:** **NEXT** (Single-click) / **NEXT-2** / **DOWN** (Double-click)
+
+### 1.2 Touchscreen Interface
+
+The Inkplate 6PLUS, 6PLUSV2, and 6FLICK devices utilize a capacitive touchscreen for intuitive, gesture-based navigation. The application supports the following interactions:
+
+* **TAP** ![TAP](pictures/icon-tap.png){ width=4% }
+  Briefly touch the screen surface with a single fingertip. This action is used to select menu items, open links, or confirm selections.
+* **TOUCH-AND-HOLD** ![TOUCH-AND-HOLD](pictures/icon-touch-and-hold.png){ width=5% }
+  Press and hold your fingertip on the screen for an extended duration. Use this gesture to view context-specific descriptive text in menus or to display the author and title information of a book in the matrix catalog view.
+* **SWIPE-LEFT / SWIPE-RIGHT** ![SWIPE-LEFT and SWIPE-RIGHT](pictures/icon-swipe.png){ width=9% }
+  Slide your fingertip horizontally across the screen. Swipe left or right to turn pages while reading a book or to browse through the book directory.
+* **PINCH-IN / PINCH-OUT** ![PINCH-IN and PINCH-OUT](pictures/icon-pinch.png){ width=11% }
+  Touch the screen with two fingers and move them closer together or further apart. This gesture dynamically decreases or increases the screen backlight brightness.
+
+### 1.3 BLE Mini Keypad
+
+The application supports an optional Bluetooth Low Energy (BLE) mini-keypad featuring six physical buttons and a dedicated power switch. It is currently the only supported BLE accessory and can be purchased on AliExpress: https://www.aliexpress.com/item/1005007944515439.html.
+
+![BLE Mini Keypad](pictures/ble-mini-keypad.png){ width=20% }
+
+The six physical keys map to the following software functions:
+
+* **Center Button:** **SELECT**
+* **Left Arrow:** **PREVIOUS**
+* **Right Arrow:** **NEXT**
+* **Up Arrow:** **PREVIOUS-2** / **UP**
+* **Down Arrow:** **NEXT-2** / **DOWN**
+* **Bottom Button:** **HOME**
+
+#### Connection and Troubleshooting
+
+The application automatically handles pairing when the keypad is powered on. A small Bluetooth icon will appear at the bottom of the Inkplate screen, just to the left of the battery level indicator, to confirm a successful connection.
+
+If the keypad fails to connect or the Bluetooth icon does not appear, try the following troubleshooting steps:
+* Ensure the keypad power switch is turned **ON**.
+* Press any button on the keypad to re-trigger the automated connection protocol.
+* Verify the battery status; the integrated blue LED will not light up upon keypresses if the battery is depleted.
+
+*Note: The blue LED on the keypad will flash repeatedly if it loses connection with the Inkplate. This occurs when the Inkplate enters sleep mode or if the device is moved out of Bluetooth range.*
+
+### 1.4 Extension Board
+
+The physical expansion board provides six standalone mechanical buttons for application control. Because the physical positions of the keys rotate with the display, their functional mappings adjust automatically based on your chosen screen orientation:
+
+#### Keys at the Bottom (Indexed Left to Right)
+
+* **Button 1:** **HOME**
+* **Button 2:** **PREVIOUS**
+* **Button 3:** **PREVIOUS-2** / **UP**
+* **Button 4:** **NEXT-2** / **DOWN**
+* **Button 5:** **NEXT**
+* **Button 6:** **SELECT**
+
+#### Keys on the Left (Indexed Top to Bottom)
+
+* **Button 1:** **SELECT**
+* **Button 2:** **PREVIOUS-2** / **UP**
+* **Button 3:** **PREVIOUS**
+* **Button 4:** **NEXT**
+* **Button 5:** **NEXT-2** / **DOWN**
+* **Button 6:** **HOME**
+
+#### Keys on the Right (Indexed Top to Bottom)
+
+* **Button 1:** **SELECT**
+* **Button 2:** **PREVIOUS-2** / **UP**
+* **Button 3:** **PREVIOUS**
+* **Button 4:** **NEXT**
+* **Button 5:** **NEXT-2** / **DOWN**
+* **Button 6:** **HOME**
 
 
-## 3. Interacting with the application
+## 2. Application Startup
 
-The application has two main display modes:
+Upon powering on the device, the application automatically executes the following startup sequence:
 
-- The Books List mode — Shows the list of books available on the SD-Card, displaying a small cover thumbnail, title, and author for each book.
-- The Book Reader mode — Displays a book's content one page at a time.
+* **Configuration Loading:** Retrieves system settings and preferences from the `config.txt` file located in the root directory of the SD card.
+* **Font Initialization:** Loads typography rules defined in the `fonts_list.xml` file (located in the root directory). All corresponding font files must reside within the `fonts/` folder on the SD card.
+* **Library Cataloging:** Scans the `books/` folder on the SD card to verify the available file catalog and dynamically update the internal database. To be recognized, books must use the EPub (V2 or V3) format and feature a lowercase `.epub` file extension.
+* **Interface Launch:** Displays the library directory to the user. If a book was actively being read during the previous session, the application bypasses the directory and reopens that book directly to the last-read page.
 
-Each display mode also provides a set of functions the user can invoke. These are described in the sub-sections below.
 
-### 3.1 The Books List mode
+## 3. Interacting with the Application
 
-The list presents all books available to the user for reading. Two views are offered: a *linear view* and a *matrix view*:
+The application features two primary display modes:
 
-- The Linear view will show books as a vertical list, showing the cover page on the left and the title/author on the right. 
-- The Matrix view will show covers arranged in a matrix with the title/author of the currently selected book at the top of the screen.
+* **Book List Mode:** Displays the catalog of books available on the SD card, complete with cover thumbnails, titles, and authors.
+* **Book Reader Mode:** Displays the content of a selected book, formatted one page at a time.
 
-The application keeps track of the reading page location of the last 10 books opened by the user. A book will have its title prefixed with `[Reading]` to show this fact in the displayed list. 
+Each mode provides a specific set of interactive functions, which are detailed in the sub-sections below.
 
-The books are presented in the following manner:
+### 3.1 Book List Mode
 
-- Books being read are presented first in the list.
-- The other books are then presented in alphabetical order by title.
+The library interface organizes all available books into two user-selectable layouts: a *linear view* and a *matrix view*.
 
-The list may require several pages depending on the number of books present on the SD-Card and the size of the books' cover, selectable in the Main Parameters Form (see section 2.3 below).
+* **Linear View:** Displays books in a vertical list format, featuring the cover thumbnail on the left and the title and author on the right.
+* **Matrix View:** Displays book covers arranged in a grid. The title and author of the currently highlighted book are displayed at the top of the screen.
 
-![The Books' List Linear View](pictures/linear_view_6.png){ width=50% }
+The application automatically tracks the exact reading progress for the 10 most recently opened books. To easily identify these active titles in the list, their names are prefixed with a **[Reading]** tag. 
 
-![The Books' List Matrix View](pictures/matrix_view_6_small.png){ width=50% }
+Books are sorted and displayed using the following hierarchy:
+1. Active books currently being read are pinned to the top of the list.
+2. All remaining books are sorted alphabetically by title.
 
-On touch screen devices, you select the book you want to read by a **TAP** on the book's cover picture. Use the **SWIPE-LEFT** or **SWIPE-RIGHT** to show the previous/next page showing the books that are part of the library. Use the **TOUCH-AND-HOLD** on a book cover to display the information (title and author) of the book at the top of the screen. If you **TAP** elsewhere on screen, the main application menu will be shown.
+The total number of catalog pages varies depending on how many books are stored on the SD card and the cover thumbnail size chosen in the Main Parameters Form (see Section 3.5).
 
-For the other devices, use the **NEXT** and **PREVIOUS** buttons to highlight the appropriate book that you want to read, then use the **SELECT** button to have the book loaded, presenting the first page of it. The **NEXT-2** and **PREVIOUS-2** buttons can be used to show the previous/next page showing the books that are part of the library. The **HOME** button opens the main application menu.
+\newpage
+
+\begin{center}
+Books List Display Modes
+\end{center}
+| Linear View | Matrix View |
+|:-----------:|:-----------:|
+|![](pictures/linear_view_6.png){ width=100% }|![](pictures/matrix_view_6_small.png){ width=100% }|
+
+
+#### Touchscreen Navigation (6PLUS, 6PLUSV2, and 6FLICK)
+
+* **Open a Book:** **TAP** directly on a book cover to load it.
+* **Browse Pages:** **SWIPE-LEFT** or **SWIPE-RIGHT** to flip through pages of the library catalog.
+* **View Metadata:** **TOUCH-AND-HOLD** a book cover to display its title and author at the top of the screen.
+* **Open Menu:** **TAP** anywhere on an empty area of the screen to open the main application menu.
+
+#### Button-Based Navigation (All Other Devices)
+
+* **Highlight a Book:** Use the **NEXT** and **PREVIOUS** buttons to navigate through the titles on the current page.
+* **Open a Book:** Press the **SELECT** button while a book is highlighted to load it.
+* **Browse Pages:** Use the **NEXT-2** and **PREVIOUS-2** buttons to jump to the next or previous page of the library catalog.
+* **Open Menu:** Press the **HOME** button to access the main application menu.
 
 ### 3.2 The Main Application Menu
 
-The main application menu is displayed at the top of the screen using an icon for each option and a label that would be shown below the menu. The options are as follows:
+The main application menu is displayed at the top of the screen. Each option is represented by an icon, with its corresponding descriptive label displayed directly below the menu bar. 
 
-![Books List options](pictures/dir-menu-options-6PLUS.png){ width=50% }
+![Book List Options](pictures/dir-menu-options-6PLUS.png){ width=50% }
 
-- ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** - Closes the options menu and returns to the book list.
-- ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** - Opens the last book read, at the last page displayed.
-- ![](pictures/icon-params.png){ width=15 } **Main parameters** - Opens the Main Parameters form, where you can adjust application behavior settings. Described below.
-- ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** - Opens the Default Parameters form, where you can set default font and image settings for book rendering. Described below.
-- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - Starts the Wi-Fi connection and a web server, allowing you to manage the book list on the SD-Card from a web browser — uploading, downloading, and removing books. Once started, pressing any key stops the server, closes the Wi-Fi connection, and restarts the device. Note that while the web server is running, power-saving features (deep sleep and light sleep) are disabled.
-- ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** - Refreshes the books database. This happens automatically at startup and is rarely needed manually. Note that this action refreshes *all* books, which can be time-consuming — allow five to ten seconds per book.
-- ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** - Erases all reading progress information (current position in each book and their priority placement at the top of the book list). The books themselves are not deleted.
-- ![](pictures/icon-time.png){ width=15 } **Set Date/Time** - Opens a form to set the local date and time manually.
-- ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** - Starts the Wi-Fi connection and retrieves the current time from an NTP server. The server address can be set in `config.txt`; the default is `pool.ntp.org`. Once the time is retrieved, press any button to restart the device.
-- ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** - (Touch Screen devices only) Launches the calibration screen. Each crosshair must be pressed **only once** to align the touch coordinates with the display. See section 3.2.1 for important details.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a box with the application version number and developer's name.
-- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press any button to restart.
+* ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** – Closes the options menu and returns to the library catalog.
+* ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** – Reopens the most recently read book at the last viewed page.
+* ![](pictures/icon-params.png){ width=15 } **Main parameters** – Opens the Main Parameters form to customize application behavior and system settings (detailed below).
+* ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** – Opens the Default Parameters form to configure default font and image settings for book rendering (detailed below).
+* ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** – Connects to Wi-Fi and launches a local web server, enabling you to manage books on the SD card (upload, download, or delete) via a standard web browser. Pressing any key stops the server, closes the Wi-Fi connection, and reboots the device. *Note: Power-saving modes (light and deep sleep) are disabled while the web server is running.*
+* ![](pictures/icon-refresh.png){ width=15 } **Refresh the e-books list** – Manually reindexes the books database. This process runs automatically at startup and is rarely required manually. *Note: This action re-scans every book, which can take 5 to 10 seconds per file.*
+* ![](pictures/icon-clr-history.png){ width=15 } **Clear e-books' read history** – Erases all tracking data, including current page progress and priority placement at the top of the library list. This action does not delete the book files.
+* ![](pictures/icon-time.png){ width=15 } **Set Date/Time** – Opens a manual configuration form to set the local system date and time.
+* ![](pictures/icon-ntp.png){ width=15 } **Retrieve Date/Time from Time Server** – Connects to Wi-Fi to sync the system clock with a Network Time Protocol (NTP) server. The server address can be customized in `config.txt` (defaults to `pool.ntp.org`). Press any button after synchronization to restart the device.
+* ![](pictures/icon-calib.png){ width=15 } **Touch Screen Calibration** *(Touchscreen models only)* – Launches the display alignment utility. Each crosshair must be pressed exactly once to sync touch input with the screen coordinates (see Section 3.2.1 for critical details).
+* ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** – Displays system information, including the application version and developer credits.
+* ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** – Suspends the device into a low-power Deep Sleep mode. Press any button to wake and reboot.
 
-On touch screen devices, you select the option to execute with a **TAP** on the icon. A **TOUCH-AND-HOLD** on an icon will show the option table below the menu. A **TAP** outside of the menu space will return to the list of books in the library (equivalent to selecting the first icon in the menu).
+#### Touchscreen Navigation (6PLUS, 6PLUSV2, and 6FLICK)
 
-For the other devices, the **NEXT** and **PREVIOUS** buttons move the cursor between options. Press **SELECT** to execute the highlighted option. **HOME** closes the application menu and returns to the book list (equivalent to selecting the first icon in the menu).
+* **Execute an Option:** **TAP** an icon to launch its function.
+* **View Descriptions:** **TOUCH-AND-HOLD** an icon to display its label in the text box below.
+* **Exit Menu:** **TAP** anywhere outside the menu boundaries to return to the library list (equivalent to selecting the first icon).
+
+#### Button-Based Navigation (All Other Devices)
+
+* **Navigate Options:** Use the **NEXT** and **PREVIOUS** buttons to cycle through the menu items.
+* **Execute an Option:** Press **SELECT** to confirm and run the highlighted function.
+* **Exit Menu:** Press **HOME** to dismiss the menu and return to the library list (equivalent to selecting the first icon).
 
 #### 3.2.1 Touchscreen Calibration
 
-The touch screen calibration aligns the touch layer coordinates with the display. For some devices the alignment is already accurate enough and calibration is not needed, but you may notice a problem if tapping a menu entry or form option selects an adjacent item instead of the intended one.
+The calibration tool aligns the capacitive touch layer with the underlying visual display. While factory calibration is sufficient for most units, manual adjustment is recommended if tapping a menu option consistently registers on adjacent items instead.
 
-When calibrating, touch each crosshair as precisely as possible. Imprecise touches will worsen alignment and can make menus and form inputs harder — or even impossible — to use.
+When running this utility, touch the center of each crosshair as accurately as possible. Careless or inaccurate inputs will degrade alignment, making forms and menus difficult or impossible to navigate.
 
-If the calibration result is unsatisfactory, run the calibration again while you can still access it.
+If the resulting alignment is poor, immediately launch and run the calibration utility again while the interface remains accessible.
 
-If calibration has made the screen impossible to use, remove the SD-Card, insert it into a computer, and open `config.txt`. Delete the following lines and save the file:
+##### Emergency Reset via SD Card
 
-- calib_a
-- calib_b
-- calib_c
-- calib_d
-- calib_e
-- calib_f
-- calib_divider 
+If an inaccurate calibration has rendered the touchscreen completely unresponsive, you can manually reset the coordinates:
+1. Remove the SD card and insert it into a computer.
+2. Open the `config.txt` file located in the root directory.
+3. Locate and delete the following lines:
+   * `calib_a`
+   * `calib_b`
+   * `calib_c`
+   * `calib_d`
+   * `calib_e`
+   * `calib_f`
+   * `calib_divider`
+4. Save the file, reinsert the SD card, and power on the Inkplate. 
 
-After removing those lines and rebooting, the device will use the default touch screen coordinates and calibration will be accessible again.
+The device will reboot using default hardware touch coordinates, restoring menu accessibility so you can attempt calibration again.
 
-### 3.3 The Book Reader mode
+### 3.3 Book Reader Mode
 
-The reader presents the book selected by the user one page at a time. Use the **NEXT** and **PREVIOUS** buttons to go to the next or previous page. The **DOUBLE-NEXT** and **DOUBLE-PREVIOUS** buttons will go 10 pages at a time.
+The reader interface presents the content of your selected book one page at a time. 
 
-If the user presses the **PREVIOUS** button when the first page of a book is presented, the reader will display the last page of the book. If the **NEXT** button is pressed when the last page of a book is presented, the reader will display the first page of the book.
+#### Touchscreen Navigation (6PLUS, 6PLUSV2, and 6FLICK)
 
-As in the book list, **DOUBLE-SELECT** opens a list of options (**SELECT** does the same). The options are displayed at the top of the screen with an icon and label beneath each icon. The list is as follows:
+The screen is divided into three invisible, vertical zones: left, center, and right.
+* **Next Page:** **TAP** the right zone or perform a **SWIPE-LEFT** gesture.
+* **Previous Page:** **TAP** the left zone or perform a **SWIPE-RIGHT** gesture.
+* **Open Context Menu:** **TAP** the center zone to access the book action menu.
 
-![Book Reader options](pictures/ebook-reader-options-menu.png){ width=50% }
+#### Button-Based Navigation (All Other Devices)
 
-- ![](pictures/icon-return.png){ width=15 } **Return to the e-book reader** - Returns to the page being read in the current book.
-- ![](pictures/icon-content.png){ width=15 } **Table of Content** - If the book includes a table of contents, it will be shown here. Move the cursor to an entry and press **SELECT** to jump to that section. Available only if the EPub file contains a table of contents structure.
-- ![](pictures/icon-dir.png){ width=15 } **E-Books List** - Exits the book reader and returns to the book list.
-- ![](pictures/icon-font.png){ width=15 } **Current e-book parameters** - Opens the parameters form for the current book, allowing you to select font and image display settings specific to this book. These settings are stored in a `.pars` file on the SD-Card. The available options are similar to those in the Default Parameters form, described below.
-- ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** - Resets all editable book formatting parameters to their default values.
-- ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** - Removes the current book and all its associated files from the device. A confirmation dialog is shown — press **SELECT** to confirm or any other button to cancel. After deletion, the book list is displayed.
-- ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** - Starts the Wi-Fi connection and a web server, allowing you to manage the book list on the SD-Card from a web browser — uploading, downloading, and removing books. Once started, pressing any key stops the server, closes the Wi-Fi connection, and restarts the device. Note that while the web server is running, power-saving features (deep sleep and light sleep) are disabled.
-- ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** - Shows a message box with the application version number and developer's name.
-- ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** - Puts the device into Deep Sleep. Press any button to restart.
+* **Next Page:** Press the **NEXT** or **SELECT** button.
+* **Previous Page:** Press the **PREVIOUS** button.
+* **Skip 10 Pages:** Press the **NEXT-2** (forward 10 pages) or **PREVIOUS-2** (backward 10 pages) button.
+* **Open Context Menu:** Press the **HOME** button to access the book action menu.
 
-The **NEXT** and **PREVIOUS** buttons move the cursor between options. Press **SELECT** to execute the highlighted option. **DOUBLE-SELECT** closes the options list and returns to the book list (equivalent to selecting the first entry).
+### 3.4 Book Context Menu
 
-### 3.4 The Main Parameters Form
+The action menu is displayed at the top of the screen. Each function is represented by an icon, with its corresponding descriptive label displayed directly below the menu bar.
 
-As described in section 2.1, the Main Parameters form lets you adjust settings that affect application behavior. Each item is presented with a list of selectable options.
+![Book Reader Options](pictures/ebook-reader-options-menu.png){ width=50% }
 
-![The Main Parameters Form](pictures/parameters-before-selection.png){ width=50% }
+* ![](pictures/icon-return.png){ width=15 } **Return to the e-book reader** – Closes the menu and returns to the active page of the current book.
+* ![](pictures/icon-content.png){ width=15 } **Table of Contents** – Displays the book's internal navigation index. Scroll to an entry and press **SELECT** to jump directly to that section. *Note: This option is only available if the EPub file contains a valid table of contents structure.*
+* ![](pictures/icon-dir.png){ width=15 } **E-Books List** – Exits the active book and returns to the main library catalog.
+* ![](pictures/icon-font.png){ width=15 } **Current e-book parameters** – Opens a custom configuration form to adjust font and image rendering settings exclusively for this book. These preferences are saved in a localized `.pars` file on the SD card.
+* ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** – Clears book-specific settings and restores formatting parameters to global application defaults.
+* ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** – Completely removes the active book and its companion data files from the SD card. A confirmation dialog will prompt you to verify the action; press **SELECT** to confirm or any other button to cancel.
+* ![](pictures/icon-wifi.png){ width=15 } **WiFi access to the e-books folder** – Connects to Wi-Fi and launches a local web server, enabling you to manage books on the SD card (upload, download, or delete) via a standard web browser. Pressing any key stops the server, closes the Wi-Fi connection, and reboots the device. *Note: Power-saving modes (light and deep sleep) are disabled while the web server is running.*
+* ![](pictures/icon-info.png){ width=10 } **About the EPub-InkPlate application** – Displays system information, including the application version and developer credits.
+* ![](pictures/icon-poweroff.png){ width=15 } **Power OFF (Deep Sleep)** – Suspends the device into a low-power Deep Sleep mode. Press any button to wake and reboot.
 
-The following items are displayed:
+#### Menu Navigation on Touchscreen Devices
 
-- **Minutes Before Sleeping** - Options: 5, 15, or 30 minutes. The idle timeout after which the device enters Deep Sleep, a state in which battery consumption is minimal. Once asleep, the device wakes on any key press.
-- **Books Directory View** - Options: Linear or Matrix. Selects how the book list is displayed. The Linear view shows books as a vertical list with the cover on the left and the title/author on the right. The Matrix view arranges covers in a grid with the title/author of the selected book shown at the top of the screen.
-- **Books Cover Size** - Options: SMALL, MEDIUM, LARGE. Sets the size of the books cover that will be used to display the book list. They will be, respectively (Width x Height pixels): 70x90, 140x180, and 180x240 pixels.
-- **Buttons Position** - Options: LEFT, RIGHT, BOTTOM. Sets the physical orientation of the device so the keys are located on the left, right, or bottom of the screen. Changing orientation between BOTTOM and LEFT/RIGHT (or vice versa) switches between landscape and portrait geometry, which affects how much content fits on each page and may trigger a recalculation of page locations for all books.
-- **Pixel Resolution** - Selects how many bits are used per pixel. 3 bits per pixel enables font anti-aliasing but requires a full screen refresh on every page turn. 1 bit per pixel enables faster partial screen updates but disables anti-aliasing, resulting in visibly jagged glyphs.
-- **Show Battery Level** - Options: NONE, PERCENT, VOLTAGE, ICON. Displays the battery level at the bottom-left of the screen, updated each time the screen refreshes in the book list and book reader modes (not updated while option menus or parameter forms are displayed). PERCENT shows the charge percentage (2.5 V = 0%, 3.7 V and more = 100%). VOLTAGE shows the raw battery voltage. The icon is shown for all options except NONE. (A 3.7 volts rechargeable battery may have a value than can go up to around 4.2 volts)
-- **Show Title** - When selected, display the book title at the top portion of pages.
-- **Right Bottom Selection** - What to show at the bottom-right of the screen: nothing, the date/time, or the stack/heap size. When date/time is selected, it is shown as `MM/DD - HH:MM` (e.g., `Mon - 01/24 22:44`). When stack/heap size is selected, three numbers are shown left to right: unused stack space, largest available heap chunk, and total available heap memory. This is primarily useful for diagnosing memory issues. The total stack is 60 KB and the heap is approximately 4.3 MB.
-- **Battery Trim** - This is a linear trim factor to adjust the proper display of the battery level. It must be set to a value between 0.0 and 2.0 exclusive (normally will be closer to 1.0). The battery level is being read by means of one of the ESP32's A2D (Analog to Digital) interface. This interface is known to have some limitation when reading analogic values. The resistors used to divide the voltage at the entry of that interface could also offset the value being read depending on their values. Here is the way to adjust the factor (if you are not familiar with electronics voltmeter, try to find somebody to help you):
-  1. Set the **Show Battery Level** parameter to VOLTAGE;
-  2. Return to the books directory view;
-  3. Take note of the voltage that is shown at the bottom of the screen;
-  4. Power Off the device;
-  5. Open the device cover to get access to the zone where the battery is connected. Pay attention in the way you manipulate the device;
-  6. With a DC voltmeter, read the voltage of the battery. There must be some circuit pads close to the battery connector that allow to read that voltage;
-  7. You can now compute the proper trim factor using the following formula: 
-    ```
-    Voltage read on the voltmeter divided by the Voltage displayed on the screen 
-    ```
+* **Execute an Option:** **TAP** an icon to launch its function.
+* **View Descriptions:** **TOUCH-AND-HOLD** an icon to display its label in the text box below.
 
-\newpage
+#### Menu Navigation on Button-Based Devices
 
-When the form appears, the currently selected option for each item is highlighted with a small rectangle. A larger thin-line rectangle — the *selecting box* — surrounds all options of the first item. (See Figure 5)
-
-![Buttons Position is selected](pictures/parameters-after-selection.png){ width=50% }
-
-To change an item, move the selecting box to it using **NEXT** and **PREVIOUS**, then press **SELECT**. The box changes to a **bold** rectangle around the options (see Figure 6). Use **NEXT** and **PREVIOUS** to cycle through choices, then press **SELECT** again to confirm. The box reverts to thin lines and advances to the next item.
-
-Press **DOUBLE-SELECT** to exit the form. The new settings are saved and applied.
+* **Navigate Options:** Use the **NEXT** and **PREVIOUS** buttons to cycle through the menu items.
+* **Execute an Option:** Press **SELECT** to confirm and run the highlighted function.
+* **Exit Menu:** Press **HOME** to dismiss the menu and return to the reading view.
 
 \newpage
 
-### 3.5 The Default Parameters Form
+### 3.5 The Main Parameters Form
 
-As described in section 2.1, the Default Parameters form lets you set default font and image rendering values. Each item is presented with a list of selectable options.
+The Main Parameters form allows you to adjust settings that dictate the core behavior of the application. Each configuration item presents a list of selectable, mutually exclusive options.
+
+\begin{center}
+The Main Parameters Form
+\end{center}
+| For Touchscreen Devices | For Button-base Devices |
+|:-----------------------:|:-----------------------:|
+|![](pictures/parameters-before-selection-6PLUS.png){ width=100% }|![](pictures/parameters-before-selection.png){ width=100% }|
+
+
+The form displays the following items:
+
+* **Minutes Before Sleeping** – Options: `5`, `15`, or `30` minutes. Defines the idle timeout period before the device enters Deep Sleep to minimize battery consumption. Once in sleep mode, pressing any physical button will wake and reboot the device.
+* **Books Directory View** – Options: `Linear` or `Matrix`. Toggles the layout style of the library catalog. Linear view displays a vertical list with the cover on the left and metadata on the right. Matrix view arranges covers in a grid and displays the highlighted book's metadata at the top of the screen.
+* **Books Cover Size** – Options: `SMALL`, `MEDIUM`, or `LARGE`. Sets the resolution of the book covers in the library view. The dimensions correspond to `70x90`, `140x180`, and `180x240` pixels, respectively.
+* **Buttons Position** – Options: `LEFT`, `RIGHT`, or `BOTTOM`. Configures the physical orientation of the device. Switching between `BOTTOM` and `LEFT`/`RIGHT` alternates the display between landscape and portrait formats. *Note: Changing orientation alters page layouts and will trigger a background recalculation of page positions for all books.*
+* **Pixel Resolution** – Configures the bit-depth per pixel. `3 bits per pixel` enables anti-aliasing for smooth typography but requires a full, slower screen refresh on every page turn. `1 bit per pixel` allows rapid partial screen updates but disables anti-aliasing, resulting in jagged font edges.
+* **Show Battery Level** – Options: `NONE`, `PERCENT`, `VOLTAGE`, or `ICON`. Displays the battery charge status at the bottom-left of the screen. This value updates during standard screen refreshes in the catalog and reader views, but remains static while menus or forms are open. `PERCENT` tracks the charge relative to voltage thresholds (2.5V = 0%, 3.7V and above = 100%). `VOLTAGE` shows the raw battery reading (a standard 3.7V rechargeable battery can peak near 4.2V when fully charged). The battery icon accompanies all choices except `NONE`.
+* **Show Title** – When enabled, displays the active book's title at the top of every page in reader mode.
+* **Right Bottom Selection** – Configures the metadata displayed at the bottom-right of the screen. Options include: `Nothing`, `Date/Time`, or `Memory Status`. `Date/Time` formatting displays as `Day - MM/DD HH:MM` (e.g., `Mon - 01/24 22:44`). `Memory Status` outputs three values for developer diagnostics: unused stack space, the largest available contiguous heap chunk, and total available heap memory. The device features a 60 KB total stack and approximately 4.3 MB of total heap.
+* **Battery Trim** – A linear calibration factor used to adjust the accuracy of the battery readout. The value must sit strictly between `0.0` and `2.0` (typically resting close to `1.0`). Because the ESP32's internal Analog-to-Digital Converter (ADC) has non-linear limitations, and hardware voltage-divider resistors have inherent tolerances, manual trimming may be required. 
+
+  ##### Battery Calibration Steps
+
+  1. Set **Show Battery Level** to `VOLTAGE`.
+  2. Return to the main book catalog and note the displayed voltage string at the bottom.
+  3. Power off the device completely.
+  4. Carefully open the device casing to expose the physical battery connection terminal. 
+  5. Use a reliable digital DC voltmeter to read the voltage directly across the battery circuit pads.
+  6. Calculate your precise trim factor using the following formula:
+     $$\text{Battery Trim Factor} = \frac{\text{Voltage read on physical voltmeter}}{\text{Voltage displayed on e-reader screen}}$$
+
+#### Form Navigation on Touchscreen Devices
+
+When the form is launched, the active setting for each parameter is bounded by a thin selection rectangle. To modify a setting, **TAP** your desired option.
+
+**TAP** the **DONE** button at the bottom of the screen to commit your adjustments, save the configuration, and return to the application.
+
+#### Form Navigation on Button-Based Devices
+
+When the form opens, active settings are highlighted by a small rectangle. A larger, thin-lined bounding box (the *selecting box*) highlights the entire first parameter category.
+
+1. Press **NEXT** or **PREVIOUS** to move the thin selection box to the parameter category you wish to edit.
+2. Press **SELECT** to enter editing mode for that item. The thin box will transform into a **bold** focus rectangle.
+3. Use **NEXT** or **PREVIOUS** to cycle through the choices within that category.
+4. Press **SELECT** again to confirm your choice. The focus rectangle will revert to a thin line and automatically advance to the next category.
+5. Press **HOME** at any time to save your changes, exit the form, and apply the new configuration.
+
+### 3.6 The Default Parameters Form
+
+The Default Parameters form establishes the global typography and image rendering defaults for the application. These settings apply automatically to any book that has not been explicitly configured with its own custom parameters.
 
 ![The Default Parameters Form](pictures/default-parameters.png){ width=50% }
 
-The following items are displayed:
+The form displays the following items:
 
-- **Default Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point = 1/72 inch).
-- **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
-- **Default Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
-- **Show Images in E-books** - Controls whether images in books are rendered. Disabling images reduces memory usage and speeds up page rendering.
-- **Column Count** - Choose to render e-book pages across 1 to 4 columns.
+* **Default Font Size** – Options: `8`, `10`, `12`, or `15` points. Configures the base character size for reflowable text layout (where 1 point equals 1/72 of an inch).
+* **Use Fonts in E-books** – Toggles whether the application should honor and render custom typefaces embedded directly within the EPub file structure.
+* **Default Font** – Selects the fallback typeface from the eight standard fonts supplied with the application. Font names include **CONDENSED**, **SERIF**, **SANS** (sans-serif), or **TYPEWRITER** suffixes to describe their visual style and stroke characteristics.
+* **Show Images in E-books** – Controls whether images embedded within books are rendered on screen. Disabling image rendering reduces system memory consumption and accelerates page generation speeds.
+* **Column Count** – Options: `1`, `2`, `3`, or `4`. Configures the multi-column layout engine, allowing you to split reflowable text across up to four vertical columns on a single screen layout.
 
-These are default values that apply to any book parameter that has not been customized for that specific book.
+### 3.7 The Current Book Parameters Form
 
-### 3.6 The Current book parameters form
-
-As described in section 2.2, the current book parameters form lets you set font and image rendering values specific to the current book. These settings are stored in a `.pars` file on the SD-Card. The available options are similar to those in the Default Parameters form described in section 2.4.
+The Current Book Parameters form lets you customize typography and image rendering values exclusively for the active title. These localized settings are saved on the SD card in a dedicated `.pars` file matching the book's filename. The configuration layout mirrors the global options found in the Default Parameters form (see Section 3.6).
 
 ![The Current Book Parameters Form](pictures/current-parameters.png){ width=50% }
 
-The following items are displayed:
+The form displays the following items:
 
-- **Font Size** - Options: 8, 10, 12, 15 points. Sets the character size for reflowable books (1 point = 1/72 inch).
-- **Use Fonts in E-books** - Specifies whether fonts embedded in the book should be used to render pages.
-- **Font** - Eight fonts are supplied with the application. Font names will have **CONDENSED**, **SERIF**, **SANS** (for sans-serif), or **TYPEWRITER** suffix to help distinguish the stroke of the font to use.
-- **Show Images in E-books** - Controls whether images in the book are rendered. Disabling images reduces memory usage and speeds up page rendering.
-- **Column Count** - Choose to render e-book pages across 1 to 4 columns.
+* **Font Size** – Options: `8`, `10`, `12`, or `15` points. Overrides the base character size for reflowable text layout (where 1 point equals 1/72 of an inch).
+* **Use Fonts in E-books** – Toggles whether the application renders custom typefaces embedded directly within this specific EPub file.
+* **Font** – Overrides the global fallback typeface using one of the eight standard fonts supplied with the application (**CONDENSED**, **SERIF**, **SANS**, or **TYPEWRITER**).
+* **Show Images in E-books** – Controls whether images inside this book are rendered on screen. Disabling images lowers memory overhead and speeds up local page rendering.
+* **Column Count** – Options: `1`, `2`, `3`, or `4`. Customizes the multi-column text layout engine for the active book layout.
 
-When the form opens, it shows the values currently used to render the book's pages.
+#### Parameter Inheritance and Overrides
+When this form opens, it populates with the active settings currently being used to render the book's pages. 
 
-Parameters that the user has not explicitly set will show the value from the Default Parameters form. Once you change a parameter here, it is stored for this book. If you leave a parameter at its default, it will continue to track the value in the Default Parameters form — so updating the default will also update that book's presentation.
+Any configuration item that you have not explicitly changed will continue to inherit its value from the global Default Parameters form. If you modify an item here, it creates a permanent override stored specifically for this book. Unmodified items will continue to dynamically track global defaults; updating a setting in the Default Parameters menu will automatically update this book's rendering as well.
 
-### 3.7 The Screen Saver
+### 3.8 The Screen Saver
 
-The V3 application now supports custom artwork being displayed during deep-sleep, loaded from the `artworks/` folder on the SD card. Seven default images are included in the distribution package, which the application selects at random when entering deep-sleep. Users can add their own custom JPEG images to this folder. Note that those images must *not* be saved as progressive as the application doesn't support this mode.
+The application supports custom artwork displayed automatically during deep-sleep mode, retrieved from the `artworks/` folder on the SD card. Seven default images are included in the distribution package, which the application selects at random each time the device enters deep sleep. 
 
-Use images that are close to the size of your device screen.
+Users can add their own custom images to this directory under the following constraints:
+* **Format:** Images must be saved as standard JPEG files.
+* **Compression:** Do **not** use progressive JPEG compression, as the rendering engine does not support this mode.
+* **Resolution:** For optimal display quality and to avoid scaling artifacts, use images that closely match the native pixel resolution of your specific device's screen.
 
-## 4. Additional information
+## 4. Additional Information
 
-### 4.1 The books database
+### 4.1 The Books Database
 
-The application maintains a small database of minimal metadata about each book (title, author, description, and a small cover image). This database is built the first time the application sees a book on the SD-Card and is used to present the book list. 
+The application maintains a lightweight internal database to store essential metadata for each title, including the title, author, description, and a small cover thumbnail. This database is automatically generated the first time the application detects a new file on the SD card and is used to render the library catalog. 
 
-The only limit on the number of books is the SD-Card capacity. Too many books become difficult to browse, however: a few dozen are manageable, while a few hundred would be unwieldy. 
+While the maximum number of supported books is limited only by the physical capacity of your SD card, large libraries can become difficult to browse. A collection of a few dozen books is highly manageable, whereas several hundred titles will become unwieldy to navigate within the interface.
 
-### 4.2 The Pages location computation
+### 4.2 Page Location Computation
 
-A book is presented one page at a time on the screen. The quantity of characters displayed on a page depends on the screen orientation (portrait or landscape), the fonts used, and the characters' size. Parameters in forms described in section 2, selectable by the user, have an impact on the number of pages and their localization in the EPub file. 
+Books are rendered on the screen one page at a time. The volume of text displayed per page dynamically shifts based on your chosen screen orientation (portrait or landscape), the active typeface, and the selected font size. Because user-adjustable parameters (detailed in Section 3) directly influence how text flows, any changes to these settings alter both the total page count and the text mapping within the EPub file.
 
-When a book is selected for display, the program checks whether its page locations need to be recalculated. This is transparent to the user. If required, a background task is started to recompute locations; it interferes minimally with reading and page navigation. The page count shown at the bottom of the screen becomes available only once the computation finishes. The locations are saved so that reopening the book does not require recomputation, provided the formatting parameters have not changed.
+When you open a book, the application automatically determines if its page boundaries need to be recalculated. This process runs transparently in the background, allowing you to read and turn pages with minimal performance interruption. The total page count indicator at the bottom of the screen will display as soon as this background calculation concludes. Once generated, these page coordinates are saved to the SD card so that subsequent viewings load instantly, provided your formatting parameters remain unchanged.
 
-There is a big difference in the duration of the location computation between using slow SD-Cards and fast SD-Cards. The author made some tests with cards in hands. With SanDisk Ultra SD-Cards (both 16GB and 32GB), the scan duration with the two supplied books is ~3 minutes each. With a slow SD-Card (very old Sandisk 4GB), it took 8 minutes and 20 seconds.
+#### SD Card Performance Impacts
 
-### 4.3 On the complexity of EPub page formatting
+The time required to compute page locations is highly dependent on the read/write speeds of your SD card. Benchmarks using the two bundled e-books yielded the following results:
+* **High-Speed Storage (SanDisk Ultra 16GB / 32GB):** Approximately 3 minutes per book.
+* **Legacy/Slow Storage (Older SanDisk 4GB):** Approximately 8 minutes and 20 seconds per book.
 
-The EPub standard allows for the use of a very large amount of flexible formatting capabilities available with HTML/CSS engines. This is quite a challenge to pack a reasonable amount of interpretation of formatting scripts on a small processor.
+Using a modern, high-quality SD card is strongly recommended for an optimal user experience.
 
-I've chosen a *good-enough* approach by which I obtain a reasonable page formatting quality. The aim is to get something that will allow the user to read a book and enjoy it without too much effort. There are cases for which the book content is way too complex to get good results...
+### 4.3 EPub Formatting Complexity and Optimization
 
-One way to circumvent the problems is to use the epub converter provided with the [Calibre](https://calibre-ebook.com/) book management application. This is a tool able to manage a large number of books on computers. There are versions for Windows, macOS, and Linux. *Calibre* supplies a conversion tool (called 'Convert books' on the main toolbar) that, when choosing to *convert EPub to EPub*, will simplify the coding of styling that would be more in line with the interpretation capability of *EPub-InkPlate*. 
+The EPub standard supports extensive, flexible design styling powered by complex HTML and CSS layout engines. Interpreting and rendering these demanding stylesheets on a lightweight, low-power microcontroller presents a significant engineering challenge.
 
-The convert tool in *Calibre* can also subset fonts so they contain only the glyphs required by the book (when the 'Convert books' tool is open, this option is under 'Look & feel' > 'Fonts' > 'Subset all embedded fonts'). Some books have four or five fonts of 1.5 MB each that the convert tool reduces to around 200 KB per font (roughly 1 MB total). 
+To balance performance and usability, the application employs a streamlined rendering approach designed to deliver high-quality text layout for standard reading. This ensures a clean, distraction-free reading experience for the vast majority of publications. However, documents containing highly complex or nested CSS styling layouts may not render correctly.
 
-For images, to get them reasonably in line with the screen resolution of the InkPlate devices (that is 600x800 for the InkPlate-6), the convert tool can be tailored to do so. Simply select the 'Generic e-ink' output profile from the 'Page setup' options once the convert tool is launched. For example, even at this size, a 600x800 image will take close to 500 kilobytes. 
+#### Optimizing Files with Calibre
 
-It appears that the tool may omit to transform some images from the book. Also, the images will remain with RGB pixels instead of grayscale pixels that usually require more time to load. A script named `adjust_size.sh` is supplied with this release that can be used to transform all images in a book to use grayscale and a resolution equal to or lower than 800x600 pixels (if you prefer, you can modify it to use 1200x825 format for InkPlate-10 device). This script is using a tool supplied with the **ImageMagick** package available with Linux or macOS. It can also be loaded under MS Windows with **Cygwin**. 
+To ensure optimal layout compatibility, you can pre-process your library using the open-source eBook management platform [Calibre](https://calibre-ebook.com/) (available for Windows, macOS, and Linux). Re-encoding your files using Calibre simplifies nested styles into a clean format optimized for the `EPub-InkPlate` rendering engine:
 
-### 4.4 In case of out of memory situation
+1. Import your book into Calibre and click the **Convert books** button on the main toolbar.
+2. Set the output format in the top-right corner to **EPUB**.
+3. **Font Subsetting:** To compress file sizes, navigate to **Look & feel > Fonts** and enable **Subset all embedded fonts**. This option strips out unused characters; for example, it can safely compress multiple 1.5 MB embedded fonts down to roughly 200 KB per font, drastically saving system memory.
+4. **Resolution Scaling:** To match the target e-paper display, navigate to **Page setup** and set the output profile to **Generic e-ink**. This automatically scales artwork downward to fit standard e-paper boundaries (such as the 600x800 resolution of the InkPlate-6), where a typical full-screen image consumes roughly 500 KB.
 
-The memory required to prepare a book to be displayed may become an issue if there is not enough memory available. The InkPlate devices are limited in memory: around 4.5 megabytes are available. A part of it is dedicated to the screen buffer and the rest of it is mainly used by the application.
+#### Advanced Image Optimization Script
 
-As performance is a key factor, fonts are loaded and kept in memory by the application.  If a book is using too many fonts or fonts that are too big (they may contain more glyphs than necessary for the book), it will not be possible to show the document with the original fonts. 
+Because automated conversion tools occasionally bypass certain embedded graphics or leave them in a resource-heavy RGB color space, this release includes an optimization script named `adjust_size.sh`. 
 
-Here are some steps that can be used to minimize the amount of memory that would be required to present the content of books:
+This script parses an EPub file, downscales all embedded images to a maximum resolution of 800x600 pixels, and converts them to true grayscale. Grayscale images load significantly faster on e-paper hardware and require less processing overhead. 
 
-- **Convert the book** - As indicated in the previous section, the *Calibre Convert* tool can be used to minimize both fonts and image size.
-- **Use 1-bit pixels** - The frame buffer used to render pages consumes significant memory: 240 KB for 3-bit pixels, 60 KB for 1-bit pixels (for an Inkplate-6). Pixel resolution is set in the Main Parameters.
-- **Deactivate images** - In the Main Parameters, you can disable image rendering.
-- **Deactivate book fonts** - In the Font Parameters, you can disable fonts embedded in the book.
+* *Note:* If you are using an InkPlate-10 device, you can manually edit the script's configuration variables to target its native 1200x825 resolution instead.
+* *Prerequisites:* The script relies on the open-source **ImageMagick** suite. It runs natively on Linux and macOS terminal environments, and can be executed on Windows systems utilizing the **Cygwin** compatibility layer.
 
-If an internal problem related to memory allocation is found by the application, a message will appear on the screen and the device will be put in a Deep Sleep state. The message will indicate the reason why the allocation was not successful. This can be used as a hint to use one or more steps indicated above.
+### 4.4 Out of Memory Handling and Troubleshooting
 
-### 4.5 Images rendering
+System memory limitations can become an issue if a complex publication demands more resources than the hardware can allocate. InkPlate hardware operates within strict memory constraints, providing approximately 4.5 MB of total available RAM. A portion of this memory is permanently reserved for the display frame buffer, while the remaining pool is dynamically allocated by the application.
 
-Starting with version 1.3.0, the application is using a new *stream-based* approach to render images that are part of a book. This approach optimizes the use of memory to load pictures by using a minimal amount of memory as a picture is retrieved from the ePub file.
+To maximize performance, the application loads active fonts directly into RAM. If an EPub file utilizes an excessive number of typefaces, or if the embedded font files are unnecessarily large (containing full global glyph sets rather than just the characters needed for the text), the system will be unable to render the document using its native styling.
 
-JPEG, PNG, GIF, SVG, and BMP image types are supported. Only basic formats of both types are recognized. For some books, image rendering may not be possible. The `adjust_size.sh` script supplied with the application can transform the resolution of embedded images and convert them to a format compatible with the application. See section 3.3 for details on how to run the script. 
+If you encounter memory issues, implement the following steps to significantly reduce the application's RAM overhead:
 
-### 4.6 Moving the SD-Card from an Inkplate model to another
+* **Convert the Publication:** Use the Calibre conversion engine as detailed in Section 4.3 to compress embedded font files and scale down high-resolution graphics.
+* **Switch to 1-Bit Pixel Resolution:** The system frame buffer consumes a significant portion of memory depending on its color depth. For example, on an Inkplate-6, a 3-bit color layout requires 240 KB of RAM, whereas switching to a 1-bit layout reduces this footprint to just 60 KB. This can be adjusted in the Main Parameters menu.
+* **Disable Embedded Images:** Toggle image rendering off within the Main Parameters menu to stop the application from allocating memory for graphical assets.
+* **Disable Embedded Book Fonts:** Toggle embedded font support off in the Default or Current Book Parameters menu to force the document to fall back to the lightweight, pre-installed system fonts.
 
-For each book, the application may generate three additional files in the `books/` folder of the SD-Card:
+#### Low-Memory Emergency Safeguard
 
-- Pages location offsets (files with extension `.locs`). They are tailored to the screen resolution, selected fonts and formatting parameters.
-- Table of Content (files with extension `.toc`). They may also be tailored to the screen resolution and formatting parameters.
-- The book's formatting parameters (files with extension `.pars`).
+If the core application encounters a fatal memory allocation error, it will immediately output a diagnostic failure message directly to the e-paper screen and place the hardware into Deep Sleep to protect system stability. The on-screen error message will pinpoint exactly which asset or buffer caused the allocation failure, serving as a direct hint for which of the optimization steps above you should apply to the problematic EPub file.
 
-These files are automatically generated when they are not present (or when a formatting parameter will impact the page rendering) in the folder at the time the user opens a book to be read.
+### 4.5 Image Rendering Engine
 
-Inkplate device models use different eInk screens that have different pixel resolutions. If you ever want to transfer an SD-Card from one model to another, the application normally detects the change of screen resolution and regenerates the page's location when the user opens the book. If you suspect that the pages are not properly displayed, it could be beneficial to erase some files in the SD-Card's `books` folder. The best way to do it is to plug the SD-Card into your computer or laptop and delete all those `.locs` and `.toc` files. The `.pars` files are the same for all Inkplate models.
+The application features a highly optimized, stream-based rendering architecture. This framework drastically minimizes the system's memory overhead by decoding and parsing graphical data sequentially as it is pulled from the compressed EPub container, preventing the need to cache large, uncompressed image files entirely in RAM.
 
-### 4.7 Internal fonts replacement
+The layout engine supports **JPEG**, **PNG**, **GIF**, **SVG**, and **BMP** image types. However, please note that only the core, baseline specifications of these graphical standards are officially supported. Highly advanced variations or non-standard formatting profiles within certain books may fail to render on screen. 
 
-Starting with version 1.3.1, the application allows for the replacement of fonts that can be selected by the user through the configuration forms. To do so, a fonts configuration file named `fonts_list.xml` is used to define which font can be selected. This file must be present in the main SD-Card folder. It is loaded at boot time or after deep sleep to initialize the structure of the fonts. 
+If embedded images fail to load or display correctly, run the bundled `adjust_size.sh` script to re-encode them into a fully compatible, grayscale format at an optimized resolution (refer to **Section 4.3** for detailed operational and configuration instructions).
 
-Two groups of fonts are defined: SYSTEM fonts used to display application controls, and USER fonts that can be selected to display book content.
-  
-Each font in the USER group must define normal, bold, italic, and bold-italic filenames. Font files that are too large may cause problems: the four files combined are limited to 300 KB by the application.
-  
-The SYSTEM group is tailored to the needs of the EPub-Inkplate software. Changes may impact the way that the application behaves.
-  
-The font files must reside in the `fonts` folder on the SD-Card. The EPub-Inkplate distribution contains many other fonts that are not used in the `fonts_list.xml` but can be selected by the user by modifying the content of the XML file. Two font types are supported: True Type Fonts (`.ttf` files) and Open Type Fonts (`.otf` files). The previous versions of tha application were also supporting the IBMF fonts, these were replaced with their equivalent Open Type Fonts. IBMF fonts are no longer supported.
+### 4.6 Transferring the SD Card Between Different Inkplate Models
 
-**Important:** If you modify the fonts in the USER group, previously computed page locations may shift because glyph sizes can differ between fonts. Delete the `.locs` files in the books folder; the application will recompute page locations automatically.
+To manage your library, the application may automatically generate up to three companion data files alongside each primary publication inside the `books/` folder on your SD card:
 
-### 4.8 In case of a problem
+* **Page Location Offsets (`.locs` files):** Store the background text mappings. These are highly specific to the device's native screen resolution, active typefaces, and formatting parameters.
+* **Table of Contents Cache (`.toc` files):** Store parsed index structures, which may also be tailored to active screen geometry and formatting constraints.
+* **Book Formatting Parameters (`.pars` files):** Store custom user layout overrides applied explicitly to that title.
 
-The application may occasionally behave unexpectedly. That can happen for a variety of reasons beyond the testing effort made by the author.
+The system automatically generates these companion files when you open a book if they are missing or if a newly altered formatting option impacts page layout structure.
 
-The first thing to do is verify that your device is running the latest version of the application. You can check this through the **About the EPub-InkPlate application** menu entry, which shows the current version. New releases are published [here](https://github.com/turgu1/EPub-InkPlate/releases) from time to time. See the Install Manual for instructions on updating your device.
+Because different Inkplate hardware models feature varying e-paper screens with distinct pixel resolutions, swapping an SD card into a different model changes layout dynamics. While the application is engineered to detect resolution shifts automatically and regenerate page maps on the fly, layout anomalies can occasionally occur. 
 
-If your device is already on the latest release, connect it via USB cable and use a serial terminal emulator on your computer to view diagnostic output. When EPub-InkPlate is running, messages are sent to the USB port. Errors are usually reported there, which can help identify the issue. 
+If you notice formatting issues after swapping devices, it is highly recommended to perform a manual cache reset:
+1. Connect the SD card to a computer or laptop.
+2. Navigate to the `books/` directory.
+3. Delete all `.locs` and `.toc` files. 
 
-On both Linux and Mac computers, the author is using **minicom** to access the USB port. The device name is usually `/dev/ttyUSB0` and the baud rate to use is 115200 bps with 8N1 bits/parity.
+*Note: You do not need to delete `.pars` files, as these formatting preference values are completely universal and translate identically across all Inkplate hardware models.*
 
-On a Windows computer, there is a variety of terminal emulators available to select from. The device name is usually `COM3:` and the other parameters must be the same as for Linux.
+### 4.7 Custom and Internal Font Replacement
 
-If you can't resolve the problem by yourself, it is always possible to raise an issue [here](https://github.com/turgu1/EPub-InkPlate/issues). You have to explain the bad behavior of the application and attach any information that can help the author to find what the problem is.
+The application allows you to expand and customize the available typography selection. Font mapping is governed by a central configuration file named `fonts_list.xml`, which must reside in the root directory of the SD card. This layout map is evaluated at boot time and upon waking from deep sleep to initialize system typefaces.
 
-### 4.9 Limitations
+The configuration engine divides typefaces into two strict categories:
+* **SYSTEM Fonts:** Hardcoded layouts used exclusively to render the application's menus, buttons, forms, and dialog boxes. *Warning: Modifying the SYSTEM group may destabilize the interface layout and cause unexpected behavior.*
+* **USER Fonts:** The collection of typefaces made available for selection inside the document parameter forms to render e-book content.
 
-The Inkplate devices are based on ESP32-WROVER MPU. This is a very capable chip with a fair amount of processing power and memory. The following are the limitations imposed on the EPub-Inkplate application related to the capabilities available with the device.
+#### Custom Font Constraints and Integration
 
-- *Maximum number of books:* **200**. The application must keep some information about the books to quickly build and show the directory content.
-- *Maximum single book size:* **25 Mbytes**.
-- *Font formats:* **TTF, OTF**.
-- *Maximum memory used for application internal fonts content:* **300 Kbytes**.
-- *Maximum memory used for books' fonts content:* **800 Kbytes**. Fonts that are already loaded are kept for rendering. If the output is not appropriate, the user can disable the use of the fonts embedded with the book and use one of the fonts supplied with the application.
-- *Maximum nested HTML tags in book content:* **50**. Testing the application, the author never had to deal with books having more than 15 nested tags. This limit is to track potential nested issues that would reset the device (stack overflow).
-- *Image format types:* **subset of PNG, JPeg, GIF, SVG, and BMP**. The subsets are imposed by libraries used to interpret the image file content. In particular, JPeg pictures in progressive mode are not supported. They must be transformed to static mode using some tool (like Calibre) if you want them to be displayed. SVG support is very basic and will be enhanced in a future version. 
+Every typeface integrated into the USER category must include four standalone companion files mapping to its **Normal**, **Bold**, **Italic**, and **Bold-Italic** weights. 
+
+To protect system stability and prevent low-memory crashes, strict file size limits are enforced: the combined file size of all four font weights within a single family must not exceed **300 KB**.
+
+All active font files must reside within the `fonts/` directory on the SD card. The base distribution package includes a rich assortment of pre-loaded fonts that are not enabled by default in the stock `fonts_list.xml` file, which you can easily activate by modifying the XML configuration markup. 
+
+The engine natively supports standard **TrueType Fonts (`.ttf`)** and **OpenType Fonts (`.otf`)**. 
+
+*Note: Legacy IBMF font support has been completely deprecated and replaced with superior OpenType equivalents. IBMF files are no longer recognized by the rendering engine.*
+
+**Important Layout Notice:** Changing or modifying active USER fonts will alter glyph dimensions across your library, causing previously calculated text layouts to drift. After modifying your font configuration map, you must delete the existing `.locs` files from your `books/` folder to force the application to accurately recompute your page layouts on the next launch.
+
+### 4.8 Troubleshooting and Technical Support
+
+If the application behaves unexpectedly, implement the following diagnostic steps to resolve the issue:
+
+#### 1. Verify Software Version
+
+Ensure the device is running the latest stable release. You can check the active version number via the **About the EPub-InkPlate application** menu entry. The latest official distributions are hosted on the [EPub-InkPlate Releases Repository](https://github.com/turgu1/EPub-InkPlate/releases). If your version is outdated, refer to the installation manual for upgrade instructions.
+
+#### 2. Analyze Serial Output Logs
+
+If the issue persists on the latest release, connect the device to a computer via a USB cable to monitor real-time diagnostic logs. The application streams runtime warnings and errors over the serial interface.
+
+Configure your serial terminal emulator using the following parameters:
+* **Baud Rate:** `115200 bps`
+* **Data Bits:** `8`
+* **Parity:** `None`
+* **Stop Bits:** `1` (`8N1`)
+* **Linux / macOS Port:** Typically maps to `/dev/ttyUSB0` (utilities like **minicom** are recommended)
+* **Windows Port:** Typically maps to a `COM` port (such as `COM3:`)
+
+#### 3. Submit a Bug Report
+
+If you cannot resolve the issue independently, submit a formal bug report on the [EPub-InkPlate Issues Tracker](https://github.com/turgu1/EPub-InkPlate/issues). Provide a detailed description of the unexpected behavior and attach your serial log outputs alongside any problematic EPub files to help accelerate debugging.
+
+### 4.9 System Limitations
+
+The EPub-InkPlate application operates within the constraints of the ESP32-WROVER microcontroller architecture. To protect system stability and prevent stack overflows or memory fragmentation, the following thresholds are strictly enforced:
+
+* **Maximum Library Capacity:** 200 books (required to maintain indexing speeds for the catalog layout).
+* **Maximum Individual File Size:** 25 MB per EPub document.
+* **Supported Font Formats:** Standard TrueType (`.ttf`) and OpenType (`.otf`) containers.
+* **System Font Memory Budget:** 300 KB maximum allocation for core application typefaces.
+* **Document Font Memory Budget:** 800 KB maximum allocation for active, book-embedded typefaces. 
+* **HTML Tag Nesting Depth:** 50 levels maximum (implemented as a safeguard against recursive stack-overflow crashes).
+* **Supported Image Ecosystem:** Baseline profiles of PNG, JPEG, GIF, SVG, and BMP.
+
+*Note on Typography and Images:* If an EPub's embedded fonts exceed the 800 KB allocation pool, disable embedded fonts within the configuration menu to fall back to the pre-installed system typefaces. Progressive JPEG compression profiles are completely unsupported; images must be converted to standard baseline layouts using optimization tools like Calibre or the bundled `adjust_size.sh` script prior to loading. SVG rendering remains basic and will be expanded in future versions.
+ 

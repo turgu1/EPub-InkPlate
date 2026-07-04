@@ -48,7 +48,7 @@ To streamline our GitHub release page, distributions for all supported devices a
 |6|e-Radionica|release-v3.0.0-BETA-inkplate_6.zip|
 |6PLUS|e-Radionica|release-v3.0.0-BETA-inkplate_6plus.zip|
 |10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
-|6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
+|6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6plusv2.zip|
 |6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
 |6 V2|Soldered|TBA (Bluetooth keypad)|
 |10 V2|Soldered|TBA (Bluetooth keypad)|
