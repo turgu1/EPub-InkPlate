@@ -282,6 +282,9 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
 
       case EventMgr::EventKind::NONE:
         break;
+
+      default:
+        break;
     }
 
     // *INDENT-ON*

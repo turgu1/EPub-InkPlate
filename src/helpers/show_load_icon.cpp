@@ -8,10 +8,11 @@
 #include "screen.hpp"
 
 auto showLoadIcon(const Dim &imageDim) -> void {
-  if ((imageDim.width <= 200) && (imageDim.height <= 200)) return;
+  if ((imageDim.width <= 200) && (imageDim.height <= 200)) { return; }
 
   FontPtr &iconFont = appFonts.getFont(0);
-  Glyph *glyph      = iconFont->getGlyph('N', 24);
+  Glyph *  glyph    = iconFont->getGlyph('W', 24);
+
   if ((glyph == nullptr) || (glyph->buffer == nullptr) || (glyph->dim.width == 0) ||
       (glyph->dim.height == 0)) {
     return;
@@ -30,15 +31,15 @@ auto showLoadIcon(const Dim &imageDim) -> void {
   int16_t clearX = rectX - 10;
   int16_t clearY = rectY - 10;
 
-  if (rectX < 0) rectX = 0;
-  if (rectY < 0) rectY = 0;
-  if (rectX + rectW > Screen::getWidth()) rectW = Screen::getWidth() - rectX;
-  if (rectY + rectH > Screen::getHeight()) rectH = Screen::getHeight() - rectY;
+  if (rectX < 0) { rectX = 0; }
+  if (rectY < 0) { rectY = 0; }
+  if (rectX + rectW > Screen::getWidth()) { rectW = Screen::getWidth() - rectX; }
+  if (rectY + rectH > Screen::getHeight()) { rectH = Screen::getHeight() - rectY; }
 
-  if (clearX < 0) clearX = 0;
-  if (clearY < 0) clearY = 0;
-  if (clearX + clearW > Screen::getWidth()) clearW = Screen::getWidth() - clearX;
-  if (clearY + clearH > Screen::getHeight()) clearH = Screen::getHeight() - clearY;
+  if (clearX < 0) { clearX = 0; }
+  if (clearY < 0) { clearY = 0; }
+  if (clearX + clearW > Screen::getWidth()) { clearW = Screen::getWidth() - clearX; }
+  if (clearY + clearH > Screen::getHeight()) { clearH = Screen::getHeight() - clearY; }
 
   screen.colorizeRegion(Dim(static_cast<uint16_t>(clearW), static_cast<uint16_t>(clearH)),
                         Pos(static_cast<uint16_t>(clearX), static_cast<uint16_t>(clearY)),

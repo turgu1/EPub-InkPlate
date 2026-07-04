@@ -21,6 +21,7 @@
   #include "freertos/task.h"
 
   #include "helpers/goto_deep_sleep.hpp"
+  #include "helpers/show_bt_state.hpp"
   #include "inkplate_platform.hpp"
   #include "models/page_locs.hpp"
   #include "viewers/msg_viewer.hpp"
@@ -29,16 +30,10 @@
 
   #include "ble_keypad.hpp"
 
-  static QueueHandle_t touchpadIsrQueue   = NULL;
-  static QueueHandle_t touchpadEventQueue = NULL;
+  static QueueHandle_t mainEventQueue = NULL;
 
   static QueueHandle_t bleKeypadEventQueue = NULL;
   auto EventMgr::getBLEKeypadEventQueue() -> QueueHandle_t { return bleKeypadEventQueue; }
-
-  static void IRAM_ATTR touchpadIsrHandler(void *arg) {
-    uint32_t gpioNum = (uint32_t)arg;
-    xQueueSendFromISR(touchpadIsrQueue, &gpioNum, NULL);
-  }
 
   uint8_t NEXT_PAD;
   uint8_t PREV_PAD;
@@ -60,7 +55,7 @@
       xQueueReceive(bleKeypadEventQueue, &event, portMAX_DELAY);
 
       if (event.kind != EventMgr::EventKind::NONE) {
-        xQueueSend(touchpadEventQueue, &event, 0);
+        xQueueSend(mainEventQueue, &event, 0);
       }
     }
   }
@@ -69,20 +64,34 @@
     // Nothing to do
   }
 
-  auto EventMgr::someEventWaiting() -> bool { return uxQueueMessagesWaiting(touchpadEventQueue) > 0; }
+  auto EventMgr::someEventWaiting() -> bool { return uxQueueMessagesWaiting(mainEventQueue) > 0; }
 
   auto EventMgr::getEvent() -> const EventMgr::Event & {
     static Event event;
+
     int8_t       timeOutDuration = 5;
     config.get(Config::Ident::TIMEOUT, &timeOutDuration);
-    if (!xQueueReceive(touchpadEventQueue, &event, pdMS_TO_TICKS(timeOutDuration * 60000))) {
-      LOG_D("Timed out on BLE event reading. Going now to Deep Sleep");
 
-      // Will not return
-      gotoDeepSleep(timeOutDuration);
+    while (true) {
+
+      if (!xQueueReceive(mainEventQueue, &event, pdMS_TO_TICKS(timeOutDuration * 60000))) {
+
+        if (!stayOn) {
+          LOG_D("Timed out on BLE event reading. Going now to Deep Sleep");
+
+          // Will not return
+          gotoDeepSleep(timeOutDuration);
+        }
+      }
+
+      if (event.kind == EventMgr::EventKind::PAIRING_ON) {
+        showBtState.show(true, true);
+      } else if (event.kind == EventMgr::EventKind::PAIRING_OFF) {
+        showBtState.show(false, true);
+      } else {
+        return event;
+      }
     }
-
-    return event;
   }
 
   auto EventMgr::loop() -> void {
@@ -108,11 +117,8 @@
 
     gpio_config(&io_conf);
 
-    // create a queue to handle gpio event from isr
-    touchpadIsrQueue   = xQueueCreate(10, sizeof(uint32_t));
-
     // create a queue to handle key event from task
-    touchpadEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
+    mainEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
 
     // create a queue to handle key event from BLE GAP callback
     bleKeypadEventQueue = xQueueCreate(10, sizeof(EventMgr::Event));
@@ -120,16 +126,14 @@
     if (!bleKeypad.setup(bleKeypadEventQueue)) {
       MsgViewer::show(
         MsgViewer::MsgType::ALERT, false, true, "Bluetooth Problem!",
-        "Failed to initialize Bluetooth. Bluetooth features will be unavailable. ");
+        "Failed to initialize BLE Keypad driver. ");
+      return false;
+    } else {
+      showBtState.setup();
     }
 
     TaskHandle_t xHandle = nullptr;
     xTaskCreate(getEventTask, "GetEvent", 2000, nullptr, 2 | portPRIVILEGE_BIT, &xHandle);
-
-    gpio_install_isr_service(0);   // install gpio isr service
-
-    gpio_isr_handler_add( // hook isr handler for specific gpio pin
-      GPIO_NUM_34, touchpadIsrHandler, (void *)GPIO_NUM_34);
 
     Wire::enter();
     io_expander_int.get_int_state();   // This is activating interrupts...

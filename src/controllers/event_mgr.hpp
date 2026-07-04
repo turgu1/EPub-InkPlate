@@ -78,15 +78,17 @@ class EventMgr {
       auto toUserCoord(uint16_t &x, uint16_t &y) -> void;
 
     #else
-      enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+      #if BLE_KEYPAD
+        auto getBLEKeypadEventQueue() -> QueueHandle_t;
+        enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT, PAIRING_ON, PAIRING_OFF };
+      #else
+        enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
+      #endif
 
       struct Event {
         EventKind kind;
       };
 
-      #if BLE_KEYPAD
-        auto getBLEKeypadEventQueue() -> QueueHandle_t;
-      #endif
     #endif
 
     EventMgr()  = default;

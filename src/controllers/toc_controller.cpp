@@ -150,6 +150,9 @@ auto TocController::leave(bool goingToDeepSleep) -> void {
 
                   case EventMgr::EventKind::NONE:
                     break;
+
+                  default:
+                    break;
     }
   }
 #endif

@@ -47,7 +47,13 @@
 
   static constexpr char const *TAG = "main";
 
-  void mainTask(void *params) {
+  static bool                  appInitialized = false;
+
+  auto appIsInitialized() -> bool {
+    return appInitialized;
+  }
+
+  auto mainTask(void *params) -> void {
 
     // esp_log_level_set("PageLocs", ESP_LOG_DEBUG);
 
@@ -174,6 +180,9 @@
         MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
 
         booksDirController.setup();
+
+        appInitialized = true;
+
         LOG_D("Initialization completed");
         appController.start();
       } else {

@@ -15,9 +15,18 @@
   #include "host/ble_gap.h"
   #include "services/gap/ble_svc_gap.h"
 
+  #include <functional>
+
   #define TRACING_BLE_KEYPAD 0
 
   class BLEKeypad {
+
+    public:
+      enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT, PAIRING_ON, PAIRING_OFF };
+
+      struct Event {
+        EventKind kind;
+      };
 
     private:
       static constexpr const char *TAG = "BLEKeypad";
@@ -25,10 +34,9 @@
       // Singleton pointer used by static C callbacks to route back into C++ object context
       static BLEKeypad *instance;
 
-      enum class EventKind { NONE, NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT, DBL_SELECT };
-      struct Event {
-        EventKind kind;
-      };
+
+
+      std::function<void(bool, bool)> blePairedHandler{};
 
       QueueHandle_t bleEventQueue{};
 
@@ -41,6 +49,7 @@
       // NimBLE tracks connection sessions using connection handles instead of interface objects
       uint16_t gl_conn_id{ BLE_HS_CONN_HANDLE_NONE };
       bool is_connecting{ false };
+      bool paired{ false };
 
       // Time tracking variable for the 500 ms debounce lock
       int64_t last_button_press_time{ 0 };
@@ -124,6 +133,18 @@
 
       auto setup(QueueHandle_t eventQueue) -> bool;
       auto startScanning() -> void;
+
+      inline auto isPaired() -> bool { return paired; }
+
+      inline auto setPairedHandler(std::function<void(bool, bool)> handler) {
+        blePairedHandler = std::move(handler);
+      }
+
+      inline auto updateState(bool updateScr) {
+        if (blePairedHandler) {
+          blePairedHandler(isPaired(), updateScr);
+        }
+      }
 
       static void blecent_on_reset(int reason);
       static void blecent_on_sync(void);

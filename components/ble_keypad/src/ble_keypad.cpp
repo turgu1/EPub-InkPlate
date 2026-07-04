@@ -283,6 +283,15 @@
                                          BLEKeypad::discoveryStub, nullptr);
         if (rc != 0) {
           LOG_E("GATT query initialization failure; rc={}", rc);
+        } else {
+          paired = true;
+
+          Event event = { EventKind::PAIRING_ON };
+          if (bleEventQueue) {
+            xQueueSend(bleEventQueue, &event, 0);
+          } else {
+            LOG_E("Event bleEventQueue not initialized. Unable to send event.");
+          }
         }
       } else {
         LOG_E("Failed to map GATT channel, error status: {}", event->connect.status);
@@ -292,12 +301,20 @@
       return 0;
     }
 
-
     // Replaces legacy Bluedroid: ESP_GATTC_DISCONNECT_EVT
     case BLE_GAP_EVENT_DISCONNECT: {
       LOG_W("BLE Device disconnected. Re-opening scanning state machine...");
       gl_conn_id = BLE_HS_CONN_HANDLE_NONE;
       is_connecting = false;
+      paired = false;
+
+      Event event = { EventKind::PAIRING_OFF };
+      if (bleEventQueue) {
+        xQueueSend(bleEventQueue, &event, 0);
+      } else {
+        LOG_E("Event bleEventQueue not initialized. Unable to send event.");
+      }
+
       startScanning();
       return 0;
     }

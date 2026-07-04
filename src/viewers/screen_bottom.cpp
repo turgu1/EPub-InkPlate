@@ -6,6 +6,11 @@
 #include "screen.hpp"
 #include "viewers/battery_viewer.hpp"
 
+#if BLE_KEYPAD
+  #include "ble_keypad.hpp"
+  #include "helpers/show_bt_state.hpp"
+#endif
+
 #include <ctime>
 #include <iomanip>
 
@@ -78,6 +83,11 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
                          Screen::getHeight() + font->getDescenderHeight(FONT_SIZE) - 2),
                      fmt);
     }
+
+    #if BLE_KEYPAD
+      showBtState.show(page, bleKeypad.isPaired());
+      // bleKeypad.updateState(false);
+    #endif
 
     BatteryViewer::show(page);
   #endif

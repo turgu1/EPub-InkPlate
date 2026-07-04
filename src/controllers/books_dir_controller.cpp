@@ -11,6 +11,7 @@
 #include "models/books_dir.hpp"
 #include "models/nvs_mgr.hpp"
 #include "viewers/book_viewer.hpp"
+#include "helpers/show_load_icon.hpp"
 
 #include <fstream>
 
@@ -225,6 +226,8 @@ auto BooksDirController::enter() -> void {
     booksDirViewer = MatrixBooksDirViewer::Make();
   }
 
+  showLoadIcon();
+
   booksDirViewer->setup();
   screen.forceFullUpdate();
 
@@ -391,6 +394,9 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
                     break;
 
                   case EventMgr::EventKind::NONE:
+                    break;
+
+                  default:
                     break;
     }
   }

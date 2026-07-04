@@ -242,6 +242,8 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
       case EventMgr::EventKind::DBL_SELECT:
         completed = true;
         break;
+      default:
+        break;
       }
     } else {
       bool wasInControl = (*currentField)->inEventControl();

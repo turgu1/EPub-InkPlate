@@ -329,6 +329,8 @@ auto MenuViewer::event(const EventMgr::Event &event) -> bool {
       return true;
     case EventMgr::EventKind::NONE:
       return false;
+    default:
+      break;
     }
 
     if (currentEntryIndex != oldIndex) {

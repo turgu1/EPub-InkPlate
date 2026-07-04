@@ -43,13 +43,19 @@
     dim.height = -font->getDescenderHeight(9);
 
     Pos pos;
-    // pos.x = 4;
     pos.y = Screen::getHeight() + font->getDescenderHeight(9) - 2;
 
     // page->clearRegion(dim, pos);
 
     fmt.fontIndex = ICONS_FONT_INDEX;
-    pos.x         = 10;
+
+    #if BLE_KEYPAD
+      // Leave space for the Bluetooth pairing state icon
+      pos.x         = 25;
+    #else
+      pos.x         = 10;
+    #endif
+
     page->putCharAt(icons[iconIndex], pos, fmt);
 
     // LOG_E("Battery icon index: {} ({})", iconIndex, icons[iconIndex]);
@@ -68,7 +74,7 @@
       }
 
       fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
-      pos.x         = 10 + (glyph != nullptr ? glyph->advance : 10) + 5;
+      pos.x         += (glyph != nullptr ? glyph->advance : 10) + 5;
       page->putStrAt(str, pos, fmt);
     }
   }
