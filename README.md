@@ -11,9 +11,9 @@ Here are pictures showcasing some of the new features available in V3.0.0:
 - 2 columns output (1, 2, 3, 4 columns available as options), and a picture of the Bluetooth Mini Keypad;
 - 4 columns output.
 
-<img src="doc/pictures/IMG_3151.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
+<img src="doc/pictures/IMG_3161.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
 
-<img src="doc/pictures/IMG_3152.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3150.jpeg" alt="picture" width="300"/>
+<img src="doc/pictures/IMG_3160.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3156.jpeg" alt="picture" width="300"/>
 
 (Updated 2026.06.29)
 

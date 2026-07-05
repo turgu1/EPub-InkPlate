@@ -10,8 +10,6 @@
 
 echo "User Guide..."
 pandoc USER\ GUIDE.md -o USER\ GUIDE.pdf "-fmarkdown-implicit_figures -o" --from=markdown -V geometry:margin=.8in -V fontsize:12pt --toc --highlight-style=espresso
-pandoc USER\ GUIDE\ for\ Extended\ Case.md -o USER\ GUIDE\ for\ Extended\ Case.pdf "-fmarkdown-implicit_figures -o" --from=markdown -V geometry:margin=.8in -V fontsize:12pt --toc --highlight-style=espresso
-pandoc USER\ GUIDE\ TOUCH.md -o USER\ GUIDE\ TOUCH.pdf "-fmarkdown-implicit_figures -o" --from=markdown -V geometry:margin=.8in -V fontsize:12pt --toc --highlight-style=espresso
 
 echo "Install ..."
 pandoc INSTALL.md -o INSTALL.pdf "-fmarkdown-implicit_figures -o" --from=markdown -V geometry:margin=.8in -V fontsize:12pt --highlight-style=espresso

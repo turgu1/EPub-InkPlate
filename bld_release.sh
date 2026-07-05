@@ -16,13 +16,15 @@ fi
 
 if [ "$3" = "" ]; then
   echo "Usage: $0 version_nbr type extended_case [build_only]"
-  echo "type = 6, 10, 6v2, 10v2, 6plus, 6plusv2, 6flick"
+  echo "type = 6, 10, 5v2, 6v2, 10v2, 6plus, 6plusv2, 6flick"
   echo "extended_case = 0, 1"
   echo "   0 = no extended case"
   echo "   1 = with extended case"
   echo "build_only (optional) = 1, 2"
   echo "   1 = clean build folder"
   echo "   2 = keep build folder"
+  echo " "
+  echo "Example: ./bld_release.sh 3.0.0 5v2 0"
   return 1
 fi
 
@@ -32,6 +34,7 @@ if [ "$3" = "0" ]; then
   case "$2" in
     "6") device="INKPLATE_6" ;;
     "10") device="INKPLATE_10" ;;
+    "5v2") device="INKPLATE_5_V2" ;;
     "6v2") device="INKPLATE_6_V2" ;;
     "10v2") device="INKPLATE_10_V2" ;;
     "6plus") device="INKPLATE_6PLUS" ;;
@@ -43,7 +46,7 @@ if [ "$3" = "0" ]; then
   esac
   echo "Device is ${device}"
 else
-  folder="release-v$1-inkplate_extended_case_$2"
+  folder="release-v$1-inkplate_$2_ext"
   environment="inkplate_$2_extended_case_release"
   case "$2" in
     "6") device="INKPLATE_6_EXTENDED" ;;
@@ -111,14 +114,7 @@ esac
 
 cp screen_saver/$geometry/* $folder/SDCard/artworks
 
-if [ "$3" = "0" ]; then
-  case "$2" in
-    "6plus"|"6plusv2"|"6flick")  cp "doc/USER GUIDE TOUCH.pdf" "$folder/USER GUIDE.pdf" ;;
-    *) cp "doc/USER GUIDE.pdf" "$folder" ;;
-  esac
-else
-  cp "doc/USER GUIDE for Extended Case.pdf" "$folder/USER GUIDE.pdf"
-fi
+cp "doc/USER GUIDE.pdf" "$folder"
 cp "doc/INSTALL.pdf" "$folder"
 
 cp adjust_size.sh "$folder"
