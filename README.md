@@ -50,6 +50,7 @@ To streamline our GitHub release page, distributions for all supported devices a
 |10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
 |6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6plusv2.zip|
 |6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
+|5 V2|Soldered|TBA (Bluetooth keypad)|
 |6 V2|Soldered|TBA (Bluetooth keypad)|
 |10 V2|Soldered|TBA (Bluetooth keypad)|
 
@@ -135,6 +136,7 @@ $ . ~/.espressif/v5.5.4/esp-idf/export.sh
 Supported device names:
 
 - INKPLATE_6
+- INKPLATE_5_V2
 - INKPLATE_6_V2
 - INKPLATE_6PLUS
 - INKPLATE_6PLUS_V2
@@ -176,7 +178,7 @@ This generates release files named `release-v<version>-inkplate_<XXX>.zip` in th
 The `bld_release.sh` script requires three parameters and one optional parameter:
 
 - **First parameter**: version number (e.g., `3.0.0-BETA` or `3.0.0`)
-- **Second parameter**: device type — `6`, `10`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
+- **Second parameter**: device type — `6`, `10`, `5V2`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
 - **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
 - **Fourth parameter** (optional, may not work anymore... need testing): optimization mode
   - If omitted: the build folder is cleared, and the script aborts if a release zip already exists
