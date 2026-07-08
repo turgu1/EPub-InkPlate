@@ -17,7 +17,7 @@
 
   #include <functional>
 
-  #define TRACING_BLE_KEYPAD 0
+  #define TRACING_BLE_KEYPAD 1
 
   class BLEKeypad {
 
@@ -31,16 +31,18 @@
     private:
       static constexpr const char *TAG = "BLEKeypad";
 
+      enum class KeypadType : int8_t {  NONE = 0, BEAUTY_R1 = 1, J06_PRO = 2 };
+
       // Singleton pointer used by static C callbacks to route back into C++ object context
       static BLEKeypad *instance;
-
-
 
       std::function<void(bool, bool)> blePairedHandler{};
 
       QueueHandle_t bleEventQueue{};
 
       uint8_t target_mac_address[6]{};
+      KeypadType keypadType{ KeypadType::NONE };
+      auto getKeypadType() -> KeypadType { return keypadType; }
 
       uint8_t macAddress[6];
       uint8_t keysMapping[6][5]{};
@@ -66,7 +68,8 @@
       auto hexToInt(const char c) const -> uint8_t;
       auto parseMacAddr(const std::string& macStr, uint8_t mac[6]) -> bool;
 
-      auto handleIncomingPacket(uint8_t *data, size_t length) -> void;
+      auto processJ06ProPacket(const uint8_t *data, size_t length) -> void;
+      auto processBeautyR1Packet(uint8_t *data, size_t length) -> void;
 
       // --- C++ NimBLE Class Instance Handlers ---
       auto handleGapEvent(struct ble_gap_event *event) -> int;
@@ -110,7 +113,6 @@
         return 0;
       }
 
-
       static int onNotifyStub(uint16_t conn_handle, uint16_t attr_handle, struct os_mbuf *om, void *arg) {
         if (instance && om) {
           // Safely flatten the NimBLE segmented mbuf memory chain down into a contiguous buffer
@@ -119,7 +121,17 @@
             uint8_t *data = (uint8_t *)malloc(len);
             if (data) {
               os_mbuf_copydata(om, 0, len, data);
-              instance->handleIncomingPacket(data, len);
+              switch (instance->getKeypadType()) {
+              case KeypadType::BEAUTY_R1:
+                instance->processBeautyR1Packet(data, len);
+                break;
+              case KeypadType::J06_PRO:
+                instance->processJ06ProPacket(data, len);
+                break;
+              default:
+                LOG_W("Unknown BLE Keypad Type!");
+                break;
+              }
               free(data);
             }
           }

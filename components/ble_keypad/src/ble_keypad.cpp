@@ -11,6 +11,10 @@
   #include "nimble/nimble_port_freertos.h"
   #include "host/ble_uuid.h"
 
+  #if TRACING_BLE_KEYPAD
+    #include <iostream>
+  #endif
+
   BLEKeypad *BLEKeypad::instance = nullptr;
 
   auto BLEKeypad::hexToInt(const char c) const -> uint8_t {
@@ -50,6 +54,161 @@
     return true;
   }
 
+  void BLEKeypad::processJ06ProPacket(const uint8_t* data, size_t length) {
+    static bool    is4byteButtonHeld = false;
+    static uint8_t last3byteState = 0x00;
+
+    if (data == nullptr) {
+      return;
+    }
+
+    #if TRACING_BLE_KEYPAD
+      std::cout << "Packet: ";
+      for (size_t i = 0; i < length; i++) {
+        std::cout << std::format("{:02x} ", data[i]);
+      }
+      std::cout << std::endl;
+    #endif
+
+    Event event{ EventKind::NONE };
+
+    // ==========================================
+    // CASE 1: 3-BYTE PACKET HANDLING (Up / Down)
+    // ==========================================
+    if (length == 3) {
+      uint8_t currentAction = data[0];
+
+      if (currentAction == 0x00) {
+        last3byteState = 0x00;     // Reset state on release
+        return;
+      }
+
+      // Prevent continuous hold repetitions from hitting the display loop
+      if (currentAction == last3byteState) {
+        return;
+      }
+
+      last3byteState = currentAction;
+
+      if (currentAction == 0x10) { event.kind = EventKind::DBL_PREV; }
+      else if (currentAction == 0x40) { event.kind = EventKind::DBL_NEXT; }
+    }
+
+    // ====================================================================
+    // CASE 2: 4-BYTE PACKET HANDLING (Right, Left, Select, Home)
+    // ====================================================================
+    else if (length == 4) {
+      uint8_t stateByte = data[0];
+
+      // --- Handle Release Edge ---
+      if (stateByte == 0x08) {
+        is4byteButtonHeld = false;
+
+        // Differentiate Left vs Right strictly by parsing the unique release footprint
+        if (data[1] == 0x00) {
+          event.kind = EventKind::NEXT;       // Right Key released
+        } else if (data[1] == 0xE7) {
+          event.kind = EventKind::PREV;       // Left Key released
+        }
+      }
+      // --- Handle Initial Press Edge ---
+      else if (stateByte == 0x0F) {
+        if (is4byteButtonHeld) {
+          return;       // Safely ignore the continuous rolling code stream (Bytes 1-3)
+        }
+        is4byteButtonHeld = true;
+
+        // Select and Home have unique, static layout identifiers in their payloads
+        if (data[2] == 0x41 && data[3] == 0x1F) {
+          event.kind = EventKind::SELECT;       // Select Key pressed
+        } else if (data[2] == 0x02 && data[3] == 0x32) {
+          event.kind = EventKind::DBL_SELECT;           // Home Key pressed
+        }
+        // Note: Left and Right are skipped here because we process them on the clean
+        // Release Edge (0x08) where their data streams finally differentiate.
+      }
+    }
+
+    if (event.kind != EventKind::NONE) {
+      if (bleEventQueue) {
+        xQueueSend(bleEventQueue, &event, 0);
+      } else {
+        LOG_E("Event bleEventQueue not initialized. Unable to send event.");
+      }
+    }
+  }
+
+  #if 0
+    auto BLEKeypad::processJ06ProPacket(const uint8_t* data, size_t length) -> void {
+
+      enum J06ProKeyCodes : uint8_t {
+        J06_PRO_KEY_NONE  = 0x00,
+        J06_PRO_KEY_A     = 0x04,// J06 mapping varies; standard arrow keys/letters are typical
+        J06_PRO_KEY_RIGHT = 0x4F, // Often mapped to next page
+        J06_PRO_KEY_LEFT  = 0x50,// Often mapped to previous page
+        J06_PRO_KEY_DOWN  = 0x51,
+        J06_PRO_KEY_UP    = 0x52,
+        J06_PRO_KEY_ENTER = 0x28
+      };
+
+      #if TRACING_BLE_KEYPAD
+        std::cout << "Packet: ";
+        for (size_t i = 0; i < length; i++) {
+          std::cout << std::format("{:02x} ", data[i]);
+        }
+        std::cout << std::endl;
+      #endif
+
+      if (data == nullptr || length < 3) {
+        return;
+      }
+
+      static int8_t lastPressedKey{ 0 };
+      Event         event{ EventKind::NONE };
+
+      int8_t        currentKey = data[2]; // Capture the active key
+
+      // FIX STEP 1: Explicitly catch the release packet
+      if (currentKey == 0x00) {
+        lastPressedKey = 0x00; // Reset state so the NEXT press of the same key works
+        return;
+      }
+
+      // FIX STEP 2: Now this safely blocks only *unintended holds*, not rapid separate presses
+      if (currentKey == lastPressedKey) {
+        return;
+      }
+
+      // Lock in the key as active until the 0x00 packet releases it
+      lastPressedKey = currentKey;
+
+      switch (currentKey) {
+      case J06_PRO_KEY_RIGHT:
+        event.kind = EventKind::NEXT;
+        break;
+      case J06_PRO_KEY_DOWN:
+        event.kind = EventKind::DBL_NEXT;
+        break;
+      case J06_PRO_KEY_LEFT:
+        event.kind = EventKind::PREV;
+        break;
+      case J06_PRO_KEY_UP:
+        event.kind = EventKind::DBL_PREV;;
+        break;
+      default:
+        return;
+      }
+
+      if (event.kind != EventKind::NONE) {
+        if (bleEventQueue) {
+          xQueueSend(bleEventQueue, &event, 0);
+        } else {
+          LOG_E("Event bleEventQueue not initialized. Unable to send event.");
+        }
+      }
+    }
+  #endif
+
   // The handleIncomingPacket is taylored to the specific packet structures emitted by the TikTok Remote
   // Control, which is the primary target device for this BLE keypad integration. It decodes the raw
   // HID report data into actionable events while managing internal state to handle the unique burst
@@ -63,7 +222,7 @@
   #define DO while (1)
   #define END_DO break
 
-  auto BLEKeypad::handleIncomingPacket(uint8_t *data, size_t length) -> void {
+  auto BLEKeypad::processBeautyR1Packet(uint8_t *data, size_t length) -> void {
     if (length == 0 || data == nullptr) { return; }
 
     auto reset_state = [&]() {
@@ -74,7 +233,7 @@
     Event event = { EventKind::NONE };
 
     #if TRACING_BLE_KEYPAD
-      LOG_I("---- [handleIncomingPacket] ----");
+      LOG_I("---- [processBeautyR1Packet] ----");
       LOG_I("Received BLE Packet. Length: {}", (int)length);
       for (size_t i = 0; i < length; i++) {
         LOG_I("  {}: 0x{:02x} ", (int)i, data[i]);
@@ -223,16 +382,25 @@
       if (!match) {
         std::string_view data{ reinterpret_cast<const char *>(event->disc.data),
                                event->disc.length_data };
-        match = data.contains("Beauty-R1");
+
+        if (data.contains("Beauty-R1")) {
+          match = true;
+          keypadType = KeypadType::BEAUTY_R1;
+          LOG_I("Found Beauty-R1!");
+        } else if (data.contains("J06 Pro")) {
+          match = true;
+          keypadType = KeypadType::J06_PRO;
+          LOG_I("Found J06 Pro!");
+        }
 
         if (match) {
-          LOG_I("Found Beauty-R1!");
 
           const uint8_t * d = event->disc.addr.val;
           HimemString     mac_addr = std::format("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
                                                  d[5], d[4], d[3], d[2], d[1], d[0]).c_str();
           LOG_I("MAC Address: {}", mac_addr);
-          config.put(Config::Ident::BT_KEYPAD_MAC, mac_addr);
+          config.put(Config::Ident::BT_KEYPAD_MAC,  mac_addr);
+          config.put(Config::Ident::BT_KEYPAD_TYPE, static_cast<int8_t>(keypadType));
           config.save();
         }
       }
@@ -391,7 +559,12 @@
 
     // Retrieved the BLE mac address saved in the config file
     HimemString mac_addr;
-    config.get(Config::Ident::BT_KEYPAD_MAC, mac_addr);
+    int8_t      kType = 0;
+
+    config.get(Config::Ident::BT_KEYPAD_MAC,  mac_addr);
+    config.get(Config::Ident::BT_KEYPAD_TYPE, &kType);
+    keypadType = static_cast<KeypadType>(kType);
+
     if (mac_addr.length() == 17) {
       if (parseMacAddr(mac_addr.c_str(), target_mac_address)) {
         LOG_I("BLE Keypad MAC address: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",

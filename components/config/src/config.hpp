@@ -17,20 +17,20 @@ enum class ConfigIdent {
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER,
   #endif
-  FONTS_DB, BATTERY_TRIM, COLUMN_COUNT, BT_KEYPAD_MAC
+  FONTS_DB, BATTERY_TRIM, COLUMN_COUNT, BT_KEYPAD_MAC, BT_KEYPAD_TYPE
 };
 
 #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 35>;
+    using Config = ConfigBase<ConfigIdent, 36>;
   #else
-    using Config = ConfigBase<ConfigIdent, 32>;
+    using Config = ConfigBase<ConfigIdent, 33>;
   #endif
 #else
   #if DATE_TIME_RTC
-    using Config = ConfigBase<ConfigIdent, 28>;
+    using Config = ConfigBase<ConfigIdent, 29>;
   #else
-    using Config = ConfigBase<ConfigIdent, 25>;
+    using Config = ConfigBase<ConfigIdent, 26>;
   #endif
 #endif
 
@@ -63,6 +63,7 @@ enum class ConfigIdent {
   static double            batteryTrim;
   static int8_t            lineHeight;
   static int8_t            columnCount;
+  static int8_t            btKeypadType;
 
   #if DATE_TIME_RTC
     static int8_t showRtc;
@@ -95,6 +96,7 @@ enum class ConfigIdent {
   static const double  defaultBatteryTrim     = 4.086 / 4.26;
   static const int8_t  defaultLineHeight      =  1; // 0 = TIGHT, 1 = MEDIUM, 2 = LARGE
   static const int8_t  defaultColumnCount     =  1; // 1 to 4
+  static const int8_t  defaultBtKeypadType  =  0; // 0 = NONE, 1 = Beauty_R1, 2 = J06_PRO
 
   template <>
   Config::CfgType Config::cfg = { {
@@ -140,6 +142,7 @@ enum class ConfigIdent {
     { Config::Ident::LINE_HEIGHT,        Config::EntryType::BYTE,     "line_height",        &lineHeight,      &defaultLineHeight,       0 },
     { Config::Ident::COLUMN_COUNT,       Config::EntryType::BYTE,     "column_count",       &columnCount,     &defaultColumnCount,      0 },
     { Config::Ident::BT_KEYPAD_MAC,      Config::EntryType::STRING,   "bt_keypad_mac",      &btKeypadMac,     "00:00:00:00:00:00",     20 },
+    { Config::Ident::BT_KEYPAD_TYPE,     Config::EntryType::BYTE,     "bt_keypad_type",     &btKeypadType,    &defaultBtKeypadType,     0 },
   } };
 
 
