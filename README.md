@@ -2,6 +2,13 @@
 
 ## Last news
 
+(updated 2026.07.08)
+
+Found two issues with the **Inkplate 10**. The first one is related to the e-Radionica version only, the second one for all versions of the Inkplate 10:
+
+- For the e-Radionica Inkplate 10 device: A mistake in the `EInk10::update(FrameBuffer1Bit)`  generates bad screen updates. The BETA version of the application were not usable for both the Inkplate_10 and Inkplate_extended_case_10. A new corrected version has been made to replace the V3.0.0-BETA release for both devices.
+- For all Inkplate 10 devices (e-Radionica and Soldered versions): In 3Bits mode, there is a need to adjust the waveform used for grayscale rendering as different eInk pannels are used with these devices and require waveform adjustments. I'm modifying the Main Parameter Form to permit the selection of a waveform lookup table from a pre-defined list. The releases will be updated once the modification completed.
+  
 (Updated 2026.07.02)
 
 Here are pictures showcasing some of the new features available in V3.0.0:
