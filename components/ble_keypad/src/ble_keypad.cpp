@@ -54,6 +54,57 @@
     return true;
   }
 
+  // The processJ06ProPacket is taylored to the specific packet structures emitted by the TikTok Remote
+  // Control (named "J06 Pro"), which is one of the two target device for this BLE keypad integration.
+  // It decodes the raw HID report data into actionable events while managing internal state to handle
+  // the unique burst patterns of the device's input stream.
+  //
+  // Here are all the packets received for all available keys:
+  //
+  // Right Key:
+  // Packet: 0f bc 72 12
+  // Packet: 0f 8a 12 13
+  // Packet: 0f 58 72 12
+  // Packet: 0f 26 12 13
+  // Packet: 0f c2 11 13
+  // Packet: 0f 90 71 12
+  // Packet: 0f 5e 11 13
+  // Packet: 0f c8 70 12
+  // Packet: 08 00 10 13
+  //
+  // Left Key:
+  // Packet: 0f c8 70 12
+  // Packet: 0f fa 10 13
+  // Packet: 0f 2c 71 12
+  // Packet: 0f 5e 11 13
+  // Packet: 0f 90 71 12
+  // Packet: 0f c2 11 13
+  // Packet: 0f f4 71 12
+  // Packet: 0f 26 12 13
+  // Packet: 0f bc 72 12
+  // Packet: 08 e7 13 13
+  //
+  // Up Key:
+  // Packet: 10 00 00
+  // Packet: 00 00 00
+  //
+  // Down key:
+  // Packet: 40 00 00
+  // Packet: 00 00 00
+  //
+  // Select key:
+  // Packet: 0f f4 41 1f
+  // Packet: 08 f4 41 1f
+  //
+  // Home key:
+  // Packet: 0f 03 02 32
+  // Packet: 08 03 02 32
+  //
+  // The remote control can be purchased through AliExpress:
+  //
+  // https://www.aliexpress.com/item/1005011855666831.html
+  //
+
   void BLEKeypad::processJ06ProPacket(const uint8_t* data, size_t length) {
     static bool    is4byteButtonHeld = false;
     static uint8_t last3byteState = 0x00;
@@ -138,81 +189,69 @@
     }
   }
 
-  #if 0
-    auto BLEKeypad::processJ06ProPacket(const uint8_t* data, size_t length) -> void {
-
-      enum J06ProKeyCodes : uint8_t {
-        J06_PRO_KEY_NONE  = 0x00,
-        J06_PRO_KEY_A     = 0x04,// J06 mapping varies; standard arrow keys/letters are typical
-        J06_PRO_KEY_RIGHT = 0x4F, // Often mapped to next page
-        J06_PRO_KEY_LEFT  = 0x50,// Often mapped to previous page
-        J06_PRO_KEY_DOWN  = 0x51,
-        J06_PRO_KEY_UP    = 0x52,
-        J06_PRO_KEY_ENTER = 0x28
-      };
-
-      #if TRACING_BLE_KEYPAD
-        std::cout << "Packet: ";
-        for (size_t i = 0; i < length; i++) {
-          std::cout << std::format("{:02x} ", data[i]);
-        }
-        std::cout << std::endl;
-      #endif
-
-      if (data == nullptr || length < 3) {
-        return;
-      }
-
-      static int8_t lastPressedKey{ 0 };
-      Event         event{ EventKind::NONE };
-
-      int8_t        currentKey = data[2]; // Capture the active key
-
-      // FIX STEP 1: Explicitly catch the release packet
-      if (currentKey == 0x00) {
-        lastPressedKey = 0x00; // Reset state so the NEXT press of the same key works
-        return;
-      }
-
-      // FIX STEP 2: Now this safely blocks only *unintended holds*, not rapid separate presses
-      if (currentKey == lastPressedKey) {
-        return;
-      }
-
-      // Lock in the key as active until the 0x00 packet releases it
-      lastPressedKey = currentKey;
-
-      switch (currentKey) {
-      case J06_PRO_KEY_RIGHT:
-        event.kind = EventKind::NEXT;
-        break;
-      case J06_PRO_KEY_DOWN:
-        event.kind = EventKind::DBL_NEXT;
-        break;
-      case J06_PRO_KEY_LEFT:
-        event.kind = EventKind::PREV;
-        break;
-      case J06_PRO_KEY_UP:
-        event.kind = EventKind::DBL_PREV;;
-        break;
-      default:
-        return;
-      }
-
-      if (event.kind != EventKind::NONE) {
-        if (bleEventQueue) {
-          xQueueSend(bleEventQueue, &event, 0);
-        } else {
-          LOG_E("Event bleEventQueue not initialized. Unable to send event.");
-        }
-      }
-    }
-  #endif
-
-  // The handleIncomingPacket is taylored to the specific packet structures emitted by the TikTok Remote
-  // Control, which is the primary target device for this BLE keypad integration. It decodes the raw
-  // HID report data into actionable events while managing internal state to handle the unique burst
-  // patterns of the device's input stream.
+  // The processBeautyR1Packet is taylored to the specific packet structures emitted by the TikTok Remote
+  // Control (named "BeautyR1"), which is one of the two target device for this BLE keypad integration.
+  // It decodes the raw HID report data into actionable events while managing internal state to handle
+  // the unique burst patterns of the device's input stream.
+  //
+  // Here are all the packets received for all available keys:
+  //
+  // Right Key:
+  // Packet: 07 50 05 50 06
+  // Packet: 07 28 05 50 06
+  // Packet: 07 60 04 50 06
+  // Packet: 07 98 03 50 06
+  // Packet: 07 d0 02 50 06
+  // Packet: 07 08 02 50 06
+  // Packet: 07 40 01 50 06
+  // Packet: 07 78 00 50 06
+  // Packet: 00 78 00 50 06
+  //
+  // Left Key:
+  // Packet: 07 3a 01 50 06
+  // Packet: 07 40 01 50 06
+  // Packet: 07 08 02 50 06
+  // Packet: 07 d0 02 50 06
+  // Packet: 07 98 03 50 06
+  // Packet: 07 60 04 50 06
+  // Packet: 07 28 05 50 06
+  // Packet: 07 50 05 50 06
+  // Packet: 07 18 06 50 06
+  // Packet: 07 e0 06 50 06
+  // Packet: 00 e0 06 50 06
+  //
+  // Up Key:
+  // Packet: 07 f0 04 f0 02
+  // Packet: 07 f0 04 1c 04
+  // Packet: 07 f0 04 48 05
+  // Packet: 07 f0 04 74 06
+  // Packet: 07 f0 04 a0 07
+  // Packet: 07 f0 04 cc 08
+  // Packet: 07 f0 04 f8 09
+  // Packet: 62 f0 04 24 0b
+  // Packet: 00 d0 f9 24 0b
+  //
+  // Down key:
+  // Packet: 62 f0 04 24 0b
+  // Packet: 07 f0 04 f8 09
+  // Packet: 07 f0 04 cc 08
+  // Packet: 07 f0 04 a0 07
+  // Packet: 07 f0 04 74 06
+  // Packet: 07 f0 04 48 05
+  // Packet: 07 f0 04 1c 04
+  // Packet: 07 f0 04 f0 02
+  // Packet: 00 d0 f9 24 0b
+  //
+  // Select key:
+  // Packet: 07 f0 04 74 06
+  // Packet: 04 f4 03 cc 06
+  //
+  // Home key:
+  // Packet: 06 00 00 00 00
+  // Packet: 07 00 00 00 00
+  // Packet: 02 00
+  // Packet: 00 00
+  // Packet: 06 00 00 00 00
   //
   // The remote control can be purchased through AliExpress:
   //
@@ -233,11 +272,11 @@
     Event event = { EventKind::NONE };
 
     #if TRACING_BLE_KEYPAD
-      LOG_I("---- [processBeautyR1Packet] ----");
-      LOG_I("Received BLE Packet. Length: {}", (int)length);
+      std::cout << "Packet: ";
       for (size_t i = 0; i < length; i++) {
-        LOG_I("  {}: 0x{:02x} ", (int)i, data[i]);
+        std::cout << std::format("{:02x} ", data[i]);
       }
+      std::cout << std::endl;
     #endif
 
     DO {
@@ -337,21 +376,21 @@
 
   // --- NIMBLE SCAN ENGINE MANAGER ---
   auto BLEKeypad::startScanning() -> void {
-    if (is_connecting) { return; }
+    if (isConnecting) { return; }
 
-    struct ble_gap_disc_params disc_params;
-    memset(&disc_params, 0, sizeof(disc_params));
+    struct ble_gap_disc_params discParams;
+    memset(&discParams, 0, sizeof(discParams));
 
-    disc_params.filter_policy     = BLE_HCI_SCAN_FILT_NO_WL;
-    disc_params.passive           = 0; // Active scanning captures scan responses
-    disc_params.itvl              = 0x0050;
-    disc_params.window            = 0x0030;
+    discParams.filter_policy     = BLE_HCI_SCAN_FILT_NO_WL;
+    discParams.passive           = 0; // Active scanning captures scan responses
+    discParams.itvl              = 0x0050;
+    discParams.window            = 0x0030;
 
     // FIX 1: Turn on duplicate filtering to stop catch every packet burst
-    disc_params.filter_duplicates = 1;
+    discParams.filter_duplicates = 1;
 
     // FIX 2: Change duration argument from 0 to BLE_HS_FOREVER for continuous scanning
-    int rc = ble_gap_disc(BLE_OWN_ADDR_PUBLIC, BLE_HS_FOREVER, &disc_params,
+    int rc = ble_gap_disc(BLE_OWN_ADDR_PUBLIC, BLE_HS_FOREVER, &discParams,
                           BLEKeypad::gapEventStub, nullptr);
     if (rc != 0) {
       LOG_E("Error initiating NimBLE discovery scan; rc={}", rc);
@@ -367,13 +406,16 @@
     switch (event->type) {
 
     case BLE_GAP_EVENT_DISC: {
-      // if (event->disc.length_data > 0) {
-      //   LOG_I("Data Info: {:<{}}", (char *)(event->disc.data), event->disc.length_data);
-      // }
+      #if TRACING_BLE_KEYPAD
+        if (event->disc.length_data > 0) {
+          LOG_I("BLE Device Info: {:<{}}", (char *)(event->disc.data), event->disc.length_data);
+        }
+      #endif
+
       bool match = true;
 
       for (int i = 0; i < 6; i++) {
-        if (event->disc.addr.val[5 - i] != target_mac_address[i]) {
+        if (event->disc.addr.val[5 - i] != targetMacAddress[i]) {
           match = false;
           break;
         }
@@ -391,42 +433,44 @@
           match = true;
           keypadType = KeypadType::J06_PRO;
           LOG_I("Found J06 Pro!");
+        } else {
+          match = false;
         }
 
         if (match) {
 
           const uint8_t * d = event->disc.addr.val;
-          HimemString     mac_addr = std::format("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-                                                 d[5], d[4], d[3], d[2], d[1], d[0]).c_str();
-          LOG_I("MAC Address: {}", mac_addr);
-          config.put(Config::Ident::BT_KEYPAD_MAC,  mac_addr);
+          HimemString     macAddr = std::format("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+                                                d[5], d[4], d[3], d[2], d[1], d[0]).c_str();
+          LOG_I("MAC Address: {}", macAddr);
+          config.put(Config::Ident::BT_KEYPAD_MAC,  macAddr);
           config.put(Config::Ident::BT_KEYPAD_TYPE, static_cast<int8_t>(keypadType));
           config.save();
         }
       }
 
-      if (match && !is_connecting) {
-        is_connecting = true;
+      if (match && !isConnecting) {
+        isConnecting = true;
         LOG_W("TARGET MAC MATCHED! Terminating scan and establishing connection...");
 
         ble_gap_disc_cancel();
 
         // FIX 1: Provide explicit connection configuration parameters
-        struct ble_gap_conn_params conn_params;
-        memset(&conn_params, 0, sizeof(conn_params));
-        conn_params.scan_itvl = 0x0010;
-        conn_params.scan_window = 0x0010;
-        conn_params.itvl_min = 24;            // 30ms interval minimum
-        conn_params.itvl_max = 40;            // 50ms interval maximum
-        conn_params.latency = 0;
-        conn_params.supervision_timeout = 512;   // Give it 5.12 seconds buffer to prevent dropouts
+        struct ble_gap_conn_params connParams;
+        memset(&connParams, 0, sizeof(connParams));
+        connParams.scan_itvl = 0x0010;
+        connParams.scan_window = 0x0010;
+        connParams.itvl_min = 24;            // 30ms interval minimum
+        connParams.itvl_max = 40;            // 50ms interval maximum
+        connParams.latency = 0;
+        connParams.supervision_timeout = 512;   // Give it 5.12 seconds buffer to prevent dropouts
 
-        // FIX 2: Pass &conn_params instead of nullptr as the 4th argument
+        // FIX 2: Pass &connParams instead of nullptr as the 4th argument
         rc = ble_gap_connect(BLE_OWN_ADDR_PUBLIC, &event->disc.addr, 30000,
-                             &conn_params, BLEKeypad::gapEventStub, nullptr);
+                             &connParams, BLEKeypad::gapEventStub, nullptr);
         if (rc != 0) {
           LOG_E("Failed to initiate device pairing connection; rc={}", rc);
-          is_connecting = false;
+          isConnecting = false;
           startScanning();
         }
       }
@@ -438,16 +482,16 @@
     case BLE_GAP_EVENT_CONNECT: {
       if (event->connect.status == 0) {
         LOG_D("GATT Channel Active! Pulling internal service maps...");
-        gl_conn_id = event->connect.conn_handle;
-        is_connecting = false;
+        glConnId = event->connect.conn_handle;
+        isConnecting = false;
 
-        ble_uuid16_t hid_uuid = {
+        ble_uuid16_t hidUuid = {
           .u = { .type = BLE_UUID_TYPE_16 },
           .value = HID_REPORT_CHAR_UUID
         };
 
         // Ground-level discovery pass passing discoveryStub to register the endpoints
-        rc = ble_gattc_disc_chrs_by_uuid(gl_conn_id, 1, 0xffff, &hid_uuid.u,
+        rc = ble_gattc_disc_chrs_by_uuid(glConnId, 1, 0xffff, &hidUuid.u,
                                          BLEKeypad::discoveryStub, nullptr);
         if (rc != 0) {
           LOG_E("GATT query initialization failure; rc={}", rc);
@@ -463,7 +507,7 @@
         }
       } else {
         LOG_E("Failed to map GATT channel, error status: {}", event->connect.status);
-        is_connecting = false;
+        isConnecting = false;
         startScanning();
       }
       return 0;
@@ -472,8 +516,8 @@
     // Replaces legacy Bluedroid: ESP_GATTC_DISCONNECT_EVT
     case BLE_GAP_EVENT_DISCONNECT: {
       LOG_W("BLE Device disconnected. Re-opening scanning state machine...");
-      gl_conn_id = BLE_HS_CONN_HANDLE_NONE;
-      is_connecting = false;
+      glConnId = BLE_HS_CONN_HANDLE_NONE;
+      isConnecting = false;
       paired = false;
 
       Event event = { EventKind::PAIRING_OFF };
@@ -489,7 +533,7 @@
 
     case BLE_GAP_EVENT_NOTIFY_RX: {
       // Only process notifications coming from our connected remote device
-      if (event->notify_rx.conn_handle == gl_conn_id) {
+      if (event->notify_rx.conn_handle == glConnId) {
 
         #if TRACING_BLE_KEYPAD
           LOG_D("Notification received on attribute handle {}", event->notify_rx.attr_handle);
@@ -510,7 +554,7 @@
       } else {
         LOG_E("Security encryption negotiation failed; status={}", event->enc_change.status);
         // If security fails, force a connection reset to clear bad state
-        ble_gap_terminate(gl_conn_id, BLE_ERR_REM_USER_CONN_TERM);
+        ble_gap_terminate(glConnId, BLE_ERR_REM_USER_CONN_TERM);
       }
       return 0;
     }
@@ -526,13 +570,13 @@
     if (chr->properties & BLE_GATT_CHR_PROP_NOTIFY) {
       LOG_W("Found valid HID Notification Handle at: {}. Activating stream...", chr->val_handle);
 
-      uint16_t cccd_handle = chr->val_handle + 1;
+      uint16_t cccdHandle = chr->val_handle + 1;
       uint8_t  value[] = { 0x01, 0x00 };
 
       LOG_D("Writing CCCD descriptor to subscribe to notifications...");
 
       // FIX: Use subscriptionStub here to handle the write confirmation event safely
-      int rc = ble_gattc_write_flat(gl_conn_id, cccd_handle, value, sizeof(value),
+      int rc = ble_gattc_write_flat(glConnId, cccdHandle, value, sizeof(value),
                                     BLEKeypad::subscriptionStub, nullptr);
       if (rc != 0) {
         LOG_E("Error trying to update peripheral notification permissions; rc={}", rc);
@@ -541,9 +585,9 @@
   }
 
   // --- NOTIFICATION REGISTRATION TRACKER ---
-  auto BLEKeypad::handleSubscription(int status, uint16_t attr_handle) -> void {
+  auto BLEKeypad::handleSubscription(int status, uint16_t attrHandle) -> void {
     if (status == 0) {
-      LOG_D("CCCD descriptor written successfully. Handle {} subscribed!", attr_handle);
+      LOG_D("CCCD descriptor written successfully. Handle {} subscribed!", attrHandle);
 
       // REMOVED: The recursive ble_gattc_disc_chrs_by_uuid call.
       // The stream is already live. Doing nothing here breaks the infinite query loop!
@@ -558,22 +602,22 @@
     bleEventQueue = eventQueue;
 
     // Retrieved the BLE mac address saved in the config file
-    HimemString mac_addr;
+    HimemString macAddr;
     int8_t      kType = 0;
 
-    config.get(Config::Ident::BT_KEYPAD_MAC,  mac_addr);
+    config.get(Config::Ident::BT_KEYPAD_MAC,  macAddr);
     config.get(Config::Ident::BT_KEYPAD_TYPE, &kType);
     keypadType = static_cast<KeypadType>(kType);
 
-    if (mac_addr.length() == 17) {
-      if (parseMacAddr(mac_addr.c_str(), target_mac_address)) {
+    if (macAddr.length() == 17) {
+      if (parseMacAddr(macAddr.c_str(), targetMacAddress)) {
         LOG_I("BLE Keypad MAC address: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-              target_mac_address[0],
-              target_mac_address[1],
-              target_mac_address[2],
-              target_mac_address[3],
-              target_mac_address[4],
-              target_mac_address[5]);
+              targetMacAddress[0],
+              targetMacAddress[1],
+              targetMacAddress[2],
+              targetMacAddress[3],
+              targetMacAddress[4],
+              targetMacAddress[5]);
       }
     }
 
@@ -583,30 +627,30 @@
     }
 
     // 3. Security parameters context mapping (Aligns with original pairing parameters)
-    ble_hs_cfg.reset_cb   = blecent_on_reset;
-    ble_hs_cfg.sync_cb    = blecent_on_sync;
+    ble_hs_cfg.reset_cb   = blecentOnReset;
+    ble_hs_cfg.sync_cb    = blecentOnSync;
     ble_hs_cfg.sm_io_cap  = BLE_SM_IO_CAP_NO_IO; // Replaces legacy ESP_IO_CAP_NONE
     ble_hs_cfg.sm_bonding = 1;                   // Replaces legacy ESP_LE_AUTH_BOND
 
     // 4. Create the background tracking thread daemon task execution context
-    xTaskCreate(blecent_host_task, "blecent_host_task", 4096, nullptr, 5, nullptr);
+    xTaskCreate(blecentHostTask, "blecentHostTask", 4096, nullptr, 5, nullptr);
 
     return true;
   }
 
   // --- GLOBAL SYSTEM CONTEXT LINKAGE WRAPPERS ---
-  void BLEKeypad::blecent_on_reset(int reason) {
+  void BLEKeypad::blecentOnReset(int reason) {
     ESP_LOGE("BLEKeypad", "Resetting NimBLE stack host context; reason={}", reason);
   }
 
-  void BLEKeypad::blecent_on_sync(void) {
+  void BLEKeypad::blecentOnSync(void) {
     ESP_LOGI("BLEKeypad", "GATT Client registered. NimBLE host and controller sync achieved.");
     if (instance) {
       instance->startScanning(); // Perfectly accessible now!
     }
   }
 
-  void BLEKeypad::blecent_host_task(void *param) {
+  void BLEKeypad::blecentHostTask(void *param) {
     ESP_LOGI("BLEKeypad", "NimBLE core thread tracking initiated.");
     nimble_port_run();
     nimble_port_freertos_deinit();

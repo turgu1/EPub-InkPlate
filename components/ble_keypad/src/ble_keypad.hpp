@@ -40,21 +40,14 @@
 
       QueueHandle_t bleEventQueue{};
 
-      uint8_t target_mac_address[6]{};
+      uint8_t targetMacAddress[6]{};
       KeypadType keypadType{ KeypadType::NONE };
       auto getKeypadType() -> KeypadType { return keypadType; }
 
-      uint8_t macAddress[6];
-      uint8_t keysMapping[6][5]{};
-      uint16_t debouncingTimeMs{ 500 };
-
       // NimBLE tracks connection sessions using connection handles instead of interface objects
-      uint16_t gl_conn_id{ BLE_HS_CONN_HANDLE_NONE };
-      bool is_connecting{ false };
+      uint16_t glConnId{ BLE_HS_CONN_HANDLE_NONE };
+      bool isConnecting{ false };
       bool paired{ false };
-
-      // Time tracking variable for the 500 ms debounce lock
-      int64_t last_button_press_time{ 0 };
 
       // Standard SIG BLE UUID Definitions for HID Devices
       static constexpr uint16_t HID_REPORT_CHAR_UUID = 0x2A4D;
@@ -74,7 +67,7 @@
       // --- C++ NimBLE Class Instance Handlers ---
       auto handleGapEvent(struct ble_gap_event *event) -> int;
       auto handleDiscovery(const struct ble_gatt_chr *chr) -> void;
-      auto handleSubscription(int status, uint16_t attr_handle) -> void;
+      auto handleSubscription(int status, uint16_t attrHandle) -> void;
 
       // --- Static Bridging Stubs (Links NimBLE C function pointers to C++ instance variables) ---
       static int gapEventStub(struct ble_gap_event *event, void *arg) {
@@ -84,7 +77,7 @@
         return 0;
       }
 
-      static int discoveryStub(uint16_t conn_handle, const struct ble_gatt_error *error,
+      static int discoveryStub(uint16_t connHandle, const struct ble_gatt_error *error,
                                const struct ble_gatt_chr *chr, void *arg) {
 
         // 1. Check if the discovery procedure completed or encountered an error
@@ -105,7 +98,7 @@
         return 0;
       }
 
-      static int subscriptionStub(uint16_t conn_handle, const struct ble_gatt_error *error,
+      static int subscriptionStub(uint16_t connHandle, const struct ble_gatt_error *error,
                                   struct ble_gatt_attr *attr, void *arg) { // <-- Changed to ble_gatt_attr
         if (instance) {
           instance->handleSubscription(error->status, attr->handle);
@@ -113,7 +106,7 @@
         return 0;
       }
 
-      static int onNotifyStub(uint16_t conn_handle, uint16_t attr_handle, struct os_mbuf *om, void *arg) {
+      static int onNotifyStub(uint16_t connHandle, uint16_t attrHandle, struct os_mbuf *om, void *arg) {
         if (instance && om) {
           // Safely flatten the NimBLE segmented mbuf memory chain down into a contiguous buffer
           uint16_t len = OS_MBUF_PKTLEN(om);
@@ -158,9 +151,9 @@
         }
       }
 
-      static void blecent_on_reset(int reason);
-      static void blecent_on_sync(void);
-      static void blecent_host_task(void *param);
+      static void blecentOnReset(int reason);
+      static void blecentOnSync(void);
+      static void blecentHostTask(void *param);
   };
 
   #if __BLE_KEYPAD__
