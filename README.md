@@ -67,7 +67,7 @@ To streamline our GitHub release page, distributions for all supported devices a
 |6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6plusv2.zip|
 |6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
 
-The following Inkplates require a Bluetooth BLE mini keypad to be useable with this application. You can find the two supported mini keypads on AliExpres:
+The following Inkplates require a Bluetooth BLE mini keypad to be usable with this application. You can find the two supported mini keypads on AliExpress:
 
 * **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
 * **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
