@@ -4,6 +4,7 @@
 #
 # Guy Turcotte, March 2021
 # Update for idf.py, October 2024
+# Update for V3.0.0, July 2026
 #
 
 if [ ! command -v idf.py >/dev/null 2>&1 ]; then
@@ -105,6 +106,7 @@ cp doc/timezones.csv $folder
 case "$2" in
   "6") geometry="600x800" ;;
   "10") geometry="825x1200" ;;
+  "5v2") geometry="825x1200" ;;
   "6v2") geometry="600x800" ;;
   "10v2") geometry="825x1200" ;;
   "6plus") geometry="758x1024" ;;

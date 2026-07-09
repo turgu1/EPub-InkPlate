@@ -3,14 +3,12 @@ cmake_minimum_required(VERSION 3.16)
 if (NOT DEFINED DEVICE)
 # set(DEVICE "INKPLATE_5_V2")
 # set(DEVICE "INKPLATE_6")
-# set(DEVICE "INKPLATE_6_BLE")
 # set(DEVICE "INKPLATE_6_EXTENDED")
 # set(DEVICE "INKPLATE_6_BLUETOOTH")
 # set(DEVICE "INKPLATE_6_V2")
 # set(DEVICE "INKPLATE_10")
-# set(DEVICE "INKPLATE_10_BLE")
 # set(DEVICE "INKPLATE_10_EXTENDED")
-set(DEVICE "INKPLATE_10_V2")
+# set(DEVICE "INKPLATE_10_V2")
 # set(DEVICE "INKPLATE_6FLICK")
 # set(DEVICE "INKPLATE_6PLUS")
 # set(DEVICE "INKPLATE_6PLUS_V2")
@@ -48,14 +46,6 @@ elseif(DEVICE MATCHES "^INKPLATE_6$")
     add_compile_definitions(
         INKPLATE_6=1 
         MCP23017=1)
-elseif(DEVICE MATCHES "^INKPLATE_6_BLE$")
-    message("INKPLATE 6 BLE defined")
-    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I6B")
-    add_compile_definitions(
-        INKPLATE_6=1 
-        MCP23017=1
-        BLE_KEYPAD=1)
 elseif(DEVICE MATCHES "^INKPLATE_6_EXTENDED$")
     message("INKPLATE 6 EXTENDED defined")
     set(DEVICE_NAME "I6E")
@@ -87,14 +77,6 @@ elseif(DEVICE MATCHES "^INKPLATE_10$")
     add_compile_definitions(
         INKPLATE_10=1
         MCP23017=1)
-elseif(DEVICE MATCHES "^INKPLATE_10_BLE$")
-    message("INKPLATE 10 defined")
-    set(DEVICE_NAME "I10B")
-    set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    add_compile_definitions(
-        INKPLATE_10=1
-        MCP23017=1
-        BLE_KEYPAD=1)
 elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
     message("INKPLATE 10 EXTENDED defined")
     set(DEVICE_NAME "I10E")
@@ -105,7 +87,7 @@ elseif(DEVICE MATCHES "^INKPLATE_10_EXTENDED$")
 elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
     message("INKPLATE 6 V2 defined")
     set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I6V2B")
+    set(DEVICE_NAME "I6V2")
     add_compile_definitions(
         INKPLATE_6_V2=1
         BLE_KEYPAD=1
@@ -113,7 +95,7 @@ elseif(DEVICE MATCHES "^INKPLATE_6_V2$")
 elseif(DEVICE MATCHES "^INKPLATE_10_V2$")
     message("INKPLATE 10 V2 defined")
     set(SDKCONFIG_DEFAULTS "sdkconfig.defaults;sdkconfig.ble")
-    set(DEVICE_NAME "I10V2B")
+    set(DEVICE_NAME "I10V2")
     add_compile_definitions(
         INKPLATE_10_V2=1
         DMA_ENABLE=0
@@ -126,7 +108,7 @@ endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 
     src 
-    # ../ESP-IDF-InkPlate
+    ../ESP-IDF-InkPlate
 )
 
 string(TIMESTAMP THE_TIME "%Y%m%d-%H%MZ" UTC)

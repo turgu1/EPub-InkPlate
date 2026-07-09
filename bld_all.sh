@@ -3,6 +3,7 @@
 # This script is used to generate a all releases
 #
 # Guy Turcotte, March 2021
+# Update for V3.0.0, July 2026
 #
 
 if [ "$1" = "" ]
@@ -23,6 +24,6 @@ fi
 ./bld_release.sh $1 6plus 0
 ./bld_release.sh $1 6plusv2 0
 ./bld_release.sh $1 6flick 0
-# ./bld_release.sh $1 5v2 0
-# ./bld_release.sh $1 6v2 0
-# ./bld_release.sh $1 10v2 0
+./bld_release.sh $1 5v2 0
+./bld_release.sh $1 6v2 0
+./bld_release.sh $1 10v2 0
