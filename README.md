@@ -2,6 +2,15 @@
 
 ## Last news
 
+(updated 2026.07.09)
+
+The release files for the Inkplate 5v2, 6v2 and 10v2 are now ready. The description below (dated 2026.06.27) has been updated to reflect their availability. Two Bluetooth BLE mini keypads are supported to interact with these devices. They can be purchased on AliExpress:
+
+* **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
+* **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
+
+Please consult the User's Guide that is part of the release for more explanation.
+
 (updated 2026.07.08)
 
 Found two issues with the **Inkplate 10**. The first one is related to the e-Radionica version only, the second one for all versions of the Inkplate 10:
@@ -57,11 +66,9 @@ To streamline our GitHub release page, distributions for all supported devices a
 |10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
 |6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6plusv2.zip|
 |6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
-|5 V2|Soldered|TBA (Bluetooth keypad)|
-|6 V2|Soldered|TBA (Bluetooth keypad)|
-|10 V2|Soldered|TBA (Bluetooth keypad)|
-
-Note: **TBA** is **To Be Announced**
+|5 V2|Soldered|release-v3.0.0-BETA-inkplate_5v2.zip|
+|6 V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
+|10 V2|Soldered|release-v3.0.0-BETA-inkplate_10v2.zip|
 
 Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
 

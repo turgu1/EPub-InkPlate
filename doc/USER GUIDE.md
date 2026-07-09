@@ -162,9 +162,18 @@ The Inkplate 6PLUS, 6PLUSV2, and 6FLICK devices utilize a capacitive touchscreen
 
 ### 1.3 BLE Mini Keypad
 
-The application supports an optional Bluetooth Low Energy (BLE) mini-keypad featuring six physical buttons and a dedicated power switch. It is currently the only supported BLE accessory and can be purchased on AliExpress: https://www.aliexpress.com/item/1005007944515439.html.
+The application supports two optional Bluetooth Low Energy (BLE) mini-keypad featuring six physical buttons. They are currently the only supported BLE accessories and can be purchased on AliExpress:
 
-![BLE Mini Keypad](pictures/ble-mini-keypad.png){ width=20% }
+* **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
+* **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
+
+\begin{center}
+Bluetooth BLE Keypads
+\end{center}
+| Beauty-R1 | J06 Pro |
+|:-----------:|:-----------:|
+|![](pictures/ble-mini-keypad.png){ width=40% }|![](pictures/j06-pro.png){ width=40% }|
+
 
 The six physical keys map to the following software functions:
 
@@ -173,7 +182,17 @@ The six physical keys map to the following software functions:
 * **Right Arrow:** **NEXT**
 * **Up Arrow:** **PREVIOUS-2** / **UP**
 * **Down Arrow:** **NEXT-2** / **DOWN**
-* **Bottom Button:** **HOME**
+* For the Beauty-R1 - **Bottom Button:** **HOME**
+* For the J06 Pro - **Bottom Right Button:** **HOME**
+
+For the Beauty-R1:
+
+* On the right, the switch is for power ON/OFF.
+
+For the **J06 Pro**:
+
+* The bottom left button is for power ON/OFF. Keep the button pressed for 3 seconds for the action to occur.
+* On the left there is a switch that permits to select the protocol to use. It **must** be put to the **DOWN** position (Photo Mode).
 
 #### Connection and Troubleshooting
 
@@ -261,7 +280,7 @@ Books List Display Modes
 \end{center}
 | Linear View | Matrix View |
 |:-----------:|:-----------:|
-|![](pictures/linear_view_6.png){ width=100% }|![](pictures/matrix_view_6_small.png){ width=100% }|
+|![](pictures/linear_view_6.png){ width=90% }|![](pictures/matrix_view_6_small.png){ width=90% }|
 
 
 #### Touchscreen Navigation (6PLUS, 6PLUSV2, and 6FLICK)
