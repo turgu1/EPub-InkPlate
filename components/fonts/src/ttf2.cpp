@@ -149,7 +149,7 @@ auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
     }
 
   } else {
-    LOG_W("Next charcode not found in face: {}, font_index: {}", (uint32_t)nextCharcode,
+    LOG_W("Next charcode not found in face: U+{:04X}, font_index: {}", (uint32_t)nextCharcode,
           fontsCacheIndex);
   }
 

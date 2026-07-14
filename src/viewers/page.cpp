@@ -174,8 +174,7 @@ auto hexValue(uint8_t c) -> char32_t {
   return 0;
 }
 
-auto Page::toUnicode(const char *str, TextTransform transform, bool first,
-                     const char **str2) const -> char32_t {
+auto Page::toUnicode(const char *str, TextTransform transform, bool first) const -> std::pair<char32_t, const char *> {
 
   const uint8_t *c    = reinterpret_cast<const uint8_t *>(str);
   char32_t       u    = ' ';
@@ -213,7 +212,7 @@ auto Page::toUnicode(const char *str, TextTransform transform, bool first,
       }
 
       if (*end == ';') {
-        LOG_I("Entity: {:.{}s}", (char *)name, len);
+        // LOG_I("Entity: {:.{}s}", (char *)name, len);
         auto theStr = EntityString((char *)(name), (size_t)(end - name));
         auto search = entities.find(theStr);
         if (search != entities.end()) {
@@ -258,34 +257,35 @@ auto Page::toUnicode(const char *str, TextTransform transform, bool first,
     ++c;
   }
 
-  *str2 = reinterpret_cast<const char *>(c);
-
-  if (done && (u <= 0x7F) && (transform != TextTransform::NONE)) {
-    if (transform == TextTransform::UPPERCASE) {
+  if (done && (u <= 0x7F)) {
+    switch (transform) {
+    case TextTransform::NONE:
+      break;
+    case TextTransform::UPPERCASE:
       u = toupper(static_cast<unsigned char>(u));
-    }
-    else if (transform == TextTransform::LOWERCASE) {
+      break;
+    case TextTransform::LOWERCASE:
       u = tolower(static_cast<unsigned char>(u));
-    }
-    else if (first && (transform == TextTransform::CAPITALIZE)) {
-      u = toupper(static_cast<unsigned char>(u));
+      break;
+    case TextTransform::CAPITALIZE:
+      if (first) { u = toupper(static_cast<unsigned char>(u)); }
+      break;
     }
   }
 
-  return done ? u : ' ';
+  return { done ? u : ' ', reinterpret_cast<const char *>(c) };
 }
 
 auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void {
-  Glyph *     glyph;
-
   FontPtr &   font = fonts.getFont(fmt.fontIndex);
 
   const char *s = str.c_str();
+
   if (fmt.align == HAlign::LEFT) {
     bool first = true;
     while (*s) {
-      const char *s1;
-      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
+      auto [ch, s1] = toUnicode(s, fmt.textTransform, first);
+      auto glyph = font->getGlyph(ch, fmt.fontSize);
       s     = s1;
       if (glyph != nullptr) {
         DisplayListEntry *entry = displayList->getNewEntry();
@@ -317,8 +317,10 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
 
     while (*s) {
       bool        first = true;
-      const char *s1;
-      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
+
+      auto [ch, s1] = toUnicode(s, fmt.textTransform, first);
+      auto glyph = font->getGlyph(ch, fmt.fontSize);
+
       s     = s1;
       if (glyph != nullptr) { size += glyph->advance; }
       first = false;
@@ -346,8 +348,8 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
     bool first = true;
 
     while (*s) {
-      const char *s1;
-      glyph = font->getGlyph(toUnicode(s, fmt.textTransform, first, &s1), fmt.fontSize);
+      auto [ch, s1] = toUnicode(s, fmt.textTransform, first);
+      auto glyph = font->getGlyph(ch, fmt.fontSize);
       s     = s1;
       if (glyph != nullptr) {
 
@@ -624,8 +626,9 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
   // This is mainly required for the JUSTIFY alignment algo.
 
   while (!lineList->empty()) {
-    DisplayListEntry *entry = lineList->last();
+    auto *entry = lineList->last();
     if ((entry->command == DisplayListCommand::GLYPH) && (std::get<GlyphEntry>(entry->v).isSpace)) {
+      lineWidth -= std::get<GlyphEntry>(entry->v).glyph->advance;
       lineList->removeLast(); // This is O(N)...
     } else {
       break;
@@ -634,39 +637,92 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
 
   if (!lineList->empty() && (computeMode == ComputeMode::DISPLAY)) {
 
-    if ((fmt.align == HAlign::JUSTIFY) && justifyable) {
-      int16_t targetWidth = (paraMaxX - paraMinX - paraIndent);
-      int16_t loopCount   = 0;
-      while ((lineWidth < targetWidth) && (++loopCount < 50)) {
-        bool atLeastOnce = false;
-        for (auto *entry : *lineList) {
-          if (entry->pos.x > 0) { // This means it's a white space
-            atLeastOnce = true;
-            ++entry->pos.x;
-            if (++lineWidth >= targetWidth) { break; }
+    switch (fmt.align) {
+    case HAlign::JUSTIFY:
+      if (justifyable) {
+        #if DEBUGGING_AID
+          uint16_t computedLineWidth = 0;
+          for (auto *entry : *lineList) {
+            switch (entry->command) {
+            case DisplayListCommand::GLYPH:
+              computedLineWidth += std::get<GlyphEntry>(entry->v).glyph->advance;
+              break;
+            case DisplayListCommand::PICTURE:
+              computedLineWidth += std::get<PictureEntry>(entry->v).advance;
+              break;
+            default:
+              break;
+            }
           }
+
+          if (lineWidth != computedLineWidth) {
+            LOG_W("lineWidth ({}) != computedLineWidth ({})!", lineWidth, computedLineWidth)
+          }
+        #endif
+
+        auto *entry = lineList->last();
+        if (entry->command == DisplayListCommand::GLYPH) {
+          auto adj = (std::get<GlyphEntry>(entry->v).glyph->advance - 
+                        std::get<GlyphEntry>(entry->v).glyph->dim.width);
+          lineWidth -= adj;
         }
-        if (!atLeastOnce) { break; } // No space available in line to justify the line
+
+        int16_t targetWidth = (paraMaxX - paraMinX - paraIndent);
+        int16_t loopCount   = 0;
+
+        #if DEBUGGING_AID
+          if (lineWidth > targetWidth) {
+            LOG_W("lineWidth ({}) larger than targetWidth ({})!", lineWidth, targetWidth);
+          }
+        #endif
+
+        while ((lineWidth < targetWidth) && (++loopCount < 100)) {
+          bool atLeastOnce = false;
+          for (auto *entry : *lineList) {
+            if (entry->pos.x > 0) { // This means it's a white space
+              atLeastOnce = true;
+              ++entry->pos.x;
+              if (++lineWidth >= targetWidth) { break; }
+            }
+          }
+          if (!atLeastOnce) { break; } // No space available in line to justify the line
+        }
+        if (loopCount >= 100) {
+          for (auto *entry : *lineList) entry->pos.x = 0;
+        }
+
+        #if DEBUGGING_AID
+          if (lineWidth != targetWidth) {
+            LOG_W("Hum... lineWidth ({}) not equal to targetWidth ({})!", lineWidth, targetWidth);
+          }
+        #endif
       }
-      if (loopCount >= 50) {
-        for (auto *entry : *lineList) entry->pos.x = 0;
-      }
-    } else {
-      if (fmt.align == HAlign::RIGHT) {
-        pos.x = paraMaxX - lineWidth;
-      } else if (fmt.align == HAlign::CENTER) {
-        pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
-      }
+      break;
+
+    case HAlign::RIGHT:
+      pos.x = paraMaxX - lineWidth;
+      break;
+
+    case HAlign::CENTER:
+      pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
+      break;
+
+    default:
+      break;
     }
   }
 
   for (auto *entry : *lineList) {
-    if (entry->command == DisplayListCommand::GLYPH) {
+    switch (entry->command) {
+    case DisplayListCommand::GLYPH: {
       int16_t x    = entry->pos.x; // x may contains the calculated gap between words
       entry->pos.x = pos.x + std::get<GlyphEntry>(entry->v).glyph->xoff;
       entry->pos.y += pos.y + std::get<GlyphEntry>(entry->v).glyph->yoff;
       pos.x += (x == 0) ? std::get<GlyphEntry>(entry->v).kern : x;
-    } else if (entry->command == DisplayListCommand::PICTURE) {
+    }
+    break;
+    
+    case DisplayListCommand::PICTURE:
       if (fmt.align == HAlign::CENTER) {
         entry->pos.x = paraMinX + ((paraMaxX - paraMinX) >> 1) - (lineWidth >> 1);
       } else {
@@ -674,11 +730,14 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
       }
       entry->pos.y = pos.y - std::get<PictureEntry>(entry->v).picture->getDim().height;
       pos.x += std::get<PictureEntry>(entry->v).advance;
-    } else {
+      break;
+
+    default:
       LOG_E("Wrong entry type for addLine: {}", (int)entry->command);
+      break;
     }
 
-    #if DEBUGGING
+    #if DEBUGGING_AID
       // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
       //   LOG_E("addLine entry with a negative location: {} {} {}", entry->pos.x, entry->pos.y,
       //   (int)entry->command); showControls("  -> "); showFmt(fmt, "  -> ");
@@ -809,30 +868,36 @@ auto Page::theScreenIsFull(const Format &fmt, FontPtr &font, uint16_t verticalSi
 
 #undef NEXT_LINE_REQUIRED_SPACE
 
-auto Page::addWord(const char *word, const Format &fmt) -> const char * {
-  FontPtr &   font = fonts.getFont(fmt.fontIndex);
+auto Page::checkState(int ident, PageId &pageId) -> void {
+  if ((lineWidth != 0) && screenIsFull) {
+    LOG_E("Screen is full and lineWidth is not zero: {} pixels [{}, {}]! ({})", lineWidth, pageId.itemrefIndex, pageId.offset, ident);
+  }
+}
 
-  const char *str         = word;
-  int16_t     height      = font->getLineHeight(fmt.fontSize);
-  int16_t     wordWidth   = 0;
-  bool        first       = true;
+auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> const char * {
+
+  FontPtr & font = fonts.getFont(fmt.fontIndex);
+
+  const char *str            = word;
+  int16_t     height         = font->getLineHeight(fmt.fontSize);
+  int16_t     wordWidth      = 0;
+  bool        first          = true;
   uint16_t    availableWidth = paraMaxX - paraMinX - paraIndent;
 
   // The following are required when a word is too large to fit alone
   // on a line, to split it at the last fitting part of the word.
   // If there is hyphens part of the word, they will be used to
-  // cut it properly. If not, the cut will be done to the point where
-  // enough characters fit on the line. Managing an hyphen database would
-  // be too prohibitive for this device architecture.
+  // cut it properly. If not, the cut will be done using the 
+  // Hyphenator component.
 
   const char *hyphenLoc      = nullptr;
   const char *newHyphenLoc   = nullptr;
   const char *charM0         = nullptr;
   const char *charM1         = nullptr;
 
-  // if (strncmp(word, "coin", 4) == 0) {
-  //   LOG_I("Found it!");
-  // }
+  int         passCount = 0;
+
+  bool hyphenate = strlen(word) > 4;
 
   if (computeMode != ComputeMode::DISPLAY) {
 
@@ -843,11 +908,27 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
       charM1 = charM0;
       charM0 = str;
 
-      hyphenLoc = newHyphenLoc;
+      if (newHyphenLoc) {
+        hyphenLoc = newHyphenLoc;
+        newHyphenLoc = nullptr;
+      }
       newHyphenLoc = (*str == '-') ? str : nullptr;
 
-      uc1 = toUnicode(str, fmt.textTransform, first, &str1);
-      uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
+      while (true) {
+        std::tie(uc1, str1) = toUnicode(str, fmt.textTransform, first);
+        passCount += (str1 - str) - 1;
+        if (uc1 != (char32_t)0xad) { break; }
+        passCount += 1;
+        str = str1;
+      }
+
+      while (true) {
+        std::tie(uc2, str2) = toUnicode(str1, fmt.textTransform, false);
+        passCount += (str2 - str1) - 1;
+        if (uc2 != (char32_t)0xad) { break; }
+        passCount += 1;
+        str1 = str2;
+      }
 
       auto [glyph, kern, ignoreNext] = font->getGlyph(uc1, uc2, fmt.fontSize);
 
@@ -866,39 +947,74 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
 
       if (glyph != nullptr) {
         wordWidth += advance;
-        if (wordWidth >= availableWidth) {
-          if (hyphenLoc != nullptr) {
-            std::string tempStr(word, hyphenLoc + 1);
-            addWord(tempStr.c_str(), fmt);
-            return addWord(hyphenLoc + 1, fmt);
-          } else {
-            std::string tempStr(word, charM1);
-            tempStr += '-';
-            addWord(tempStr.c_str(), fmt);
-            return addWord(charM1, fmt);
+        if (!addToEndOfLine) {
+          uint16_t maxIdx = (charM1 == nullptr) ? 1 : charM1 - word;
+          if ((lineWidth + wordWidth >= availableWidth) && ((maxIdx <= (1 + passCount)) || !hyphenate)) {
+            addLine(fmt, true);
+            if (theScreenIsFull(fmt, font)) { return word; }
+            hyphenate = true;
+          }
+          if (lineWidth + wordWidth >= availableWidth) {
+            if (hyphenLoc != nullptr) {
+              std::string tempStr(word, hyphenLoc + 1);
+              addWord(tempStr.c_str(), fmt, true);
+              return screenIsFull ? hyphenLoc + 1 : addWord(hyphenLoc + 1, fmt);
+            } else {
+              auto vect = hyphenator->findHyphenIndices(word, 2 + passCount, maxIdx);
+              if ((vect != nullptr) && !vect->empty()) {
+                uint16_t targetIdx = 0;
+                for (auto idx : *vect) {
+                  if (idx > maxIdx) { break; }
+                  targetIdx = idx;
+                }
+                if (targetIdx != 0) {
+                  charM1 = &word[targetIdx];
+                  std::string tempStr(word, charM1);
+                  tempStr += '-';
+                  addWord(tempStr.c_str(), fmt, true);
+                  return screenIsFull ? charM1 : addWord(charM1, fmt, false);
+                }
+                hyphenate = false;
+              } else {
+                addLine(fmt, true);
+                if (theScreenIsFull(fmt, font)) { return word; }
+              }
+            }
           }
         }
+
         first = false;
         pageEmpty = false;
       }
     }
 
-    if ((lineWidth + wordWidth) >= availableWidth) {
+    if (addToEndOfLine) {
+      if (glyphsHeight < height) { glyphsHeight = height; }
+      if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+      lineWidth += wordWidth;
       addLine(fmt, true);
-      if (theScreenIsFull(fmt, font)) { return word; }
+      theScreenIsFull(fmt, font);
+    } else {
+      if ((lineWidth + wordWidth) >= availableWidth) {
+        addLine(fmt, true);
+        if (theScreenIsFull(fmt, font)) { return word; }
+      }
+
+      if (glyphsHeight < height) { glyphsHeight = height; }
+      if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+      lineWidth += wordWidth;
     }
 
-    if (glyphsHeight < height) { glyphsHeight = height; }
-    if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-    lineWidth += wordWidth;
-
     return nullptr;
+
+  } // computeMode != ComputeMode::DISPLAY
+
+  // -----------------------
+
+  if (lineList->empty() && (theScreenIsFull(fmt, font))) { 
+    return word; 
   }
 
-  if (lineList->empty()) {
-    // We are about to start a new line. Check if it will fit on the page.
-    if (theScreenIsFull(fmt, font)) { return word; }
-  }
 
   auto wordEntries = DisplayList::Make(displayListPool);
 
@@ -909,11 +1025,27 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
     charM1 = charM0;
     charM0 = str;
 
-    hyphenLoc = newHyphenLoc;
+    if (newHyphenLoc) {
+      hyphenLoc = newHyphenLoc;
+      newHyphenLoc = nullptr;
+    }
     newHyphenLoc = (*str == '-') ? str : nullptr;
 
-    uc1 = toUnicode(str, fmt.textTransform, first, &str1);
-    uc2 = toUnicode(str1, fmt.textTransform, false, &str2);
+    while (true) {
+      std::tie(uc1, str1) = toUnicode(str, fmt.textTransform, first);
+      passCount += (str1 - str) - 1;
+      if (uc1 != (char32_t)0xad) { break; }
+      passCount += 1;
+      str = str1;
+    }
+
+    while (true) {
+      std::tie(uc2, str2) = toUnicode(str1, fmt.textTransform, false);
+      passCount += (str2 - str1) - 1;
+      if (uc2 != (char32_t)0xad) { break; }
+      passCount += 1;
+      str1 = str2;
+    }
 
     auto [glyph, kern, ignoreNext] = font->getGlyph(uc1, uc2, fmt.fontSize);
 
@@ -922,7 +1054,10 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
     int16_t advance{ 0 };
 
     if (glyph == nullptr) {
-      glyph = font->getGlyph(' ', fmt.fontSize);
+      glyph = font->getGlyph(0xFFFD, fmt.fontSize);
+      if (glyph == nullptr) {
+        glyph = font->getGlyph(' ', fmt.fontSize);
+      }
       if (glyph != nullptr) {
         advance = glyph->advance;
       }
@@ -932,18 +1067,51 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
 
     if (glyph != nullptr) {
       wordWidth += advance;
-      if (wordWidth >= availableWidth) {
-        if (hyphenLoc != nullptr) {
-          std::string tempStr(word, hyphenLoc + 1);
-          addWord(tempStr.c_str(), fmt);
-          return addWord(hyphenLoc + 1, fmt);
-        } else {
-          std::string tempStr(word, charM1);
-          tempStr += '-';
-          addWord(tempStr.c_str(), fmt);
-          return addWord(charM1, fmt);
+      if (!addToEndOfLine) {
+        int16_t maxIdx = (charM1 == nullptr) ? 1 : charM1 - word;
+        if ((lineWidth + wordWidth >= availableWidth) && ((maxIdx <= (1 + passCount)) || !hyphenate)) {
+          addLine(fmt, true);
+          if (theScreenIsFull(fmt, font)) { return word; }
+          hyphenate = true;
+        }
+        if (lineWidth + wordWidth >= availableWidth) {
+          // LOG_I("Word too large: {} passCount {}", word, passCount);
+          if (hyphenLoc != nullptr) {
+            std::string tempStr(word, hyphenLoc + 1);
+            addWord(tempStr.c_str(), fmt, true);
+            return screenIsFull ? hyphenLoc + 1 : addWord(hyphenLoc + 1, fmt, false);
+          } else {
+            auto vect = hyphenator->findHyphenIndices(word, 2 + passCount, maxIdx);
+            if ((vect != nullptr) && !vect->empty()) {
+
+              // LOG_I("Hyphen positions for {} count {}:", word, vect->size());
+              // for (auto val : *vect) {
+              //   LOG_I("Position {}", val);
+              // }
+
+              uint16_t targetIdx = 0;
+              for (auto idx : *vect) {
+                if (idx > maxIdx) { break; }
+                targetIdx = idx;
+              }
+              if (targetIdx != 0) {
+                // LOG_I("TargetIdx = {}", targetIdx);
+                charM1 = &word[targetIdx];
+                std::string tempStr(word, charM1);
+                tempStr += '-';
+                addWord(tempStr.c_str(), fmt, true);
+                return screenIsFull ? charM1 : addWord(charM1, fmt, false);
+              }
+            } else {
+              addLine(fmt, true);
+              if (theScreenIsFull(fmt, font)) { return word; }
+            }
+
+            hyphenate = false;
+          }
         }
       }
+
       first = false;
       pageEmpty = false;
 
@@ -958,16 +1126,25 @@ auto Page::addWord(const char *word, const Format &fmt) -> const char * {
     }
   }
 
-  if ((lineWidth + wordWidth) >= availableWidth) {
+  if (addToEndOfLine) {
+    lineList->merge(*wordEntries.get());
+    if (glyphsHeight < height) { glyphsHeight = height; }
+    if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+    lineWidth += wordWidth;
     addLine(fmt, true);
-    if (theScreenIsFull(fmt, font)) { return word; }
+    theScreenIsFull(fmt, font);
+  } else {
+    if ((lineWidth + wordWidth) >= availableWidth) {
+      addLine(fmt, true);
+      if (theScreenIsFull(fmt, font)) { return word; }
+    }
+
+    lineList->merge(*wordEntries.get());
+
+    if (glyphsHeight < height) { glyphsHeight = height; }
+    if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
+    lineWidth += wordWidth;
   }
-
-  lineList->merge(*wordEntries.get());
-
-  if (glyphsHeight < height) { glyphsHeight = height; }
-  if (lineHeightFactor < fmt.lineHeightFactor) { lineHeightFactor = fmt.lineHeightFactor; }
-  lineWidth += wordWidth;
 
   return nullptr;
 }
@@ -981,10 +1158,16 @@ auto Page::addChar(const char *ch, const Format &fmt) -> bool {
 
   if (lineList->empty() && theScreenIsFull(fmt, font)) { return false; }
 
-  const char *s1;
-  int32_t     code = toUnicode(ch, fmt.textTransform, true, &s1);
+  auto [code, s1] = toUnicode(ch, fmt.textTransform, true);
 
   glyph = font->getGlyph(code, fmt.fontSize);
+
+  if (glyph == nullptr) {
+    glyph = font->getGlyph(0xFFFD, fmt.fontSize);
+    if (glyph == nullptr) {
+      glyph = font->getGlyph(' ', fmt.fontSize);
+    }
+  }
 
   if (glyph != nullptr) {
     // Verify that there is enough space for the glyph on the line.
@@ -1040,8 +1223,8 @@ auto Page::addPicture(PicturePtr picture, const Format &fmt /*, bool at_start_of
   FontPtr &   font = fonts.getFont(fmt.fontIndex);
 
   const char *str = "m";
-  const char *s1;
-  int32_t     code = toUnicode(str, fmt.textTransform, true, &s1);
+
+  auto [code, s1] = toUnicode(str, fmt.textTransform, true);
 
   glyph = font->getGlyph(code, fmt.fontSize);
 

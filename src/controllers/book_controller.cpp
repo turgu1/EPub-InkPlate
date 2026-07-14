@@ -24,7 +24,7 @@ auto BookController::enter() -> void {
   // When entering the book viewer, the BookController::openBook() method was already called,
   // the epub instance is ready and pointing at the required book.
 
-  bookViewer = BookViewer::Make(epub->getFonts());
+  bookViewer = BookViewer::Make(epub->getFonts(), epub->getLanguage());
 
   // As the page formatting options may have changed since the last time the book was requested to
   // be shown, we need to check if the page locations are still valid. If not, we need to

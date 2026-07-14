@@ -45,9 +45,9 @@ class BookViewerInterp : public HTMLInterpreter {
     }
 };
 
-auto BookViewer::recreatePage(Fonts &fonts) -> bool {
+auto BookViewer::recreatePage(EPubPtr &epub) -> bool {
   page.reset();
-  page = Page::Make(fonts);
+  page = Page::Make(epub->getFonts(), epub->getLanguage());
   if (page == nullptr) {
     LOG_E("Unable to allocate a new Page instance");
     return false;
@@ -58,14 +58,14 @@ auto BookViewer::recreatePage(Fonts &fonts) -> bool {
 auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
 
   #if LINE_POS_TRACING
-    if ((pageId.itemrefIndex == 5)) {
+    if ((pageId.itemrefIndex == LINE_POS_TRACING)) {
       page->setTracing(true);
       LOG_I("buildPageAt(): {} {}", pageId.itemrefIndex, pageId.offset);
     }
   #endif
 
   FontPtr &font = epub->getFonts().getFont(ScreenBottom::FONT);
-  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 10;
+  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
 
   if (epub->getItemAtIndex(pageId.itemrefIndex)) {
 
@@ -121,7 +121,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
     if ((node = epub->getCurrentItem().child("html").child("body"))) {
 
       #if LINE_POS_TRACING
-        if ((pageId.itemrefIndex == 5)) {
+        if ((pageId.itemrefIndex == LINE_POS_TRACING)) {
           page->showFmt(fmt, "");
         }
       #endif
@@ -216,7 +216,7 @@ auto BookViewer::preparePage(const PageId &pageId, EPubPtr &epub) -> bool {
     return false;
   }
 
-  if (!recreatePage(epub->getFonts())) { return false; }
+  if (!recreatePage(epub)) { return false; }
 
   current_page_id = pageId;
 

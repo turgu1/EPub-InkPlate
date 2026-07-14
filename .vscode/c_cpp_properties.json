@@ -5,7 +5,7 @@
             "includePath": [
                 "${default}"
             ],
-            "defines": ["INKPLATE_10_V2=1", "BLE_KEYPAD=1"],
+            "defines": ["EPUB_INKPLATE_BUILD=1", "INKPLATE_10_V2=1", "BLE_KEYPAD=1"],
             "cStandard": "c23",
             "cppStandard": "c++23",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json"

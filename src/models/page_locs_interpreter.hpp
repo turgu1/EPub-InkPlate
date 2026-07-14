@@ -58,6 +58,8 @@ class PageLocsInterpreter : public HTMLInterpreter {
 
       PageId             pageId = PageId(itemInfo.itemrefIndex, startOffset);
 
+      page->checkState(1, pageId);
+
       PageLocs::PageInfo pageInfo = PageLocs::PageInfo(currentOffset - startOffset, -1);
 
       if ((pageInfo.size > 0) || ((pageId.itemrefIndex == 0) && (pageId.offset == 0))) {

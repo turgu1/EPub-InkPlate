@@ -26,7 +26,7 @@ header-includes:
         {\large\bfseries Prepared by: \par}
         {\large Guy Turcotte \par}
         \vspace{0.5cm}
-        {\large July 5, 2026 \par}
+        {\large July 14, 2026 \par}
       \end{titlepage}
     }
 ---
@@ -50,7 +50,7 @@ For detailed installation instructions, please refer to the `INSTALL.pdf` docume
 
 #### Key Features & Technical Specifications
 
-* **Advanced Typography:** Full support for embedded TTF and OTF fonts with normal, bold, italic, and bold-italic styles. Features built-in kerning, ligatures, and minimal hyphenation for an optimal reading experience.
+* **Advanced Typography:** Full support for embedded TTF and OTF fonts with normal, bold, italic, and bold-italic styles. Features built-in kerning, ligatures, and hyphenation for an optimal reading experience.
 * **Flexible Page Layouts:** Supports dynamic multi-column page rendering (from 1 to 4 columns) alongside left, centered, right, and fully justified text alignments with paragraph indentation.
 * **Image Rendering:** Displays dithered bitmap images across multiple formats, including JPEG, PNG, GIF, SVG, and BMP.
 * **Format Compatibility:** Reads a subset of the EPub (V2 and V3) book format and supports complete UTF-8 character encoding.
@@ -607,7 +607,7 @@ The configuration engine divides typefaces into two strict categories:
 
 Every typeface integrated into the USER category must include four standalone companion files mapping to its **Normal**, **Bold**, **Italic**, and **Bold-Italic** weights. 
 
-To protect system stability and prevent low-memory crashes, strict file size limits are enforced: the combined file size of all four font weights within a single family must not exceed **300 KB**.
+To protect system stability and prevent low-memory crashes, strict file size limits are enforced: the combined file size of all four font weights within a single family must not exceed **400 KB**.
 
 All active font files must reside within the `fonts/` directory on the SD card. The base distribution package includes a rich assortment of pre-loaded fonts that are not enabled by default in the stock `fonts_list.xml` file, which you can easily activate by modifying the XML configuration markup. 
 
@@ -649,7 +649,7 @@ The EPub-InkPlate application operates within the constraints of the ESP32-WROVE
 * **Maximum Library Capacity:** 200 books (required to maintain indexing speeds for the catalog layout).
 * **Maximum Individual File Size:** 25 MB per EPub document.
 * **Supported Font Formats:** Standard TrueType (`.ttf`) and OpenType (`.otf`) containers.
-* **System Font Memory Budget:** 300 KB maximum allocation for core application typefaces.
+* **System Font Memory Budget:** 400 KB maximum allocation for core application typefaces.
 * **Document Font Memory Budget:** 800 KB maximum allocation for active, book-embedded typefaces. 
 * **HTML Tag Nesting Depth:** 50 levels maximum (implemented as a safeguard against recursive stack-overflow crashes).
 * **Supported Image Ecosystem:** Baseline profiles of PNG, JPEG, GIF, SVG, and BMP.

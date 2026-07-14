@@ -31,7 +31,7 @@ auto FontsDB::checkFile(const HimemString &filename) -> bool {
     }
     if (stat(fullName.c_str(), &fileStat) != -1) {
       fontSize += fileStat.st_size;
-      if (fontSize > (1024 * 300)) {
+      if (fontSize > (1024 * 400)) {
         LOG_E("Font size too big for {}", filename);
       } else {
         return true;

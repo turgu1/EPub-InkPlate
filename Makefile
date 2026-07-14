@@ -82,12 +82,13 @@ INCLUDES := \
   -I components/simple_db/src \
   -I components/display_list/src \
   -I components/simple_list/src \
+  -I components/hyphenator/src \
   $(FREETYPE_CFLAGS)
 
 # ---------------------------------------------------------------------------
 # Compiler flags
 # ---------------------------------------------------------------------------
-CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(DEFINES) $(INCLUDES) $(GTK_CFLAGS) $(FREETYPE_CFLAGS) \
+CXXFLAGS := -std=c++26 $(OPT_FLAGS) $(DEFINES) $(INCLUDES) $(GTK_CFLAGS) $(FREETYPE_CFLAGS) \
             -Wall -Wno-psabi -MMD -MP
 
 CFLAGS   := -std=c11   $(OPT_FLAGS) $(DEFINES) $(INCLUDES) $(GTK_CFLAGS) $(FREETYPE_CFLAGS) \
@@ -133,6 +134,7 @@ SRC_CPP += \
   components/simple_db/src/simple_db.cpp \
   components/display_list/src/display_list.cpp \
   components/zip/src/unzip.cpp \
+  components/hyphenator/src/hyphenator.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp \
   lib_linux/EPub_InkPlate/src/screen.cpp \
 
@@ -235,6 +237,7 @@ TEST_INCLUDES := \
   -I components/pugixml/src \
   -I components/display_list/src \
   -I components/simple_list/src \
+  -I components/hyphenator/src \
   $(FREETYPE_CFLAGS)
 
 TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) \
@@ -260,6 +263,7 @@ TEST_SRC_CPP := \
   test/test_epub.cpp \
   test/test_unzip.cpp \
   test/test_simple_list.cpp \
+  test/test_hyphenator.cpp \
   test/stubs.cpp \
   src/models/dom.cpp \
   src/models/css.cpp \
@@ -281,6 +285,7 @@ TEST_SRC_CPP := \
   components/simple_db/src/simple_db.cpp \
   components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
+  components/hyphenator/src/hyphenator.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp
 
 TEST_OBJS_C   := $(patsubst %.c,$(TEST_BUILD)/%.o,$(TEST_SRC_C))
@@ -290,7 +295,7 @@ TEST_DEPS     := $(TEST_OBJS:.o=.d)
 .PHONY: test build_test clean_test all_tests \
   test_himem test_himem_pool_test test_char_pool test_fonts_cache test_fonts_cache_stress test_dom test_simple_db test_css \
   test_gif_decoder test_svg_decoder \
-  test_display_list test_app_config test_epub test_unzip test_simple_list
+  test_display_list test_app_config test_epub test_unzip test_simple_list test_hyphenator
 
 build_test: $(TEST_BUILD)/$(TEST_TARGET)
 
@@ -314,6 +319,7 @@ test_fonts_cache_stress: $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TA
 test_gif_decoder:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) gif_decoder
 test_svg_decoder:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) svg_decoder
 test_simple_list:    $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) simple_list
+test_hyphenator:     $(TEST_BUILD)/$(TEST_TARGET) ; @$(TEST_BUILD)/$(TEST_TARGET) hyphenator
 
 # Convenience target: run both test suites in sequence.
 all_tests: test config_test

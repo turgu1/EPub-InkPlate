@@ -192,6 +192,7 @@ class EPub {
     }
     [[nodiscard]] inline auto getTitle() -> const char * { return getMeta("dc:title"); }
     [[nodiscard]] inline auto getAuthor() -> const char * { return getMeta("dc:creator"); }
+    [[nodiscard]] inline auto getLanguage() -> const char * { return getMeta("dc:language"); }
     [[nodiscard]] inline auto getDescription() -> const char * { return getMeta("dc:description"); }
     [[nodiscard]] inline auto getCurrentItem() const -> const pugi::xml_document & {
       return currentItemInfo.xmlDoc;

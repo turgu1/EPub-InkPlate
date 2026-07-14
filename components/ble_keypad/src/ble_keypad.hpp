@@ -17,7 +17,7 @@
 
   #include <functional>
 
-  #define TRACING_BLE_KEYPAD 1
+  #define TRACING_BLE_KEYPAD 0
 
   class BLEKeypad {
 

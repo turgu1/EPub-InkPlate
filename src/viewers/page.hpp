@@ -10,6 +10,7 @@
 #include "himem_pool.hpp"
 #include "picture.hpp"
 #include "pugixml.hpp"
+#include "hyphenator.hpp"
 
 #include "models/css.hpp"
 
@@ -19,7 +20,7 @@
 
 #include "display_list.hpp"
 
-#define LINE_POS_TRACING 0
+// #define LINE_POS_TRACING 6
 
 /**
  * @brief Page preparation
@@ -36,9 +37,10 @@ using PagePtr = HimemUniquePtr<class Page>;
 
 class Page {
   private:
-    Page(Fonts &fonts) : fonts(fonts) {}
+    Page(Fonts &fonts, const char * language) : fonts(fonts), hyphenator(Hyphenator::Make(language)) {}
 
     Fonts &fonts;
+    HyphenatorPtr hyphenator;
 
   public:
     ~Page() = default; // { LOG_D("Page destructor called"); };
@@ -47,7 +49,7 @@ class Page {
     requires(!std::is_array_v<T>)
     friend auto makeUniqueHimem(Args &&... args)->HimemUniquePtr<T>;
 
-    static inline auto Make(Fonts &fonts) { return makeUniqueHimem<Page>(fonts); }
+    static inline auto Make(Fonts &fonts, const char *language = "") { return makeUniqueHimem<Page>(fonts, language); }
 
     static const uint16_t HORIZONTAL_CENTER = 9999;
 
@@ -224,7 +226,7 @@ class Page {
      * @return not nullptr: The internal word start address that was not put on page.
      *                      This is required has hyphen management has been added.
      */
-    auto addWord(const char *word, const Format &fmt) -> const char *;
+    auto addWord(const char *word, const Format &fmt, bool addToEndOfLine = false) -> const char *;
 
     /**
      * @brief Add a UTF-8 character to the paragraph.
@@ -297,7 +299,7 @@ class Page {
 
     auto showFmt(const Format &fmt, const char *spaces) -> void const {
 
-      #if DEBUGGING
+      #if 1 //DEBUGGING
         std::cout << spaces << "Fmt: align:" << (int)fmt.align << " valign:" << (int)fmt.verticalAlign
                   << " Idx:" << fmt.fontIndex << " Sz:" << fmt.fontSize << " St:" << (int)fmt.fontStyle
                   << " ind:" << fmt.indent << " lhf:" << fmt.lineHeightFactor
@@ -326,8 +328,8 @@ class Page {
       #endif
     }
 
-    auto toUnicode(const char *str, TextTransform transform, bool first, const char **str2) const
-    -> char32_t;
+    auto toUnicode(const char *str, TextTransform transform, bool first) const
+    -> std::pair<char32_t, const char *>;
 
     inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
 
@@ -364,4 +366,6 @@ class Page {
     void adjustFormat(DOM::Node *domCurrentNode, Format &fmt, const CSSPtr &elementCss,
                       const CSSPtr &itemCss);
     auto adjustFormatFromRules(Format &fmt, const CSS::RulesMap &rules) -> void;
+
+    auto checkState(int ident, PageId &pageId) -> void;
 };

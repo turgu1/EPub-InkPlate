@@ -304,7 +304,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
   Fonts &  fonts = epub->getFonts();
 
   FontPtr &font = fonts.getFont(ScreenBottom::FONT);
-  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 10;
+  pageBottom    = font->getCharsHeight(ScreenBottom::FONT_SIZE) + 15;
 
   bool           resultOk = false;
 
@@ -338,7 +338,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     };
 
     auto         dom     = DOM::Make(epub->getDomPools());
-    auto         pageOut = Page::Make(fonts);
+    auto         pageOut = Page::Make(fonts, epub->getLanguage());
 
     auto         interp = PageLocsInterpreter::Make(
       epub, pageOut, dom, Page::ComputeMode::LOCATION, itemInfo, abortCurrentItem,
@@ -357,7 +357,7 @@ auto PageLocsRetriever::buildPageLocs(int16_t itemrefIndex) -> bool {
     if ((node = itemInfo.xmlDoc.child("html").child("body"))) {
 
       #if LINE_POS_TRACING
-        if (itemrefIndex == 5) {
+        if (itemrefIndex == LINE_POS_TRACING) {
           pageOut->setTracing(true);
           LOG_I("buildPageAt(): {} {}", itemrefIndex, 0);
           pageOut->showFmt(fmt, "");

@@ -39,6 +39,7 @@ auto testFontsCache() -> TestStats;
 auto testFontsCacheStress() -> TestStats;
 auto testGifDecoder() -> TestStats;
 auto testSvgDecoder() -> TestStats;
+auto testHyphenator() -> TestStats;
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
       {"fonts_cache_stress", testFontsCacheStress},
       {"gif_decoder", testGifDecoder},
       {"svg_decoder", testSvgDecoder},
+      {"hyphenator", testHyphenator}
   };
 
   // Determine which suites to run. When no arguments are given, run all.
@@ -145,20 +147,20 @@ int main(int argc, char *argv[]) {
     return std::strcmp(a.name, b.name) < 0;
   });
 
-  std::printf("\n=============== PER-SUITE STATS ==================\n");
+  std::printf("\n================= PER-SUITE STATS ====================\n");
   for (std::size_t i = 0; i < resultCount; ++i) {
     const auto &r = results[i];
-    std::printf("  %-16s pass=%4d  fail=%3d  total=%4d\n", r.name, r.stats.passed, r.stats.failed,
+    std::printf("  %-20s pass=%4d  fail=%3d  total=%4d\n", r.name, r.stats.passed, r.stats.failed,
                 r.stats.total());
   }
-  std::printf("==================================================\n");
+  std::printf("======================================================\n");
   std::printf("  GRAND TOTAL: pass=%d  fail=%d  total=%d\n", totalPassed, totalFailed,
               totalPassed + totalFailed);
 
-  std::printf("\n===========================================\n");
+  std::printf("\n===============================================\n");
   std::printf("  %s  (%d suite(s) failed)\n",
               failedSuites == 0 ? "ALL SUITES PASSED" : "FAILURES DETECTED", failedSuites);
-  std::printf("===========================================\n");
+  std::printf("===============================================\n");
 
   return failedSuites == 0 ? 0 : 1;
 }

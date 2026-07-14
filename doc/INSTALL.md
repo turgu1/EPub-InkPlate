@@ -1,6 +1,17 @@
 # EPub-InkPlate - Installation Guide
 
+## Important Notes
+
 **Please Note: If you are updating from a version prior to V3.0.0 of the application, the SD-Card must be re-initialized. See the section on preparing the SD-Card for details.**
+
+### Updating from V3.0.0-BETA
+
+Updating from V3.0.0-BETA will require, to the minimum, doing the following on the SD-Card:
+
+- Remove all `.locs` and `.toc` files from the `/books` folder. 
+- Remove the `/fonts` folder, and copy the `/fonts` folder from the `/SDCard/fonts` distribution.
+
+## Introduction
 
 This document describes the installation procedure for the EPub-InkPlate application, which can be adapted to suit your requirements.
 
