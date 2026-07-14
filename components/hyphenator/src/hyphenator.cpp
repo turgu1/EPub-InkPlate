@@ -187,8 +187,6 @@ auto Hyphenator::findHyphenIndices(const std::string& word, uint8_t min, uint8_t
     wordLength = MAX_WORD_LENGTH;
   }
 
-  // Build augmented word ".word." with simple case-folding:
-  // ASCII A-Z → a-z; UTF-8 C3+[80-9E] (Latin-1 uppercase supplement) → C3+[A0-BE].
   uint8_t aug[MAX_WORD_LENGTH + 3];
   aug[0] = '.';
   for (size_t i = 0; i < wordLength; ++i) {
@@ -206,11 +204,9 @@ auto Hyphenator::findHyphenIndices(const std::string& word, uint8_t min, uint8_t
   const int32_t augLength = wordLength + 2;
   aug[augLength - 1] = '.';
 
-  // Score array: one byte per augmented position.
   uint8_t scores[MAX_WORD_LENGTH + 3];
   std::memset(scores, 0, augLength);
 
-  // Walk trie from every starting position in the augmented word.
   const TrieNodePtr root = decodeTrieNode(trieRootOffset);
   if (root == nullptr) {
     TRACE("<- findHyphenIndices 2");
