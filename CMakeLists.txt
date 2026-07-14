@@ -108,7 +108,7 @@ endif()
 
 list(APPEND EXTRA_COMPONENT_DIRS 
     src 
-    ../ESP-IDF-InkPlate
+    # ../ESP-IDF-InkPlate
 )
 
 string(TIMESTAMP THE_TIME "%Y%m%d-%H%MZ" UTC)
