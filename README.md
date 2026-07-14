@@ -2,6 +2,31 @@
 
 ## Last news
 
+(Updated 2026.07.14)
+
+An Hyphenator has been added, based on the Liang algorithm. The language binary tries have been retrieved from the following location: https://github.com/typst/hypher. The following 16 languages are supported. They represent more than 415K of data:
+
+- Albanian
+- Croatian
+- Czech
+- Danish
+- Dutch
+- English
+- French
+- German
+- Icelandic
+- Italian
+- Polish
+- Portuguese
+- Spanish
+- Slovak
+- Slovenian
+- Turkish
+
+ The fonts have also been updated to reflect the needed characters for these languages. The memory limitations of the ESP32 do not allow for more languages.
+
+ The hyphenator and the updated fonts will be part of the V3.0.0 version later this week. As such, the fonts folder on the SD-Card will need to be updated. As the hyphenator is now part of the application, all books' `.locs` and `.toc` files needs to be refreshed. Simply removing them from the SD-Card will be sufficient to have them updated when a book is opened for reading.
+
 (updated 2026.07.09)
 
 The release files for the Inkplate 5v2, 6v2 and 10v2 are now ready. The description below (dated 2026.06.27) has been updated to reflect their availability. Two Bluetooth BLE mini keypads are supported to interact with these devices. They can be purchased on AliExpress:
@@ -107,7 +132,7 @@ A Demonstration Gallery has been prepared to showcase the major UI enhancements.
 
 - **Deep-Sleep Screensavers**: Supports custom JPEG images placed within the artworks/ folder on the SD card, which are randomly displayed when the device powers down into deep sleep. The default release package includes 7 pre-loaded images.
 
-- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures and minimal line-break hyphenation.
+- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures and line-break hyphenation.
 
 - **Battery Calibration**: Introduced a floating-point battery_trim configuration value, allowing users to linearly adjust and calibrate the battery voltage read by the Inkplate ADC.
 
