@@ -32,6 +32,7 @@
   LANGUAGE(pt)
   LANGUAGE(sl)
   LANGUAGE(sk)
+  LANGUAGE(sq)
   LANGUAGE(tk)
 
 
