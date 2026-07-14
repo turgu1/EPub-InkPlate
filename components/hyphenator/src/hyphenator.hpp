@@ -62,10 +62,7 @@ class Hyphenator {
     const uint8_t* trieData;
     size_t trieSize;
     size_t trieRootOffset;
-
-    // Decoded view of a single trie node pulled from the serialized blob.
-    // Node layout: [header][?levelsInfo][transitions][targets]
-    // header bits: 7=hasLevels, 6-5=stride(0→1,else1-3), 4-0=childCount(31=overflow→extraByte)
+    
     struct TrieNode {
       size_t addr;
       uint8_t stride;
