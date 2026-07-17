@@ -36,6 +36,8 @@ set(components
     simple_list
     ble_keypad
     hyphenator
+    frozen
+    utf8
 )
 
 idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "." REQUIRES ${components})

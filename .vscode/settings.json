@@ -117,4 +117,11 @@
     "target/esp32.cfg"
   ],
   "idf.customExtraVars": {},
+  "makefile.launchConfigurations": [
+    {
+      "cwd": "/home/turgu1/Dev/EPub-InkPlate/build_linux",
+      "binaryPath": "/home/turgu1/Dev/EPub-InkPlate/build_linux/epub_linux",
+      "binaryArgs": []
+    }
+  ],
 }

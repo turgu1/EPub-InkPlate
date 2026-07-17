@@ -4,7 +4,7 @@
 
 (Updated 2026.07.14)
 
-An Hyphenator has been added, based on the Liang algorithm. The language binary tries have been retrieved from the following location: https://github.com/typst/hypher. The following 16 languages are supported. They represent more than 415K of data:
+An Hyphenator has been added, based on the Knuth-Liang algorithm. The language binary tries have been retrieved from the following location: https://github.com/typst/hypher. The following 16 languages are supported. They represent more than 415K of data:
 
 - Albanian
 - Croatian

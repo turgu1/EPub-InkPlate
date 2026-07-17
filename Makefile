@@ -83,6 +83,8 @@ INCLUDES := \
   -I components/display_list/src \
   -I components/simple_list/src \
   -I components/hyphenator/src \
+  -I components/frozen/src \
+  -I components/utf8/src \
   $(FREETYPE_CFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -135,6 +137,7 @@ SRC_CPP += \
   components/display_list/src/display_list.cpp \
   components/zip/src/unzip.cpp \
   components/hyphenator/src/hyphenator.cpp \
+  components/utf8/src/utf8.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp \
   lib_linux/EPub_InkPlate/src/screen.cpp \
 
@@ -238,6 +241,8 @@ TEST_INCLUDES := \
   -I components/display_list/src \
   -I components/simple_list/src \
   -I components/hyphenator/src \
+  -I components/utf8/src \
+  -I components/frozen/src \
   $(FREETYPE_CFLAGS)
 
 TEST_CXXFLAGS := -std=c++23 $(OPT_FLAGS) $(TEST_DEFINES) $(TEST_INCLUDES) \
@@ -286,6 +291,7 @@ TEST_SRC_CPP := \
   components/sys_functions/number_to_str.cpp \
   components/sys_functions/strlcpy.cpp \
   components/hyphenator/src/hyphenator.cpp \
+  components/utf8/src/utf8.cpp \
   lib_linux/EPub_InkPlate/src/logging.cpp
 
 TEST_OBJS_C   := $(patsubst %.c,$(TEST_BUILD)/%.o,$(TEST_SRC_C))

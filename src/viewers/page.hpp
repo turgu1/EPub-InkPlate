@@ -90,8 +90,6 @@ class Page {
      */
     enum class ComputeMode { LOCATION, MOVE, DISPLAY };
 
-    struct EntityStringTag {};
-
   private:
     static constexpr char const *TAG = "Page";
 
@@ -99,15 +97,6 @@ class Page {
     uint8_t currentColumn{ 1 };
     uint8_t columnCount{ 1 };
     uint16_t columnWidth{ 0 };
-
-    using EntityString =
-      std::basic_string<char, std::char_traits<char>, StaticPoolAllocator<char, EntityStringTag> >;
-
-    using Entities = std::unordered_map<
-      EntityString, char32_t, std::hash<EntityString>, std::equal_to<EntityString>,
-      StaticPoolAllocator<std::pair<const EntityString, char32_t>, EntityStringTag> >;
-
-    static Entities entities;
 
     #if LINE_POS_TRACING
       bool tracing{ false };
@@ -327,9 +316,6 @@ class Page {
                   << " width:" << lineWidth << std::endl;
       #endif
     }
-
-    auto toUnicode(const char *str, TextTransform transform, bool first) const
-    -> std::pair<char32_t, const char *>;
 
     inline auto setComputeMode(ComputeMode mode) -> void { computeMode = mode; }
 

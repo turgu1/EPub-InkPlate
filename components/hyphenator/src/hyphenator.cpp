@@ -1,65 +1,114 @@
 #include "hyphenator.hpp"
 
+#include <frozen/unordered_map.h>
+#include <frozen/string.h>
+
 // #define TRACE(...) LOG_I(__VA_ARGS__)
 #define TRACE(...)
 
+enum class Language : uint8_t {
+  EN, FR, HR, CS, DA, DE, ES, IS, IT, NL, PL, PT, SL, SK, SQ, TK,
+  NONE
+};
+
+static frozen::unordered_map<frozen::string, Language, 16> languageMap = {
+   { "en", Language::EN },
+   { "fr", Language::FR },
+   { "hr", Language::HR },
+   { "cs", Language::CS },
+   { "da", Language::DA },
+   { "de", Language::DE },
+   { "es", Language::ES },
+   { "is", Language::IS },
+   { "it", Language::IT },
+   { "nl", Language::NL },
+   { "pl", Language::PL },
+   { "pt", Language::PT },
+   { "sl", Language::SL },
+   { "sk", Language::SK },
+   { "sq", Language::SQ },
+   { "tk", Language::TK },
+};
+
 Hyphenator::Hyphenator(const char *lang) {
-  if (strncmp("en", lang, 2) == 0) {  // English
-    trieData = enStart;
-    trieSize = enSize;
-  } else if (strncmp("fr", lang, 2) == 0) { // French
-    trieData = frStart;
-    trieSize = frSize;
-  } else if (strncmp("hr", lang, 2) == 0) { // Croatian
-    trieData = hrStart;
-    trieSize = hrSize;
+
+  trieData = nullptr;
+  trieSize = 0;
+
+  if (strlen(lang) < 2) { return; }
+
+  auto it = languageMap.find(frozen::string((const char *)(lang), 2));
+  auto language = (it != languageMap.end()) ? it->second : Language::NONE;
+
+  switch (language) {
+    case Language::EN:  // English
+      trieData = enStart;
+      trieSize = enSize;
+      break;
+    case Language::FR: // French
+      trieData = frStart;
+      trieSize = frSize;
+      break;
+    case Language::HR: // Croatian
+      trieData = hrStart;
+      trieSize = hrSize;
+      break;
 #if EPUB_INKPLATE_BUILD
-  } else if (strncmp("cs", lang, 2) == 0) { // Czech
-    trieData = csStart;
-    trieSize = csSize;
-  } else if (strncmp("da", lang, 2) == 0) { // Danish
-    trieData = daStart;
-    trieSize = daSize;
-  } else if (strncmp("de", lang, 2) == 0) { // German
-    trieData = deStart;
-    trieSize = deSize;
-  } else if (strncmp("es", lang, 2) == 0) { // Spanish
-    trieData = esStart;
-    trieSize = esSize;
-  } else if (strncmp("hr", lang, 2) == 0) { // Croatian
-    trieData = hrStart;
-    trieSize = hrSize;
-  } else if (strncmp("is", lang, 2) == 0) { // Icelandic
-    trieData = isStart;
-    trieSize = isSize;
-  } else if (strncmp("it", lang, 2) == 0) { // Italian
-    trieData = itStart;
-    trieSize = itSize;
-  } else if (strncmp("nl", lang, 2) == 0) { // Dutch
-    trieData = nlStart;
-    trieSize = nlSize;
-  } else if (strncmp("pl", lang, 2) == 0) { // Polish
-    trieData = plStart;
-    trieSize = plSize;
-  } else if (strncmp("pt", lang, 2) == 0) { // Portuguese
-    trieData = ptStart;
-    trieSize = ptSize;
-  } else if (strncmp("sl", lang, 2) == 0) { // Slovenian
-    trieData = slStart;
-    trieSize = slSize;
-  } else if (strncmp("sk", lang, 2) == 0) { // Slovak
-    trieData = skStart;
-    trieSize = skSize;
-  } else if (strncmp("sq", lang, 2) == 0) { // Albanian
-    trieData = sqStart;
-    trieSize = sqSize;
-  } else if (strncmp("tk", lang, 2) == 0) { // Turkish
-    trieData = tkStart;
-    trieSize = tkSize;
+    case Language::CS: // Czech
+      trieData = csStart;
+      trieSize = csSize;
+      break;
+    case Language::DA: // Danish
+      trieData = daStart;
+      trieSize = daSize;
+      break;
+    case Language::DE: // German
+      trieData = deStart;
+      trieSize = deSize;
+      break;
+    case Language::ES: // Spanish
+      trieData = esStart;
+      trieSize = esSize;
+      break;
+    case Language::IS: // Icelandic
+      trieData = isStart;
+      trieSize = isSize;
+      break;
+    case Language::IT: // Italian
+      trieData = itStart;
+      trieSize = itSize;
+      break;
+    case Language::NL: // Dutch
+      trieData = nlStart;
+      trieSize = nlSize;
+      break;
+    case Language::PL: // Polish
+      trieData = plStart;
+      trieSize = plSize;
+      break;
+    case Language::PT: // Portuguese
+      trieData = ptStart;
+      trieSize = ptSize;
+      break;
+    case Language::SL: // Slovenian
+      trieData = slStart;
+      trieSize = slSize;
+      break;
+    case Language::SK: // Slovak
+      trieData = skStart;
+      trieSize = skSize;
+      break;
+    case Language::SQ: // Albanian
+      trieData = sqStart;
+      trieSize = sqSize;
+      break;
+    case Language::TK: // Turkish
+      trieData = tkStart;
+      trieSize = tkSize;
+      break;
 #endif
-  } else {
-    trieData = nullptr;
-    trieSize = 0;
+    default:
+      return;
   }
 
   if (trieData != nullptr) {
