@@ -2,6 +2,109 @@
 
 ## Last news
 
+(2026.07.18)
+
+Here it is, the completed, stable, version 3.0.0. The original BETA readme portion has been updated and was moved below. 
+
+Please look at the installation guide for some information in regard of moving from an old or BETA version to this one.
+
+Enjoy!!
+
+### Version 3.0.0 - What's New in This Release
+
+This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
+
+#### Important Installation Requirements
+
+Because this is a major release, you must re-initialize and re-install your storage card.
+
+- Initialize your SD card.
+  
+- Re-install the system files using the contents of the **SDCard** folder provided in this distribution package.
+  
+- For detailed steps, please consult the included **Installation Manual**.
+  
+#### Feedbacks
+
+If you encounter any bugs or unexpected behaviour, please submit an issue on our GitHub repository so we can address it promptly.
+
+#### Unified Distribution Files
+
+To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **V3.0.0 Release of the EPub-InkPlate Application** that you can find [here](https://github.com/turgu1/EPub-InkPlate/releases/tag/v3.0.0). Please download the specific .zip file that matches your target device:
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-inkplate_6.zip|
+|6PLUS|e-Radionica|release-v3.0.0-inkplate_6plus.zip|
+|10|e-Radionica|release-v3.0.0-inkplate_10.zip|
+|6PLUS V2|Soldered|release-v3.0.0-inkplate_6plusv2.zip|
+|6FLICK|Soldered|release-v3.0.0-inkplate_6flick.zip|
+
+The following Inkplates require a Bluetooth BLE mini keypad to be usable with this application. You can find the two supported mini keypads on AliExpress:
+
+* **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
+* **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|5 V2|Soldered|release-v3.0.0-inkplate_5v2.zip|
+|6 V2|Soldered|release-v3.0.0-inkplate_6v2.zip|
+|10 V2|Soldered|release-v3.0.0-inkplate_10v2.zip|
+
+Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
+
+|Inkplate device|From|Release filename|
+|:-------------:|:--:|----------------|
+|6|e-Radionica|release-v3.0.0-inkplate_6_ext.zip|
+|10|e-Radionica|release-v3.0.0-inkplate_10_ext.zip|
+
+### Enhancements
+
+A Demonstration Gallery has been prepared to showcase the major UI enhancements. You can access it [here](./doc/V3.0%20Pictures%20Demo/Demo%20V3.0.md).
+
+#### User Interface & Navigation
+
+- **Variable Cover Image Sizes**: The book library directory now supports small, medium, and large cover images.
+
+- **New Image Types**: GIF, SVG, and BMP image types are now supported with some limitations.
+ 
+- **Multi-Column Rendering**: Readers can now choose to render e-book pages across 1 to 4 columns.
+
+- **Adjustable Line Spacing**: Added three distinct line height settings for text display: Tight, Medium, and Large.
+  
+- **Touch-Optimized Menus**: Icons within parameter and option menus are now larger and vertically centered across lines for more precise navigation.
+
+- **Processing Indicator**: Added a visual waiting spinner that displays on-screen while large image files are being processed.
+
+#### Core Enhancements & Hardware Control
+
+- **Deep-Sleep Screensavers**: Supports custom JPEG images placed within the artworks/ folder on the SD card, which are randomly displayed when the device powers down into deep sleep. The default release package includes 7 pre-loaded images.
+
+- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures.
+
+- **Hyphenator:** Based on the Knuth-Liang algorithm. The following 16 languages are supported: Albanian, Croatian, Czech, Danish, Dutch, English, French, German, Icelandic, Italian, Polish, Portuguese, Slovak, Slovenian, Spanish, and Turkish. Fonts have also been updated to support those languages.
+
+- **Battery Calibration**: Introduced a floating-point battery_trim configuration value, allowing users to linearly adjust and calibrate the battery voltage read by the Inkplate ADC.
+
+- **Bluetooth support**: Upcoming capability for Inkplate devices without any input hardware support. A short demonstration on the Soldered InkPlate-10 V2 using a BLE mini keypad is available [Here](https://www.youtube.com/shorts/Jre9zbq_AkM).
+
+### Bug Fixes & Under-the-Hood
+
+- **Stability Enhancements**: Resolved numerous minor bugs and optimization issues throughout the codebase.
+
+- **Updated Toolchains & Dependencies**:
+
+  - **ESP-IDF** upgraded to v5.5.4
+  - **PugiXML** upgraded to v1.15
+  - **FreeType** upgraded to v2.14.3 (featuring significantly improved OTF font support)
+
+See [CHANGES.md](CHANGES.md) for a list of changes including internal improvements.
+
+For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
+[TESTING_TOOLS_GUIDE.md](doc/development-notes/TESTING_TOOLS_GUIDE.md).
+
+------
+
 (Updated 2026.07.14)
 
 An Hyphenator has been added, based on the Knuth-Liang algorithm. The language binary tries have been retrieved from the following location: https://github.com/typst/hypher. The following 16 languages are supported. They represent more than 415K of data:
@@ -18,9 +121,9 @@ An Hyphenator has been added, based on the Knuth-Liang algorithm. The language b
 - Italian
 - Polish
 - Portuguese
-- Spanish
 - Slovak
 - Slovenian
+- Spanish
 - Turkish
 
  The fonts have also been updated to reflect the needed characters for these languages. The memory limitations of the ESP32 do not allow for more languages.
@@ -59,99 +162,6 @@ Here are pictures showcasing some of the new features available in V3.0.0:
 (Updated 2026.06.29)
 
 I had to rebuild all releases. An issue with the building process.
-
-(Updated 2026.06.27)
-
-### Version 3.0.0 - What's New in This Release
-
-This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
-
-#### Important Installation Requirements
-
-Because this is a major release, you must re-initialize and re-install your storage card.
-
-- Initialize your SD card.
-  
-- Re-install the system files using the contents of the **SDCard** folder provided in this distribution package.
-  
-- For detailed steps, please consult the included **Installation Manual**.
-  
-#### Beta Testing & Feedback
-
-This is a BETA release. If you encounter any bugs or unexpected behaviour, please submit an issue on our GitHub repository so we can address it promptly. If no critical issues are reported within the next two weeks, we will launch the final, stable Version 3.0.0.
-
-#### Unified Distribution Files
-
-To streamline our GitHub release page, distributions for all supported devices are now bundled under this single release entry: **V3.0.0-BETA Release of the EPub-InkPlate Application** that you can find [here](https://github.com/turgu1/EPub-InkPlate/releases/tag/v3.0.0-BETA). Please download the specific .zip file that matches your target device:
-
-|Inkplate device|From|Release filename|
-|:-------------:|:--:|----------------|
-|6|e-Radionica|release-v3.0.0-BETA-inkplate_6.zip|
-|6PLUS|e-Radionica|release-v3.0.0-BETA-inkplate_6plus.zip|
-|10|e-Radionica|release-v3.0.0-BETA-inkplate_10.zip|
-|6PLUS V2|Soldered|release-v3.0.0-BETA-inkplate_6plusv2.zip|
-|6FLICK|Soldered|release-v3.0.0-BETA-inkplate_6flick.zip|
-
-The following Inkplates require a Bluetooth BLE mini keypad to be usable with this application. You can find the two supported mini keypads on AliExpress:
-
-* **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
-* **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
-
-|Inkplate device|From|Release filename|
-|:-------------:|:--:|----------------|
-|5 V2|Soldered|release-v3.0.0-BETA-inkplate_5v2.zip|
-|6 V2|Soldered|release-v3.0.0-BETA-inkplate_6v2.zip|
-|10 V2|Soldered|release-v3.0.0-BETA-inkplate_10v2.zip|
-
-Other versions in support of the exended keypad for older dervices, as available [here](https://github.com/turgu1/InkPlate-6-Extended-Case) and [here](https://github.com/turgu1/InkPlate-10-Extended-Case):
-
-|Inkplate device|From|Release filename|
-|:-------------:|:--:|----------------|
-|6|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_6.zip|
-|10|e-Radionica|release-v3.0.0-BETA-inkplate_extended_case_10.zip|
-
-### Enhancements
-
-A Demonstration Gallery has been prepared to showcase the major UI enhancements. You can access it [here](./doc/V3.0%20Pictures%20Demo/Demo%20V3.0.md).
-
-#### User Interface & Navigation
-
-- **Variable Cover Image Sizes**: The book library directory now supports small, medium, and large cover images.
-
-- **New Image Types**: GIF, SVG, and BMP image types are now supported with some limitations.
- 
-- **Multi-Column Rendering**: Readers can now choose to render e-book pages across 1 to 4 columns.
-
-- **Adjustable Line Spacing**: Added three distinct line height settings for text display: Tight, Medium, and Large.
-  
-- **Touch-Optimized Menus**: Icons within parameter and option menus are now larger and vertically centered across lines for more precise navigation.
-
-- **Processing Indicator**: Added a visual waiting spinner that displays on-screen while large image files are being processed.
-
-#### Core Enhancements & Hardware Control
-
-- **Deep-Sleep Screensavers**: Supports custom JPEG images placed within the artworks/ folder on the SD card, which are randomly displayed when the device powers down into deep sleep. The default release package includes 7 pre-loaded images.
-
-- **Advanced Typography**: Adjusted fonts and the underlying FreeType library to natively support kerning, alongside a lightweight custom algorithm for standard ligatures and line-break hyphenation.
-
-- **Battery Calibration**: Introduced a floating-point battery_trim configuration value, allowing users to linearly adjust and calibrate the battery voltage read by the Inkplate ADC.
-
-- **Bluetooth support**: Upcoming capability for Inkplate devices without any input hardware support. A short demonstration on the Soldered InkPlate-10 V2 using a BLE mini keypad is available [Here](https://www.youtube.com/shorts/Jre9zbq_AkM).
-
-### Bug Fixes & Under-the-Hood
-
-- **Stability Enhancements**: Resolved numerous minor bugs and optimization issues throughout the codebase.
-
-- **Updated Toolchains & Dependencies**:
-
-  - **ESP-IDF** upgraded to v5.5.4
-  - **PugiXML** upgraded to v1.15
-  - **FreeType** upgraded to v2.14.3 (featuring significantly improved OTF font support)
-
-See [CHANGES.md](CHANGES.md) for a list of changes including internal improvements.
-
-For testing and validation workflows (unit suites, valgrind targets, page-locs tools), see
-[TESTING_TOOLS_GUIDE.md](doc/development-notes/TESTING_TOOLS_GUIDE.md).
 
 ### Building the application image
 
@@ -215,7 +225,7 @@ The `bld_all.sh` script requires one parameter: the release version number.
 Example:
 
 ```bash
-$ ./bld_all.sh 3.0.0-BETA
+$ ./bld_all.sh 3.0.0
 ```
 
 This generates release files named `release-v<version>-inkplate_<XXX>.zip` in the main project folder.
@@ -224,7 +234,7 @@ This generates release files named `release-v<version>-inkplate_<XXX>.zip` in th
 
 The `bld_release.sh` script requires three parameters and one optional parameter:
 
-- **First parameter**: version number (e.g., `3.0.0-BETA` or `3.0.0`)
+- **First parameter**: version number (e.g., `3.0.0`)
 - **Second parameter**: device type — `6`, `10`, `5V2`, `6V2`, `10V2`, `6plus`, `6plusv2`, or `6flick`
 - **Third parameter**: buttons extension usage — `0` (no extension) or `1` (extension present). Currently, no known users have this extension, so use `0`.
 - **Fourth parameter** (optional, may not work anymore... need testing): optimization mode

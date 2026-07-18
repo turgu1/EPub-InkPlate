@@ -434,7 +434,7 @@ auto Page::addLine(const Format &fmt, bool justifyable) -> void {
             if (entry->pos.x > 0) { // This means it's a white space
               atLeastOnce = true;
               ++entry->pos.x;
-              if (++lineWidth > targetWidth) { break; }
+              if (++lineWidth >= targetWidth) { break; }
             }
           }
           if (!atLeastOnce) { break; } // No space available in line to justify the line
@@ -630,9 +630,9 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
 
   FontPtr & font = fonts.getFont(fmt.fontIndex);
 
-  if (strcmp(word, "continuent") == 0) {
-    LOG_I("Found it!");
-  }
+  // if (strcmp(word, "continuent") == 0) {
+  //   LOG_I("Found it!");
+  // }
 
   const char *str            = word;
   int16_t     height         = font->getLineHeight(fmt.fontSize);
@@ -650,8 +650,6 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
   const char *newHyphenLoc   = nullptr;
   const char *charM0         = nullptr;
   const char *charM1         = nullptr;
-
-  int         passCount = 0;
 
   bool hyphenate = strlen(word) > 4;
 
@@ -684,13 +682,17 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
       }
       newHyphenLoc = (*str == '-') ? str : nullptr;
 
+      // Retrieve the first unicode character. We bypass the presence of U+00AD soft 
+      // hyphen characters.
+
       while (true) {
         std::tie(uc1, str1) = UTF8::toUnicode(str, fmt.textTransform, first);
-        passCount += (str1 - str) - 1;
         if (uc1 != (char32_t)0xad) { break; }
-        passCount += 1;
         str = str1;
       }
+
+      // Retrieve the next unicode character. We bypass the presence of U+00AD soft 
+      // hyphen characters. Required to compute kerning and ligatures.
 
       while (true) {
         std::tie(uc2, str2) = UTF8::toUnicode(str1, fmt.textTransform, false);
@@ -715,6 +717,11 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
 
       if (glyph != nullptr) {
         wordWidth += advance;
+
+        // We now need to figure out if the word must be splitted.
+        // We compute the place where an hyphen can be put to separate the word in half.
+        // This is the place where the last character was known to fit in the line. This
+        // guaranties that the hyphen will have some space for it in the line.
         int16_t maxIdx = (charM1 == nullptr) ? -1 : charM1 - word;
 
         if (!addToEndOfLine) {
@@ -729,7 +736,14 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
               addWord(tempStr.c_str(), fmt, true);
               return screenIsFull ? hyphenLoc + 1 : addWord(hyphenLoc + 1, fmt);
             } else {
+
+              // We extract the part of the word that contains only letters to help the
+              // hypenator to compute properly where an hyphen can be inserted. 'w' is
+              // receiving the extracted word, v receives the position of each letter in the
+              // original 'word', k receives the indice in 'w' that correspond to maxIdx in the
+              // 'word', or -1 if it is not part of it.
               auto [w, v, k] = UTF8::extractWord(word, maxIdx);
+
               auto vect = hyphenator->findHyphenIndices(w.c_str(), 1, k);
               if ((vect != nullptr) && !vect->empty() && (k != -1)) {
                 uint16_t targetIdx = 0;
@@ -810,18 +824,17 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
     }
     newHyphenLoc = (*str == '-') ? str : nullptr;
 
-    // Retrieve the first unicode character. We bypass the presence of U+00AD soft hyphen characters.
+    // Retrieve the first unicode character. We bypass the presence of U+00AD soft
+    // hyphen characters.
 
     while (true) {
       std::tie(uc1, str1) = UTF8::toUnicode(str, fmt.textTransform, first);
-      passCount += (str1 - str) - 1;
       if (uc1 != (char32_t)0xad) { break; }
-      passCount += 1;
       str = str1;
     }
 
-    // Retrieve the next unicode character. We bypass the presence of U+00AD soft hyphen characters.
-    // Required to compute kerning and ligatures
+    // Retrieve the next unicode character. We bypass the presence of U+00AD soft 
+    // hyphen characters. Required to compute kerning and ligatures.
 
     while (true) {
       std::tie(uc2, str2) = UTF8::toUnicode(str1, fmt.textTransform, false);
@@ -858,7 +871,9 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
       if (!addToEndOfLine) {
 
         // We now need to figure out if the word must be splitted.
-
+        // We compute the place where an hyphen can be put to separate the word in half.
+        // This is the place where the last character was known to fit in the line. This
+        // guaranties that the hyphen will have some space for it in the line.
         int16_t maxIdx = (charM1 == nullptr) ? -1 : charM1 - word;
 
         if ((lineWidth + wordWidth > availableWidth) && ((maxIdx <= 1) || !hyphenate)) {
@@ -867,13 +882,19 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
           hyphenate = true;
         }
         if (lineWidth + wordWidth > availableWidth) {
-          // LOG_I("Word too large: {} passCount {}", word, passCount);
           if (hyphenLoc != nullptr) {
             std::string tempStr(word, hyphenLoc + 1);
             addWord(tempStr.c_str(), fmt, true);
             return screenIsFull ? hyphenLoc + 1 : addWord(hyphenLoc + 1, fmt, false);
           } else {
+
+            // We extract the part of the word that contains only letters to help the
+            // hypenator to compute properly where an hyphen can be inserted. 'w' is
+            // receiving the extracted word, v receives the position of each letter in the
+            // original 'word', k receives the indice in 'w' that correspond to maxIdx in the
+            // 'word', or -1 if it is not part of it.
             auto [w, v, k] = UTF8::extractWord(word, maxIdx);
+
             auto vect = hyphenator->findHyphenIndices(w.c_str(), 1, k);
             if ((vect != nullptr) && !vect->empty() && (k != -1)) {
 

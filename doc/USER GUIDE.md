@@ -51,6 +51,7 @@ For detailed installation instructions, please refer to the `INSTALL.pdf` docume
 #### Key Features & Technical Specifications
 
 * **Advanced Typography:** Full support for embedded TTF and OTF fonts with normal, bold, italic, and bold-italic styles. Features built-in kerning, ligatures, and hyphenation for an optimal reading experience.
+* **Hyphenator:** Based on the Knuth-Liang algorithm. The following 16 languages are supported: Albanian, Croatian, Czech, Danish, Dutch, English, French, German, Icelandic, Italian, Polish, Portuguese, Slovak, Slovenian, Spanish, and Turkish.
 * **Flexible Page Layouts:** Supports dynamic multi-column page rendering (from 1 to 4 columns) alongside left, centered, right, and fully justified text alignments with paragraph indentation.
 * **Image Rendering:** Displays dithered bitmap images across multiple formats, including JPEG, PNG, GIF, SVG, and BMP.
 * **Format Compatibility:** Reads a subset of the EPub (V2 and V3) book format and supports complete UTF-8 character encoding.
@@ -185,7 +186,7 @@ The six physical keys map to the following software functions:
 * For the Beauty-R1 - **Bottom Button:** **HOME**
 * For the J06 Pro - **Bottom Right Button:** **HOME**
 
-For the Beauty-R1:
+For the **Beauty-R1**:
 
 * On the right, the switch is for power ON/OFF.
 

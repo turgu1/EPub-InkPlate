@@ -2,7 +2,7 @@
 
 ## Last News
 
-(Updated 2026.05.04)
+(Updated 2026.07.18)
 
 Update to version 3.0.0
 
@@ -12,6 +12,7 @@ Update to version 3.0.0
 - PugiXML updated to version 1.15
 - FreeType updated to version 2.14.3 (including OTF support correction)
 - C++ standard updated to gnu++23 (as supported by ESP-IDF)
+- Frozen (added as a component)
 
 **User-visible changes**
 
@@ -24,6 +25,8 @@ Update to version 3.0.0
 - A new `battery_trim` config value (floating point) permits the adjustment of the battery voltage read from the A2D Inkplate capability. It is modifyable through the `Main Parameters` form.
 - Bug fix: bad page location restored when returning from deep sleep.
 - Bug fix: bad field highlighting when the keypad is shown over its location on screen.
+- Hyphenator for 16 languages. They are Albanian, Croatian, Czech, Danish, Dutch, English, French, German, Icelandic, Italian, Polish, Portuguese, Slovak, Slovenian, Spanish, and Turkish
+- Bluetooth support for mini keypads in use with the following Inkplate devices: 5V2, 6V2, and 10V2.
 
 **Page locations (PageLocs) architecture**
 
@@ -39,6 +42,7 @@ Update to version 3.0.0
 - A new `FontsDB` database is populated by the Config class at startup, allowing cleaner font selection logic.
 - Font presence checks are now more robust, validating the index against the actual cache size.
 - Added support for kerning and ligature.
+- Fonts updated to support 16 languages. They are Albanian, Croatian, Czech, Danish, Dutch, English, French, German, Icelandic, Italian, Polish, Portuguese, Slovak, Slovenian, Spanish, and Turkish
 
 **Memory management**
 
@@ -57,6 +61,7 @@ Update to version 3.0.0
 - `simple_db` component moved from `src/helpers` to `components/simple_db`.
 - `Page::Format` struct now carries default field values; all call sites only pass parameters that differ from the defaults.
 - A new floating point value support added to the `FormViewer` and `KeypadViewer` used to permit the edition of the `battery_trim` option.
+- New components: `UTF8`, `Frozen`, and `Hyphenator`.
 
 **Code quality**
 
@@ -68,12 +73,13 @@ Update to version 3.0.0
 - Complete list of HTML named character references added to the CSS/HTML parser.
 - Several small CSS parser bugs fixed; new CSS tokens added.
 - Issue with UINT16 form field that highlight the field before showing the keypad corrected.
+- Issue with lines justification corrected.
 
 **Testing and validation**
 
 - A Linux build target is still available for rapid development and debugging without requiring physical hardware.
 - Valgrind integration for the Linux build: a dedicated test binary and stubs allow full leak analysis under Valgrind.
-- An ESP32 regression test suite (`esp32_regression_loop`) is included, covering 7 scenarios (book open/close, TOC load, cover images, page-location recomputation, concurrent navigation, WiFi/NTP, and web server). It can be enabled at build time.
+- An ESP32 regression test suite (`esp32_regression_loop`) is included, covering 8 scenarios (book open/close, TOC load, cover images, page-location recomputation, concurrent navigation, WiFi/NTP, Hypenator, and web server). It can be enabled at build time.
 
 (Updated 2026.01.20)
 
