@@ -4,13 +4,28 @@
 
 (2026.07.18)
 
+## Version 3.0.0
+
 Here it is, the completed, stable, version 3.0.0. The original BETA readme portion has been updated and was moved below. 
 
 Please look at the installation guide for some information in regard of moving from an old or BETA version to this one.
 
 Enjoy!!
 
-### Version 3.0.0 - What's New in This Release
+---
+
+Here are pictures showcasing some of the new features available in V3.0.0:
+
+- larger e-book covers (three sizes available as options);
+- Artworks folder used when deep sleep occurs;
+- 2 columns output (1, 2, 3, 4 columns available as options), and a picture of the Bluetooth Mini Keypad;
+- 4 columns output.
+
+<img src="doc/pictures/IMG_3161.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
+
+<img src="doc/pictures/IMG_3160.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3156.jpeg" alt="picture" width="300"/>
+
+#### What's New in This Release
 
 This long-awaited update heavily refactors the core internal architecture to make the application significantly more stable, while introducing a variety of user interface enhancements to improve overall usability.
 
@@ -132,7 +147,7 @@ An Hyphenator has been added, based on the Knuth-Liang algorithm. The language b
 
 (updated 2026.07.09)
 
-The release files for the Inkplate 5v2, 6v2 and 10v2 are now ready. The description below (dated 2026.06.27) has been updated to reflect their availability. Two Bluetooth BLE mini keypads are supported to interact with these devices. They can be purchased on AliExpress:
+The release files for the Inkplate 5v2, 6v2 and 10v2 are now ready. The description ~~below~~ above (dated ~~2026.06.27~~ 2026.07.18) has been updated to reflect their availability. Two Bluetooth BLE mini keypads are supported to interact with these devices. They can be purchased on AliExpress:
 
 * **Beauty-R1**: https://www.aliexpress.com/item/1005007944515439.html
 * **J06 Pro**: https://www.aliexpress.com/item/1005011855666831.html
@@ -145,19 +160,6 @@ Found two issues with the **Inkplate 10**. The first one is related to the e-Rad
 
 - For the e-Radionica Inkplate 10 device: A mistake in the `EInk10::update(FrameBuffer1Bit)`  generates bad screen updates. The BETA version of the application were not usable for both the Inkplate_10 and Inkplate_extended_case_10. A new corrected version has been made to replace the V3.0.0-BETA release for both devices.
 - For all Inkplate 10 devices (e-Radionica and Soldered versions): In 3Bits mode, there is a need to adjust the waveform used for grayscale rendering as different eInk pannels are used with these devices and require waveform adjustments. I'm modifying the Main Parameter Form to permit the selection of a waveform lookup table from a pre-defined list. The releases will be updated once the modification completed.
-  
-(Updated 2026.07.02)
-
-Here are pictures showcasing some of the new features available in V3.0.0:
-
-- larger e-book covers (three sizes available as options);
-- Artworks folder used when deep sleep occurs;
-- 2 columns output (1, 2, 3, 4 columns available as options), and a picture of the Bluetooth Mini Keypad;
-- 4 columns output.
-
-<img src="doc/pictures/IMG_3161.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3149.jpeg" alt="picture" width="300"/>
-
-<img src="doc/pictures/IMG_3160.jpeg" alt="picture" width="300"/><img src="doc/pictures/IMG_3156.jpeg" alt="picture" width="300"/>
 
 (Updated 2026.06.29)
 
