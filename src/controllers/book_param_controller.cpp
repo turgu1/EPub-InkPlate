@@ -232,9 +232,9 @@ auto BookParamController::powerOff() -> void {
 // The first (menu[0]) and the last menu entry (the one before END_MENU) MUST ALWAYS BE VISIBLE!!!
 
 static MenuViewer::MenuEntry menu[10] = {
-  { MenuViewer::Icon::RETURN,      true,  true, nullptr, "Return to the e-books reader"               },
+  { MenuViewer::Icon::RETURN,      true,  true, nullptr, "Return to the e-book reader"               },
   { MenuViewer::Icon::TOC,         false, true, nullptr, "Table of Content"                           },
-  { MenuViewer::Icon::BOOK_LIST,   true,  true, nullptr, "E-Books list"                               },
+  { MenuViewer::Icon::LIBRARY,     true,  true, nullptr, "Library Catalog"                               },
   { MenuViewer::Icon::FONT_PARAMS, true,  true, nullptr, BOOK_PARAMS_CAPTION                          },
   { MenuViewer::Icon::REVERT,      true,  true, nullptr, "Revert e-book parameters to default values" },
   { MenuViewer::Icon::DELETE,      true,  true, nullptr, "Delete the current e-book"                  },

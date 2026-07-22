@@ -10,7 +10,7 @@
   
   Each font in the USER's group must define normal, bold, italic, and bold-italic 
   filenames. Too large font files may cause bad application behavior: the 4 files 
-  combined are limited to 300 Kbytes by the application.
+  combined are limited to 400 Kbytes by the application.
   
   The SYSTEM group is taylored to the needs of the EPub-Inkplate software. Changes 
   may impact the way that the application behave.

@@ -36,7 +36,7 @@ class MenuViewer {
       CLR_HISTORY,
       REFRESH,
       BOOK,
-      BOOK_LIST,
+      LIBRARY,
       MAIN_PARAMS,
       FONT_PARAMS,
       POWEROFF,

@@ -397,7 +397,7 @@ auto OptionController::initNvs() -> void {
 
 static MenuViewer::MenuEntry menu[] = {
 
-  { MenuViewer::Icon::RETURN,      true, true, nullptr, "Return to the e-books list"           },
+  { MenuViewer::Icon::RETURN,      true, true, nullptr, "Return to the Library Catalog"           },
   { MenuViewer::Icon::BOOK,        true, true, nullptr, "Return to the last e-book being read" },
   { MenuViewer::Icon::MAIN_PARAMS, true, true, nullptr,  MAIN_PARAMS_CAPTION                   },
   { MenuViewer::Icon::FONT_PARAMS, true, true, nullptr,  BOOK_DEFAULTS_CAPTION                 },

@@ -338,6 +338,7 @@ The following are imported C header and source files, that implement some algori
 - [PNGLE](https://github.com/kikuchan/pngle) (For PNG Images) The EPub-Inkplate uses a modified version that is optimized for grayscale output instead of RGBA.
 - [MINIZ](https://github.com/kikuchan/pngle) (For Zip/PNG files and epub files decompress)
 - [TJPGD](http://elm-chan.org/fsw/tjpgd/00index.html) (For JPeg Images)
+- [Frozen](https://github.com/serge-sans-paille/frozen) Header-only C++ library that provides 0 cost initialization for immutable containers, fixed-size containers, and various algorithms.
 
 The following libraries were used at first but replaced with counterparts:
 

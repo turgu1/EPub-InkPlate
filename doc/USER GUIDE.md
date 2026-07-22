@@ -304,7 +304,7 @@ The main application menu is displayed at the top of the screen. Each option is 
 
 ![Book List Options](pictures/dir-menu-options-6PLUS.png){ width=50% }
 
-* ![](pictures/icon-return.png){ width=15 } **Return to the e-books list** – Closes the options menu and returns to the library catalog.
+* ![](pictures/icon-return.png){ width=15 } **Return to the Library Catalog** – Closes the options menu and returns to the library catalog.
 * ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** – Reopens the most recently read book at the last viewed page.
 * ![](pictures/icon-params.png){ width=15 } **Main parameters** – Opens the Main Parameters form to customize application behavior and system settings (detailed below).
 * ![](pictures/icon-font.png){ width=15 } **Default e-book parameters** – Opens the Default Parameters form to configure default font and image settings for book rendering (detailed below).
@@ -384,7 +384,7 @@ The action menu is displayed at the top of the screen. Each function is represen
 
 * ![](pictures/icon-return.png){ width=15 } **Return to the e-book reader** – Closes the menu and returns to the active page of the current book.
 * ![](pictures/icon-content.png){ width=15 } **Table of Contents** – Displays the book's internal navigation index. Scroll to an entry and press **SELECT** to jump directly to that section. *Note: This option is only available if the EPub file contains a valid table of contents structure.*
-* ![](pictures/icon-dir.png){ width=15 } **E-Books List** – Exits the active book and returns to the main library catalog.
+* ![](pictures/icon-dir.png){ width=15 } **Library Catalog** – Exits the active book and returns to the main library catalog.
 * ![](pictures/icon-font.png){ width=15 } **Current e-book parameters** – Opens a custom configuration form to adjust font and image rendering settings exclusively for this book. These preferences are saved in a localized `.pars` file on the SD card.
 * ![](pictures/icon-revert.png){ width=15 } **Revert e-book parameters to default values** – Clears book-specific settings and restores formatting parameters to global application defaults.
 * ![](pictures/icon-delete.png){ width=15 } **Delete the current e-book** – Completely removes the active book and its companion data files from the SD card. A confirmation dialog will prompt you to verify the action; press **SELECT** to confirm or any other button to cancel.
