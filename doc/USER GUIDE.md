@@ -302,7 +302,7 @@ Books List Display Modes
 
 The main application menu is displayed at the top of the screen. Each option is represented by an icon, with its corresponding descriptive label displayed directly below the menu bar. 
 
-![Book List Options](pictures/dir-menu-options-6PLUS.png){ width=50% }
+![Book List Options](pictures/dir-menu-options.png){ width=50% }
 
 * ![](pictures/icon-return.png){ width=15 } **Return to the Library Catalog** – Closes the options menu and returns to the library catalog.
 * ![](pictures/icon-book.png){ width=15 } **Return to the last e-book being read** – Reopens the most recently read book at the last viewed page.
