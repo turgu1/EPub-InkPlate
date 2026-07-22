@@ -6,7 +6,7 @@ Below is the licensing information for each font family. For each license used, 
 
 ### Sil Open Font Version 1.1
 
-See the license text [Here]("./licenses/License - Sil Open Font Version 1.1.txt")
+See the license text [Here](./licenses-Sil-Open-Font-Version-1.1.txt)
 
 - [Asap](https://www.1001fonts.com/asap-font.html)
 - [Bitter](https://fonts.google.com/specimen/Bitter)
@@ -22,7 +22,7 @@ See the license text [Here]("./licenses/License - Sil Open Font Version 1.1.txt"
 
 ### Apache License, Version 2.0
 
-See the license text [Here]("./licenses/License - Apache V2.0.txt")
+See the license text [Here](./licenses/Apache-V2.0.txt)
 
 - [Caladea](https://www.1001fonts.com/caladea-font.html)
 - [OpenSans](https://www.1001fonts.com/open-sans-font.html)
@@ -31,7 +31,7 @@ See the license text [Here]("./licenses/License - Apache V2.0.txt")
 
 ### DejaVu License
 
-See the license text [Here](".licenses/License - DejaVu.txt")
+See the license text [Here](.licenses/DejaVu.txt)
 
 - [DejaVuSans](https://dejavu-fonts.github.io/)
 - [DejaVuSerif](https://dejavu-fonts.github.io/)
@@ -48,7 +48,8 @@ The icon library includes mixed licensing:
 * **Apache License:** Applied to specific third-party icons.
 * **Custom Designs:** Created by the author and available under either the MIT or Apache license at your discretion.
 
-See the Apache license text [Here]("./licenses/License - Apache V2.0.txt")
-See the MIT license text [Here]("./licenses/License - MIT.txt")
+See the Apache license text [Here](./licenses/Apache-V2.0.txt)
+
+See the MIT license text [Here](./licenses/MIT.txt)
 
 The icons were retrieved from the following [location](https://icon-sets.iconify.design).
