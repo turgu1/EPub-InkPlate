@@ -6,7 +6,7 @@ Below is the licensing information for each font family. For each license used, 
 
 ### Sil Open Font Version 1.1
 
-See the license text [Here](./licenses-Sil-Open-Font-Version-1.1.txt)
+See the license text [Here](./licenses/Sil-Open-Font-Version-1.1.txt)
 
 - [Asap](https://www.1001fonts.com/asap-font.html)
 - [Bitter](https://fonts.google.com/specimen/Bitter)
@@ -31,7 +31,7 @@ See the license text [Here](./licenses/Apache-V2.0.txt)
 
 ### DejaVu License
 
-See the license text [Here](.licenses/DejaVu.txt)
+See the license text [Here](./licenses/DejaVu.txt)
 
 - [DejaVuSans](https://dejavu-fonts.github.io/)
 - [DejaVuSerif](https://dejavu-fonts.github.io/)
