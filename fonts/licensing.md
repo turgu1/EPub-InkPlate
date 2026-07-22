@@ -38,7 +38,7 @@ See the license text [Here](./licenses/DejaVu.txt)
 
 ## Interface Icon Font (drawings.otf)
 
-The application interface utilizes an OTF icon font containing required SVG graphics converted to TTF using FontForge. These resulting font is then converted from TTF to OTF format using supplementary tools. This conversion workflow is fully automated by the `./subsetter.sh` script.
+The application interface utilizes an OTF icon font containing required SVG graphics converted to TTF using FontForge. The resulting font is then converted from TTF to OTF format using supplementary tools. This conversion workflow is fully automated by the `./subsetter.sh` script.
 
 ### Icons Licensing
 
