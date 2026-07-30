@@ -1,4 +1,4 @@
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #define __NVS_MGR__ 1
   #include "models/nvs_mgr.hpp"

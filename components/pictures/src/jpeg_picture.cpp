@@ -86,7 +86,7 @@ static int outFunc(              /* Returns 1 to continue, 0 to abort */
   uint8_t *src;
   uint16_t y, bws, bwd;
 
-  // #if EPUB_INKPLATE_BUILD
+  // #if EINK_BUILD
   //   if (!waiting_msg_shown && ((ESP::millis() - load_start_time) > 2000)) {
   //     waiting_msg_shown = true;
 
@@ -161,7 +161,7 @@ JPegPicture::JPegPicture(const HimemString &filename, Dim max, bool loadBitmap, 
           if ((bitmap = makeUniqueHimem<uint8_t[]>(width * height)) != nullptr) {
             dim = Dim(width, height);
             // first = true;
-            // #if EPUB_INKPLATE_BUILD
+            // #if EINK_BUILD
             //   load_start_time   = ESP::millis();
             //   waiting_msg_shown = false;
             // #endif
@@ -227,7 +227,7 @@ auto JPegPicture::loadFromFile(const HimemString &filename, Dim max, bool loadBi
       if ((bitmap = makeUniqueHimem<uint8_t[]>(width * height)) != nullptr) {
         dim = Dim(width, height);
         // first = true;
-        // #if EPUB_INKPLATE_BUILD
+        // #if EINK_BUILD
         //   load_start_time   = ESP::millis();
         //   waiting_msg_shown = false;
         // #endif

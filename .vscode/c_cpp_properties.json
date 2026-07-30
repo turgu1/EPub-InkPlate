@@ -1,25 +1,30 @@
 {
-    "configurations": [
-        {
-            "name": "ESP32",
-            "includePath": [
-                "${default}"
-            ],
-            "defines": ["EPUB_INKPLATE_BUILD=1", "INKPLATE_10_V2=1", "BLE_KEYPAD=1"],
-            "cStandard": "c23",
-            "cppStandard": "c++23",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
-        },
-        {
-            "name": "LINUX",
-            "includePath": [
-                "${default}"
-            ],
-            "defines": [],
-            "cStandard": "c23",
-            "cppStandard": "c++23",
-            "compileCommands": "${workspaceFolder}/compile_commands.json"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "ESP32",
+      "includePath": [
+        "${default}"
+      ],
+      "defines": [
+        "EINK_BUILD=1",
+        "INKPLATE_10_V2=1",
+        "BLE_KEYPAD=1"
+      ],
+      "cStandard": "c23",
+      "cppStandard": "c++23",
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+      "compilerPath": "/home/turgu1/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+    },
+    {
+      "name": "LINUX",
+      "includePath": [
+        "${default}"
+      ],
+      "defines": [],
+      "cStandard": "c23",
+      "cppStandard": "c++23",
+      "compileCommands": "${workspaceFolder}/compile_commands.json"
+    }
+  ],
+  "version": 4
 }

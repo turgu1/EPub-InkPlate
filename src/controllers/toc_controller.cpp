@@ -13,7 +13,7 @@
 #include "models/books_dir.hpp"
 #include "models/toc.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "nvs.h"
 #endif
 
@@ -62,7 +62,7 @@ auto TocController::leave(bool goingToDeepSleep) -> void {
   if (tocViewer) { tocViewer.reset(); }
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if TOUCH_ENABLE
   auto TocController::inputEvent(const EventMgr::Event &event) -> void {
     switch (event.kind) {
     case EventMgr::EventKind::SWIPE_RIGHT:

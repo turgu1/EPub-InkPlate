@@ -8,7 +8,7 @@
 
 #include "viewers/page.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   class BatteryViewer {
   private:
     static constexpr char const *TAG = "BatteryViewer";

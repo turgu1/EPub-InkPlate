@@ -4,7 +4,7 @@
 //
 // This is the event manageer for linux base development.
 
-#if (EPUB_LINUX_BUILD && !TOUCH_TRIAL)
+#if (LINUX_BUILD && !TOUCH_TRIAL)
 
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"

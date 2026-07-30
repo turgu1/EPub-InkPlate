@@ -56,7 +56,7 @@ class KeypadViewer {
     static const uint8_t KEY_ADDED_WIDTH  = 50;
     static const uint8_t KEY_ADDED_HEIGHT = 30;
 
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+    #if !TOUCH_ENABLE
       KeyLocation *matrix[5][3];
       KeyLocation *currentKey;
       KeyLocation *previousKey;
@@ -75,7 +75,7 @@ class KeypadViewer {
     Page::Format fmt;
     Glyph *glyph;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       auto getKeyVal(uint16_t x, uint16_t y) -> int8_t {
         for (int i = 0; i < (KEY_COUNT - 1); i++) {
           if ((x >= keyLocs[i].pos.x) && (x <= keyLocs[i].pos.x + keyDim.width) &&
@@ -153,7 +153,7 @@ class KeypadViewer {
       }
     }
 
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+    #if !TOUCH_ENABLE
       auto updateHighlight() -> void {
         if (previousKey != currentKey) {
           if (previousKey != nullptr) {
@@ -255,14 +255,14 @@ class KeypadViewer {
 
       Pos the_pos = Pos(keypadPos.x, keypadPos.y + (keyDim.height << 1) + 4);
 
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      #if !TOUCH_ENABLE
         line = col = 0;
       #endif
 
       for (int i = 0; i < 14; i++) {
         keyLocs[i] = { .pos = the_pos, .value = values[i] };
 
-        #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+        #if !TOUCH_ENABLE
           matrix[line][col] = &keyLocs[i];
           if (++col >= 3) {
             col = 0;
@@ -334,7 +334,7 @@ class KeypadViewer {
         }
       }
 
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      #if !TOUCH_ENABLE
         matrix[4][2] = matrix[4][1];
         line = col  = 1;
         previousKey = nullptr;
@@ -394,7 +394,7 @@ class KeypadViewer {
      */
     auto event(const EventMgr::Event &event) -> bool {
 
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+      #if TOUCH_ENABLE
         if (event.kind == EventMgr::EventKind::TAP) {
           int8_t value = getKeyVal(event.x, event.y);
           if (value != 99) {

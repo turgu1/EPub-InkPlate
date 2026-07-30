@@ -369,7 +369,7 @@ auto ConfigBase<IdType, cfg_size>::save(bool force) -> bool {
     if (!file.is_open()) { return false; }
 
     if (comment) {
-      file << "# EPub-InkPlate Config File\n"
+      file << "# EPub-EInk-Reader Config File\n"
         "# -------------------------\n"
         "#\n"
         "# (This file will be reinitialized automatically)\n"

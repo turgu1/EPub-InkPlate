@@ -14,7 +14,7 @@
 #include "unzip.hpp"
 
 #include "logging.hpp"
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp_heap_caps.h"
 #else
   #include <openssl/sha.h>
@@ -257,7 +257,7 @@ inline auto toBin(const char *from, uint8_t *to) -> bool {
   }
 }
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "mbedtls/md.h"
 
   auto EPub::sha1(const std::string &data) -> void {
@@ -470,7 +470,7 @@ auto EPub::loadFont(const HimemString &filename, const HimemString &fontFamily,
 auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
   LOG_D("retrieveFontsFromCss()");
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 
@@ -546,7 +546,7 @@ auto EPub::retrieveFontsFromCss(CSSPtr &css) -> void {
 
   LOG_D("end of retrieveFontsFromCss()");
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 }
@@ -558,7 +558,7 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
   // being processed.
 
   LOG_D("retrieveCss()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 
@@ -652,7 +652,7 @@ auto EPub::retrieveCss(ItemInfo &item) -> void {
 
   // item.css->show();
   LOG_D("end of retrieveCss()");
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 }
@@ -792,7 +792,7 @@ auto EPub::retrieveBookFormatParams() -> void {
 
   if (bookParams == nullptr) {
 
-    bookFormatParams = { .ident = Screen::IDENT,
+    bookFormatParams = { .ident = screen.getIdent(),
                          .orientation =
                            0,  // Get the compiler happy (no warning). Will be set below...
                          .showTitle      = 0,// ... idem ...

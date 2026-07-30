@@ -107,16 +107,17 @@
     "-j",
     "10"
   ],
-  "idf.port": "/dev/ttyUSB0",
+  "idf.port": "/dev/ttyACM0",
   "idf.flashType": "UART",
   "idf.espIdfPath": "/home/turgu1/esp/v5.5.2/esp-idf",
   "idf.toolsPath": "/home/turgu1/.espressif",
   "idf.currentSetup": "/home/turgu1/.espressif/v5.5.4/esp-idf",
   "idf.openOcdConfigs": [
-    "interface/ftdi/esp32_devkitj_v1.cfg",
-    "target/esp32.cfg"
+    "board/esp32s3-builtin.cfg"
   ],
-  "idf.customExtraVars": {},
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3"
+  },
   "makefile.launchConfigurations": [
     {
       "cwd": "/home/turgu1/Dev/EPub-InkPlate/build_linux",
@@ -124,4 +125,10 @@
       "binaryArgs": []
     }
   ],
+  "clangd.path": "/home/turgu1/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/home/turgu1/Dev/EPub-InkPlate/build"
+  ]
 }

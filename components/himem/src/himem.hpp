@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 // himem — PSRAM-backed allocator and smart-pointer / container helpers
 //
-// On EPUB_INKPLATE_BUILD targets every allocation hits SPIRAM via
+// On EINK_BUILD targets every allocation hits SPIRAM via
 // heap_caps_malloc(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT).
 // On host/Linux builds the implementation silently falls back to the
 // default heap so that unit-tests can run unmodified.
@@ -44,7 +44,7 @@
 
 // #include <iostream>
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp_heap_caps.h"
   #define HIMEM_MALLOC(size_) heap_caps_malloc((size_), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
   #define HIMEM_FREE(ptr_) heap_caps_free(ptr_)

@@ -12,7 +12,7 @@
 #include <mutex>
 #include <thread>
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   #include <fcntl.h>
   #include <mqueue.h>
   #include <sys/stat.h>
@@ -78,7 +78,7 @@ public:
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     return mq_send(mgrQueue, (const char *)&data, sizeof(data), 1);
 #else
     return xQueueSendToBack(mgrQueue, &data, timeout);
@@ -156,7 +156,7 @@ private:
   auto load(const std::string &epubFilename) -> bool; ///< load pages location from .locs file
   auto save(const std::string &epubFilename) -> bool; ///< save pages location to .locs file
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   static mqd_t mgrQueue;
   static constexpr mq_attr mgrAttr = {0, 5, sizeof(QueueData), 0};
 #else
@@ -164,7 +164,7 @@ private:
 #endif
 
   auto receive(QueueData &data, int timeout = -1) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     if (timeout < 0) {
       return mq_receive(mgrQueue, (char *)&data, sizeof(data), nullptr);
     }

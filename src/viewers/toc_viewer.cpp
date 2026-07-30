@@ -4,12 +4,14 @@
 
 #include "viewers/toc_viewer.hpp"
 
+#include "platform.hpp"
+
 #include "config.hpp"
 #include "fonts.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "viewers/battery_viewer.hpp"
 #endif
 

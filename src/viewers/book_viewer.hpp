@@ -9,7 +9,7 @@
 
 #include <unordered_map>
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
 #else
   #include "freertos/FreeRTOS.h"
   #include "freertos/semphr.h"

@@ -56,7 +56,7 @@ class EPub {
 // both the e-book's specific parameters and default configuration options.
     #pragma pack(push, 1)
     struct BookFormatParams {
-      int8_t ident;     ///< Device identity (screen.hpp IDENT constant)
+      uint8_t ident;     ///< Device identity (screen.hpp IDENT constant)
       int8_t orientation; ///< Config option only
       int8_t showTitle;
       int8_t showPictures;

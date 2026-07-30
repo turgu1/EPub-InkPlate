@@ -1,7 +1,7 @@
 #define __WIFI__ 1
 #include "controllers/wifi.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #include "freertos/FreeRTOS.h"
   #include "freertos/event_groups.h"

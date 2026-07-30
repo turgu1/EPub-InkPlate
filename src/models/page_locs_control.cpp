@@ -37,7 +37,7 @@ namespace {
   }
 } // namespace
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   QueueHandle_t PageLocsControl::managerQueue{ nullptr };
   QueueHandle_t PageLocsControl::retrieverQueue{ nullptr };
 #else
@@ -57,7 +57,7 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
     return false;
   }
 
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     mq_unlink("/control_mgr");
     mq_unlink("/control_r2c");
 
@@ -116,7 +116,7 @@ auto PageLocsControl::setup(const HimemString &epubFilename) -> bool {
  * Join the control worker thread during shutdown.
  */
 auto PageLocsControl::waitForExit() -> void {
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     if (controlThread.joinable()) {
       controlThread.join();
     }
@@ -217,7 +217,7 @@ auto PageLocsControl::task() -> void {
     bool      hasMessage = false;
 
 // Manager commands first so GET_ASAP/STOP are not delayed by retriever chatter.
-    #if EPUB_LINUX_BUILD
+    #if LINUX_BUILD
       if (receiveFromManager(controlQueueData, 0) >= 0) {
         hasMessage = true;
       } else if (receiveFromRetriever(controlQueueData, 0) >= 0) {
@@ -232,7 +232,7 @@ auto PageLocsControl::task() -> void {
     #endif
 
     if (!hasMessage) {
-      #if EPUB_LINUX_BUILD
+      #if LINUX_BUILD
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
       #else
         vTaskDelay(pdMS_TO_TICKS(1));

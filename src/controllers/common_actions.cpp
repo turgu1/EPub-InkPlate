@@ -14,11 +14,11 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_saver.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp.hpp"
   #include "esp_app_desc.h"
   #include "esp_system.h"
-  #include "inkplate_platform.hpp"
+  #include "platform.hpp"
 
   #include "helpers/goto_deep_sleep.hpp"
 #endif
@@ -38,7 +38,7 @@ auto CommonActions::refreshBooksDir() -> void {
 
 auto CommonActions::powerItOff() -> void {
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     gotoDeepSleep(-1);
   #else
     extern void exitApp();
@@ -48,7 +48,7 @@ auto CommonActions::powerItOff() -> void {
 }
 
 auto CommonActions::about() -> void {
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     const esp_app_desc_t *descr = esp_app_get_description();
 
     // menu_viewer.clearHighlight();

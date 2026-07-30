@@ -67,7 +67,7 @@ PngPicture::PngPicture(const HimemString &filename, Dim max, bool loadBitmap) : 
 
     mypngle_set_draw_callback(pngle, onDraw);
 
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       // load_start_time   = ESP::millis();
       // waiting_msg_shown = false;
       // pix_count = 2048;

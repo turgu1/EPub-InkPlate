@@ -8,27 +8,25 @@
 #define TEST_HIMEM 0
 #define TEST_DOM 0
 
-#if EPUB_INKPLATE_BUILD
-// InkPlate6 main function and main task
-
+#if EINK_BUILD
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
 
+  #include "platform.hpp"
+
   #include "alloc.hpp"
-  #include "battery.hpp"
   #include "config.hpp"
   #include "controllers/app_controller.hpp"
   #include "controllers/books_dir_controller.hpp"
   #include "esp.hpp"
   #include "fonts.hpp"
-  #include "inkplate_platform.hpp"
   #include "models/epub.hpp"
   #include "models/nvs_mgr.hpp"
   #include "pugixml.hpp"
   #include "screen.hpp"
   #include "viewers/msg_viewer.hpp"
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if BACKLIT_ENABLE
     #include "controllers/back_lit.hpp"
   #endif
 
@@ -57,7 +55,7 @@
 
     // esp_log_level_set("PageLocs", ESP_LOG_DEBUG);
 
-    LOG_D("EPub-Inkplate Startup. ({})", esp_timer_get_time());
+    LOG_D("EPub EInk Reader Startup. ({})", esp_timer_get_time());
 
     bool nvsMgrRes = nvsMgr.setup();
 
@@ -81,11 +79,11 @@
 
     #else
       #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2 || INKPLATE_5_V2
-        #define MSG "Press the WakeUp Button to restart."
+        // #define MSG "Press the WakeUp Button to restart."
         #define INT_PIN EInk::WAKE_UP_PIN
         #define LEVEL 0
       #else
-        #define MSG "Press a key to restart."
+        // #define MSG "Press a key to restart."
         #if EXTENDED_CASE
           #define INT_PIN PressKeys::INTERRUPT_PIN
         #elif INKPLATE_6 || INKPLATE_10
@@ -96,10 +94,9 @@
 
       // Initialize the platform first, to be able to use its delay and
       // deep sleep functions in case of critical errors.
-      bool inkplateErr = !inkplate_platform.setup(true);
-      if (inkplateErr) {
+      if (!platform.setup()) {
         LOG_E("Inkplate Platform Setup Error. Restarting!");
-        inkplate_platform.restart();
+        platform.restart();
       }
 
       // Initialize the Config object, reading the config.txt file. If there
@@ -123,7 +120,7 @@
 
           if (config.get(Config::Ident::BATTERY_TRIM, &batteryTrimFactor)) {
             LOG_D("Battery trim factor: {}", batteryTrimFactor);
-            battery.set_voltage_trim(batteryTrimFactor);
+            platform.getBattery().setVoltageTrim(batteryTrimFactor);
           }
         }
       #endif
@@ -158,23 +155,23 @@
           }
         #endif
 
-        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+        #if BACKIT_ENABLE
           backLit.setup();
         #endif
 
         if (!nvsMgrRes) {
           MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Hardware Problem!",
-                          "Failed to initialise NVS Flash. Entering Deep Sleep. " MSG);
+                          "Failed to initialise NVS Flash. Entering Deep Sleep. " WAKEUP_MSG);
 
           ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
+          platform.deepSleep();
         }
 
         if (configErr) {
           MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
-                          "Unable to read/save configuration file. Entering Deep Sleep. " MSG);
+                          "Unable to read/save configuration file. Entering Deep Sleep. " WAKEUP_MSG);
           ESP::delay(500);
-          inkplate_platform.deep_sleep(INT_PIN, LEVEL);
+          platform.deepSleep();
         }
 
         MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Starting", "One moment please...");
@@ -188,9 +185,9 @@
       } else {
         LOG_E("Font loading error.");
         MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Font Loading Problem!",
-                        "Unable to read required fonts. Entering Deep Sleep. " MSG);
+                        "Unable to read required fonts. Entering Deep Sleep. " WAKEUP_MSG);
         ESP::delay(500);
-        inkplate_platform.deep_sleep(INT_PIN, LEVEL);
+        platform.deepSleep();
       }
 
       #if DEBUGGING
@@ -293,16 +290,9 @@
       eventMgr.setup();
       booksDirController.setup();
 
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        #define MSG "the WakeUp button"
-      #else
-        #define MSG "a key"
-      #endif
-
       if (configErr) {
         MsgViewer::show(MsgViewer::MsgType::ALERT, false, true, "Configuration Problem!",
-                        "Unable to read/save configuration file. Entering Deep Sleep. Press " MSG
-                        " to restart.");
+                        "Unable to read/save configuration file. Entering Deep Sleep.");
         sleep(10);
         exit(0);
       }

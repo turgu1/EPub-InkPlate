@@ -4,7 +4,7 @@
 
 #include "global.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #include "config.hpp"
   #include "controllers/wifi.hpp"

@@ -7,7 +7,7 @@
 #include "viewers/html_interpreter.hpp"
 #include "viewers/page.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
 #else
@@ -35,7 +35,7 @@ public:
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     (void)timeout;
     QueueData wireData{};
     wireData.req           = data.req;
@@ -78,7 +78,7 @@ private:
   uint16_t pageBottom{0};
   int16_t currentItemrefIndex{-1};
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   static mqd_t retrieverQueue;
   static constexpr mq_attr retrieverAttr = {0, 5, sizeof(QueueData), 0};
 #else
@@ -86,14 +86,14 @@ private:
 #endif
 
   auto receive(QueueData &data, int timeout = -1) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
 #else
     return xQueueReceive(retrieverQueue, &data, timeout);
 #endif
   }
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   TaskHandle_t retrieverTaskHandle{nullptr};
 #else
   std::thread retrieverThread;

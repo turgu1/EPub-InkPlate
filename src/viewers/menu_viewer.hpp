@@ -80,7 +80,7 @@ class MenuViewer {
     uint16_t visibleEntryCount{ 0 };
     uint16_t textHeight{ 0 }, lineHeight{ 0 }, regionHeight{ 0 }, textYPos{ 0 };
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       bool hintShown{ false };
       auto findIndex(uint16_t x, uint16_t y) -> uint8_t;
     #endif

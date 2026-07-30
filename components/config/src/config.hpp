@@ -5,6 +5,8 @@
 #pragma once
 #include "global.hpp"
 
+#include "platform_config.hpp"
+
 #include "config_template.hpp"
 
 enum class ConfigIdent {
@@ -14,13 +16,13 @@ enum class ConfigIdent {
   #if DATE_TIME_RTC
     SHOW_RTC,   NTP_SERVER,         TIME_ZONE,
   #endif
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     CALIB_A, CALIB_B, CALIB_C, CALIB_D, CALIB_E, CALIB_F, CALIB_DIVIDER,
   #endif
   FONTS_DB, BATTERY_TRIM, COLUMN_COUNT, BT_KEYPAD_MAC, BT_KEYPAD_TYPE
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+#if TOUCH_CALIBRATION
   #if DATE_TIME_RTC
     using Config = ConfigBase<ConfigIdent, 36>;
   #else
@@ -70,7 +72,7 @@ enum class ConfigIdent {
     static char   ntpServer[32];
     static char   timeZone[32];
   #endif
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     static int64_t       calibA, calibB, calibC, calibD, calibE, calibF, calibDivider;
     static const int64_t defaultCalib = 0;
   #endif
@@ -103,8 +105,8 @@ enum class ConfigIdent {
     { Config::Ident::VERSION,            Config::EntryType::BYTE,     "version",            &version,         &theVersion,              0 },
     { Config::Ident::SSID,               Config::EntryType::STRING,   "wifi_ssid",          ssid,             "NONE",                  32 },
     { Config::Ident::PWD,                Config::EntryType::STRING,   "wifi_pwd",           pwd,              "NONE",                  32 },
-    { Config::Ident::DNS_NAME,           Config::EntryType::STRING,   "dns_name",           dnsName,          "inkplate",              32 },
-    { Config::Ident::AP_SSID,            Config::EntryType::STRING,   "ap_wifi_ssid",       apSsid,           "inkplate",              32 },
+    { Config::Ident::DNS_NAME,           Config::EntryType::STRING,   "dns_name",           dnsName,          "eink_reader",              32 },
+    { Config::Ident::AP_SSID,            Config::EntryType::STRING,   "ap_wifi_ssid",       apSsid,           "eink_reader",              32 },
     { Config::Ident::AP_PWD,             Config::EntryType::STRING,   "ap_wifi_pwd",        apPwd,            "qwerty1234",            32 },
     { Config::Ident::PORT,               Config::EntryType::INT,      "http_port",          &port,            &defaultPort,             0 },
     { Config::Ident::BATTERY,            Config::EntryType::BYTE,     "battery",            &battery,         &defaultBattery,          0 },
@@ -127,7 +129,7 @@ enum class ConfigIdent {
       { Config::Ident::TIME_ZONE,        Config::EntryType::STRING,   "tz",                 timeZone,         "",                      32 },
     #endif
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    #if TOUCH_CALIBRATION
       { Config::Ident::CALIB_A,          Config::EntryType::INT64,    "calib_a",            &calibA,          &defaultCalib,            0 },
       { Config::Ident::CALIB_B,          Config::EntryType::INT64,    "calib_b",            &calibB,          &defaultCalib,            0 },
       { Config::Ident::CALIB_C,          Config::EntryType::INT64,    "calib_c",            &calibC,          &defaultCalib,            0 },

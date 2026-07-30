@@ -4,6 +4,7 @@
 
 #include "page.hpp"
 
+#include "platform.hpp"
 #include "picture.hpp"
 
 #include "alloc.hpp"
@@ -1386,16 +1387,16 @@ auto Page::getPixelValue(const CSS::Value &value, const Format &fmt, int16_t ref
   case CSS::ValueType::PX:
     return value.num;
   case CSS::ValueType::PT:
-    return (value.num * Screen::RESOLUTION) / 72;
+    return (value.num * screen.getPixelsPerInch()) / 72;
   case CSS::ValueType::EM:
   case CSS::ValueType::REM:
-    return value.num * ((fmt.fontSize * Screen::RESOLUTION) / 72);
+    return value.num * ((fmt.fontSize * screen.getPixelsPerInch()) / 72);
   case CSS::ValueType::PERCENT:
     return (value.num * ref) / 100;
   case CSS::ValueType::NO_TYPE:
     return ref * value.num;
   case CSS::ValueType::CM:
-    return (value.num * Screen::RESOLUTION) / 2.54;
+    return (value.num * screen.getPixelsPerInch()) / 2.54;
   case CSS::ValueType::VH:
     return (value.num * (fmt.screenBottom - fmt.screenTop)) / 100;
   case CSS::ValueType::VW:
@@ -1419,7 +1420,7 @@ auto Page::getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref
   case CSS::ValueType::PX:
     //  pixels -> Screen HResolution per inch
     //    x    ->    72 pixels per inch
-    return (value.num * 72) / Screen::RESOLUTION; // convert pixels in points
+    return (value.num * 72) / screen.getPixelsPerInch(); // convert pixels in points
   case CSS::ValueType::PT:
     return value.num; // Already in points
   case CSS::ValueType::EM:
@@ -1436,9 +1437,9 @@ auto Page::getPointValue(const CSS::Value &value, const Format &fmt, int16_t ref
     return 0;
     break;
   case CSS::ValueType::VH:
-    return ((value.num * (fmt.screenBottom - fmt.screenTop)) / 100) * 72 / Screen::RESOLUTION;
+    return ((value.num * (fmt.screenBottom - fmt.screenTop)) / 100) * 72 / screen.getPixelsPerInch();
   case CSS::ValueType::VW:
-    return ((value.num * (fmt.screenRight - fmt.screenLeft)) / 100) * 72 / Screen::RESOLUTION;
+    return ((value.num * (fmt.screenRight - fmt.screenLeft)) / 100) * 72 / screen.getPixelsPerInch();
   case CSS::ValueType::INHERIT:
     return ref;
   default:

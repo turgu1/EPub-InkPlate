@@ -14,7 +14,7 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/screen_bottom.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "viewers/battery_viewer.hpp"
 #endif
 
@@ -95,7 +95,7 @@ auto BookViewer::buildPageAt(const PageId &pageId, EPubPtr &epub) -> void {
       .screenBottom     = pageBottom,
     };
 
-    #if EPUB_LINUX_BUILD
+    #if LINUX_BUILD
       std::this_thread::yield();
     #else
       vTaskDelay(pdMS_TO_TICKS(1));

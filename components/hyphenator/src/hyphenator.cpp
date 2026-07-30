@@ -53,7 +53,7 @@ Hyphenator::Hyphenator(const char *lang) {
       trieData = hrStart;
       trieSize = hrSize;
       break;
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
     case Language::CS: // Czech
       trieData = csStart;
       trieSize = csSize;

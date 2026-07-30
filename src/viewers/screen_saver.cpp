@@ -1,7 +1,9 @@
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #define __SCREEN_SAVER__ 1
   #include "screen_saver.hpp"
+
+  #include "platform.hpp"
 
   extern "C" {
     #include <dirent.h>

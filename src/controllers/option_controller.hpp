@@ -20,7 +20,7 @@ private:
   #if DATE_TIME_RTC
     bool dateTimeFormIsShown{false};
   #endif
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     bool calibrationIsShown{false};
   #endif
 
@@ -46,7 +46,7 @@ public:
     inline auto setDateTimeFormIsShown() -> void { dateTimeFormIsShown = true; }
   #endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     inline auto setCalibrationIsShown() -> void { calibrationIsShown = true; }
   #endif
 
@@ -58,7 +58,7 @@ public:
     #if DATE_TIME_RTC
       dateTimeFormIsShown = false;
     #endif
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    #if TOUCH_CALIBRATION
       calibrationIsShown = false;
     #endif
   }
@@ -67,7 +67,7 @@ public:
   auto defaultParameters() -> void;
   auto wifiMode() -> void;
   auto initNvs() -> void;
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     auto calibrate() -> void;
   #endif
   #if DATE_TIME_RTC

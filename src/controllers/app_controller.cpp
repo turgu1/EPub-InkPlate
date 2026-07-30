@@ -5,6 +5,8 @@
 #define __APP_CONTROLLER__ 1
 #include "controllers/app_controller.hpp"
 
+#include "platform.hpp"
+
 #include "controllers/book_controller.hpp"
 #include "controllers/book_param_controller.hpp"
 #include "controllers/books_dir_controller.hpp"
@@ -13,7 +15,7 @@
 #include "controllers/option_controller.hpp"
 #include "controllers/toc_controller.hpp"
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+#if BACKLIT_ENABLE
   #include "controllers/back_lit.hpp"
 #endif
 
@@ -29,7 +31,7 @@ auto AppController::start() -> void {
   currentCtrl = Ctrl::NONE;
   nextCtrl    = Ctrl::DIR;
 
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     launch();
     eventMgr.loop(); // Will start gtk. Will not return.
   #else
@@ -58,7 +60,7 @@ auto AppController::setController(Ctrl newCtrl) -> void {
 }
 
 auto AppController::launch() -> void {
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     if (nextCtrl == Ctrl::NONE) { return; }
   #endif
 
@@ -125,14 +127,17 @@ auto AppController::launch() -> void {
 auto AppController::inputEvent(const EventMgr::Event &event) -> void {
   if (nextCtrl != Ctrl::NONE) { launch(); }
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if BACKLIT_ENABLE
     if (event.kind == EventMgr::EventKind::PINCH_ENLARGE) {
       backLit.adjust(event.dist);
       return;
     } else if (event.kind == EventMgr::EventKind::PINCH_REDUCE) {
       backLit.adjust(-event.dist);
       return;
-    } else if (event.kind == EventMgr::EventKind::WAKEUP_BUTTON) {
+    } else 
+  #endif
+  #if WAKEUP_BUTTON_PRESENT
+    if (event.kind == EventMgr::EventKind::WAKEUP_BUTTON) {
       CommonActions::powerItOff();
       return;
     }

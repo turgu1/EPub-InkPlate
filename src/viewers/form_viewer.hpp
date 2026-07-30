@@ -8,6 +8,8 @@
 #include "himem.hpp"
 #include "himem_pool.hpp"
 
+#include "platform.hpp"
+
 #include "config.hpp"
 #include "controllers/event_mgr.hpp"
 #include "fonts.hpp"
@@ -23,7 +25,7 @@ enum class FormEntryType {
   VERTICAL,
   UINT16,
   FLOAT,
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     DONE
   #endif
 };
@@ -138,7 +140,7 @@ class FormField {
       }
     }
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    #if TOUCH_ENABLE
       [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
         return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
                (x <= (fieldPos.x + fieldDim.width + 10)) && (y <= (fieldPos.y + fieldDim.height + 10));
@@ -177,11 +179,12 @@ class FormChoiceField : public FormField {
       static constexpr FormChoice rightCornerChoices[3] = { { "NONE", 0 }, { "DATE TIME", 1 }, { "HEAP", 2 } };
     #endif
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_6_V2 || INKPLATE_10_V2 || TOUCH_TRIAL || TOUCH_MENU
+    #if OLD_INKPLATE
+      static constexpr FormChoice orientationChoices[3] = { 
+        { "LEFT", 0 }, { "RIGHT", 1 }, { "BOTTOM", 2 } };
+    #else
       static constexpr FormChoice orientationChoices[4] = {
         { "LEFT", 3 }, { "RIGHT", 2 }, { "TOP", 1 }, { "BOTTOM", 0 } };
-    #else
-      static constexpr FormChoice orientationChoices[3] = { { "LEFT", 0 }, { "RIGHT", 1 }, { "BOTTOM", 2 } };
     #endif
 
     static FormChoice fontChoices[8];
@@ -235,7 +238,7 @@ class FormChoiceField : public FormField {
       }
     }
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       auto event(const EventMgr::Event &event) -> bool {
         oldItem = currentItem;
         Items::iterator it;
@@ -543,7 +546,7 @@ class FormFloat : public FormField {
     auto computeFieldDim() -> void { fieldDim = font.getASCIISize("XXXXXXX", FORM_FONT_SIZE); }
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
   class FormDone : public FormField {
 
     public:
@@ -603,7 +606,7 @@ class FieldFactory {
         return FormUInt16::Make(entry, font, page);
       case FormEntryType::FLOAT:
         return FormFloat::Make(entry, font, page);
-        #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+        #if TOUCH_ENABLE
           case FormEntryType::DONE:
             return FormDone::Make(entry, font, page);
         #endif
@@ -658,7 +661,7 @@ class FormViewer {
 
     Pos bottomMsgPos;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       auto findField(uint16_t x, uint16_t y) -> Fields::iterator {
         for (Fields::iterator it = fields.begin(); it != fields.end(); ++it) {
           if ((*it)->isPointed(x, y)) { return it; }

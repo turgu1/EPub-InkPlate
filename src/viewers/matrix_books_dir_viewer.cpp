@@ -5,6 +5,8 @@
 #define __MATRIX_BOOKS_DIR_VIEWER__ 1
 #include "viewers/matrix_books_dir_viewer.hpp"
 
+#include "platform.hpp"
+
 #include "picture.hpp"
 
 #include "config.hpp"
@@ -13,7 +15,7 @@
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "models/nvs_mgr.hpp"
   #include "viewers/battery_viewer.hpp"
 #endif
@@ -22,7 +24,7 @@
 
 #include <iomanip>
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
   static const std::string TOUCH_AND_HOLD_STR = "Touch and hold cover for info. Tap to open.";
 #endif
 
@@ -36,10 +38,10 @@ auto MatrixBooksDirViewer::setup() -> void {
   FontPtr &pageNbrFont = appFonts.getFont(ScreenBottom::FONT);
   pagenbrFontHeight    = pageNbrFont->getLineHeight(ScreenBottom::FONT_SIZE) + 10;
 
-  firstEntryYpos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 30;
-  headerHeight   = firstEntryYpos - 20;
+  firstEntryYPos = (titleFontHeight << 1) + authorFontHeight + SPACE_BELOW_INFO + 30;
+  headerHeight   = firstEntryYPos - 20;
 
-  lineCount = (Screen::getHeight() - firstEntryYpos - pagenbrFontHeight - SPACE_ABOVE_PAGENBR +
+  lineCount = (Screen::getHeight() - firstEntryYPos - pagenbrFontHeight - SPACE_ABOVE_PAGENBR +
                MIN_SPACE_BETWEEN_ENTRIES) /
               (BooksDir::coverDim.height + MIN_SPACE_BETWEEN_ENTRIES);
 
@@ -47,11 +49,12 @@ auto MatrixBooksDirViewer::setup() -> void {
                 (BooksDir::coverDim.width + MIN_SPACE_BETWEEN_ENTRIES);
 
   horizSpaceBetweenEntries =
-    (Screen::getWidth() - 10 - (BooksDir::coverDim.width * columnCount)) / (columnCount - 1);
-  vertSpaceBetweenEntries = (Screen::getHeight() - firstEntryYpos - pagenbrFontHeight -
+    (Screen::getWidth() - 10 - (BooksDir::coverDim.width * columnCount)) / (columnCount + 1);
+  vertSpaceBetweenEntries = (Screen::getHeight() - firstEntryYPos - pagenbrFontHeight -
                              SPACE_ABOVE_PAGENBR - (BooksDir::coverDim.height * lineCount)) /
                             (lineCount + 1);
-  firstEntryYpos += vertSpaceBetweenEntries;
+  firstEntryXPos = 5 + horizSpaceBetweenEntries;
+  firstEntryYPos += vertSpaceBetweenEntries;
 
   booksPerPage = lineCount * columnCount;
   pageCount    = (booksDir.getBookCount() + booksPerPage - 1) / booksPerPage;
@@ -73,8 +76,8 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
   if (last > booksDir.getBookCount()) { last = booksDir.getBookCount(); }
 
-  int16_t      xpos     = 5;
-  int16_t      ypos     = firstEntryYpos;
+  int16_t      xpos     = firstEntryXPos;
+  int16_t      ypos     = firstEntryYPos;
   int16_t      line_pos = 0;
 
   Page::Format fmt = {
@@ -103,7 +106,7 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
                      Pos(xpos + ((BooksDir::coverDim.width - book->coverDim.width) >> 1),
                          ypos + ((BooksDir::coverDim.height - book->coverDim.height) >> 1)));
 
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    #if !TOUCH_ENABLE
       if (item_idx == currentItemIdx) {
         page->putHighlight(Dim(BooksDir::coverDim.width + 4, BooksDir::coverDim.height + 4),
                            Pos(xpos - 2, ypos - 2));
@@ -127,7 +130,7 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
         page->setLimits(fmt);
         page->newParagraph(fmt);
-        #if EPUB_INKPLATE_BUILD
+        #if EINK_BUILD
           if (nvsMgr.idExists(book->id)) { page->addText("[Reading] ", fmt); }
         #endif
         page->addText(title, fmt);
@@ -147,14 +150,14 @@ auto MatrixBooksDirViewer::showPage(int16_t page_nbr, int16_t hightlight_item_id
 
     if (line_pos >= lineCount) {
       xpos += BooksDir::coverDim.width + horizSpaceBetweenEntries;
-      ypos     = firstEntryYpos;
+      ypos     = firstEntryYPos;
       line_pos = 0;
     } else {
       ypos += BooksDir::coverDim.height + vertSpaceBetweenEntries;
     }
   }
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     fmt.screenTop = 18;
     page->setLimits(fmt);
     page->newParagraph(fmt);
@@ -199,7 +202,7 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
     line_idx   = currentItemIdx % lineCount;
 
     xpos = 5 + ((BooksDir::coverDim.width + horizSpaceBetweenEntries) * column_idx);
-    ypos = firstEntryYpos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
+    ypos = firstEntryYPos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
 
     book = booksDir.getBookData(book_idx);
 
@@ -231,7 +234,7 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
   line_idx   = currentItemIdx % lineCount;
 
   xpos = 5 + ((BooksDir::coverDim.width + horizSpaceBetweenEntries) * column_idx);
-  ypos = firstEntryYpos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
+  ypos = firstEntryYPos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
 
   page->putHighlight(Dim(BooksDir::coverDim.width + 4, BooksDir::coverDim.height + 4),
                      Pos(xpos - 2, ypos - 2));
@@ -258,7 +261,7 @@ auto MatrixBooksDirViewer::highlight(int16_t item_idx) -> void {
 
   page->setLimits(fmt);
   page->newParagraph(fmt);
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     if (nvsMgr.idExists(book->id)) { page->addText("[Reading] ", fmt); }
   #endif
   page->addText(title, fmt);
@@ -291,7 +294,7 @@ auto MatrixBooksDirViewer::clearHighlight() -> void {
 
   int16_t xpos = 5 + ((BooksDir::coverDim.width + horizSpaceBetweenEntries) * column_idx);
   int16_t ypos =
-    firstEntryYpos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
+    firstEntryYPos + ((BooksDir::coverDim.height + vertSpaceBetweenEntries) * line_idx);
 
   auto book = booksDir.getBookData(book_idx);
 
@@ -317,7 +320,7 @@ auto MatrixBooksDirViewer::clearHighlight() -> void {
   page->clearRegion(Dim(Screen::getWidth() - 40, (titleFontHeight << 1) + authorFontHeight),
                     Pos(20, 20));
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     fmt.screenTop = 18;
     page->setLimits(fmt);
     page->newParagraph(fmt);
@@ -325,7 +328,7 @@ auto MatrixBooksDirViewer::clearHighlight() -> void {
     page->endParagraph(fmt);
   #endif
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     BatteryViewer::show(page);
   #endif
 
@@ -361,7 +364,7 @@ auto MatrixBooksDirViewer::nextPage() -> int16_t {
     showPage(page_nbr, 0);
     currentBookIdx = page_nbr * booksPerPage;
   } else if ((page_nbr + 1) == pageCount) {
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    #if !TOUCH_ENABLE
       highlight(booksDir.getBookCount() % booksPerPage - 1);
     #endif
     currentBookIdx = booksDir.getBookCount() - 1;
@@ -377,7 +380,7 @@ auto MatrixBooksDirViewer::prevPage() -> int16_t {
   if (currentPageNbr != page_nbr) {
     showPage(page_nbr, 0);
   } else {
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU)
+    #if !TOUCH_ENABLE
       highlight(0);
     #endif
   }

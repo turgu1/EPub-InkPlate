@@ -6,7 +6,9 @@
 // Touch Screen calibration algorithm from: https://www.embedded.com/how-to-calibrate-touch-screens
 //
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+#include "platform.hpp"
+
+#if TOUCH_ENABLE && !LINUX_BUILD
 
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"
@@ -14,6 +16,7 @@
   #include <cmath>
   #include <iostream>
 
+  
   #include "config.hpp"
   #include "controllers/app_controller.hpp"
   #include "helpers/goto_deep_sleep.hpp"
@@ -32,16 +35,9 @@
   #include "freertos/queue.h"
   #include "freertos/task.h"
 
-  #include "inkplate_platform.hpp"
   #include "viewers/msg_viewer.hpp"
   #include "viewers/screen_saver.hpp"
   #include "wire.hpp"
-
-  #if INKPLATE_6FLICK
-    #include "touch_screen_cypress.hpp"
-  #else
-    #include "touch_screen_elan.hpp"
-  #endif
 
   #include "logging.hpp"
 
@@ -90,48 +86,54 @@
       switch (state) {
       case State::NONE:
         xQueueReceive(touchscreenIsrQueue, &ioNum, portMAX_DELAY);
-        count = touch_screen.get_position(x, y);
-        if (timeout) {
-          timeout = false;
-        } else if (count == 1) {
-          state = State::WAIT_NEXT;
-          eventMgr.setPosition(x[0], y[0]);
-          eventMgr.toUserCoord(x[0], y[0]);
-          xStart = x[0];
-          yStart = y[0];
-        } else if (count == 2) {
-          eventMgr.toUserCoord(x[0], y[0]);
-          eventMgr.toUserCoord(x[1], y[1]);
-          event.dist = lastDist = DISTANCE2;
-          state                 = State::PINCHING;
-        }
-        // else if (count == 0) {
-        //   event.kind = EventMgr::EventKind::WAKEUP_BUTTON;
-        // }
-        break;
-
-      case State::WAIT_NEXT:
-        if (xQueueReceive(touchscreenIsrQueue, &ioNum, 500 / portTICK_PERIOD_MS)) {
-          count = touch_screen.get_position(x, y);
-          if (count == 0) {
-            state      = State::NONE;
-            event.kind = EventMgr::EventKind::TAP;
-            event.x    = xStart;
-            event.y    = yStart;
+        if (ioNum != 0) {
+          count = platform.getTouchScreen().getPosition(x, y);
+          if (timeout) {
+            timeout = false;
           } else if (count == 1) {
+            state = State::WAIT_NEXT;
             eventMgr.setPosition(x[0], y[0]);
             eventMgr.toUserCoord(x[0], y[0]);
-            xEnd = x[0];
-            yEnd = y[0];
-            if (DISTANCE > distanceThreshold) {
-              state = State::SWIPING;
-            }
+            xStart = x[0];
+            yStart = y[0];
           } else if (count == 2) {
             eventMgr.toUserCoord(x[0], y[0]);
             eventMgr.toUserCoord(x[1], y[1]);
             event.dist = lastDist = DISTANCE2;
             state                 = State::PINCHING;
           }
+          // else if (count == 0) {
+          //   event.kind = EventMgr::EventKind::WAKEUP_BUTTON;
+          // }
+        }
+        platform.getTouchScreen().appIsrHandlerCompleted();
+        break;
+
+      case State::WAIT_NEXT:
+        if (xQueueReceive(touchscreenIsrQueue, &ioNum, 500 / portTICK_PERIOD_MS)) {
+          if (ioNum != 0) {
+            count = platform.getTouchScreen().getPosition(x, y);
+            if (count == 0) {
+              state      = State::NONE;
+              event.kind = EventMgr::EventKind::TAP;
+              event.x    = xStart;
+              event.y    = yStart;
+            } else if (count == 1) {
+              eventMgr.setPosition(x[0], y[0]);
+              eventMgr.toUserCoord(x[0], y[0]);
+              xEnd = x[0];
+              yEnd = y[0];
+              if (DISTANCE > distanceThreshold) {
+                state = State::SWIPING;
+              }
+            } else if (count == 2) {
+              eventMgr.toUserCoord(x[0], y[0]);
+              eventMgr.toUserCoord(x[1], y[1]);
+              event.dist = lastDist = DISTANCE2;
+              state                 = State::PINCHING;
+            }
+          }
+          platform.getTouchScreen().appIsrHandlerCompleted();
         } else {
           state      = State::HOLDING;
           event.kind = EventMgr::EventKind::HOLD;
@@ -141,13 +143,16 @@
         break;
 
       case State::HOLDING:
-        ESP::delay_microseconds(1000);
+        ESP::delayMicroseconds(1000);
         if (xQueueReceive(touchscreenIsrQueue, &ioNum, maxDelayMs / portTICK_PERIOD_MS)) {
-          count = touch_screen.get_position(x, y);
-          if (count == 0) {
-            event.kind = EventMgr::EventKind::RELEASE;
-            state      = State::NONE;
+          if (ioNum != 0) {
+            count = platform.getTouchScreen().getPosition(x, y);
+            if (count == 0) {
+              event.kind = EventMgr::EventKind::RELEASE;
+              state      = State::NONE;
+            }
           }
+          platform.getTouchScreen().appIsrHandlerCompleted();
         } else {   // timeout
           event.kind = EventMgr::EventKind::RELEASE;
           state      = State::NONE;
@@ -157,23 +162,26 @@
 
       case State::SWIPING:
         if (xQueueReceive(touchscreenIsrQueue, &ioNum, maxDelayMs / portTICK_PERIOD_MS)) {
-          count = touch_screen.get_position(x, y);
-          if (count == 0) {
-            event.kind =
-              (xStart < xEnd) ? EventMgr::EventKind::SWIPE_RIGHT : EventMgr::EventKind::SWIPE_LEFT;
-            state = State::NONE;
+          if (ioNum != 0) {
+            count = platform.getTouchScreen().getPosition(x, y);
+            if (count == 0) {
+              event.kind =
+                (xStart < xEnd) ? EventMgr::EventKind::SWIPE_RIGHT : EventMgr::EventKind::SWIPE_LEFT;
+              state = State::NONE;
+            }
+            if (count == 1) {
+              eventMgr.setPosition(x[0], y[0]);
+              eventMgr.toUserCoord(x[0], y[0]);
+              xEnd = x[0];
+              yEnd = y[0];
+            } else if (count == 2) {
+              eventMgr.toUserCoord(x[0], y[0]);
+              eventMgr.toUserCoord(x[1], y[1]);
+              event.dist = lastDist = DISTANCE2;
+              state                 = State::PINCHING;
+            }
           }
-          if (count == 1) {
-            eventMgr.setPosition(x[0], y[0]);
-            eventMgr.toUserCoord(x[0], y[0]);
-            xEnd = x[0];
-            yEnd = y[0];
-          } else if (count == 2) {
-            eventMgr.toUserCoord(x[0], y[0]);
-            eventMgr.toUserCoord(x[1], y[1]);
-            event.dist = lastDist = DISTANCE2;
-            state                 = State::PINCHING;
-          }
+          platform.getTouchScreen().appIsrHandlerCompleted();
         } else {   // timeout
           event.kind =
             (xStart < xEnd) ? EventMgr::EventKind::SWIPE_RIGHT : EventMgr::EventKind::SWIPE_LEFT;
@@ -184,23 +192,26 @@
 
       case State::PINCHING:
         if (xQueueReceive(touchscreenIsrQueue, &ioNum, maxDelayMs / portTICK_PERIOD_MS)) {
-          count = touch_screen.get_position(x, y);
-          if (count == 0) {
-            event.kind = EventMgr::EventKind::RELEASE;
-            state      = State::NONE;
-          } else if (count == 2) {
-            eventMgr.toUserCoord(x[0], y[0]);
-            eventMgr.toUserCoord(x[1], y[1]);
-            uint16_t thisDist    = DISTANCE2;
-            uint16_t newDistDiff = abs(lastDist - thisDist);
-            LOG_D("Distance diffs: {} {}", lastDist, newDistDiff);
-            if (newDistDiff != 0) {
-              event.kind = (lastDist < thisDist) ? EventMgr::EventKind::PINCH_ENLARGE
-                                               : EventMgr::EventKind::PINCH_REDUCE;
-              event.dist = newDistDiff;
-              lastDist   = thisDist;
+          if (ioNum != 0) {
+            count = platform.getTouchScreen().getPosition(x, y);
+            if (count == 0) {
+              event.kind = EventMgr::EventKind::RELEASE;
+              state      = State::NONE;
+            } else if (count == 2) {
+              eventMgr.toUserCoord(x[0], y[0]);
+              eventMgr.toUserCoord(x[1], y[1]);
+              uint16_t thisDist    = DISTANCE2;
+              uint16_t newDistDiff = abs(lastDist - thisDist);
+              LOG_D("Distance diffs: {} {}", lastDist, newDistDiff);
+              if (newDistDiff != 0) {
+                event.kind = (lastDist < thisDist) ? EventMgr::EventKind::PINCH_ENLARGE
+                                                : EventMgr::EventKind::PINCH_REDUCE;
+                event.dist = newDistDiff;
+                lastDist   = thisDist;
+              }
             }
           }
+          platform.getTouchScreen().appIsrHandlerCompleted();
         } else {
           event.kind = EventMgr::EventKind::RELEASE;
           state      = State::NONE;
@@ -298,40 +309,72 @@
     Screen::Orientation orientation = screen.getOrientation();
 
     if (a == 0) {
-      LOG_I("Calibration required!");
+      // LOG_I("Calibration required!");
       switch (orientation) {
       case Screen::Orientation::BOTTOM:
-        LOG_D("Bottom...");
-        temp = y;
-        y    = ((uint32_t)(Screen::getHeight() - 1) * x) / touch_screen.get_x_resolution();
-        x    = Screen::getWidth() -
-               ((uint32_t)(Screen::getWidth() - 1) * temp) / touch_screen.get_y_resolution();
+        LOG_I("Bottom from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+               x, y, 
+               Screen::getWidth(), Screen::getHeight(), 
+               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          // It's already OK...
+        #else // Inkplate devices        temp = y;
+          y    = ((uint32_t)(Screen::getHeight() - 1) * x) / platform.getTouchScreen().getXResolution();
+          x    = Screen::getWidth() -
+                ((uint32_t)(Screen::getWidth() - 1) * temp) / platform.getTouchScreen().getYResolution();
+        #endif
         break;
 
       case Screen::Orientation::TOP:
-        LOG_D("Top...");
-        temp = y;
-        y    = Screen::getHeight() -
-               ((uint32_t)(Screen::getHeight() - 1) * x) / touch_screen.get_x_resolution();
-        x = ((uint32_t)(Screen::getWidth() - 1) * temp) / touch_screen.get_y_resolution();
+        LOG_I("Top from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+               x, y, 
+               Screen::getWidth(), Screen::getHeight(), 
+               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          y = Screen::getHeight() - y;
+          x = Screen::getWidth() - x;
+        #else // Inkplate devices
+          temp = y;
+          y    = Screen::getHeight() -
+                ((uint32_t)(Screen::getHeight() - 1) * x) / platform.getTouchScreen().getXResolution();
+          x = ((uint32_t)(Screen::getWidth() - 1) * temp) / platform.getTouchScreen().getYResolution();
+        #endif
         break;
 
       case Screen::Orientation::LEFT:
-        LOG_D("Left...");
-        x = Screen::getWidth() -
-            ((uint32_t)(Screen::getWidth() - 1) * x) / touch_screen.get_x_resolution();
-        y = Screen::getHeight() -
-            ((uint32_t)(Screen::getHeight() - 1) * y) / touch_screen.get_y_resolution();
+        LOG_I("Left from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+               x, y, 
+               Screen::getWidth(), Screen::getHeight(), 
+               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          temp = y;
+          y = x;
+          x = Screen::getWidth() - temp;
+        #else // Inkplate devices
+          x = Screen::getWidth() -
+              ((uint32_t)(Screen::getWidth() - 1) * x) / platform.getTouchScreen().getXResolution();
+          y = Screen::getHeight() -
+              ((uint32_t)(Screen::getHeight() - 1) * y) / platform.getTouchScreen().getYResolution();
+        #endif
         break;
 
       case Screen::Orientation::RIGHT:
-        LOG_D("Right...");
-        x = ((uint32_t)(Screen::getWidth() - 1) * x) / touch_screen.get_x_resolution();
-        y = ((uint32_t)(Screen::getHeight() - 1) * y) / touch_screen.get_y_resolution();
+        // LOG_I("Right from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+        //        x, y, 
+        //        Screen::getWidth(), Screen::getHeight(), 
+        //        platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          temp = y;
+          y = platform.getTouchScreen().getXResolution() - x;
+          x = temp;
+        #else // Inkplate devices
+          x = ((uint32_t)(Screen::getWidth() - 1) * x) / platform.getTouchScreen().getXResolution();
+          y = ((uint32_t)(Screen::getHeight() - 1) * y) / platform.getTouchScreen().getYResolution();
+        #endif
         break;
       }
     } else {
-      LOG_D("Coordinates to transform: [{}, {}]", x, y);
+      LOG_I("Coordinates to transform: [{}, {}]", x, y);
 
       uint16_t xd = (a * x + b * y + c) / divider;
       uint16_t yd = (d * x + e * y + f) / divider;
@@ -364,9 +407,8 @@
         y = yd;
         break;
       }
-
-      LOG_D("Result of transform: [{}, {}]", x, y);
     }
+    LOG_I("Result of transform: [{}, {}]", x, y);
   }
 
   auto EventMgr::calibrationEvent(const Event &event) -> bool {
@@ -400,8 +442,8 @@
         #define Y1 touchPoint.y[1]
         #define Y2 touchPoint.y[2]
 
-        calibPoint = { .x = { 100, U16(e_ink.get_height() - 100), U16(e_ink.get_height() / 2) },
-                       .y = { 100, U16(e_ink.get_width() / 2), U16(e_ink.get_width() - 100) } };
+        calibPoint = { .x = { 100, U16(platform.getEInk().getHeight() - 100), U16(platform.getEInk().getHeight() / 2) },
+                       .y = { 100, U16(platform.getEInk().getWidth() / 2), U16(platform.getEInk().getWidth() - 100) } };
 
         #define XD0 calibPoint.x[0]
         #define XD1 calibPoint.x[1]
@@ -496,7 +538,7 @@
           LOG_D("Light Sleep for {} minutes...", lightSleepDuration);
           ESP::delay(500);
 
-          if (inkplate_platform.light_sleep(lightSleepDuration, TouchScreen::INTERRUPT_PIN, 0)) {
+          if (platform.lightSleep(lightSleepDuration)) {
             LOG_I("Timed out on Light Sleep. Going now to Deep Sleep");
 
             gotoDeepSleep(lightSleepDuration);
@@ -515,10 +557,10 @@
     touchscreenEventQueue = xQueueCreate(   // create a queue to handle event from task
       20, sizeof(EventMgr::Event));
 
-    touch_screen.set_app_isr_handler(touchscreenIsrHandler);
+    platform.getTouchScreen().setAppIsrHandler(touchscreenIsrHandler);
 
     TaskHandle_t taskHandle = NULL;
-    xTaskCreate(getEventTask, "GetEvent", 2000, nullptr, 10, &taskHandle);
+    xTaskCreate(getEventTask, "GetEvent", 4000, nullptr, 10, &taskHandle);
 
     return true;
   }

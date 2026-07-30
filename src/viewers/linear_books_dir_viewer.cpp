@@ -5,6 +5,8 @@
 #define __LINEAR_BOOKS_DIR_VIEWER__ 1
 #include "viewers/linear_books_dir_viewer.hpp"
 
+#include "platform.hpp"
+
 #include "picture.hpp"
 
 #include "config.hpp"
@@ -12,7 +14,7 @@
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "models/nvs_mgr.hpp"
   #include "viewers/battery_viewer.hpp"
 #endif
@@ -76,7 +78,7 @@ auto LinearBooksDirViewer::showPage(int16_t pageNbr, int16_t hightlightItemIdx) 
     page->putPicture(std::move(picture),
                      Pos(10 + BooksDir::coverDim.width - book->coverDim.width, ypos));
 
-    #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+    #if !TOUCH_ENABLE
       if (itemIdx == currentItemIdx) {
         page->putHighlight(
           Dim(Screen::getWidth() - (25 + BooksDir::coverDim.width), BooksDir::coverDim.height),
@@ -93,7 +95,7 @@ auto LinearBooksDirViewer::showPage(int16_t pageNbr, int16_t hightlightItemIdx) 
 
     page->setLimits(fmt);
     page->newParagraph(fmt);
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       if (nvsMgr.idExists(book->id)) { page->addText("[Reading] ", fmt); }
     #endif
     page->addText(book->title, fmt);
@@ -116,7 +118,7 @@ auto LinearBooksDirViewer::showPage(int16_t pageNbr, int16_t hightlightItemIdx) 
 }
 
 auto LinearBooksDirViewer::highlight(int16_t itemIdx) -> void {
-  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+  #if !TOUCH_ENABLE
     page->setComputeMode(Page::ComputeMode::DISPLAY);
 
     if (currentItemIdx != itemIdx) {
@@ -154,7 +156,7 @@ auto LinearBooksDirViewer::highlight(int16_t itemIdx) -> void {
 
       page->setLimits(fmt);
       page->newParagraph(fmt);
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         if (nvsMgr.idExists(book->id)) { page->addText("[Reading] ", fmt); }
       #endif
       page->addText(book->title, fmt);
@@ -192,7 +194,7 @@ auto LinearBooksDirViewer::highlight(int16_t itemIdx) -> void {
 
       page->setLimits(fmt);
       page->newParagraph(fmt);
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         if (nvsMgr.idExists(book->id)) { page->addText("[Reading] ", fmt); }
       #endif
       page->addText(book->title, fmt);
@@ -205,7 +207,7 @@ auto LinearBooksDirViewer::highlight(int16_t itemIdx) -> void {
       page->addText(book->author, fmt);
       page->endParagraph(fmt);
 
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         BatteryViewer::show(page);
       #endif
 

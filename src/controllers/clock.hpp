@@ -4,11 +4,9 @@
 
 #if DATE_TIME_RTC
 
-  #if EPUB_INKPLATE_BUILD
-    #include "inkplate_platform.hpp"
+  #if EINK_BUILD
+    #include "platform.hpp"
   #endif
-
-  #include "logging.hpp"
 
   #include <sys/time.h>
 
@@ -18,9 +16,9 @@
 
   public:
     static auto setDateTime(const time_t &tm) -> void {
-      #if EPUB_INKPLATE_BUILD
-        if (rtc.is_present()) {
-          rtc.set_date_time(&tm);
+      #if EINK_BUILD
+        if (platform.getRTC().isPresent()) {
+          platform.getRTC().setDateTime(&tm);
         } else {
           timeval tv;
           tv.tv_sec  = tm;
@@ -31,10 +29,10 @@
     }
 
     static auto getDateTime(time_t &t) -> void {
-      #if EPUB_INKPLATE_BUILD
-        if (rtc.is_present()) {
+      #if EINK_BUILD
+        if (platform.getRTC().isPresent()) {
           LOG_D("RTC chip is present");
-          rtc.get_date_time(&t);
+          platform.getRTC().getDateTime(&t);
         } else {
           LOG_D("RTC chip is NOT present");
           time(&t);

@@ -1,6 +1,8 @@
 #define _SCREEN_BOTTOM_ 1
 #include "viewers/screen_bottom.hpp"
 
+#include "platform.hpp"
+
 #include "config.hpp"
 #include "controllers/clock.hpp"
 #include "screen.hpp"
@@ -31,7 +33,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
 
   int8_t             showHeap = 0;
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     config.get(Config::Ident::SHOW_HEAP, &showHeap);
   #endif
 
@@ -68,7 +70,7 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
     }
   }
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
 
     if (showHeap != 0) {
       ostr.str(std::string());
@@ -104,9 +106,15 @@ auto ScreenBottom::show(PagePtr &page, int16_t pageNbr, int16_t pageCount) -> vo
       localtime_r(&epoch, &time);
 
       ostr.str(std::string());
-      ostr << dw[static_cast<int8_t>(time.tm_wday)] << " - " << std::setfill('0') << std::setw(2)
-           << +(time.tm_mon + 1) << '/' << std::setw(2) << +time.tm_mday << ' ' << std::setw(2)
-           << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
+      if (Screen::getWidth() < 600) {
+        ostr << std::setfill('0') << std::setw(2)
+             << +(time.tm_mon + 1) << '/' << std::setw(2) << +time.tm_mday << ' ' << std::setw(2)
+             << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
+      } else {
+        ostr << dw[static_cast<int8_t>(time.tm_wday)] << " - " << std::setfill('0') << std::setw(2)
+             << +(time.tm_mon + 1) << '/' << std::setw(2) << +time.tm_mday << ' ' << std::setw(2)
+             << +time.tm_hour << ':' << std::setw(2) << +time.tm_min;
+      }
 
       Dim dim = font->getASCIISize(ostr.str().c_str(), FONT_SIZE);
 

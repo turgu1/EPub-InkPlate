@@ -3,7 +3,7 @@
   #define __NTP__ 1
   #include "controllers/ntp.hpp"
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     #include "config.hpp"
     #include "controllers/clock.hpp"
     #include "controllers/wifi.hpp"
@@ -15,7 +15,7 @@
   auto NTP::error(const char *msg) -> bool {
     LOG_E("{}", msg);
 
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       wifi.stop();
     #endif
 
@@ -23,7 +23,7 @@
   }
 
   auto NTP::getAndSetTime() -> bool {
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
 
       int                sockfd;
 

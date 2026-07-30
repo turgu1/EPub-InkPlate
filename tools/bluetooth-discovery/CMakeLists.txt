@@ -49,7 +49,7 @@ set(PROJECT_VER "${APP_VERSION}-${DEVICE_NAME}-${THE_TIME}")
 
 add_compile_definitions(
     APP_VERSION="${APP_VERSION}"
-    EPUB_INKPLATE_BUILD=1)
+    EINK_BUILD=1)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(Bluetooth-Discovery)

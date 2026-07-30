@@ -5,6 +5,8 @@
 #define __MENU_VIEWER__ 1
 #include "viewers/menu_viewer.hpp"
 
+#include "platform.hpp"
+
 #include "controllers/app_controller.hpp"
 #include "fonts.hpp"
 #include "menu_viewer.hpp"
@@ -164,12 +166,12 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
   while (!menu[entryIndex].visible) entryIndex++;
   currentEntryIndex = entryIndex;
 
-  #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+  #if !TOUCH_ENABLE
     page->putHighlight(Dim(entryLocs[entryIndex].dim.width + 8, entryLocs[entryIndex].dim.height + 8),
                        Pos(entryLocs[entryIndex].pos.x - 4, entryLocs[entryIndex].pos.y - 4));
   #endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  #if TOUCH_ENABLE
     showCaption(TOUCH_AND_HOLD_STR, fmt);
     hintShown = false;
   #else
@@ -183,7 +185,7 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
   page->paint(clearScreen);
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if TOUCH_ENABLE
   auto MenuViewer::findIndex(uint16_t x, uint16_t y) -> uint8_t {
     LOG_D("Find Index: [{} {}]", x, y);
 
@@ -205,7 +207,7 @@ auto MenuViewer::show(MenuEntry *theMenu, uint8_t entryIndex, bool clearScreen) 
 #endif
 
 auto MenuViewer::clearHighlight() -> void {
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  #if TOUCH_ENABLE
     Page::Format fmt = {
       .fontSize     = CAPTION_SIZE,
       .screenBottom = 0,
@@ -235,7 +237,7 @@ auto MenuViewer::event(const EventMgr::Event &event) -> bool {
     .screenBottom = 0,
   };
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  #if TOUCH_ENABLE
 
     switch (event.kind) {
     case EventMgr::EventKind::HOLD:
@@ -253,7 +255,7 @@ auto MenuViewer::event(const EventMgr::Event &event) -> bool {
       break;
 
     case EventMgr::EventKind::RELEASE:
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         ESP::delay(1000);
       #endif
       clearHighlight();

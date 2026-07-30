@@ -5,6 +5,7 @@
 #include "ttf2.hpp"
 
 #include "screen.hpp"
+#include "platform.hpp"
 
 #include <iostream>
 #include <ostream>
@@ -149,8 +150,8 @@ auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
     }
 
   } else {
-    LOG_W("Next charcode not found in face: U+{:04X}, font_index: {}", (uint32_t)nextCharcode,
-          fontsCacheIndex);
+    // LOG_W("Next charcode not found in face: U+{:04X}, font_index: {}", (uint32_t)nextCharcode,
+    //       fontsCacheIndex);
   }
 
   return kern;
@@ -158,12 +159,12 @@ auto TTF::getKern(Glyph &glyph, char32_t nextCharcode) -> int16_t {
 
 auto TTF::setFontSize(int16_t size) -> bool {
   int error = (currentSizeUnit == SizeUnit::POINTS)
-                  ? FT_Set_Char_Size(face,               // handle to face object
-                                     0,                  // char_width in 1/64th of points
-                                     size * 64,          // char_height in 1/64th of points
-                                     Screen::RESOLUTION, // horizontal device resolution
-                                     Screen::RESOLUTION) // vertical device resolution
-                  : FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(size));
+    ? FT_Set_Char_Size(face,               // handle to face object
+                        0,                  // char_width in 1/64th of points
+                        size * 64,          // char_height in 1/64th of points
+                        screen.getPixelsPerInch(), // horizontal device resolution
+                        screen.getPixelsPerInch()) // vertical device resolution
+    : FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(size));
   if (error) {
     LOG_E("Unable to set font size Error code: {}", error);
     return false;

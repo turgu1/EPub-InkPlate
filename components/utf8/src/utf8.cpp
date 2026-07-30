@@ -137,7 +137,7 @@ static constexpr frozen::unordered_map<frozen::string, char32_t, 129> entities =
 };
 
 
-static constexpr frozen::unordered_set<char32_t, 22> shouldTrim {
+static constexpr frozen::unordered_set<char32_t, 27> shouldTrim {
   0x0027, 0x0022, // ' and "
   0x002C, 0x002E, // , and .
   0x0021, 0x003F, // ! and ?
@@ -149,6 +149,10 @@ static constexpr frozen::unordered_set<char32_t, 22> shouldTrim {
   0x00AB, 0x00BB, // « and »
   0x2018, 0x2019, // ‘ and ’
   0x201C, 0x201D, // “ and ”
+  0x202F, 0x00A0, // Non breakeable spaces
+  0x2002, 0x2003, // Other spaces
+  0x2009
+
 };
 
 static const uint8_t utf8d[] = {

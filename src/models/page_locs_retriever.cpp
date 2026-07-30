@@ -26,7 +26,7 @@ namespace {
   }
 } // namespace
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp.hpp"
   #include "freertos/task.h"
 
@@ -59,7 +59,7 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
     return false;
   }
 
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     mq_unlink("/retriever");
 
     retrieverQueue = mq_open("/retriever", O_RDWR | O_CREAT, S_IRWXU, &retrieverAttr);
@@ -102,7 +102,7 @@ auto PageLocsRetriever::setup(const HimemString &epubFilename) -> bool {
  * Join retriever worker thread during teardown.
  */
 auto PageLocsRetriever::waitForExit() -> void {
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     if (retrieverThread.joinable()) { retrieverThread.join(); }
   #else
     // Signal the retriever task to stop and wait for it to exit before returning.
@@ -131,7 +131,7 @@ auto PageLocsRetriever::handlePendingQueueAtPageBoundary() -> bool {
   for (;;) {
     QueueData queueData;
 
-    #if EPUB_LINUX_BUILD
+    #if LINUX_BUILD
       mq_attr attr{};
       if (mq_getattr(retrieverQueue, &attr) == -1) {
         LOG_E("Unable to query retrieverQueue: {}", errno);
@@ -165,7 +165,7 @@ auto PageLocsRetriever::handlePendingQueueAtPageBoundary() -> bool {
 
     case Req::SHOW_HEAP:
       SHOW_IT("{:40c} ----> PB SHOW_HEAP", ' ');
-      #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+      #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
         ESP::show_heaps_info();
       #endif
       break;
@@ -209,7 +209,7 @@ auto PageLocsRetriever::task() -> void {
 
       case Req::GET_ASAP:
       case Req::RETRIEVE_ITEM: {
-        #if EPUB_INKPLATE_BUILD
+        #if EINK_BUILD
           SHOW_IT("{:40c} ---->  {} ({}, {})", ' ',
                   (queueData.req == Req::GET_ASAP) ? "GET_ASAP" : "RETRIEVE_ITEM",
                   queueData.itemrefIndex, (int32_t)uxTaskGetStackHighWaterMark(nullptr));
@@ -227,7 +227,7 @@ auto PageLocsRetriever::task() -> void {
 
       case Req::SHOW_HEAP:
         SHOW_IT("{:40c} ----> SHOW_HEAP", ' ');
-        #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+        #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
           ESP::show_heaps_info();
         #endif
         break;

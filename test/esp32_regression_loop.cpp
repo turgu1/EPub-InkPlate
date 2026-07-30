@@ -29,7 +29,7 @@
 // normal controller enter/leave path and dispatches synthetic EventMgr events.
 // ---------------------------------------------------------------------------
 
-#if EPUB_INKPLATE_BUILD && REGRESSION_TEST
+#if EINK_BUILD && REGRESSION_TEST
 
   #include "config.hpp"
   #include "controllers/app_controller.hpp"
@@ -1364,4 +1364,4 @@
     ESP_LOGI(TAG, "========================================");
   }
 
-#endif // EPUB_INKPLATE_BUILD && REGRESSION_TEST
+#endif // EINK_BUILD && REGRESSION_TEST

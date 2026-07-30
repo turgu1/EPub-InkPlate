@@ -17,8 +17,8 @@
 #include "viewers/keypad_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#if EPUB_INKPLATE_BUILD
-  #include "battery.hpp"
+#if EINK_BUILD
+  #include "platform.hpp"
   #include "esp_system.h"
 #endif
 
@@ -70,7 +70,7 @@ static double                  oldBatteryTrim;
   static int8_t showHeap;
 #endif
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
   static constexpr int8_t MAIN_FORM_SIZE = 10;
 #else
   static constexpr int8_t MAIN_FORM_SIZE = 9;
@@ -88,7 +88,7 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
                            .choiceCount = 3,
                            .choices     = FormChoiceField::coverSizeChoices } },
     .entryType = FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_6_V2 || INKPLATE_10_V2 || TOUCH_TRIAL
+  #if SDCARD_ORIENTATION
     { .caption   = "uSDCard Position (*):",
       .u         = { .ch = { .value       = (int8_t *)&orientation,
                              .choiceCount = 4,
@@ -129,14 +129,14 @@ static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
     .u         = { .floatVal = { .value = &batteryTrim, .min = 0.0, .max = 2.0 } },
     .entryType = FormEntryType::FLOAT },
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     { .caption   = " DONE ",
       .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
       .entryType = FormEntryType::DONE }
   #endif
 };
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
   static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 7;
 #else
   static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 6;
@@ -172,7 +172,7 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
                            .choiceCount = 4,
                            .choices     = FormChoiceField::columnCountChoices } },
     .entryType = FormEntryType::HORIZONTAL },
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     { .caption   = " DONE ",
       .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
       .entryType = FormEntryType::DONE }
@@ -180,7 +180,7 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
 };
 
 #if DATE_TIME_RTC
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_ENABLE
     static constexpr int8_t DATE_TIME_FORM_SIZE = 7;
   #else
     static constexpr int8_t DATE_TIME_FORM_SIZE = 6;
@@ -210,7 +210,7 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
       .u         = { .intVal = { .value = &second, .min = 0, .max = 59 } },
       .entryType = FormEntryType::UINT16 },
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    #if TOUCH_ENABLE
       { .caption   = "DONE",
         .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
         .entryType = FormEntryType::DONE }
@@ -281,7 +281,7 @@ auto OptionController::defaultParameters() -> void {
 auto OptionController::wifiMode() -> void {
   pageLocs.stopControlTask();
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     appFonts.clear(true);
     appFonts.clearGlyphCaches();
 
@@ -295,7 +295,7 @@ auto OptionController::wifiMode() -> void {
 
 auto OptionController::initNvs() -> void {
 // menuViewer.clearHighlight();
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     if (nvsMgr.setup(true)) {
       MsgViewer::show(MsgViewer::MsgType::BOOK, false, false, "E-Books History Cleared",
                       "The E-Books History has been initialized with success.");
@@ -307,7 +307,7 @@ auto OptionController::initNvs() -> void {
   #endif
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+#if TOUCH_CALIBRATION
   auto OptionController::calibrate() -> void {
     eventMgr.showCalibration();
     optionController.setCalibrationIsShown();
@@ -409,7 +409,7 @@ static MenuViewer::MenuEntry menu[] = {
     { MenuViewer::Icon::NTP_CLOCK, true, true, nullptr, "Retrieve Date/Time from Time Server"  },
   #endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || SEE_ALL || TOUCH_TRIAL || TOUCH_MENU
+  #if TOUCH_CALIBRATION
     { MenuViewer::Icon::CALIB,     true, false, nullptr, "Touch Screen Calibration"            },
   #endif
   #if DEBUGGING
@@ -464,7 +464,7 @@ auto OptionController::enter() -> void {
           menu[idx].func = [this]() { this->ntpClockAdjust(); };
           break;
       #endif
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+      #if TOUCH_CALIBRATION
         case MenuViewer::Icon::CALIB:
           menu[idx].func = [this]() { this->calibrate(); };
           break;
@@ -544,9 +544,9 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
         screen.setPixelResolution(resolution);
       }
 
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         if (oldBatteryTrim != batteryTrim) {
-          battery.set_voltage_trim(batteryTrim);
+          platform.getBattery().setVoltageTrim(batteryTrim);
         }
       #endif
 
@@ -608,7 +608,7 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
     }
   #endif
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     else if (waitForKeyAfterWifi) {
       MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
                       "The device is now restarting. Please wait.");
@@ -621,11 +621,11 @@ auto OptionController::inputEvent(const EventMgr::Event &event) -> void {
         int16_t dummy;
         booksDir.refresh(nullptr, dummy, true);
       }
-      inkplate_platform.restart();
+      platform.restart();
     }
   #endif
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+  #if TOUCH_CALIBRATION
     else if (calibrationIsShown) {
       if (eventMgr.calibrationEvent(event)) {
         calibrationIsShown = false;

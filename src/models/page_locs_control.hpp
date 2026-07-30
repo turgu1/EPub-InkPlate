@@ -5,7 +5,7 @@
 
 #include "models/page_locs_retriever.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "freertos/FreeRTOS.h"
   #include "freertos/task.h"
 #else
@@ -54,7 +54,7 @@ public:
   };
 
   static inline auto send(const QueueData data, int timeout = 0) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     (void)timeout;
     QueueData wireData{};
     wireData.req           = data.req;
@@ -71,7 +71,7 @@ public:
   // Retriever notifications use a dedicated queue to avoid starvation/mixing
   // with manager commands (GET_ASAP/STOP/PERCENT).
   static inline auto sendFromRetriever(const QueueData data, int timeout = 0) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     (void)timeout;
     QueueData wireData{};
     wireData.req           = data.req;
@@ -113,7 +113,7 @@ private:
 
   PageLocsRetriever retrieverTask;
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   static mqd_t managerQueue;
   static mqd_t retrieverQueue;
   static constexpr mq_attr queueAttr = {0, 5, sizeof(QueueData), 0};
@@ -123,7 +123,7 @@ private:
 #endif
 
   auto receiveFromManager(QueueData &data, int timeout = -1) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     if (timeout <= 0) {
       return mq_receive(managerQueue, (char *)&data, sizeof(data), nullptr);
     }
@@ -141,7 +141,7 @@ private:
   }
 
   auto receiveFromRetriever(QueueData &data, int timeout = -1) {
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
     if (timeout <= 0) {
       return mq_receive(retrieverQueue, (char *)&data, sizeof(data), nullptr);
     }
@@ -179,7 +179,7 @@ private:
   auto sendPendingAsapReplies(int16_t itemref, const char *ctx, bool alreadySentToMgr = false)
       -> void;
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   TaskHandle_t controlTaskHandle{nullptr};
 #else
   std::thread controlThread;

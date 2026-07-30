@@ -7,7 +7,7 @@
 #include "models/page_locs.hpp"
 #include "viewers/html_interpreter.hpp"
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   #include <chrono>
   #include <thread>
 #endif
@@ -71,7 +71,7 @@ class PageLocsInterpreter : public HTMLInterpreter {
           pageInfo.size = -pageInfo.size; // The page will not be counted nor displayed
         }
 
-        #if EPUB_LINUX_BUILD
+        #if LINUX_BUILD
           // This is to simulate a long processing time for page location computation
           // and to give the chance to book_viewer to show a page if required during
           // testing. It will be removed in production.
@@ -88,7 +88,7 @@ class PageLocsInterpreter : public HTMLInterpreter {
 
       // Gives the chance to book_viewer to show a page if required
 
-      #if EPUB_LINUX_BUILD
+      #if LINUX_BUILD
         std::this_thread::yield();
       #else
         vTaskDelay(pdMS_TO_TICKS(1));

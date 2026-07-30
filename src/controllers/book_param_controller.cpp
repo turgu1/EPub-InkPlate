@@ -5,6 +5,8 @@
 #define __BOOK_PARAM_CONTROLLER__ 1
 #include "controllers/book_param_controller.hpp"
 
+#include "platform.hpp"
+
 #include "config.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
@@ -19,8 +21,8 @@
 #include "models/page_locs.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#if EPUB_INKPLATE_BUILD
-  #include "eink.hpp"
+#if EINK_BUILD
+  #include "platform.hpp"
   #include "esp.hpp"
   #include "esp_system.h"
 // #include "soc/rtc.h"
@@ -44,7 +46,7 @@ static int8_t oldFont;
 static int8_t oldLineHeight;
 static int8_t oldColumnCount;
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 7;
 #else
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
@@ -80,7 +82,7 @@ static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
                           .choiceCount = 4,
                           .choices     = FormChoiceField::columnCountChoices}},
      .entryType = FormEntryType::HORIZONTAL},
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+#if TOUCH_ENABLE
     {.caption   = " DONE ",
      .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
      .entryType = FormEntryType::DONE}
@@ -208,7 +210,7 @@ auto BookParamController::tocCtrl() -> void {
 auto BookParamController::wifiMode() -> void {
   pageLocs.stopControlTask();
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     epub->closeFile();
     appFonts.clear(true);
     appFonts.clearGlyphCaches();
@@ -384,13 +386,13 @@ auto BookParamController::inputEvent(const EventMgr::Event &event) -> void {
       }
     }
   }
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     else if (waitForKeyAfterWifi) {
       MsgViewer::show(MsgViewer::MsgType::INFO, false, true, "Restarting",
                       "The device is now restarting. Please wait.");
       waitForKeyAfterWifi = false;
       stopWebServer();
-      inkplate_platform.restart();
+      platform.restart();
     }
   #endif
   else {

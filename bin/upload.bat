@@ -9,7 +9,7 @@
 :: Do not put any spaces in the following definitions.
 ::
 :: You may have to modify the device port number to which the 
-:: InkPlate device is connected. Look below and adjust 
+:: EInk device is connected. Look below and adjust 
 :: the "set device=" entry.
 ::
 :: Guy Turcotte, January 2021.

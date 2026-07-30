@@ -9,7 +9,7 @@
   #define __KEYBOARD_VIEWER__ 1
   #include "viewers/keyboard_viewer.hpp"
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     #include "inkplate_platform.hpp"
     #include "nvs.h"
   #endif

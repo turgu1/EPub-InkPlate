@@ -14,7 +14,7 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/page.hpp"
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   #include <chrono>
 #else
   #include <esp_pthread.h>
@@ -28,7 +28,7 @@
 #include <ios>
 #include <iostream>
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   QueueHandle_t PageLocs::mgrQueue{ nullptr };
 #else
   #include <mqueue.h>
@@ -48,7 +48,7 @@ auto PageLocs::setupPagesComputation(EPubPtr &epub) -> void {
   controlTask = PageLocsControl::Make();
   controlTask->setup(epub->getCurrentFilename());
 
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     mq_unlink("/mgr");
 
     mgrQueue = mq_open("/mgr", O_RDWR | O_CREAT, S_IRWXU, &mgrAttr);
@@ -103,7 +103,7 @@ auto PageLocs::retrieveAsap(int16_t itemrefIndex) -> bool {
   bool      matched  = false;
   QueueData queueData;
 
-  #if EPUB_LINUX_BUILD
+  #if LINUX_BUILD
     timespec ts{};
     clock_gettime(CLOCK_REALTIME, &ts);
     constexpr int64_t ASAP_REPLY_TIMEOUT_MS = 60000;
@@ -523,7 +523,7 @@ auto PageLocs::computationCompleted() -> void {
 
     eventMgr.setStayOn(false);
 
-    // #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+    // #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     //   ESP::show_heaps_info();
     //   RetrieveQueueData retrieve_queue_data = {
     //     .req = RetrieveReq::SHOW_HEAP,

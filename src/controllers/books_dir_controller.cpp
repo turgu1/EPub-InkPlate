@@ -5,6 +5,8 @@
 #define __BOOKS_DIR_CONTROLLER__ 1
 #include "controllers/books_dir_controller.hpp"
 
+#include "platform.hpp"
+
 #include "config.hpp"
 #include "controllers/app_controller.hpp"
 #include "controllers/book_controller.hpp"
@@ -15,7 +17,7 @@
 
 #include <fstream>
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "models/nvs_mgr.hpp"
 #endif
 
@@ -31,7 +33,7 @@ auto BooksDirController::setup() -> void {
   bookPageId.offset       = -1;
   bookWasShown            = false;
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
 
     int16_t dummy;
     if (!booksDir.readBooksDirectory(nullptr, dummy)) {
@@ -121,7 +123,7 @@ auto BooksDirController::saveLastBook(const PageId &pageId, bool goingToDeepSlee
 
   bookPageId = pageId;
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
 
     uint32_t bookId;
 
@@ -247,7 +249,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
   booksDirViewer.reset();
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if TOUCH_ENABLE
   auto BooksDirController::inputEvent(const EventMgr::Event &event) -> void {
     static HimemString bookFilenameLocal;
     static HimemString bookTitleLocal;
@@ -280,7 +282,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
 
             PageId pageId = { 0, 0 };
 
-            #if EPUB_INKPLATE_BUILD
+            #if EINK_BUILD
               NVSMgr::NVSData nvsData;
               if (nvsMgr.getLocation(book->id, nvsData)) {
                 pageId = { nvsData.itemrefIndex, nvsData.offset };
@@ -313,7 +315,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
 
     case EventMgr::EventKind::RELEASE:
       LOG_D("[RELEASE]");
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+      #if !EINK_BUILD
         ESP::delay(1000);
       #endif
 
@@ -374,7 +376,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
 
                         PageId pageId = { 0, 0 };
 
-                        #if EPUB_INKPLATE_BUILD
+                        #if EINK_BUILD
                           NVSMgr::NVSData nvsData;
                           if (nvsMgr.getLocation(book->id, nvsData)) {
                             pageId.itemrefIndex = nvsData.itemrefIndex;

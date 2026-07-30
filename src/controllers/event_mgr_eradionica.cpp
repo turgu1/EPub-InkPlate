@@ -5,7 +5,9 @@
 // This is the event manageer for the first devices mad by E-Radionica.
 // They use 3 tactical buttons
 
-#if (INKPLATE_6 || INKPLATE_10) && !(EXTENDED_CASE || BLE_KEYPAD)
+#include "platform.hpp"
+
+#if OLD_INKPLATE && !(EXTENDED_CASE || BLE_KEYPAD)
 
   #define __EVENT_MGR__ 1
   #include "controllers/event_mgr.hpp"

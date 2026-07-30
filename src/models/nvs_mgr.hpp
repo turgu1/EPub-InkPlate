@@ -1,6 +1,6 @@
 #pragma once
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #include "global.hpp"
 

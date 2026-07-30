@@ -21,7 +21,7 @@ set(components
     pugixml
     sys_functions
     freertos
-    ESP-IDF-InkPlate
+    ESP-IDF-EInk-Platform
     inkplate_screen
     memory_pool
     pictures

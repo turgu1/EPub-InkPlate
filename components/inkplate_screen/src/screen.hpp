@@ -7,7 +7,7 @@
 #include "global.hpp"
 #include "himem.hpp"
 
-#include "inkplate_platform.hpp"
+#include "platform.hpp"
 #include "non_copyable.hpp"
 #include "picture.hpp"
 
@@ -24,23 +24,16 @@
 
 class Screen : NonCopyable {
   public:
-    #if INKPLATE_10 || INKPLATE_10_V2
-      static constexpr int8_t IDENT                 = 2;
-      static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
-      static constexpr uint16_t RESOLUTION          = 150;///< Pixels per inch
-    #elif INKPLATE_6 || INKPLATE_5_V2 || INKPLATE_6_V2
-      static constexpr int8_t IDENT                 = 1;
-      static constexpr int8_t PARTIAL_COUNT_ALLOWED = 10;
-      static constexpr uint16_t RESOLUTION          = 166;///< Pixels per inch
-    #elif INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-      static constexpr int8_t IDENT                  = 3;
-      static constexpr int16_t PARTIAL_COUNT_ALLOWED = 10;
-      static constexpr uint16_t RESOLUTION           = 212;///< Pixels per inch
-    #endif
     enum class Orientation : int8_t { LEFT, RIGHT, BOTTOM, TOP };
     enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
 
-    enum Color { WHITE = 0, BLACK = 7 };
+    #if COLOR_INVERTED
+      #define COLOR 0
+    #else
+      #define COLOR 1
+    #endif
+
+    enum Color { WHITE = 0, BLACK = 0x0F };
 
     auto drawPicture(PicturePtr &picture, Pos pos) -> void;
     auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
@@ -51,31 +44,31 @@ class Screen : NonCopyable {
     auto lowColorize1Bit(Dim dim, Pos pos, uint8_t color) -> void;
     auto lowColorize3Bit(Dim dim, Pos pos, uint8_t color) -> void;
 
-    inline auto clear() -> void {
+    auto clear() -> void {
       if (pixelResolution == PixelResolution::ONE_BIT) {
-        frameBuffer1Bit->clear();
+        frameBufferMono->clear();
       } else {
-        frameBuffer3Bit->clear();
+        frameBufferGrayScale->clear();
       }
     }
 
-    inline auto update(bool noFull = false) -> void {
+    auto update(bool noFull = false) -> void {
       if (pixelResolution == PixelResolution::ONE_BIT) {
         if (noFull) {
-          e_ink.partial_update(*frameBuffer1Bit);
+          platform.getEInk().partialUpdate(*frameBufferMono);
           partialCount = 0;
         } else {
           if (partialCount <= 0) {
             // e_ink.clean();
-            e_ink.update(*frameBuffer1Bit);
-            partialCount = PARTIAL_COUNT_ALLOWED;
+            platform.getEInk().update(*frameBufferMono);
+            partialCount = platform.getEInk().getPartialCountAllowed();
           } else {
-            e_ink.partial_update(*frameBuffer1Bit);
+            platform.getEInk().partialUpdate(*frameBufferMono);
             partialCount--;
           }
         }
       } else {
-        e_ink.update(*frameBuffer3Bit);
+        platform.getEInk().update(*frameBufferGrayScale);
       }
     }
 
@@ -93,8 +86,8 @@ class Screen : NonCopyable {
     static Screen singleton;
 
     int16_t partialCount{ 0 };
-    FrameBuffer1Bit *frameBuffer1Bit{ nullptr };
-    FrameBuffer3Bit *frameBuffer3Bit{ nullptr };
+    FrameBufferMono *frameBufferMono{ nullptr };
+    FrameBufferGrayScale *frameBufferGrayScale{ nullptr };
     PixelResolution pixelResolution{ PixelResolution::ONE_BIT };
     Orientation orientation{ Orientation::LEFT };
 
@@ -115,99 +108,14 @@ class Screen : NonCopyable {
     // location where a pixel needs to be set.
     //
 
-    inline auto setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
-                                       (frameBuffer1Bit->get_line_size() * (col + 1)) + (row >> 3)];
-      if (color == 1) {
-        *temp = *temp | LUT1BIT_INV[row & 7];
-      }
-      else {
-        *temp = (*temp & ~LUT1BIT_INV[row & 7]);
-      }
-    }
-
-    inline auto setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer1Bit
-          ->get_data())[(frameBuffer1Bit->get_line_size() * (col + 1)) - (row >> 3) - 1];
-      if (color == 1) {
-        *temp = *temp | LUT1BIT[row & 7];
-      }
-      else {
-        *temp = (*temp & ~LUT1BIT[row & 7]);
-      }
-    }
-
-    inline auto setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_line_size() * row + (col >> 3)];
-      if (color == 1) {
-        *temp = *temp | LUT1BIT_INV[col & 7];
-      }
-      else {
-        *temp = (*temp & ~LUT1BIT_INV[col & 7]);
-      }
-    }
-
-    inline auto setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp = &(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_data_size() -
-                                                     (frameBuffer1Bit->get_line_size() * row) -
-                                                     ((col + yOffset) >> 3)];
-      if (color == 1) {
-        *temp = *temp | LUT1BIT[(col + yOffset) & 7];
-      }
-      else {
-        *temp = (*temp & ~LUT1BIT[(col + yOffset) & 7]);
-      }
-    }
-
-    inline auto setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_data_size() -
-                                       (frameBuffer3Bit->get_line_size() * (col + 1)) + (row >> 1)];
-      if (row & 1) {
-        *temp = (*temp & 0xF0) | color;
-      }
-      else {
-        *temp = (*temp & 0x0F) | (color << 4);
-      }
-    }
-
-    inline auto setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer3Bit
-          ->get_data())[(frameBuffer3Bit->get_line_size() * (col + 1)) - (row >> 1) - 1];
-      if (row & 1) {
-        *temp = (*temp & 0x0F) | (color << 4);
-      }
-      else {
-        *temp = (*temp & 0xF0) | color;
-      }
-    }
-
-    inline auto setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_line_size() * row + (col >> 1)];
-      if (col & 1) {
-        *temp = (*temp & 0xF0) | color;
-      }
-      else {
-        *temp = (*temp & 0x0F) | (color << 4);
-      }
-    }
-
-    inline auto setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-      uint8_t *temp =
-        &(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_data_size() -
-                                       (frameBuffer3Bit->get_line_size() * row) - ((col + yOffset) >> 1)];
-      if ((col + yOffset) & 1) {
-        *temp = (*temp & 0x0F) | (color << 4);
-      }
-      else {
-        *temp = (*temp & 0xF0) | color;
-      }
-    }
+    auto   setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto  setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto    setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto   setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto  setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto    setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
 
     auto setYOffset() -> void;
 
@@ -216,17 +124,19 @@ class Screen : NonCopyable {
     auto setup(PixelResolution resolution, Orientation orientation) -> void;
     auto setPixelResolution(PixelResolution resolution, bool force = false) -> void;
     auto setOrientation(Orientation orient) -> void;
-    [[nodiscard]] inline auto getOrientation() -> Orientation { return orientation; }
-    [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
-    inline auto forceFullUpdate() -> void { partialCount = 0; }
+    auto getOrientation() const -> Orientation { return orientation; }
+    auto getPixelResolution() const -> PixelResolution { return pixelResolution; }
+    auto getPixelsPerInch() const -> uint16_t { return platform.getEInk().getPixelsPerInch(); }
+    auto getIdent() const -> uint8_t { return platform.getEInk().getIdent(); }
+    auto forceFullUpdate() -> void { partialCount = 0; }
 
     // #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     //   void to_user_coord(uint16_t &x, uint16_t &y);
     // #endif
 
-    [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
-    [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
-    [[nodiscard]] inline static auto getYOffset() -> uint16_t { return yOffset; }
+    static auto getWidth() -> uint16_t { return width; }
+    static auto getHeight() -> uint16_t { return height; }
+    static auto getYOffset() -> uint16_t { return yOffset; }
 };
 
 #if __SCREEN__

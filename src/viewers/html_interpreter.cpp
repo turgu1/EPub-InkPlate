@@ -488,7 +488,7 @@ auto HTMLInterpreter::buildPagesRecurse(xml_node node, Page::Format &fmt, DOM::N
 
             std::string word(w, count);
 
-            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+            #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               static bool first = true;
               if (first) {
                 LOG_D("before page->addWord()");

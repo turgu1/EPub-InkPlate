@@ -6,19 +6,11 @@
 #include "global.hpp"
 
 #include "screen.hpp"
-
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-  #if INKPLATE_6FLICK
-    #include "touch_screen_cypress.hpp"
-  #else
-    #include "touch_screen_elan.hpp"
-  #endif
-  #include "inkplate_platform.hpp"
-#endif
+#include "platform.hpp"
 
 class EventMgr {
   public:
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    #if TOUCH_ENABLE
       struct CalibPoint {
         uint16_t x[3], y[3];
       };
@@ -30,7 +22,7 @@ class EventMgr {
   protected:
     volatile bool stayOn{ false };
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    #if TOUCH_ENABLE
 
       int64_t a, b, c, d, e, f, divider;
 
@@ -41,7 +33,7 @@ class EventMgr {
       uint16_t xPos, yPos;
       uint16_t distance;
 
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+      #if TOUCH_CALIBRATION
         auto retrieveCalibrationValues() -> void;
       #endif
     #endif
@@ -49,11 +41,11 @@ class EventMgr {
   public:
     static constexpr char const *TAG = "EventMgr";
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL || TOUCH_MENU
+    #if TOUCH_ENABLE
       enum class EventKind {
         NONE,         TAP,     HOLD,          SWIPE_LEFT, SWIPE_RIGHT, PINCH_ENLARGE,
         PINCH_REDUCE, RELEASE, WAKEUP_BUTTON,
-        #if EPUB_LINUX_BUILD
+        #if LINUX_BUILD
           NEXT, PREV, DBL_NEXT, DBL_PREV, SELECT,  DBL_SELECT
         #endif
       };
@@ -102,7 +94,7 @@ class EventMgr {
 
     auto getEvent() -> const Event &;
 
-    #if EPUB_LINUX_BUILD
+    #if LINUX_BUILD
       #if TOUCH_TRIAL
         // void low_input_event();
       #else

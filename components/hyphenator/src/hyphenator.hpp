@@ -9,7 +9,7 @@
 #include <cstring>
 #include <cstdint>
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #define STR_HELPER(x) #x
   #define STR(x) STR_HELPER(x)
 
@@ -96,7 +96,7 @@ class Hyphenator {
     auto findHyphenIndices(const std::string& word, uint8_t min, uint8_t max) -> OffsetsPtr;
 };
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #undef STR_HELPER
   #undef STR
   #undef LANGUAGE

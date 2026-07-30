@@ -5,15 +5,15 @@
 #define __MSG_VIEWER__ 1
 #include "viewers/msg_viewer.hpp"
 
-#include "screen.hpp"
+#include "platform.hpp"
+
 #include "viewers/book_viewer.hpp"
 #include "viewers/page.hpp"
 
 #include <cstdarg>
 #include <memory>
 
-#if EPUB_INKPLATE_BUILD
-  #include "inkplate_platform.hpp"
+#if EINK_BUILD
   #include "nvs.h"
 #endif
 
@@ -39,7 +39,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   Page::Format fmt = {
     .lineHeightFactor = 1.0,
     .fontIndex        = ICONS_FONT_INDEX,
-    .fontSize         = 24,
+    .fontSize         = static_cast<int16_t>((width < 500) ? 20 : 24),
     .marginLeft       = 10,
     .marginRight      = 10,
     .marginTop        = 30,
@@ -70,7 +70,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   }
 
   fmt.fontIndex = SYSTEM_REGULAR_FONT_INDEX;
-  fmt.fontSize  = 10;
+  fmt.fontSize  = width < 500 ? 9 : 10;
 
   // Title
 
@@ -84,6 +84,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   fmt.align      = HAlign::LEFT;
   fmt.marginTop  = 80;
   fmt.marginLeft = 100;
+  fmt.fontSize   = width < 500 ? 8 : 9;
 
   page->setLimits(fmt);
   page->newParagraph(fmt);
@@ -93,7 +94,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
   // Press a Key option
 
   if (pressAKey) {
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       if (msgType != MsgType::CONFIRM) {
         fmt.align      = HAlign::CENTER;
         fmt.fontSize   = 9;
@@ -166,7 +167,7 @@ auto MsgViewer::show(MsgType msgType, bool pressAKey, bool clearScreen, const ch
  */
 auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData)
 -> std::pair<bool, ConfirmDataPtr> {
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  #if TOUCH_ENABLE
 
     if (event.kind == EventMgr::EventKind::TAP) {
       if ((event.x >= confirmData->okPos.x) &&
@@ -199,6 +200,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
     uint16_t     width = Screen::getWidth() - 60;
 
     Page::Format fmt = {
+      .fontSize     = static_cast<int16_t>((width < 500) ? 9 : 10),
       .indent       = 0,
       .marginLeft   = 10,
       .marginRight  = 10,
@@ -259,6 +261,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
     uint16_t     width = Screen::getWidth() - 60;
 
     Page::Format fmt = {
+      .fontSize     = static_cast<int16_t>((width < 500) ? 9 : 10),
       .marginTop    = 30, // 70,
       .screenLeft   = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
       .screenRight  = static_cast<uint16_t>((Screen::getWidth() - width) >> 1),
@@ -314,7 +317,7 @@ auto MsgViewer::confirm(const EventMgr::Event &event, ConfirmDataPtr confirmData
  * (embedded) or exits (Linux).
  */
 auto MsgViewer::outOfMemory(const char *reason) -> void {
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     nvs_handle_t nvsHandle;
     esp_err_t    err;
 
@@ -329,11 +332,11 @@ auto MsgViewer::outOfMemory(const char *reason) -> void {
   screen.forceFullUpdate();
 
   #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2 || INKPLATE_6_V2 || INKPLATE_5_V2
-    #define MSG "Press the WakeUp Button to restart."
+    // #define MSG "Press the WakeUp Button to restart."
     #define INT_PIN EInk::WAKE_UP_PIN
     #define LEVEL 0
   #else
-    #define MSG "Press a key to restart."
+    // #define MSG "Press a key to restart."
     #if EXTENDED_CASE
       #define INT_PIN PressKeys::INTERRUPT_PIN
     #elif INKPLATE_6 || INKPLATE_10
@@ -342,16 +345,18 @@ auto MsgViewer::outOfMemory(const char *reason) -> void {
     #define LEVEL 1
   #endif
 
+  #ifndef WAKEUP_MSG
+    #define WAKEUP_MSG ""
+  #endif
+  
   show(ALERT, true, true, "OUT OF MEMORY!!",
        "It's a bit sad that the device is now out of "
        "memory to continue. The reason: %s. "
-       "The device is now entering into Deep Sleep. " MSG,
+       "The device is now entering into Deep Sleep. " WAKEUP_MSG,
        reason);
 
-  #undef MSG
-
-  #if EPUB_INKPLATE_BUILD
-    inkplate_platform.deep_sleep(INT_PIN, LEVEL); // Never return
+  #if EINK_BUILD
+    platform.deepSleep(); // Never return
   #else
     exit(0);
   #endif

@@ -17,28 +17,27 @@
   #define APP_VERSION "3.0.0"
 #endif
 
-#if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD)
+#if !(LINUX_BUILD || EINK_BUILD)
   #error "BUILD_TYPE Not Set."
 #else
-  #if !(EPUB_LINUX_BUILD || EPUB_INKPLATE_BUILD)
-    #error "One of EPUB_LINUX_BUILD or EPUB_INKPLATE_BUILD must be set to 1"
+  #if !(LINUX_BUILD || EINK_BUILD)
+    #error "One of LINUX_BUILD or EINK_BUILD must be set to 1"
   #endif
 #endif
 
 #define USE_EPUB_FONTS                                                                             \
         1 ///< 1: Embeded fonts in EPub books are loaded and used 0: Only preset fonts are used
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   #ifndef MAIN_FOLDER
     #define MAIN_FOLDER "/home/turgu1/Dev/EPub-InkPlate/SDCard"
   #endif
 #endif
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #ifndef MAIN_FOLDER
     #define MAIN_FOLDER "/sdcard"
   #endif
-  #define LOG_LOCAL_LEVEL EPUB_LOG_LEVEL
 #endif
 
 #define FONTS_FOLDER MAIN_FOLDER "/fonts"

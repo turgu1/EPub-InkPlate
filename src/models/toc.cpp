@@ -106,7 +106,7 @@ auto TOC::load(EPubPtr &epub) -> bool {
   #endif
 
   if (ready) { LOG_D("Reading toc completed. Entry count: {}.", entries.size()); }
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
   return ready;

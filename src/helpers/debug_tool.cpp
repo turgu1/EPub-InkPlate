@@ -1,6 +1,8 @@
-#if 1 // DEBUGGING_TOOL
+#if 0 // DEBUGGING_TOOL
 
   #include "helpers/debug_tool.hpp"
+
+  #include "platform.hpp"
 
   #include "controllers/app_controller.hpp"
   #include "controllers/back_lit.hpp"
@@ -59,7 +61,7 @@
   #include "simple_db.hpp"
   #include "unzip.hpp"
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     #include "esp_heap_caps.h"
     #include "esp_system.h"
     #include "freertos/task.h"
@@ -76,7 +78,7 @@
               << " bytes" << std::endl;
   }
 
-  #if EPUB_INKPLATE_BUILD
+  #if EINK_BUILD
     struct HeapCap {
       const char *name;
       uint32_t caps;
@@ -118,7 +120,7 @@
     printClassSize<TTF>("TTF");
     // printClassSize<IBMFFont>("IBMFFont");
 
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       printClassSize<NVSMgr>("NVSMgr");
     #endif
 
@@ -157,7 +159,7 @@
     printClassSize<Screen>("Screen");
     printClassSize<Unzip>("Unzip");
 
-    // #if EPUB_INKPLATE_BUILD
+    // #if EINK_BUILD
     //   printClassSize<PsramAllocator>("PsramAllocator");
     // #endif
 
@@ -169,7 +171,7 @@
     printClassSize<SimpleDB>("SimpleDB");
     printClassSize<CharPool>("CharPool");
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
+    #if BACKLIT_ENABLE
       printClassSize<BackLit>("BackLit");
     #endif
 
@@ -178,13 +180,13 @@
       printClassSize<NTP>("NTP");
     #endif
 
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       printClassSize<WIFI>("WIFI");
     #endif
   }
 
   auto DebugTool::printMemoryState() -> void {
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       std::cout << "========== Memory State Report ==========" << std::endl;
       std::cout << "Min free heap observed : " << esp_get_minimum_free_heap_size() << " bytes"
                 << std::endl;
@@ -218,7 +220,7 @@
         printHeapCapInfo(entry);
       }
     #else
-      std::cout << "Memory state report is available only with EPUB_INKPLATE_BUILD." << std::endl;
+      std::cout << "Memory state report is available only with EINK_BUILD." << std::endl;
     #endif
   }
 

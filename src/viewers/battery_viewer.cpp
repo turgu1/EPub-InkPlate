@@ -4,8 +4,8 @@
 
 #include "viewers/battery_viewer.hpp"
 
-#if EPUB_INKPLATE_BUILD
-  #include "battery.hpp"
+#if EINK_BUILD
+  #include "platform.hpp"
   #include "config.hpp"
   #include "logging.hpp"
   #include "screen.hpp"
@@ -18,7 +18,7 @@
 
     if (viewMode == 0) { return; }
 
-    float voltage = battery.read_level();
+    float voltage = platform.getBattery().readLevel();
 
     LOG_D("Battery voltage: {:5.3f}", voltage);
 

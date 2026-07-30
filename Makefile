@@ -51,7 +51,7 @@ FREETYPE_LIBS   := $(shell pkg-config --libs   freetype2)
 # Preprocessor definitions
 # ---------------------------------------------------------------------------
 DEFINES := \
-  -DEPUB_LINUX_BUILD=1 \
+  -DLINUX_BUILD=1 \
   -DAPP_VERSION=\"$(APP_VERSION)\" \
   -DPNGLE_GRAYSCALE_OUTPUT=1 \
   -DPNGLE_NO_GAMMA_CORRECTION=1 \
@@ -85,6 +85,7 @@ INCLUDES := \
   -I components/hyphenator/src \
   -I components/frozen/src \
   -I components/utf8/src \
+  -I ../ESP-IDF-EInk-Platform/src/platform \
   $(FREETYPE_CFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -214,7 +215,7 @@ TEST_BUILD   := build_test
 TEST_TARGET  := epub_test
 
 TEST_DEFINES := \
-  -DEPUB_LINUX_BUILD=1 \
+  -DLINUX_BUILD=1 \
   -DAPP_VERSION=\"$(APP_VERSION)\" \
   -DDATE_TIME_RTC=1 \
   -DMAIN_FOLDER=\"$(CURDIR)/test/fixtures/config_data\"
@@ -364,7 +365,7 @@ CONFIG_TEST_BUILD   := build_test_config
 CONFIG_TEST_TARGET  := epub_config_test
 
 CONFIG_TEST_DEFINES := \
-  -DEPUB_LINUX_BUILD=1 \
+  -DLINUX_BUILD=1 \
   -DAPP_VERSION=\"$(APP_VERSION)\" \
   -DDATE_TIME_RTC=1
 
@@ -468,7 +469,7 @@ VALGRIND_INCLUDES := \
   $(FREETYPE_CFLAGS)
 
 VALGRIND_DEFINES := \
-  -DEPUB_LINUX_BUILD=1 \
+  -DLINUX_BUILD=1 \
   -DAPP_VERSION=\"$(APP_VERSION)\" \
   -DPNGLE_GRAYSCALE_OUTPUT=1 \
   -DPNGLE_NO_GAMMA_CORRECTION=1 \

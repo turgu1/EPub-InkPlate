@@ -1,4 +1,4 @@
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
 
   #pragma once
 

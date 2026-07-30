@@ -268,106 +268,106 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
 
   auto Screen::lowColorize3Bit(Dim dim, Pos pos, uint8_t color) -> void {
     uint32_t *temp =
-      ((uint32_t *)(&(frameBuffer3Bit->get_data())[frameBuffer3Bit->get_line_size() * pos.y])) +
+      ((uint32_t *)(&(frameBufferGrayScale->getData())[frameBufferGrayScale->getLineSize() * pos.y])) +
       (pos.x >> 3);
 
-    uint32_t color_mask;
-    uint16_t line_size_32 = frameBuffer3Bit->get_line_size() >> 2; // 32 bits count
-    // int16_t  in_size_32   = (static_cast<int16_t>(dim.width) - (8 - (pos.x & 0x07)) -
+    uint32_t colorMask;
+    uint16_t lineSize32 = frameBufferGrayScale->getLineSize() >> 2; // 32 bits count
+    // int16_t  inSize32   = (static_cast<int16_t>(dim.width) - (8 - (pos.x & 0x07)) -
     // ((static_cast<int16_t>(dim.width) + pos.x - 1) & 0x07) + 1) / 8;
-    int16_t in_size_32 =
+    int16_t inSize32 =
       ((dim.width + (pos.x & 0x07) + (8 - ((dim.width + pos.x - 1) & 0x07))) >> 3) - 2;
-    uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
+    uint16_t remainingLineWidth32 = lineSize32 - inSize32 - 2;
 
-    LOG_D("Line Size: {}, in_size: {}, remaining: {}", line_size_32, in_size_32,
-          remaining_line_width_32);
+    LOG_D("Line Size: {}, inSize: {}, remaining: {}", lineSize32, inSize32,
+          remainingLineWidth32);
     LOG_D("Pos: [{}, {}], Dim: [{}, {}]", pos.x, pos.y, dim.width, dim.height);
 
-    color_mask = color | (color << 4);
-    color_mask |= (color_mask << 8);
-    color_mask |= (color_mask << 16);
+    colorMask = color | (color << 4);
+    colorMask |= (colorMask << 8);
+    colorMask |= (colorMask << 16);
 
-    uint32_t first_mask = ~(0x77777777 << ((pos.x & 0x07) << 2));
-    uint32_t last_mask  = ~(0x77777777 >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
+    uint32_t firstMask = ~(0x77777777 << ((pos.x & 0x07) << 2));
+    uint32_t lastMask  = ~(0x77777777 >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
 
-    LOG_D("Masks: {:#010x}, {:010x}, {:010x}", first_mask, last_mask, color_mask);
+    LOG_D("Masks: {:#010x}, {:010x}, {:010x}", firstMask, lastMask, colorMask);
 
-    if (in_size_32 < 0) { // All pixels in a row are in the same 32 bits word
-      first_mask &= last_mask;
-      color_mask &= ~first_mask;
+    if (inSize32 < 0) { // All pixels in a row are in the same 32 bits word
+      firstMask &= lastMask;
+      colorMask &= ~firstMask;
       for (uint16_t i = 0; i < dim.height; i++) {
-        *temp = (*temp & first_mask) | color_mask;
-        temp += line_size_32;
+        *temp = (*temp & firstMask) | colorMask;
+        temp += lineSize32;
       }
     } else {
       for (uint16_t i = 0; i < dim.height; i++) {
-        *temp = (*temp & first_mask) | (color_mask & ~first_mask);
+        *temp = (*temp & firstMask) | (colorMask & ~firstMask);
         temp++;
-        for (int16_t j = 0; j < in_size_32; j++) {
-          *temp++ = color_mask;
+        for (int16_t j = 0; j < inSize32; j++) {
+          *temp++ = colorMask;
         }
-        *temp = (*temp & last_mask) | (color_mask & ~last_mask);
-        temp += remaining_line_width_32 + 1;
+        *temp = (*temp & lastMask) | (colorMask & ~lastMask);
+        temp += remainingLineWidth32 + 1;
       }
     }
   }
 
   auto Screen::lowColorize1Bit(Dim dim, Pos pos, uint8_t color) -> void {
     uint32_t *temp =
-      ((uint32_t *)(&(frameBuffer1Bit->get_data())[frameBuffer1Bit->get_line_size() * pos.y])) +
+      ((uint32_t *)(&(frameBufferMono->getData())[frameBufferMono->getLineSize() * pos.y])) +
       (pos.x >> 5);
 
-    uint16_t line_size_32 = frameBuffer1Bit->get_line_size() >> 2; // 32 bits count
-    int16_t  in_size_32 =
+    uint16_t lineSize32 = frameBufferMono->getLineSize() >> 2; // 32 bits count
+    int16_t  inSize32 =
       ((dim.width + (pos.x & 0x1F) + (32 - ((dim.width + pos.x - 1) & 0x1F))) >> 5) - 2;
-    uint16_t remaining_line_width_32 = line_size_32 - in_size_32 - 2;
+    uint16_t remainingLineWidth32 = lineSize32 - inSize32 - 2;
 
-    LOG_D("Line Size: {}, in_size: {}, remaining: {}", line_size_32, in_size_32,
-          remaining_line_width_32);
+    LOG_D("Line Size: {}, inSize: {}, remaining: {}", lineSize32, inSize32,
+          remainingLineWidth32);
     LOG_D("Pos: [{}, {}], Dim: [{}, {}]", pos.x, pos.y, dim.width, dim.height);
 
-    if (color == 1) {
-      uint32_t first_mask = 0xFFFFFFFF << (pos.x & 0x1F);
-      uint32_t last_mask  = 0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F));
+    if (color == COLOR) {
+      uint32_t firstMask = 0xFFFFFFFF << (pos.x & 0x1F);
+      uint32_t lastMask  = 0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F));
 
-      LOG_D("Masks: {:#010x}, {:#010x}", first_mask, last_mask);
+      LOG_D("Masks: {:#010x}, {:#010x}", firstMask, lastMask);
 
-      if (in_size_32 < 0) {
-        first_mask &= last_mask;
+      if (inSize32 < 0) {
+        firstMask &= lastMask;
         for (uint16_t i = 0; i < dim.height; i++) {
-          *temp |= first_mask;
-          temp += line_size_32;
+          *temp |= firstMask;
+          temp += lineSize32;
         }
       } else {
         for (uint16_t i = 0; i < dim.height; i++) {
-          *temp++ |= first_mask;
-          for (int16_t j = 0; j < in_size_32; j++) {
+          *temp++ |= firstMask;
+          for (int16_t j = 0; j < inSize32; j++) {
             *temp++ = 0xFFFFFFFF;
           }
-          *temp++ |= last_mask;
-          temp += remaining_line_width_32;
+          *temp++ |= lastMask;
+          temp += remainingLineWidth32;
         }
       }
     } else {
-      uint32_t first_mask = ~(0xFFFFFFFF << (pos.x & 0x1F));
-      uint32_t last_mask  = ~(0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F)));
+      uint32_t firstMask = ~(0xFFFFFFFF << (pos.x & 0x1F));
+      uint32_t lastMask  = ~(0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F)));
 
-      LOG_D("Masks: {:#010x}, {:#010x}", first_mask, last_mask);
+      LOG_D("Masks: {:#010x}, {:#010x}", firstMask, lastMask);
 
-      if (in_size_32 < 0) {
-        first_mask |= last_mask;
+      if (inSize32 < 0) {
+        firstMask |= lastMask;
         for (uint16_t i = 0; i < dim.height; i++) {
-          *temp &= first_mask;
-          temp += line_size_32;
+          *temp &= firstMask;
+          temp += lineSize32;
         }
       } else {
         for (uint16_t i = 0; i < dim.height; i++) {
-          *temp++ &= first_mask;
-          for (int16_t j = 0; j < in_size_32; j++) {
+          *temp++ &= firstMask;
+          for (int16_t j = 0; j < inSize32; j++) {
             *temp++ = 0;
           }
-          *temp++ &= last_mask;
-          temp += remaining_line_width_32;
+          *temp++ &= lastMask;
+          temp += remainingLineWidth32;
         }
       }
     }
@@ -484,23 +484,23 @@ auto Screen::setPixelResolution(PixelResolution resolution, bool force) -> void 
     pixelResolution = resolution;
     if (pixelResolution == PixelResolution::ONE_BIT) {
 
-      if (frameBuffer3Bit != nullptr) {
-        free(frameBuffer3Bit);
-        frameBuffer3Bit = nullptr;
+      if (frameBufferGrayScale != nullptr) {
+        free(frameBufferGrayScale);
+        frameBufferGrayScale = nullptr;
       }
 
-      if ((frameBuffer1Bit = e_ink.new_frame_buffer_1bit()) != nullptr) {
-        frameBuffer1Bit->clear();
+      if ((frameBufferMono = platform.getEInk().newFrameBufferMono()) != nullptr) {
+        frameBufferMono->clear();
       }
       partialCount = 0;
     } else {
-      if (frameBuffer1Bit != nullptr) {
-        free(frameBuffer1Bit);
-        frameBuffer1Bit = nullptr;
+      if (frameBufferMono != nullptr) {
+        free(frameBufferMono);
+        frameBufferMono = nullptr;
       }
 
-      if ((frameBuffer3Bit = e_ink.new_frame_buffer_3bit()) != nullptr) {
-        frameBuffer3Bit->clear();
+      if ((frameBufferGrayScale = platform.getEInk().newFrameBufferGrayScale()) != nullptr) {
+        frameBufferGrayScale->clear();
       }
     }
   }
@@ -512,11 +512,11 @@ auto Screen::setOrientation(Orientation orient) -> void {
   orientation = orient;
 
   if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
-    width  = e_ink.get_height();
-    height = e_ink.get_width();
+    width  = platform.getEInk().getHeight();
+    height = platform.getEInk().getWidth();
   } else {
-    width  = e_ink.get_width();
-    height = e_ink.get_height();
+    width  = platform.getEInk().getWidth();
+    height = platform.getEInk().getHeight();
   }
 
   setYOffset();
@@ -534,4 +534,136 @@ auto Screen::setYOffset() -> void {
   }
 
   LOG_I("Setting yOffset to {}", yOffset);
+}
+
+auto Screen::setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferMono->getData())[frameBufferMono->getDataSize() -
+      (frameBufferMono->getLineSize() * (col + 1)) + (row >> 3)];
+  #if PIXELS_BIG_ENDIAN
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT[row & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT[row & 7]);
+    }
+  #else
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT_INV[row & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT_INV[row & 7]);
+    }
+  #endif
+}
+
+auto Screen::setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferMono
+      ->getData())[(frameBufferMono->getLineSize() * (col + 1)) - (row >> 3) - 1];
+
+  #if PIXELS_BIG_ENDIAN
+    if (color == COLOR) {
+      *temp = (*temp | LUT1BIT_INV[row & 7]);
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT_INV[row & 7]);
+    }
+  #else
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT[row & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT[row & 7]);
+    }
+  #endif
+}
+
+auto Screen::setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferMono->getData())[frameBufferMono->getLineSize() * row + (col >> 3)];
+
+  #if PIXELS_BIG_ENDIAN
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT[col & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT[col & 7]);
+    }
+  #else
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT_INV[col & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT_INV[col & 7]);
+    }
+  #endif
+}
+
+auto Screen::setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp = &(frameBufferMono->getData())[frameBufferMono->getDataSize() -
+                    (frameBufferMono->getLineSize() * row) - ((col + yOffset) >> 3)];
+
+  #if PIXELS_BIG_ENDIAN
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT_INV[((col + yOffset) & 7)];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT_INV[((col + yOffset) & 7)]);
+    }
+  #else
+    if (color == COLOR) {
+      *temp = *temp | LUT1BIT[(col + yOffset) & 7];
+    }
+    else {
+      *temp = (*temp & ~LUT1BIT[(col + yOffset) & 7]);
+    }
+  #endif
+}
+
+auto Screen::setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getDataSize() -
+                                    (frameBufferGrayScale->getLineSize() * (col + 1)) + (row >> 1)];
+  if (row & 1) {
+    *temp = (*temp & 0xF0) | color;
+  }
+  else {
+    *temp = (*temp & 0x0F) | (color << 4);
+  }
+}
+
+auto Screen::setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferGrayScale
+      ->getData())[(frameBufferGrayScale->getLineSize() * (col + 1)) - (row >> 1) - 1];
+  if (row & 1) {
+    *temp = (*temp & 0x0F) | (color << 4);
+  }
+  else {
+    *temp = (*temp & 0xF0) | color;
+  }
+}
+
+auto Screen::setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getLineSize() * row + (col >> 1)];
+  if (col & 1) {
+    *temp = (*temp & 0xF0) | color;
+  }
+  else {
+    *temp = (*temp & 0x0F) | (color << 4);
+  }
+}
+
+auto Screen::setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+  uint8_t *temp =
+    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getDataSize() -
+                                    (frameBufferGrayScale->getLineSize() * row) - ((col + yOffset) >> 1)];
+  if ((col + yOffset) & 1) {
+    *temp = (*temp & 0x0F) | (color << 4);
+  }
+  else {
+    *temp = (*temp & 0xF0) | color;
+  }
 }

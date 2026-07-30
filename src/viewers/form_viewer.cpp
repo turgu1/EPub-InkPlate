@@ -5,6 +5,8 @@
 #define __FORM_VIEWER__ 1
 #include "viewers/form_viewer.hpp"
 
+#include "platform.hpp"
+
 HimemPool<FormChoiceField::Item> FormChoiceField::itemPool;
 uint8_t                          FormChoiceField::fontChoicesCount = 0;
 
@@ -14,7 +16,7 @@ FormChoice FormChoiceField::fontChoices[8] = {
   { nullptr, 3 }, { nullptr, 4 }, { nullptr, 5 },
   { nullptr, 6 }, { nullptr, 7 } };
 
-// #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+// #if TOUCH_ENABLE
 //   bool FormDone::event(const EventMgr::Event &event) {
 //     form_viewer.setCompleted(true);
 //     return false;
@@ -165,7 +167,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   if (!refresh) {
     selectingField = false;
 
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+    #if TOUCH_ENABLE
       currentField      = fields.end();
       highlightingField = false;
     #else
@@ -184,7 +186,7 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
 
   completed = false;
 
-  #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+  #if TOUCH_ENABLE
     if (currentField != fields.end()) {
       if (!(*currentField)->event(event)) {
         // The field releases control of future events
@@ -296,12 +298,12 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
     page->start(fmt);
 
     if (highlightingField) {
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      #if !TOUCH_ENABLE
         (*oldField)->showSelected(false);
         (*currentField)->showHighlighted(true);
       #endif
     } else {
-      #if !(INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL)
+      #if !TOUCH_ENABLE
         if (selectingField) {
           selectingField = false;
           (*currentField)->showSelected(true);

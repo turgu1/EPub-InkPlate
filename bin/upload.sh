@@ -11,7 +11,7 @@
 # Do not put any spaces in the following definitions.
 #
 # You may have to modify the device name to which the 
-# InkPlate device is connected. Look below and adjust 
+# EInk reader device is connected. Look below and adjust 
 # the "device=" entry.
 #
 # Guy Turcotte, January 2021.

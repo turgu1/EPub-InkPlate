@@ -17,7 +17,7 @@
 #include "viewers/book_viewer.hpp"
 #include "viewers/msg_viewer.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp.hpp"
   #include "models/nvs_mgr.hpp"
 #endif
@@ -327,7 +327,7 @@ auto BooksDir::setTrackOrder(uint32_t id, int8_t pos) -> void {
   }
 
   if (!found) {
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       noRecurse = true;
       nvsMgr.erase(id);
       noRecurse = false;
@@ -384,7 +384,7 @@ auto BooksDir::setCoverSize() -> void {
  * - Allocates a temporary PartialRecord structure to read database entries
  * - Removes database records if the corresponding file doesn't exist or has mismatched file size
  * - For valid books, constructs a sorted index with a special prefix character:
- *   - On EPUB_INKPLATE_BUILD: prefix is based on position from NVS manager ('a'-'z')
+ *   - On EINK_BUILD: prefix is based on position from NVS manager ('a'-'z')
  *   - Otherwise: prefix is 'z'
  * - Logs book availability and title information
  *
@@ -422,7 +422,7 @@ auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedInde
       LOG_D("Title: {}", partialRecord->title);
       tempIndex[partialRecord->filename] = IndexInfo{ .id = 0, .dbIndex = 0 };
 
-      #if EPUB_INKPLATE_BUILD
+      #if EINK_BUILD
         int8_t      pos        = nvsMgr.getPos(partialRecord->id);
         HimemString title = " ";
         title += partialRecord->title;
@@ -464,7 +464,7 @@ auto BooksDir::checkDbContent(char *bookFilename, int16_t &bookIndex, SortedInde
  *
  * @note The first record in the database is treated as a version record and is
  *       not included in the sorted index.
- * @note On EPUB_INKPLATE_BUILD, book titles are prefixed with a position indicator
+ * @note On EINK_BUILD, book titles are prefixed with a position indicator
  *       ('a'-'z' from NVS manager, or 'z' if position not found).
  *       On other builds, titles are simply prefixed with 'z'.
  * @note This operation closes and recreates the database file on disk.
@@ -523,7 +523,7 @@ auto BooksDir::cleanupDb(char *bookFilename, int16_t &bookIndex) -> bool {
         }
 
         uint16_t idx = newDb->getRecordCount() - 1;
-        #if EPUB_INKPLATE_BUILD
+        #if EINK_BUILD
           int8_t      pos        = nvsMgr.getPos(data->id);
           HimemString title = " ";
           title += data->title;
@@ -594,7 +594,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
 
   LOG_D("Looking at book files in folder {}", BOOKS_FOLDER);
 
-  #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+  #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
     ESP::show_heaps_info();
   #endif
 
@@ -742,7 +742,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
             }
 
             uint16_t idx = db->getRecordCount() - 1;
-            #if EPUB_INKPLATE_BUILD
+            #if EINK_BUILD
               int8_t      pos        = nvsMgr.getPos(theBook->id);
               HimemString title = " ";
               title += theBook->title;
@@ -761,7 +761,7 @@ auto BooksDir::loadNewBooksToDb(const char *theTitle, char *bookFilename, int16_
 
             epub->closeFile();
 
-            #if EPUB_INKPLATE_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
+            #if EINK_BUILD && (LOG_LOCAL_LEVEL == ESP_LOG_VERBOSE)
               ESP::show_heaps_info();
             #endif
           }

@@ -32,7 +32,8 @@ class MatrixBooksDirViewer : public BooksDirViewer {
     int16_t columnCount;
     int16_t lineCount;
     int16_t pageCount;
-    int16_t firstEntryYpos;
+    int16_t firstEntryYPos;
+    int16_t firstEntryXPos;
     int16_t headerHeight;
     uint16_t titleFontHeight;
     uint16_t authorFontHeight;
@@ -70,9 +71,9 @@ class MatrixBooksDirViewer : public BooksDirViewer {
     auto prevColumn() -> int16_t;
 
     auto getIndexAt(uint16_t x, uint16_t y) -> int16_t {
-      if ((x < 5) || (y < firstEntryYpos)) { return -1; }
-      int16_t line_idx = (y - firstEntryYpos) / (BooksDir::coverDim.height + vertSpaceBetweenEntries);
-      int16_t column_idx = (x - 5) / (BooksDir::coverDim.width + horizSpaceBetweenEntries);
+      if ((x < firstEntryXPos) || (y < firstEntryYPos)) { return -1; }
+      int16_t line_idx = (y - firstEntryYPos) / (BooksDir::coverDim.height + vertSpaceBetweenEntries);
+      int16_t column_idx = (x - firstEntryXPos) / (BooksDir::coverDim.width + horizSpaceBetweenEntries);
       if ((line_idx >= lineCount) || (column_idx >= columnCount)) { return -1; }
       return (currentPageNbr * booksPerPage) + (column_idx * lineCount) + line_idx;
     }

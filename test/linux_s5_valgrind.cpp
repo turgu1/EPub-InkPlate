@@ -19,7 +19,7 @@
 // Valgrind can report any still-reachable / definitely-lost allocations.
 // ---------------------------------------------------------------------------
 
-// Must be compiled with EPUB_LINUX_BUILD=1 (Makefile sets this).
+// Must be compiled with LINUX_BUILD=1 (Makefile sets this).
 
 #define __GLOBAL__ 1 // emit global singleton definitions from headers
 #include "global.hpp"

@@ -13,7 +13,7 @@
 // ---------------------------------------------------------------------------
 // DMA-safe I/O helpers
 // ---------------------------------------------------------------------------
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "esp_heap_caps.h"
   #include "esp_memory_utils.h"
   // Cover bitmaps can be 50KB+; allocate a fixed bounce buffer and chunk the I/O

@@ -22,7 +22,7 @@
   #include <iostream>
 #endif
 
-#if EPUB_LINUX_BUILD
+#if LINUX_BUILD
   #include <thread>
 #else
   #include "freertos/FreeRTOS.h"
@@ -37,7 +37,7 @@ static auto myZAlloc(void *opaque, size_t items, size_t size) -> void * {
   if (zipMem != nullptr) {
     return zipMem;
   } else {
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       return zipMem = heap_caps_malloc(items * size, MALLOC_CAP_SPIRAM);
     #else
       // const char *TAG = "myZAlloc";
@@ -50,7 +50,7 @@ static auto myZAlloc(void *opaque, size_t items, size_t size) -> void * {
 static void myZFree(void *opaque, void *address) {
 // Do nothing
   #if 0
-    #if EPUB_INKPLATE_BUILD
+    #if EINK_BUILD
       heap_caps_free(address);
     #else
       const char *TAG = "myZFree";
@@ -597,7 +597,7 @@ auto Unzip::closeFile() -> void {}
       if (localLock.try_lock()) {
         break;
       }
-      #if EPUB_LINUX_BUILD
+      #if LINUX_BUILD
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
       #else
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -771,7 +771,7 @@ auto Unzip::closeFile() -> void {}
 
       // If we couldn't get the lock, the other thread is busy.
       // Yield or sleep briefly to let the other thread finish its chunk.
-      #if EPUB_LINUX_BUILD
+      #if LINUX_BUILD
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
       #else
         // FreeRTOS equivalent: delay for 2 ticks (usually 2ms depending on configTICK_RATE_HZ)

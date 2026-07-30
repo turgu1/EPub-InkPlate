@@ -29,7 +29,7 @@ public:
 
   class ConfirmData {
   public:
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if TOUCH_ENABLE
     Pos okPos, cancelPos;
     Dim buttonsDim;
 #endif

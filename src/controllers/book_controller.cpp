@@ -13,7 +13,7 @@
 #include "viewers/msg_viewer.hpp"
 #include "viewers/page.hpp"
 
-#if EPUB_INKPLATE_BUILD
+#if EINK_BUILD
   #include "book_controller.hpp"
   #include "nvs.h"
 #endif
@@ -142,7 +142,7 @@ auto BookController::showPage(const PageId &pageId, EPubPtr &epub) -> void {
   }
 }
 
-#if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
+#if TOUCH_ENABLE
   auto BookController::inputEvent(const EventMgr::Event &event) -> void {
 
     // LOG_I("inputEvent: kind={} x={} y={}", static_cast<int>(event.kind), event.x, event.y);

@@ -81,14 +81,16 @@ class Screen : NonCopyable {
     auto setup(PixelResolution resolution, Orientation orientation) -> void;
     auto setPixelResolution(PixelResolution resolution, bool force = false) -> void;
     auto setOrientation(Orientation orient) -> void;
-    auto getOrientation() -> Orientation { return orientation; }
-    [[nodiscard]] inline auto getPixelResolution() -> PixelResolution { return pixelResolution; }
+    auto getOrientation() const -> Orientation { return orientation; }
+    auto getPixelResolution() const -> PixelResolution { return pixelResolution; }
+    auto getPixelsPerInch() const -> uint16_t { return RESOLUTION; }
+    auto getIdent() const -> uint8_t { return 0; }
     auto getPicture() -> GtkImage * { return pictureData.picture; }
     // auto to_user_coord(uint16_t &x, uint16_t &y) -> void {}
-    inline auto forceFullUpdate() -> void {}
+    auto forceFullUpdate() -> void {}
 
-    [[nodiscard]] inline static auto getWidth() -> uint16_t { return width; }
-    [[nodiscard]] inline static auto getHeight() -> uint16_t { return height; }
+    static auto getWidth() -> uint16_t { return width; }
+    static auto getHeight() -> uint16_t { return height; }
 
     #if TOUCH_TRIAL
       GtkWidget *window, *pictureBox;
