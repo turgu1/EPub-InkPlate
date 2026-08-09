@@ -14,30 +14,29 @@
 
 #include <iomanip>
 
-#define BYTES_PER_PIXEL 3
-
 Screen        Screen::singleton;
 
 uint16_t      Screen::width;
 uint16_t      Screen::height;
 uint16_t      Screen::yOffset;
 
-const uint8_t Screen::LUT1BIT[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
-const uint8_t Screen::LUT1BIT_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
-
-#define SELECT(resolution)                                                                               \
-        if (orientation == Orientation::LEFT) {                                                          \
-          CODE(resolution, Left);                                                                        \
-        } else if (orientation == Orientation::RIGHT) {                                                  \
-          CODE(resolution, Right);                                                                       \
-        } else if (orientation == Orientation::BOTTOM) {                                                 \
-          CODE(resolution, Bottom);                                                                      \
-        } else {                                                                                         \
-          CODE(resolution, Top);                                                                         \
-        }
+const uint8_t Screen::LUT_MONO[8]     = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+const uint8_t Screen::LUT_MONO_INV[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
 #define NIBBLE(k, p) (((k & 1) ? (bitmapData[p] & 0x0F) : (bitmapData[p] >> 4)) << 4)
-#define NIBBLE2(k, p) (((k & 1) ? ((bitmapData[p] & 0x0F) >> 1) : (bitmapData[p] >> 5)))
+#if COLOR_INVERTED
+  #if GRAY_3_BITS
+    #define NIBBLE2(k, p) (7 - (((k & 1) ? ((bitmapData[p] & 0x0F) >> 1) : (bitmapData[p] >> 5))))
+  #else
+    #define NIBBLE2(k, p) (15 - (((k & 1) ? (bitmapData[p] & 0x0F) : (bitmapData[p] >> 4))))
+  #endif
+#else
+  #if GRAY_3_BITS
+    #define NIBBLE2(k, p) (((k & 1) ? ((bitmapData[p] & 0x0F) >> 1) : (bitmapData[p] >> 5)))
+  #else
+    #define NIBBLE2(k, p) (((k & 1) ? (bitmapData[p] & 0x0F) : (bitmapData[p] >> 4)))
+  #endif
+#endif
 
 auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 
@@ -48,92 +47,96 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
   if (pos.x > width) { pos.x = 0; }
   if (pos.y > height) { pos.y = 0; }
 
-  uint32_t xMax = pos.x + dim.width;
-  uint32_t yMax = pos.y + dim.height;
+  uint16_t xMax = pos.x + dim.width;
+  uint16_t yMax = pos.y + dim.height;
 
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  if (pixelResolution == PixelResolution::ONE_BIT) {
+  if (pixelResolution == PixelResolution::MONO) {
     static int16_t err[1201]; // This is the maximum width of all Inkplate devices + 1
     int16_t        error;
     memset(err, 0, 1201 * 2);
 
+    auto black = platform.getEInk().getMonoBlack();
+    auto white = platform.getEInk().getMonoWhite();
+
     if (bpp == 4) {
       uint16_t w = ((dim.width + 1) & 0xFFFE) >> 1; // Round up to even number of pixels
       // LOG_I("Two last nibbles from the first line: {:#04x} {:#04x}", NIBBLE(0, w-1), NIBBLE(1, w-1));
-      #define CODE(resolution, orientation)                                                                    \
-              for (int j = pos.y, q = 0; j < yMax; j++, q++) {                                                 \
-                for (int i = pos.x, p = q * w, k = 0; i < (xMax - 1); i++, k++) {                              \
-                  int32_t v = NIBBLE(k, p) + err[k + 1];                                                       \
-                  if (v > 128) {                                                                               \
-                    error = (v - 255);                                                                         \
-                    setPixelO ## orientation ## resolution(i, j, 0);                                           \
-                  } else {                                                                                     \
-                    error = v;                                                                                 \
-                    setPixelO ## orientation ## resolution(i, j, 1);                                           \
-                  }                                                                                            \
-                  if (k != 0) {                                                                                \
-                    err[k - 1] += error / 8;                                                                   \
-                  }                                                                                            \
-                  err[k] += 3 * error / 8;                                                                     \
-                  err[k + 1] = error / 8;                                                                      \
-                  err[k + 2] += 3 * error / 8;                                                                 \
-                  if (k & 1) { ++p; }                                                                          \
-                }                                                                                              \
-              }
-
-      SELECT(1Bit);
-      #undef CODE
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * w;
+        for (uint16_t i = pos.x, k = 0; i < (xMax - 1); ++i, ++k) {
+          int32_t v = NIBBLE(k, p) + err[k + 1];
+          if (v > 128) {
+            error = (v - 255);
+            setPixel({i, j}, white);
+          } else {
+            error = v;
+            setPixel({i, j}, black);
+          }
+          if (k != 0) {
+            err[k - 1] += error >> 3;
+          }
+          err[k] += 3 * error >> 3;
+          err[k + 1] = error >> 3;
+          err[k + 2] += 3 * error >> 3;
+          if (k & 1) { ++p; }
+        }
+      }
     }
     else {
-      #define CODE(resolution, orientation)                                                                    \
-              for (int j = pos.y, q = 0; j < yMax; j++, q++) {                                                 \
-                for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); i++, p++, k++) {                 \
-                  int32_t v = bitmapData[p] + err[k + 1];                                                      \
-                  if (v > 128) {                                                                               \
-                    error = (v - 255);                                                                         \
-                    setPixelO ## orientation ## resolution(i, j, 0);                                           \
-                  } else {                                                                                     \
-                    error = v;                                                                                 \
-                    setPixelO ## orientation ## resolution(i, j, 1);                                           \
-                  }                                                                                            \
-                  if (k != 0) {                                                                                \
-                    err[k - 1] += error / 8;                                                                   \
-                  }                                                                                            \
-                  err[k] += 3 * error / 8;                                                                     \
-                  err[k + 1] = error / 8;                                                                      \
-                  err[k + 2] += 3 * error / 8;                                                                 \
-                }                                                                                              \
-              }
-
-      SELECT(1Bit);
-      #undef CODE
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * dim.width;
+        for (uint16_t i = pos.x, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
+          int32_t v = bitmapData[p] + err[k + 1];
+          if (v > 128) {
+            error = (v - 255);
+            setPixel({i, j}, white);
+          } else {
+            error = v;
+            setPixel({i, j}, black);
+          }
+          if (k != 0) {
+            err[k - 1] += error >> 3;
+          }
+          err[k] += 3 * error >> 3;
+          err[k + 1] = error >> 3;
+          err[k + 2] += 3 * error >> 3;
+        }
+      }
     }
   } else {
     if (bpp == 4) {
       uint16_t w = ((dim.width + 1) & 0xFFFE) >> 1; // Round up to even number of pixels
-      #define CODE(resolution, orientation)                                                                    \
-              for (int j = pos.y, q = 0; j < yMax; j++, q++) {                                                 \
-                for (int i = pos.x, p = q * w, k = 0; i < xMax; i++, k++) {                                    \
-                  int8_t v = NIBBLE2(k, p);                                                                    \
-                  setPixelO ## orientation ## resolution(i, j, v);                                             \
-                  if (k & 1) { ++p; }                                                                          \
-                }                                                                                              \
-              }
-
-      SELECT(3Bit);
-      #undef CODE
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * w;
+        for (uint16_t i = pos.x, k = 0; i < xMax; ++i, ++k) {
+          int8_t v = NIBBLE2(k, p);
+          setPixel({i, j}, v);
+          if (k & 1) { ++p; }
+        }
+      }
     } else {
-      #define CODE(resolution, orientation)                                                                    \
-              for (int j = pos.y, q = 0; j < yMax; j++, q++) {                                                 \
-                for (int i = pos.x, p = q * dim.width; i < xMax; i++, p++) {                                   \
-                  int8_t v = bitmapData[p] >> 5;                                                               \
-                  setPixelO ## orientation ## resolution(i, j, v);                                             \
-                }                                                                                              \
-              }
-      SELECT(3Bit);
-      #undef CODE
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * dim.width;
+        for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
+          #if GRAY_4_BITS
+            #if COLOR_INVERTED
+              int8_t v = 15 - (bitmapData[p] >> 4);
+            #else
+              int8_t v = bitmapData[p] >> 4;
+            #endif
+          #else
+            #if COLOR_INVERTED
+              int8_t v = 7 - (bitmapData[p] >> 5);
+            #else
+              int8_t v = bitmapData[p] >> 5;
+            #endif
+          #endif
+          setPixel({i, j}, v);
+        }
+      }
     }
   }
 }
@@ -141,140 +144,412 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 #undef NIBBLE
 #undef NIBBLE2
 
-auto Screen::drawRectangle(Dim dim, Pos pos, uint8_t color) -> void {
-  uint32_t xMax = pos.x + dim.width;
-  uint32_t yMax = pos.y + dim.height;
+auto Screen::drawRectangle(Dim dim, Pos pos, uint8_t color, int8_t thickness) -> void {
+  uint16_t xMax = pos.x + dim.width;
+  uint16_t yMax = pos.y + dim.height;
 
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  #define CODE(resolution, orientation)                                                                    \
-          for (int i = pos.x; i < xMax; i++) {                                                             \
-            setPixelO ## orientation ## resolution(i, pos.y, color);                                       \
-            setPixelO ## orientation ## resolution(i, yMax - 1, color);                                    \
-          }                                                                                                \
-          for (int j = pos.y; j < yMax; j++) {                                                             \
-            setPixelO ## orientation ## resolution(pos.x, j, color);                                       \
-            setPixelO ## orientation ## resolution(xMax - 1, j, color);                                    \
-          }
-
-  if (pixelResolution == PixelResolution::ONE_BIT) {
-    color = color == Color::BLACK ? 1 : 0;
-    SELECT(1Bit);
+  if (pixelResolution == PixelResolution::MONO) {
+    color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
   } else {
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2
-      color = color == Color::BLACK ? 0 : 7;
-    #endif
-
-    SELECT(3Bit);
+    color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
   }
 
-  #undef CODE
+  for (uint16_t i = pos.x; i < xMax; ++i) {
+    setPixel({i, pos.y}, color);
+    setPixel({i, (uint16_t)(yMax - 1)}, color);
+  }
+  for (uint16_t j = pos.y; j < yMax; ++j) {
+    setPixel({pos.x, j}, color);
+    setPixel({(uint16_t)(xMax - 1), j}, color);
+  }
 }
 
-auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color)
--> void {
-  int16_t f     = 1 - radius;
-  int16_t ddF_x = 1;
-  int16_t ddF_y = -2 * radius;
-  int16_t x     = 0;
-  int16_t y     = radius;
-
-  #define CODE(resolution, orientation)                                                              \
-          while (x < y) {                                                                                  \
-            if (f >= 0) {                                                                                  \
-              y--;                                                                                         \
-              ddF_y += 2;                                                                                  \
-              f += ddF_y;                                                                                  \
-            }                                                                                              \
-            x++;                                                                                           \
-            ddF_x += 2;                                                                                    \
-            f += ddF_x;                                                                                    \
-                                                                                                   \
-            switch (corner) {                                                                              \
-            case Corner::TOP_LEFT:                                                                         \
-              setPixelO ## orientation ## resolution(xMid - x, yMid - y, color);                               \
-              setPixelO ## orientation ## resolution(xMid - y, yMid - x, color);                               \
-              break;                                                                                       \
-                                                                                                   \
-            case Corner::TOP_RIGHT:                                                                        \
-              setPixelO ## orientation ## resolution(xMid + x, yMid - y, color);                               \
-              setPixelO ## orientation ## resolution(xMid + y, yMid - x, color);                               \
-              break;                                                                                       \
-                                                                                                   \
-            case Corner::LOWER_LEFT:                                                                       \
-              setPixelO ## orientation ## resolution(xMid - x, yMid + y, color);                               \
-              setPixelO ## orientation ## resolution(xMid - y, yMid + x, color);                               \
-              break;                                                                                       \
-                                                                                                   \
-            case Corner::LOWER_RIGHT:                                                                      \
-              setPixelO ## orientation ## resolution(xMid + x, yMid + y, color);                               \
-              setPixelO ## orientation ## resolution(xMid + y, yMid + x, color);                               \
-              break;                                                                                       \
-            }                                                                                              \
-          }
-
-  if (pixelResolution == PixelResolution::ONE_BIT) {
-    SELECT(1Bit);
-  } else {
-    SELECT(3Bit);
-  };
-
-  #undef CODE
+/**
+ * Draws a solid horizontal row using single pixel iterations.
+ */
+auto Screen::drawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint8_t color) -> void {
+  for (uint16_t x = x0; x <= x1; ++x) {
+    setPixel({ x, y }, color);
+  }
 }
 
-void Screen::drawRoundRectangle(Dim dim, Pos pos,
-                                uint8_t color) //, bool show)
-{
-  int16_t xMax = pos.x + dim.width;
-  int16_t yMax = pos.y + dim.height;
+/**
+ * Draws a rounded rectangle into any arbitrary bitmap format via functional abstraction.
+ * 
+ * @param dim        The rectangle dimension
+ * @param p0         Top-left position coordinates
+ * @param color      Color payload value (0/1 for 1-bpp, 0-15 for 4-bpp)
+ * @param radius     Corner rounding radius
+ * @param thickness  Line thickness growing inward (-1 for solid, -2 for 1/2 dither, -3 for 1/3 dither)
+ */
+auto Screen::drawRoundedRectangle(Dim dim, Pos p0, uint8_t color, int8_t thickness, int8_t radius) -> void {
+  if (dim.width == 0 || dim.height == 0) return;
 
-  if (yMax > height) { yMax = height; }
-  if (xMax > width) { xMax = width; }
+  // Compute inclusive outer boundaries (p1 is the last drawable pixel index)
+  Pos p1 = { uint16_t(p0.x + dim.width - 1), uint16_t(p0.y + dim.height - 1) };
 
-  #define CODE(resolution, orientation)                                                              \
-          for (int i = pos.x + 10; i < xMax - 10; i++) {                                                   \
-            setPixelO ## orientation ## resolution(i, pos.y, color);                                           \
-            setPixelO ## orientation ## resolution(i, yMax - 1, color);                                        \
-          }                                                                                                \
-          for (int j = pos.y + 10; j < yMax - 10; j++) {                                                   \
-            setPixelO ## orientation ## resolution(pos.x, j, color);                                           \
-            setPixelO ## orientation ## resolution(xMax - 1, j, color);                                        \
-          }
-
-  if (pixelResolution == PixelResolution::ONE_BIT) {
-    color = color == Color::BLACK ? 1 : 0;
-    SELECT(1Bit);
+  if (pixelResolution == PixelResolution::MONO) {
+    color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
   } else {
-    #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || INKPLATE_10_V2
-      color = color == Color::BLACK ? 0 : 7;
-    #endif
-
-    SELECT(3Bit);
+    color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
   }
 
-  #undef CODE
+  // Validate and clamp radius
+  if (2 * radius > (p1.x - p0.x)) radius = (p1.x - p0.x) / 2;
+  if (2 * radius > (p1.y - p0.y)) radius = (p1.y - p0.y) / 2;
+  if (radius < 0) radius = 0;
 
-  drawArc(pos.x + 10,             pos.y + 10,              10, Corner::TOP_LEFT,    color);
-  drawArc(pos.x + dim.width - 11, pos.y + 10,              10, Corner::TOP_RIGHT,   color);
-  drawArc(pos.x + 10,             pos.y + dim.height - 11, 10, Corner::LOWER_LEFT,  color);
-  drawArc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
+  // Cleanly separate mode selection to avoid implicit signed/unsigned comparison bugs
+  bool fill = false;
+  int8_t spacing = 1;
+
+  if (thickness < 0) {
+    fill = true;
+    spacing = -thickness; // -2 becomes spacing 2, -3 becomes spacing 3
+  } else {
+    // Safely promote to signed integers before comparison
+    int32_t req_thickness = thickness * 2;
+    int32_t max_width = p1.x - p0.x + 1;
+    int32_t max_height = p1.y - p0.y + 1;
+    if (req_thickness >= max_width || req_thickness >= max_height) {
+      fill = true;
+    }
+  }
+
+  if (fill) {
+    // Inline helper lambda to safely intercept and grid-dither the lines
+    auto drawFillLine = [this, spacing, color](uint16_t x0, uint16_t x1, uint16_t y) {
+      if (spacing > 1) {
+        for (uint16_t x = x0; x <= x1; ++x) {
+          // Staggered pattern: (x + y) ensures an elegant diagonal gray mesh
+          if ((x + y) % spacing == 0) {
+            setPixel({ x, y }, color);
+          }
+        }
+      } else {
+        drawHLine(x0, x1, y, color);
+      }
+    };
+
+    // --- FILL MODE ---
+    uint16_t cx_left  = p0.x + radius;
+    uint16_t cx_right = p1.x - radius;
+    uint16_t cy_top   = p0.y + radius;
+    uint16_t cy_bot   = p1.y - radius;
+
+    // 1. Fill top and bottom rounded canopies simultaneously
+    if (radius > 0) {
+      int16_t cx = 0;
+      int16_t cy = radius;
+      int16_t d  = 3 - 2 * radius;
+
+      while (cx <= cy) {
+        // Draw rows corresponding to vertical steps
+        drawFillLine(cx_left - cx, cx_right + cx, cy_top - cy);
+        drawFillLine(cx_left - cx, cx_right + cx, cy_bot + cy);
+
+        // Draw rows corresponding to horizontal steps
+        drawFillLine(cx_left - cy, cx_right + cy, cy_top - cx);
+        drawFillLine(cx_left - cy, cx_right + cy, cy_bot + cx);
+
+        if (d < 0) {
+          d += 4 * cx + 6;
+        } else {
+          d += 4 * (cx - cy) + 10;
+          cy--;
+        }
+        cx++;
+      }
+    }
+
+    // 2. Fill massive center body square
+    uint16_t y_start = p0.y + radius;
+    uint16_t y_end   = p1.y - radius;
+    for (uint16_t y = y_start; y <= y_end; y++) {
+      drawFillLine(p0.x, p1.x, y);
+    }
+
+  } else {
+    // --- THICK OUTLINE MODE ---
+    for (uint8_t i = 0; i < thickness; i++) {
+      if ((p0.x + i) > (p1.x - i) || (p0.y + i) > (p1.y - i)) break;
+
+      uint16_t cur_x0     = p0.x + i;
+      uint16_t cur_y0     = p0.y + i;
+      uint16_t cur_x1     = p1.x - i;
+      uint16_t cur_y1     = p1.y - i;
+      int16_t  cur_radius = radius - i; 
+
+      if (cur_radius < 0) cur_radius = 0;
+
+      // Draw horizontal borders
+      drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y0, color);
+      drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y1, color);
+
+      // Draw vertical borders
+      for (uint16_t y = cur_y0 + cur_radius; y <= cur_y1 - cur_radius; ++y) {
+        setPixel({ cur_x0, y }, color);
+        setPixel({ cur_x1, y }, color);
+      }
+
+      // Draw corner arc accents
+      if (cur_radius > 0) {
+        uint16_t cx_left  = cur_x0 + cur_radius;
+        uint16_t cx_right = cur_x1 - cur_radius;
+        uint16_t cy_top   = cur_y0 + cur_radius;
+        uint16_t cy_bot   = cur_y1 - cur_radius;
+        
+        int16_t cx = 0;
+        int16_t cy = cur_radius;
+        int16_t d  = 3 - 2 * cur_radius; 
+
+        while (cx <= cy) {
+          setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_top - cx) }, color);
+          setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_top - cy) }, color);
+          setPixel({ uint16_t(cx_right + cx), uint16_t(cy_top - cy) }, color);
+          setPixel({ uint16_t(cx_right + cy), uint16_t(cy_top - cx) }, color);
+          setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_bot + cx) }, color);
+          setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_bot + cy) }, color);
+          setPixel({ uint16_t(cx_right + cx), uint16_t(cy_bot + cy) }, color);
+          setPixel({ uint16_t(cx_right + cy), uint16_t(cy_bot + cx) }, color);
+
+          if (d < 0) { 
+            d += 4 * cx + 6; 
+          } else { 
+            d += 4 * (cx - cy) + 10; 
+            cy--; 
+          }
+          ++cx;
+        }
+      }
+    }
+  }
 }
+
+// /**
+//  * Draws a solid horizontal row using single pixel iterations.
+//  */
+// auto Screen::drawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint8_t color) -> void {
+//   for (uint16_t x = x0; x <= x1; ++x) {
+//     setPixel({ x, y }, color);
+//   }
+// }
+
+// /**
+//  * Draws a rounded rectangle into any arbitrary bitmap format via functional abstraction.
+//  * 
+//  * @param dim        The rectangle dimension
+//  * @param p0         Top-left position coordinates
+//  * @param color      Color payload value (0/1 for 1-bpp, 0-15 for 4-bpp)
+//  * @param radius     Corner rounding radius
+//  * @param thickness  Line thickness growing inward (-1 for solid fill)
+//  */
+// auto Screen::drawRoundedRectangle(Dim dim, Pos p0, uint8_t color, int8_t thickness, int8_t radius) -> void {
+//   if (dim.width == 0 || dim.height == 0) return;
+
+//   // Compute inclusive outer boundaries (p1 is the last drawable pixel index)
+//   Pos p1 = { uint16_t(p0.x + dim.width - 1), uint16_t(p0.y + dim.height - 1) };
+
+//   if (pixelResolution == PixelResolution::MONO) {
+//     color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
+//   } else {
+//     color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
+//   }
+
+//   // Validate and clamp radius
+//   if (2 * radius > (p1.x - p0.x)) radius = (p1.x - p0.x) / 2;
+//   if (2 * radius > (p1.y - p0.y)) radius = (p1.y - p0.y) / 2;
+//   if (radius < 0) radius = 0;
+
+//   // Detect if drawing in solid fill mode
+//   bool fill = (thickness == -1 || (thickness * 2) >= (p1.x - p0.x + 1) || (thickness * 2) >= (p1.y - p0.y + 1));
+
+//   if (fill) {
+//     // --- SOLID FILL MODE ---
+//     uint16_t cx_left  = p0.x + radius;
+//     uint16_t cx_right = p1.x - radius;
+//     uint16_t cy_top   = p0.y + radius;
+//     uint16_t cy_bot   = p1.y - radius;
+
+//     // 1. Fill top and bottom rounded canopies simultaneously
+//     if (radius > 0) {
+//       int16_t cx = 0;
+//       int16_t cy = radius;
+//       int16_t d  = 3 - 2 * radius; // Signed decision variable
+
+//       while (cx <= cy) {
+//         // Draw rows corresponding to vertical steps
+//         drawHLine(cx_left - cx, cx_right + cx, cy_top - cy, color);
+//         drawHLine(cx_left - cx, cx_right + cx, cy_bot + cy, color);
+
+//         // Draw rows corresponding to horizontal steps
+//         drawHLine(cx_left - cy, cx_right + cy, cy_top - cx, color);
+//         drawHLine(cx_left - cy, cx_right + cy, cy_bot + cx, color);
+
+//         if (d < 0) {
+//           d += 4 * cx + 6;
+//         } else {
+//           d += 4 * (cx - cy) + 10;
+//           cy--;
+//         }
+//         cx++;
+//       }
+//     }
+
+//     // 2. Fill massive center body square
+//     uint16_t y_start = p0.y + radius;
+//     uint16_t y_end   = p1.y - radius;
+//     for (uint16_t y = y_start; y <= y_end; y++) {
+//       drawHLine(p0.x, p1.x, y, color);
+//     }
+
+//   } else {
+//     // --- THICK OUTLINE MODE ---
+//     for (uint8_t i = 0; i < thickness; i++) {
+//       // Gracefully prevent thin shapes from folding inward over themselves
+//       if ((p0.x + i) > (p1.x - i) || (p0.y + i) > (p1.y - i)) break;
+
+//       uint16_t cur_x0     = p0.x + i;
+//       uint16_t cur_y0     = p0.y + i;
+//       uint16_t cur_x1     = p1.x - i;
+//       uint16_t cur_y1     = p1.y - i;
+//       int16_t  cur_radius = radius - i; 
+
+//       if (cur_radius < 0) cur_radius = 0;
+
+//       // Draw horizontal borders
+//       drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y0, color);
+//       drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y1, color);
+
+//       // Draw vertical borders
+//       for (uint16_t y = cur_y0 + cur_radius; y <= cur_y1 - cur_radius; ++y) {
+//         setPixel({ cur_x0, y }, color);
+//         setPixel({ cur_x1, y }, color);
+//       }
+
+//       // Draw corner arc accents
+//       if (cur_radius > 0) {
+//         uint16_t cx_left  = cur_x0 + cur_radius;
+//         uint16_t cx_right = cur_x1 - cur_radius;
+//         uint16_t cy_top   = cur_y0 + cur_radius;
+//         uint16_t cy_bot   = cur_y1 - cur_radius;
+        
+//         int16_t cx = 0;
+//         int16_t cy = cur_radius;
+//         int16_t d  = 3 - 2 * cur_radius; // Fixed type underflow
+
+//         while (cx <= cy) {
+//           setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_top - cx) }, color);
+//           setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_top - cy) }, color);
+//           setPixel({ uint16_t(cx_right + cx), uint16_t(cy_top - cy) }, color);
+//           setPixel({ uint16_t(cx_right + cy), uint16_t(cy_top - cx) }, color);
+//           setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_bot + cx) }, color);
+//           setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_bot + cy) }, color);
+//           setPixel({ uint16_t(cx_right + cx), uint16_t(cy_bot + cy) }, color);
+//           setPixel({ uint16_t(cx_right + cy), uint16_t(cy_bot + cx) }, color);
+
+//           if (d < 0) { 
+//             d += 4 * cx + 6; 
+//           } else { 
+//             d += 4 * (cx - cy) + 10; 
+//             cy--; 
+//           }
+//           ++cx;
+//         }
+//       }
+//     }
+//   }
+// }
+
+// auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color)
+// -> void {
+//   int16_t f     = 1 - radius;
+//   int16_t ddF_x = 1;
+//   int16_t ddF_y = -2 * radius;
+//   int16_t x     = 0;
+//   int16_t y     = radius;
+
+//   while (x < y) {
+//     if (f >= 0) {
+//       y--;
+//       ddF_y += 2;
+//       f += ddF_y;
+//     }
+//     x++;
+//     ddF_x += 2;  
+//     f += ddF_x;  
+
+//     switch (corner) {
+//     case Corner::TOP_LEFT:
+//       setPixel({(uint16_t)(xMid - x), (uint16_t)(yMid - y)}, color);
+//       setPixel({(uint16_t)(xMid - y), (uint16_t)(yMid - x)}, color);
+//       break;
+
+//     case Corner::TOP_RIGHT:
+//       setPixel({(uint16_t)(xMid + x), (uint16_t)(yMid - y)}, color);
+//       setPixel({(uint16_t)(xMid + y), (uint16_t)(yMid - x)}, color);
+//       break;
+
+//     case Corner::LOWER_LEFT:
+//       setPixel({(uint16_t)(xMid - x), (uint16_t)(yMid + y)}, color);
+//       setPixel({(uint16_t)(xMid - y), (uint16_t)(yMid + x)}, color);
+//       break;
+
+//     case Corner::LOWER_RIGHT:
+//       setPixel({(uint16_t)(xMid + x), (uint16_t)(yMid + y)}, color);
+//       setPixel({(uint16_t)(xMid + y), (uint16_t)(yMid + x)}, color);
+//       break;
+//     }
+//   }
+// }
+
+// void Screen::drawRoundRectangle(Dim dim, Pos pos,
+//                                 uint8_t color) //, bool show)
+// {
+//   uint16_t xMax = pos.x + dim.width;
+//   uint16_t yMax = pos.y + dim.height;
+
+//   if (yMax > height) { yMax = height; }
+//   if (xMax > width) { xMax = width; }
+
+//   if (pixelResolution == PixelResolution::MONO) {
+//     color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
+//   } else {
+//     color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
+//   }
+
+//   for (uint16_t i = pos.x + 10; i < xMax - 10; ++i) {
+//     setPixel({i, pos.y}, color);
+//     setPixel({i, (uint16_t)(yMax - 1)}, color);
+//   }
+//   for (uint16_t j = pos.y + 10; j < yMax - 10; ++j) {
+//     setPixel({pos.x, j}, color);
+//     setPixel({(uint16_t)(xMax - 1), j}, color);
+//   }
+
+//   drawArc(pos.x + 10,             pos.y + 10,              10, Corner::TOP_LEFT,    color);
+//   drawArc(pos.x + dim.width - 11, pos.y + 10,              10, Corner::TOP_RIGHT,   color);
+//   drawArc(pos.x + 10,             pos.y + dim.height - 11, 10, Corner::LOWER_LEFT,  color);
+//   drawArc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
+// }
 
 // High performance Colorize a rectangle in the frame buffer
 // Does not work with Inkplate-10 and 10_V2 as the screen width is not a multiple of 32.
 
 #if !(INKPLATE_10 || INKPLATE_10_V2)
 
-  auto Screen::lowColorize3Bit(Dim dim, Pos pos, uint8_t color) -> void {
+  auto Screen::lowColorizeGray(Dim dim, Pos pos, uint8_t color) -> void {
     uint32_t *temp =
-      ((uint32_t *)(&(frameBufferGrayScale->getData())[frameBufferGrayScale->getLineSize() * pos.y])) +
+      ((uint32_t *)(&(frameBufferGray->getData())[frameBufferGray->getStride() * pos.y])) +
       (pos.x >> 3);
 
     uint32_t colorMask;
-    uint16_t lineSize32 = frameBufferGrayScale->getLineSize() >> 2; // 32 bits count
+    uint16_t lineSize32 = frameBufferGray->getStride() >> 2; // 32 bits count
     // int16_t  inSize32   = (static_cast<int16_t>(dim.width) - (8 - (pos.x & 0x07)) -
-    // ((static_cast<int16_t>(dim.width) + pos.x - 1) & 0x07) + 1) / 8;
+    // ((static_cast<int16_t>(dim.width) + pos.x - 1) & 0x07) + 1) >> 3;
     int16_t inSize32 =
       ((dim.width + (pos.x & 0x07) + (8 - ((dim.width + pos.x - 1) & 0x07))) >> 3) - 2;
     uint16_t remainingLineWidth32 = lineSize32 - inSize32 - 2;
@@ -287,23 +562,28 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
     colorMask |= (colorMask << 8);
     colorMask |= (colorMask << 16);
 
-    uint32_t firstMask = ~(0x77777777 << ((pos.x & 0x07) << 2));
-    uint32_t lastMask  = ~(0x77777777 >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
+    #if GRAY_4_BITS
+      uint32_t firstMask = ~(0xFFFFFFFF << ((pos.x & 0x07) << 2));
+      uint32_t lastMask  = ~(0xFFFFFFFF >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
+   #else
+      uint32_t firstMask = ~(0x77777777 << ((pos.x & 0x07) << 2));
+      uint32_t lastMask  = ~(0x77777777 >> ((8 - ((pos.x + dim.width) & 0x07)) << 2));
+    #endif
 
     LOG_D("Masks: {:#010x}, {:010x}, {:010x}", firstMask, lastMask, colorMask);
 
     if (inSize32 < 0) { // All pixels in a row are in the same 32 bits word
       firstMask &= lastMask;
       colorMask &= ~firstMask;
-      for (uint16_t i = 0; i < dim.height; i++) {
+      for (uint16_t i = 0; i < dim.height; ++i) {
         *temp = (*temp & firstMask) | colorMask;
         temp += lineSize32;
       }
     } else {
-      for (uint16_t i = 0; i < dim.height; i++) {
+      for (uint16_t i = 0; i < dim.height; ++i) {
         *temp = (*temp & firstMask) | (colorMask & ~firstMask);
         temp++;
-        for (int16_t j = 0; j < inSize32; j++) {
+        for (int16_t j = 0; j < inSize32; ++j) {
           *temp++ = colorMask;
         }
         *temp = (*temp & lastMask) | (colorMask & ~lastMask);
@@ -312,12 +592,12 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
     }
   }
 
-  auto Screen::lowColorize1Bit(Dim dim, Pos pos, uint8_t color) -> void {
+  auto Screen::lowColorizeMono(Dim dim, Pos pos, uint8_t color) -> void {
     uint32_t *temp =
-      ((uint32_t *)(&(frameBufferMono->getData())[frameBufferMono->getLineSize() * pos.y])) +
+      ((uint32_t *)(&(frameBufferMono->getData())[frameBufferMono->getStride() * pos.y])) +
       (pos.x >> 5);
 
-    uint16_t lineSize32 = frameBufferMono->getLineSize() >> 2; // 32 bits count
+    uint16_t lineSize32 = frameBufferMono->getStride() >> 2; // 32 bits count
     int16_t  inSize32 =
       ((dim.width + (pos.x & 0x1F) + (32 - ((dim.width + pos.x - 1) & 0x1F))) >> 5) - 2;
     uint16_t remainingLineWidth32 = lineSize32 - inSize32 - 2;
@@ -326,7 +606,7 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
           remainingLineWidth32);
     LOG_D("Pos: [{}, {}], Dim: [{}, {}]", pos.x, pos.y, dim.width, dim.height);
 
-    if (color == COLOR) {
+    if (color != 0) {
       uint32_t firstMask = 0xFFFFFFFF << (pos.x & 0x1F);
       uint32_t lastMask  = 0xFFFFFFFF >> (32 - ((pos.x + dim.width) & 0x1F));
 
@@ -334,14 +614,14 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
 
       if (inSize32 < 0) {
         firstMask &= lastMask;
-        for (uint16_t i = 0; i < dim.height; i++) {
+        for (uint16_t i = 0; i < dim.height; ++i) {
           *temp |= firstMask;
           temp += lineSize32;
         }
       } else {
-        for (uint16_t i = 0; i < dim.height; i++) {
+        for (uint16_t i = 0; i < dim.height; ++i) {
           *temp++ |= firstMask;
-          for (int16_t j = 0; j < inSize32; j++) {
+          for (int16_t j = 0; j < inSize32; ++j) {
             *temp++ = 0xFFFFFFFF;
           }
           *temp++ |= lastMask;
@@ -356,14 +636,14 @@ void Screen::drawRoundRectangle(Dim dim, Pos pos,
 
       if (inSize32 < 0) {
         firstMask |= lastMask;
-        for (uint16_t i = 0; i < dim.height; i++) {
+        for (uint16_t i = 0; i < dim.height; ++i) {
           *temp &= firstMask;
           temp += lineSize32;
         }
       } else {
-        for (uint16_t i = 0; i < dim.height; i++) {
+        for (uint16_t i = 0; i < dim.height; ++i) {
           *temp++ &= firstMask;
-          for (int16_t j = 0; j < inSize32; j++) {
+          for (int16_t j = 0; j < inSize32; ++j) {
             *temp++ = 0;
           }
           *temp++ &= lastMask;
@@ -379,97 +659,90 @@ auto Screen::colorizeRegion(Dim dim, Pos pos,
                             uint8_t color) -> void //, bool show)
 {
   #if !(INKPLATE_10 || INKPLATE_10_V2)
-    if (pixelResolution == PixelResolution::ONE_BIT) {
-      color = color == Color::BLACK ? 1 : 0;
+    if (pixelResolution == PixelResolution::MONO) {
+      color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
 
       switch (orientation) {
       case Orientation::BOTTOM:
-        lowColorize1Bit(dim, pos, color);
+        lowColorizeMono(dim, pos, color);
         break;
       case Orientation::TOP:
-        lowColorize1Bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
+        lowColorizeMono(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
         break;
       case Orientation::LEFT:
-        lowColorize1Bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
+        lowColorizeMono(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
         break;
       case Orientation::RIGHT:
-        lowColorize1Bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
+        lowColorizeMono(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
         break;
       }
     } else {
-      #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
-        color = color == Color::BLACK ? 0 : 7;
-      #endif
+      color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
       switch (orientation) {
       case Orientation::BOTTOM:
-        lowColorize3Bit(dim, pos, color);
+        lowColorizeGray(dim, pos, color);
         break;
       case Orientation::TOP:
-        lowColorize3Bit(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
+        lowColorizeGray(dim, Pos(width - (pos.x + dim.width), height - (pos.y + dim.height)), color);
         break;
       case Orientation::LEFT:
-        lowColorize3Bit(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
+        lowColorizeGray(Dim(dim.height, dim.width), Pos(pos.y, width - (pos.x + dim.width)), color);
         break;
       case Orientation::RIGHT:
-        lowColorize3Bit(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
+        lowColorizeGray(Dim(dim.height, dim.width), Pos(height - (pos.y + dim.height), pos.x), color);
         break;
       }
     }
-
   #else
-    int16_t xMax = pos.x + dim.width;
-    int16_t yMax = pos.y + dim.height;
+    uint16_t xMax = pos.x + dim.width;
+    uint16_t yMax = pos.y + dim.height;
 
     if (yMax > height) { yMax = height; }
     if (xMax > width) { xMax = width; }
 
-    #define CODE(resolution, orientation)                                                            \
-            for (int j = pos.y; j < yMax; j++) {                                                           \
-              for (int i = pos.x; i < xMax; i++) {                                                         \
-                setPixelO ## orientation ## resolution(i, j, color);                                           \
-              }                                                                                            \
-            }
-
-    if (pixelResolution == PixelResolution::ONE_BIT) {
-      color = color == Color::BLACK ? 1 : 0;
-      SELECT(1Bit);
+    if (pixelResolution == PixelResolution::MONO) {
+      color = color == Color::BLACK ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
     } else {
-      color = color == Color::BLACK ? 0 : 7;
-      SELECT(3Bit);
+      color = color == Color::BLACK ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
     }
 
-    #undef CODE
-
+    for (uint16_t j = pos.y; j < yMax; ++j) {
+      for (uint16_t i = pos.x; i < xMax; ++i) {
+        setPixel({i, j}, color);
+      }
+    }
   #endif
 }
 
-auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void {
+auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch, bool inverse) -> void {
   int xMax = pos.x + dim.width;
   int yMax = pos.y + dim.height;
 
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  if (pixelResolution == PixelResolution::ONE_BIT) {
-    #define CODE(resolution, orientation)                                                              \
-            for (uint32_t j = pos.y, q = 0; j < yMax; j++, q++) {                                            \
-              for (uint32_t i = pos.x, p = (q * pitch) << 3; i < xMax; i++, p++) {                           \
-                uint8_t v = bitmapData[p >> 3] &LUT1BIT[p & 7];                                             \
-                if (v) setPixelO ## orientation ## resolution(i, j, 1);                                          \
-              }                                                                                              \
-            }
-    SELECT(1Bit);
-    #undef CODE
+  if (pixelResolution == PixelResolution::MONO) {
+    auto color = inverse ? platform.getEInk().getMonoWhite() : platform.getEInk().getMonoBlack();
+    for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      uint32_t p = (q * pitch) << 3;
+      for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
+        uint8_t v = bitmapData[p >> 3] &LUT_MONO[p & 7];
+        if (v) setPixel({i, j}, color);
+      }
+    }
   } else {
-    #define CODE(resolution, orientation)                                                              \
-            for (uint32_t j = pos.y, q = 0; j < yMax; j++, q++) {                                            \
-              for (uint32_t i = pos.x, p = q * pitch; i < xMax; i++, p++) {                                  \
-                uint8_t v = 7 - (bitmapData[p] >> 5);                                                        \
-                if (v != 7) setPixelO ## orientation ## resolution(i, j, v);                                     \
-              }                                                                                              \
-            }
-    SELECT(3Bit);
-    #undef CODE
+    for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      uint32_t p = q * pitch;
+      for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
+        #if GRAY_4_BITS
+          uint8_t v = 15 - (bitmapData[p] >> 4);
+          if (v != 15) setPixel({i, j}, inverse ? 15 - v : v);
+        #else
+          uint8_t v = 15 - (bitmapData[p] >> 5);
+          if (v != 7) setPixel({i, j}, inverse ? 7 - v : v);
+        #endif
+      }
+    }
   }
 }
 
@@ -482,27 +755,28 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
 auto Screen::setPixelResolution(PixelResolution resolution, bool force) -> void {
   if (force || (pixelResolution != resolution)) {
     pixelResolution = resolution;
-    if (pixelResolution == PixelResolution::ONE_BIT) {
+    if (pixelResolution == PixelResolution::MONO) {
 
-      if (frameBufferGrayScale != nullptr) {
-        free(frameBufferGrayScale);
-        frameBufferGrayScale = nullptr;
+      if (frameBufferGray != nullptr) {
+        free(frameBufferGray);
+        frameBufferGray = nullptr;
       }
 
       if ((frameBufferMono = platform.getEInk().newFrameBufferMono()) != nullptr) {
         frameBufferMono->clear();
       }
-      partialCount = 0;
     } else {
       if (frameBufferMono != nullptr) {
         free(frameBufferMono);
         frameBufferMono = nullptr;
       }
 
-      if ((frameBufferGrayScale = platform.getEInk().newFrameBufferGrayScale()) != nullptr) {
-        frameBufferGrayScale->clear();
+      if ((frameBufferGray = platform.getEInk().newFrameBufferGray()) != nullptr) {
+        frameBufferGray->clear();
       }
     }
+    
+    updateCount = 0;
   }
 
   setYOffset();
@@ -526,7 +800,7 @@ auto Screen::setYOffset() -> void {
   yOffset = 0;
 
   if (orientation == Orientation::TOP) {
-    if (pixelResolution == PixelResolution::ONE_BIT) {
+    if (pixelResolution == PixelResolution::MONO) {
       yOffset = ((height + 7) & 0xFFF8) - height;
     } else {
       yOffset = ((height + 1) & 0xFFFE) - height;
@@ -536,134 +810,152 @@ auto Screen::setYOffset() -> void {
   LOG_I("Setting yOffset to {}", yOffset);
 }
 
-auto Screen::setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+#define SELECT(resolution)                                                                               \
+        if (orientation == Orientation::LEFT) {                                                          \
+          CODE(resolution, Left);                                                                        \
+        } else if (orientation == Orientation::RIGHT) {                                                  \
+          CODE(resolution, Right);                                                                       \
+        } else if (orientation == Orientation::BOTTOM) {                                                 \
+          CODE(resolution, Bottom);                                                                      \
+        } else {                                                                                         \
+          CODE(resolution, Top);                                                                         \
+        }
+
+auto Screen::setPixel(Pos pos, uint8_t color) -> void {
+  #define CODE(resolution, orientation)             \
+      setPixel ## orientation ## resolution(pos, color)
+
+  if (pixelResolution == PixelResolution::MONO) {
+    SELECT(Mono);
+  } else {
+    SELECT(Gray)
+  }
+}
+
+#undef CODE
+#undef SELECT
+
+auto Screen::setPixelLeftMono(Pos pos, uint8_t color) -> void {
   uint8_t *temp =
     &(frameBufferMono->getData())[frameBufferMono->getDataSize() -
-      (frameBufferMono->getLineSize() * (col + 1)) + (row >> 3)];
+      (frameBufferMono->getStride() * (pos.x + 1)) + (pos.y >> 3)];
   #if PIXELS_BIG_ENDIAN
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT[row & 7];
+    if (color != 0) {
+      *temp = *temp | LUT_MONO[pos.y & 7];
     }
     else {
-      *temp = (*temp & ~LUT1BIT[row & 7]);
+      *temp = (*temp & ~LUT_MONO[pos.y & 7]);
     }
   #else
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT_INV[row & 7];
+    if (color != 0) {
+      *temp = *temp | LUT_MONO_INV[pos.y & 7];
     }
     else {
-      *temp = (*temp & ~LUT1BIT_INV[row & 7]);
+      *temp = (*temp & ~LUT_MONO_INV[pos.y & 7]);
     }
   #endif
 }
 
-auto Screen::setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+auto Screen::setPixelRightMono(Pos pos, uint8_t color) -> void {
   uint8_t *temp =
     &(frameBufferMono
-      ->getData())[(frameBufferMono->getLineSize() * (col + 1)) - (row >> 3) - 1];
+      ->getData())[(frameBufferMono->getStride() * (pos.x + 1)) - (pos.y >> 3) - 1];
 
   #if PIXELS_BIG_ENDIAN
-    if (color == COLOR) {
-      *temp = (*temp | LUT1BIT_INV[row & 7]);
+    if (color != 0) {
+      *temp = (*temp | LUT_MONO_INV[pos.y & 7]);
     }
     else {
-      *temp = (*temp & ~LUT1BIT_INV[row & 7]);
+      *temp = (*temp & ~LUT_MONO_INV[pos.y & 7]);
     }
   #else
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT[row & 7];
+    if (color != 0) {
+      *temp = *temp | LUT_MONO[pos.y & 7];
     }
     else {
-      *temp = (*temp & ~LUT1BIT[row & 7]);
+      *temp = (*temp & ~LUT_MONO[pos.y & 7]);
     }
   #endif
 }
 
-auto Screen::setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+auto Screen::setPixelBottomMono(Pos pos, uint8_t color) -> void {
   uint8_t *temp =
-    &(frameBufferMono->getData())[frameBufferMono->getLineSize() * row + (col >> 3)];
+    &(frameBufferMono->getData())[frameBufferMono->getStride() * pos.y + (pos.x >> 3)];
 
   #if PIXELS_BIG_ENDIAN
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT[col & 7];
+    if (color != 0) {
+      *temp = *temp | LUT_MONO[pos.x & 7];
     }
     else {
-      *temp = (*temp & ~LUT1BIT[col & 7]);
+      *temp = (*temp & ~LUT_MONO[pos.x & 7]);
     }
   #else
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT_INV[col & 7];
+    if (color != 0) {
+      *temp = *temp | LUT_MONO_INV[pos.x & 7];
     }
     else {
-      *temp = (*temp & ~LUT1BIT_INV[col & 7]);
+      *temp = (*temp & ~LUT_MONO_INV[pos.x & 7]);
     }
   #endif
 }
 
-auto Screen::setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+auto Screen::setPixelTopMono(Pos pos, uint8_t color) -> void {
   uint8_t *temp = &(frameBufferMono->getData())[frameBufferMono->getDataSize() -
-                    (frameBufferMono->getLineSize() * row) - ((col + yOffset) >> 3)];
+                    (frameBufferMono->getStride() * pos.y) - ((pos.x + yOffset) >> 3)];
 
   #if PIXELS_BIG_ENDIAN
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT_INV[((col + yOffset) & 7)];
-    }
-    else {
-      *temp = (*temp & ~LUT1BIT_INV[((col + yOffset) & 7)]);
+    if (color != 0) {
+      *temp = *temp | LUT_MONO_INV[((pos.x + yOffset) & 7)];
+    } else {
+      *temp = (*temp & ~LUT_MONO_INV[((pos.x + yOffset) & 7)]);
     }
   #else
-    if (color == COLOR) {
-      *temp = *temp | LUT1BIT[(col + yOffset) & 7];
-    }
-    else {
-      *temp = (*temp & ~LUT1BIT[(col + yOffset) & 7]);
+    if (color != 0) {
+      *temp = *temp | LUT_MONO[(pos.x + yOffset) & 7];
+    } else {
+      *temp = (*temp & ~LUT_MONO[(pos.x + yOffset) & 7]);
     }
   #endif
 }
 
-auto Screen::setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-  uint8_t *temp =
-    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getDataSize() -
-                                    (frameBufferGrayScale->getLineSize() * (col + 1)) + (row >> 1)];
-  if (row & 1) {
+auto Screen::setPixelLeftGray(Pos pos, uint8_t color) -> void {
+  uint8_t *temp = &(frameBufferGray->getData())[frameBufferGray->getDataSize() -
+                  (frameBufferGray->getStride() * (pos.x + 1)) + (pos.y >> 1)];
+  #if PIXELS_BIG_ENDIAN
+    *temp = (pos.y & 1) ? ((*temp & 0xF0) | color) : ((*temp & 0x0F) | (color << 4));
+  #else
+    *temp = (pos.y & 1) ? ((*temp & 0x0F) | (color << 4)) : ((*temp & 0xF0) | color);
+  #endif
+}
+
+
+auto Screen::setPixelRightGray(Pos pos, uint8_t color) -> void {
+  uint8_t *temp = &(frameBufferGray->getData())[(frameBufferGray->getStride() *
+                  (pos.x + 1)) - (pos.y >> 1) - 1];
+  #if PIXELS_BIG_ENDIAN
+    *temp = (pos.y & 1) ? ((*temp & 0xF0) | color) : ((*temp & 0x0F) | (color << 4));
+  #else
+    *temp = (pos.y & 1) ? ((*temp & 0x0F) | (color << 4)) : ((*temp & 0xF0) | color);
+  #endif
+}
+
+auto Screen::setPixelBottomGray(Pos pos, uint8_t color) -> void {
+  uint8_t *temp = &(frameBufferGray->getData())[frameBufferGray->getStride() * 
+                  pos.y + (pos.x >> 1)];
+  if (pos.x & 1) {
     *temp = (*temp & 0xF0) | color;
-  }
-  else {
+  } else {
     *temp = (*temp & 0x0F) | (color << 4);
   }
 }
 
-auto Screen::setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
+auto Screen::setPixelTopGray(Pos pos, uint8_t color) -> void {
   uint8_t *temp =
-    &(frameBufferGrayScale
-      ->getData())[(frameBufferGrayScale->getLineSize() * (col + 1)) - (row >> 1) - 1];
-  if (row & 1) {
+    &(frameBufferGray->getData())[frameBufferGray->getDataSize() -
+                                    (frameBufferGray->getStride() * pos.y) - ((pos.x + yOffset) >> 1)];
+  if ((pos.x + yOffset) & 1) {
     *temp = (*temp & 0x0F) | (color << 4);
-  }
-  else {
-    *temp = (*temp & 0xF0) | color;
-  }
-}
-
-auto Screen::setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-  uint8_t *temp =
-    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getLineSize() * row + (col >> 1)];
-  if (col & 1) {
-    *temp = (*temp & 0xF0) | color;
-  }
-  else {
-    *temp = (*temp & 0x0F) | (color << 4);
-  }
-}
-
-auto Screen::setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void {
-  uint8_t *temp =
-    &(frameBufferGrayScale->getData())[frameBufferGrayScale->getDataSize() -
-                                    (frameBufferGrayScale->getLineSize() * row) - ((col + yOffset) >> 1)];
-  if ((col + yOffset) & 1) {
-    *temp = (*temp & 0x0F) | (color << 4);
-  }
-  else {
+  } else {
     *temp = (*temp & 0xF0) | color;
   }
 }

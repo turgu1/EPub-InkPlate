@@ -14,18 +14,21 @@
 #include "controllers/event_mgr.hpp"
 #include "fonts.hpp"
 #include "fonts_db.hpp"
+#include "viewers/keyboard_viewer.hpp"
 #include "viewers/keypad_viewer.hpp"
 #include "viewers/page.hpp"
 #include "viewers/screen_bottom.hpp"
 
 #include <list>
+#include <string>
+#include <variant>
 
 enum class FormEntryType {
-  HORIZONTAL,
-  VERTICAL,
+  CHOICE,
   UINT16,
   FLOAT,
-  #if TOUCH_ENABLE
+  STRING,
+  #if TOUCH_ENABLE || TOUCH_MENU
     DONE
   #endif
 };
@@ -35,32 +38,52 @@ constexpr uint8_t FORM_FONT_SIZE = 9;
 struct FormChoice {
   const char *caption;
   int8_t value;
+  ~FormChoice() = default;
 };
 
-struct FormEntry {
-  const char *caption;
-  union {
-    struct {
-      int8_t *value;
-      int8_t choiceCount;
-      const FormChoice *choices;
-    } ch;
-    struct {
-      uint16_t *value;
-      uint16_t min;
-      uint16_t max;
-    } intVal;
-    struct {
-      double *value;
-      double min;
-      double max;
-    } floatVal;
-  } u;
-  FormEntryType entryType;
+struct ChoiceEntry {
+  int8_t *value;
+  int8_t choiceCount;
+  const FormChoice *choices;
+  ~ChoiceEntry() = default;
+};
+
+struct IntEntry {
+  uint16_t *value;
+  uint16_t min;
+  uint16_t max;
+  ~IntEntry() = default;
+};
+
+struct FloatEntry {
+  double *value;
+  double min;
+  double max;
+  ~FloatEntry() = default;
+};
+
+struct StringEntry {
+  HimemString value;
+  uint16_t maxLen;
+
+  ~StringEntry() {
+    value.clear();
+  }
+};
+
+class FormEntry {
+  public:
+    const char *caption;
+    std::variant<ChoiceEntry, IntEntry, FloatEntry, StringEntry> u;
+    FormEntryType entryType;
+    ~FormEntry() {};
 };
 
 using FormFieldPtr = HimemUniquePtr<class FormField>;
 class FormField {
+  public:
+    enum class State : uint8_t { NORMAL, HIGHLIGHTED, SELECTED };
+
   private:
     static constexpr char const *TAG = "FormField";
 
@@ -68,13 +91,17 @@ class FormField {
     FormEntry &formEntry;
     Font &font;
     Page &page;
-    bool eventControl;
+    bool eventControl; // True if the field is currently in control of events (e.g., a keypad is open for input)
     Dim fieldDim, captionDim;
     Pos fieldPos, captionPos;
+    State state;
+    uint16_t rightXPos;
+    uint16_t baseOffset;
 
   public:
+
     FormField(FormEntry &formEntry, Font &font, Page &page)
-      : formEntry(formEntry), font(font), page(page), eventControl(false) {};
+      : formEntry(formEntry), font(font), page(page), eventControl(false), state(State::NORMAL) {};
     virtual ~FormField() = default; // { LOG_I("FormField destructor called"); }
 
     virtual auto getFieldDim() -> const Dim { return fieldDim; }
@@ -85,65 +112,42 @@ class FormField {
 
     [[nodiscard]] inline auto getType() -> FormEntryType { return formEntry.entryType; }
 
-    auto computeCaptionDim() -> void {
+    auto computeCaptionDim(uint8_t lineHeight) -> void {
       #pragma GCC diagnostic push
       #pragma GCC diagnostic ignored "-Wsequence-point"
 
       captionDim = (formEntry.caption != nullptr) ?
                    font.getASCIISize(formEntry.caption, FORM_FONT_SIZE) :
-                   captionDim = Dim(0, 0);
-
+                   Dim(0, 0);
+      captionDim.height = lineHeight;
       #pragma GCC diagnostic pop
-
     }
 
     virtual auto formRefreshRequired() -> bool { return false; }
-    virtual auto paint(Page::Format &fmt) -> void     = 0;
-    virtual auto computeFieldDim() -> void            = 0;
-    virtual auto computeFieldPos(Pos fromPos) -> void = 0;
-    virtual auto updateHighlight() -> void            = 0;
-    virtual auto saveValue() -> void                  = 0;
+    virtual auto paintCaption(Page::Format &fmt) -> void = 0;
+    virtual auto computeDim(uint8_t lineHeight) -> void  = 0;
+    virtual auto computePos(Pos fromPos) -> void         = 0;
+    virtual auto saveValue() -> void                     = 0;
 
-    virtual auto event(const EventMgr::Event &event) -> bool { return false; }
+    virtual auto event(EventMgr::Event &event, 
+                       Page::Format &fmt) -> bool { return false; }
 
     [[nodiscard]] inline auto inEventControl() -> bool { return eventControl; }
 
-    auto computeCaptionPos(Pos fromPos) -> void {
-      captionPos = Pos(fromPos.x - captionDim.width, fromPos.y);
+    auto computeCaptionPos(Pos fromPos, uint16_t offset) -> void {
+      baseOffset = offset;
+      captionPos = Pos(fromPos.x, fromPos.y);
     }
 
-    auto showHighlighted(bool showIt) -> void {
-      if (showIt) {
-        page.putHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                          Pos(fieldPos.x - 10, fieldPos.y - 10));
-      } else {
-        page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                            Pos(fieldPos.x - 10, fieldPos.y - 10));
-      }
-    }
-
-    virtual auto showSelected(bool showIt) -> void {
-      if (showIt) {
-        page.putHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                          Pos(fieldPos.x - 10, fieldPos.y - 10));
-        page.putHighlight(Dim(fieldDim.width + 22, fieldDim.height + 22),
-                          Pos(fieldPos.x - 11, fieldPos.y - 11));
-        page.putHighlight(Dim(fieldDim.width + 24, fieldDim.height + 24),
-                          Pos(fieldPos.x - 12, fieldPos.y - 12));
-      } else {
-        page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                            Pos(fieldPos.x - 10, fieldPos.y - 10));
-        page.clearHighlight(Dim(fieldDim.width + 22, fieldDim.height + 22),
-                            Pos(fieldPos.x - 11, fieldPos.y - 11));
-        page.clearHighlight(Dim(fieldDim.width + 24, fieldDim.height + 24),
-                            Pos(fieldPos.x - 12, fieldPos.y - 12));
-      }
-    }
+    virtual auto updateState(State state, Page::Format &fmt) -> void = 0;
+    virtual auto update(Page::Format &fmt) -> void = 0;
+    
+    auto getState() -> State { return state; }
 
     #if TOUCH_ENABLE
       [[nodiscard]] inline auto isPointed(uint16_t x, uint16_t y) -> bool {
-        return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 10)) &&
-               (x <= (fieldPos.x + fieldDim.width + 10)) && (y <= (fieldPos.y + fieldDim.height + 10));
+        return (x >= (fieldPos.x - 10)) && (y >= (fieldPos.y - 7)) &&
+               (x <= (fieldPos.x + fieldDim.width + 10)) && (y <= (fieldPos.y + baseOffset + 7));
       }
 
     #endif
@@ -152,6 +156,20 @@ class FormField {
 class FormChoiceField : public FormField {
   private:
     constexpr static char const *TAG = "FormChoiceField";
+    struct Item {
+      Pos pos;
+      Dim dim;
+      uint8_t idx;
+    };
+
+    static HimemPool<Item> itemPool; // Shared by all FormChoiceField
+
+    using Items = std::list<Item *>;
+
+    Items items;
+    Items::iterator currentItem, oldItem;
+
+    uint8_t savedLineHeight;
 
   public:
     static constexpr FormChoice dirViewChoices[2] = { { "LINEAR", 0 }, { "MATRIX", 1 } };
@@ -190,18 +208,24 @@ class FormChoiceField : public FormField {
     static FormChoice fontChoices[8];
     static uint8_t fontChoicesCount;
 
-    auto computeFieldDim() -> void {
+    static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
+      return makeUniqueHimem<FormChoiceField>(formEntry, font, page);
+    }
+
+    auto computeDim(uint8_t lineHeight) -> void {
+      savedLineHeight = lineHeight;
       fieldDim = { 0, 0 };
-      for (int8_t i = 0; i < formEntry.u.ch.choiceCount; ++i) {
+      for (int8_t i = 0; i < std::get<ChoiceEntry>(formEntry.u).choiceCount; ++i) {
         Item *item = itemPool.newElement();
         items.push_back(item);
-        item->dim = font.getASCIISize(formEntry.u.ch.choices[i].caption, FORM_FONT_SIZE);
+        item->dim = font.getASCIISize(std::get<ChoiceEntry>(formEntry.u).choices[i].caption, FORM_FONT_SIZE);
+        item->dim.height = savedLineHeight;
         item->idx = i;
       }
 
       int i = 0;
       for (Items::iterator it = items.begin(); it != items.end(); ++it) {
-        if (formEntry.u.ch.choices[i].value == *formEntry.u.ch.value) {
+        if (std::get<ChoiceEntry>(formEntry.u).choices[i].value == *std::get<ChoiceEntry>(formEntry.u).value) {
           currentItem = it;
           break;
         }
@@ -210,6 +234,14 @@ class FormChoiceField : public FormField {
       if (currentItem == items.end()) { currentItem = items.begin(); }
 
       oldItem = items.end();
+
+      // uint8_t lineHeight = font.getLineHeight(FORM_FONT_SIZE);
+      // uint8_t lastHeight = 0;
+      for (auto *item : items) {
+        if (fieldDim.width < item->dim.width) { fieldDim.width = item->dim.width; }
+        if (fieldDim.height < item->dim.height) { fieldDim.height = item->dim.height; }
+        LOG_D("Item dimension: [{}, {}]", item->dim.width, item->dim.height);
+      }
     }
 
     static auto adjustFontChoices() -> void {
@@ -224,86 +256,102 @@ class FormChoiceField : public FormField {
       fontChoicesCount = fontCount;
     }
 
-    auto computeFieldPos(Pos fromPos) -> void = 0;
+    auto computePos(Pos fromPos) -> void {
+      rightXPos = fromPos.x;
+      fieldPos   = { uint16_t(rightXPos - fieldDim.width), fromPos.y };
 
-    auto paint(Page::Format &fmt) -> void {
-
-      Glyph * glyph   = font.getGlyph('M', FORM_FONT_SIZE);
-      uint8_t offset = -glyph->yoff;
-
-      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + offset), fmt);
+      // uint8_t lineHeight = font.getLineHeight(FORM_FONT_SIZE);
       for (auto *item : items) {
-        page.putStrAt(formEntry.u.ch.choices[item->idx].caption,
-                      Pos(item->pos.x, item->pos.y + offset), fmt);
+        item->pos = { uint16_t(rightXPos - item->dim.width), fromPos.y };
+        LOG_D("Item position  [{}, {}]", item->pos.x, item->pos.y);
       }
     }
 
+    auto paintCaption(Page::Format &fmt) -> void {
+      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + baseOffset), fmt);
+    }
+
     #if TOUCH_ENABLE
-      auto event(const EventMgr::Event &event) -> bool {
+      auto event(EventMgr::Event &event, Page::Format &fmt) -> bool {
+        if (state != State::SELECTED) { return false; }
         oldItem = currentItem;
-        Items::iterator it;
-        for (it = items.begin(); it != items.end(); ++it) {
-          if ((event.x >= (*it)->pos.x - 5) && (event.y >= (*it)->pos.y - 5) &&
-              (event.x <= ((*it)->pos.x + (*it)->dim.width + 5)) &&
-              (event.y <= ((*it)->pos.y + (*it)->dim.height + 5))) {
-            break;
-          }
-        }
-        if (it != items.end()) { currentItem = it; }
-        return false;
+        ++currentItem;
+        if (currentItem == items.end()) { currentItem = items.begin(); }
+        update(fmt);    
+        return true;    
       }
     #else
-      auto event(const EventMgr::Event &event) -> bool {
+      auto event(EventMgr::Event &event, Page::Format &fmt) -> bool override{
+        if (state != State::SELECTED) { return false; }
         oldItem = currentItem;
         switch (event.kind) {
-        case EventMgr::EventKind::DBL_PREV:
         case EventMgr::EventKind::PREV:
           if (currentItem == items.begin()) { currentItem = items.end(); }
-          currentItem--;
+          --currentItem;
+          update(fmt);
           break;
-        case EventMgr::EventKind::DBL_NEXT:
         case EventMgr::EventKind::NEXT:
           ++currentItem;
           if (currentItem == items.end()) { currentItem = items.begin(); }
+          update(fmt);
           break;
         default:
-          break;
+          return false;
         }
-        return false;
+        return true;
       }
     #endif
 
-    auto updateHighlight() -> void {
+    auto updateState(State newState, Page::Format &fmt) -> void {
+      state = newState;
+      int8_t thickness = 1;
+      switch (state) {
+      case State::NORMAL:
+        break;
+      case State::HIGHLIGHTED:
+        thickness = -3;
+        break;
+      case State::SELECTED:
+        thickness = -1;
+        break;
+      }
+
+      page.clearRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                        {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                        -1, 20);
+
+      auto fieldDim = font.getASCIISize(std::get<ChoiceEntry>(formEntry.u).choices[(*currentItem)->idx].caption, 
+                                        FORM_FONT_SIZE);
+      fieldDim.height = savedLineHeight;
+
+      page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                      {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                      thickness, 20);
+
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
+      page.putStrAt(std::get<ChoiceEntry>(formEntry.u).choices[(*currentItem)->idx].caption,
+                    Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), fmt);
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
+
+      fieldPos = Pos(rightXPos - fieldDim.width, fieldPos.y);
+    }
+
+    auto update(Page::Format &fmt) -> void {
       if (oldItem != currentItem) {
         if (oldItem != items.end()) {
-          page.clearHighlight(Dim((*oldItem)->dim.width + 10, (*oldItem)->dim.height + 10),
-                              Pos((*oldItem)->pos.x - 5, (*oldItem)->pos.y - 5));
+          page.clearRounded({uint16_t((*oldItem)->dim.width + 20), uint16_t((*oldItem)->dim.height + 14) },
+                            {uint16_t((*oldItem)->pos.x - 10), uint16_t((*oldItem)->pos.y - 7) },
+                             -1, 20);
         }
-        page.putHighlight(Dim((*currentItem)->dim.width + 10, (*currentItem)->dim.height + 10),
-                          Pos((*currentItem)->pos.x - 5, (*currentItem)->pos.y - 5));
+        updateState(state, fmt);
       }
       oldItem = currentItem;
     }
 
     auto saveValue() -> void {
-      *formEntry.u.ch.value = formEntry.u.ch.choices[(*currentItem)->idx].value;
+      *std::get<ChoiceEntry>(formEntry.u).value = std::get<ChoiceEntry>(formEntry.u).choices[(*currentItem)->idx].value;
     }
 
-  protected:
-    struct Item {
-      Pos pos;
-      Dim dim;
-      uint8_t idx;
-    };
-
-    static HimemPool<Item> itemPool; // Shared by all FormChoiceField
-
-    using Items = std::list<Item *>;
-
-    Items items;
-    Items::iterator currentItem, oldItem;
-
-  public:
     using FormField::FormField;
 
     ~FormChoiceField() {
@@ -311,87 +359,6 @@ class FormChoiceField : public FormField {
         itemPool.deleteElement(item);
       }
       items.clear();
-    }
-};
-
-class VFormChoiceField : public FormChoiceField {
-  private:
-    static constexpr char const *TAG = "VFormChoiceField";
-
-  public:
-    using FormChoiceField::FormChoiceField;
-
-    VFormChoiceField()  = default;
-    ~VFormChoiceField() = default;
-
-    static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
-      return makeUniqueHimem<VFormChoiceField>(formEntry, font, page);
-    }
-
-    auto computeFieldPos(Pos fromPos) -> void {
-      fieldPos   = fromPos;
-      Pos     thePos = fromPos;
-
-      uint8_t lineHeight = font.getLineHeight(FORM_FONT_SIZE);
-      for (auto *item : items) {
-        item->pos = thePos;
-        thePos.y += lineHeight;
-        LOG_D("Item position  [{}, {}]", item->pos.x, item->pos.y);
-      }
-    }
-
-    auto computeFieldDim() -> void {
-      FormChoiceField::computeFieldDim();
-      uint8_t lineHeight = font.getLineHeight(FORM_FONT_SIZE);
-      uint8_t lastHeight = 0;
-      for (auto *item : items) {
-        if (fieldDim.width < item->dim.width) { fieldDim.width = item->dim.width; }
-        fieldDim.height += lineHeight;
-        lastHeight = item->dim.height;
-        LOG_D("Item dimension: [{}, {}]", item->dim.width, item->dim.height);
-      }
-      fieldDim.height += lastHeight - lineHeight;
-    }
-};
-
-using HFormChoiceFieldPtr = HimemUniquePtr<class HFormChoiceField>;
-
-class HFormChoiceField : public FormChoiceField {
-  private:
-    static constexpr char const *TAG = "HFormChoiceField";
-
-  public:
-    using FormChoiceField::FormChoiceField;
-
-    HFormChoiceField()  = default;
-    ~HFormChoiceField() = default;
-
-    static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
-      return makeUniqueHimem<HFormChoiceField>(formEntry, font, page);
-    }
-
-    auto computeFieldPos(Pos fromPos) -> void {
-      fieldPos   = fromPos;
-      Pos thePos = fromPos;
-
-      for (auto *item : items) {
-        item->pos = thePos;
-        thePos.x += item->dim.width + 20;
-        LOG_D("Item position: [{}, {}]", item->pos.x, item->pos.y);
-      }
-    }
-
-    static constexpr uint8_t HORIZONTAL_SEPARATOR = 20;
-
-    auto computeFieldDim() -> void {
-      FormChoiceField::computeFieldDim();
-      uint16_t separator = 0;
-      for (auto *item : items) {
-        if (fieldDim.height < item->dim.height) { fieldDim.height = item->dim.height; }
-        fieldDim.width += item->dim.width + separator;
-        separator = HORIZONTAL_SEPARATOR;
-        LOG_D("Item dimension: [{}, {}]", item->dim.width, item->dim.height);
-      }
     }
 };
 
@@ -411,53 +378,31 @@ class FormUInt16 : public FormField {
       return makeUniqueHimem<FormUInt16>(formEntry, font, page);
     }
 
-    auto showSelected(bool showIt) -> void {
-
-      // As the keypad viewer is used to edit the value of the field, we don't
-      // want to show the field as selected when it's a numeric field, to avoid confusion with the
-      // highlighting of the keypad viewer. So we just show the field as highlighted when it's
-      // selected, and not when it's in control of events.
-      if (!showIt) {
-        page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                            Pos(fieldPos.x - 10, fieldPos.y - 10));
-      }
-    }
-
     auto formRefreshRequired() -> bool { return true; }
 
-    auto computeFieldPos(Pos fromPos) -> void { fieldPos = fromPos; }
+    auto computePos(Pos fromPos) -> void { 
 
-    auto paint(Page::Format &fmt) -> void {
-      char     val[8];
-      Glyph *  glyph   = font.getGlyph('M', FORM_FONT_SIZE);
-      uint8_t  offset = -glyph->yoff;
-
-      uint16_t v = *formEntry.u.intVal.value;
-      if (v < formEntry.u.intVal.min) {
-        v = formEntry.u.intVal.min;
-      } else if (v > formEntry.u.intVal.max) {
-        v = formEntry.u.intVal.max;
-      }
-      *formEntry.u.intVal.value = v;
-
-      int_to_str(v, val, 8);
-      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + offset), fmt);
-      page.putStrAt(val,               Pos(fieldPos.x, fieldPos.y + offset),     fmt);
+      rightXPos = fromPos.x;
+      fieldPos = { uint16_t(rightXPos - fieldDim.width), fromPos.y };
     }
 
-    auto event(const EventMgr::Event &event) -> bool {
+    auto paintCaption(Page::Format &fmt) -> void {
+      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + baseOffset), fmt);
+    }
+
+    auto event(EventMgr::Event &event, Page::Format &fmt) -> bool {
       if (!eventControl) {
-        keypadViewer->show(*formEntry.u.intVal.value, formEntry.caption);
+        keypadViewer->show(*std::get<IntEntry>(formEntry.u).value, formEntry.caption);
         eventControl = true;
       } else {
         if (!keypadViewer->event(event)) {
           uint16_t v = keypadViewer->getIntValue();
-          if (v < formEntry.u.intVal.min) {
-            v = formEntry.u.intVal.min;
-          } else if (v > formEntry.u.intVal.max) {
-            v = formEntry.u.intVal.max;
+          if (v < std::get<IntEntry>(formEntry.u).min) {
+            v = std::get<IntEntry>(formEntry.u).min;
+          } else if (v > std::get<IntEntry>(formEntry.u).max) {
+            v = std::get<IntEntry>(formEntry.u).max;
           }
-          *formEntry.u.intVal.value = v;
+          *std::get<IntEntry>(formEntry.u).value = v;
           eventControl              = false;
 
           return false; // release events control
@@ -466,17 +411,66 @@ class FormUInt16 : public FormField {
       return true; // keep events control
     }
 
-    auto updateHighlight() -> void {}
+    auto updateState(State newState, Page::Format &fmt) -> void {
+
+      char     val[8];
+
+      uint16_t v = *std::get<IntEntry>(formEntry.u).value;
+      if (v < std::get<IntEntry>(formEntry.u).min) {
+        v = std::get<IntEntry>(formEntry.u).min;
+      } else if (v > std::get<IntEntry>(formEntry.u).max) {
+        v = std::get<IntEntry>(formEntry.u).max;
+      }
+      *std::get<IntEntry>(formEntry.u).value = v;
+
+      int_to_str(v, val, 8);
+
+      state = newState;
+      int8_t thickness = 1;
+      switch (state) {
+      case State::NORMAL:
+        break;
+      case State::HIGHLIGHTED:
+        thickness = -3;
+        break;
+      case State::SELECTED:
+        thickness = -1;
+        break;
+      }
+      page.clearRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                        {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                        -1, 20);
+
+      auto fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+
+      page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                      {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                      thickness, 20);
+
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
+      page.putStrAt(val, Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), fmt);
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
+
+      fieldPos = Pos(rightXPos - fieldDim.width, fieldPos.y);
+    }
+
+    auto update(Page::Format &fmt) -> void {
+        updateState(State::SELECTED, fmt);
+    }
 
     auto saveValue() -> void {}
 
-    auto computeFieldDim() -> void { fieldDim = font.getASCIISize("XXXXX", FORM_FONT_SIZE); }
+    auto computeDim(uint8_t lineHeight) -> void {
+      fieldDim = font.getASCIISize("XXXXX", FORM_FONT_SIZE);
+      fieldDim.height = lineHeight;
+    }
 };
 
 using FormFloatPtr = HimemUniquePtr<class FormFloat>;
 
 class FormFloat : public FormField {
   private:
+    static constexpr char const *TAG = "FormFloat";
     KeypadViewerPtr keypadViewer{ KeypadViewer::Make() };
 
   public:
@@ -489,48 +483,74 @@ class FormFloat : public FormField {
       return makeUniqueHimem<FormFloat>(formEntry, font, page);
     }
 
-    auto showSelected(bool showIt) -> void {
-      // As the keypad viewer is used to edit the value of the field, we don't
-      // want to show the field as selected when it's a numeric field, to avoid confusion with the
-      // highlighting of the keypad viewer. So we just show the field as highlighted when it's
-      // selected, and not when it's in control of events.
-      if (!showIt) {
-        page.clearHighlight(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                            Pos(fieldPos.x - 10, fieldPos.y - 10));
-      }
-    }
-
     auto formRefreshRequired() -> bool { return true; }
 
-    auto computeFieldPos(Pos fromPos) -> void { fieldPos = fromPos; }
-
-    auto paint(Page::Format &fmt) -> void {
-      char    val[8];
-      Glyph * glyph   = font.getGlyph('M', FORM_FONT_SIZE);
-      uint8_t offset = -glyph->yoff;
-
-      double  v = *formEntry.u.floatVal.value;
-      if ((v <= formEntry.u.floatVal.min) && (v >= formEntry.u.floatVal.max)) {
-        v = 1.0;
-      }
-      *formEntry.u.floatVal.value = v;
-
-      float_to_str(v, val, 6, 3);
-      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + offset), fmt);
-      page.putStrAt(val,               Pos(fieldPos.x, fieldPos.y + offset),     fmt);
+    auto computePos(Pos fromPos) -> void { 
+      rightXPos = fromPos.x; 
+      fieldPos = { uint16_t(rightXPos - fieldDim.width), fromPos.y };
     }
 
-    auto event(const EventMgr::Event &event) -> bool {
+    auto updateState(State newState, Page::Format &fmt) -> void {
+      char    val[8];
+
+      double  v = *std::get<FloatEntry>(formEntry.u).value;
+      if ((v <= std::get<FloatEntry>(formEntry.u).min) && (v >= std::get<FloatEntry>(formEntry.u).max)) {
+        v = 1.0;
+      }
+      *std::get<FloatEntry>(formEntry.u).value = v;
+
+      float_to_str(v, val, 6, 3);
+
+      state = newState;
+      int8_t thickness = 1;
+
+      switch (state) {
+      case State::NORMAL:
+        break;
+      case State::HIGHLIGHTED:
+        thickness = -3;
+        break;
+      case State::SELECTED:
+        thickness = -1;
+        break;
+      }
+
+      page.clearRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                        {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                        -1, 20);
+
+      fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+
+      page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                      {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                      thickness, 20);
+
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
+      page.putStrAt(val, Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), fmt);
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
+
+      fieldPos = Pos(rightXPos - fieldDim.width, fieldPos.y);
+    }
+
+    auto update(Page::Format &fmt) -> void {
+        updateState(State::SELECTED, fmt);
+    }
+
+    auto paintCaption(Page::Format &fmt) -> void {
+      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + baseOffset), fmt);
+    }
+
+    auto event(EventMgr::Event &event, Page::Format &fmt) -> bool {
       if (!eventControl) {
-        keypadViewer->show(*formEntry.u.floatVal.value, formEntry.caption);
+        keypadViewer->show(*std::get<FloatEntry>(formEntry.u).value, formEntry.caption);
         eventControl = true;
       } else {
         if (!keypadViewer->event(event)) {
           double v = keypadViewer->getFloatValue();
-          if ((v <= formEntry.u.floatVal.min) && (v >= formEntry.u.floatVal.max)) {
+          if ((v <= std::get<FloatEntry>(formEntry.u).min) && (v >= std::get<FloatEntry>(formEntry.u).max)) {
             v = 1.0;
           }
-          *formEntry.u.floatVal.value = v;
+          *std::get<FloatEntry>(formEntry.u).value = v;
           eventControl                = false;
 
           return false; // release events control
@@ -539,14 +559,108 @@ class FormFloat : public FormField {
       return true; // keep events control
     }
 
-    auto updateHighlight() -> void {}
-
     auto saveValue() -> void {}
 
-    auto computeFieldDim() -> void { fieldDim = font.getASCIISize("XXXXXXX", FORM_FONT_SIZE); }
+    auto computeDim(uint8_t lineHeight) -> void { 
+      fieldDim = font.getASCIISize("XXXXXXX", FORM_FONT_SIZE);
+    }
 };
 
-#if TOUCH_ENABLE
+using FormFloatPtr = HimemUniquePtr<class FormFloat>;
+
+class FormString : public FormField {
+  private:
+    static constexpr char const *TAG = "FormString";
+    KeyboardViewerPtr keyboardViewer{ KeyboardViewer::Make() };
+    std::string currentValue;
+
+  public:
+    using FormField::FormField;
+
+    FormString()  = default;
+    ~FormString() = default;
+
+    static inline auto Make(FormEntry &formEntry, Font &font, Page &page) {
+      return makeUniqueHimem<FormString>(formEntry, font, page);
+    }
+
+    auto formRefreshRequired() -> bool { return true; }
+
+    auto computePos(Pos fromPos) -> void { 
+      rightXPos = fromPos.x; 
+      fieldPos = { uint16_t(rightXPos - fieldDim.width), fromPos.y };
+    }
+
+    auto updateState(State newState, Page::Format &fmt) -> void {
+      char    val[33];
+
+      memcpy(val, std::get<StringEntry>(formEntry.u).value.c_str(), 32);
+      val[32] = '\0';
+
+      state = newState;
+      int8_t thickness = 1;
+
+      switch (state) {
+      case State::NORMAL:
+        break;
+      case State::HIGHLIGHTED:
+        thickness = -3;
+        break;
+      case State::SELECTED:
+        thickness = -1;
+        break;
+      }
+
+      page.clearRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                        {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                        -1, 20);
+
+      fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+
+      page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
+                      {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
+                      thickness, 20);
+
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
+      page.putStrAt(val, Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), fmt);
+      if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
+
+      fieldPos = Pos(rightXPos - fieldDim.width, fieldPos.y);
+    }
+
+    auto update(Page::Format &fmt) -> void {
+        updateState(State::SELECTED, fmt);
+    }
+
+    auto paintCaption(Page::Format &fmt) -> void {
+      page.putStrAt(formEntry.caption, Pos(captionPos.x, captionPos.y + baseOffset), fmt);
+    }
+
+    auto event(EventMgr::Event &event, Page::Format &fmt) -> bool {
+      if (!eventControl) {
+        currentValue = std::get<StringEntry>(formEntry.u).value;
+        keyboardViewer->show(currentValue, formEntry.caption);
+        eventControl = true;
+      } else {
+        if (!keyboardViewer->event(event)) {
+          eventControl = false;
+          return false; // release events control
+        }
+      }
+      return true; // keep events control
+    }
+
+    auto saveValue() -> void {
+      std::get<StringEntry>(formEntry.u).value = currentValue;
+      std::get<StringEntry>(formEntry.u).value[std::get<StringEntry>(formEntry.u).maxLen - 1] = '\0'; // Ensure null-termination
+    }
+
+    auto computeDim(uint8_t lineHeight) -> void { 
+      fieldDim = font.getASCIISize("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", FORM_FONT_SIZE);
+    }
+};
+
+#if TOUCH_ENABLE || TOUCH_MENU
   class FormDone : public FormField {
 
     public:
@@ -561,32 +675,34 @@ class FormFloat : public FormField {
 
       // bool event(const EventMgr::Event &event);
 
-      const Dim getFieldDim() { return Dim(fieldDim.width, fieldDim.height + 10); }
-      auto saveValue() -> void {}
-      auto updateHighlight() -> void {
-        page.putRounded(Dim(fieldDim.width + 16, fieldDim.height + 16),
-                        Pos(fieldPos.x - 8, fieldPos.y - 8));
-        page.putRounded(Dim(fieldDim.width + 18, fieldDim.height + 18),
-                        Pos(fieldPos.x - 9, fieldPos.y - 9));
-        page.putRounded(Dim(fieldDim.width + 20, fieldDim.height + 20),
-                        Pos(fieldPos.x - 10, fieldPos.y - 10));
-      }
+      const Dim getFieldDim() { return Dim(fieldDim.width, fieldDim.height + 20); }
 
-      auto computeFieldDim() -> void {
+      auto saveValue() -> void {}
+
+      auto computeDim(uint8_t lineHeight) -> void {
         fieldDim = font.getASCIISize(formEntry.caption, FORM_FONT_SIZE);
       }
 
-      auto computeFieldPos(Pos fromPos) -> void {
+      auto computePos(Pos fromPos) -> void {
         fieldPos.x = (Screen::getWidth() / 2) - (fieldDim.width / 2);
         fieldPos.y = fromPos.y + 10;
       }
 
-      auto paint(Page::Format &fmt) -> void {
-        Glyph * glyph   = font.getGlyph('M', FORM_FONT_SIZE);
-        uint8_t offset = -glyph->yoff;
+      auto updateState(State newState, Page::Format &fmt) -> void {
+        state = newState;
 
-        page.putStrAt(formEntry.caption, Pos(fieldPos.x, fieldPos.y + offset), fmt);
+        page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 20) },
+                        {uint16_t(fieldPos.x - 10), uint16_t(fieldPos.y - 10) },
+                        -1, 8);
+
+        fmt.fontStyle = FaceStyle::INVERSE;
+        page.putStrAt(formEntry.caption, Pos(fieldPos.x, fieldPos.y + baseOffset), fmt);
+        fmt.fontStyle = FaceStyle::NORMAL;
       }
+
+      auto update(Page::Format &fmt) -> void {}
+    
+      auto paintCaption(Page::Format &fmt) -> void {}
   };
 #endif
 
@@ -594,22 +710,18 @@ class FieldFactory {
   public:
     static auto create(FormEntry &entry, Font &font, Page &page) -> FormFieldPtr {
       switch (entry.entryType) {
-      case FormEntryType::HORIZONTAL:
-        return HFormChoiceField::Make(entry, font, page);
-      case FormEntryType::VERTICAL:
-        if ((Screen::getWidth() > Screen::getHeight()) && (entry.u.ch.choiceCount <= 4)) {
-          return HFormChoiceField::Make(entry, font, page);
-        } else {
-          return VFormChoiceField::Make(entry, font, page);
-        }
+      case FormEntryType::CHOICE:
+        return FormChoiceField::Make(entry, font, page);
       case FormEntryType::UINT16:
         return FormUInt16::Make(entry, font, page);
       case FormEntryType::FLOAT:
         return FormFloat::Make(entry, font, page);
-        #if TOUCH_ENABLE
-          case FormEntryType::DONE:
-            return FormDone::Make(entry, font, page);
-        #endif
+      case FormEntryType::STRING:
+        return FormString::Make(entry, font, page);
+    #if TOUCH_ENABLE || TOUCH_MENU
+      case FormEntryType::DONE:
+        return FormDone::Make(entry, font, page);
+    #endif
       }
       return nullptr;
     }
@@ -647,19 +759,19 @@ class FormViewer {
     const char *title;
     const char *bottomMsg;
 
-    int16_t allFieldsWidth, allCaptionsWidth;
-    // int16_t lastChoicesWidth;
+    int16_t maxFieldsWidth, maxCaptionsWidth;
     int8_t lineHeight;
-    bool highlightingField;
-    bool selectingField;
     bool completed;
 
     using Fields = std::list<FormFieldPtr>;
 
     Fields fields;
-    Fields::iterator currentField;
+    Fields::iterator oldField, currentField;
 
     Pos bottomMsgPos;
+
+    Page::Format fmt{};
+    uint8_t glyphYOffset;
 
     #if TOUCH_ENABLE
       auto findField(uint16_t x, uint16_t y) -> Fields::iterator {

@@ -45,6 +45,7 @@ static int8_t                  dirView;
 static int8_t                  coverSize;
 static int8_t                  done;
 static int8_t                  columnCount;
+static HimemString             wifiSSID;
 
 static double                  batteryTrim;
 
@@ -62,6 +63,8 @@ static int8_t                  oldColumnCount;
 
 static double                  oldBatteryTrim;
 
+static std::string             oldWifiSSID;
+
 #if DATE_TIME_RTC
   static int8_t   showHeapOrRtc;
   static uint16_t year;
@@ -70,117 +73,119 @@ static double                  oldBatteryTrim;
   static int8_t showHeap;
 #endif
 
-#if TOUCH_ENABLE
-  static constexpr int8_t MAIN_FORM_SIZE = 10;
+#if TOUCH_ENABLE || TOUCH_MENU
+  static constexpr int8_t MAIN_FORM_SIZE = 11;
 #else
-  static constexpr int8_t MAIN_FORM_SIZE = 9;
+  static constexpr int8_t MAIN_FORM_SIZE = 10;
 #endif
 
 static FormEntry mainParamsFormEntries[MAIN_FORM_SIZE] = {
   { .caption = "Minutes Before Sleeping :",
-    .u = { .ch = { .value = &timeout, .choiceCount = 3, .choices = FormChoiceField::timeoutChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+    .u = ChoiceEntry{ .value = &timeout, .choiceCount = 3, .choices = FormChoiceField::timeoutChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption = "Books Directory View :",
-    .u = { .ch = { .value = &dirView, .choiceCount = 2, .choices = FormChoiceField::dirViewChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+    .u = ChoiceEntry{ .value = &dirView, .choiceCount = 2, .choices = FormChoiceField::dirViewChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Books Cover Size :",
-    .u         = { .ch = { .value       = &coverSize,
+    .u         = ChoiceEntry{ .value       = &coverSize,
                            .choiceCount = 3,
-                           .choices     = FormChoiceField::coverSizeChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::coverSizeChoices },
+    .entryType = FormEntryType::CHOICE },
   #if SDCARD_ORIENTATION
     { .caption   = "uSDCard Position (*):",
-      .u         = { .ch = { .value       = (int8_t *)&orientation,
+      .u         = ChoiceEntry{ .value       = (int8_t *)&orientation,
                              .choiceCount = 4,
-                             .choices     = FormChoiceField::orientationChoices } },
-      .entryType = FormEntryType::HORIZONTAL },
+                             .choices     = FormChoiceField::orientationChoices },
+      .entryType = FormEntryType::CHOICE },
   #else
     { .caption   = "Buttons Position (*):",
-      .u         = { .ch = { .value       = (int8_t *)&orientation,
+      .u         = ChoiceEntry{ .value       = (int8_t *)&orientation,
                              .choiceCount = 3,
-                             .choices     = FormChoiceField::orientationChoices } },
-      .entryType = FormEntryType::HORIZONTAL },
+                             .choices     = FormChoiceField::orientationChoices },
+      .entryType = FormEntryType::CHOICE },
   #endif
   { .caption   = "Pixel Resolution :",
-    .u         = { .ch = { .value       = (int8_t *)&resolution,
+    .u         = ChoiceEntry{ .value       = (int8_t *)&resolution,
                            .choiceCount = 2,
-                           .choices     = FormChoiceField::resolutionChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::resolutionChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Show Battery Level :",
-    .u         = { .ch = { .value       = &showBattery,
+    .u         = ChoiceEntry{ .value       = &showBattery,
                            .choiceCount = 4,
-                           .choices     = FormChoiceField::batteryVisualChoices } },
-    .entryType = FormEntryType::VERTICAL },
+                           .choices     = FormChoiceField::batteryVisualChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption = "Show Title (*):",
-    .u = { .ch = { .value = &showTitle, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+    .u = ChoiceEntry{ .value = &showTitle, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices },
+    .entryType = FormEntryType::CHOICE },
   #if DATE_TIME_RTC
     { .caption   = "Right Bottom Corner :",
-      .u         = { .ch = { .value       = &showHeapOrRtc,
+      .u         = ChoiceEntry{ .value       = &showHeapOrRtc,
                              .choiceCount = 3,
-                             .choices     = FormChoiceField::rightCornerChoices } },
-      .entryType = FormEntryType::HORIZONTAL },
+                             .choices     = FormChoiceField::rightCornerChoices },
+      .entryType = FormEntryType::CHOICE },
   #else
     { .caption = "Show Heap Sizes :",
-      .u = { .ch = { .value = &showHeap, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices } },
-      .entryType = FormEntryType::HORIZONTAL },
+      .u = ChoiceEntry{ .value = &showHeap, .choiceCount = 2, .choices = FormChoiceField::yesNoChoices },
+      .entryType = FormEntryType::CHOICE },
   #endif
   { .caption   = "Battery Trim:",
-    .u         = { .floatVal = { .value = &batteryTrim, .min = 0.0, .max = 2.0 } },
+    .u         = FloatEntry{ .value = &batteryTrim, .min = 0.0, .max = 2.0 },
     .entryType = FormEntryType::FLOAT },
-
-  #if TOUCH_ENABLE
+  { .caption   = "Wifi SSID:",
+    .u         = StringEntry{ .value = wifiSSID, .maxLen = sizeof(wifiSSID) - 1 },
+    .entryType = FormEntryType::STRING },
+  #if TOUCH_ENABLE || TOUCH_MENU
     { .caption   = " DONE ",
-      .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
+      .u         = ChoiceEntry{ .value = &done, .choiceCount = 0, .choices = nullptr },
       .entryType = FormEntryType::DONE }
   #endif
 };
 
-#if TOUCH_ENABLE
+#if TOUCH_ENABLE || TOUCH_MENU
   static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 7;
 #else
   static constexpr int8_t DEFAULT_PARAMETERS_FORM_SIZE = 6;
 #endif
 static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
   { .caption   = "Default Font Size:",
-    .u         = { .ch = { .value       = &fontSize,
+    .u         = ChoiceEntry{ .value       = &fontSize,
                            .choiceCount = 4,
-                           .choices     = FormChoiceField::fontSizeChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::fontSizeChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Line Height:",
-    .u         = { .ch = { .value       = &lineHeight,
+    .u         = ChoiceEntry{ .value       = &lineHeight,
                            .choiceCount = 3,
-                           .choices     = FormChoiceField::lineHeightChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::lineHeightChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Use Fonts in E-books:",
-    .u         = { .ch = { .value       = &useFontsInBooks,
+    .u         = ChoiceEntry{ .value       = &useFontsInBooks,
                            .choiceCount = 2,
-                           .choices     = FormChoiceField::yesNoChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::yesNoChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Default Font:",
-    .u         = { .ch = { .value       = &defaultFont,
+    .u         = ChoiceEntry{ .value       = &defaultFont,
                            .choiceCount = 8,
-                           .choices     = FormChoiceField::fontChoices } },
-    .entryType = FormEntryType::VERTICAL },
+                           .choices     = FormChoiceField::fontChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Show Images in E-books:",
-    .u         = { .ch = { .value       = &showPictures,
+    .u         = ChoiceEntry{ .value       = &showPictures,
                            .choiceCount = 2,
-                           .choices     = FormChoiceField::yesNoChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
+                           .choices     = FormChoiceField::yesNoChoices },
+    .entryType = FormEntryType::CHOICE },
   { .caption   = "Column Count:",
-    .u         = { .ch = { .value       = &columnCount,
+    .u         = ChoiceEntry{ .value       = &columnCount,
                            .choiceCount = 4,
-                           .choices     = FormChoiceField::columnCountChoices } },
-    .entryType = FormEntryType::HORIZONTAL },
-  #if TOUCH_ENABLE
+                           .choices     = FormChoiceField::columnCountChoices },
+    .entryType = FormEntryType::CHOICE },
+  #if TOUCH_ENABLE || TOUCH_MENU
     { .caption   = " DONE ",
-      .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
+      .u         = ChoiceEntry{ .value = &done, .choiceCount = 0, .choices = nullptr },
       .entryType = FormEntryType::DONE }
   #endif
 };
 
 #if DATE_TIME_RTC
-  #if TOUCH_ENABLE
+  #if TOUCH_ENABLE || TOUCH_MENU
     static constexpr int8_t DATE_TIME_FORM_SIZE = 7;
   #else
     static constexpr int8_t DATE_TIME_FORM_SIZE = 6;
@@ -192,27 +197,27 @@ static FormEntry defaultParametersFormEntries[DEFAULT_PARAMETERS_FORM_SIZE] = {
                            // avoid confusion with the highlighting of the keypad viewer. So we
                            // just show the field as highlighted when it's selected, and not when
                            // it's in control of events.
-      .u         = { .intVal = { .value = &year, .min = 2022, .max = 2099 } },
+      .u         = IntEntry{ .value = &year, .min = 2022, .max = 2099 },
       .entryType = FormEntryType::UINT16 },
     { .caption   = "Month :",
-      .u         = { .intVal = { .value = &month, .min = 1, .max = 12 } },
+      .u         = IntEntry{ .value = &month, .min = 1, .max = 12 },
       .entryType = FormEntryType::UINT16 },
     { .caption   = "Day :",
-      .u         = { .intVal = { .value = &day, .min = 1, .max = 31 } },
+      .u         = IntEntry{ .value = &day, .min = 1, .max = 31 },
       .entryType = FormEntryType::UINT16 },
     { .caption   = "Hour :",
-      .u         = { .intVal = { .value = &hour, .min = 0, .max = 23 } },
+      .u         = IntEntry{ .value = &hour, .min = 0, .max = 23 },
       .entryType = FormEntryType::UINT16 },
     { .caption   = "Minute :",
-      .u         = { .intVal = { .value = &minute, .min = 0, .max = 59 } },
+      .u         = IntEntry{ .value = &minute, .min = 0, .max = 59 },
       .entryType = FormEntryType::UINT16 },
     { .caption   = "Second :",
-      .u         = { .intVal = { .value = &second, .min = 0, .max = 59 } },
+      .u         = IntEntry{ .value = &second, .min = 0, .max = 59 },
       .entryType = FormEntryType::UINT16 },
 
-    #if TOUCH_ENABLE
+    #if TOUCH_ENABLE || TOUCH_MENU
       { .caption   = "DONE",
-        .u         = { .ch = { .value = &done, .choiceCount = 0, .choices = nullptr } },
+        .u         = ChoiceEntry{ .value = &done, .choiceCount = 0, .choices = nullptr},
         .entryType = FormEntryType::DONE }
     #endif
   };
@@ -223,14 +228,15 @@ static constexpr char const *BOOK_DEFAULTS_CAPTION = "Default e-books parameters
 static constexpr char const *CLOCK_ADJUST_CAPTION  = "Set Date / Time";
 
 auto OptionController::mainParameters() -> void {
-  config.  get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
-  config.  get(Config::Ident::DIR_VIEW,         &dirView);
-  config.  get(Config::Ident::COVER_SIZE,       &coverSize);
-  config.  get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
-  config.  get(Config::Ident::BATTERY,          &showBattery);
-  config.  get(Config::Ident::SHOW_TITLE,       &showTitle);
-  config.  get(Config::Ident::TIMEOUT,          &timeout);
-  config.  get(Config::Ident::BATTERY_TRIM,     &batteryTrim);
+  config.get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
+  config.get(Config::Ident::DIR_VIEW,         &dirView);
+  config.get(Config::Ident::COVER_SIZE,       &coverSize);
+  config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
+  config.get(Config::Ident::BATTERY,          &showBattery);
+  config.get(Config::Ident::SHOW_TITLE,       &showTitle);
+  config.get(Config::Ident::TIMEOUT,          &timeout);
+  config.get(Config::Ident::BATTERY_TRIM,     &batteryTrim);
+  config.get(Config::Ident::SSID,             wifiSSID);
 
   #if DATE_TIME_RTC
     int8_t showHeap{ 0 }, showRtc{ 0 };
@@ -421,7 +427,7 @@ static MenuViewer::MenuEntry menu[] = {
   { MenuViewer::Icon::END_MENU,    false, false, nullptr, nullptr                              } };
 
 auto OptionController::setFontCount(uint8_t count) -> void {
-  defaultParametersFormEntries[3].u.ch.choiceCount = count;
+  std::get<ChoiceEntry>(defaultParametersFormEntries[3].u).choiceCount = count;
 }
 
 auto OptionController::enter() -> void {

@@ -69,7 +69,7 @@ auto TTF::getGlyphInternal(Glyph &glyph, char32_t charcode, int16_t glyphSize) -
   if (glyphLoadMode == GlyphLoadMode::WITH_BITMAP) {
     if (face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
       const bool useMonoRender =
-        (screen.getPixelResolution() == Screen::PixelResolution::ONE_BIT) &&
+        (screen.getPixelResolution() == Screen::PixelResolution::MONO) &&
         !isAntialiasingPreferred();
       if (useMonoRender) {
         error = FT_Render_Glyph(face->glyph,          // glyph slot

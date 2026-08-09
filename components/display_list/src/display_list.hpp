@@ -16,6 +16,7 @@ struct GlyphEntry {      ///< Used for GLYPH
   Glyph *glyph{ nullptr }; ///< Glyph
   int16_t kern{ 0 };
   bool isSpace{ false };
+  bool inverse{ false };
 };
 
 struct PictureEntry { ///< Used for PICTURE
@@ -25,6 +26,8 @@ struct PictureEntry { ///< Used for PICTURE
 
 struct RegionEntry { ///< Used for HIGHLIGHT, CLEAR_HIGHLIGHT, SET_REGION and CLEAR_REGION
   Dim dim{ 0, 0 };     ///< Region dimensions
+  int8_t thickness{ 1 };
+  uint8_t radius{ 8 }; ///< For rounded corners
 };
 
 class DisplayListEntry {

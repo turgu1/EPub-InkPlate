@@ -312,10 +312,10 @@
       // LOG_I("Calibration required!");
       switch (orientation) {
       case Screen::Orientation::BOTTOM:
-        LOG_I("Bottom from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
-               x, y, 
-               Screen::getWidth(), Screen::getHeight(), 
-               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        // LOG_I("Bottom from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+        //   x, y, 
+        //   Screen::getWidth(), Screen::getHeight(), 
+        //   platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
         #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
           // It's already OK...
         #else // Inkplate devices        temp = y;
@@ -326,10 +326,10 @@
         break;
 
       case Screen::Orientation::TOP:
-        LOG_I("Top from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
-               x, y, 
-               Screen::getWidth(), Screen::getHeight(), 
-               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        // LOG_I("Top from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+        //   x, y, 
+        //   Screen::getWidth(), Screen::getHeight(), 
+        //   platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
         #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
           y = Screen::getHeight() - y;
           x = Screen::getWidth() - x;
@@ -342,10 +342,10 @@
         break;
 
       case Screen::Orientation::LEFT:
-        LOG_I("Left from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
-               x, y, 
-               Screen::getWidth(), Screen::getHeight(), 
-               platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
+        // LOG_I("Left from [{}, {}]... Screen [{}, {}], Touch: [{}, {}]", 
+        //    x, y, 
+        //    Screen::getWidth(), Screen::getHeight(), 
+        //    platform.getTouchScreen().getXResolution(), platform.getTouchScreen().getYResolution());
         #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
           temp = y;
           y = x;
@@ -374,7 +374,7 @@
         break;
       }
     } else {
-      LOG_I("Coordinates to transform: [{}, {}]", x, y);
+      // LOG_I("Coordinates to transform: [{}, {}]", x, y);
 
       uint16_t xd = (a * x + b * y + c) / divider;
       uint16_t yd = (d * x + e * y + f) / divider;
@@ -382,33 +382,50 @@
       switch (orientation) {
       case Screen::Orientation::BOTTOM:
         LOG_D("Bottom...");
-        temp = y;
-        y    = xd;
-        ;
-        x = Screen::getWidth() - yd;
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          x = xd;
+          y = yd;
+        #else // Inkplate devices        temp = y;
+          y    = xd;
+          x = Screen::getWidth() - yd;
+        #endif
         break;
 
       case Screen::Orientation::TOP:
         LOG_D("Top...");
-        temp = y;
-        y    = Screen::getHeight() - xd;
-        x    = yd;
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          y = Screen::getHeight() - yd;
+          x = Screen::getWidth() - xd;
+        #else // Inkplate devices
+          y    = Screen::getHeight() - xd;
+          x    = yd;
+        #endif
         break;
 
       case Screen::Orientation::LEFT:
         LOG_D("Left...");
-        x = Screen::getWidth() - xd;
-        y = Screen::getHeight() - yd;
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          y = xd;
+          x = Screen::getWidth() - yd;
+        #else
+          x = Screen::getWidth() - xd;
+          y = Screen::getHeight() - yd;
+        #endif
         break;
 
       case Screen::Orientation::RIGHT:
         LOG_D("Right...");
-        x = xd;
-        y = yd;
+        #if TOUCH_ORIENTATION_INVERTED == 1  // PaperS3
+          y = platform.getTouchScreen().getXResolution() - xd;
+          x = yd;
+        #else // Inkplate devices
+          x = xd;
+          y = yd;
+        #endif
         break;
       }
     }
-    LOG_I("Result of transform: [{}, {}]", x, y);
+    // LOG_I("Result of transform: [{}, {}]", x, y);
   }
 
   auto EventMgr::calibrationEvent(const Event &event) -> bool {

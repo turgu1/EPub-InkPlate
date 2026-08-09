@@ -42,11 +42,11 @@ enum class ConfigIdent {
   static const std::string CONFIG_FILE = MAIN_FOLDER "/config.txt";
 
   static int8_t            version;
-  static char              ssid[32];
-  static char              pwd[32];
-  static char              dnsName[32];
-  static char              apSsid[32];
-  static char              apPwd[32];
+  static char              ssid[33];
+  static char              pwd[33];
+  static char              dnsName[33];
+  static char              apSsid[33];
+  static char              apPwd[33];
   static char              btKeypadMac[20];
   static int32_t           port;
   static int8_t            battery;
@@ -69,8 +69,8 @@ enum class ConfigIdent {
 
   #if DATE_TIME_RTC
     static int8_t showRtc;
-    static char   ntpServer[32];
-    static char   timeZone[32];
+    static char   ntpServer[33];
+    static char   timeZone[33];
   #endif
   #if TOUCH_CALIBRATION
     static int64_t       calibA, calibB, calibC, calibD, calibE, calibF, calibDivider;
@@ -103,11 +103,11 @@ enum class ConfigIdent {
   template <>
   Config::CfgType Config::cfg = { {
     { Config::Ident::VERSION,            Config::EntryType::BYTE,     "version",            &version,         &theVersion,              0 },
-    { Config::Ident::SSID,               Config::EntryType::STRING,   "wifi_ssid",          ssid,             "NONE",                  32 },
-    { Config::Ident::PWD,                Config::EntryType::STRING,   "wifi_pwd",           pwd,              "NONE",                  32 },
-    { Config::Ident::DNS_NAME,           Config::EntryType::STRING,   "dns_name",           dnsName,          "eink_reader",              32 },
-    { Config::Ident::AP_SSID,            Config::EntryType::STRING,   "ap_wifi_ssid",       apSsid,           "eink_reader",              32 },
-    { Config::Ident::AP_PWD,             Config::EntryType::STRING,   "ap_wifi_pwd",        apPwd,            "qwerty1234",            32 },
+    { Config::Ident::SSID,               Config::EntryType::STRING,   "wifi_ssid",          ssid,             "NONE",                  33 },
+    { Config::Ident::PWD,                Config::EntryType::STRING,   "wifi_pwd",           pwd,              "NONE",                  33 },
+    { Config::Ident::DNS_NAME,           Config::EntryType::STRING,   "dns_name",           dnsName,          "eink_reader",              33 },
+    { Config::Ident::AP_SSID,            Config::EntryType::STRING,   "ap_wifi_ssid",       apSsid,           "eink_reader",              33 },
+    { Config::Ident::AP_PWD,             Config::EntryType::STRING,   "ap_wifi_pwd",        apPwd,            "qwerty1234",            33 },
     { Config::Ident::PORT,               Config::EntryType::INT,      "http_port",          &port,            &defaultPort,             0 },
     { Config::Ident::BATTERY,            Config::EntryType::BYTE,     "battery",            &battery,         &defaultBattery,          0 },
     { Config::Ident::TIMEOUT,            Config::EntryType::BYTE,     "timeout",            &timeout,         &defaultTimeout,          0 },
@@ -125,8 +125,8 @@ enum class ConfigIdent {
 
     #if DATE_TIME_RTC
       { Config::Ident::SHOW_RTC,         Config::EntryType::BYTE,     "show_rtc",           &showRtc,         &defaultShowRtc,          0 },
-      { Config::Ident::NTP_SERVER,       Config::EntryType::STRING,   "ntp_server",         ntpServer,        "pool.ntp.org",          32 },
-      { Config::Ident::TIME_ZONE,        Config::EntryType::STRING,   "tz",                 timeZone,         "",                      32 },
+      { Config::Ident::NTP_SERVER,       Config::EntryType::STRING,   "ntp_server",         ntpServer,        "pool.ntp.org",          33 },
+      { Config::Ident::TIME_ZONE,        Config::EntryType::STRING,   "tz",                 timeZone,         "",                      33 },
     #endif
 
     #if TOUCH_CALIBRATION

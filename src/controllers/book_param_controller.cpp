@@ -46,7 +46,7 @@ static int8_t oldFont;
 static int8_t oldLineHeight;
 static int8_t oldColumnCount;
 
-#if TOUCH_ENABLE
+#if TOUCH_ENABLE || TOUCH_MENU
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 7;
 #else
   static constexpr int8_t BOOK_PARAMS_FORM_SIZE = 6;
@@ -55,36 +55,36 @@ static int8_t oldColumnCount;
 // *INDENT-OFF*
 static FormEntry bookParamsFormEntries[BOOK_PARAMS_FORM_SIZE] = {
     {.caption   = "Font Size:",
-     .u         = {.ch = {.value       = &fontSize,
+     .u         = ChoiceEntry{.value       = &fontSize,
                           .choiceCount = 4,
-                          .choices     = FormChoiceField::fontSizeChoices}},
-     .entryType = FormEntryType::HORIZONTAL},
+                          .choices     = FormChoiceField::fontSizeChoices},
+     .entryType = FormEntryType::CHOICE},
     {.caption   = "Line Height Factor:",
-     .u         = {.ch = {.value       = &lineHeight,
+     .u         = ChoiceEntry{.value       = &lineHeight,
                           .choiceCount = 3,
-                          .choices     = FormChoiceField::lineHeightChoices}},
-     .entryType = FormEntryType::HORIZONTAL},
+                          .choices     = FormChoiceField::lineHeightChoices},
+     .entryType = FormEntryType::CHOICE},
     {.caption   = "Use fonts in book:",
-     .u         = {.ch = {.value       = &useFontsInBook,
+     .u         = ChoiceEntry{.value       = &useFontsInBook,
                           .choiceCount = 2,
-                          .choices     = FormChoiceField::yesNoChoices}},
-     .entryType = FormEntryType::HORIZONTAL},
+                          .choices     = FormChoiceField::yesNoChoices},
+     .entryType = FormEntryType::CHOICE},
     {.caption = "Font:",
-     .u       = {.ch = {.value = &font, .choiceCount = 8, .choices = FormChoiceField::fontChoices}},
-     .entryType = FormEntryType::VERTICAL},
+     .u       = ChoiceEntry{.value = &font, .choiceCount = 8, .choices = FormChoiceField::fontChoices},
+     .entryType = FormEntryType::CHOICE},
     {.caption   = "Show Images in book:",
-     .u         = {.ch = {.value       = &showPictures,
+     .u         = ChoiceEntry{.value       = &showPictures,
                           .choiceCount = 2,
-                          .choices     = FormChoiceField::yesNoChoices}},
-     .entryType = FormEntryType::HORIZONTAL},
+                          .choices     = FormChoiceField::yesNoChoices},
+     .entryType = FormEntryType::CHOICE},
     {.caption   = "Column Count:",
-     .u         = {.ch = {.value       = &columnCount,
+     .u         = ChoiceEntry{.value       = &columnCount,
                           .choiceCount = 4,
-                          .choices     = FormChoiceField::columnCountChoices}},
-     .entryType = FormEntryType::HORIZONTAL},
-#if TOUCH_ENABLE
+                          .choices     = FormChoiceField::columnCountChoices},
+     .entryType = FormEntryType::CHOICE},
+#if TOUCH_ENABLE || TOUCH_MENU
     {.caption   = " DONE ",
-     .u         = {.ch = {.value = &doneRes, .choiceCount = 0, .choices = nullptr}},
+     .u         = ChoiceEntry{.value = &doneRes, .choiceCount = 0, .choices = nullptr},
      .entryType = FormEntryType::DONE}
 #endif
 };
@@ -249,7 +249,7 @@ static MenuViewer::MenuEntry menu[10] = {
 auto BookParamController::setFontCount(uint8_t count) -> void {
   // Caution: The index is hard coded. Must be updated when the
   // form entries are changed.
-  bookParamsFormEntries[3].u.ch.choiceCount = count;
+  std::get<ChoiceEntry>(bookParamsFormEntries[3].u).choiceCount = count;
 }
 
 auto BookParamController::enter() -> void {

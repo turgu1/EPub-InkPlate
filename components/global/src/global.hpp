@@ -80,12 +80,13 @@
 // The following data definitions are here for laziness...
 // ToDo: Move them to the appropriate location
 
+#pragma pack(push, 2)
 struct Dim {
   uint16_t width{ 0 };
   uint16_t height{ 0 };
 
   Dim() = default;
-  constexpr Dim(uint16_t w, uint16_t h) : width{w}, height{h} {}
+  constexpr Dim(uint16_t width, uint16_t height) : width{width}, height{height} {}
 
   constexpr auto getWidth() const -> uint16_t { return width; }
   constexpr auto getHeight() const -> uint16_t { return height; }
@@ -94,32 +95,26 @@ struct Dim {
 struct Pos {
   uint16_t x{ 0 };
   uint16_t y{ 0 };
-  Pos(uint16_t xpos, uint16_t ypos) {
-    x = xpos;
-    y = ypos;
-  }
+  Pos(uint16_t x, uint16_t y) : x(x), y(y) {}
   Pos() = default;
 };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
 struct Dim8 {
   uint8_t width{ 0 };
   uint8_t height{ 0 };
-  Dim8(uint8_t w, uint8_t h) {
-    width  = w;
-    height = h;
-  }
+  Dim8(uint8_t width, uint8_t height) : width(width), height(height) {}
   Dim8() = default;
 };
 
 struct Pos8 {
   uint8_t x{ 0 };
   uint8_t y{ 0 };
-  Pos8(uint8_t xpos, uint8_t ypos) {
-    x = xpos;
-    y = ypos;
-  }
+  Pos8(uint8_t x, uint8_t y) : x(x), y(y) {}
   Pos8() = default;
 };
+#pragma pack(pop)
 
 struct Glyph {
   Dim dim{ 0, 0 };
@@ -158,7 +153,7 @@ struct PageId {
   }
 };
 
-enum class FaceStyle     : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC };
+enum class FaceStyle     : uint8_t { NORMAL = 0, BOLD, ITALIC, BOLD_ITALIC, INVERSE, INVERSE_BOLD };
 enum class HAlign        : uint8_t { LEFT, CENTER, RIGHT, JUSTIFY };
 enum class VAlign        : uint8_t { NORMAL, SUB, SUPER, VALUE };
 enum class TextTransform : uint8_t { NONE, UPPERCASE, LOWERCASE, CAPITALIZE };

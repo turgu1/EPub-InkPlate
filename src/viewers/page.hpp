@@ -75,6 +75,7 @@ class Page {
       HAlign align                = HAlign::LEFT;
       TextTransform textTransform = TextTransform::NONE;
       Display display             = Display::INLINE;
+      int8_t thickness            = 1; // -1 = fill, 1, 2,... thickness
     };
 
     /**
@@ -303,8 +304,8 @@ class Page {
     auto putPicture(PicturePtr picture, Pos pos) -> void;
     auto putHighlight(Dim dim, Pos pos) -> void;
     auto clearHighlight(Dim dim, Pos pos) -> void;
-    auto putRounded(Dim dim, Pos pos) -> void;
-    auto clearRounded(Dim dim, Pos pos) -> void;
+    auto putRounded(Dim dim, Pos pos, int8_t thickness = 1, uint8_t radius = 8) -> void;
+    auto clearRounded(Dim dim, Pos pos, int8_t thickness = 1, uint8_t radius = 8) -> void;
     auto clearRegion(Dim dim, Pos pos) -> void;
     auto setRegion(Dim dim, Pos pos) -> void;
 

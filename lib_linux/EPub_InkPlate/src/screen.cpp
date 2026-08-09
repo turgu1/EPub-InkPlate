@@ -28,8 +28,9 @@ auto freePixels(guchar *pixels, gpointer data) -> void {
   }
 }
 
-inline void setRgb(guchar *a, int row, int col, int stride, guchar color) {
-  int p = row * stride + col * BYTES_PER_PIXEL;
+auto Screen::setPixel(Pos pos, guchar color) -> void {
+  guchar *a     = gdk_pixbuf_get_pixels(pb);
+  int p = pos.y * pictureData.stride + pos.x * BYTES_PER_PIXEL;
   a[p] = a[p + 1] = a[p + 2] = color;
 }
 
@@ -37,8 +38,7 @@ inline void setRgb(guchar *a, int row, int col, int stride, guchar color) {
 
 auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
+  pb = gtk_image_get_pixbuf(pictureData.picture);
 
   auto       dim        = picture->getDim();
   auto       bitmapData = picture->getBitmap();
@@ -55,23 +55,24 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 
   // LOG_I("Picture position: [{}, {}], dimensions: [{}, {}], bpp: {}", pos.x, pos.y, dim.width, dim.height, bpp);
 
-  if (pixelResolution == PixelResolution::ONE_BIT) {
+  if (pixelResolution == PixelResolution::MONO) {
     static int16_t err[601];
     int16_t        error;
     memset(err, 0, 601 * 2);
 
     if (bpp == 4) {
       uint16_t w = (dim.width + 1) >> 1;
-      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
         // LOG_I("Nibbles of line {}: {:#04x} <--> {:#04x} {:#04x}", q, NIBBLE(0, (q*w)), NIBBLE(0, ((q+1)*w)-1), NIBBLE(1, ((q+1)*w)-1));
-        for (int i = pos.x, p = q * w, k = 0; i < (xMax - 1); ++i, ++k) {
+        uint32_t p = q * w;
+        for (uint16_t i = pos.x, k = 0; i < (xMax - 1); ++i, ++k) {
           int32_t v = NIBBLE(k, p) + err[k + 1];
           if (v > 128) {
             error = (v - 255);
-            setRgb(g, j, i, pictureData.stride, 255);
+            setPixel({i, j}, 255);
           } else {
             error = v;
-            setRgb(g, j, i, pictureData.stride, 0);
+            setPixel({i, j}, 0);
           }
           if (k != 0) {
             err[k - 1] += error / 8;
@@ -84,15 +85,16 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
         }
       }
     } else {
-      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-        for (int i = pos.x, p = q * dim.width, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * dim.width;
+        for (uint16_t i = pos.x, k = 0; i < (xMax - 1); ++i, ++p, ++k) {
           int32_t v = bitmapData[p] + err[k + 1];
           if (v > 128) {
             error = (v - 255);
-            setRgb(g, j, i, pictureData.stride, 255);
+            setPixel({i, j}, 255);
           } else {
             error = v;
-            setRgb(g, j, i, pictureData.stride, 0);
+            setPixel({i, j}, 0);
           }
           if (k != 0) {
             err[k - 1] += error / 8;
@@ -107,16 +109,18 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
   else {
     if (bpp == 4) {
       uint16_t w = (dim.width + 1) >> 1;
-      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-        for (int i = pos.x, p = q * w, k = 0; i < xMax; ++i, ++k) {
-          setRgb(g, j, i, pictureData.stride, NIBBLE(k, p));
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * w;
+        for (uint16_t i = pos.x, k = 0; i < xMax; ++i, ++k) {
+          setPixel({i, j}, NIBBLE(k, p));
           if (k & 1) { ++p; }
         }
       }
     } else {
-      for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-        for (int i = pos.x, p = q * dim.width; i < xMax; ++i, ++p) {
-          setRgb(g, j, i, pictureData.stride, bitmapData[p]);
+      for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+        uint32_t p = q * dim.width;
+        for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
+          setPixel({i, j}, bitmapData[p]);
         }
       }
     }
@@ -125,115 +129,204 @@ auto Screen::drawPicture(PicturePtr &picture, Pos pos) -> void {
 
 #undef NIBBLE
 
-auto Screen::drawRectangle(Dim dim, Pos pos,
-                           Color color) //, bool show)
--> void {
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
+auto Screen::drawRectangle(Dim dim, Pos pos, Color color, int8_t thickness) -> void {
 
-  int16_t    xMax = pos.x + dim.width;
-  int16_t    yMax = pos.y + dim.height;
+  pb = gtk_image_get_pixbuf(pictureData.picture);
+
+  uint16_t    xMax = pos.x + dim.width;
+  uint16_t    yMax = pos.y + dim.height;
 
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  for (int i = pos.x; i < xMax; ++i) {
-    setRgb(g, pos.y,    i, pictureData.stride, color);
-    setRgb(g, yMax - 1, i, pictureData.stride, color);
+  for (uint16_t i = pos.x; i < xMax; ++i) {
+    setPixel({i, pos.y}, color);
+    setPixel({i, uint16_t(yMax - 1)}, color);
   }
-  for (int j = pos.y; j < yMax; ++j) {
-    setRgb(g, j, pos.x,    pictureData.stride, color);
-    setRgb(g, j, xMax - 1, pictureData.stride, color);
-  }
-}
-
-auto Screen::drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color)
--> void {
-  int16_t    f    = 1 - radius;
-  int16_t    ddFx = 1;
-  int16_t    ddFy = -2 * radius;
-  int16_t    x    = 0;
-  int16_t    y    = radius;
-
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
-
-  // Bottom middle
-  //  drawPixel(xMid, yMid + radius);
-
-  // Top Middle
-  //  drawPixel(xMid, yMid - radius);
-
-  // Right Middle
-  //  drawPixel(xMid + radius, yMid);
-
-  // Left Middle
-  //  drawPixel(xMid - radius, yMid);
-
-  while (x < y) {
-    if (f >= 0) {
-      y--;
-      ddFy += 2;
-      f += ddFy;
-    }
-    ++x;
-    ddFx += 2;
-    f += ddFx;
-
-    switch (corner) {
-    case Corner::TOP_LEFT:
-      setRgb(g, yMid - y, xMid - x, pictureData.stride, color);
-      setRgb(g, yMid - x, xMid - y, pictureData.stride, color);
-      break;
-
-    case Corner::TOP_RIGHT:
-      setRgb(g, yMid - y, xMid + x, pictureData.stride, color);
-      setRgb(g, yMid - x, xMid + y, pictureData.stride, color);
-      break;
-
-    case Corner::LOWER_LEFT:
-      setRgb(g, yMid + y, xMid - x, pictureData.stride, color);
-      setRgb(g, yMid + x, xMid - y, pictureData.stride, color);
-      break;
-
-    case Corner::LOWER_RIGHT:
-      setRgb(g, yMid + y, xMid + x, pictureData.stride, color);
-      setRgb(g, yMid + x, xMid + y, pictureData.stride, color);
-      break;
-    }
+  for (uint16_t j = pos.y; j < yMax; ++j) {
+    setPixel({pos.x, j}, color);
+    setPixel({uint16_t(xMax - 1), j}, color);
   }
 }
 
-auto Screen::drawRoundRectangle(Dim dim, Pos pos,
-                                Color color) //, bool show)
--> void {
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
-
-  int16_t    xMax = pos.x + dim.width;
-  int16_t    yMax = pos.y + dim.height;
-
-  if (yMax > height) { yMax = height; }
-  if (xMax > width) { xMax = width; }
-
-  for (int i = pos.x + 10; i < xMax - 10; ++i) {
-    setRgb(g, pos.y,    i, pictureData.stride, color);
-    setRgb(g, yMax - 1, i, pictureData.stride, color);
+/**
+ * Draws a solid horizontal row using single pixel iterations.
+ */
+auto Screen::drawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint8_t color) -> void {
+  for (uint16_t x = x0; x <= x1; ++x) {
+    setPixel({ x, y }, color);
   }
-  for (int j = pos.y + 10; j < yMax - 10; ++j) {
-    setRgb(g, j, pos.x,    pictureData.stride, color);
-    setRgb(g, j, xMax - 1, pictureData.stride, color);
+}
+
+/**
+ * Draws a rounded rectangle into any arbitrary bitmap format via functional abstraction.
+ * 
+ * @param dim        The rectangle dimension
+ * @param p0         Top-left position coordinates
+ * @param color      Color payload value (0/1 for 1-bpp, 0-15 for 4-bpp)
+ * @param radius     Corner rounding radius
+ * @param thickness  Line thickness inward (-1 solid, -2 for 1-in-2 grid, -3 for 1-in-3 grid)
+ */
+auto Screen::drawRoundedRectangle(Dim dim, Pos p0, uint8_t color, int8_t thickness, int8_t radius) -> void {
+  if (dim.width == 0 || dim.height == 0) return;
+
+  // Compute inclusive outer boundaries
+  Pos p1 = { uint16_t(p0.x + dim.width - 1), uint16_t(p0.y + dim.height - 1) };
+
+  // if (pixelResolution == PixelResolution::MONO) {
+  //   color = (color == Color::BLACK) ? platform.getEInk().getMonoBlack() : platform.getEInk().getMonoWhite();
+  // } else {
+  //   color = (color == Color::BLACK) ? platform.getEInk().getGrayBlack() : platform.getEInk().getGrayWhite();
+  // }
+
+  // Validate and clamp radius
+  if (2 * radius > (p1.x - p0.x)) radius = (p1.x - p0.x) / 2;
+  if (2 * radius > (p1.y - p0.y)) radius = (p1.y - p0.y) / 2;
+  if (radius < 0) radius = 0;
+
+  // Identify modes cleanly
+  bool pattern_fill = (thickness < -1);
+  bool solid_fill   = (thickness == -1);
+  
+  if (!solid_fill && !pattern_fill) {
+    int32_t req_thickness = thickness * 2;
+    int32_t max_width = p1.x - p0.x + 1;
+    int32_t max_height = p1.y - p0.y + 1;
+    if (req_thickness >= max_width || req_thickness >= max_height) {
+      solid_fill = true;
+    }
   }
 
-  drawArc(pos.x + 10,             pos.y + 10,              10, Corner::TOP_LEFT,    color);
-  drawArc(pos.x + dim.width - 11, pos.y + 10,              10, Corner::TOP_RIGHT,   color);
-  drawArc(pos.x + 10,             pos.y + dim.height - 11, 10, Corner::LOWER_LEFT,  color);
-  drawArc(pos.x + dim.width - 11, pos.y + dim.height - 11, 10, Corner::LOWER_RIGHT, color);
+  if (solid_fill || pattern_fill) {
+    int8_t spacing = (pattern_fill) ? -thickness : 1;
+
+    // Aligned grid filling logic to completely prevent 45-degree striping
+    auto drawInteriorLine = [this, spacing, color](uint16_t x0, uint16_t x1, uint16_t y) {
+      if (spacing > 1) {
+        // Only allow drawing on rows that match the vertical spacing rule
+        if (y % spacing == 0) {
+          for (uint16_t x = x0; x <= x1; ++x) {
+            // Only illuminate pixels matching the horizontal spacing rule
+            if (x % spacing == 0) {
+              setPixel({ x, y }, color);
+            }
+          }
+        }
+      } else {
+        // Mode -1: Solid fill
+        drawHLine(x0, x1, y, color);
+      }
+    };
+
+    uint16_t cx_left  = p0.x + radius;
+    uint16_t cx_right = p1.x - radius;
+    uint16_t cy_top   = p0.y + radius;
+    uint16_t cy_bot   = p1.y - radius;
+
+    // 1. Render the outer structural shell first to guarantee a continuous solid contour line
+    drawHLine(cx_left, cx_right, p0.y, color);
+    drawHLine(cx_left, cx_right, p1.y, color);
+    for (uint16_t y = cy_top; y <= cy_bot; ++y) {
+      setPixel({ p0.x, y }, color);
+      setPixel({ p1.x, y }, color);
+    }
+    if (radius > 0) {
+      int16_t cx = 0;
+      int16_t cy = radius;
+      int16_t d  = 3 - 2 * radius;
+      while (cx <= cy) {
+        setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_top - cx) }, color);
+        setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_top - cy) }, color);
+        setPixel({ uint16_t(cx_right + cx), uint16_t(cy_top - cy) }, color);
+        setPixel({ uint16_t(cx_right + cy), uint16_t(cy_top - cx) }, color);
+        setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_bot + cx) }, color);
+        setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_bot + cy) }, color);
+        setPixel({ uint16_t(cx_right + cx), uint16_t(cy_bot + cy) }, color);
+        setPixel({ uint16_t(cx_right + cy), uint16_t(cy_bot + cx) }, color);
+        if (d < 0) { d += 4 * cx + 6; } else { d += 4 * (cx - cy) + 10; cy--; }
+        cx++;
+      }
+    }
+
+    // 2. Render interior dither contents strictly inside the border boundaries
+    if (radius > 0) {
+      int16_t cx = 0;
+      int16_t cy = radius;
+      int16_t d  = 3 - 2 * radius;
+      while (cx <= cy) {
+        // Avoid drawing over the outermost perimeter structural pixels
+        if (cy_top - cy > p0.y) {
+          drawInteriorLine(cx_left - cx + 1, cx_right + cx - 1, cy_top - cy);
+          drawInteriorLine(cx_left - cx + 1, cx_right + cx - 1, cy_bot + cy);
+        }
+        if (cy_top - cx > p0.y) {
+          drawInteriorLine(cx_left - cy + 1, cx_right + cy - 1, cy_top - cx);
+          drawInteriorLine(cx_left - cy + 1, cx_right + cy - 1, cy_bot + cx);
+        }
+        if (d < 0) { d += 4 * cx + 6; } else { d += 4 * (cx - cy) + 10; cy--; }
+        cx++;
+      }
+    }
+
+    uint16_t y_start = p0.y + radius + 1;
+    uint16_t y_end   = p1.y - radius - 1;
+    if (radius == 0) { y_start = p0.y + 1; y_end = p1.y - 1; }
+
+    for (uint16_t y = y_start; y <= y_end; y++) {
+      drawInteriorLine(p0.x + 1, p1.x - 1, y);
+    }
+
+  } else {
+    // --- THICK OUTLINE MODE ---
+    for (uint8_t i = 0; i < thickness; i++) {
+      if ((p0.x + i) > (p1.x - i) || (p0.y + i) > (p1.y - i)) break;
+
+      uint16_t cur_x0     = p0.x + i;
+      uint16_t cur_y0     = p0.y + i;
+      uint16_t cur_x1     = p1.x - i;
+      uint16_t cur_y1     = p1.y - i;
+      int16_t  cur_radius = radius - i; 
+
+      if (cur_radius < 0) cur_radius = 0;
+
+      drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y0, color);
+      drawHLine(cur_x0 + cur_radius, cur_x1 - cur_radius, cur_y1, color);
+
+      for (uint16_t y = cur_y0 + cur_radius; y <= cur_y1 - cur_radius; ++y) {
+        setPixel({ cur_x0, y }, color);
+        setPixel({ cur_x1, y }, color);
+      }
+
+      if (cur_radius > 0) {
+        uint16_t cx_left  = cur_x0 + cur_radius;
+        uint16_t cx_right = cur_x1 - cur_radius;
+        uint16_t cy_top   = cur_y0 + cur_radius;
+        uint16_t cy_bot   = cur_y1 - cur_radius;
+        
+        int16_t cx = 0;
+        int16_t cy = cur_radius;
+        int16_t d  = 3 - 2 * cur_radius; 
+
+        while (cx <= cy) {
+          setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_top - cx) }, color);
+          setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_top - cy) }, color);
+          setPixel({ uint16_t(cx_right + cx), uint16_t(cy_top - cy) }, color);
+          setPixel({ uint16_t(cx_right + cy), uint16_t(cy_top - cx) }, color);
+          setPixel({ uint16_t(cx_left  - cy), uint16_t(cy_bot + cx) }, color);
+          setPixel({ uint16_t(cx_left  - cx), uint16_t(cy_bot + cy) }, color);
+          setPixel({ uint16_t(cx_right + cx), uint16_t(cy_bot + cy) }, color);
+          setPixel({ uint16_t(cx_right + cy), uint16_t(cy_bot + cx) }, color);
+
+          if (d < 0) { d += 4 * cx + 6; } else { d += 4 * (cx - cy) + 10; cy--; }
+          ++cx;
+        }
+      }
+    }
+  }
 }
 
 auto Screen::colorizeRegion(Dim dim, Pos pos, Color color) -> void {
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
+  pb = gtk_image_get_pixbuf(pictureData.picture);
 
   int16_t    xMax = pos.x + dim.width;
   int16_t    yMax = pos.y + dim.height;
@@ -241,16 +334,15 @@ auto Screen::colorizeRegion(Dim dim, Pos pos, Color color) -> void {
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  for (int j = pos.y; j < yMax; ++j) {
-    for (int i = pos.x; i < xMax; ++i) {
-      setRgb(g, j, i, pictureData.stride, color);
+  for (uint16_t j = pos.y; j < yMax; ++j) {
+    for (uint16_t i = pos.x; i < xMax; ++i) {
+      setPixel({i, j}, color);
     }
   }
 }
 
-auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void {
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
-  guchar *   g     = gdk_pixbuf_get_pixels(pb);
+auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch, bool inverse) -> void {
+  pb = gtk_image_get_pixbuf(pictureData.picture);
 
   int        xMax = pos.x + dim.width;
   int        yMax = pos.y + dim.height;
@@ -258,50 +350,55 @@ auto Screen::drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16
   if (yMax > height) { yMax = height; }
   if (xMax > width) { xMax = width; }
 
-  if (pixelResolution == PixelResolution::ONE_BIT) {
-    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-      for (int i = pos.x, p = (q * pitch) << 3; i < xMax; ++i, ++p) {
+  if (pixelResolution == PixelResolution::MONO) {
+    for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      uint32_t p = (q * pitch) << 3;
+      for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
         // int v = (255 - bitmapData[p]);
         // if (v != 255) {
         //   v &= 0xE0; // 8 levels of grayscale
-        //   setRgb(g, j, i, pictureData.stride, v);
+        //   setPixel({i, j}, v);
         // }
         uint8_t v = bitmapData[p >> 3] & LUT1BIT[p & 7];
-        if (v) { setRgb(g, j, i, pictureData.stride, 0); }
+        if (inverse) {
+          if (v) { setPixel({i, j}, 0xFF); }
+        } else {
+          if (v) { setPixel({i, j}, 0); }
+        }
       }
     }
   } else {
-    for (int j = pos.y, q = 0; j < yMax; ++j, ++q) {
-      for (int i = pos.x, p = q * pitch; i < xMax; ++i, ++p) {
+    for (uint16_t j = pos.y, q = 0; j < yMax; ++j, ++q) {
+      uint32_t p = q * pitch;
+      for (uint16_t i = pos.x; i < xMax; ++i, ++p) {
         // int v = (255 - bitmapData[p]);
         // if (v != 255) {
-        //   v &= 0xE0; // 8 levels of grayscale
-        //   setRgb(g, j, i, pictureData.stride, v);
+        //   v &= 0xF0; // 16 levels of grayscale
+        //   setPixel({i, j}, v);
         // }
-        uint8_t v = (255 - bitmapData[p]) & 0xE0;
-        if (v != 0xE0) { setRgb(g, j, i, pictureData.stride, v); }
+        uint8_t v = (255 - bitmapData[p]) & 0xF0;
+        if (v != 0xF0) { setPixel({i, j}, inverse ? ~v : v); }
       }
     }
   }
 }
 
 auto Screen::clear() -> void {
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
+  pb = gtk_image_get_pixbuf(pictureData.picture);
   gdk_pixbuf_fill(pb, 0xFFFFFFFF); // clear to white
 }
 
 auto Screen::test() -> void {
   static int N = 0;
 
-  GdkPixbuf *pb = gtk_image_get_pixbuf(pictureData.picture);
+  pb = gtk_image_get_pixbuf(pictureData.picture);
 
   gdk_pixbuf_fill(pb, 0xFFFFFFFF); // clear to white
 
-  guchar *g = gdk_pixbuf_get_pixels(pb);
 
-  for (int r = 0; r < pictureData.rows; ++r)
-    for (int c = 0; c < pictureData.cols; ++c)
-      if ((r + N) / 20 % 2 && (c + N) / 20 % 2) { setRgb(g, r, c, pictureData.stride, 0); }
+  for (uint16_t r = 0; r < pictureData.rows; ++r)
+    for (uint16_t c = 0; c < pictureData.cols; ++c)
+      if ((r + N) / 20 % 2 && (c + N) / 20 % 2) { setPixel({c, r}, 0); }
 
   N = (N + 1) % 100;
 
@@ -345,19 +442,20 @@ auto Screen::setup(PixelResolution resolution, Orientation orientation) -> void 
   pixels = std::make_unique<guchar[]>(height * pictureData.stride);
   memset(pixels.get(), 255, height * pictureData.stride); // clear to white
 
-  for (int r = 0; r < height; ++r)
-    for (int c = 0; c < width; ++c) setRgb(pixels.get(), r, c, pictureData.stride, 255);
 
-  GdkPixbuf *pb = gdk_pixbuf_new_from_data(pixels.get(),
-                                           GDK_COLORSPACE_RGB, // colorspace
-                                           0,                  // has_alpha
-                                           8,                  // bits-per-sample
-                                           width,              // rows
-                                           height,             // cols
-                                           pictureData.stride, // rowstride
-                                           freePixels,         // destroy_fn
-                                           nullptr             // destroy_fn_data
-                                           );
+  pb = gdk_pixbuf_new_from_data(pixels.get(),
+        GDK_COLORSPACE_RGB, // colorspace
+        0,                  // has_alpha
+        8,                  // bits-per-sample
+        width,              // rows
+        height,             // cols
+        pictureData.stride, // rowstride
+        freePixels,         // destroy_fn
+        nullptr             // destroy_fn_data
+      );
+
+  for (uint16_t r = 0; r < height; ++r)
+    for (uint16_t c = 0; c < width; ++c) setPixel({c, r}, 255);
 
   pictureData.picture = GTK_IMAGE(gtk_image_new_from_pixbuf(pb));
   // g_object_unref(

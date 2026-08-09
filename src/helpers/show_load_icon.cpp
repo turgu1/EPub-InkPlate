@@ -45,7 +45,7 @@ auto showLoadIcon(const Dim &imageDim) -> void {
                         Pos(static_cast<uint16_t>(clearX), static_cast<uint16_t>(clearY)),
                         Screen::Color::WHITE);
 
-  screen.drawRoundRectangle(Dim(static_cast<uint16_t>(rectW), static_cast<uint16_t>(rectH)),
+  screen.drawRoundedRectangle(Dim(static_cast<uint16_t>(rectW), static_cast<uint16_t>(rectH)),
                             Pos(static_cast<uint16_t>(rectX), static_cast<uint16_t>(rectY)),
                             Screen::Color::BLACK);
   screen.drawGlyph(glyph->buffer, glyph->dim,

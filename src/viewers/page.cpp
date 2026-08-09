@@ -46,7 +46,7 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
         entry->command = DisplayListCommand::GLYPH;
         entry->pos     = { static_cast<uint16_t>(pos.x + glyph->xoff),
                            static_cast<uint16_t>(pos.y + glyph->yoff) };
-        entry->v       = GlyphEntry{ glyph, glyph->advance, false };
+        entry->v       = GlyphEntry{ glyph, glyph->advance, false, fmt.fontStyle == FaceStyle::INVERSE };
 
         #if DEBUGGING
           // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -112,7 +112,7 @@ auto Page::putStrAt(const std::string &str, Pos pos, const Format &fmt) -> void 
         entry->command = DisplayListCommand::GLYPH;
         entry->pos     = { static_cast<uint16_t>(x + glyph->xoff),
                            static_cast<uint16_t>(pos.y + glyph->yoff) };
-        entry->v       = GlyphEntry{ glyph, glyph->advance, false };
+        entry->v       = GlyphEntry{ glyph, glyph->advance, false, fmt.fontStyle == FaceStyle::INVERSE };
 
         #if DEBUGGING
           // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -145,7 +145,7 @@ auto Page::putCharAt(char ch, Pos pos, const Format &fmt) -> void {
     entry->command = DisplayListCommand::GLYPH;
     entry->pos     = { static_cast<uint16_t>(pos.x + glyph->xoff),
                        static_cast<uint16_t>(pos.y + glyph->yoff) };
-    entry->v       = GlyphEntry{ glyph, glyph->advance, false };
+    entry->v       = GlyphEntry{ glyph, glyph->advance, false, fmt.fontStyle == FaceStyle::INVERSE };
 
     #if DEBUGGING
       // if ((entry->pos.x < 0) || (entry->pos.y < 0)) {
@@ -179,7 +179,8 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
           std::get<GlyphEntry>(entry->v).glyph != nullptr) {
         screen.drawGlyph(std::get<GlyphEntry>(entry->v).glyph->buffer,
                          std::get<GlyphEntry>(entry->v).glyph->dim, entry->pos,
-                         std::get<GlyphEntry>(entry->v).glyph->pitch);
+                         std::get<GlyphEntry>(entry->v).glyph->pitch,
+                         std::get<GlyphEntry>(entry->v).inverse);
       } else {
         LOG_E("DISPLAY LIST CORRUPTED!!");
       }
@@ -188,18 +189,22 @@ auto Page::paint(bool clearScreen, bool noFull, bool doIt) -> void {
       screen.drawPicture(std::get<PictureEntry>(entry->v).picture, entry->pos);
       break;
     case DisplayListCommand::HIGHLIGHT:
-      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK);
+      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::BLACK, std::get<RegionEntry>(entry->v).thickness);
       break;
     case DisplayListCommand::CLEAR_HIGHLIGHT:
-      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
+      screen.drawRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE, std::get<RegionEntry>(entry->v).thickness);
       break;
     case DisplayListCommand::ROUNDED:
-      screen.drawRoundRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
-                                Screen::Color::BLACK);
+      screen.drawRoundedRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
+                                Screen::Color::BLACK, 
+                                std::get<RegionEntry>(entry->v).thickness,
+                                std::get<RegionEntry>(entry->v).radius);
       break;
     case DisplayListCommand::CLEAR_ROUNDED:
-      screen.drawRoundRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
-                                Screen::Color::WHITE);
+      screen.drawRoundedRectangle(std::get<RegionEntry>(entry->v).dim, entry->pos,
+                                Screen::Color::WHITE, 
+                                std::get<RegionEntry>(entry->v).thickness,
+                                std::get<RegionEntry>(entry->v).radius);
       break;
     case DisplayListCommand::CLEAR_REGION:
       screen.colorizeRegion(std::get<RegionEntry>(entry->v).dim, entry->pos, Screen::Color::WHITE);
@@ -530,7 +535,7 @@ inline auto Page::addGlyphToLine(Glyph *glyph, const Format &fmt, Font &font, bo
     if (entry == nullptr) { return; }
 
     entry->command = DisplayListCommand::GLYPH;
-    entry->v       = GlyphEntry{ glyph, glyph->advance, isSpace };
+    entry->v       = GlyphEntry{ glyph, glyph->advance, isSpace, fmt.fontStyle == FaceStyle::INVERSE };
     entry->pos     = { (uint16_t)(isSpace ? glyph->advance : 0), 0 };
 
     if (glyphsHeight < glyph->lineHeight) { glyphsHeight = glyph->lineHeight; }
@@ -934,7 +939,7 @@ auto Page::addWord(const char *word, const Format &fmt, bool addToEndOfLine) -> 
       if (entry == nullptr) { return word; }
 
       entry->command = DisplayListCommand::GLYPH;
-      entry->v       = GlyphEntry{ glyph, advance, false };
+      entry->v       = GlyphEntry{ glyph, advance, false, fmt.fontStyle == FaceStyle::INVERSE };
       entry->pos     = { 0, fmt.verticalAlign };
 
       wordEntries->pushBack(entry);
@@ -1250,12 +1255,12 @@ auto Page::clearHighlight(Dim dim, Pos pos) -> void {
   displayList->pushBack(entry);
 }
 
-auto Page::putRounded(Dim dim, Pos pos) -> void {
+auto Page::putRounded(Dim dim, Pos pos, int8_t thickness, uint8_t radius) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) { return; }
 
   entry->command = DisplayListCommand::ROUNDED;
-  entry->v       = RegionEntry{ dim };
+  entry->v       = RegionEntry{ dim, thickness, radius };
   entry->pos     = pos;
 
   #if DEBUGGING
@@ -1271,12 +1276,12 @@ auto Page::putRounded(Dim dim, Pos pos) -> void {
   displayList->pushBack(entry);
 }
 
-auto Page::clearRounded(Dim dim, Pos pos) -> void {
+auto Page::clearRounded(Dim dim, Pos pos, int8_t thickness, uint8_t radius) -> void {
   DisplayListEntry *entry = displayList->getNewEntry();
   if (entry == nullptr) { return; }
 
   entry->command = DisplayListCommand::CLEAR_ROUNDED;
-  entry->v       = RegionEntry{ dim };
+  entry->v       = RegionEntry{ dim, thickness, radius };
   entry->pos     = pos;
 
   #if DEBUGGING

@@ -315,7 +315,7 @@ auto BooksDirController::leave(bool goingToDeepSleep) -> void {
 
     case EventMgr::EventKind::RELEASE:
       LOG_D("[RELEASE]");
-      #if !EINK_BUILD
+      #if EINK_BUILD
         ESP::delay(1000);
       #endif
 

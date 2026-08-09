@@ -138,7 +138,7 @@
       if (appFonts.setup()) {
 
         Screen::Orientation     orientation    = Screen::Orientation::TOP;
-        Screen::PixelResolution resolution = Screen::PixelResolution::ONE_BIT;
+        Screen::PixelResolution resolution = Screen::PixelResolution::MONO;
 
         config.get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
         config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
@@ -282,7 +282,7 @@
     if (appFonts.setup()) {
 
       Screen::Orientation     orientation{ Screen::Orientation::RIGHT };
-      Screen::PixelResolution resolution{ Screen::PixelResolution::ONE_BIT };
+      Screen::PixelResolution resolution{ Screen::PixelResolution::MONO };
       config.get(Config::Ident::ORIENTATION,      (int8_t *)&orientation);
       config.get(Config::Ident::PIXEL_RESOLUTION, (int8_t *)&resolution);
       screen.setup(resolution, orientation);
@@ -297,7 +297,7 @@
         exit(0);
       }
 
-// exit(0)  // Used for some Valgrind tests
+      // Used for some Valgrind tests
       #if TESTING
         testing::InitGoogleTest();
         return RUN_ALL_TESTS();

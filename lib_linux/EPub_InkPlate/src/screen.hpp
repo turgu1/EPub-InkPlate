@@ -34,17 +34,16 @@ class Screen : NonCopyable {
       LEFT, RIGHT, TOP, BOTTOM
     };
     enum class PixelResolution : int8_t {
-      ONE_BIT, THREE_BITS
+      MONO, GRAY
     };
     enum Color {
       WHITE = 0xFF, BLACK = 0
     };
 
     auto drawPicture(PicturePtr &picture, Pos pos) -> void;
-    auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
-    auto drawRectangle(Dim dim, Pos pos, Color color) -> void;
-    auto drawRoundRectangle(Dim dim, Pos pos, Color color) -> void;
-    auto colorizeRegion(Dim dim, Pos pos, Color color) -> void;
+    auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch, bool inverse = false) -> void;
+    auto drawRectangle(Dim dim, Pos pos, Color color, int8_t thickness = 1) -> void;
+    auto drawRoundedRectangle(Dim dim, Pos p0, uint8_t color, int8_t thickness = 1, int8_t radius = 8) -> void;    auto colorizeRegion(Dim dim, Pos pos, Color color) -> void;
     auto clear() -> void;
     auto update(bool noFull = false) -> void; // Parameter only used by the InkPlate version
     auto test() -> void;
@@ -71,10 +70,14 @@ class Screen : NonCopyable {
     PixelResolution pixelResolution;
     Orientation orientation;
 
+    GdkPixbuf *pb;
+
     enum class Corner : uint8_t {
       TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT
     };
-    auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color) -> void;
+
+    // auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, Color color) -> void;
+    auto drawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint8_t color) -> void;
 
   public:
     static auto getSingleton() noexcept -> Screen & { return singleton; }
@@ -91,6 +94,8 @@ class Screen : NonCopyable {
 
     static auto getWidth() -> uint16_t { return width; }
     static auto getHeight() -> uint16_t { return height; }
+
+    auto setPixel(Pos pos, guchar color) -> void;
 
     #if TOUCH_TRIAL
       GtkWidget *window, *pictureBox;

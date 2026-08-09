@@ -25,77 +25,82 @@
 class Screen : NonCopyable {
   public:
     enum class Orientation : int8_t { LEFT, RIGHT, BOTTOM, TOP };
-    enum class PixelResolution : int8_t { ONE_BIT, THREE_BITS };
-
-    #if COLOR_INVERTED
-      #define COLOR 0
-    #else
-      #define COLOR 1
-    #endif
+    enum class PixelResolution : int8_t { MONO, GRAY };
 
     enum Color { WHITE = 0, BLACK = 0x0F };
 
     auto drawPicture(PicturePtr &picture, Pos pos) -> void;
-    auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch) -> void;
-    auto drawRectangle(Dim dim, Pos pos, uint8_t color) -> void;
-    auto drawRoundRectangle(Dim dim, Pos pos, uint8_t color) -> void;
+    auto drawGlyph(const unsigned char *bitmapData, Dim dim, Pos pos, uint16_t pitch, bool inverse = false) -> void;
+    auto drawRectangle(Dim dim, Pos pos, uint8_t color, int8_t thickness = 1) -> void;
+    auto drawRoundedRectangle(Dim dim, Pos p0, uint8_t color, int8_t thickness = 1, int8_t radius = 8) -> void;
     auto colorizeRegion(Dim dim, Pos pos, uint8_t color) -> void;
 
-    auto lowColorize1Bit(Dim dim, Pos pos, uint8_t color) -> void;
-    auto lowColorize3Bit(Dim dim, Pos pos, uint8_t color) -> void;
+    auto lowColorizeMono(Dim dim, Pos pos, uint8_t color) -> void;
+    auto lowColorizeGray(Dim dim, Pos pos, uint8_t color) -> void;
 
     auto clear() -> void {
-      if (pixelResolution == PixelResolution::ONE_BIT) {
+      if (pixelResolution == PixelResolution::MONO) {
         frameBufferMono->clear();
       } else {
-        frameBufferGrayScale->clear();
+        frameBufferGray->clear();
       }
     }
 
     auto update(bool noFull = false) -> void {
-      if (pixelResolution == PixelResolution::ONE_BIT) {
+      if (pixelResolution == PixelResolution::MONO) {
         if (noFull) {
           platform.getEInk().partialUpdate(*frameBufferMono);
-          partialCount = 0;
+          updateCount = 0;
         } else {
-          if (partialCount <= 0) {
+          if (updateCount <= 0) {
             // e_ink.clean();
             platform.getEInk().update(*frameBufferMono);
-            partialCount = platform.getEInk().getPartialCountAllowed();
+            updateCount = platform.getEInk().getUpdateCountAllowed();
           } else {
             platform.getEInk().partialUpdate(*frameBufferMono);
-            partialCount--;
+            updateCount--;
           }
         }
       } else {
-        platform.getEInk().update(*frameBufferGrayScale);
+        if (noFull) {
+          platform.getEInk().update(*frameBufferGray, EInk::GrayUpdateType::SMOOTH);
+          updateCount = 0;
+        } else {
+          if (updateCount <= 0) {
+            platform.getEInk().update(*frameBufferGray, EInk::GrayUpdateType::SLOW);
+            updateCount = platform.getEInk().getUpdateCountAllowed();
+          } else {
+            platform.getEInk().update(*frameBufferGray, EInk::GrayUpdateType::SMOOTH);
+            updateCount--;
+          }
+        }
       }
     }
 
   private:
     static constexpr char const *TAG = "Screen";
 
-    static const uint8_t LUT1BIT[8];
-    static const uint8_t LUT1BIT_INV[8];
+    static const uint8_t LUT_MONO[8];
+    static const uint8_t LUT_MONO_INV[8];
 
     static uint16_t width;
     static uint16_t height;
     static uint16_t yOffset;
-    ;
 
     static Screen singleton;
 
-    int16_t partialCount{ 0 };
+    int16_t updateCount{ 0 };
     FrameBufferMono *frameBufferMono{ nullptr };
-    FrameBufferGrayScale *frameBufferGrayScale{ nullptr };
-    PixelResolution pixelResolution{ PixelResolution::ONE_BIT };
+    FrameBufferGray *frameBufferGray{ nullptr };
+    PixelResolution pixelResolution{ PixelResolution::MONO };
     Orientation orientation{ Orientation::LEFT };
 
     enum class Corner : uint8_t { TOP_LEFT, TOP_RIGHT, LOWER_LEFT, LOWER_RIGHT };
 
     Screen() = default;
 
-    auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color) -> void;
+    auto drawHLine(uint16_t x0, uint16_t x1, uint16_t y, uint8_t color) -> void;
+    // auto drawArc(uint16_t xMid, uint16_t yMid, uint8_t radius, Corner corner, uint8_t color) -> void;
 
     // The Top, Left, Right and Bottom indicators are related to the first E-Radionica
     // Inkplate-6 device, where the 3 touch buttons are located. The Bottom location is the
@@ -108,14 +113,16 @@ class Screen : NonCopyable {
     // location where a pixel needs to be set.
     //
 
-    auto   setPixelOLeft1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto  setPixelORight1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto setPixelOBottom1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto    setPixelOTop1Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto   setPixelOLeft3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto  setPixelORight3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto setPixelOBottom3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
-    auto    setPixelOTop3Bit(uint32_t col, uint32_t row, uint8_t color) -> void;
+    auto setPixel(Pos pos, uint8_t color) -> void;
+
+    auto   setPixelLeftMono(Pos pos, uint8_t color) -> void;
+    auto  setPixelRightMono(Pos pos, uint8_t color) -> void;
+    auto setPixelBottomMono(Pos pos, uint8_t color) -> void;
+    auto    setPixelTopMono(Pos pos, uint8_t color) -> void;
+    auto   setPixelLeftGray(Pos pos, uint8_t color) -> void;
+    auto  setPixelRightGray(Pos pos, uint8_t color) -> void;
+    auto setPixelBottomGray(Pos pos, uint8_t color) -> void;
+    auto    setPixelTopGray(Pos pos, uint8_t color) -> void;
 
     auto setYOffset() -> void;
 
@@ -128,7 +135,7 @@ class Screen : NonCopyable {
     auto getPixelResolution() const -> PixelResolution { return pixelResolution; }
     auto getPixelsPerInch() const -> uint16_t { return platform.getEInk().getPixelsPerInch(); }
     auto getIdent() const -> uint8_t { return platform.getEInk().getIdent(); }
-    auto forceFullUpdate() -> void { partialCount = 0; }
+    auto forceFullUpdate() -> void { updateCount = 0; }
 
     // #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK
     //   void to_user_coord(uint16_t &x, uint16_t &y);

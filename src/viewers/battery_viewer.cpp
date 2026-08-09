@@ -30,8 +30,8 @@
 
     FontPtr &font = appFonts.getFont(0);
 
-    float    value       = ((voltage - 2.5) * 4.0) / 1.2;
-    int16_t  iconIndex = value; // max is 3.7
+    float    value       = ((voltage - 2.5) * 4.0) / 1.7;
+    int16_t  iconIndex = value; // max is 4.2
     if (iconIndex > 4) { iconIndex = 4; }
 
     static constexpr char icons[5] = { '0', '1', '2', '3', '4' };
@@ -66,7 +66,7 @@
       char str[15];
 
       if (viewMode == 1) {
-        int percentage = ((voltage - 2.5) * 100.0) / 1.2;
+        int percentage = ((voltage - 2.5) * 100.0) / 1.7;
         if (percentage > 100) { percentage = 100; }
         sprintf(str, "%d%c", percentage, '%');
       } else if (viewMode == 2) {

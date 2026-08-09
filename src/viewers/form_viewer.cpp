@@ -10,18 +10,10 @@
 HimemPool<FormChoiceField::Item> FormChoiceField::itemPool;
 uint8_t                          FormChoiceField::fontChoicesCount = 0;
 
-
 FormChoice FormChoiceField::fontChoices[8] = {
   { nullptr, 0 }, { nullptr, 1 }, { nullptr, 2 },
   { nullptr, 3 }, { nullptr, 4 }, { nullptr, 5 },
   { nullptr, 6 }, { nullptr, 7 } };
-
-// #if TOUCH_ENABLE
-//   bool FormDone::event(const EventMgr::Event &event) {
-//     form_viewer.setCompleted(true);
-//     return false;
-//   }
-// #endif
 
 /**
  * @brief Displays a form with the given entries and optional message at the bottom.
@@ -45,7 +37,7 @@ FormChoice FormChoiceField::fontChoices[8] = {
  *
  * @note On non-touchscreen platforms, the first field is automatically highlighted.
  *       On touchscreen-enabled platforms (INKPLATE_6PLUS, INKPLATE_6FLICK, etc.),
- *       no field is initially highlighted.
+ *       no field is initially highlighted., int8_t thickness
  *
  * @see FormField, FieldFactory, Page, ScreenBottom
  */
@@ -64,40 +56,40 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
     fields.clear();
 
+    Glyph * glyph   = font->getGlyph('M', FORM_FONT_SIZE);
+    glyphYOffset    = -glyph->yoff;
+    lineHeight      = glyph->dim.height;
+
     for (int i = 0; i < size; ++i) {
       FormFieldPtr field = FieldFactory::create(formEntries[i], *font.get(), *page.get());
       if (field != nullptr) {
-        field->computeCaptionDim();
-        field->computeFieldDim();
-        LOG_D("Field dimentions: Caption: [{}, {}] Field: [{}, {}]", field->getCaptionDim().width,
-              field->getCaptionDim().height, field->getFieldDim().width,
-              field->getFieldDim().height);
+        field->computeCaptionDim(lineHeight);
+        field->computeDim(lineHeight);
+        LOG_I("Field dimentions: Caption: [{}, {}] Field: [{}, {}]", 
+              field->getCaptionDim().width, field->getCaptionDim().height, 
+              field->getFieldDim().width,   field->getFieldDim().height);
         fields.push_back(std::move(field));
       }
     }
 
-    allFieldsWidth = allCaptionsWidth = 0;
+    maxFieldsWidth = 0;
 
     int16_t width;
 
     for (auto &field : fields) {
-      width = field->getFieldDim().width;
-      if (width > allFieldsWidth) { allFieldsWidth = width; }
-
-      width = field->getCaptionDim().width;
-      if (width > allCaptionsWidth) { allCaptionsWidth = width; }
+      width = field->getFieldDim().width + field->getCaptionDim().width;;
+      if (width > maxFieldsWidth) { maxFieldsWidth = width; }
     }
 
-    width                   = allCaptionsWidth + allFieldsWidth + 25;
+    width                   = maxFieldsWidth + 25;
     const int16_t rightXpos = (Screen::getWidth() >> 1) + (width >> 1);
 
     int16_t       currentYpos  = TOP_YPOS + 20;
-    int16_t       captionRight = rightXpos - allFieldsWidth - 25;
-    int16_t       fieldLeft    = rightXpos - allFieldsWidth - 10;
+    int16_t       captionLeft = rightXpos - width;
 
     for (auto &field : fields) {
-      field->computeCaptionPos(Pos(captionRight, currentYpos));
-      field->computeFieldPos(Pos(fieldLeft, currentYpos));
+      field->computeCaptionPos(Pos(captionLeft, currentYpos), glyphYOffset);
+      field->computePos(Pos(rightXpos, currentYpos));
       currentYpos += field->getFieldDim().height + 20;
       LOG_D("Field positions: Caption: [{}, {}] Field: [{}, {}]", field->getCaptionPos().x,
             field->getCaptionPos().y, field->getFieldPos().x, field->getFieldPos().y);
@@ -108,7 +100,7 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
   // Display the form
 
-  Page::Format fmt = {
+  fmt = {
     .fontSize     = FORM_FONT_SIZE + 4,
     .marginLeft   = 5,
     .marginRight  = 5,
@@ -120,44 +112,37 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
   page->start(fmt);
 
-  page->putRounded(Dim(Screen::getWidth() - 44, TOP_YPOS - 20), Pos(22, 10));
+  page->putRounded(Dim(Screen::getWidth() - 20, TOP_YPOS - 20), Pos(10, 10), 2);
 
   Dim titleDim;
 
-  titleDim = font->getASCIISize(title, FORM_FONT_SIZE + 4);
+  while (true) {
+    titleDim = font->getASCIISize(title, fmt.fontSize);
+    if (titleDim.width > (Screen::getWidth() - 20)) {
+      fmt.fontSize -= 1;
+    } else {
+      break;
+    }
+  }
 
   page->putStrAt(
     title,
     Pos((Screen::getWidth() - titleDim.width) >> 1, (TOP_YPOS >> 1) + (titleDim.height >> 1)),
     fmt);
 
-  // Page::Format fmt = {
-  //     .fontSize     = FORM_FONT_SIZE,
-  //     .marginLeft   = 5,
-  //     .marginRight  = 5,
-  //     .screenLeft   = 20,
-  //     .screenRight  = 20,
-  //     .screenTop    = TOP_YPOS,
-  //     .screenBottom = BOTTOM_YPOS,
-  // };
-
   fmt.fontSize = FORM_FONT_SIZE;
 
   // The large rectangle into which the form will be drawn
 
-  // page.clearRegion(
-  //     Dim(Screen::getWidth() - 40, Screen::getHeight() - fmt.screenBottom - fmt.screenTop),
-  //     Pos(20, TOP_YPOS));
-
   page->putRounded(
-    Dim(Screen::getWidth() - 44, Screen::getHeight() - fmt.screenBottom - fmt.screenTop - 4),
-    Pos(22, TOP_YPOS + 2));
+    Dim(Screen::getWidth() - 20, Screen::getHeight() - fmt.screenBottom - fmt.screenTop - 4),
+    Pos(10, TOP_YPOS + 2), 2);
 
   // Show all captions (but the last one (OK / CANCEL) or (DONE)) and choices
 
   for (auto &field : fields) {
-    field->paint(fmt);
-    field->updateHighlight();
+    field->paintCaption(fmt);
+    field->updateState(FormField::State::NORMAL, fmt);
   }
 
   if (bottomMsg != nullptr) {
@@ -165,15 +150,12 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
   }
 
   if (!refresh) {
-    selectingField = false;
-
     #if TOUCH_ENABLE
-      currentField      = fields.end();
-      highlightingField = false;
+      oldField = currentField = fields.end();
     #else
-      currentField      = fields.begin();
-      highlightingField = true;
-      (*currentField)->showHighlighted(true);
+      currentField = fields.begin();
+      oldField = fields.end();
+      (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
     #endif
   }
 
@@ -184,98 +166,136 @@ void FormViewer::show(const char *titleArg, FormEntries formEntriesArg, int8_t s
 
 auto FormViewer::event(const EventMgr::Event &event) -> bool {
 
+  LOG_I("Event...");
+  EventMgr::Event eventCopy = event; // Create a mutable copy of the event to allow modifications
+
   completed = false;
+  page->start(fmt);
+
 
   #if TOUCH_ENABLE
-    if (currentField != fields.end()) {
-      if (!(*currentField)->event(event)) {
-        // The field releases control of future events
-        // Redraw the form
-        show(title, formEntries, size, bottomMsg, true);
-        currentField = fields.end();
+    if ((eventCopy.kind == EventMgr::EventKind::TAP) && 
+        (currentField != fields.end()) && 
+        ((*currentField)->getState() == FormField::State::SELECTED) && 
+        ((*currentField)->inEventControl())) {
+      if (!(*currentField)->event(eventCopy, fmt)) {
+        LOG_I("Field released control of events, resetting to NORMAL state...");
+        if ((*currentField)->formRefreshRequired()) {
+          show(title, formEntries, size, bottomMsg, true);
+          page->start(fmt);
+          (*currentField)->updateState(FormField::State::SELECTED, fmt);
+        }
+      } else {
+        LOG_I("Field took control of events, keeping it in SELECTED state...");
       }
-      return false; // Not completed yet
     } else {
-      switch (event.kind) {
-      case EventMgr::EventKind::TAP:
-        currentField = findField(event.x, event.y);
+      auto foundField = findField(eventCopy.x, eventCopy.y);
 
-        if ((currentField != fields.end()) && ((*currentField)->getType() == FormEntryType::DONE)) {
-          completed = true;
+      if (foundField != fields.end()) {
+        oldField = currentField;
+        currentField = foundField;
+
+        if ((eventCopy.kind == EventMgr::EventKind::TAP) && 
+            (currentField != fields.end()) && 
+            ((*currentField)->getState() == FormField::State::SELECTED)) {
+          if (!(*currentField)->event(eventCopy, fmt)) {
+            LOG_I("Field released control of events, resetting to NORMAL state...");
+            (*currentField)->updateState(FormField::State::NORMAL, fmt);
+            currentField = fields.end();
+          } else {
+            LOG_I("Field took control of events, keeping it in SELECTED state...");
+          }
         } else {
           if (currentField != fields.end()) {
-            if ((*currentField)->event(event)) {
-              // The field needs to keep control of future events
-              // currentField is not reset for next event loop to pass
-              // control to it.
-              return false;
-            } else {
-              // The field doesn't need control of future events
-              currentField = fields.end();
+            switch (eventCopy.kind) {
+            case EventMgr::EventKind::TAP:
+              LOG_I("TAP: Field found at position [{}, {}]", eventCopy.x, eventCopy.y);
+              if ((*currentField)->getType() == FormEntryType::DONE) {
+                completed = true;
+              } else {
+                if ((*currentField)->getState() != FormField::State::SELECTED) {
+                  LOG_I("new field to SELECTED state...");
+                  (*currentField)->updateState(FormField::State::SELECTED, fmt);
+                }
+                if ((oldField != fields.end()) && (oldField != currentField)) {
+                  LOG_I("old field to NORMAL state...");
+                  (*oldField)->updateState(FormField::State::NORMAL, fmt);
+                }
+              }
+              break;
+
+            default:
+              break;
             }
+          } else {
+            LOG_I("Field not found at position [{}, {}]", eventCopy.x, eventCopy.y);
+            for (auto &field : fields) {
+              LOG_I("Field: [{}, {}] .. [{}, {}]", 
+                    field->getFieldPos().x, field->getFieldPos().y,
+                    field->getFieldPos().x + field->getFieldDim().width, 
+                    field->getFieldPos().y + field->getFieldDim().height);
+            }
+            LOG_I("-------------------------------");
           }
         }
-        break;
-
-      default:
-        break;
       }
     }
   #else
-    Fields::iterator oldField = currentField;
-    if (highlightingField) {
-      switch (event.kind) {
+    oldField = currentField;
+    if ((*currentField)->getState() == FormField::State::SELECTED) {
+      if (!(*currentField)->event(eventCopy, fmt)) {
+        (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
+        if ((*currentField)->formRefreshRequired()) {
+          show(title, formEntries, size, bottomMsg, true);
+          page->start(fmt);
+          (*currentField)->updateState(FormField::State::SELECTED, fmt);
+        }
+        switch (eventCopy.kind) {
+        case EventMgr::EventKind::SELECT:
+        case EventMgr::EventKind::DBL_NEXT:
+          ++currentField;
+          if (currentField == fields.end()) { currentField = fields.begin(); }
+          (*oldField)->updateState(FormField::State::NORMAL, fmt);
+          (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
+          break;
+        case EventMgr::EventKind::DBL_PREV:
+          if (currentField == fields.begin()) { currentField = fields.end(); }
+          --currentField;
+          (*oldField)->updateState(FormField::State::NORMAL, fmt);
+          (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
+          break;
+        case EventMgr::EventKind::DBL_SELECT:
+          completed = true;
+          break;
+        default: 
+          break;
+        }
+      }
+    } else {
+      Fields::iterator oldField = currentField;
+      switch (eventCopy.kind) {
       case EventMgr::EventKind::DBL_PREV:
-      case EventMgr::EventKind::PREV:
         if (currentField == fields.begin()) { currentField = fields.end(); }
         --currentField;
+        (*oldField)->updateState(FormField::State::NORMAL, fmt);
+        (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
         break;
       case EventMgr::EventKind::DBL_NEXT:
-      case EventMgr::EventKind::NEXT:
         ++currentField;
         if (currentField == fields.end()) { currentField = fields.begin(); }
+        (*oldField)->updateState(FormField::State::NORMAL, fmt);
+        (*currentField)->updateState(FormField::State::HIGHLIGHTED, fmt);
         break;
       case EventMgr::EventKind::SELECT:
-        highlightingField = false;
-        selectingField    = true;
+        (*currentField)->updateState(FormField::State::SELECTED, fmt);
         break;
       case EventMgr::EventKind::NONE:
         return false;
       case EventMgr::EventKind::DBL_SELECT:
         completed = true;
         break;
-      default:
+      default: 
         break;
-      }
-    } else {
-      bool wasInControl = (*currentField)->inEventControl();
-      if (!(*currentField)->event(event)) {
-        if ((*currentField)->formRefreshRequired()) {
-          show(title, formEntries, size, bottomMsg, true);
-        }
-        switch (event.kind) {
-        case EventMgr::EventKind::SELECT:
-          highlightingField = true;
-          oldField          = currentField;
-          ++currentField;
-          if (currentField == fields.end()) { currentField = fields.begin(); }
-          break;
-        case EventMgr::EventKind::NONE:
-          return false;
-        case EventMgr::EventKind::DBL_SELECT:
-          if (!wasInControl) {
-            completed = true;
-          }
-          else {
-            highlightingField = true;
-            oldField          = currentField;
-            ++currentField;
-            if (currentField == fields.end()) { currentField = fields.begin(); }
-          }
-          break;
-        default:
-          break;
-        }
       }
     }
   #endif
@@ -286,36 +306,7 @@ auto FormViewer::event(const EventMgr::Event &event) -> bool {
     }
     fields.clear();
 
-  } else {
-    Page::Format fmt = {
-      .fontSize     = FORM_FONT_SIZE,
-      .screenLeft   = 20,
-      .screenRight  = 20,
-      .screenTop    = TOP_YPOS,
-      .screenBottom = BOTTOM_YPOS,
-    };
-
-    page->start(fmt);
-
-    if (highlightingField) {
-      #if !TOUCH_ENABLE
-        (*oldField)->showSelected(false);
-        (*currentField)->showHighlighted(true);
-      #endif
-    } else {
-      #if !TOUCH_ENABLE
-        if (selectingField) {
-          selectingField = false;
-          (*currentField)->showSelected(true);
-          (*currentField)->event(event);
-        }
-      #endif
-
-      for (auto &field : fields) {
-        field->updateHighlight();
-      }
-    }
-
+  }  else {
     ScreenBottom::show(page);
 
     page->paint(false);

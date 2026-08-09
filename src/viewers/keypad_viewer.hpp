@@ -2,6 +2,22 @@
 //
 // MIT License. Look at file licenses.txt for details.
 
+//    +-----------------+
+//    |      Caption    |
+//    +-----------------+
+//    |     Int Value   |
+//    +-----+-----+-----+
+//    |  7  |  8  |  9  |
+//    +-----+-----+-----+
+//    |  4  |  5  |  6  |
+//    +-----+-----+-----+
+//    |  1  |  2  |  3  |
+//    +-----+-----+-----+
+//    | CLR |  0  | DEL |
+//    +-----+-----+-----+
+//    | OK  |  CANCEL   |
+//    +-----+-----------+
+
 #pragma once
 
 #include "global.hpp"
@@ -39,18 +55,20 @@ class KeypadViewer {
 
     Layout layout{ Layout::INT };
 
-    static const uint8_t MAX_INT_SIZE            = 4;
+    static const uint8_t MAX_INT_LENGTH            = 4;
     static const uint8_t MAX_FLOAT_FRACTION_SIZE = 3;
     static const uint8_t MAX_FLOAT_INTEGER_SIZE  = 1;
-    static const uint8_t MAX_FLOAT_SIZE = MAX_FLOAT_INTEGER_SIZE + 1 + MAX_FLOAT_FRACTION_SIZE;
+    static const uint8_t MAX_FLOAT_LENGTH = MAX_FLOAT_INTEGER_SIZE + 1 + MAX_FLOAT_FRACTION_SIZE;
     static const uint8_t KEY_COUNT      = 14;
     static const uint8_t FONT_SIZE      = 9;
 
-    static const uint8_t NUMBER_STR_SIZE = MAX_FLOAT_SIZE + 1;
+    static const uint8_t NUMBER_STR_SIZE = MAX_FLOAT_LENGTH + 1;
 
     struct KeyLocation {
+      Dim dim;
       Pos pos;
       int8_t value; // 0-9 => value, -1 => cancel, -2 => OK, -3 => BackSpace, -4 => Clear
+      char label;
     };
 
     static const uint8_t KEY_ADDED_WIDTH  = 50;
@@ -68,11 +86,11 @@ class KeypadViewer {
     Pos keypadPos;
     Dim keyDim, keyDim2;
     char numberStr[NUMBER_STR_SIZE];
-    uint8_t numberStrCount;
+    uint8_t numberStrLength;
     Pos fieldPos;           // Where to put the number on screen
     uint16_t clientUIntValue; // Computed value
     double clientFloatValue; // Computed value
-    Page::Format fmt;
+    Page::Format fmt{};
     Glyph *glyph;
 
     #if TOUCH_ENABLE
@@ -94,8 +112,8 @@ class KeypadViewer {
     #endif
 
     auto updateValue() -> void {
-      page->clearRegion(Dim(keypadDim.width - 6, keyDim.height - 6),
-                        Pos(fieldPos.x + 3, fieldPos.y + 3));
+      page->clearRegion(Dim(keypadDim.width - 10, keyDim.height - 10),
+                        Pos(fieldPos.x + 5, fieldPos.y + 5));
       page->putStrAt(numberStr,
                      Pos(fieldPos.x + (keypadDim.width >> 1),
                          fieldPos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
@@ -105,22 +123,22 @@ class KeypadViewer {
     auto addDigit(uint8_t d) -> void {
       switch (layout) {
       case Layout::INT:
-        if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+        if ((numberStrLength == 1) && (numberStr[0] == '0')) {
           numberStr[0] = '0' + d;
-        } else if (numberStrCount < MAX_INT_SIZE) {
-          numberStr[numberStrCount++] = '0' + d;
-          numberStr[numberStrCount]   = 0;
+        } else if (numberStrLength < MAX_INT_LENGTH) {
+          numberStr[numberStrLength++] = '0' + d;
+          numberStr[numberStrLength]   = 0;
         }
         break;
       case Layout::FLOAT:
-        if ((numberStrCount == 1) && (numberStr[0] == '0')) {
+        if ((numberStrLength == 1) && (numberStr[0] == '0')) {
           numberStr[0]   = '0' + d;
           numberStr[1]   = '.';
           numberStr[2]   = 0;
-          numberStrCount = 2;
-        } else if (numberStrCount < MAX_FLOAT_SIZE) {
-          numberStr[numberStrCount++] = '0' + d;
-          numberStr[numberStrCount]   = 0;
+          numberStrLength = 2;
+        } else if (numberStrLength < MAX_FLOAT_LENGTH) {
+          numberStr[numberStrLength++] = '0' + d;
+          numberStr[numberStrLength]   = 0;
         }
         break;
       }
@@ -129,65 +147,95 @@ class KeypadViewer {
     auto clearDigits() -> void {
       numberStr[0]   = '0';
       numberStr[1]   = 0;
-      numberStrCount = 1;
+      numberStrLength = 1;
     }
 
     auto removeDigit() -> void {
       switch (layout) {
       case Layout::INT:
-        if (numberStrCount == 1) {
+        if (numberStrLength == 1) {
           numberStr[0] = '0';
         } else {
-          numberStr[--numberStrCount] = 0;
+          numberStr[--numberStrLength] = 0;
         }
         break;
       case Layout::FLOAT:
-        if (numberStrCount <= (MAX_FLOAT_INTEGER_SIZE + 1)) {
+        if (numberStrLength <= (MAX_FLOAT_INTEGER_SIZE + 1)) {
           numberStr[0]   = '0';
           numberStr[1]   = 0;
-          numberStrCount = 1;
+          numberStrLength = 1;
         } else {
-          numberStr[--numberStrCount] = 0;
+          numberStr[--numberStrLength] = 0;
         }
         break;
       }
+    }
+
+    void drawButton(const KeyLocation &key, int8_t thickness = 1) {
+
+      if (thickness == -1) { fmt.fontStyle = FaceStyle::INVERSE; }
+ 
+      switch (key.value) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+      case 9:
+        page->putRounded(key.dim, key.pos, thickness);
+        page->putCharAt(key.label,
+                        Pos(key.pos.x + (key.dim.width >> 1) - (glyph->dim.width >> 1),
+                            key.pos.y + (glyph->dim.height >> 1) + (key.dim.height >> 1)),
+                        fmt);
+        break;
+      case -1: // Cancel
+        page->  putRounded(key.dim, key.pos, thickness);
+        page->putStrAt("CANCEL",
+                        Pos(key.pos.x + (key.dim.width >> 1),
+                            key.pos.y + (glyph->dim.height >> 1) + (key.dim.height >> 1)),
+                        fmt);
+        break;
+      case -2: // OK
+        page->  putRounded(key.dim, key.pos, thickness);
+        page->putStrAt("OK",
+                        Pos(key.pos.x + (key.dim.width >> 1),
+                            key.pos.y + (glyph->dim.height >> 1) + (key.dim.height >> 1)),
+                        fmt);
+        break;
+      case -3: // Delete
+        page->putRounded(key.dim, key.pos, thickness);
+        page->putStrAt("DEL",
+                        Pos(key.pos.x + (key.dim.width >> 1),
+                            key.pos.y + (glyph->dim.height >> 1) + (key.dim.height >> 1)),
+                        fmt);
+        break;
+      case -4: // Clear
+        page->putRounded(key.dim, key.pos, thickness);
+        page->putStrAt("CLR",
+                        Pos(key.pos.x + (key.dim.width >> 1),
+                            key.pos.y + (glyph->dim.height >> 1) + (key.dim.height >> 1)),
+                        fmt);
+        break;  
+      }
+
+      fmt.fontStyle = FaceStyle::NORMAL;
     }
 
     #if !TOUCH_ENABLE
       auto updateHighlight() -> void {
         if (previousKey != currentKey) {
           if (previousKey != nullptr) {
-            if (previousKey->value == -1) { // Cancel key
-              page->clearHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
-                                   Pos(previousKey->pos.x + 1, previousKey->pos.y + 1));
-              page->clearHighlight(Dim(keyDim2.width - 4, keyDim2.height - 4),
-                                   Pos(previousKey->pos.x + 2, previousKey->pos.y + 2));
-              page->clearHighlight(Dim(keyDim2.width - 6, keyDim2.height - 6),
-                                   Pos(previousKey->pos.x + 3, previousKey->pos.y + 3));
-            } else {
-              page->clearHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
-                                   Pos(previousKey->pos.x + 1, previousKey->pos.y + 1));
-              page->clearHighlight(Dim(keyDim.width - 4, keyDim.height - 4),
-                                   Pos(previousKey->pos.x + 2, previousKey->pos.y + 2));
-              page->clearHighlight(Dim(keyDim.width - 6, keyDim.height - 6),
-                                   Pos(previousKey->pos.x + 3, previousKey->pos.y + 3));
-            }
+            page->clearRounded(Dim(previousKey->dim.width - 2, previousKey->dim.height - 2),
+                               Pos(previousKey->pos.x + 1, previousKey->pos.y + 1), -1);
+            drawButton(*previousKey, 1);
           }
-          if (currentKey->value == -1) { // Cancel key
-            page->putHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
-                               Pos(currentKey->pos.x + 1, currentKey->pos.y + 1));
-            page->putHighlight(Dim(keyDim2.width - 4, keyDim2.height - 4),
-                               Pos(currentKey->pos.x + 2, currentKey->pos.y + 2));
-            page->putHighlight(Dim(keyDim2.width - 6, keyDim2.height - 6),
-                               Pos(currentKey->pos.x + 3, currentKey->pos.y + 3));
-          } else {
-            page->putHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
-                               Pos(currentKey->pos.x + 1, currentKey->pos.y + 1));
-            page->putHighlight(Dim(keyDim.width - 4, keyDim.height - 4),
-                               Pos(currentKey->pos.x + 2, currentKey->pos.y + 2));
-            page->putHighlight(Dim(keyDim.width - 6, keyDim.height - 6),
-                               Pos(currentKey->pos.x + 3, currentKey->pos.y + 3));
-          }
+          page->clearRounded(Dim(currentKey->dim.width - 2, currentKey->dim.height - 2),
+                             Pos(currentKey->pos.x + 1, currentKey->pos.y + 1), -1);
+          drawButton(*currentKey, -1);
         }
       }
     #endif
@@ -213,7 +261,7 @@ class KeypadViewer {
       LOG_D("Keypad Dim: [{}, {}], Pos: [{}, {}]", keypadDim.width, keypadDim.height, keypadPos.x,
             keypadPos.y);
 
-      // Show keypad on screen
+     // Show keypad on screen
 
       fmt = {
         .fontSize     = FONT_SIZE,
@@ -226,41 +274,34 @@ class KeypadViewer {
         .align        = HAlign::CENTER,
       };
 
-      #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-        page->start(fmt);
-      #endif
+      page->start(fmt);
 
       // The large rectangle into which the keypad will be drawn
 
       page->clearRegion(Dim(keypadDim.width + 26, keypadDim.height + 26),
                         Pos(keypadPos.x - 13, keypadPos.y - 13));
-      page->putHighlight(Dim(keypadDim.width + 20, keypadDim.height + 20),
-                         Pos(keypadPos.x - 10, keypadPos.y - 10));
+      page->putRounded(Dim(keypadDim.width + 20, keypadDim.height + 20),
+                         Pos(keypadPos.x - 10, keypadPos.y - 10), 2, 8);
 
       constexpr int8_t values[14] = { 7, 8, 9, 4, 5, 6, 1, 2, 3, -4, 0, -3, -2, -1 };
-      constexpr char   labels[12]   = "789456123 0";
+      constexpr char   labels[15]   = "789456123 0   ";
 
       page->putStrAt(
         caption,
         Pos(Screen::getWidth() >> 1, keypadPos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
         fmt);
 
-      page->putHighlight(Dim(keypadDim.width, keyDim.height), Pos(fieldPos.x, fieldPos.y));
-      page->putHighlight(Dim(keypadDim.width - 2, keyDim.height - 2),
-                         Pos(fieldPos.x + 1, fieldPos.y + 1));
-      page->putHighlight(Dim(keypadDim.width - 4, keyDim.height - 4),
-                         Pos(fieldPos.x + 2, fieldPos.y + 2));
 
       updateValue();
 
-      Pos the_pos = Pos(keypadPos.x, keypadPos.y + (keyDim.height << 1) + 4);
+      Pos the_pos = Pos(keypadPos.x, keypadPos.y + (keyDim.height << 1) + 6);
 
       #if !TOUCH_ENABLE
         line = col = 0;
       #endif
 
       for (int i = 0; i < 14; i++) {
-        keyLocs[i] = { .pos = the_pos, .value = values[i] };
+        keyLocs[i] = { .dim = i == 13 ? keyDim2 : keyDim, .pos = the_pos, .value = values[i], .label = labels[i] };
 
         #if !TOUCH_ENABLE
           matrix[line][col] = &keyLocs[i];
@@ -272,60 +313,8 @@ class KeypadViewer {
 
         LOG_D("Key {} pos: [{}, {}]", i, the_pos.x, the_pos.y);
 
-        switch (values[i]) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-          page->putHighlight(keyDim, the_pos);
-          page->putCharAt(labels[i],
-                          Pos(the_pos.x + (keyDim.width >> 1) - (glyph->dim.width >> 1),
-                              the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
-                          fmt);
-          break;
-        case -1: // Cancel
-          page->  putHighlight(keyDim2, the_pos);
-          #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-            page->putHighlight(Dim(keyDim2.width - 2, keyDim2.height - 2),
-                               Pos(the_pos.x + 1, the_pos.y + 1));
-          #endif
-          page->putStrAt("CANCEL",
-                         Pos(the_pos.x + (keyDim2.width >> 1),
-                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
-                         fmt);
-          break;
-        case -2: // OK
-          page->  putHighlight(keyDim, the_pos);
-          #if INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-            page->putHighlight(Dim(keyDim.width - 2, keyDim.height - 2),
-                               Pos(the_pos.x + 1, the_pos.y + 1));
-          #endif
-          page->putStrAt("OK",
-                         Pos(the_pos.x + (keyDim.width >> 1),
-                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
-                         fmt);
-          break;
-        case -3: // Delete
-          page->putHighlight(keyDim, the_pos);
-          page->putStrAt("DEL",
-                         Pos(the_pos.x + (keyDim.width >> 1),
-                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
-                         fmt);
-          break;
-        case -4: // Clear
-          page->putHighlight(keyDim, the_pos);
-          page->putStrAt("CLR",
-                         Pos(the_pos.x + (keyDim.width >> 1),
-                             the_pos.y + (glyph->dim.height >> 1) + (keyDim.height >> 1)),
-                         fmt);
-          break;
-        }
+        drawButton(keyLocs[i]);
+
         if (((i + 1) % 3) == 0) {
           the_pos.x = keypadPos.x;
           the_pos.y += keyDim.height + 2;
@@ -333,6 +322,8 @@ class KeypadViewer {
           the_pos.x += keyDim.width + 2;
         }
       }
+
+      page->putRounded(Dim(keypadDim.width, keyDim.height), Pos(fieldPos.x, fieldPos.y), 3);
 
       #if !TOUCH_ENABLE
         matrix[4][2] = matrix[4][1];
@@ -345,23 +336,17 @@ class KeypadViewer {
 
       updateValue();
 
-      #if 1 // INKPLATE_6PLUS || INKPLATE_6PLUS_V2 || INKPLATE_6FLICK || TOUCH_TRIAL
-        page->paint(false);
-      #endif
+      page->paint(false);
     }
 
     auto show(uint16_t value, const char *caption) -> void {
 
-      layout = Layout::INT;
-
+      layout          = Layout::INT;
       clientUIntValue = value;
       if (clientUIntValue > 9999) { clientUIntValue = 9999; }
 
       int_to_str(clientUIntValue, numberStr, 5);
-
-      numberStrCount = strlen(numberStr);
-
-      // LOG_I("Digits: {}", numberStr);
+      numberStrLength = strlen(numberStr);
 
       display(caption);
     }
@@ -378,7 +363,7 @@ class KeypadViewer {
 
       float_to_str(clientFloatValue, numberStr, 6, 3);
 
-      numberStrCount = strlen(numberStr);
+      numberStrLength = strlen(numberStr);
 
       // LOG_I("Digits: {}", numberStr);
 
@@ -392,11 +377,15 @@ class KeypadViewer {
      * @return true The Keypad must keep control of events
      * @return false Events processing is complete
      */
-    auto event(const EventMgr::Event &event) -> bool {
+    auto event(EventMgr::Event &event) -> bool {
 
       #if TOUCH_ENABLE
+        LOG_I("Event: kind: {}, x: {}, y: {}, dist: {}", 
+              EventMgr::eventStr[static_cast<uint8_t>(event.kind)],
+              event.x, event.y, event.dist);
         if (event.kind == EventMgr::EventKind::TAP) {
           int8_t value = getKeyVal(event.x, event.y);
+          LOG_I("Key value: {}", value);
           if (value != 99) {
             if (value >= 0) {
               addDigit(value);
@@ -426,73 +415,74 @@ class KeypadViewer {
         return true;
       #else
         switch (event.kind) {
-        #if EXTENDED_CASE
+        #if EXTENDED_CASE || LINUX_BUILD
           case EventMgr::EventKind::PREV:
         #else
           case EventMgr::EventKind::DBL_PREV:
-            #endif
+        #endif
             col        = (col == 0) ? 2 : col - 1;
             currentKey = matrix[line][col];
             break;
 
-            #if EXTENDED_CASE
-              case EventMgr::EventKind::NEXT:
-            #else
-              case EventMgr::EventKind::DBL_NEXT:
-                #endif
-                col        = (col == 2) ? 0 : col + 1;
-                currentKey = matrix[line][col];
-                break;
+        #if EXTENDED_CASE || LINUX_BUILD
+          case EventMgr::EventKind::NEXT:
+        #else
+          case EventMgr::EventKind::DBL_NEXT:
+        #endif
+            col        = (col == 2) ? 0 : col + 1;
+            currentKey = matrix[line][col];
+            break;
 
-                #if EXTENDED_CASE
-                  case EventMgr::EventKind::DBL_PREV:
-                #else
-                  case EventMgr::EventKind::PREV:
-                    #endif
-                    line       = (line == 0) ? 4 : line - 1;
-                    currentKey = matrix[line][col];
-                    break;
+        #if EXTENDED_CASE || LINUX_BUILD
+          case EventMgr::EventKind::DBL_PREV:
+        #else
+          case EventMgr::EventKind::PREV:
+        #endif
+            line       = (line == 0) ? 4 : line - 1;
+            currentKey = matrix[line][col];
+            break;
 
-                    #if EXTENDED_CASE
-                      case EventMgr::EventKind::DBL_NEXT:
-                    #else
-                      case EventMgr::EventKind::NEXT:
-                        #endif
-                        line       = (line == 4) ? 0 : line + 1;
-                        currentKey = matrix[line][col];
-                        break;
+        #if EXTENDED_CASE || LINUX_BUILD
+          case EventMgr::EventKind::DBL_NEXT:
+        #else
+          case EventMgr::EventKind::NEXT:
+        #endif
+            line       = (line == 4) ? 0 : line + 1;
+            currentKey = matrix[line][col];
+            break;
 
-                      case EventMgr::EventKind::SELECT: {
-                        int8_t value = currentKey->value;
-                        if (value != 99) {
-                          if (value >= 0) {
-                            addDigit(value);
-                          }
-                          else if (value == -1) {
-                            return false;
-                          }
-                          else if (value == -2) {
-                            if (layout == Layout::INT) {
-                              clientUIntValue = atoi(numberStr);
-                            } else {
-                              clientFloatValue = atof(numberStr);
-                            }
-                            return false;
-                          } else if (value == -3) {
-                            removeDigit();
-                          }
-                          else if (value == -4) {
-                            clearDigits();
-                          }
-                        }
-                      } break;
+        case EventMgr::EventKind::SELECT: {
+          int8_t value = currentKey->value;
+          if (value != 99) {
+            if (value >= 0) {
+              addDigit(value);
+            }
+            else if (value == -1) {
+              return false;
+            }
+            else if (value == -2) {
+              if (layout == Layout::INT) {
+                clientUIntValue = atoi(numberStr);
+              } else {
+                clientFloatValue = atof(numberStr);
+              }
+              return false;
+            } else if (value == -3) {
+              removeDigit();
+            }
+            else if (value == -4) {
+              clearDigits();
+            }
+          }
+        } break;
 
-                      case EventMgr::EventKind::DBL_SELECT:
-                        return false;
-                        break;
+        case EventMgr::EventKind::DBL_SELECT:
+          event.kind = EventMgr::EventKind::SELECT;
+          return false;
+          break;
 
-                      default:
-                        break;
+        default:
+          break;
         }
 
         page->start(fmt);
@@ -505,41 +495,3 @@ class KeypadViewer {
       #endif
     }
 };
-
-#if 0
-
-Keypads:
-
-  +----------------- +
-  |     Caption     |
-  +----------------- +
-  |    Int Value    |
-  +----- +----- +----- +
-  |  7  |  8  |  9  |
-  +----- +----- +----- +
-  |  4  |  5  |  6  |
-  +----- +----- +----- +
-  |  1  |  2  |  3  |
-  +----- +----- +----- +
-  | CLR |  0  | DEL |
-  +----- +----- +----- +
-  | OK  |  CANCEL   |
-  +----- +----------- +
-
-  +----------------- +
-  |     Caption     |
-  +----------------- +
-  |   Float Value   |
-  +----- +----- +----- +
-  |  7  |  8  |  9  |
-  +----- +----- +----- +
-  |  4  |  5  |  6  |
-  +----- +----- +----- +
-  |  1  |  2  |  3  |
-  +----- +----- +----- +
-  |.|  0  | DEL |
-  +----- +----- +----- +
-  | OK  |  CANCEL   |
-  +----- +----------- +
-
-#endif
