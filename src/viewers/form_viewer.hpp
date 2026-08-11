@@ -63,19 +63,18 @@ struct FloatEntry {
 };
 
 struct StringEntry {
-  HimemString value;
+  HimemString *value;
   uint16_t maxLen;
+  bool hide;
 
-  ~StringEntry() {
-    value.clear();
-  }
+  ~StringEntry() = default;
 };
 
 class FormEntry {
   public:
+    FormEntryType entryType;
     const char *caption;
     std::variant<ChoiceEntry, IntEntry, FloatEntry, StringEntry> u;
-    FormEntryType entryType;
     ~FormEntry() {};
 };
 
@@ -97,6 +96,7 @@ class FormField {
     State state;
     uint16_t rightXPos;
     uint16_t baseOffset;
+    uint8_t savedLineHeight;
 
   public:
 
@@ -120,6 +120,7 @@ class FormField {
                    font.getASCIISize(formEntry.caption, FORM_FONT_SIZE) :
                    Dim(0, 0);
       captionDim.height = lineHeight;
+      savedLineHeight = lineHeight;
       #pragma GCC diagnostic pop
     }
 
@@ -169,8 +170,6 @@ class FormChoiceField : public FormField {
     Items items;
     Items::iterator currentItem, oldItem;
 
-    uint8_t savedLineHeight;
-
   public:
     static constexpr FormChoice dirViewChoices[2] = { { "LINEAR", 0 }, { "MATRIX", 1 } };
 
@@ -213,7 +212,6 @@ class FormChoiceField : public FormField {
     }
 
     auto computeDim(uint8_t lineHeight) -> void {
-      savedLineHeight = lineHeight;
       fieldDim = { 0, 0 };
       for (int8_t i = 0; i < std::get<ChoiceEntry>(formEntry.u).choiceCount; ++i) {
         Item *item = itemPool.newElement();
@@ -442,6 +440,7 @@ class FormUInt16 : public FormField {
                         -1, 20);
 
       auto fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+      fieldDim.height = savedLineHeight;
 
       page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
                       {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
@@ -520,6 +519,7 @@ class FormFloat : public FormField {
                         -1, 20);
 
       fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+      fieldDim.height = savedLineHeight;
 
       page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
                       {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
@@ -563,6 +563,7 @@ class FormFloat : public FormField {
 
     auto computeDim(uint8_t lineHeight) -> void { 
       fieldDim = font.getASCIISize("XXXXXXX", FORM_FONT_SIZE);
+      fieldDim.height = lineHeight;
     }
 };
 
@@ -594,7 +595,7 @@ class FormString : public FormField {
     auto updateState(State newState, Page::Format &fmt) -> void {
       char    val[33];
 
-      memcpy(val, std::get<StringEntry>(formEntry.u).value.c_str(), 32);
+      memcpy(val, std::get<StringEntry>(formEntry.u).value->c_str(), 32);
       val[32] = '\0';
 
       state = newState;
@@ -615,14 +616,17 @@ class FormString : public FormField {
                         {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
                         -1, 20);
 
-      fieldDim = font.getASCIISize(val, FORM_FONT_SIZE);
+      fieldDim = font.getASCIISize(val[0] == 0 ? "empty" : val, FORM_FONT_SIZE);
+      fieldDim.height = savedLineHeight;
 
       page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
                       {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
                       thickness, 20);
 
       if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
-      page.putStrAt(val, Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), fmt);
+      page.putStrAt(val[0] == 0 ? "empty" : val, 
+                    Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), 
+                    fmt);
       if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
 
       fieldPos = Pos(rightXPos - fieldDim.width, fieldPos.y);
@@ -638,12 +642,13 @@ class FormString : public FormField {
 
     auto event(EventMgr::Event &event, Page::Format &fmt) -> bool {
       if (!eventControl) {
-        currentValue = std::get<StringEntry>(formEntry.u).value;
-        keyboardViewer->show(currentValue, formEntry.caption);
+        currentValue.assign(std::get<StringEntry>(formEntry.u).value->c_str());
+        keyboardViewer->show(currentValue, std::get<StringEntry>(formEntry.u).maxLen, formEntry.caption, std::get<StringEntry>(formEntry.u).hide);
         eventControl = true;
       } else {
         if (!keyboardViewer->event(event)) {
           eventControl = false;
+          std::get<StringEntry>(formEntry.u).value->assign(currentValue);
           return false; // release events control
         }
       }
@@ -651,12 +656,13 @@ class FormString : public FormField {
     }
 
     auto saveValue() -> void {
-      std::get<StringEntry>(formEntry.u).value = currentValue;
-      std::get<StringEntry>(formEntry.u).value[std::get<StringEntry>(formEntry.u).maxLen - 1] = '\0'; // Ensure null-termination
+      // std::get<StringEntry>(formEntry.u).value->assign(currentValue);
+      // std::get<StringEntry>(formEntry.u).value[std::get<StringEntry>(formEntry.u).maxLen - 1] = '\0'; // Ensure null-termination
     }
 
     auto computeDim(uint8_t lineHeight) -> void { 
-      fieldDim = font.getASCIISize("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", FORM_FONT_SIZE);
+      fieldDim = font.getASCIISize("XXXXXXXXXXXXXXXXXXXX", FORM_FONT_SIZE);
+      fieldDim.height = lineHeight;
     }
 };
 
@@ -681,6 +687,7 @@ class FormString : public FormField {
 
       auto computeDim(uint8_t lineHeight) -> void {
         fieldDim = font.getASCIISize(formEntry.caption, FORM_FONT_SIZE);
+        fieldDim.height = savedLineHeight;
       }
 
       auto computePos(Pos fromPos) -> void {

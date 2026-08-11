@@ -41,11 +41,11 @@
 # ---
 
 version = 1
-wifi_ssid = "your_pwd_ssid"
-wifi_pwd = "your_wifi_pwd"
+wifi_ssid = "Gen"
+wifi_pwd = "bonsoir"
 dns_name = "inkplate"
-ap_wifi_ssid = "inkplate"
-ap_wifi_pwd = "qwerty1234"
+ap_wifi_ssid = ""
+ap_wifi_pwd = ""
 http_port = 80
 battery = 3
 timeout = 30
@@ -62,7 +62,7 @@ dir_view = 0
 cover_size = 1
 show_rtc = 0
 ntp_server = "pool.ntp.org"
-tz = "EST5EDT,M3.2.0,M11.1.0"
+tz = "ggggg"
 battery_trim = 0.1
 line_height = 1
 column_count = 1
