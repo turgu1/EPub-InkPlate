@@ -514,10 +514,10 @@ auto Screen::setPixelResolution(PixelResolution resolution, bool force) -> void 
 auto Screen::setOrientation(Orientation orient) -> void {
   orientation = orient;
   if ((orientation == Orientation::LEFT) || (orientation == Orientation::RIGHT)) {
-    width  = 600;
-    height = 800;
+    width  = 540; //600;
+    height = 960; //800;
   } else {
-    width  = 800;
-    height = 600;
+    width  = 960; //800;
+    height = 540; //600;
   }
 }

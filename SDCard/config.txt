@@ -41,7 +41,7 @@
 # ---
 
 version = 1
-wifi_ssid = "Gen"
+wifi_ssid = "Un tres long SSID"
 wifi_pwd = "bonsoir"
 dns_name = "inkplate"
 ap_wifi_ssid = ""
@@ -53,16 +53,16 @@ font_size = 10
 default_font = 2
 use_fonts_in_books = 0
 show_images = 1
-orientation = 1
-resolution = 0
+orientation = 3
+resolution = 1
 show_heap = 1
 show_title = 1
 front_light = 15
-dir_view = 0
+dir_view = 1
 cover_size = 1
 show_rtc = 0
 ntp_server = "pool.ntp.org"
-tz = "ggggg"
+tz = ""
 battery_trim = 0.1
 line_height = 1
 column_count = 1

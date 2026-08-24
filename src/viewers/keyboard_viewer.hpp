@@ -95,7 +95,7 @@ class KeyboardViewer {
     enum class Layout { ALPHA_LOW, ALPHA_UP, NUM_NORM, NUM_SHIFT };
     Layout currentLayout{ Layout::ALPHA_LOW };
 
-    static const uint8_t MAX_LEN = 32, FONT_SIZE = 9, KEY_COUNT = 34;
+    static const uint8_t MAX_LEN = 32, FONT_SIZE = 8, KEY_COUNT = 34;
     static const int8_t VAL_SHIFT = -1, VAL_DEL = -2, VAL_TOGGLE = -3, VAL_SPACE = -4, VAL_OK = -5, VAL_PASS = -6;
 
     struct KeyLocation { Dim dim; Pos pos; int8_t value; const char* label; };
@@ -149,7 +149,7 @@ class KeyboardViewer {
     void updateValue() {
         page->clearRegion(Dim(kbDim.width - 10, keyDim.height + 6), Pos(fieldPos.x + 5, fieldPos.y + 5));
         
-        FontPtr &largeFont = appFonts.getFont(2);
+        FontPtr &largeFont = appFonts.getFont(1);
         uint8_t largeFontSize = FONT_SIZE + 2;
         Glyph *largeGlyph = largeFont->getGlyph('0', largeFontSize);
         

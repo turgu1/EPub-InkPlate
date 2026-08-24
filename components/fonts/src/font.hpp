@@ -58,6 +58,7 @@ class Font {
     auto clearCache() -> void;
 
     auto getASCIISize(const char *str, int16_t glyphSize) -> Dim;
+    auto getMaxASCIIIndex(const char *str, uint16_t maxWidth, int16_t glyphSize) -> uint16_t;
 
     enum class GlyphLoadMode : uint8_t {
       METRICS_ONLY, ///< Only metric fields; buffer == nullptr

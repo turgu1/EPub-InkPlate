@@ -147,11 +147,6 @@ auto Font::getASCIISize(const char *str, int16_t glyphSize) -> Dim {
 
   dim.width = 0;
 
-  // if (str == nullptr) {
-  //   dim->height = 0;
-  //   return;
-  // }
-
   while (*str) {
     Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
     if (glyph != nullptr) {
@@ -168,4 +163,22 @@ auto Font::getASCIISize(const char *str, int16_t glyphSize) -> Dim {
   dim.height = maxUp + maxDown;
 
   return dim;
+}
+
+// Only used for ASCII chars
+auto Font::getMaxASCIIIndex(const char *str, uint16_t maxWidth, int16_t glyphSize) -> uint16_t {
+
+  uint16_t width = 0;
+  uint16_t idx = 0;
+
+  while (*str) {
+    Glyph *glyph = getOrCreateGlyph(*str++, glyphSize);
+    if (glyph != nullptr) {
+      width += glyph->advance;
+      if (width > maxWidth) break;
+    }
+    ++idx;
+  }
+
+  return idx;
 }

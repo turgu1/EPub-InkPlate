@@ -26,7 +26,7 @@
 class Screen : NonCopyable {
   public:
     static constexpr int8_t IDENT        = 99;
-    static constexpr uint16_t RESOLUTION = 166; ///< Pixels per inch
+    static constexpr uint16_t RESOLUTION = 235 ; //166; ///< Pixels per inch
 
     static std::unique_ptr<guchar[]> pixels;
 

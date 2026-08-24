@@ -137,7 +137,7 @@ class FormField {
 
     auto computeCaptionPos(Pos fromPos, uint16_t offset) -> void {
       baseOffset = offset;
-      captionPos = Pos(fromPos.x, fromPos.y);
+      captionPos = fromPos;
     }
 
     virtual auto updateState(State state, Page::Format &fmt) -> void = 0;
@@ -574,6 +574,8 @@ class FormString : public FormField {
     static constexpr char const *TAG = "FormString";
     KeyboardViewerPtr keyboardViewer{ KeyboardViewer::Make() };
     std::string currentValue;
+    uint16_t maxWidth;
+    uint16_t ellipsisWidth;
 
   public:
     using FormField::FormField;
@@ -593,9 +595,12 @@ class FormString : public FormField {
     }
 
     auto updateState(State newState, Page::Format &fmt) -> void {
-      char    val[33];
+      char val[33];
+      bool hidden;
 
       memcpy(val, std::get<StringEntry>(formEntry.u).value->c_str(), 32);
+      hidden = std::get<StringEntry>(formEntry.u).hide;
+
       val[32] = '\0';
 
       state = newState;
@@ -616,15 +621,22 @@ class FormString : public FormField {
                         {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
                         -1, 20);
 
-      fieldDim = font.getASCIISize(val[0] == 0 ? "empty" : val, FORM_FONT_SIZE);
+      fieldDim = font.getASCIISize(val[0] == 0 ? "empty" : (hidden ? "****" : val), FORM_FONT_SIZE);
       fieldDim.height = savedLineHeight;
+
+      if (fieldDim.width > maxWidth) {
+        auto idx = font.getMaxASCIIIndex(val, maxWidth - ellipsisWidth, FORM_FONT_SIZE);
+        val[idx] = 0;
+        strncat(val, "...", 32);
+        fieldDim.width = maxWidth;
+      }
 
       page.putRounded({uint16_t(fieldDim.width + 20), uint16_t(fieldDim.height + 14) },
                       {uint16_t(rightXPos - fieldDim.width - 10), uint16_t(fieldPos.y - 7) },
                       thickness, 20);
 
       if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::INVERSE; } 
-      page.putStrAt(val[0] == 0 ? "empty" : val, 
+      page.putStrAt(val[0] == 0 ? "empty" : (hidden ? "****" : val), 
                     Pos(rightXPos - fieldDim.width, fieldPos.y + baseOffset), 
                     fmt);
       if (state != State::NORMAL && thickness != -3) { fmt.fontStyle = FaceStyle::NORMAL; } 
@@ -661,8 +673,11 @@ class FormString : public FormField {
     }
 
     auto computeDim(uint8_t lineHeight) -> void { 
-      fieldDim = font.getASCIISize("XXXXXXXXXXXXXXXXXXXX", FORM_FONT_SIZE);
+      fieldDim = font.getASCIISize("...", FORM_FONT_SIZE);
+      ellipsisWidth = fieldDim.width;
+      fieldDim = font.getASCIISize(Screen::getWidth() >= 600 ? "XXXXXXXXXXXXXXXXXXXX" : "XXXXXXXXXXXXXXX", FORM_FONT_SIZE);
       fieldDim.height = lineHeight;
+      maxWidth = fieldDim.width;
     }
 };
 
@@ -758,7 +773,6 @@ class FormViewer {
   private:
     static constexpr char const *TAG = "FormViewer";
 
-    static constexpr uint8_t TOP_YPOS    = 100;
     static constexpr uint8_t BOTTOM_YPOS = 50;
 
     FormEntries formEntries;
@@ -766,14 +780,33 @@ class FormViewer {
     const char *title;
     const char *bottomMsg;
 
-    int16_t maxFieldsWidth, maxCaptionsWidth;
-    int8_t lineHeight;
+    uint16_t maxFieldsWidth, maxCaptionsWidth;
+    uint16_t titleYSpace;
+    uint16_t titleFontSize;
+    Dim titleDim;
+    uint16_t bottomMsgYSpace;
+    uint16_t rightXpos;
+    uint16_t width;
+
+    FontPtr &font{appFonts.getFont(1)};
+
+    #if TOUCH_ENABLE
+      uint16_t doneButtonYSpace;
+    #endif
+
+    uint16_t spaceAvailableForFields;
+
+    uint8_t lineHeight;
     bool completed;
 
     using Fields = std::list<FormFieldPtr>;
 
     Fields fields;
     Fields::iterator oldField, currentField;
+    Fields::iterator firstFieldInPage, lastFieldInPage;
+
+    uint8_t firstEntryInPage;
+    uint8_t entriesPerPage;
 
     Pos bottomMsgPos;
 
@@ -788,13 +821,19 @@ class FormViewer {
 
         return fields.end();
       }
-
     #endif
 
+    auto computeDisplayParameters() -> void;
+    auto generateFields(bool all = false) -> void;
+    auto computeFieldsPos() -> void;
+    auto displayForm() -> void;
+
   public:
+    enum class UpdateType : uint8_t { INITIAL, PAGE_CHANGE, REFRESH };
+
     auto setCompleted(bool value) -> void { completed = value; }
 
     void show(const char *titleArg, FormEntries formEntriesArg, int8_t sizeArg,
-              const char *bottomMsgArg, bool refresh = false);
+              const char *bottomMsgArg, UpdateType updateType);
     auto event(const EventMgr::Event &event) -> bool;
 };
